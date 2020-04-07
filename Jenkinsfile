@@ -71,7 +71,7 @@ pipeline {
                         label "centos7"
                     }
                     steps {
-                        echo "build on ${env.NODE_NAME}"
+                        echo "running on ${env.NODE_NAME}"
                         echo "Conda home = ${env.CONDA_HOME}"
                     }
                 }
@@ -80,6 +80,7 @@ pipeline {
                         label "macosx11"
                     }
                     steps {
+                        echo "running on ${env.NODE_NAME}"
                         echo "build on ${env.NODE_NAME}"
                         echo "Conda home = ${env.CONDA_HOME}"
                     }
@@ -93,6 +94,7 @@ pipeline {
                         label "centos7"
                     }
                     steps {
+                        echo "test on ${env.NODE_NAME}"
                         echo "Conda home = ${env.CONDA_HOME}"
                         echo "pull build"
                         echo "install build"
@@ -104,6 +106,7 @@ pipeline {
                         label "macosx11"
                     }
                     steps {
+                        echo "test on ${env.NODE_NAME}"
                         echo "Conda home = ${env.CONDA_HOME}"
                         echo "pull build"
                         echo "install build"
@@ -124,11 +127,13 @@ pipeline {
                         label "centos7"
                     }
                     steps {
+                        echo "running on ${env.NODE_NAME}"
                         echo "deploy linux-64"
                     }
                 }
                 stage('noarch') {
                     steps {
+                        echo "running on ${env.NODE_NAME}"
                         echo "deploy noarch"
                     }
                 }
@@ -137,6 +142,7 @@ pipeline {
                         label "macosx11"
                     }
                     steps {
+                        echo "running on ${env.NODE_NAME}"
                         echo "deploy osx-64"
                     }
                 }
