@@ -44,6 +44,7 @@ pipeline {
                     }
                     steps {
                         echo "Building on ${env.NODE_NAME}"
+                        echo "Conda home = ${env.CONDA_HOME}"
                         checkout scm
 //                         condaCreateEnv $CONDA_ENV_NAME $CONDA_ENV_FILE
                     }
@@ -55,6 +56,7 @@ pipeline {
                     }
                     steps {
                         echo "Building on ${env.NODE_NAME}"
+                        echo "Conda home = ${env.CONDA_HOME}"
                         checkout scm
 //                         condaCreateEnv $CONDA_ENV_NAME $CONDA_ENV_FILE
                     }
@@ -67,11 +69,13 @@ pipeline {
                 stage("linux-64") {
                     steps {
                         echo "build on ${env.NODE_NAME}"
+                        echo "Conda home = ${env.CONDA_HOME}"
                     }
                 }
                 stage("osx-64") {
                     steps {
                         echo "build on ${env.NODE_NAME}"
+                        echo "Conda home = ${env.CONDA_HOME}"
                     }
                 }
             }
