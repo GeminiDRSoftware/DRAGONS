@@ -105,17 +105,27 @@ def test_get_spectrophotometry(path_to_outputs):
         magnitude = np.ones_like(wavelengths) * 10
         bandpass = np.ones_like(wavelengths) * 5.
 
-        _table = table.Table([wavelengths, magnitude, bandpass])
-        _table.name = os.path.join(path_to_outputs, 'specphot3cols.dat')
+        _table = table.Table(
+            [wavelengths, magnitude, bandpass],
+            names=['WAVELENGTH', 'FLUX', 'FWHM'])
+
+        _table.name = os.path.join(path_to_outputs, 'specphot.dat')
         _table.write(_table.name, format='ascii.no_header')
 
         return _table.name
 
     _p = primitives_spect.Spect([])
     fake_table = _p._get_spectrophotometry(create_fake_table())
+
     assert 'WAVELENGTH' in fake_table.columns
     assert 'FLUX' in fake_table.columns
     assert 'MAGNITUDE' in fake_table.columns
+    assert 'WIDTH' in fake_table.columns
+
+    assert hasattr(fake_table['WAVELENGTH'], 'quantity')
+    assert hasattr(fake_table['FLUX'], 'quantity')
+    assert hasattr(fake_table['MAGNITUDE'], 'quantity')
+    assert hasattr(fake_table['WIDTH'], 'quantity')
 
 
 def test_QESpline_optimization():
