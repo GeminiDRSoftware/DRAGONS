@@ -27,11 +27,8 @@ pipeline {
     }
 
     environment {
-        PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
+        PATH = "$CONDA_HOME/bin:$PATH"
         MPLBACKEND = "agg"
-        // CONDA_ENV_FILE = ".jenkins/conda_py3env_stable.yml"
-        // CONDA_ENV_NAME = "py3_stable"
-        // PYTEST_ARGS = "--remote-data=any --basetemp=/data/jenkins/dragons/outputs"
     }
 
     stages {

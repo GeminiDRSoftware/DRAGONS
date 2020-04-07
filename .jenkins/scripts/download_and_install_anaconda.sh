@@ -3,31 +3,27 @@
 ## Remove anaconda for re-installation
 #conda install anaconda-clean --yes
 #anaconda-clean --yes
-#rm -Rf $JENKINS_HOME/anaconda3/
-
-LINUX_URL="https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh"
-MACOS_URL="https://repo.anaconda.com/archive/Anaconda3-2019.03-MacOSX-x86_64.sh"
-
-
-if [[ "$(uname)" == "Darwin" ]]; then
-    ANACONDA_URL="${MACOS_URL}"
-elif [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
-    ANACONDA_URL="${LINUX_URL}"
+if [ -d "$CONDA_HOME" ]; then
+    rm -Rf $CONDA_HOME
 fi
 
+LINUX_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+MACOS_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
+
+if [[ "$(uname)" == "Darwin" ]]; then
+    CONDA_URL="${MACOS_URL}"
+elif [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
+    CONDA_URL="${LINUX_URL}"
+fi
 
 if ! [[ "$(command -v conda)" ]]; then
-
     echo "\n\n   Conda is not installed - Downloading and installing\n\n"
-    curl "${ANACONDA_URL}" --output anaconda.sh --silent
+    curl "${CONDA_URL}" --output Miniconda3-latest.sh --silent
 
-    chmod a+x anaconda.sh
-    ./anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
-
+    chmod a+x Miniconda3-latest.sh
+    ./Miniconda3-latest.sh -u -b -p $CONDA_HOME
 else
-
-  echo "\n\n   Anaconda is already installed --- Skipping step.\n\n"
-
+  echo "\n\n   Conda is already installed --- Skipping step.\n\n"
 fi
 
 conda update --quiet conda
