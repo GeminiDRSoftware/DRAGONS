@@ -3,6 +3,7 @@ import os
 import re
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import namedtuple
+from contextlib import suppress
 from copy import deepcopy
 from functools import wraps
 
@@ -443,10 +444,10 @@ class AstroData:
     # Simply a value that nobody is going to try to set an NDData attribute to
     _IGNORE = -23
 
-    # Derived classes may provide their own __keyword_dict. Being a private
+    # Derived classes may provide their own _keyword_dict. Being a private
     # variable, each class will preserve its own, and there's no risk of
     # overriding the whole thing
-    __keyword_dict = {
+    _keyword_dict = {
         'instrument': 'INSTRUME',
         'object': 'OBJECT',
         'telescope': 'TELESCOP',
@@ -500,15 +501,12 @@ class AstroData:
         """
 
         for cls in self.__class__.mro():
-            mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
-            try:
-                return getattr(self, mangled_dict_name)[name]
-            except (AttributeError, KeyError):
-                pass
+            with suppress(AttributeError, KeyError):
+                return self._keyword_dict[name]
         else:
             raise AttributeError("No match for '{}'".format(name))
 
-    def __process_tags(self):
+    def _process_tags(self):
         """
         Determines the tag set for the current instance
 
@@ -567,7 +565,7 @@ class AstroData:
         """
         A set of strings that represent the tags defining this instance
         """
-        return self.__process_tags()
+        return self._process_tags()
 
     @property
     def descriptors(self):
