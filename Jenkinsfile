@@ -67,12 +67,18 @@ pipeline {
         stage('Provide') {
             parallel {
                 stage("linux-64") {
+                    agent{
+                        label "centos7"
+                    }
                     steps {
                         echo "build on ${env.NODE_NAME}"
                         echo "Conda home = ${env.CONDA_HOME}"
                     }
                 }
                 stage("osx-64") {
+                    agent {
+                        label "macosx11"
+                    }
                     steps {
                         echo "build on ${env.NODE_NAME}"
                         echo "Conda home = ${env.CONDA_HOME}"
@@ -83,6 +89,9 @@ pipeline {
         stage('Test') {
             parallel {
                 stage("linux-64") {
+                    agent{
+                        label "centos7"
+                    }
                     steps {
                         echo "Conda home = ${env.CONDA_HOME}"
                         echo "pull build"
@@ -91,6 +100,9 @@ pipeline {
                     }
                 }
                 stage("osx-64") {
+                    agent {
+                        label "macosx11"
+                    }
                     steps {
                         echo "Conda home = ${env.CONDA_HOME}"
                         echo "pull build"
@@ -107,12 +119,10 @@ pipeline {
         }
         stage('Deliver') {
             parallel {
-                stage('linux-32') {
-                    steps {
-                        echo "deploy linux-32"
-                    }
-                }
                 stage('linux-64') {
+                    agent{
+                        label "centos7"
+                    }
                     steps {
                         echo "deploy linux-64"
                     }
@@ -123,6 +133,9 @@ pipeline {
                     }
                 }
                 stage('osx-64') {
+                    agent {
+                        label "macosx11"
+                    }
                     steps {
                         echo "deploy osx-64"
                     }
