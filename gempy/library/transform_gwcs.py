@@ -73,8 +73,8 @@ def add_mosaic_wcs(ad, geotable):
         # the full array, to ensure any rotation takes place around
         # the true centre.
         if offset.x1 != 0 or offset.y1 != 0:
-            model_list.append(models.Shift(float(offset.x1) / xbin) &
-                              models.Shift(float(offset.y1) / ybin))
+            model_list.append(models.Shift(offset.x1 / xbin) &
+                              models.Shift(offset.y1 / ybin))
 
         if rot != 0 or mag != (1, 1):
             # Shift to centre, do whatever, and then shift back
@@ -94,23 +94,22 @@ def add_mosaic_wcs(ad, geotable):
                                   models.Scale(mag[1]))
             model_list.append(models.Shift(0.5 * (nx-1)) &
                               models.Shift(0.5 * (ny-1)))
-        model_list.append(models.Shift(float(shift[0]) / xbin) &
-                          models.Shift(float(shift[1]) / ybin))
+        model_list.append(models.Shift(shift[0] / xbin) &
+                          models.Shift(shift[1] / ybin))
         mosaic_model = reduce(Model.__or__, model_list)
 
         first_section = ad[indices[0]].array_section()
-        in_frame = Frame2D(name="pixels", axes_names=("x", "y"),
-                           unit=(u.pix, u.pix))
-        tiled_frame = Frame2D(name="tile", axes_names=("x", "y"),
-                              unit=(u.pix, u.pix))
-        mos_frame = Frame2D(name="mosaic", axes_names=("x", "y"),
-                            unit=(u.pix, u.pix))
+        in_frame = Frame2D(name="pixels")
+        tiled_frame = Frame2D(name="tile")
+        mos_frame = Frame2D(name="mosaic")
         for i in indices:
             arrsec = ad[i].array_section()
             datsec = ad[i].data_section()
             if len(indices) > 1:
-                ext_shift = (models.Shift(((arrsec.x1 - first_section.x1) // xbin - datsec.x1)) &
-                             models.Shift(((arrsec.y1 - first_section.y1) // ybin - datsec.y1)))
+                #ext_shift = (models.Shift(((arrsec.x1 - first_section.x1) // xbin - datsec.x1)) &
+                #             models.Shift(((arrsec.y1 - first_section.y1) // ybin - datsec.y1)))
+                ext_shift = (models.Shift((arrsec.x1 // xbin - datsec.x1)) &
+                             models.Shift((arrsec.y1 // ybin - datsec.y1)))
                 pipeline = [(in_frame, ext_shift),
                             (tiled_frame, mosaic_model),
                             (mos_frame, None)]

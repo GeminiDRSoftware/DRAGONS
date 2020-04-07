@@ -10,6 +10,7 @@ import urllib.request
 
 from copy import deepcopy
 from importlib import import_module
+from functools import reduce
 
 from gempy.library import astromodels
 from gempy.utils import logutils
@@ -18,6 +19,8 @@ from gempy import numdisplay as nd
 
 from gempy.library import transform, transform_gwcs
 from astropy.modeling import models
+from gwcs.coordinate_frames import Frame2D
+from gwcs.wcs import WCS as gWCS
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.gmos.pixel_functions import get_bias_level
@@ -311,6 +314,138 @@ class Visualize(PrimitivesBASE):
         return adoutputs
 
     def tileArrays(self, adinputs=None, **params):
+        """
+        This primitive combines extensions by tiling (no interpolation).
+        The array_section() and detector_section() descriptors are used
+        to derive the geometry of the tiling, so outside help (from the
+        instrument's geometry_conf module) is only required if there are
+        multiple arrays being tiled together, as the gaps need to be
+        specified.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        tile_all: bool
+            tile to a single extension, rather than one per array?
+            (array=physical detector)
+        sci_only: bool
+            tile only the data plane?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys["tileArrays"]
+
+        suffix = params['suffix']
+        tile_all = params['tile_all']
+        attributes = ['data'] if params["sci_only"] else None
+
+        adoutputs = []
+        for ad in adinputs:
+            if len(ad) == 1:
+                log.warning("{} has only one extension, so there's nothing "
+                            "to tile".format(ad.filename))
+                adoutputs.append(ad)
+                continue
+
+            array_info = gt.array_information(ad)
+            detshape = array_info.detector_shape
+            if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
+                log.warning("{} has nothing to tile, as tile_all=False but "
+                            "each array has only one amplifier.")
+                adoutputs.append(ad)
+                continue
+
+            if tile_all and detshape != (1, 1):  # We need gaps!
+                geotable = import_module('.geometry_conf', self.inst_lookups)
+                chip_gaps = geotable.tile_gaps[ad.detector_name()]
+                try:
+                    xgap, ygap = chip_gaps
+                except TypeError:  # single number, applies to both
+                    xgap = ygap = chip_gaps
+
+            kw = ad._keyword_for('data_section')
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+
+            # Work out additional shifts required to cope with posisble overscan regions
+            if tile_all:
+                yorigins, xorigins = np.rollaxis(np.array(array_info.origins), 1).reshape((2,) + array_info.detector_shape)
+                xorigins //= xbin
+                yorigins //= ybin
+            else:
+                yorigins, xorigins = np.zeros((2,) + array_info.detector_shape)
+            it_ccd = np.nditer(xorigins, flags=['multi_index'])
+            i = 0
+            while not it_ccd.finished:
+                ccdy, ccdx = it_ccd.multi_index
+                shp = array_info.array_shapes[i]
+                exts = array_info.extensions[i]
+                xshifts = np.zeros(shp, dtype=np.int32)
+                yshifts = np.zeros(shp, dtype=np.int32)
+                it = np.nditer(np.array(exts).reshape(shp), flags=['multi_index'])
+                while not it.finished:
+                    iy, ix = it.multi_index
+                    ext = ad[int(it[0])]
+                    datsec = ext.data_section()
+                    if datsec.x1 > 0:
+                        xshifts[iy, ix:] += datsec.x1
+                    if datsec.x2 < ext.shape[1]:
+                        xshifts[iy, ix+1:] += ext.shape[1] - datsec.x2
+                    if datsec.y1 > 0:
+                        yshifts[iy:, ix] += datsec.y1
+                    if datsec.y2 < ext.shape[0]:
+                        xshifts[iy+1:, ix] += ext.shape[0] - datsec.y2
+
+                    # We need to have a "tile" Frame to resample to
+                    if ext.wcs is None:
+                        ext.wcs = gWCS([(Frame2D(name="pixels"), ext_shift),
+                                        (Frame2D(name="tile"), None)])
+                    elif 'tile' not in ext.wcs.available_frames:
+                        arrsec = ext.array_section()
+                        ext_shift = (models.Shift((arrsec.x1 // xbin - datsec.x1)) &
+                             models.Shift((arrsec.y1 // ybin - datsec.y1)))
+                        ext.wcs = gWCS([(ext.wcs.input_frame, ext_shift),
+                                        (Frame2D(name="tile"), ext.wcs.pipeline[1][1])] +
+                                       ext.wcs.pipeline[2:])
+                    if tile_all:
+                        ext.wcs.insert_transform('tile', models.Shift(xshifts[iy,ix] + xorigins[ccdy,ccdx]) &
+                                                 models.Shift(yshifts[iy,ix] + yorigins[ccdy,ccdx]), after=False)
+                    # Reset data_section since we're not trimming overscans
+                    ext.hdr[kw] = '[1:{},1:{}]'.format(*reversed(ext.shape))
+                    it.iternext()
+
+                if tile_all:
+                    # We need to shift other arrays if this one is larger than
+                    # its expected size due to overscan regions. We've kept
+                    # track of shifts we've introduced, but it might also be
+                    # the case that we've been sent a previous tile_all=False output
+                    if ccdx < detshape[1] - 1:
+                        max_xshift = max(xshifts.max(), ext.shape[1] - (xorigins[ccdy, ccdx+1] - xorigins[ccdy, ccdx]))
+                        xorigins[ccdy, ccdx+1:] += max_xshift + xgap // xbin
+                    if ccdy < detshape[0] - 1:
+                        max_yshift = max(yshifts.max(), ext.shape[0] - (yorigins[ccdy+1, ccdx] - yorigins[ccdy, ccdx]))
+                        yorigins[ccdy+1:, ccdx] += max_yshift + ygap // ybin
+                elif i == 0:
+                    ad_out = transform_gwcs.resample_from_wcs(ad[exts], "tile",
+                                            attributes=attributes, process_objcat=True)
+                else:
+                    ad_out.append(transform_gwcs.resample_from_wcs(ad[exts], "tile",
+                                                 attributes=attributes, process_objcat=True)[0])
+                i += 1
+                it_ccd.iternext()
+
+            if tile_all:
+                ad_out = transform_gwcs.resample_from_wcs(ad, "tile", attributes=attributes,
+                                                          process_objcat=True)
+
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.orig_filename = ad.filename
+            ad_out.update_filename(suffix=suffix, strip=True)
+            adoutputs.append(ad_out)
+        return adoutputs
+
+
+    def oldtileArrays(self, adinputs=None, **params):
         """
         This primitive combines extensions by tiling (no interpolation).
         The array_section() and detector_section() descriptors are used
