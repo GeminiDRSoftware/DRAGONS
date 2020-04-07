@@ -84,6 +84,7 @@ pipeline {
             parallel {
                 stage("linux-64") {
                     steps {
+                        echo "Conda home = ${env.CONDA_HOME}"
                         echo "pull build"
                         echo "install build"
                         echo "run tests"
@@ -91,6 +92,7 @@ pipeline {
                 }
                 stage("osx-64") {
                     steps {
+                        echo "Conda home = ${env.CONDA_HOME}"
                         echo "pull build"
                         echo "install build"
                         echo "run tests"
