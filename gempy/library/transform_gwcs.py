@@ -35,6 +35,27 @@ catalog_coordinate_columns = {'OBJCAT': (['Y_IMAGE'], ['X_IMAGE'])}
 
 #-----------------------------------------------------------------------------
 
+def find_reference_extension(ad):
+    """
+    This function determines the reference extension of an AstroData object,
+    i.e., the extension which is most central, with preference to being to
+    the left or down of the centre.
+
+    Parameters
+    ----------
+    ad: input AstroData object
+
+    Returns
+    -------
+    int: index of the reference extension
+    """
+    det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
+    centre = np.median(det_corners, axis=0)
+    distances = list(det_corners - centre)
+    ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
+    return ref_index
+
+
 def add_mosaic_wcs(ad, geotable):
     """
 
@@ -254,14 +275,15 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     ad_out.orig_filename = ad.orig_filename
 
     # TODO: May need to revisit "reference extension"
-    ad_out.append(dg.output_dict['data'], header=ad[0].hdr.copy())
+    ref_index = find_reference_extension(ad)
+    ad_out.append(dg.output_dict['data'], header=ad[ref_index].hdr.copy())
     for key, value in dg.output_dict.items():
         if key != 'data':  # already done this
             setattr(ad_out[0], key, value)
 
     # Create a new gWCS object describing the remaining transformation.
-    ndim = len(ad[0].shape)
-    new_pipeline = wcs.pipeline[frame_index:]
+    ndim = len(ad[ref_index].shape)
+    new_pipeline = ad[ref_index].wcs.pipeline[frame_index:]
     if len(new_pipeline) == 1:
         new_wcs = None
     else:

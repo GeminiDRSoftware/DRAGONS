@@ -15,7 +15,8 @@ from gwcs.wcs import WCS as gWCS
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
-from gempy.library.transform_gwcs import add_mosaic_wcs, add_spectroscopic_wcs
+from gempy.library.transform_gwcs import (add_mosaic_wcs, add_spectroscopic_wcs,
+                                          find_reference_extension)
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -400,10 +401,7 @@ class Standardize(PrimitivesBASE):
                         reference_extension = None
 
                 if reference_extension is None:
-                    det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
-                    centre = np.median(det_corners, axis=0)
-                    distances = list(det_corners - centre)
-                    ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
+                    ref_index = find_reference_extension(ad)
 
                 ref_wcs = ad[ref_index].wcs
                 add_mosaic_wcs(ad, geotable)
