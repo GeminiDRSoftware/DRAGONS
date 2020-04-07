@@ -10,6 +10,7 @@ import numpy as np
 
 from astropy.io import fits
 
+from .fits import FitsHeaderCollection, read_fits, write_fits
 from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
 
 NO_DEFAULT = object()
@@ -217,6 +218,7 @@ class AstroData:
                 'uncertainty',
                 'mask',
                 'variance',
+                'wcs',
                 'path',
                 'filename'
                 }
@@ -238,7 +240,7 @@ class AstroData:
         A deep copy of this instance
         """
         # Force the data provider to load data, if needed
-        len(self._dataprov)
+        len(self)
 
         obj = self.__class__()
         to_copy = ('_sliced', '_phu', '_single', '_nddata',
@@ -340,12 +342,62 @@ class AstroData:
         return True
 
     @property
+    def path(self):
+        return self._path
+
+    @path.setter
+    def path(self, value):
+        if self._path is None and value is not None:
+            self._orig_filename = os.path.basename(value)
+        self._path = value
+
+    @property
+    def filename(self):
+        if self.path is not None:
+            return os.path.basename(self.path)
+
+    @filename.setter
+    def filename(self, value):
+        if os.path.isabs(value):
+            raise ValueError("Cannot set the filename to an absolute path!")
+        elif self.path is None:
+            self.path = os.path.abspath(value)
+        else:
+            dirname = os.path.dirname(self.path)
+            self.path = os.path.join(dirname, value)
+
+    @property
+    def orig_filename(self):
+        return self._orig_filename
+
+    @property
     def phu(self):
-        return self._dataprov.phu()
+        return self._phu
+
+    def set_phu(self, phu):
+        self._phu = phu
+
+    def _ext_header(self, obj):
+        if isinstance(obj, int):
+            # Assume that 'obj' is an index
+            obj = self.nddata[obj]
+        return obj.meta['header']
+
+    def _get_raw_headers(self, with_phu=False, indices=None):
+        if indices is None:
+            indices = range(len(self.nddata))
+        extensions = [self._ext_header(self.nddata[n]) for n in indices]
+
+        if with_phu:
+            return [self._phu] + extensions
+
+        return extensions
 
     @property
     def hdr(self):
-        return self._dataprov.hdr()
+        if not self.nddata:
+            return None
+        return FitsHeaderCollection(self._get_raw_headers())
 
     @property
     def tags(self):
@@ -410,6 +462,91 @@ class AstroData:
         A boolean
         """
         return attr in self._fixed_settable or attr.isupper()
+
+    @property
+    def nddata(self):
+        return self._nddata
+
+    @property
+    def tables(self):
+        return set(self._tables.keys())
+
+    @property
+    def shape(self):
+        return [nd.shape for nd in self._nddata]
+
+    @property
+    def data(self):
+        """
+        A list of the the arrays (or single array, if this is a single slice)
+        corresponding to the science data attached to each extension, in
+        loading/appending order.
+        """
+        return [nd.data for nd in self._nddata]
+
+    @data.setter
+    def data(self, value):
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
+
+    @property
+    def uncertainty(self):
+        """
+        A list of the uncertainty objects (or a single object, if this is
+        a single slice) attached to the science data, for each extension, in
+        loading/appending order.
+
+        The objects are instances of AstroPy's `NDUncertainty`, or `None` where
+        no information is available.
+
+        See also
+        ---------
+        variance: The actual array supporting the uncertainty object
+        """
+        return [nd.uncertainty for nd in self._nddata]
+
+    @uncertainty.setter
+    def uncertainty(self, value):
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
+
+    @property
+    def mask(self):
+        """
+        A list of the mask arrays (or a single array, if this is a single
+        slice) attached to the science data, for each extension, in
+        loading/appending order.
+
+        For objects that miss a mask, `None` will be provided instead.
+        """
+        return [nd.mask for nd in self._nddata]
+
+    @mask.setter
+    def mask(self, value):
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
+
+    @property
+    def variance(self):
+        """
+        A list of the variance arrays (or a single array, if this is a single
+        slice) attached to the science data, for each extension, in
+        loading/appending order.
+
+        For objects that miss uncertainty information, `None` will be provided
+        instead.
+
+        See also
+        ---------
+        uncertainty: The `NDUncertainty` object used under the hood to
+        propagate uncertainty when operating with the data
+        """
+        def variance_for(nd):
+            if nd.uncertainty is not None:
+                return nd.uncertainty.array
+
+        return [variance_for(nd) for nd in self._nddata]
+
+    @variance.setter
+    def variance(self, value):
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     def __iter__(self):
         for single in self._dataprov:
@@ -542,7 +679,7 @@ class AstroData:
         --------
         A boolean
         """
-        return attribute in self._dataprov.exposed
+        return attribute in self.exposed
 
     def __len__(self):
         """
@@ -552,7 +689,7 @@ class AstroData:
         --------
         A non-negative integer.
         """
-        return len(self._dataprov)
+        return len(self._nddata)
 
     def append(self, ext, name=None, **kwargs):
         """
@@ -611,58 +748,55 @@ class AstroData:
         set(['OBJMASK', 'OBJCAT'])
 
         """
-        return ()
-
-    def data(self):
-        """
-        A list of the the arrays (or single array, if this is a single slice)
-        corresponding to the science data attached to each extension, in
-        loading/appending order.
-        """
-
-    def uncertainty(self):
-        """
-        A list of the uncertainty objects (or a single object, if this is
-        a single slice) attached to the science data, for each extension, in
-        loading/appending order.
-
-        The objects are instances of AstroPy's `NDUncertainty`, or `None` where
-        no information is available.
-
-        See also
-        ---------
-        variance: The actual array supporting the uncertainty object
-        """
-
-    def mask(self):
-        """
-        A list of the mask arrays (or a single array, if this is a single
-        slice) attached to the science data, for each extension, in
-        loading/appending order.
-
-        For objects that miss a mask, `None` will be provided instead.
-        """
-
-    def variance(self):
-        """
-        A list of the variance arrays (or a single array, if this is a single
-        slice) attached to the science data, for each extension, in
-        loading/appending order.
-
-        For objects that miss uncertainty information, `None` will be provided
-        instead.
-
-        See also
-        ---------
-        uncertainty: The `NDUncertainty` object used under the hood to
-        propagate uncertainty when operating with the data
-        """
+        return self._exposed.copy()
 
     def info(self):
         """
         Prints out information about the contents of this instance.
         """
-        self._dataprov.info(self.tags)
+        # def info(self, tags, indices=None):
+        indices = None  # FIXME
+        print("Filename: {}".format(self.path if self.path else "Unknown"))
+        # This is fixed. We don't support opening for update
+        # print("Mode: readonly")
+
+        tags = sorted(self.tags, reverse=True)
+        tag_line = "Tags: "
+        while tags:
+            new_tag = tags.pop() + ' '
+            if len(tag_line + new_tag) > 80:
+                print(tag_line)
+                tag_line = "    " + new_tag
+            else:
+                tag_line = tag_line + new_tag
+        print(tag_line)
+
+        # Let's try to be generic. Could it be that some file contains
+        # only tables?
+        if indices is None:
+            indices = tuple(range(len(self._nddata)))
+        if indices:
+            main_fmt = "{:6} {:24} {:17} {:14} {}"
+            other_fmt = "          .{:20} {:17} {:14} {}"
+            print("\nPixels Extensions")
+            print(main_fmt.format("Index", "Content", "Type", "Dimensions",
+                                  "Format"))
+            for pi in self._pixel_info(indices):
+                main_obj = pi['main']
+                print(main_fmt.format(
+                    pi['idx'], main_obj['content'][:24], main_obj['type'][:17],
+                    main_obj['dim'], main_obj['data_type']))
+                for other in pi['other']:
+                    print(other_fmt.format(
+                        other['attr'][:20], other['type'][:17], other['dim'],
+                        other['data_type']))
+
+        additional_ext = list(self._other_info())
+        if additional_ext:
+            print("\nOther Extensions")
+            print("               Type        Dimensions")
+            for (attr, type_, dim) in additional_ext:
+                print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
 
     def _oper(self, operator, operand, indices=None):
         if indices is None:
@@ -862,6 +996,7 @@ class AstroData:
         """
         Read from a file, file object, HDUList, etc.
         """
+        return read_fits(cls, source)
 
     load = read  # for backward compatibility
 
@@ -871,8 +1006,7 @@ class AstroData:
                 raise ValueError("A filename needs to be specified")
             filename = self.path
 
-        hdulist = self._dataprov.to_hdulist()
-        hdulist.writeto(filename, overwrite=overwrite)
+        write_fits(self, filename, overwrite=overwrite)
 
     def extver(self, ver):
         """

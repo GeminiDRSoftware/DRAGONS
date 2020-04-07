@@ -268,6 +268,30 @@ def add_header_to_table(table):
     return header
 
 
+def _process_table(self, table, name=None, header=None):
+    if isinstance(table, BinTableHDU):
+        obj = Table(table.data, meta={'header': header or table.header})
+        for i, col in enumerate(obj.columns, start=1):
+            try:
+                obj[col].unit = u.Unit(obj.meta['header']['TUNIT{}'.format(i)])
+            except (KeyError, TypeError):
+                pass
+    elif isinstance(table, Table):
+        obj = Table(table)
+        if header is not None:
+            obj.meta['header'] = deepcopy(header)
+        elif 'header' not in obj.meta:
+            obj.meta['header'] = header_for_table(obj)
+    else:
+        raise ValueError("{} is not a recognized table type"
+                         .format(table.__class__))
+
+    if name is not None:
+        obj.meta['header']['EXTNAME'] = name
+
+    return obj
+
+
 def card_filter(cards, include=None, exclude=None):
     for card in cards:
         if include is not None and card[0] not in include:
@@ -659,48 +683,6 @@ class FitsProvider(DataProvider):
         except KeyError:
             raise AttributeError("'{}' is not a global table for this instance".format(attribute))
 
-    def set_phu(self, phu):
-        self._phu = phu
-
-    def info(self, tags, indices=None):
-        print("Filename: {}".format(self.path if self.path else "Unknown"))
-        # This is fixed. We don't support opening for update
-        # print("Mode: readonly")
-
-        tags = sorted(tags, reverse=True)
-        tag_line = "Tags: "
-        while tags:
-            new_tag = tags.pop() + ' '
-            if len(tag_line + new_tag) > 80:
-                print(tag_line)
-                tag_line = "    " + new_tag
-            else:
-                tag_line = tag_line + new_tag
-        print(tag_line)
-
-        # Let's try to be generic. Could it be that some file contains only tables?
-        if indices is None:
-            indices = tuple(range(len(self._nddata)))
-        if indices:
-            main_fmt = "{:6} {:24} {:17} {:14} {}"
-            other_fmt = "          .{:20} {:17} {:14} {}"
-            print("\nPixels Extensions")
-            print(main_fmt.format("Index", "Content", "Type", "Dimensions", "Format"))
-            for pi in self._pixel_info(indices):
-                main_obj = pi['main']
-                print(main_fmt.format(pi['idx'], main_obj['content'][:24], main_obj['type'][:17],
-                                                 main_obj['dim'], main_obj['data_type']))
-                for other in pi['other']:
-                    print(other_fmt.format(other['attr'][:20], other['type'][:17], other['dim'],
-                                           other['data_type']))
-
-        additional_ext = list(self._other_info())
-        if additional_ext:
-            print("\nOther Extensions")
-            print("               Type        Dimensions")
-            for (attr, type_, dim) in additional_ext:
-                print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
-
     def _pixel_info(self, indices):
         for idx, obj in ((n, self._nddata[k]) for (n, k) in enumerate(indices)):
             other_objects = []
@@ -752,10 +734,6 @@ class FitsProvider(DataProvider):
                     continue
                 yield (name, 'Table', (len(table), len(table.columns)))
 
-    @property
-    def exposed(self):
-        return self._exposed.copy()
-
     def _slice(self, indices, multi=True):
         return FitsProviderProxy(self, indices, single=not multi)
 
@@ -770,33 +748,6 @@ class FitsProvider(DataProvider):
 
     def __delitem__(self, idx):
         del self._nddata[idx]
-
-    def __len__(self):
-        return len(self._nddata)
-
-    # NOTE: This one does not make reference to self at all. May as well
-    #       move it out
-    def _process_table(self, table, name=None, header=None):
-        if isinstance(table, BinTableHDU):
-            obj = Table(table.data, meta={'header': header or table.header})
-            for i, col in enumerate(obj.columns, start=1):
-                try:
-                    obj[col].unit = u.Unit(obj.meta['header']['TUNIT{}'.format(i)])
-                except (KeyError, TypeError):
-                    pass
-        elif isinstance(table, Table):
-            obj = Table(table)
-            if header is not None:
-                obj.meta['header'] = deepcopy(header)
-            elif 'header' not in obj.meta:
-                obj.meta['header'] = header_for_table(obj)
-        else:
-            raise ValueError("{} is not a recognized table type".format(table.__class__))
-
-        if name is not None:
-            obj.meta['header']['EXTNAME'] = name
-
-        return obj
 
     def _get_max_ver(self):
         try:
@@ -865,170 +816,12 @@ class FitsProvider(DataProvider):
         return nd
 
     @property
-    def path(self):
-        return self._path
-
-    @path.setter
-    def path(self, value):
-        if self._path is None and value is not None:
-            self._orig_filename = os.path.basename(value)
-        self._path = value
-
-    @property
-    def filename(self):
-        if self.path is not None:
-            return os.path.basename(self.path)
-
-    @filename.setter
-    def filename(self, value):
-        if os.path.isabs(value):
-            raise ValueError("Cannot set the filename to an absolute path!")
-        elif self.path is None:
-            self.path = os.path.abspath(value)
-        else:
-            dirname = os.path.dirname(self.path)
-            self.path = os.path.join(dirname, value)
-
-    @property
-    def orig_filename(self):
-        return self._orig_filename
-
-    def _ext_header(self, obj):
-        if isinstance(obj, int):
-            # Assume that 'obj' is an index
-            obj = self.nddata[obj]
-        return obj.meta['header']
-
-    def _get_raw_headers(self, with_phu=False, indices=None):
-        if indices is None:
-            indices = range(len(self.nddata))
-        extensions = [self._ext_header(self.nddata[n]) for n in indices]
-
-        if with_phu:
-            return [self._phu] + extensions
-
-        return extensions
-
-    @property
     @deprecated("Access to headers through this property is deprecated and will be removed in the future")
     def header(self):
         return self._get_raw_headers(with_phu=True)
 
-    @property
-    def nddata(self):
-        return self._nddata
-
-    def phu(self):
-        return self._phu
-
-    def hdr(self):
-        if not self.nddata:
-            return None
-        return FitsHeaderCollection(self._get_raw_headers())
-
-    def to_hdulist(self):
-
-        hlst = HDUList()
-        hlst.append(PrimaryHDU(header=self.phu(), data=DELAYED))
-
-        for ext in self._nddata:
-            meta = ext.meta
-            header, ver = meta['header'], meta['ver']
-            wcs = ext.wcs
-            if isinstance(wcs, gWCS):
-                # We don't have access to the AD tags so see if it's an image
-                # Catch ValueError as any sort of failure
-                try:
-                    wcs_dict = adwcs.gwcs_to_fits(ext, self._phu)
-                except (ValueError, NotImplementedError) as e:
-                    LOGGER.warning(e)
-                else:
-                    # Must delete keywords if image WCS has been downscaled
-                    # from a higher number of dimensions
-                    for i in range(1, 5):
-                        for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}', f'CTYPE{i}'):
-                            if kw in header:
-                                del header[kw]
-                        for j in range(1, 5):
-                            for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
-                                if kw in header:
-                                    del header[kw]
-                    header.update(wcs_dict)
-                    # Use "in" here as the dict entry may be (value, comment)
-                    if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
-                        wcs = None  # There's no need to create a WCS extension
-
-            hlst.append(new_imagehdu(ext.data, header, 'SCI'))
-            if ext.uncertainty is not None:
-                hlst.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
-            if ext.mask is not None:
-                hlst.append(new_imagehdu(ext.mask, header, 'DQ'))
-
-            if isinstance(wcs, gWCS):
-                hlst.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
-
-            for name, other in meta.get('other', {}).items():
-                if isinstance(other, Table):
-                    hlst.append(table_to_bintablehdu(other))
-                elif isinstance(other, np.ndarray):
-                    hlst.append(new_imagehdu(other, meta['other_header'].get(name, meta['header']), name=name))
-                elif isinstance(other, NDDataObject):
-                    hlst.append(new_imagehdu(other.data, meta['header']))
-                else:
-                    raise ValueError("I don't know how to write back an object of type {}".format(type(other)))
-
-        if self._tables is not None:
-            for name, table in sorted(self._tables.items()):
-                hlst.append(table_to_bintablehdu(table, extname=name))
-
-        return hlst
-
     def table(self):
         return self._tables.copy()
-
-    @property
-    def tables(self):
-        return set(self._tables.keys())
-
-    @property
-    def shape(self):
-        return [nd.shape for nd in self._nddata]
-
-    @property
-    def data(self):
-        return [nd.data for nd in self._nddata]
-
-    @data.setter
-    def data(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
-
-    @property
-    def uncertainty(self):
-        return [nd.uncertainty for nd in self._nddata]
-
-    @uncertainty.setter
-    def uncertainty(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
-
-    @property
-    def mask(self):
-        return [nd.mask for nd in self._nddata]
-
-    @mask.setter
-    def mask(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
-
-    @property
-    def variance(self):
-        def variance_for(nd):
-            if nd.uncertainty is not None:
-                return nd.uncertainty.array
-
-        return [variance_for(nd) for nd in self._nddata]
-
-    @variance.setter
-    def variance(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
@@ -1154,7 +947,7 @@ class FitsProvider(DataProvider):
         self._nddata[n] = new_nddata
 
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
-        tb = self._process_table(new_table, name, header)
+        tb = _process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME') if name is None else name
         #if hname is None:
         #    raise ValueError("Can't attach a table without a name!")
@@ -1497,6 +1290,67 @@ def read_fits(cls, source, extname_parser=None):
             print(str(e)+". Discarding "+name)
 
     return provider
+
+
+def write_fits(ad, filename, overwrite=False):
+    hdul = HDUList()
+    hdul.append(PrimaryHDU(header=ad.phu(), data=DELAYED))
+
+    for ext in ad._nddata:
+        meta = ext.meta
+        header, ver = meta['header'], meta['ver']
+        wcs = ext.wcs
+
+        if isinstance(wcs, gWCS):
+            # We don't have access to the AD tags so see if it's an image
+            # Catch ValueError as any sort of failure
+            try:
+                wcs_dict = adwcs.gwcs_to_fits(ext, ad.phu())
+            except (ValueError, NotImplementedError) as e:
+                LOGGER.warning(e)
+            else:
+                # HACK! Don't update the FITS WCS for an image
+                # Must delete keywords if image WCS has been downscaled
+                # from a higher number of dimensions
+                for i in range(1, 5):
+                    for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}', f'CTYPE{i}'):
+                        if kw in header:
+                            del header[kw]
+                    for j in range(1, 5):
+                        for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
+                            if kw in header:
+                                del header[kw]
+                header.update(wcs_dict)
+                # Use "in" here as the dict entry may be (value, comment)
+                if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
+                    wcs = None  # There's no need to create a WCS extension
+
+        hdul.append(new_imagehdu(ext.data, header))
+        if ext.uncertainty is not None:
+            hdul.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
+        if ext.mask is not None:
+            hdul.append(new_imagehdu(ext.mask, header, 'DQ'))
+
+        if isinstance(wcs, gWCS):
+            hdul.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
+
+        for name, other in meta.get('other', {}).items():
+            if isinstance(other, Table):
+                hdul.append(table_to_bintablehdu(other))
+            elif isinstance(other, np.ndarray):
+                header = meta['other_header'].get(name, meta['header'])
+                hdul.append(new_imagehdu(other, header, name=name))
+            elif isinstance(other, NDDataObject):
+                hdul.append(new_imagehdu(other.data, meta['header']))
+            else:
+                raise ValueError("I don't know how to write back an object "
+                                 "of type {}".format(type(other)))
+
+    if ad._tables is not None:
+        for name, table in sorted(ad._tables.items()):
+            hdul.append(table_to_bintablehdu(table, extname=name))
+
+    hdul.writeto(filename, overwrite=overwrite)
 
 
 def windowedOp(func, sequence, kernel, shape=None, dtype=None,
