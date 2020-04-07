@@ -1,62 +1,39 @@
 import gc
-import inspect
 import logging
 import os
-import re
 import traceback
-import warnings
 from collections import OrderedDict
 from copy import deepcopy
-from functools import partial, wraps
+from functools import partial
 from io import BytesIO
+from itertools import product as cart_product
+from itertools import zip_longest
 
-from itertools import zip_longest, product as cart_product
-
-from .core import AstroData, DataProvider, astro_data_descriptor
-from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
-from . import wcs as adwcs
+import numpy as np
 
 import astropy
-from astropy.io import fits
-from astropy.io.fits import HDUList, DELAYED
-from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU, TableHDU
-from astropy.io.fits import Column, FITS_rec
-from astropy.io.fits.hdu.table import _TableBaseHDU
 from astropy import units as u
+from astropy.io import fits
+from astropy.io.fits import (DELAYED, BinTableHDU, Column, FITS_rec, HDUList,
+                             ImageHDU, PrimaryHDU, TableHDU)
+from astropy.io.fits.hdu.table import _TableBaseHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
 from astropy.nddata import NDData
 from astropy.table import Table
-import numpy as np
-
-from gwcs.wcs import WCS as gWCS
 from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
+
+from . import wcs as adwcs
+from .core import AstroData, DataProvider
+from .nddata import ADVarianceUncertainty
+from .nddata import NDAstroData as NDDataObject
+from .utils import deprecated, normalize_indices
 
 INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
 LOGGER = logging.getLogger(__name__)
-
-
-class AstroDataFitsDeprecationWarning(DeprecationWarning):
-    pass
-
-
-warnings.simplefilter("always", AstroDataFitsDeprecationWarning)
-
-
-def deprecated(reason):
-    def decorator_wrapper(fn):
-        @wraps(fn)
-        def wrapper(*args, **kw):
-            current_source = '|'.join(traceback.format_stack(inspect.currentframe()))
-            if current_source not in wrapper.seen:
-                wrapper.seen.add(current_source)
-                warnings.warn(reason, AstroDataFitsDeprecationWarning)
-            return fn(*args, **kw)
-        wrapper.seen = set()
-        return wrapper
-    return decorator_wrapper
 
 
 class KeywordCallableWrapper:
@@ -325,27 +302,6 @@ def update_header(headera, headerb):
                 headera.update((cb,))
 
     return headera
-
-def normalize_indices(slc, nitems):
-    multiple = True
-    if isinstance(slc, slice):
-        start, stop, step = slc.indices(nitems)
-        indices = list(range(start, stop, step))
-    elif isinstance(slc, INTEGER_TYPES) or (isinstance(slc, tuple) and all(isinstance(i, INTEGER_TYPES) for i in slc)):
-        if isinstance(slc, INTEGER_TYPES):
-            slc = (int(slc),)   # slc's type m
-            multiple = False
-        else:
-            multiple = True
-        # Normalize negative indices...
-        indices = [(x if x >= 0 else nitems + x) for x in slc]
-    else:
-        raise ValueError("Invalid index: {}".format(slc))
-
-    if any(i >= nitems for i in indices):
-        raise IndexError("Index out of range")
-
-    return indices, multiple
 
 
 class FitsProviderProxy(DataProvider):
@@ -1368,6 +1324,7 @@ class FitsProvider(DataProvider):
             If used against a single slice. It is of no use in that situation.
         """
         return self._extver_impl()
+
 
 def fits_ext_comp_key(ext):
     """
