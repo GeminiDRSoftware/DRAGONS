@@ -1,7 +1,6 @@
 import inspect
 import os
 import re
-from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import namedtuple
 from contextlib import suppress
 from copy import deepcopy
@@ -111,7 +110,9 @@ def returns_list(fn):
                 if len(ret) == len(self):
                     return ret
                 else:
-                    raise IndexError("Incompatible numbers of extensions and elements in {}".format(fn.__name__))
+                    raise IndexError(
+                        "Incompatible numbers of extensions and elements in {}"
+                        .format(fn.__name__))
             else:
                 return [ret] * len(self)
     return wrapper
@@ -142,7 +143,8 @@ def astro_data_tag(fn):
             ret = fn(self)
             if ret is not None:
                 if not isinstance(ret, TagSet):
-                    raise TypeError("Tag function {} didn't return a TagSet".format(fn.__name__))
+                    raise TypeError("Tag function {} didn't return a TagSet"
+                                    .format(fn.__name__))
 
                 return TagSet(*tuple(set(s) for s in ret))
         except KeyError:
@@ -159,281 +161,12 @@ class AstroDataError(Exception):
     pass
 
 
-class DataProvider(metaclass=ABCMeta):
-    """
-    Abstract class describing the minimal interface that `DataProvider`
-    derivative classes need to implement.
-    """
-
-    @property
-    def is_sliced(self):
-        """
-        If this data provider instance represents the whole dataset, return
-        False. If it represents a slice out of the whole, return True.
-
-        Returns
-        --------
-        A boolean
-        """
-        return False
-
-    @property
-    def is_single(self):
-        """
-        If this data provider represents a single slice out of a whole dataset,
-        return True. Otherwise, return False.
-
-        Returns
-        --------
-        A boolean
-        """
-        return False
-
-    @abstractmethod
-    def is_settable(self, attribute):
-        """
-        Predicate that can be used to figure out if certain attribute of the
-        `DataProvider` is meant to be modified by an external object.
-
-        This is used mostly by `AstroData`, which acts as a proxy exposing
-        attributes of its assigned provider, to decide if it should set a value
-        on the provider or on itself.
-
-        Args
-        -----
-        attribute : str
-
-        Returns
-        --------
-        A boolean
-        """
-
-    @abstractmethod
-    def append(self, ext, name=None):
-        """
-        Adds a new component to the provider. Objects appended to a single slice will
-        actually be made hierarchically dependent of the science object represented by
-        that slice. If appended to the provider as a whole, the new member will be
-        independent (eg. global table, new science object).
-
-        Args
-        -----
-        ext : array, `NDData`, `Table`, etc
-            The component to be added. The exact accepted types depend on the class
-            implementing this interface. Implementations specific to certain data formats
-            may accept specialized types (eg. a FITS provider will accept an `ImageHDU`
-            and extract the array out of it)
-
-        name : str, optional
-            A name that may be used to access the new object, as an attribute of the
-            provider. The name is typically ignored for top-level (global) objects,
-            and required for the others.
-
-            It can consist in a combination of numbers and letters, with the restriction
-            that the letters have to be all capital, and the first character cannot be
-            a number ("[A-Z][A-Z0-9]*").
-
-        Returns
-        --------
-        The same object, or a new one, if it was necessary to convert it to a more
-        suitable format for internal use.
-
-        Raises
-        -------
-        TypeError
-            If adding the object in an invalid situation (eg. `name` is `None` when
-            adding to a single slice)
-
-        ValueError
-            If adding an object that is not acceptable
-        """
-
-    @abstractmethod
-    def __getitem__(self, slice):
-        """
-        Returns a sliced view of the provider. It supports the standard Python indexing
-        syntax, including negative indices.
-
-        Args
-        -----
-        slice : int, `slice`
-            An integer or an instance of a Python standard `slice` object
-
-        Raises
-        -------
-        TypeError
-            If trying to slice an object when it doesn't make sense (eg. slicing a single
-            slice)
-
-        ValueError
-            If `slice` does not belong to one of the recognized types
-
-        IndexError
-            If an index is out of range
-
-        """
-
-    @abstractmethod
-    def __len__(self):
-        """
-        "Length" of the object. This method will typically return the number of science
-        objects contained by this provider, but this may change depending on the
-        implementation.
-
-        Returns
-        --------
-        An integer
-        """
-
-    @abstractmethod
-    def __iadd__(self, oper):
-        """
-        This method should attempt to do an in-place (modifying self) addition of each
-        internal science object and the oper.
-
-        Args
-        -----
-        oper : object
-            An operand to add to the internal science objects. The actual accepted type
-            depends on the implementation
-
-        Returns
-        --------
-        Generally, it should return `self`. The implementations may decide to return
-        something else instead.
-        """
-
-    @abstractmethod
-    def __isub__(self, oper):
-        """
-        This method should attempt to do an in-place (modifying self) subtraction of each
-        internal science object and the oper.
-
-        Args
-        -----
-        oper : object
-            An operand to subtract from the internal science objects. The actual accepted type
-            depends on the implementation
-
-        Returns
-        --------
-        Generally, it should return `self`. The implementations may decide to return
-        something else instead.
-        """
-
-    @abstractmethod
-    def __imul__(self, oper):
-        """
-        This method should attempt to do an in-place (modifying self) multiplication of each
-        internal science object and the oper.
-
-        Args
-        -----
-        oper : object
-            An operand to multiply the internal science objects by. The actual accepted type
-            depends on the implementation
-
-        Returns
-        --------
-        Generally, it should return `self`. The implementations may decide to return
-        something else instead.
-        """
-
-    @abstractmethod
-    def __itruediv__(self, oper):
-        """
-        This method should attempt to do an in-place (modifying self) division of each
-        internal science object and the oper.
-
-        Args
-        -----
-        oper : object
-            An operand to divide the internal science objects by. The actual accepted type
-            depends on the implementation
-
-        Returns
-        --------
-        Generally, it should return `self`. The implementations may decide to return
-        something else instead.
-        """
-
-    @property
-    def exposed(self):
-        """
-        A collection of strings with the names of objects that can be accessed directly
-        by name as attributes of this instance, and that are not part of its standard
-        interface (ie. data objects that have been added dynamically).
-
-        Examples
-        ---------
-        >>> ad[0].exposed  # doctest: +SKIP
-        set(['OBJMASK', 'OBJCAT'])
-
-        """
-        return ()
-
-    @abstractproperty
-    def data(self):
-        """
-        A list of the the arrays (or single array, if this is a single slice) corresponding
-        to the science data attached to each extension, in loading/appending order.
-        """
-
-    @abstractproperty
-    def uncertainty(self):
-        """
-        A list of the uncertainty objects (or a single object, if this is a single slice)
-        attached to the science data, for each extension, in loading/appending order.
-
-        The objects are instances of AstroPy's `NDUncertainty`, or `None` where no information
-        is available.
-
-        See also
-        ---------
-        variance: The actual array supporting the uncertainty object
-        """
-
-    @abstractproperty
-    def mask(self):
-        """
-        A list of the mask arrays (or a single array, if this is a single slice) attached to the
-        science data, for each extension, in loading/appending order.
-
-        For objects that miss a mask, `None` will be provided instead.
-        """
-
-    @abstractproperty
-    def variance(self):
-        """
-        A list of the variance arrays (or a single array, if this is a single slice) attached to
-        the science data, for each extension, in loading/appending order.
-
-        For objects that miss uncertainty information, `None` will be provided instead.
-
-        See also
-        ---------
-        uncertainty: The `NDUncertainty` object used under the hood to propagate uncertainty when
-        operating with the data
-        """
-
-
-# NOTE: This is not being used at all. Maybe it would be better to remove it altogether for the time
-#       being, and reimplement it if it's ever needed
-#
-# def simple_descriptor_mapping(**kw):
-#     def decorator(cls):
-#         for descriptor, descriptor_def in kw.items():
-#             setattr(cls, descriptor, property(descriptor_def))
-#         return cls
-#     return decorator
-
-
 class AstroData:
     """
     AstroData(provider)
 
-    Base class for the AstroData software package. It provides an interface to manipulate
-    astronomical data sets.
+    Base class for the AstroData software package. It provides an interface
+    to manipulate astronomical data sets.
 
     Parameters
     -----------
@@ -462,7 +195,8 @@ class AstroData:
 
     def __deepcopy__(self, memo):
         """
-        Returns a new instance of this class, initialized with a deep copy of the associted `DataProvider`
+        Returns a new instance of this class, initialized with a deep copy
+        of the associted `DataProvider`.
 
         Args
         -----
@@ -581,14 +315,56 @@ class AstroData:
                                      lambda x: hasattr(x, 'descriptor_method'))
         return tuple(mname for (mname, method) in members)
 
+    @property
+    def is_sliced(self):
+        """
+        If this data provider instance represents the whole dataset, return
+        False. If it represents a slice out of the whole, return True.
+
+        Returns
+        --------
+        A boolean
+        """
+        return False
+
+    @property
+    def is_single(self):
+        """
+        If this data provider represents a single slice out of a whole dataset,
+        return True. Otherwise, return False.
+
+        Returns
+        --------
+        A boolean
+        """
+        return False
+
+    def is_settable(self, attribute):
+        """
+        Predicate that can be used to figure out if certain attribute of the
+        `DataProvider` is meant to be modified by an external object.
+
+        This is used mostly by `AstroData`, which acts as a proxy exposing
+        attributes of its assigned provider, to decide if it should set a value
+        on the provider or on itself.
+
+        Args
+        -----
+        attribute : str
+
+        Returns
+        --------
+        A boolean
+        """
+
     def __iter__(self):
         for single in self._dataprov:
             yield self.__class__(single)
 
     def __getitem__(self, slicing):
         """
-        Returns a sliced view of the instance. It supports the standard Python indexing
-        syntax.
+        Returns a sliced view of the instance. It supports the standard
+        Python indexing syntax.
 
         Args
         -----
@@ -598,12 +374,10 @@ class AstroData:
         Raises
         -------
         TypeError
-            If trying to slice an object when it doesn't make sense (eg. slicing a single
-            slice)
-
+            If trying to slice an object when it doesn't make sense (eg.
+            slicing a single slice)
         ValueError
             If `slice` does not belong to one of the recognized types
-
         IndexError
             If an index is out of range
 
@@ -612,8 +386,8 @@ class AstroData:
 
     def __delitem__(self, idx):
         """
-        Called to implement deletion of `self[idx]`.  Supports standard Python syntax
-        (including negative indices).
+        Called to implement deletion of `self[idx]`.  Supports standard
+        Python syntax (including negative indices).
 
         Args
         -----
@@ -629,8 +403,9 @@ class AstroData:
 
     def __getattr__(self, attribute):
         """
-        Called when an attribute lookup has not found the attribute in the usual places
-        (not an instance attribute, and not in the class tree for `self`).
+        Called when an attribute lookup has not found the attribute in the
+        usual places (not an instance attribute, and not in the class tree
+        for `self`).
 
         This is implemented to provide access to objects exposed by the `DataProvider`
 
@@ -652,11 +427,12 @@ class AstroData:
 
     def __setattr__(self, attribute, value):
         """
-        Called when an attribute assignment is attempted, instead of the normal mechanism.
-        This method will check first with the `DataProvider`: if the DP says it will contain
-        this attribute, or that it will accept it for setting, then the value will be stored
-        at the DP level. Otherwise, the regular attribute assignment mechanisme takes over
-        and the value will be store as an instance attribute of `self`.
+        Called when an attribute assignment is attempted, instead of the normal
+        mechanism.  This method will check first with the `DataProvider`: if
+        the DP says it will contain this attribute, or that it will accept it
+        for setting, then the value will be stored at the DP level. Otherwise,
+        the regular attribute assignment mechanisme takes over and the value
+        will be store as an instance attribute of `self`.
 
         Args
         -----
@@ -668,9 +444,10 @@ class AstroData:
 
         Returns
         --------
-        If the value is passed to the `DataProvider`, and it is not of an acceptable type,
-        a `ValueError` (or other exception) may be rised. Please, check the appropriate
-        documentation for this.
+        If the value is passed to the `DataProvider`, and it is not of an
+        acceptable type, a `ValueError` (or other exception) may be rised.
+        Please, check the appropriate documentation for this.
+
         """
         if attribute != '_dataprov' and '_dataprov' in self.__dict__:
             if self._dataprov.is_settable(attribute):
@@ -696,10 +473,11 @@ class AstroData:
 
     def __contains__(self, attribute):
         """
-        Implements the ability to use the `in` operator with an `AstroData` object.
-        It will look up the specified attribute name within the exposed members of
-        the internal `DataProvider` object. Refer to the concrete `DataProvider`
-        implementation's documentation to know what members are exposed.
+        Implements the ability to use the `in` operator with an `AstroData`
+        object.  It will look up the specified attribute name within the
+        exposed members of the internal `DataProvider` object. Refer to the
+        concrete `DataProvider` implementation's documentation to know what
+        members are exposed.
 
         Args
         -----
@@ -722,7 +500,110 @@ class AstroData:
         """
         return len(self._dataprov)
 
-    @abstractmethod
+    def append(self, ext, name=None, **kwargs):
+        """
+        Adds a new top-level extension. Objects appended to a single
+        slice will actually be made hierarchically dependent of the science
+        object represented by that slice. If appended to the provider as
+        a whole, the new member will be independent (eg. global table, new
+        science object).
+
+        Args
+        -----
+        ext : array, `NDData`, `Table`, other
+            The contents for the new extension. The exact accepted types depend
+            on the class implementing this interface. Implementations specific
+            to certain data formats may accept specialized types (eg. a FITS
+            provider will accept an `ImageHDU` and extract the array out of it)
+
+        name : str, optional
+            A name that may be used to access the new object, as an attribute
+            of the provider. The name is typically ignored for top-level
+            (global) objects, and required for the others. If the name cannot
+            be derived from the metadata associated to `extension`, you will
+            have to provider one.
+
+            It can consist in a combination of numbers and letters, with the
+            restriction that the letters have to be all capital, and the first
+            character cannot be a number ("[A-Z][A-Z0-9]*").
+
+        Returns
+        --------
+        The same object, or a new one, if it was necessary to convert it to
+        a more suitable format for internal use.
+
+        Raises
+        -------
+        TypeError
+            If adding the object in an invalid situation (eg. `name` is `None`
+            when adding to a single slice)
+        ValueError
+            Raised if the extension is of a proper type, but its value is
+            illegal somehow.
+
+        """
+
+    @property
+    def exposed(self):
+        """
+        A collection of strings with the names of objects that can be accessed
+        directly by name as attributes of this instance, and that are not part
+        of its standard interface (ie. data objects that have been added
+        dynamically).
+
+        Examples
+        ---------
+        >>> ad[0].exposed  # doctest: +SKIP
+        set(['OBJMASK', 'OBJCAT'])
+
+        """
+        return ()
+
+    def data(self):
+        """
+        A list of the the arrays (or single array, if this is a single slice)
+        corresponding to the science data attached to each extension, in
+        loading/appending order.
+        """
+
+    def uncertainty(self):
+        """
+        A list of the uncertainty objects (or a single object, if this is
+        a single slice) attached to the science data, for each extension, in
+        loading/appending order.
+
+        The objects are instances of AstroPy's `NDUncertainty`, or `None` where
+        no information is available.
+
+        See also
+        ---------
+        variance: The actual array supporting the uncertainty object
+        """
+
+    def mask(self):
+        """
+        A list of the mask arrays (or a single array, if this is a single
+        slice) attached to the science data, for each extension, in
+        loading/appending order.
+
+        For objects that miss a mask, `None` will be provided instead.
+        """
+
+    def variance(self):
+        """
+        A list of the variance arrays (or a single array, if this is a single
+        slice) attached to the science data, for each extension, in
+        loading/appending order.
+
+        For objects that miss uncertainty information, `None` will be provided
+        instead.
+
+        See also
+        ---------
+        uncertainty: The `NDUncertainty` object used under the hood to
+        propagate uncertainty when operating with the data
+        """
+
     def info(self):
         """
         Prints out information about the contents of this instance. Implemented
@@ -891,57 +772,14 @@ class AstroData:
         return copy
 
     # This method needs to be implemented as classmethod
-    @abstractmethod
     def load(cls, source):
         """
-        Class method that returns an instance of this same class, properly initialized
-        with a DataProvider that can deal with the object passed as `source`
+        Class method that returns an instance of this same class, properly
+        initialized with a DataProvider that can deal with the object passed as
+        `source`
 
         This method is abstract and has to be implemented by derived classes.
         """
-
-    def append(self, extension, name=None, *args, **kw):
-        """
-        Adds a new top-level extension to the provider. Please, read the the concrete
-        `DataProvider` documentation that is being used to know the exact behavior and
-        additional accepted arguments.
-
-        Args
-        -----
-        extension : array, Table, or other
-            The contents for the new extension. Usually the underlying `DataProvider`
-            will understand how to deal with regular NumPy arrays and with AstroData
-            `Table` instances, but it may also accept other types.
-
-        name : string, optional
-            A `DataProvider` will usually require a name for extensions. If the name
-            cannot be derived from the metadata associated to `extension`, you will
-            have to provider one.
-
-        args : optional
-            The DataProvider may accept additional arguments. Please, refer to its
-            documentation.
-
-        kw : optional
-            The DataProvider may accept additional arguments. Please, refer to its
-            documentation.
-
-        Returns
-        --------
-        The instance that has been added internally (potentially *not* the same that
-        was passed as *extension*)
-
-        Raises
-        -------
-        TypeError
-            Will be raised if the `DataProvider` doesn't know how to deal with the
-            data that has been passed.
-
-        ValueError
-            Raised if the extension is of a proper type, but its value is illegal
-            somehow.
-        """
-        return self._dataprov.append(extension, name=name, *args, **kw)
 
     def operate(self, operator, *args, **kwargs):
         """
@@ -956,8 +794,10 @@ class AstroData:
 
             for ext in ad:
                 ad.ext.data = operator(ad.ext.data, *args, **kwargs)
-                ad.ext.mask = operator(ad.ext.mask, *args, **kwargs) if ad.ext.mask is not None else None
-                ad.ext.variance = operator(ad.ext.variance, *args, **kwargs) if ad.ext.variance is not None else None
+                if ad.ext.mask is not None:
+                    ad.ext.mask = operator(ad.ext.mask, *args, **kwargs)
+                if ad.ext.variance is not None:
+                    ad.ext.variance = operator(ad.ext.variance, *args, **kwargs)
 
         with the additional advantage that it will work on single slices, too.
 
