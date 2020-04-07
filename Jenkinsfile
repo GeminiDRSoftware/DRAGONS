@@ -43,7 +43,7 @@ pipeline {
                 branch 'master'
             }
             steps {
-                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 sh 'tox -e check'
@@ -103,7 +103,7 @@ pipeline {
                 label "centos7"
             }
             steps {
-                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Integration tests"
@@ -118,7 +118,7 @@ pipeline {
                 label "centos7"
             }
             steps {
-                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
