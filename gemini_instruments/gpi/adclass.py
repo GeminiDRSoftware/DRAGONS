@@ -1,7 +1,7 @@
 import re
 
 from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
-from astrodata.fits import FitsLoader, FitsProvider
+from astrodata.fits import read_fits
 from ..gemini import AstroDataGemini
 from .. import gmu
 
@@ -21,8 +21,7 @@ class AstroDataGpi(AstroDataGemini):
                 hdu.header['EXTNAME'] = ('SCI', 'BPM renamed by AstroData')
                 hdu.header['EXTVER'] = (int(2), 'BPM renamed by AstroData')
 
-        return cls(FitsLoader(FitsProvider).load(source, extname_parser=gpi_parser))
-
+        return read_fits(source, extname_parser=gpi_parser)
 
     @staticmethod
     def _matches_data(source):

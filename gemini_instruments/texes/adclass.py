@@ -7,11 +7,8 @@
 # ------------------------------------------------------------------------------
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
-from astrodata import returns_list
 from astrodata import TagSet
-
-from astrodata.fits import FitsLoader
-from astrodata.fits import FitsProvider
+from astrodata.fits import read_fits
 
 from ..gemini import AstroDataGemini
 
@@ -42,7 +39,7 @@ class AstroDataTexes(AstroDataGemini):
                 hdu.header.set('EXTVER', 1, 'Versioned by AstroData',
                                after='EXTNAME')
 
-        return cls(FitsLoader(FitsProvider).load(source, extname_parser=texes_parser))
+        return read_fits(source, extname_parser=texes_parser)
 
     @staticmethod
     def _matches_data(source):
@@ -85,7 +82,7 @@ class AstroDataTexes(AstroDataGemini):
     @astro_data_descriptor
     def observation_type(self):
         return self.phu.get('OBSTYPE').upper()
-    
+
     @astro_data_descriptor
     def ra(self):
         return self.phu.get(self._keyword_for('ra'))
@@ -94,4 +91,4 @@ class AstroDataTexes(AstroDataGemini):
     def dec(self):
         return self.phu.get(self._keyword_for('dec'))
 
-    
+
