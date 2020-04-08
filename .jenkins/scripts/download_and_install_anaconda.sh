@@ -3,8 +3,8 @@
 echo "Checking (Ana/Mini)Conda installation at ${CONDA_HOME}"
 
 ## Remove anaconda to replace with miniconda
-if [ -d "$CONDA_HOME/bin/anaconda" ]; then
-    rm -Rf $CONDA_HOME
+if [ -d "${CONDA_HOME}/bin/anaconda" ]; then
+    rm -Rf ${CONDA_HOME}
 fi
 
 LINUX_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
@@ -21,11 +21,13 @@ if ! [[ "$(command -v conda)" ]]; then
     curl "${CONDA_URL}" --output Miniconda3-latest.sh --silent
 
     chmod a+x Miniconda3-latest.sh
-    ./Miniconda3-latest.sh -u -b -p $CONDA_HOME
+    ./Miniconda3-latest.sh -u -b -p ${CONDA_HOME}
 else
   echo "\n\n   Conda is already installed --- Skipping step.\n\n"
 fi
 
+echo ${PATH}
+which conda
 conda update --quiet conda
 conda config --add channels http://ssb.stsci.edu/astroconda
 conda config --add channels http://astroconda.gemini.edu/public/noarch
