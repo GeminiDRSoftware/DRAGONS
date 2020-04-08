@@ -67,6 +67,9 @@ pipeline {
                     agent{
                         label "macos"
                     }
+                    environment {
+                        PATH = "$CONDA_HOME/bin:$PATH"
+                    }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
@@ -81,6 +84,9 @@ pipeline {
                 stage('Linux/Python 3.7') {
                     agent{
                         label "centos7"
+                    }
+                    environment {
+                        PATH = "$CONDA_HOME/bin:$PATH"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -102,6 +108,9 @@ pipeline {
             agent {
                 label "bquint-ld1"
             }
+            environment {
+                PATH = "$CONDA_HOME/bin:$PATH"
+            }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
@@ -116,6 +125,9 @@ pipeline {
         stage('GMOS LS Tests') {
             agent {
                 label "centos7"
+            }
+            environment {
+                PATH = "$CONDA_HOME/bin:$PATH"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
