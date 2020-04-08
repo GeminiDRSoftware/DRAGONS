@@ -1,3 +1,5 @@
+# Copyright(c) 2019-2020 Association of Universities for Research in Astronomy, Inc.
+
 """
 tracing.py
 

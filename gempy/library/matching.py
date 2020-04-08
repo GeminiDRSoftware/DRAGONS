@@ -1,3 +1,5 @@
+# Copyright(c) 2017-2020 Association of Universities for Research in Astronomy, Inc.
+
 import numpy as np
 from astropy.modeling import fitting, models, FittableModel, Parameter
 from astropy.modeling.fitting import (_validate_model,
