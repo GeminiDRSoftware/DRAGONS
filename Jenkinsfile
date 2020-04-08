@@ -100,7 +100,7 @@ pipeline {
             //     branch 'master'
             // }
             agent {
-                label "centos7"
+                label "bquint-ld1"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"

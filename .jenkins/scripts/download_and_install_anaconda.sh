@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo "Checking (Ana/Mini)Conda installation at ${CONDA_HOME}"
+
 ## Remove anaconda to replace with miniconda
 if [ -d "$CONDA_HOME/bin/anaconda" ]; then
     rm -Rf $CONDA_HOME
