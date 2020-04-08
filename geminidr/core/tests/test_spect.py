@@ -110,7 +110,7 @@ def test_get_spectrophotometry(path_to_outputs):
             names=['WAVELENGTH', 'FLUX', 'FWHM'])
 
         _table.name = os.path.join(path_to_outputs, 'specphot.dat')
-        _table.write(_table.name, format='ascii.no_header')
+        _table.write(_table.name, format='ascii')
 
         return _table.name
 
@@ -124,7 +124,6 @@ def test_get_spectrophotometry(path_to_outputs):
 
     assert hasattr(fake_table['WAVELENGTH'], 'quantity')
     assert hasattr(fake_table['FLUX'], 'quantity')
-    assert hasattr(fake_table['MAGNITUDE'], 'quantity')
     assert hasattr(fake_table['WIDTH'], 'quantity')
 
 

@@ -32,21 +32,7 @@ datasets = [
 # --- Tests -------------------------------------------------------------------
 def test_calculate_sensitivity(path_to_outputs):
 
-    def create_fake_table():
-
-        wavelengths = np.arange(200., 900., 10) * u.nm
-        flux = np.ones(wavelengths.size) * u.Unit("erg cm-2 s-1") / u.AA
-        bandpass = np.ones(wavelengths.size) * 5. * u.nm
-
-        _table = QTable([wavelengths, flux, bandpass],
-                        names=['WAVELENGTH', 'FLUX', 'FWHM'])
-
-        _table.name = os.path.join(path_to_outputs, 'std_data.dat')
-        _table.write(_table.name, format='ascii.ecsv')
-
-        return _table.name
-
-    def create_fake_data():
+    def _create_fake_data():
         astrofaker = pytest.importorskip('astrofaker')
 
         hdu = fits.ImageHDU()
@@ -61,7 +47,8 @@ def test_calculate_sensitivity(path_to_outputs):
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
 
         _ad[0].phu.set('OBJECT', "DUMMY")
-        _ad[0].hdr.set('EXPTIME', 1.)
+        _ad[0].phu.set('EXPTIME', 1.)
+        _ad[0].hdr.set('BUNIT', "electron")
         _ad[0].hdr.set('CTYPE1', "Wavelength")
         _ad[0].hdr.set('CUNIT1', "nm")
         _ad[0].hdr.set('CRPIX1', 1)
@@ -69,19 +56,59 @@ def test_calculate_sensitivity(path_to_outputs):
         _ad[0].hdr.set('CDELT1', 0.5)
         _ad[0].hdr.set('CD1_1', 0.5)
 
+        assert _ad.object() == 'DUMMY'
+        assert _ad.exposure_time() == 1
+
         return _ad
 
-    table_name = create_fake_table()
-    ad = create_fake_data()
+    def _create_fake_table():
+
+        wavelengths = np.arange(200., 900., 10) * u.Unit("nm")
+        flux = np.ones(wavelengths.size) * u.Unit("erg cm-2 s-1 AA-1")
+        bandpass = np.ones(wavelengths.size) * u.Unit("nm")
+
+        _table = QTable([wavelengths, flux, bandpass],
+                        names=['WAVELENGTH', 'FLUX', 'FWHM'])
+
+        _table.name = os.path.join(path_to_outputs, 'std_data.dat')
+        _table.write(_table.name, format='ascii.ecsv')
+
+        return _table.name
+
+    def _get_wavelength_calibration(hdr):
+
+        from astropy.modeling.models import Linear1D, Const1D
+
+        wcal_model = (
+            Const1D(hdr.get('CRVAL1')) +
+            Linear1D(slope=hdr.get('CD1_1'), intercept=hdr.get('CRPIX1')-1))
+
+        assert wcal_model(0) == hdr.get('CRVAL1')
+
+        return wcal_model
+
+    table_name = _create_fake_table()
+    ad = _create_fake_data()
 
     p = primitives_gmos_spect.GMOSSpect([ad])
-    ads = p.calculateSensitivity(filename=table_name).pop()
-    
-    assert hasattr(ads[0], 'SENSFUNC')
+    s_ad = p.calculateSensitivity(filename=table_name).pop()
 
-    for exts in ads:
-        sensfunc = exts.SENSFUNC
-        print(sensfunc)
+    assert hasattr(s_ad[0], 'SENSFUNC')
+
+    for s_ext in s_ad:
+
+        sens_table = s_ext.SENSFUNC
+        sens_model = BSpline(
+            sens_table['knots'].data, sens_table['coefficients'].data, 3)
+
+        wcal_model = _get_wavelength_calibration(s_ext.hdr)
+
+        wlengths = (wcal_model(np.arange(s_ext.data.size + 1)) * u.nm).to(
+            sens_table['knots'].unit)
+
+        sens_factor = sens_model(wlengths) * sens_table['coefficients'].unit
+
+        np.testing.assert_allclose(sens_factor.physical.value, 1, atol=1e-4)
 
 
 @pytest.mark.dragons_remote_data
