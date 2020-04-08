@@ -114,6 +114,7 @@ pipeline {
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
+                echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Integration tests"
                 sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
