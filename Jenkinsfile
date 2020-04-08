@@ -27,7 +27,6 @@ pipeline {
     }
 
     environment {
-        PATH = "$CONDA_HOME/bin:$PATH"
         MPLBACKEND = "agg"
     }
 
@@ -41,6 +40,9 @@ pipeline {
         stage('Code Metrics') {
             when {
                 branch 'master'
+            }
+            environment {
+                PATH = "$CONDA_HOME/bin:$PATH"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
