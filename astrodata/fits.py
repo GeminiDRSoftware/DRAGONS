@@ -24,7 +24,7 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 
 from . import wcs as adwcs
-from .core import AstroData, DataProvider
+from .core import AstroData
 from .nddata import ADVarianceUncertainty
 from .nddata import NDAstroData as NDDataObject
 from .utils import deprecated, normalize_indices
@@ -326,7 +326,7 @@ def update_header(headera, headerb):
     return headera
 
 
-class FitsProviderProxy(DataProvider):
+class FitsProviderProxy:
 
     # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not
     # make sense for slices. If a method of interest is identified, we need to
@@ -592,30 +592,8 @@ class FitsProviderProxy(DataProvider):
         target = self._mapped_nddata(0)
         return self._provider.append(ext, name=name, add_to=target)
 
-    def extver_map(self):
-        """
-        Provide a mapping between the FITS EXTVER of an extension and the index
-        that will be used to access it within this object.
 
-        Returns
-        -------
-        A dictionary `{EXTVER:index, ...}`
-
-        Raises
-        ------
-        ValueError
-            If used against a single slice. It is of no use in that situation.
-        """
-        if self.is_single:
-            raise ValueError("Trying to get a mapping out of a single slice")
-
-        return self._provider._extver_impl(self._mapped_nddata())
-
-    def info(self, tags):
-        self._provider.info(tags, indices=self._mapping)
-
-
-class FitsProvider(DataProvider):
+class FitsProvider:
 
     default_extension = 'SCI'
 
@@ -1005,27 +983,6 @@ class FitsProvider(DataProvider):
             # Assume that this is an array for a pixel plane
             return self._append_array(ext, name=name, header=header, add_to=add_to)
 
-    def _extver_impl(self, nds=None):
-        if nds is None:
-            nds = self.nddata
-        return {nd._meta['ver']: n for (n, nd) in enumerate(nds)}
-
-    def extver_map(self):
-        """
-        Provide a mapping between the FITS EXTVER of an extension and the index
-        that will be used to access it within this object.
-
-        Returns
-        -------
-        A dictionary `{EXTVER:index, ...}`
-
-        Raises
-        ------
-        ValueError
-            If used against a single slice. It is of no use in that situation.
-        """
-        return self._extver_impl()
-
 
 def fits_ext_comp_key(ext):
     """
@@ -1181,7 +1138,7 @@ def read_fits(cls, source, extname_parser=None):
     for the HDUList, among the registered AstroData classes.
     """
 
-    provider = cls()
+    provider = cls([])
 
     if isinstance(source, str):
         hdulist = fits.open(source, memmap=True,

@@ -10,7 +10,6 @@ import numpy as np
 
 from astropy.io import fits
 
-from .fits import FitsHeaderCollection, read_fits, write_fits
 from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
 
 NO_DEFAULT = object()
@@ -193,21 +192,18 @@ class AstroData:
         'ut_date': 'DATE-OBS'
     }
 
-    def __init__(self, nddatas, other=None, phu=None):
+    def __init__(self, nddatas, other=None, phu=None, indices=None):
         if isinstance(nddatas, (list, tuple)):
             nddatas = dict(zip(range(len(nddatas)), nddatas))
         self._nddata = nddatas
         self._other = other
         self._phu = phu or fits.Header()
         self._processing_tags = False
+        self._indices = indices
 
         # We're overloading __setattr__. This is safer than setting the
         # attributes the normal way.
         self.__dict__.update({
-            '_sliced': False,
-            '_single': False,
-            '_phu': None,
-            '_nddata': [],
             '_path': None,
             '_orig_filename': None,
             '_tables': {},
@@ -243,9 +239,8 @@ class AstroData:
         len(self)
 
         obj = self.__class__()
-        to_copy = ('_sliced', '_phu', '_single', '_nddata',
-                   '_path', '_orig_filename', '_tables', '_exposed',
-                   '_resetting')
+        to_copy = ('_phu', '_nddata', '_path', '_orig_filename',
+                   '_tables', '_exposed', '_resetting', '_indices')
         for attr in to_copy:
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
@@ -397,6 +392,7 @@ class AstroData:
     def hdr(self):
         if not self.nddata:
             return None
+        from .fits import FitsHeaderCollection
         return FitsHeaderCollection(self._get_raw_headers())
 
     @property
@@ -430,19 +426,15 @@ class AstroData:
         --------
         A boolean
         """
-        return False
+        return self._indices is not None
 
     @property
     def is_single(self):
         """
         If this data provider represents a single slice out of a whole dataset,
         return True. Otherwise, return False.
-
-        Returns
-        --------
-        A boolean
         """
-        return False
+        return len(self.nddata) == 1
 
     def is_settable(self, attr):
         """
@@ -465,7 +457,11 @@ class AstroData:
 
     @property
     def nddata(self):
-        return self._nddata
+        if self._indices is not None:
+            ndd = [self._nddata[i] for i in self._indices]
+        else:
+            ndd = self._nddata
+        return ndd[0] if self.is_single else ndd
 
     @property
     def tables(self):
@@ -473,7 +469,7 @@ class AstroData:
 
     @property
     def shape(self):
-        return [nd.shape for nd in self._nddata]
+        return [nd.shape for nd in self.nddata]
 
     @property
     def data(self):
@@ -482,7 +478,10 @@ class AstroData:
         corresponding to the science data attached to each extension, in
         loading/appending order.
         """
-        return [nd.data for nd in self._nddata]
+        if self.is_single:
+            return self.nddata.data
+        else:
+            return [nd.data for nd in self.nddata]
 
     @data.setter
     def data(self, value):
@@ -502,7 +501,10 @@ class AstroData:
         ---------
         variance: The actual array supporting the uncertainty object
         """
-        return [nd.uncertainty for nd in self._nddata]
+        if self.is_single:
+            return self.nddata.uncertainty
+        else:
+            return [nd.uncertainty for nd in self.nddata]
 
     @uncertainty.setter
     def uncertainty(self, value):
@@ -517,7 +519,10 @@ class AstroData:
 
         For objects that miss a mask, `None` will be provided instead.
         """
-        return [nd.mask for nd in self._nddata]
+        if self.is_single:
+            return self.nddata.mask
+        else:
+            return [nd.mask for nd in self.nddata]
 
     @mask.setter
     def mask(self, value):
@@ -527,7 +532,7 @@ class AstroData:
     def variance(self):
         """
         A list of the variance arrays (or a single array, if this is a single
-        slice) attached to the science data, for each extension, in
+        slice) attached to the science data, for each read_fitsextension, in
         loading/appending order.
 
         For objects that miss uncertainty information, `None` will be provided
@@ -538,11 +543,10 @@ class AstroData:
         uncertainty: The `NDUncertainty` object used under the hood to
         propagate uncertainty when operating with the data
         """
-        def variance_for(nd):
-            if nd.uncertainty is not None:
-                return nd.uncertainty.array
-
-        return [variance_for(nd) for nd in self._nddata]
+        if self.is_single:
+            return self.nddata.variance
+        else:
+            return [nd.variance for nd in self.nddata]
 
     @variance.setter
     def variance(self, value):
@@ -656,9 +660,10 @@ class AstroData:
             except (ValueError, AttributeError):
                 super().__delattr__(attribute)
         except AttributeError:
-            if self._dataprov.is_sliced:
-                raise AttributeError("{!r} sliced object has no attribute {!r}"
-                                     .format(self.__class__.__name__, attribute))
+            if self.is_sliced:
+                raise AttributeError(
+                    "{!r} sliced object has no attribute {!r}"
+                    .format(self.__class__.__name__, attribute))
             else:
                 raise
 
@@ -689,7 +694,7 @@ class AstroData:
         --------
         A non-negative integer.
         """
-        return len(self._nddata)
+        return len(self.nddata)
 
     def append(self, ext, name=None, **kwargs):
         """
@@ -754,8 +759,6 @@ class AstroData:
         """
         Prints out information about the contents of this instance.
         """
-        # def info(self, tags, indices=None):
-        indices = None  # FIXME
         print("Filename: {}".format(self.path if self.path else "Unknown"))
         # This is fixed. We don't support opening for update
         # print("Mode: readonly")
@@ -773,8 +776,9 @@ class AstroData:
 
         # Let's try to be generic. Could it be that some file contains
         # only tables?
-        if indices is None:
-            indices = tuple(range(len(self._nddata)))
+        indices = (tuple(range(len(self))) if self._indices is None
+                   else self._indices)
+
         if indices:
             main_fmt = "{:6} {:24} {:17} {:14} {}"
             other_fmt = "          .{:20} {:17} {:14} {}"
@@ -996,6 +1000,7 @@ class AstroData:
         """
         Read from a file, file object, HDUList, etc.
         """
+        from .fits import read_fits
         return read_fits(cls, source)
 
     load = read  # for backward compatibility
@@ -1006,7 +1011,26 @@ class AstroData:
                 raise ValueError("A filename needs to be specified")
             filename = self.path
 
+        from .fits import write_fits
         write_fits(self, filename, overwrite=overwrite)
+
+    def extver_map(self):
+        """
+        Provide a mapping between the FITS EXTVER of an extension and the index
+        that will be used to access it within this object.
+
+        Returns
+        -------
+        A dictionary `{EXTVER:index, ...}`
+
+        Raises
+        ------
+        ValueError
+            If used against a single slice. It is of no use in that situation.
+        """
+        if self.is_single:
+            raise ValueError("Trying to get a mapping out of a single slice")
+        return {nd._meta['ver']: n for (n, nd) in enumerate(self.nddata)}
 
     def extver(self, ver):
         """
