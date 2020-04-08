@@ -6,7 +6,7 @@ set -eux
 # Cleanup
 git clean -fxd
 mkdir plots reports
-if [[ -n "${DRAGONS_TEST_OUTPUTS}" ]]; then
+if [[ -n "${DRAGONS_TEST_OUTPUTS-}" ]]; then
     echo "Cleaning previous test results in ${DRAGONS_TEST_OUTPUTS}"
     rm -r ${DRAGONS_TEST_OUTPUTS}
 fi
