@@ -30,7 +30,7 @@ datasets = [
 
 
 # --- Tests -------------------------------------------------------------------
-def test_calculate_sensitivity(path_to_outputs):
+def test_calculate_sensitivity_using_fake_table(path_to_outputs):
 
     def _create_fake_data():
         astrofaker = pytest.importorskip('astrofaker')
@@ -53,8 +53,8 @@ def test_calculate_sensitivity(path_to_outputs):
         _ad[0].hdr.set('CUNIT1', "nm")
         _ad[0].hdr.set('CRPIX1', 1)
         _ad[0].hdr.set('CRVAL1', 350.)
-        _ad[0].hdr.set('CDELT1', 0.5)
-        _ad[0].hdr.set('CD1_1', 0.5)
+        _ad[0].hdr.set('CDELT1', 0.1)
+        _ad[0].hdr.set('CD1_1', 0.1)
 
         assert _ad.object() == 'DUMMY'
         assert _ad.exposure_time() == 1
@@ -63,7 +63,7 @@ def test_calculate_sensitivity(path_to_outputs):
 
     def _create_fake_table():
 
-        wavelengths = np.arange(200., 900., 10) * u.Unit("nm")
+        wavelengths = np.arange(200., 900., 5) * u.Unit("nm")
         flux = np.ones(wavelengths.size) * u.Unit("erg cm-2 s-1 AA-1")
         bandpass = np.ones(wavelengths.size) * u.Unit("nm")
 
