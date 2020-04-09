@@ -33,11 +33,11 @@ datasets = [
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_regression_on_calculate_sensitivity(calc_sens_ad, reference_ad):
+def test_regression_on_flux_calibration(flux_cal_ad, reference_ad):
 
-    ref_ad = reference_ad(calc_sens_ad.filename)
+    ref_ad = reference_ad(flux_cal_ad.filename)
 
-    for calc_sens_ext, ref_ext in zip(calc_sens_ad, ref_ad):
+    for calc_sens_ext, ref_ext in zip(flux_cal_ad, ref_ad):
         np.testing.assert_allclose(
             calc_sens_ext.data, ref_ext.data, atol=1e-4)
 
@@ -62,7 +62,7 @@ def flux_cal_ad(request, get_input_ad, output_path):
 
     with output_path():
         p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.fluxCalibrate()
+        p.fluxCalibrate(standard=input_ad.object())
         flux_calibrated_ad = p.writeOutputs().pop()
 
     return flux_calibrated_ad
@@ -98,7 +98,7 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
     """
     def _get_input_ad(basename, should_preprocess):
 
-        input_fname = basename.replace('.fits', '_extracted.fits')
+        input_fname = basename.replace('.fits', '_sensitivityCalculated.fits')
         input_path = os.path.join(new_path_to_inputs, input_fname)
         cals = get_associated_calibrations(basename)
 
