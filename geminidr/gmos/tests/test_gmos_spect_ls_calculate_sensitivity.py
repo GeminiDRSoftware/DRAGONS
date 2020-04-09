@@ -30,6 +30,7 @@ datasets = [
 
 
 # --- Tests -------------------------------------------------------------------
+@pytest.mark.gmosls
 def test_calculate_sensitivity_using_fake_table(path_to_outputs):
 
     def _create_fake_data():
