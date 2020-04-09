@@ -1,3 +1,5 @@
+# Copyright(c) 2016-2020 Association of Universities for Research in Astronomy, Inc.
+#
 #
 #                                                                  gemini_python
 #
@@ -264,9 +266,10 @@ class Spect(PrimitivesBASE):
                     data, mask, variance = spectrum.signal(region)
                     if mask == 0 and fluxdens > 0:
                         # Regardless of whether FLUX column is f_nu or f_lambda
-                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 AA-1'),
-                                           equivalencies=u.spectral_density(w0)) * dw
+                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
                         wave.append(w0)
+                        # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
                         zpt.append(u.Magnitude(data / flux))
                         zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
@@ -2408,7 +2411,6 @@ class Spect(PrimitivesBASE):
         except IORegistryError:
             # Force ASCII
             tbl = Table.read(filename, format='ascii')
-        num_columns = len(tbl.columns)
 
         # Create table, interpreting column names (or lack thereof)
         spec_table = Table()
@@ -2447,14 +2449,21 @@ class Spect(PrimitivesBASE):
                     unit = spec_table['WAVELENGTH'].unit
                 else:
                     if orig_colname == 'FNU':
-                        unit = u.Unit("erg cm-2 s-1") / u.Hz
-                        col.name = 'FLUX'
+                        unit = u.Unit("erg cm-2 s-1 Hz-1")
                     elif orig_colname in ('FLAM', 'FLUX') or np.median(col.data) < 1:
-                        unit = u.Unit("erg cm-2 s-1") / u.AA
-                        col.name = 'FLUX'
+                        unit = u.Unit("erg cm-2 s-1 AA-1")
                     else:
                         unit = u.mag
                 col.unit = unit
+
+            # We've created a column called "MAGNITUDE" but it might be a flux
+            if col.name == 'MAGNITUDE':
+                try:
+                    unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
+                except:
+                    pass
+                else:
+                    col.name = 'FLUX'
 
         # If we don't have a flux column, create one
         if not 'FLUX' in spec_table.colnames:

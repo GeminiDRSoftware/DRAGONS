@@ -1,3 +1,5 @@
+# Copyright(c) 2019-2020 Association of Universities for Research in Astronomy, Inc.
+#
 from astrodata import AstroData, NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 

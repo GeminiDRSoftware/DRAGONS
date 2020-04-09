@@ -1,3 +1,5 @@
+# Copyright(c) 2017-2020 Association of Universities for Research in Astronomy, Inc.
+#
 # nddops.py -- operations on NDData objects
 #
 # This module contains the NDStacker class, used to combine multiple NDData
