@@ -81,6 +81,14 @@ pipeline {
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
+                    post {
+                        always {
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: 'reports/*_results.xml'
+                            )
+                        }
+                    }
                 }
 
                 stage('Linux/Python 3.7') {
@@ -98,6 +106,14 @@ pipeline {
                         sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
+                    }
+                    post {
+                        always {
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: 'reports/*_results.xml'
+                            )
+                        }
                     }
                 }
             }
@@ -123,6 +139,14 @@ pipeline {
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F integration'
             }
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }
+            }
         }
 
         stage('GMOS LS Tests') {
@@ -145,18 +169,22 @@ pipeline {
                 always {
                     echo "Running 'archivePlots' from inside GmosArcTests"
                     archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
                 }  // end always
             }  // end post
         }  // end stage
 
     }
     post {
-        always {
-          junit (
-            allowEmptyResults: true,
-            testResults: 'reports/*_results.xml'
-            )
-        }
+//         always {
+//           junit (
+//             allowEmptyResults: true,
+//             testResults: 'reports/*_results.xml'
+//             )
+//         }
         success {
 //             sh  '.jenkins/scripts/build_sdist_file.sh'
 //             sh  'pwd'
