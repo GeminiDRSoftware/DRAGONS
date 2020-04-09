@@ -1475,8 +1475,6 @@ class Spect(PrimitivesBASE):
         std = params["standard"]
         final_units = params["units"]
 
-        print(std) # Todo - delete me
-
         # Expectation is that the SENSFUNC table will be in units
         # like (electron/s) / (W/m^2)
         flux_units = u.Unit("W m-2")
@@ -1491,7 +1489,6 @@ class Spect(PrimitivesBASE):
             std_list = std
 
         for ad, std in zip(*gt.make_lists(adinputs, std_list, force_ad=True)):
-            print(std)  # Todo - delete me
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by fluxCalibrate".

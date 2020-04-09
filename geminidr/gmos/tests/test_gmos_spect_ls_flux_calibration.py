@@ -62,7 +62,7 @@ def flux_cal_ad(request, get_input_ad, output_path):
 
     with output_path():
         p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.fluxCalibrate(standard=input_ad.object())
+        p.fluxCalibrate(standard=input_ad)
         flux_calibrated_ad = p.writeOutputs().pop()
 
     return flux_calibrated_ad
