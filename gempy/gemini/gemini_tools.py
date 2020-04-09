@@ -1228,6 +1228,8 @@ def make_lists(*args, **kwargs):
     tuple of lists
         the lists made from the keys and values
     """
+    log = logutils.get_logger(__name__)
+
     force_ad = kwargs.pop("force_ad", False)
     if kwargs:
         raise TypeError("make_lists() got unexpected keyword arguments "
@@ -1254,6 +1256,7 @@ def make_lists(*args, **kwargs):
                                         or x is None else astrodata.open(x)})
             except:
                 ad_map_dict.update({x: None})
+                log.warning(f"Cannot open file {x}")
         ret_value = [[ad_map_dict[x] for x in List] for List in ret_value]
 
     return ret_value
