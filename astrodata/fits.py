@@ -2015,12 +2015,24 @@ def gwcs_to_fits_image(wcs):
         # pipeline is a CompoundModel, and we can't slice the entire pipeline
         # in a way that also slices one of these steps. So we need to slice
         # the final step and then append it to any previous steps.
+        # In the worst case scenario, where this slicing fails, we construct
+        # the affine part of the transformation by inverting the projection
+        # and CelestialRotation steps and appending them to the end.
+        # This produces errors < 1 nanoarcsecond.
         penultimate_frame = wcs.available_frames[-2]
         pre_model = wcs.get_transform(wcs.input_frame, penultimate_frame)
         if pre_model is None:
-            affine_model = wcs_model[:-2]
+            try:
+                affine_model = wcs_model[:-2]
+            except IndexError:
+                affine_model = wcs_model | wcs_model[-1].inverse | wcs_model[-2].inverse
         else:
-            affine_model = pre_model | wcs.get_transform(penultimate_frame, wcs.output_frame)[:-2]
+            try:
+                affine_model = wcs.get_transform(penultimate_frame, wcs.output_frame)[:-2]
+            except IndexError:
+                affine_model = wcs.get_transform(penultimate_frame, wcs.output_frame)
+                affine_model |= (affine_model[-1].inverse | affine_model[-2].inverse)
+            affine_model = pre_model | affine_model
         affine = lambda x, y: np.array(affine_model(x, y))
         size = 500  # In case it's not really affine, this will give a better approximation
         wcs_dict['CD1_1'], wcs_dict['CD2_1'] = (affine(size, 0) - affine(-size, 0)) / (2 * size)
