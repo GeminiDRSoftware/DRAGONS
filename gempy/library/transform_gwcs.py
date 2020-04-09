@@ -274,7 +274,6 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     ad_out = astrodata.create(ad.phu)
     ad_out.orig_filename = ad.orig_filename
 
-    # TODO: May need to revisit "reference extension"
     ref_index = find_reference_extension(ad)
     ad_out.append(dg.output_dict['data'], header=ad[ref_index].hdr.copy())
     for key, value in dg.output_dict.items():
@@ -288,13 +287,13 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         new_wcs = None
     else:
         new_wcs = gWCS(new_pipeline)
-    ad[0].wcs = new_wcs
+    ad_out[0].wcs = new_wcs
 
     # Update and delete keywords from extension (_update_headers)
     if ndim != 2:
         log.warning("The updating of header keywords has only been "
                     "fully tested for 2D data.")
-    header = ad[0].hdr
+    header = ad_out[0].hdr
     keywords = {sec: ad._keyword_for('{}_section'.format(sec))
                 for sec in ('array', 'data', 'detector')}
     # Data section probably has meaning even if ndim!=2
@@ -314,13 +313,13 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                                 for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
         else:
             del ad.hdr[keywords['array']]
-    if 'CCDNAME' in ad[0].hdr:
+    if 'CCDNAME' in ad_out[0].hdr:
         ad.hdr['CCDNAME'] = ad.detector_name()
     # Finally, delete any keywords that no longer make sense
     for kw in ('AMPNAME', 'FRMNAME', 'FRAMEID', 'CCDSIZE', 'BIASSEC',
                'DATATYP', 'OVERSEC', 'TRIMSEC', 'OVERSCAN', 'OVERRMS'):
         if kw in header:
-            del ad.hdr[kw]
+            del ad_out.hdr[kw]
 
     # Now let's worry about the tables. Top-level ones first
     for table_name in ad.tables:

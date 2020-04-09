@@ -322,6 +322,11 @@ class Visualize(PrimitivesBASE):
         multiple arrays being tiled together, as the gaps need to be
         specified.
 
+        If the input AstroData objects still have non-data regions, these
+        will not be trimmed. However, the WCS of the final image will
+        only be correct for some of the image since extra space has been
+        introduced into the image.
+
         Parameters
         ----------
         suffix: str
@@ -334,7 +339,7 @@ class Visualize(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["tileArrays"]
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params['suffix']
         tile_all = params['tile_all']
@@ -367,7 +372,8 @@ class Visualize(PrimitivesBASE):
             kw = ad._keyword_for('data_section')
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
 
-            # Work out additional shifts required to cope with posisble overscan regions
+            # Work out additional shifts required to cope with posisble overscan
+            # regions, including those in already-tiled CCDs
             if tile_all:
                 yorigins, xorigins = np.rollaxis(np.array(array_info.origins), 1).reshape((2,) + array_info.detector_shape)
                 xorigins //= xbin
@@ -396,20 +402,34 @@ class Visualize(PrimitivesBASE):
                     if datsec.y2 < ext.shape[0]:
                         xshifts[iy+1:, ix] += ext.shape[0] - datsec.y2
 
-                    # We need to have a "tile" Frame to resample to
+                    arrsec = ext.array_section()
+                    ext_shift = (models.Shift((arrsec.x1 // xbin - datsec.x1)) &
+                                 models.Shift((arrsec.y1 // ybin - datsec.y1)))
+
+                    # To accommodate non-data regions (e.g., overscan)
+                    nondata_shift = (models.Shift(xshifts[iy,ix]) &
+                                     models.Shift(yshifts[iy,ix]))
+
+                    # We need to have a "tile" Frame to resample to.
+                    # We also need to perform the inverse, after the "tile"
+                    # frame, of any change we make beforehand.
                     if ext.wcs is None:
                         ext.wcs = gWCS([(Frame2D(name="pixels"), ext_shift),
                                         (Frame2D(name="tile"), None)])
                     elif 'tile' not in ext.wcs.available_frames:
-                        arrsec = ext.array_section()
-                        ext_shift = (models.Shift((arrsec.x1 // xbin - datsec.x1)) &
-                             models.Shift((arrsec.y1 // ybin - datsec.y1)))
                         ext.wcs = gWCS([(ext.wcs.input_frame, ext_shift),
-                                        (Frame2D(name="tile"), ext.wcs.pipeline[1][1])] +
-                                       ext.wcs.pipeline[2:])
+                                        (Frame2D(name="tile"), ext.wcs.pipeline[0][1])] +
+                                       ext.wcs.pipeline[1:])
+                        ext.wcs.insert_transform('tile', ext_shift.inverse, after=True)
                     if tile_all:
-                        ext.wcs.insert_transform('tile', models.Shift(xshifts[iy,ix] + xorigins[ccdy,ccdx]) &
-                                                 models.Shift(yshifts[iy,ix] + yorigins[ccdy,ccdx]), after=False)
+                        shift_model = (models.Shift(xshifts[iy,ix] + xorigins[ccdy,ccdx]) &
+                                       models.Shift(yshifts[iy,ix] + yorigins[ccdy,ccdx]))
+                        ext.wcs.insert_transform('tile', shift_model, after=False)
+                        if ext.wcs.output_frame != 'tile':
+                            ext.wcs.insert_transform('tile', shift_model.inverse, after=True)
+                    else:
+                        ext.wcs.insert_transform('tile', nondata_shift, after=False)
+                        ext.wcs.insert_transform('tile', nondata_shift.inverse, after=True)
                     # Reset data_section since we're not trimming overscans
                     ext.hdr[kw] = '[1:{},1:{}]'.format(*reversed(ext.shape))
                     it.iternext()
@@ -466,7 +486,7 @@ class Visualize(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys["tileArrays"]
 
         suffix = params['suffix']
         tile_all = params['tile_all']
