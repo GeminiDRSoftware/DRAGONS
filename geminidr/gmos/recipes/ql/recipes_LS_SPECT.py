@@ -63,7 +63,6 @@ def reduceStandard(p):
     p.calculateSensitivity()
     p.storeProcessedStandard()
     p.writeOutputs()
-    p.storeScience()
 
 
 
