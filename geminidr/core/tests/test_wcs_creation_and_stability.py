@@ -4,7 +4,7 @@ WCS created by prepare is good, and that there is stability during the
 tiling and mosaicking operations, and reading and writing.
 """
 import pytest
-import numpy as np
+import os
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -19,6 +19,8 @@ try:
     from gempy.library.transform_gwcs import find_reference_extension
 except (ModuleNotFoundError, ImportError):
     from gempy.library.transform import find_reference_extension
+
+TEMPFILE = "wcs_test.fits"
 
 GMOS_FILES = ["N20200306S0297.fits"]
 
@@ -54,6 +56,10 @@ def test_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
     raw_ad = astrodata.open(raw_ad_path)
     instrument = raw_ad.instrument(generic=True)
 
+    # Ensure it's tagged IMAGE so we can get an imaging WCS and can use SkyCoord
+    if instrument == 'GMOS':
+        raw_ad.phu['GRATING'] = 'MIRROR'
+
     # Check the reference extension is what we think and find the middle
     ref_index = find_reference_extension(raw_ad)
     if instrument == 'GMOS':
@@ -61,7 +67,7 @@ def test_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
     y, x = [length // 2 for length in raw_ad[ref_index].shape]
     c0 = SkyCoord(*raw_ad[ref_index].wcs(x, y), unit="deg")
 
-    p = GMOSImage([raw_ad])
+    p = GMOSImage([raw_ad])  # TODO: support for other instruments
     geotable = import_module('.geometry_conf', p.inst_lookups)
     chip_gaps = geotable.tile_gaps[raw_ad.detector_name()]
 
@@ -93,3 +99,13 @@ def test_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
             x += chip_gaps // raw_ad.detector_x_bin()
         c = SkyCoord(*ad[0 if tile_all else 1].wcs(x, y), unit="deg")
         assert c0.separation(c) < 1e-12 * u.arcsec
+
+    # Now write the file to disk and read it back in and check WCS stability
+    ad.write(TEMPFILE, overwrite=True)
+    ad = astrodata.open(TEMPFILE)
+
+    if instrument == 'GMOS':
+        c = SkyCoord(*ad[0 if tile_all else 1].wcs(x, y), unit="deg")
+        assert c0.separation(c) < 1e-9 * u.arcsec
+
+    os.remove(TEMPFILE)
