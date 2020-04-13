@@ -14,7 +14,6 @@ import gemini_instruments
 
 from astropy import modeling
 from astropy.utils.data import download_file
-from astropy.stats import sigma_clip
 from contextlib import contextmanager
 from geminidr.gmos import primitives_gmos_longslit
 from gempy.adlibrary import dataselect
@@ -77,6 +76,7 @@ gap_local_kw = {
     "S20180919S0139.fits": {'bad_cols': 10, 'order': 4},
     "S20191005S0051.fits": {'order': 8},
 }
+
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.dragons_remote_data
@@ -384,6 +384,9 @@ def processed_ad(request, qe_corrected_ad, get_master_arc, output_path):
     get_master_arc : pytest.fixture
         Fixture that reads the master flat either from the permanent input folder
         or from the temporary cache folder.
+    output_path : pytest.fixture
+        Fixture that contains a context manager that allows changing folders
+        easily.
 
     Returns
     -------
@@ -518,7 +521,7 @@ def reduce_data(output_path):
     function : A function that will read the standard star file, process them
     using a custom recipe and return an AstroData object.
     """
-    def _reduce_data(ad, master_arc, master_bias, master_flat):
+    def _reduce_data(ad, master_bias, master_flat):
         with output_path():
             # Use config to prevent outputs when running Reduce via API
             logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
@@ -532,7 +535,6 @@ def reduce_data(output_path):
             p.ADUToElectrons()
             p.addVAR(poisson_noise=True)
             p.flatCorrect(flat=master_flat)
-            # p.applyQECorrection(arc=master_arc)
 
             processed_ad = p.writeOutputs().pop()
 
@@ -707,9 +709,9 @@ class Gap:
 
     Parameters
     ----------
-    l : int
+    left : int
         Left index that defines the beginning of the gap.
-    r : int
+    right : int
         Right index that defines the end of the gap
     i : int
         Increment size on both sides of the gap.
@@ -725,10 +727,10 @@ class Gap:
     size : int
         Gap size in number of elements.
     """
-    def __init__(self, l, r, i):
-        self.center = 0.5 * (l + r)
-        self.left = l - i
-        self.right = r + i
+    def __init__(self, left, right, i):
+        self.center = 0.5 * (left + right)
+        self.left = left - i
+        self.right = right + i
         self.size = abs(self.left - self.right)
 
 
