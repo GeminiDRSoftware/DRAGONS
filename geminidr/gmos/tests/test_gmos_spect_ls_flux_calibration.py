@@ -2,6 +2,7 @@
 """
 Tests for the `calculateSensitivity` primitive using GMOS-S and GMOS-N data.
 """
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pytest
@@ -9,13 +10,11 @@ import pytest
 import astrodata
 import gemini_instruments
 
-from astropy import units as u
 from astropy.io import fits
 from scipy.interpolate import BSpline
 
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.adlibrary import dataselect
-from gempy.library import astromodels
 from gempy.utils import logutils
 
 from .test_gmos_spect_ls_apply_qe_correction import (
@@ -50,7 +49,8 @@ def test_flux_calibration_with_fake_data():
         std_flux = table['FLUX'].data
 
         spline = BSpline(std_wavelength, std_flux, 3)
-        wavelength = np.arange(1000) / std_wavelength.ptp() + std_wavelength.min()
+        indexes = np.arange(1000)
+        wavelength = indexes * (std_wavelength.ptp() / indexes.size) + std_wavelength.min()
         flux = spline(wavelength)
 
         return wavelength, flux
@@ -79,8 +79,8 @@ def test_flux_calibration_with_fake_data():
         _ad[0].hdr.set('CUNIT1', "Angstrom")
         _ad[0].hdr.set('CRPIX1', 1)
         _ad[0].hdr.set('CRVAL1', wavelength.min())
-        _ad[0].hdr.set('CDELT1', wavelength.size / wavelength.ptp())
-        _ad[0].hdr.set('CD1_1', wavelength.size / wavelength.ptp())
+        _ad[0].hdr.set('CDELT1', (wavelength.size / wavelength.ptp()))
+        _ad[0].hdr.set('CD1_1', (wavelength.size / wavelength.ptp()))
 
         assert _ad.object() == object_name
         assert _ad.exposure_time() == 1
@@ -91,8 +91,8 @@ def test_flux_calibration_with_fake_data():
     std_filename = _get_spectrophotometric_file_path(ad.object())
 
     p = primitives_gmos_spect.GMOSSpect([ad])
-    p.calculateSensitivity()
-    flux_corrected_ad = p.fluxCalibrate(standard=std_filename).pop()
+    std_ad = p.calculateSensitivity()[0]
+    # flux_calibrated_ad = p.fluxCalibrate(standard=std_ad)[0]
 
     # for flux_corrected_ext in flux_corrected_ad:
     #     np.testing.assert_allclose(flux_corrected_ext.data, 2, atol=1e-4)
