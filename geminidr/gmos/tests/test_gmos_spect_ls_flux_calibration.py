@@ -43,16 +43,17 @@ def test_flux_calibration_with_fake_data():
     def _get_spectrophotometric_data(object_name):
 
         file_path = _get_spectrophotometric_file_path(object_name)
+
         table = primitives_gmos_spect.Spect([])._get_spectrophotometry(file_path)
+        table = table[table['WAVELENGTH'].data >= 3500.]
+        table = table[table['WAVELENGTH'].data <= 8500.]
 
         std_wavelength = table['WAVELENGTH'].data
         std_flux = table['FLUX'].data
 
         spline = BSpline(std_wavelength, std_flux, 3)
-        indexes = np.arange(1000)
-        wavelength = indexes * (std_wavelength.ptp() / indexes.size) + std_wavelength.min()
+        wavelength = np.linspace(std_wavelength.min(), std_wavelength.max(), 1000)
         flux = spline(wavelength)
-
         return wavelength, flux
 
     def _create_fake_data(object_name):
@@ -63,12 +64,12 @@ def test_flux_calibration_with_fake_data():
 
         hdu = fits.ImageHDU()
         hdu.header['CCDSUM'] = "1 1"
-        hdu.data = flux[np.newaxis, :]
+        hdu.data = flux[np.newaxis, :]  # astrofaker needs 2D data
 
         _ad = astrofaker.create('GMOS-S')
         _ad.add_extension(hdu, pixel_scale=1.0)
 
-        _ad[0].data = _ad[0].data.ravel() * 2
+        _ad[0].data = _ad[0].data.ravel()
         _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
 
@@ -77,10 +78,10 @@ def test_flux_calibration_with_fake_data():
         _ad[0].hdr.set('BUNIT', "electron")
         _ad[0].hdr.set('CTYPE1', "Wavelength")
         _ad[0].hdr.set('CUNIT1', "Angstrom")
-        _ad[0].hdr.set('CRPIX1', 1)
+        _ad[0].hdr.set('CRPIX1', 0)
         _ad[0].hdr.set('CRVAL1', wavelength.min())
-        _ad[0].hdr.set('CDELT1', (wavelength.size / wavelength.ptp()))
-        _ad[0].hdr.set('CD1_1', (wavelength.size / wavelength.ptp()))
+        _ad[0].hdr.set('CDELT1', wavelength.ptp() / wavelength.size)
+        _ad[0].hdr.set('CD1_1', wavelength.ptp() / wavelength.size)
 
         assert _ad.object() == object_name
         assert _ad.exposure_time() == 1
@@ -92,7 +93,7 @@ def test_flux_calibration_with_fake_data():
 
     p = primitives_gmos_spect.GMOSSpect([ad])
     std_ad = p.calculateSensitivity()[0]
-    # flux_calibrated_ad = p.fluxCalibrate(standard=std_ad)[0]
+    flux_calibrated_ad = p.fluxCalibrate(standard=std_ad)[0]
 
     # for flux_corrected_ext in flux_corrected_ad:
     #     np.testing.assert_allclose(flux_corrected_ext.data, 2, atol=1e-4)
