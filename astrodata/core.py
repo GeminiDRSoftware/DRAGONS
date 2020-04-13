@@ -11,6 +11,7 @@ import numpy as np
 from astropy.io import fits
 
 from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
+from .utils import deprecated, normalize_indices
 
 NO_DEFAULT = object()
 
@@ -372,7 +373,14 @@ class AstroData:
         if not self.nddata:
             return None
         from .fits import FitsHeaderCollection
-        return FitsHeaderCollection(self._get_raw_headers())
+        headers = self._get_raw_headers()
+        return headers[0] if self.is_single else FitsHeaderCollection(headers)
+
+    @property
+    @deprecated("Access to headers through this property is deprecated and "
+                "will be removed in the future. Use '.hdr' instead.")
+    def header(self):
+        return self._get_raw_headers(with_phu=True)
 
     @property
     def tags(self):
@@ -448,7 +456,10 @@ class AstroData:
 
     @property
     def shape(self):
-        return [nd.shape for nd in self.nddata]
+        if self.is_single:
+            return self.nddata.shape
+        else:
+            return [nd.shape for nd in self.nddata]
 
     @property
     def data(self):
@@ -464,7 +475,17 @@ class AstroData:
 
     @data.setter
     def data(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object that "
+                             "is not a single slice")
+
+        # Setting the ._data in the NDData is a bit kludgy, but we're all
+        # grown adults and know what we're doing, isn't it?
+        if hasattr(value, 'shape'):
+            self.nddata._data = value
+        else:
+            raise AttributeError("Trying to assign data to be something "
+                                 "with no shape")
 
     @property
     def uncertainty(self):
@@ -487,7 +508,10 @@ class AstroData:
 
     @uncertainty.setter
     def uncertainty(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object that "
+                             "is not a single slice")
+        self.nddata.uncertainty = value
 
     @property
     def mask(self):
@@ -505,7 +529,10 @@ class AstroData:
 
     @mask.setter
     def mask(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object that "
+                             "is not a single slice")
+        self.nddata.mask = value
 
     @property
     def variance(self):
@@ -529,13 +556,34 @@ class AstroData:
 
     @variance.setter
     def variance(self, value):
-        raise ValueError("Trying to assign to a non-sliced AstroData object")
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object that "
+                             "is not a single slice")
+        if value is None:
+            self.nddata.uncertainty = None
+        else:
+            self.nddata.uncertainty = ADVarianceUncertainty(value)
+
+    @property
+    def wcs(self):
+        if self.is_single:
+            return self.nddata.wcs
+        else:
+            raise ValueError("Cannot return WCS for an AstroData object "
+                             "that is not a single slice")
+
+    @wcs.setter
+    def wcs(self, value):
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object "
+                             "that is not a single slice")
+        self.nddata.wcs = value
 
     def __iter__(self):
-        for single in self._dataprov:
-            yield self.__class__(single)
+        for n in range(len(self)):
+            yield self[n]
 
-    def __getitem__(self, slicing):
+    def __getitem__(self, idx):
         """
         Returns a sliced view of the instance. It supports the standard
         Python indexing syntax.
@@ -556,7 +604,16 @@ class AstroData:
             If an index is out of range
 
         """
-        return self.__class__(self._dataprov[slicing])
+        if self.is_single:
+            raise TypeError("Can't slice a single slice!")
+
+        indices, multiple = normalize_indices(idx, nitems=len(self))
+        # FIXME: propagate other attributes ? path, orig_filename, etc.
+        if self._indices:
+            # FIXME: slice _indices
+            pass
+        return self.__class__(self.nddatas, other=self.other, phu=self.phu,
+                              indices=indices)
 
     def __delitem__(self, idx):
         """
@@ -574,7 +631,10 @@ class AstroData:
         IndexError
             If `idx` is out of range
         """
-        del self._dataprov[idx]
+        if self._indices:
+            raise TypeError("Can't remove items from a sliced object")
+        # FIXME: what happens with indices/slices ?
+        del self._nddata[idx]
 
     def __getattr__(self, attribute):
         """
@@ -783,13 +843,11 @@ class AstroData:
             for (attr, type_, dim) in additional_ext:
                 print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
 
-    def _oper(self, operator, operand, indices=None):
-        if indices is None:
-            indices = tuple(range(len(self._nddata)))
+    def _oper(self, operator, operand):
         if isinstance(operand, AstroData):
-            if len(operand) != len(indices):
+            if len(operand) != len(self):
                 raise ValueError("Operands are not the same size")
-            for n in indices:
+            for n in range(len(self)):
                 try:
                     data = operand.nddata if operand.is_single else operand.nddata[n]
                     self._nddata[n] = operator(self._nddata[n], data)
@@ -802,13 +860,12 @@ class AstroData:
             for tab in (rtab - ltab):
                 self._tables[tab] = op_table[tab]
         else:
-            for n in indices:
+            for n in range(len(self)):
                 self._nddata[n] = operator(self._nddata[n], operand)
 
-    def _standard_nddata_op(self, fn, operand, indices=None):
+    def _standard_nddata_op(self, fn, operand):
         return self._oper(partial(fn, handle_mask=np.bitwise_or,
-                                  handle_meta='first_found'),
-                          operand, indices)
+                                  handle_meta='first_found'), operand)
 
     def __add__(self, oper):
         """

@@ -328,28 +328,6 @@ def update_header(headera, headerb):
 
 class FitsProviderProxy:
 
-    # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not
-    # make sense for slices. If a method of interest is identified, we need to
-    # implement it properly, or make it raise an exception if not valid.
-
-    def __init__(self, provider, mapping, single):
-        # We're overloading __setattr__. This is safer than setting the
-        # attributes the normal way.
-        self.__dict__.update({
-            '_provider': provider,
-            '_mapping': tuple(mapping),
-            '_sliced': True,
-            '_single': single
-            })
-
-    @property
-    def is_sliced(self):
-        return True
-
-    @property
-    def is_single(self):
-        return self._single
-
     def __deepcopy__(self, memo):
         return self._provider._clone(mapping=self._mapping)
 
@@ -358,15 +336,6 @@ class FitsProviderProxy:
             return False
 
         return self._provider.is_settable(attr)
-
-    def __len__(self):
-        return len(self._mapping)
-
-    def _mapped_nddata(self, idx=None):
-        if idx is None:
-            return [self._provider._nddata[idx] for idx in self._mapping]
-        else:
-            return self._provider._nddata[self._mapping[idx]]
 
     def __getattr__(self, attribute):
         if not attribute.startswith('_'):
@@ -449,125 +418,9 @@ class FitsProviderProxy:
     def __delitem__(self, idx):
         raise TypeError("Can't remove items from a sliced object")
 
-    def __iadd__(self, operand):
-        self._provider._standard_nddata_op(NDDataObject.add, operand, self._mapping)
-        return self
-
-    def __isub__(self, operand):
-        self._provider._standard_nddata_op(NDDataObject.subtract, operand, self._mapping)
-        return self
-
-    def __imul__(self, operand):
-        self._provider._standard_nddata_op(NDDataObject.multiply, operand, self._mapping)
-        return self
-
-    def __itruediv__(self, operand):
-        self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
-        return self
-
     def __rtruediv__(self, operand):
         self._provider._oper(self._provider._rdiv, operand, self._mapping)
         return self
-
-    @property
-    @deprecated("Access to headers through this property is deprecated and will be removed in the future. "
-                "Use '.hdr' instead.")
-    def header(self):
-        return self._provider._get_raw_headers(with_phu=True, indices=self._mapping)
-
-    @property
-    def data(self):
-        if self.is_single:
-            return self._mapped_nddata(0).data
-        else:
-            return [nd.data for nd in self._mapped_nddata()]
-
-    @data.setter
-    def data(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
-
-        ext = self._mapped_nddata(0)
-        # Setting the ._data in the NDData is a bit kludgy, but we're all grown adults
-        # and know what we're doing, isn't it?
-        if hasattr(value, 'shape'):
-            ext._data = value
-        else:
-            raise AttributeError("Trying to assign data to be something with no shape")
-
-    @property
-    def uncertainty(self):
-        if self.is_single:
-            return self._mapped_nddata(0).uncertainty
-        else:
-            return [nd.uncertainty for nd in self._mapped_nddata()]
-
-    @uncertainty.setter
-    def uncertainty(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
-        self._mapped_nddata(0).uncertainty = value
-
-    @property
-    def mask(self):
-        if self.is_single:
-            return self._mapped_nddata(0).mask
-        else:
-            return [nd.mask for nd in self._mapped_nddata()]
-
-    @mask.setter
-    def mask(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
-        self._mapped_nddata(0).mask = value
-
-    @property
-    def variance(self):
-        if self.is_single:
-            return self._mapped_nddata(0).variance
-        else:
-            return [nd.variance for nd in self._mapped_nddata()]
-
-    @variance.setter
-    def variance(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
-        nd = self._mapped_nddata(0)
-        if value is None:
-            nd.uncertainty = None
-        else:
-            nd.uncertainty = ADVarianceUncertainty(value)
-
-    @property
-    def nddata(self):
-        if not self.is_single:
-            return self._mapped_nddata()
-        else:
-            return self._mapped_nddata(0)
-
-    @property
-    def shape(self):
-        if not self.is_single:
-            return [nd.shape for nd in self._mapped_nddata()]
-        else:
-            return self._mapped_nddata(0).shape
-
-    @property
-    def wcs(self):
-        if self.is_single:
-            return self._mapped_nddata(0).wcs
-        raise ValueError("Cannot return WCS for an AstroData object that is not a single slice")
-
-    @wcs.setter
-    def wcs(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
-        self._mapped_nddata(0).wcs = value
-
-    def hdr(self):
-        headers = self._provider._get_raw_headers(indices=self._mapping)
-
-        return headers[0] if self.is_single else FitsHeaderCollection(headers)
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         # needed because __getattr__ breaks finding private methods in the
@@ -792,11 +645,6 @@ class FitsProvider:
                 nd.meta['ver'] = ver
 
         return nd
-
-    @property
-    @deprecated("Access to headers through this property is deprecated and will be removed in the future")
-    def header(self):
-        return self._get_raw_headers(with_phu=True)
 
     def table(self):
         return self._tables.copy()
