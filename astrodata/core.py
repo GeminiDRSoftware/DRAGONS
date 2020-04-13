@@ -198,27 +198,16 @@ class AstroData:
         self._nddata = nddatas
         self._other = other
         self._phu = phu or fits.Header()
-        self._processing_tags = False
         self._indices = indices
 
-        # We're overloading __setattr__. This is safer than setting the
-        # attributes the normal way.
-        self.__dict__.update({
-            '_path': None,
-            '_orig_filename': None,
-            '_tables': {},
-            '_exposed': set(),
-            '_resetting': False,
-            '_fixed_settable': {
-                'data',
-                'uncertainty',
-                'mask',
-                'variance',
-                'wcs',
-                'path',
-                'filename'
-                }
-            })
+        self._exposed = set()
+        self._fixed_settable = {'data', 'uncertainty', 'mask', 'variance',
+                                'wcs', 'path', 'filename'}
+        self._orig_filename = None
+        self._path = None
+        self._processing_tags = False
+        self._resetting = False
+        self._tables = {}
 
     def __deepcopy__(self, memo):
         """
@@ -372,20 +361,10 @@ class AstroData:
     def set_phu(self, phu):
         self._phu = phu
 
-    def _ext_header(self, obj):
-        if isinstance(obj, int):
-            # Assume that 'obj' is an index
-            obj = self.nddata[obj]
-        return obj.meta['header']
-
-    def _get_raw_headers(self, with_phu=False, indices=None):
-        if indices is None:
-            indices = range(len(self.nddata))
-        extensions = [self._ext_header(self.nddata[n]) for n in indices]
-
+    def _get_raw_headers(self, with_phu=False):
+        extensions = [ndd.meta['header'] for ndd in self.nddata]
         if with_phu:
             return [self._phu] + extensions
-
         return extensions
 
     @property
@@ -587,7 +566,8 @@ class AstroData:
         Args
         -----
         idx : integer
-            This index represents the order of the element that you want to remove.
+            This index represents the order of the element that you want
+            to remove.
 
         Raises
         -------
@@ -602,7 +582,8 @@ class AstroData:
         usual places (not an instance attribute, and not in the class tree
         for `self`).
 
-        This is implemented to provide access to objects exposed by the `DataProvider`
+        This is implemented to provide access to objects exposed by
+        the `DataProvider`.
 
         Args
         -----
@@ -810,19 +791,19 @@ class AstroData:
                 raise ValueError("Operands are not the same size")
             for n in indices:
                 try:
-                    self._set_nddata(n, operator(
-                        self._nddata[n],
-                        (operand.nddata if operand.is_single else operand.nddata[n])))
+                    data = operand.nddata if operand.is_single else operand.nddata[n]
+                    self._nddata[n] = operator(self._nddata[n], data)
                 except TypeError:
-                    # This may happen if operand is a sliced, single AstroData object
-                    self._set_nddata(n, operator(self._nddata[n], operand.nddata))
+                    # This may happen if operand is a sliced, single
+                    # AstroData object
+                    self._nddata[n] = operator(self._nddata[n], operand.nddata)
             op_table = operand.table()
             ltab, rtab = set(self._tables), set(op_table)
             for tab in (rtab - ltab):
                 self._tables[tab] = op_table[tab]
         else:
             for n in indices:
-                self._set_nddata(n, operator(self._nddata[n], operand))
+                self._nddata[n] = operator(self._nddata[n], operand)
 
     def _standard_nddata_op(self, fn, operand, indices=None):
         return self._oper(partial(fn, handle_mask=np.bitwise_or,
@@ -1053,7 +1034,7 @@ class AstroData:
         """
         try:
             if isinstance(ver, int):
-                return self[self._dataprov.extver_map()[ver]]
+                return self[self.extver_map()[ver]]
             else:
                 raise ValueError("{} is not an integer EXTVER".format(ver))
         except KeyError as e:

@@ -921,9 +921,6 @@ class FitsProvider:
 
         return new_nddata
 
-    def _set_nddata(self, n, new_nddata):
-        self._nddata[n] = new_nddata
-
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
         tb = _process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME') if name is None else name
