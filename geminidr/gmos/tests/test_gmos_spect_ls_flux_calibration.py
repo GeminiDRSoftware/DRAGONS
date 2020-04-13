@@ -11,7 +11,6 @@ import gemini_instruments
 
 from astropy import units as u
 from astropy.io import fits
-from astropy.table import QTable
 from scipy.interpolate import BSpline
 
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
@@ -30,6 +29,75 @@ datasets = [
 
 
 # --- Tests -------------------------------------------------------------------
+@pytest.mark.gmosls
+def test_flux_calibration_with_fake_data():
+
+    def _get_spectrophotometric_file_path(specphot_name):
+
+        from geminidr.gemini.lookups import spectrophotometric_standards
+
+        path = list(spectrophotometric_standards.__path__).pop()
+        file_path = os.path.join(path, specphot_name.lower().replace(' ', '') + ".dat")
+
+        return file_path
+
+    def _get_spectrophotometric_data(object_name):
+
+        file_path = _get_spectrophotometric_file_path(object_name)
+        table = primitives_gmos_spect.Spect([])._get_spectrophotometry(file_path)
+
+        std_wavelength = table['WAVELENGTH'].data
+        std_flux = table['FLUX'].data
+
+        spline = BSpline(std_wavelength, std_flux, 3)
+        wavelength = np.arange(1000) / std_wavelength.ptp() + std_wavelength.min()
+        flux = spline(wavelength)
+
+        return wavelength, flux
+
+    def _create_fake_data(object_name):
+
+        astrofaker = pytest.importorskip('astrofaker')
+
+        wavelength, flux = _get_spectrophotometric_data(object_name)
+
+        hdu = fits.ImageHDU()
+        hdu.header['CCDSUM'] = "1 1"
+        hdu.data = flux[np.newaxis, :]
+
+        _ad = astrofaker.create('GMOS-S')
+        _ad.add_extension(hdu, pixel_scale=1.0)
+
+        _ad[0].data = _ad[0].data.ravel() * 2
+        _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
+        _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
+
+        _ad[0].phu.set('OBJECT', object_name)
+        _ad[0].phu.set('EXPTIME', 1.)
+        _ad[0].hdr.set('BUNIT', "electron")
+        _ad[0].hdr.set('CTYPE1', "Wavelength")
+        _ad[0].hdr.set('CUNIT1', "Angstrom")
+        _ad[0].hdr.set('CRPIX1', 1)
+        _ad[0].hdr.set('CRVAL1', wavelength.min())
+        _ad[0].hdr.set('CDELT1', wavelength.size / wavelength.ptp())
+        _ad[0].hdr.set('CD1_1', wavelength.size / wavelength.ptp())
+
+        assert _ad.object() == object_name
+        assert _ad.exposure_time() == 1
+
+        return _ad
+
+    ad = _create_fake_data("Feige 34")
+    std_filename = _get_spectrophotometric_file_path(ad.object())
+
+    p = primitives_gmos_spect.GMOSSpect([ad])
+    p.calculateSensitivity()
+    flux_corrected_ad = p.fluxCalibrate(standard=std_filename).pop()
+
+    # for flux_corrected_ext in flux_corrected_ad:
+    #     np.testing.assert_allclose(flux_corrected_ext.data, 2, atol=1e-4)
+
+
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data

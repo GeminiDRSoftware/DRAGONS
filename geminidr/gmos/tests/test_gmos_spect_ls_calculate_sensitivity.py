@@ -80,13 +80,13 @@ def test_calculate_sensitivity_using_fake_table(path_to_outputs):
 
         from astropy.modeling.models import Linear1D, Const1D
 
-        wcal_model = (
+        _wcal_model = (
             Const1D(hdr.get('CRVAL1')) +
             Linear1D(slope=hdr.get('CD1_1'), intercept=hdr.get('CRPIX1')-1))
 
-        assert wcal_model(0) == hdr.get('CRVAL1')
+        assert _wcal_model(0) == hdr.get('CRVAL1')
 
-        return wcal_model
+        return _wcal_model
 
     table_name = _create_fake_table()
     ad = _create_fake_data()
