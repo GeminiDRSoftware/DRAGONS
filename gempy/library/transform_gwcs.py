@@ -287,6 +287,9 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         new_wcs = None
     else:
         new_wcs = gWCS(new_pipeline)
+        if set(dg.origin) != {0}:
+            new_wcs.insert_transform(new_wcs.input_frame,
+                reduce(Model.__and__, [models.Shift(s) for s in reversed(dg.origin)]), after=True)
     ad_out[0].wcs = new_wcs
 
     # Update and delete keywords from extension (_update_headers)
