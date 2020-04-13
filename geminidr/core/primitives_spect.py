@@ -1495,6 +1495,14 @@ class Spect(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
+            if std is None:
+                if 'sq' in self.mode:
+                    raise OSError('No processed standard listed for {}'.
+                                  format(ad.filename))
+                else:
+                    log.warning("No changes will be made to {}, since no "
+                                "standard was specified".format(ad.filename))
+
             len_std, len_ad = len(std), len(ad)
             if len_std not in (1, len_ad):
                 log.warning("{} has {} extensions so cannot be used to "

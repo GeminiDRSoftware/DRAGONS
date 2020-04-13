@@ -14,9 +14,7 @@
 
 pipeline {
 
-    agent {
-        label 'master'
-    }
+    agent any
 
     triggers {
         pollSCM('H/6 * * * *')  // Polls Source Code Manager every six hours
@@ -29,33 +27,27 @@ pipeline {
     }
 
     environment {
-        PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
         MPLBACKEND = "agg"
-        // CONDA_ENV_FILE = ".jenkins/conda_py3env_stable.yml"
-        // CONDA_ENV_NAME = "py3_stable"
-        // PYTEST_ARGS = "--remote-data=any --basetemp=/data/jenkins/dragons/outputs"
     }
 
     stages {
-
         stage ("Prepare"){
-
             steps{
                 sendNotifications 'STARTED'
-                checkout scm
-                sh 'git clean -fxd'
-                sh 'mkdir plots reports'
-                sh '.jenkins/scripts/download_and_install_anaconda.sh'
             }
-
         }
 
         stage('Code Metrics') {
-
             when {
                 branch 'master'
             }
+            environment {
+                PATH = "$CONDA_HOME/bin:$PATH"
+            }
             steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
                 sh 'tox -e check'
             }
             post {
@@ -69,53 +61,130 @@ pipeline {
                     )
                 }
             }
-
         }
 
         stage('Unit tests') {
-          steps {
-            echo "Running tests"
-            sh 'tox -e py36-unit -v -- --junit-xml reports/unittests_results.xml'
-            echo "Reportint coverage to CodeCov"
-            sh 'tox -e codecov -- -F unit'
-          }
+            parallel {
+                stage('MacOS/Python 3.6') {
+                    agent{
+                        label "macos"
+                    }
+                    environment {
+                        PATH = "$CONDA_HOME/bin:$PATH"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_agent.sh'
+                        echo "Running tests with Python 3.6 and older dependencies"
+                        sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
+                        echo "Reportint coverage to CodeCov"
+                        sh 'tox -e codecov -- -F unit'
+                    }
+                    post {
+                        always {
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: 'reports/*_results.xml'
+                            )
+                        }
+                    }
+                }
+
+                stage('Linux/Python 3.7') {
+                    agent{
+                        label "centos7"
+                    }
+                    environment {
+                        PATH = "$CONDA_HOME/bin:$PATH"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_agent.sh'
+                        echo "Running tests with Python 3.7"
+                        sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
+                        echo "Reportint coverage to CodeCov"
+                        sh 'tox -e codecov -- -F unit'
+                    }
+                    post {
+                        always {
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: 'reports/*_results.xml'
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         stage('Integration tests') {
-          // when {
-          //     branch 'master'
-          // }
-          steps {
-            echo "Integration tests"
-            sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
-            echo "Reporting coverage"
-            sh 'tox -e codecov -- -F integration'
-          }
+            // when {
+            //     branch 'master'
+            // }
+            agent {
+                label "bquint-ld1"
+            }
+            environment {
+                PATH = "$CONDA_HOME/bin:$PATH"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                echo "${env.PATH}"
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Integration tests"
+                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F integration'
+            }
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }
+            }
         }
 
         stage('GMOS LS Tests') {
-          steps {
-            echo "Running tests"
-            sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
-            echo "Reporting coverage"
-            sh 'tox -e codecov -- -F gmosls'
-          }  // end steps
-          post {
-            always {
-              echo "Running 'archivePlots' from inside GmosArcTests"
-              archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-            }  // end always
-          }  // end post
+            agent {
+                label "centos7"
+            }
+            environment {
+                PATH = "$CONDA_HOME/bin:$PATH"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Running tests"
+                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F gmosls'
+            }  // end steps
+            post {
+                always {
+                    echo "Running 'archivePlots' from inside GmosArcTests"
+                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }  // end always
+            }  // end post
         }  // end stage
 
     }
     post {
-        always {
-          junit (
-            allowEmptyResults: true,
-            testResults: 'reports/*_results.xml'
-            )
-        }
+//         always {
+//           junit (
+//             allowEmptyResults: true,
+//             testResults: 'reports/*_results.xml'
+//             )
+//         }
         success {
 //             sh  '.jenkins/scripts/build_sdist_file.sh'
 //             sh  'pwd'
