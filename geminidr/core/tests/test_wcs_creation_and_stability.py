@@ -2,6 +2,8 @@
 This test loads data from multi-extension instruments and checks that the
 WCS created by prepare is good, and that there is stability during the
 tiling and mosaicking operations, and reading and writing.
+
+This is only implemented for GMOS at the present time.
 """
 import pytest
 import os
@@ -22,7 +24,8 @@ except (ModuleNotFoundError, ImportError):
 
 TEMPFILE = "wcs_test.fits"
 
-GMOS_FILES = ["N20200306S0297.fits"]
+# Full Frame, Central Spectrum, Central Stamp
+GMOS_FILES = ["N20180113S0128.fits", "N20180119S0156.fits", "N20180115S0238.fits"]
 
 @pytest.fixture(scope="module", params=GMOS_FILES)
 def raw_ad_path(request):
@@ -52,18 +55,16 @@ def do_overscan_correct(request):
 def tile_all(request):
     return request.param
 
-def test_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
+def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
     raw_ad = astrodata.open(raw_ad_path)
     instrument = raw_ad.instrument(generic=True)
 
     # Ensure it's tagged IMAGE so we can get an imaging WCS and can use SkyCoord
-    if instrument == 'GMOS':
-        raw_ad.phu['GRATING'] = 'MIRROR'
+    raw_ad.phu['GRATING'] = 'MIRROR'
 
     # Check the reference extension is what we think and find the middle
     ref_index = find_reference_extension(raw_ad)
-    if instrument == 'GMOS':
-        assert ref_index == (len(raw_ad) - 1) // 2  # works for GMOS
+    assert ref_index == (len(raw_ad) - 1) // 2  # works for GMOS
     y, x = [length // 2 for length in raw_ad[ref_index].shape]
     c0 = SkyCoord(*raw_ad[ref_index].wcs(x, y), unit="deg")
 
@@ -87,25 +88,24 @@ def test_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
         assert c0.separation(c) < 1e-12 * u.arcsec
 
     # Test that tiling doesn't affect the reference extension's WCS
+    new_ref_index = 0 if (tile_all or raw_ad.detector_roi_setting() == 'Central Stamp') else 1
     p.tileArrays(tile_all=tile_all)
     ad = p.streams['main'][0]
 
-    if instrument == 'GMOS':
-        first = 0 if tile_all else (len(raw_ad) // 3)  # index of first raw extension
-        # These extension widths are either overscan-trimmed or not, as
-        # required and so no alternative logic is required
-        x += sum([ext.shape[1] for ext in raw_ad[first:ref_index]])
-        if tile_all:
-            x += chip_gaps // raw_ad.detector_x_bin()
-        c = SkyCoord(*ad[0 if tile_all else 1].wcs(x, y), unit="deg")
-        assert c0.separation(c) < 1e-12 * u.arcsec
+    first = 0 if tile_all else (len(raw_ad) // 3)  # index of first raw extension
+    # These extension widths are either overscan-trimmed or not, as
+    # required and so no alternative logic is required
+    x += sum([ext.shape[1] for ext in raw_ad[first:ref_index]])
+    if new_ref_index == 1:
+        x += chip_gaps // raw_ad.detector_x_bin()
+    c = SkyCoord(*ad[new_ref_index].wcs(x, y), unit="deg")
+    assert c0.separation(c) < 1e-12 * u.arcsec
 
     # Now write the file to disk and read it back in and check WCS stability
     ad.write(TEMPFILE, overwrite=True)
     ad = astrodata.open(TEMPFILE)
 
-    if instrument == 'GMOS':
-        c = SkyCoord(*ad[0 if tile_all else 1].wcs(x, y), unit="deg")
-        assert c0.separation(c) < 1e-9 * u.arcsec
+    c = SkyCoord(*ad[new_ref_index].wcs(x, y), unit="deg")
+    assert c0.separation(c) < 1e-9 * u.arcsec
 
     os.remove(TEMPFILE)
