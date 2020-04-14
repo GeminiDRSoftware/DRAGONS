@@ -25,7 +25,7 @@ except (ModuleNotFoundError, ImportError):
 TEMPFILE = "wcs_test.fits"
 
 # Full Frame, Central Spectrum, Central Stamp
-GMOS_FILES = ["N20180113S0128.fits", "N20180119S0156.fits", "N20180115S0238.fits"]
+GMOS_FILES = ["N20180119S0156.fits", "N20180113S0128.fits", "N20180115S0238.fits"]
 
 @pytest.fixture(scope="module", params=GMOS_FILES)
 def raw_ad_path(request):
@@ -57,7 +57,6 @@ def tile_all(request):
 
 def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
     raw_ad = astrodata.open(raw_ad_path)
-    instrument = raw_ad.instrument(generic=True)
 
     # Ensure it's tagged IMAGE so we can get an imaging WCS and can use SkyCoord
     raw_ad.phu['GRATING'] = 'MIRROR'
@@ -96,7 +95,7 @@ def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_a
     # These extension widths are either overscan-trimmed or not, as
     # required and so no alternative logic is required
     x += sum([ext.shape[1] for ext in raw_ad[first:ref_index]])
-    if new_ref_index == 1:
+    if tile_all and raw_ad.detector_roi_setting() != 'Central Stamp':
         x += chip_gaps // raw_ad.detector_x_bin()
     c = SkyCoord(*ad[new_ref_index].wcs(x, y), unit="deg")
     assert c0.separation(c) < 1e-12 * u.arcsec
