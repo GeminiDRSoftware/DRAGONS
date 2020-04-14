@@ -2,7 +2,6 @@
 """
 Tests for the `calculateSensitivity` primitive using GMOS-S and GMOS-N data.
 """
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pytest
@@ -43,13 +42,16 @@ def test_flux_calibration_with_fake_data():
     def _get_spectrophotometric_data(object_name):
 
         file_path = _get_spectrophotometric_file_path(object_name)
-
         table = primitives_gmos_spect.Spect([])._get_spectrophotometry(file_path)
-        table = table[table['WAVELENGTH'].data >= 3500.]
-        table = table[table['WAVELENGTH'].data <= 8500.]
 
         std_wavelength = table['WAVELENGTH'].data
         std_flux = table['FLUX'].data
+
+        if std_wavelength[0] // 1000 > 1:  # Converts from \AA to nm
+            std_wavelength = std_wavelength / 10
+
+        std_flux = std_flux[(350 <= std_wavelength) * (std_wavelength <= 850)]
+        std_wavelength = std_wavelength[(350 <= std_wavelength) & (std_wavelength <= 850)]
 
         spline = BSpline(std_wavelength, std_flux, 3)
         wavelength = np.linspace(std_wavelength.min(), std_wavelength.max(), 1000)
@@ -57,10 +59,19 @@ def test_flux_calibration_with_fake_data():
         return wavelength, flux
 
     def _create_fake_data(object_name):
-
+        from astropy.table import Table
         astrofaker = pytest.importorskip('astrofaker')
 
         wavelength, flux = _get_spectrophotometric_data(object_name)
+
+        wavecal = {
+            'ndim': 1.,
+            'degree': 1.,
+            'domain_start': 0.,
+            'domain_end': wavelength.size - 1,
+            'c0': wavelength.mean(),
+            'c1': wavelength.mean() / 2,
+        }
 
         hdu = fits.ImageHDU()
         hdu.header['CCDSUM'] = "1 1"
@@ -72,12 +83,17 @@ def test_flux_calibration_with_fake_data():
         _ad[0].data = _ad[0].data.ravel()
         _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
+        _ad[0].WAVECAL = Table(
+            [list(wavecal.keys()), list(wavecal.values())],
+            names=("name", "coefficients"),
+            dtype=(str, float))
 
+        _ad[0].hdr.set('NAXIS', 1)
         _ad[0].phu.set('OBJECT', object_name)
         _ad[0].phu.set('EXPTIME', 1.)
         _ad[0].hdr.set('BUNIT', "electron")
         _ad[0].hdr.set('CTYPE1', "Wavelength")
-        _ad[0].hdr.set('CUNIT1', "Angstrom")
+        _ad[0].hdr.set('CUNIT1', "nm")
         _ad[0].hdr.set('CRPIX1', 0)
         _ad[0].hdr.set('CRVAL1', wavelength.min())
         _ad[0].hdr.set('CDELT1', wavelength.ptp() / wavelength.size)
@@ -89,14 +105,13 @@ def test_flux_calibration_with_fake_data():
         return _ad
 
     ad = _create_fake_data("Feige 34")
-    std_filename = _get_spectrophotometric_file_path(ad.object())
 
     p = primitives_gmos_spect.GMOSSpect([ad])
     std_ad = p.calculateSensitivity()[0]
-    flux_calibrated_ad = p.fluxCalibrate(standard=std_ad)[0]
+    flux_corrected_ad = p.fluxCalibrate(standard=std_ad)[0]
 
-    # for flux_corrected_ext in flux_corrected_ad:
-    #     np.testing.assert_allclose(flux_corrected_ext.data, 2, atol=1e-4)
+    for ext, flux_corrected_ext in zip(ad, flux_corrected_ad):
+        np.testing.assert_allclose(flux_corrected_ext.data, ext.data, atol=1e-4)
 
 
 @pytest.mark.dragons_remote_data
