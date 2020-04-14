@@ -151,9 +151,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
                  meta=None, unit=None, copy=False, window=None):
-        # FIXME: this attribute seems useless
-        self._window = window
-
         super().__init__(FakeArray(data) if is_lazy(data) else data,
                          None if is_lazy(uncertainty) else uncertainty,
                          mask, wcs, meta, unit, copy)
@@ -211,10 +208,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     @property
     def shape(self):
         return self._data.shape
-
-    def _extract(self, source, scaling, section=None):
-        # FIXME: seems unused
-        return scaling(source.data if section is None else source[section])
 
     def _get_uncertainty(self, section=None):
         """Return the ADVarianceUncertainty object, or a slice of it."""

@@ -89,16 +89,6 @@ def test_attributes(ad1):
     assert ad1.object() == 'M42'
 
 
-def test_set_name(ad1):
-    # FIXME: is this set_name method useful?
-    assert ad1[0].nddata.meta['header']['EXTNAME'] == 'SCI'
-    assert 'name' not in ad1[0].nddata.meta
-    ad1.set_name(0, 'FOO')
-    assert ad1[0].nddata.meta['name'] == 'FOO'
-    ad1[0].set_name(0, 'BAR')
-    assert ad1[0].nddata.meta['name'] == 'BAR'
-
-
 @pytest.mark.parametrize('op, res, res2', [
     (operator.add, 3, 3),
     (operator.sub, -1, 1),

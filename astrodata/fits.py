@@ -559,9 +559,6 @@ class FitsProviderProxy(DataProvider):
 
         return headers[0] if self.is_single else FitsHeaderCollection(headers)
 
-    def set_name(self, ext, name):
-        self._provider.set_name(self._mapping[ext], name)
-
     def _crop_nd(self, nd, x1, y1, x2, y2):
         # needed because __getattr__ breaks finding private methods in the
         # parent class...
@@ -1031,10 +1028,6 @@ class FitsProvider(DataProvider):
         if not self.nddata:
             return None
         return FitsHeaderCollection(self._get_raw_headers())
-
-    def set_name(self, ext, name):
-        # FIXME: seems useless ?
-        self._nddata[ext].meta['name'] = name
 
     def to_hdulist(self):
 
