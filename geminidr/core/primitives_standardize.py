@@ -373,11 +373,11 @@ class Standardize(PrimitivesBASE):
     def standardizeWCS(self, adinputs=None, suffix=None, reference_extension=None):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
-        in the input AstroData objects. For multi-extension ADs, this means
-        prepending a tiling and/or mosaic transform before the pixel->world
-        transform, and giving all extensions copies of the reference
-        extension's pixel->world transform. For spectroscopic data, it means
+        in the input AstroData objects. For spectroscopic data, it means
         replacing an imaging WCS with an approximate spectroscopic WCS.
+        For multi-extension ADs, it means prepending a tiling and/or mosaic
+        transform before the pixel->world transform, and giving all extensions
+        copies of the reference extension's pixel->world transform.
 
         Parameters
         ----------
@@ -392,6 +392,12 @@ class Standardize(PrimitivesBASE):
         geotable = import_module('.geometry_conf', self.inst_lookups)
 
         for ad in adinputs:
+            # If this is spectroscopy, we just add the spectroscopic WCS
+            # and let the rest of the logic take effect
+            # TODO: make this "if 'SPECT' in ad.tags"
+            if {'GMOS', 'SPECT', 'LS'}.issubset(ad.tags):
+                add_spectroscopic_wcs(ad)
+
             if len(ad) > 1:
                 if reference_extension is not None:
                     try:

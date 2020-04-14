@@ -14,7 +14,7 @@ import numpy as np
 from astropy.modeling import models, Model
 from astropy import table, units as u
 
-from gwcs.coordinate_frames import Frame2D
+from gwcs.coordinate_frames import Frame2D, CoordinateFrame
 from gwcs.wcs import WCS as gWCS
 
 from functools import reduce
@@ -143,45 +143,50 @@ def add_mosaic_wcs(ad, geotable):
 
 def add_spectroscopic_wcs(ad):
     """
-    Attach a GWCS object to all extensions of an AstroData objects,
+    Attach a gWCS object to all extensions of an AstroData objects,
     representing the approximate spectroscopic WCS, as returned by
     the descriptors.
 
     Parameters
     ----------
     ad: AstroData
-        the astrodata instance
+        the AstroData instance requiring a WCS
 
     Returns
     -------
-    AstroData: the modified input AD, with WCS attributes
+    AstroData: the modified input AD, with WCS attributes on each NDAstroData
     """
     if 'SPECT' not in ad.tags:
-        raise ValueError("Image {} not of type SPECT".format(ad.filename))
+        raise ValueError(f"Image {ad.filename} is not of type SPECT")
 
     cenwave = ad.central_wavelength(asNanometers=True)
-    dw = np.mean(ad.dispersion(asNanometers=True))
-    pixscale = ad.pixel_scale() * u.arcsec / u.pix
+    pixscale = ad.pixel_scale()
 
-    linear_wavelength_model = models.Multiply(dw * u.nm / u.pix) | models.Shift(cenwave * u.nm)
-    in_frame = Frame2D(name="pixels", axes_names=("x", "y"),
-                       unit=(u.pix, u.pix))
+    # TODO: This appears to be true for GMOS. Revisit for other multi-extension
+    # spectrographs once they arrive and GMOS tests are written
+    crval1 = set(ad.hdr['CRVAL1'])
+    crval2 = set(ad.hdr['CRVAL2'])
+    if len(crval1) * len(crval2) != 1:
+        raise ValueError(f"Not all CRPIX1/CRPIX2 keywords are the same in {ad.filename}")
 
-    if len(ad) == 1:
-        ext = ad[0]
-        recenter_model = models.Shift(0.5*(1-ext.shape[1]) * u.pix) & models.Shift(0.5*(1-ext.shape[0]) * u.pix)
-        dispaxis = 2 - ext.dispersion_axis()  # python sense
-        if dispaxis == 0:
-            center_to_world_model = models.Multiply(pixscale) & linear_wavelength_model
-            out_frame = Frame2D(name="world", axes_names=("slit", "lambda"),
-                                unit=(u.arcsec, u.nm))
+    for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
+        in_frame = Frame2D(name="pixels")
+        out_frame = CoordinateFrame(name="world", naxes=2, axes_type=["SPECTRAL", "SPATIAL"],
+                                    axes_order=(0, 1),
+                                    axes_names=["wavelength", "slit"], unit=(u.nm, u.arcsec))
+        crpix1 = ext.hdr['CRPIX1'] - 1
+        crpix2 = ext.hdr['CRPIX2'] - 1
+        slit_model = (models.Shift(-crpix2 if dispaxis==1 else -crpix1) |
+                      models.Scale(pixscale))
+        wave_model = (models.Shift(-crpix1 if dispaxis==1 else -crpix2) |
+                      models.Scale(dw) | models.Shift(cenwave))
+
+        if dispaxis == 1:
+            ext.wcs = gWCS([(in_frame, wave_model & slit_model),
+                            (out_frame, None)])
         else:
-            center_to_world_model = linear_wavelength_model & models.Multiply(pixscale)
-            out_frame = Frame2D(name="world", axes_names=("lambda", "slit"),
-                                unit=(u.nm, u.arcsec))
-        ext.wcs = gWCS([(in_frame, recenter_model | center_to_world_model),
-                        (out_frame, None)])
-        return ad
+            ext.wcs = gWCS([(in_frame, models.Mapping(1, 0) | wave_model & slit_model),
+                            (out_frame, None)])
 
     return ad
 
