@@ -41,7 +41,8 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from gwcs.utils import make_fitswcs_transform
 
-#from gempy.library.transform import Transform
+from collections import namedtuple
+AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
 INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
@@ -1057,17 +1058,19 @@ class FitsProvider(DataProvider):
             wcs = ext.wcs
             if isinstance(wcs, gWCS):
                 # We don't have access to the AD tags so see if it's an image
-                if wcs.output_frame.unit == (u.deg, u.deg):
-                    try:
-                        wcs_dict = gwcs_to_fits_image(wcs)
-                    except ValueError:
-                        pass
+                try:
+                    if wcs.output_frame.unit == (u.deg, u.deg):
+                        wcs_dict = gwcs_to_fits_image(ext)
                     else:
-                        for kw in ('CDELT1', 'CDELT2', 'PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'):
-                            if kw in header:
-                                del header[kw]
-                        header.update(wcs_dict)
-                        wcs = None  # There's no need to create a WCS extension
+                        wcs_dict = gwcs_to_fits_spect(ext, self._phu.get('CENTWAVE'))
+                except ValueError:
+                    pass
+                else:
+                    for kw in ('CDELT1', 'CDELT2', 'PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'):
+                        if kw in header:
+                            del header[kw]
+                    header.update(wcs_dict)
+                    wcs = None  # There's no need to create a WCS extension
 
             hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
@@ -1979,22 +1982,21 @@ def fitswcs_to_gwcs(header):
     return gWCS([(in_frame, transform),
                  (out_frame, None)])
 
-def gwcs_to_fits_image(wcs):
+def gwcs_to_fits_image(ndd):
     """
     Convert an imaging gWCS object to a series of FITS WCS keywords that can
     be inserted into the header so other software can understand the WCS
 
     Parameters
     ----------
-    wcs: gwcs.wcs
-        The gWCS object defining the transformation from pixels to world
-        coordinates
+    ndd: NDAstroData object
 
     Returns
     -------
     dict: values to insert into the FITS header to express this WCS
     """
     wcs_dict = {'RADESYS': 'FK5'}  # Need a default
+    wcs = ndd.wcs
     wcs_model = wcs.forward_transform
     if (isinstance(wcs_model[-1], models.RotateNative2Celestial) and
             isinstance(wcs_model[-2], models.Pix2SkyProjection)):
@@ -2033,10 +2035,8 @@ def gwcs_to_fits_image(wcs):
                 affine_model = wcs.get_transform(penultimate_frame, wcs.output_frame)
                 affine_model |= (affine_model[-1].inverse | affine_model[-2].inverse)
             affine_model = pre_model | affine_model
-        affine = lambda x, y: np.array(affine_model(x, y))
-        size = 500  # In case it's not really affine, this will give a better approximation
-        wcs_dict['CD1_1'], wcs_dict['CD2_1'] = (affine(size, 0) - affine(-size, 0)) / (2 * size)
-        wcs_dict['CD1_2'], wcs_dict['CD2_2'] = (affine(0, size) - affine(0, -size)) / (2 * size)
+        affine = affine_matrices(affine_model, ndd.shape)
+        wcs_dict.update({f'CD{i}_{j}': affine.matrix[j-1, i-1] for i in (1, 2) for j in (1, 2)})
 
         wcs_dict['CRPIX1'], wcs_dict['CRPIX2'] = np.array(wcs.backward_transform(*crval)) + 1
 
@@ -2048,3 +2048,71 @@ def gwcs_to_fits_image(wcs):
         pass
 
     return wcs_dict
+
+def gwcs_to_fits_spect(ndd, cenwave=None):
+    """
+    Convert a spectroscopic gWCS object to a series of FITS WCS keywords that
+    can be inserted into the header so other software can understand the WCS
+
+    Parameters
+    ----------
+    ndd: NDAstroData object
+
+    Returns
+    -------
+    dict: values to insert into the FITS header to express this WCS
+    """
+    ctype_mapping = {'SPATIAL': 'SPATIAL', 'SPECTRAL': 'WAVE'}
+
+    wcs = ndd.wcs
+    wcs_dict = {}
+    frame = wcs.output_frame
+
+    wcs_dict.update({f'CTYPE{i}': ctype_mapping[axis_type]
+                     for i, axis_type in enumerate(frame.axes_type, start=1)})
+    wcs_dict.update({f'CUNIT{i}': unit.name
+                     for i, unit in enumerate(frame.unit, start=1)})
+
+    affine = affine_matrices(wcs, ndd.shape)
+    wcs_dict.update({f'CD{i}_{j}': affine.matrix[j-1, i-1] for i in (1, 2) for j in (1, 2)})
+
+    if cenwave is None:
+        cenwave = affine.offset[frame.axes_type.index('SPECTRAL')]
+    crval_mapping = {'SPATIAL': 0, 'SPECTRAL': cenwave}
+    crval = tuple(crval_mapping[axis_type] for axis_type in frame.axes_type)
+    wcs_dict['CRPIX1'], wcs_dict['CRPIX2'] = np.array(wcs.backward_transform(*crval)) + 1
+
+    return wcs_dict
+
+def affine_matrices(func, shape):
+    """
+    Compute the matrix and offset necessary to turn a Transform into an
+    affine transformation. This is done by computing the linear matrix
+    along all axes extending from the centre of the region, and then
+    calculating the offset such that the transformation is accurate at
+    the centre of the region.
+
+    Parameters
+    ----------
+    func: callable
+        function that maps input->output coordinates
+    shape: sequence
+        shape to use for fiducial points
+
+    Returns
+    -------
+        AffineMatrices(array, array): affine matrix and offset
+    """
+    ndim = len(shape)
+    halfsize = [0.5 * length for length in shape]
+    points = np.array([halfsize] * (2 * ndim + 1)).T
+    points[:, 1:ndim + 1] += np.eye(ndim) * points[:, 0]
+    points[:, ndim + 1:] -= np.eye(ndim) * points[:, 0]
+    if ndim > 1:
+        transformed = np.array(list(zip(*func(*points))))
+    else:
+        transformed = np.array([func(*points)]).T
+    matrix = np.array([[0.5 * (transformed[j + 1, i] - transformed[ndim + j + 1, i]) / halfsize[j]
+                        for j in range(ndim)] for i in range(ndim)])
+    offset = transformed[0] - np.dot(matrix, halfsize)
+    return AffineMatrices(matrix.T, offset[::-1])
