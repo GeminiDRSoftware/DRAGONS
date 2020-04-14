@@ -733,15 +733,15 @@ class Spect(PrimitivesBASE):
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
         matched to an arc line list, using :class:`~gempy.library.matching.KDTreeFitter`.
-        This class has a strong dependency with the fwith parameter and works better
-        if a good inicial value is providen.
+        This class has a strong dependency with the `fwith` parameter and works
+        better if a good initial value is provided.
 
         The `.WAVECAL` table contains four columns:
             ["name", "coefficients", "peaks", "wavelengths"]
 
         The `name` and the `coefficients` columns contain information to
         re-create an Chebyshev1D object. The `peaks` column contains the position
-        of the lines that were matched to the cathalog, and the `wavelengths`
+        of the lines that were matched to the catalogue, and the `wavelengths`
         column contains the wavelengths that were matched to that line.
 
         Parameters
