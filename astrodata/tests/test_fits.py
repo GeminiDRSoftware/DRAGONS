@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 import astrodata
-from astrodata.fits import AstroDataFitsDeprecationWarning
+from astrodata.utils import AstroDataFitsDeprecationWarning
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 from astrodata.testing import download_from_archive, compare_models
 import astropy

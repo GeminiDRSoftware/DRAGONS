@@ -198,13 +198,13 @@ class AstroData:
         'ut_date': 'DATE-OBS'
     }
 
-    def __init__(self, nddatas=None, other=None, phu=None, indices=None):
-        if nddatas is None:
-            nddatas = []
-        if not isinstance(nddatas, (list, tuple)):
-            nddatas = list(nddatas)
+    def __init__(self, nddata=None, other=None, phu=None, indices=None):
+        if nddata is None:
+            nddata = []
+        if not isinstance(nddata, (list, tuple)):
+            nddata = list(nddata)
 
-        self._nddata = nddatas
+        self._nddata = nddata
         self._other = other
         self._phu = phu or fits.Header()
         self._indices = indices
@@ -638,7 +638,9 @@ class AstroData:
         if self._indices:
             # FIXME: slice _indices
             pass
-        return self.__class__(self.nddatas, other=self.other, phu=self.phu,
+        return self.__class__(self.nddata,
+                              # other=self.other,
+                              phu=self.phu,
                               indices=indices)
 
     def __delitem__(self, idx):
@@ -681,11 +683,8 @@ class AstroData:
         AttributeError
             If the attribute could not be found/computed.
         """
-        try:
-            return getattr(self._dataprov, attribute)
-        except AttributeError:
-            raise AttributeError("{!r} object has no attribute {!r}"
-                                 .format(self.__class__.__name__, attribute))
+        raise AttributeError("{!r} object has no attribute {!r}"
+                             .format(self.__class__.__name__, attribute))
 
     def __setattr__(self, attribute, value):
         """
@@ -1321,7 +1320,7 @@ class AstroData:
             illegal somehow.
 
         """
-        if not self.is_single:
+        if self.is_sliced and not self.is_single:
             # TODO: We could rethink this one, but leave it like that at
             # the moment
             raise TypeError("Can't append objects to non-single slices")
