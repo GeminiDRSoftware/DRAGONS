@@ -9,6 +9,7 @@ from functools import partial, wraps
 import numpy as np
 
 from astropy.io import fits
+from astropy.table import Table
 
 from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
 from .utils import deprecated, normalize_indices
@@ -421,7 +422,7 @@ class AstroData:
         If this data provider represents a single slice out of a whole dataset,
         return True. Otherwise, return False.
         """
-        return len(self.nddata) == 1
+        return self._indices is not None and len(self._indices) == 1
 
     def is_settable(self, attr):
         """
@@ -735,7 +736,10 @@ class AstroData:
         --------
         A non-negative integer.
         """
-        return len(self.nddata)
+        if self._indices is not None:
+            return len(self._indices)
+        else:
+            return len(self._nddata)
 
     def append(self, ext, name=None, **kwargs):
         """
@@ -795,6 +799,61 @@ class AstroData:
 
         """
         return self._exposed.copy()
+
+    def _pixel_info(self, indices):
+        for idx, obj in ((n, self._nddata[k]) for n, k in enumerate(indices)):
+            other_objects = []
+            uncer = obj.uncertainty
+            fixed = (('variance', None if uncer is None else uncer),
+                     ('mask', obj.mask))
+            for name, other in fixed + tuple(sorted(obj.meta['other'].items())):
+                if other is not None:
+                    if isinstance(other, Table):
+                        other_objects.append(dict(
+                            attr=name, type='Table',
+                            dim=str((len(other), len(other.columns))),
+                            data_type='n/a'
+                        ))
+                    else:
+                        dim = ''
+                        if hasattr(other, 'dtype'):
+                            dt = other.dtype.name
+                            dim = str(other.shape)
+                        elif hasattr(other, 'data'):
+                            dt = other.data.dtype.name
+                            dim = str(other.data.shape)
+                        elif hasattr(other, 'array'):
+                            dt = other.array.dtype.name
+                            dim = str(other.array.shape)
+                        else:
+                            dt = 'unknown'
+                        other_objects.append(dict(
+                            attr=name,
+                            type=type(other).__name__,
+                            dim=dim,
+                            data_type=dt
+                        ))
+
+            yield dict(
+                idx='[{:2}]'.format(idx),
+                main=dict(
+                    content='science',
+                    type=type(obj).__name__,
+                    dim='({})'.format(', '.join(str(s) for s in obj.data.shape)),
+                    data_type=obj.data.dtype.name
+                ),
+                other=other_objects
+            )
+
+    def _other_info(self):
+        # NOTE: This covers tables, only. Study other cases before
+        # implementing a more general solution
+        if self._tables:
+            for name, table in sorted(self._tables.items()):
+                if type(table) is list:
+                    # This is not a free floating table
+                    continue
+                yield (name, 'Table', (len(table), len(table.columns)))
 
     def info(self):
         """
