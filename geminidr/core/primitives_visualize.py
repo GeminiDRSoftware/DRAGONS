@@ -10,7 +10,6 @@ import urllib.request
 
 from copy import deepcopy
 from importlib import import_module
-from functools import reduce
 
 from gempy.library import astromodels
 from gempy.utils import logutils
@@ -29,7 +28,6 @@ from geminidr import PrimitivesBASE
 from . import parameters_visualize
 
 from recipe_system.utils.decorators import parameter_override
-
 
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -276,7 +274,6 @@ class Visualize(PrimitivesBASE):
         suffix = params['suffix']
         order = params['order']
         attributes = ['data'] if params['sci_only'] else None
-        geotable = import_module('.geometry_conf', self.inst_lookups)
 
         adoutputs = []
         for ad in adinputs:
@@ -293,19 +290,32 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
+            # Because we don't save the gWCS object unnecessarily, data that
+            # have been written to disk and then reloaded will not have the
+            # mosaic transform that "prepare" creates, so we have to reattach
+            # it. We also check here that there is a "mosaic" step in the WCS
+            if not all('mosaic' in ext.wcs.available_frames for ext in ad):
+                log.stdinfo(f"No mosaic step present in {ad.filename}. "
+                            "Re-running standardizeWCS")
+                self.standardizeWCS([ad])
+
+            if not all('mosaic' in ext.wcs.available_frames for ext in ad):
+                log.warning(f"I don't know how to mosaic {ad.filename}. Continuing")
+                continue
+
             # If there's an overscan section in the data, this will crash, but
             # we can catch that, trim, and try again. Don't catch anything else
             try:
-                transform_gwcs.add_mosaic_wcs(ad, geotable)
+                ad_out = transform_gwcs.resample_from_wcs(ad, "mosaic", attributes=attributes,
+                                                          order=order, process_objcat=False)
             except ValueError as e:
                 if 'data sections' in repr(e):
-                        ad = gt.trim_to_data_section(ad, self.keyword_comments)
-                        transform_gwcs.add_mosaic_wcs(ad, geotable)
+                    ad = gt.trim_to_data_section(ad, self.keyword_comments)
+                    ad_out = transform_gwcs.resample_from_wcs(ad, "mosaic", attributes=attributes,
+                                                              order=order, process_objcat=False)
                 else:
                     raise e
 
-            ad_out = transform_gwcs.resample_from_wcs(ad, "mosaic", attributes=attributes,
-                                                      order=order, process_objcat=False)
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
