@@ -219,6 +219,17 @@ class AstroData:
         self._resetting = False
         self._tables = {}
 
+    def _clone(self):
+        # FIXME: this was used by FitsProviderProxy
+        obj = self.__class__()
+        obj._phu = deepcopy(self._phu)
+        for nd in self.nddata:
+            obj.append(deepcopy(nd))
+        for t in self._tables.values():
+            obj.append(deepcopy(t))
+
+        return obj
+
     def __deepcopy__(self, memo):
         """
         Returns a new instance of this class, initialized with a deep copy
@@ -449,6 +460,8 @@ class AstroData:
         --------
         A boolean
         """
+        if self.is_sliced and attr in {'path', 'filename'}:
+            return False
         return attr in self._fixed_settable or attr.isupper()
 
     @property
@@ -1308,11 +1321,24 @@ class AstroData:
             illegal somehow.
 
         """
+        if not self.is_single:
+            # TODO: We could rethink this one, but leave it like that at
+            # the moment
+            raise TypeError("Can't append objects to non-single slices")
+
+        # FIXME: this was used on FitsProviderProxy:
+        # elif name is None:
+        #     raise TypeError("Can't append objects to a slice without an "
+        #                     "extension name")
+
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, fits.PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed. "
                              "Use set_phu if you really need to set one")
+
+        if self.is_sliced:
+            add_to = self.nddata[0]  # FIXME: check this
 
         dispatcher = (
             (NDData, self._append_raw_nddata),

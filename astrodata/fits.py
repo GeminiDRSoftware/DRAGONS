@@ -326,15 +326,6 @@ def update_header(headera, headerb):
 
 class FitsProviderProxy:
 
-    def __deepcopy__(self, memo):
-        return self._provider._clone(mapping=self._mapping)
-
-    def is_settable(self, attr):
-        if attr in {'path', 'filename'}:
-            return False
-
-        return self._provider.is_settable(attr)
-
     def __getattr__(self, attribute):
         if not attribute.startswith('_'):
             try:
@@ -433,33 +424,10 @@ class FitsProviderProxy:
     def crop(self, x1, y1, x2, y2):
         self._crop_impl(x1, y1, x2, y2, self._mapped_nddata())
 
-    def append(self, ext, name):
-        if not self.is_single:
-            # TODO: We could rethink this one, but leave it like that at the moment
-            raise TypeError("Can't append objects to non-single slices")
-        elif name is None:
-            raise TypeError("Can't append objects to a slice without an extension name")
-
-        target = self._mapped_nddata(0)
-        return self._provider.append(ext, name=name, add_to=target)
-
 
 class FitsProvider:
 
     default_extension = 'SCI'
-
-    def _clone(self, mapping=None):
-        if mapping is None:
-            mapping = range(len(self))
-
-        dp = FitsProvider()
-        dp._phu = deepcopy(self._phu)
-        for n in mapping:
-            dp.append(deepcopy(self._nddata[n]))
-        for t in self._tables.values():
-            dp.append(deepcopy(t))
-
-        return dp
 
     def _getattr_impl(self, attribute, nds):
         # Exposed objects are part of the normal object interface. We may have
