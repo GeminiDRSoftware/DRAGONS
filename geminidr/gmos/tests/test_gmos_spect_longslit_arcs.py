@@ -310,47 +310,6 @@ class TestGmosSpectLongslitArcs:
         del ad_out, ad_ref
 
     @staticmethod
-    def test_determine_distortion(config):
-        """
-        Corrects distortion on both output and reference files using the
-        distortion model stored in themselves. Previous tests assures that
-        these data are similar and that distortion correct is applied the same
-        way. Now, this one tests the model itself.
-        """
-        if not os.path.exists(config.output_file):
-            pytest.skip("Processed arc file not found: {}".format(config.output_file))
-
-        ad_out = config.ad
-
-        p = primitives_gmos_spect.GMOSSpect([])
-
-        # Using with id_only=True isolates this test from the wavelength
-        # calibration tests
-        ad_out = p.determineDistortion(
-            adinputs=[ad_out], id_only=False, suffix="_distortionDetermined"
-        )[0]
-        ad_out.write(overwrite=True)
-
-        os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
-
-        # Reads the reference file ---
-        reference = os.path.join(config.ref_dir, ad_out.filename)
-
-        if not os.path.exists(reference):
-            pytest.fail("Reference file not found: {}".format(reference))
-
-        ad_ref = astrodata.open(reference)
-
-        # Compare them ---
-        for ext_out, ext_ref in zip(ad_out, ad_ref):
-            coeffs_out = np.ma.masked_invalid(ext_out.FITCOORD["coefficients"])
-            coeffs_ref = np.ma.masked_invalid(ext_ref.FITCOORD["coefficients"])
-
-            np.testing.assert_allclose(coeffs_out, coeffs_ref, atol=0.1)
-
-        del ad_out, ad_ref, p
-
-    @staticmethod
     def test_distortion_correct(config):
         """
         Corrects distortion on both output and reference files using the
