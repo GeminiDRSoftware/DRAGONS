@@ -286,7 +286,10 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             setattr(ad_out[0], key, value)
 
     # Create a new gWCS object describing the remaining transformation.
+    # Not all gWCS objects have to have the same steps, so we need to
+    # redetermine the frame_index in the reference extensions's WCS.ª
     ndim = len(ad[ref_index].shape)
+    frame_index = ad[ref_index].wcs.available_frames.index(frame_name)
     new_pipeline = ad[ref_index].wcs.pipeline[frame_index:]
     if len(new_pipeline) == 1:
         new_wcs = None
