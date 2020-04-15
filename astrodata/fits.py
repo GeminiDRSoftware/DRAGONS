@@ -5,7 +5,8 @@ import traceback
 from collections import OrderedDict
 from copy import deepcopy
 from io import BytesIO
-from itertools import zip_longest, product as cart_product
+from itertools import product as cart_product
+from itertools import zip_longest
 
 import numpy as np
 
@@ -14,20 +15,17 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.io.fits import (DELAYED, BinTableHDU, Column, FITS_rec, HDUList,
                              ImageHDU, PrimaryHDU, TableHDU)
-from astropy.io.fits.hdu.table import _TableBaseHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
-from astropy.nddata import NDData
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 
 from . import wcs as adwcs
-from .core import AstroData
 from .nddata import ADVarianceUncertainty
 from .nddata import NDAstroData as NDDataObject
-from .utils import deprecated, normalize_indices
+from .utils import normalize_indices
 
 DEFAULT_EXTENSION = 'SCI'
 NO_DEFAULT = object()
@@ -517,10 +515,6 @@ class FitsProvider:
     def _slice(self, indices, multi=True):
         return FitsProviderProxy(self, indices, single=not multi)
 
-    def __iter__(self):
-        for n in range(len(self)):
-            yield self._slice((n,), multi=False)
-
     def __getitem__(self, slc):
         nitems = len(self._nddata)
         indices, multiple = normalize_indices(slc, nitems=nitems)
@@ -528,75 +522,6 @@ class FitsProvider:
 
     def __delitem__(self, idx):
         del self._nddata[idx]
-
-    def _get_max_ver(self):
-        try:
-            return max(_nd.meta['ver'] for _nd in self._nddata) + 1
-        except ValueError:
-            # This seems to be the first extension!
-            return 1
-
-    def _reset_ver(self, nd):
-        ver = self._get_max_ver()
-        nd.meta['header']['EXTVER'] = ver
-        nd.meta['ver'] = ver
-
-        try:
-            oheaders = nd.meta['other_header']
-            for extname, ext in nd.meta['other'].items():
-                try:
-                    oheaders[extname]['EXTVER'] = ver
-                except KeyError:
-                    pass
-                try:
-                    # The object may keep the header on its own structure
-                    ext.meta['header']['EXTVER'] = ver
-                except AttributeError:
-                    pass
-        except KeyError:
-            pass
-
-        return ver
-
-    def _process_pixel_plane(self, pixim, name=None, top_level=False,
-                             reset_ver=True, custom_header=None):
-        if not isinstance(pixim, NDDataObject):
-            # Assume that we get an ImageHDU or something that can be
-            # turned into one
-            if isinstance(pixim, ImageHDU):
-                nd = NDDataObject(pixim.data, meta={'header': pixim.header})
-            elif custom_header is not None:
-                nd = NDDataObject(pixim, meta={'header': custom_header})
-            else:
-                nd = NDDataObject(pixim, meta={'header': {}})
-        else:
-            nd = pixim
-            if custom_header is not None:
-                nd.meta['header'] = custom_header
-
-        header = nd.meta['header']
-        currname = header.get('EXTNAME')
-        ver = header.get('EXTVER', -1)
-
-        # TODO: Review the logic. This one seems bogus
-        if name and (currname is None):
-            header['EXTNAME'] = (name if name is not None
-                                 else FitsProvider.default_extension)
-
-        if top_level:
-            if 'other' not in nd.meta:
-                nd.meta['other'] = OrderedDict()
-                nd.meta['other_header'] = {}
-
-            if reset_ver or ver == -1:
-                self._reset_ver(nd)
-            else:
-                nd.meta['ver'] = ver
-
-        return nd
-
-    def table(self):
-        return self._tables.copy()
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
@@ -623,159 +548,6 @@ class FitsProvider:
 
     def crop(self, x1, y1, x2, y2):
         self._crop_impl(x1, y1, x2, y2)
-
-    def _add_to_other(self, add_to, name, data, header=None):
-        meta = add_to.meta
-        meta['other'][name] = data
-        if header:
-            header['EXTVER'] = meta.get('ver', -1)
-            meta['other_header'][name] = header
-
-    def _append_array(self, data, name=None, header=None, add_to=None):
-        def_ext = FitsProvider.default_extension
-        if add_to is None:
-            # Top level extension
-
-            # Special cases for Gemini
-            if name is None:
-                name = def_ext
-
-            if name in {'DQ', 'VAR'}:
-                raise ValueError("'{}' need to be associated to a '{}' one"
-                                 .format(name, def_ext))
-            else:
-                # FIXME: the logic here is broken since name is
-                # always set to somehing above with def_ext
-                if name is not None:
-                    hname = name
-                elif header is not None:
-                    hname = header.get('EXTNAME', def_ext)
-                else:
-                    hname = def_ext
-
-                hdu = ImageHDU(data, header=header)
-                hdu.header['EXTNAME'] = hname
-                ret = self._append_imagehdu(hdu, name=hname, header=None, add_to=None)
-        else:
-            # Attaching to another extension
-            if header is not None and name in {'DQ', 'VAR'}:
-                LOGGER.warning("The header is ignored for '{}' extensions".format(name))
-            if name is None:
-                raise ValueError("Can't append pixel planes to other objects without a name")
-            elif name is def_ext:
-                raise ValueError("Can't attach '{}' arrays to other objects".format(def_ext))
-            elif name == 'DQ':
-                add_to.mask = data
-                ret = data
-            elif name == 'VAR':
-                std_un = ADVarianceUncertainty(data)
-                std_un.parent_nddata = add_to
-                add_to.uncertainty = std_un
-                ret = std_un
-            else:
-                self._add_to_other(add_to, name, data, header=header)
-                ret = data
-
-        return ret
-
-    def _append_imagehdu(self, hdu, name, header, add_to, reset_ver=True):
-        if name in {'DQ', 'VAR'} or add_to is not None:
-            return self._append_array(hdu.data, name=name, add_to=add_to)
-        else:
-            nd = self._process_pixel_plane(hdu, name=name, top_level=True,
-                                           reset_ver=reset_ver,
-                                           custom_header=header)
-            return self._append_nddata(nd, name, add_to=None)
-
-    def _append_raw_nddata(self, raw_nddata, name, header, add_to, reset_ver=True):
-        # We want to make sure that the instance we add is whatever we specify as
-        # `NDDataObject`, instead of the random one that the user may pass
-        top_level = add_to is None
-        if not isinstance(raw_nddata, NDDataObject):
-            raw_nddata = NDDataObject(raw_nddata)
-        processed_nddata = self._process_pixel_plane(raw_nddata, top_level=top_level,
-                                                     custom_header=header, reset_ver=reset_ver)
-        return self._append_nddata(processed_nddata, name=name, add_to=add_to)
-
-    def _append_nddata(self, new_nddata, name, add_to, reset_ver=True):
-        # NOTE: This method is only used by others that have constructed NDData
-        # according to our internal format. We don't accept new headers at this
-        # point, and that's why it's missing from the signature.  'name' is
-        # ignored. It's there just to comply with the _append_XXX signature.
-        def_ext = FitsProvider.default_extension
-        if add_to is not None:
-            raise TypeError("You can only append NDData derived instances at the top level")
-
-        hd = new_nddata.meta['header']
-        hname = hd.get('EXTNAME', def_ext)
-        if hname == def_ext:
-            if reset_ver:
-                self._reset_ver(new_nddata)
-            self._nddata.append(new_nddata)
-        else:
-            raise ValueError("Arbitrary image extensions can only be added "
-                             "in association to a '{}'".format(def_ext))
-
-        return new_nddata
-
-    def _append_table(self, new_table, name, header, add_to, reset_ver=True):
-        tb = _process_table(new_table, name, header)
-        hname = tb.meta['header'].get('EXTNAME') if name is None else name
-        #if hname is None:
-        #    raise ValueError("Can't attach a table without a name!")
-        if add_to is None:
-            if hname is None:
-                table_num = 1
-                while 'TABLE{}'.format(table_num) in self._tables:
-                    table_num += 1
-                hname = 'TABLE{}'.format(table_num)
-            # Don't use setattr, which is overloaded and may case problems
-            self.__dict__[hname] = tb
-            self._tables[hname] = tb
-            self._exposed.add(hname)
-        else:
-            if hname is None:
-                table_num = 1
-                while getattr(add_to, 'TABLE{}'.format(table_num), None):
-                    table_num += 1
-                hname = 'TABLE{}'.format(table_num)
-            setattr(add_to, hname, tb)
-            self._add_to_other(add_to, hname, tb, tb.meta['header'])
-            add_to.meta['other'][hname] = tb
-        return tb
-
-    def _append_astrodata(self, ad, name, header, add_to, reset_ver=True):
-        if not ad.is_single:
-            raise ValueError("Cannot append AstroData instances that are not single slices")
-        elif add_to is not None:
-            raise ValueError("Cannot append an AstroData slice to another slice")
-
-        new_nddata = deepcopy(ad.nddata)
-        if header is not None:
-            new_nddata.meta['header'] = deepcopy(header)
-
-        return self._append_nddata(new_nddata, name=None, add_to=None, reset_ver=True)
-
-    def append(self, ext, name=None, header=None, reset_ver=True, add_to=None):
-        # NOTE: Most probably, if we want to copy the input argument, we
-        #       should do it here...
-        if isinstance(ext, PrimaryHDU):
-            raise ValueError("Only one Primary HDU allowed. "
-                             "Use set_phu if you really need to set one")
-
-        dispatcher = (
-            (NDData, self._append_raw_nddata),
-            ((Table, _TableBaseHDU), self._append_table),
-            (ImageHDU, self._append_imagehdu),
-            (AstroData, self._append_astrodata),
-        )
-
-        for bases, method in dispatcher:
-            if isinstance(ext, bases):
-                return method(ext, name=name, header=header, add_to=add_to, reset_ver=reset_ver)
-        else:
-            # Assume that this is an array for a pixel plane
-            return self._append_array(ext, name=name, header=header, add_to=add_to)
 
 
 def fits_ext_comp_key(ext):
@@ -932,18 +704,18 @@ def read_fits(cls, source, extname_parser=None):
     for the HDUList, among the registered AstroData classes.
     """
 
-    provider = cls([])
+    ad = cls()
 
     if isinstance(source, str):
         hdulist = fits.open(source, memmap=True,
                             do_not_scale_image_data=True, mode='readonly')
-        provider.path = source
+        ad.path = source
     else:
         hdulist = source
         try:
-            provider.path = source[0].header.get('ORIGNAME')
+            ad.path = source[0].header.get('ORIGNAME')
         except AttributeError:
-            provider.path = None
+            ad.path = None
 
     _file = hdulist._file
     hdulist = _prepare_hdulist(hdulist, default_extension=DEFAULT_EXTENSION,
@@ -952,10 +724,10 @@ def read_fits(cls, source, extname_parser=None):
         hdulist._file = _file
 
     # Initialize the object containers to a bare minimum
-    if 'ORIGNAME' not in hdulist[0].header and provider.orig_filename is not None:
-        hdulist[0].header.set('ORIGNAME', provider.orig_filename,
+    if 'ORIGNAME' not in hdulist[0].header and ad.orig_filename is not None:
+        hdulist[0].header.set('ORIGNAME', ad.orig_filename,
                               'Original filename prior to processing')
-    provider.set_phu(hdulist[0].header)
+    ad.set_phu(hdulist[0].header)
 
     seen = {hdulist[0]}
 
@@ -1011,14 +783,14 @@ def read_fits(cls, source, extname_parser=None):
                         nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
                 except TypeError as e:
                     raise e
-            provider.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
+            ad.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
         else:
-            nd = provider.append(parts['data'], name=DEFAULT_EXTENSION,
-                                 reset_ver=False)
+            nd = ad.append(parts['data'], name=DEFAULT_EXTENSION,
+                           reset_ver=False)
             for item_name in ('mask', 'uncertainty'):
                 item = parts[item_name]
                 if item is not None:
-                    provider.append(item, name=item.header['EXTNAME'], add_to=nd)
+                    ad.append(item, name=item.header['EXTNAME'], add_to=nd)
             if isinstance(nd, NDData):
                 if parts['wcs'] is not None:
                     nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
@@ -1029,18 +801,18 @@ def read_fits(cls, source, extname_parser=None):
                         pass
 
         for other in parts['other']:
-            provider.append(other, name=other.header['EXTNAME'], add_to=nd)
+            ad.append(other, name=other.header['EXTNAME'], add_to=nd)
 
     for other in hdulist:
         if other in seen:
             continue
         name = other.header.get('EXTNAME')
         try:
-            provider.append(other, name=name, reset_ver=False)
+            ad.append(other, name=name, reset_ver=False)
         except ValueError as e:
             print(str(e)+". Discarding "+name)
 
-    return provider
+    return ad
 
 
 def write_fits(ad, filename, overwrite=False):
@@ -1206,10 +978,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
             result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
 
     return result
-
-
-class AstroDataFits(AstroData):
-    """Keep this for now as other classes inherit from it."""
 
 
 # ---------------------------------------------------------------------------
