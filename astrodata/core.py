@@ -683,6 +683,24 @@ class AstroData:
         AttributeError
             If the attribute could not be found/computed.
         """
+        # Exposed objects are part of the normal object interface. We may have
+        # just lazy-loaded them, and that's why we get here...
+        if attribute in self._exposed:
+            return getattr(self, attribute)
+
+        # Check if it's an aliased object
+        for nd in self.nddata:
+            if nd.meta.get('name') == attribute:
+                return nd
+
+        # I we're working with single slices, let's look some things up
+        # in the ND object
+        if self.is_single and attribute.isupper():
+            try:
+                return self.nddata.meta['other'][attribute]
+            except KeyError:
+                pass
+
         raise AttributeError("{!r} object has no attribute {!r}"
                              .format(self.__class__.__name__, attribute))
 
@@ -710,28 +728,64 @@ class AstroData:
         Please, check the appropriate documentation for this.
 
         """
-        if attribute != '_dataprov' and '_dataprov' in self.__dict__:
-            if self._dataprov.is_settable(attribute):
-                setattr(self._dataprov, attribute, value)
+
+        def _my_attribute(attr):
+            return attr in self.__dict__ or attr in self.__class__.__dict__
+
+        if attribute.isupper() and not _my_attribute(attribute):
+            # This method is meant to let the user set certain attributes of
+            # the NDData objects. First we check if the attribute belongs to
+            # this object's dictionary.  Otherwise, see if we can pass it down.
+            #
+            # self._resetting shortcircuits the method when populating the
+            # object. In that situation, we don't want to interfere. Of course,
+            # we need to check first if self._resetting is there, because
+            # otherwise we enter a loop..  CJS 20200131: if the attribute is
+            # "exposed" then we should set it via the append method I think
+            # (it's a Table or something)
+            if (self.is_settable(attribute) and
+                    '_resetting' in self.__dict__ and
+                    not self._resetting and
+                    (not _my_attribute(attribute) or
+                     attribute in self._exposed)):
+                if self.is_sliced and not self.is_single:
+                    raise TypeError("This attribute can only be "
+                                    "assigned to a single-slice object")
+                add_to = self.nddata[0] if self.is_sliced else None
+                self.append(value, name=attribute, add_to=add_to)
                 return
+
         super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         """
         Implements attribute removal. If `self` represents a single slice, the
         """
-        try:
+        if self.is_sliced:
+            if not attribute.isupper():
+                raise ValueError("Can't delete non-capitalized attributes "
+                                 "from slices")
+            if not self.is_single:
+                raise TypeError("Can't delete attributes on non-single slices")
+
             try:
-                self._dataprov.__delattr__(attribute)
-            except (ValueError, AttributeError):
-                super().__delattr__(attribute)
-        except AttributeError:
-            if self.is_sliced:
+                other = self.nddata.meta['other']
+                otherh = self.nddata.meta['other_header']
+                if attribute in other:
+                    del other[attribute]
+                    if attribute in otherh:
+                        del otherh[attribute]
+            except AttributeError:
                 raise AttributeError(
                     "{!r} sliced object has no attribute {!r}"
                     .format(self.__class__.__name__, attribute))
+        else:
+            # TODO: So far we're only deleting tables by name.
+            #       Figure out what to do with aliases
+            if not attribute.isupper() and attribute in self._tables:
+                del self._tables[attribute]
             else:
-                raise
+                super().__delattr__(attribute)
 
     def __contains__(self, attribute):
         """

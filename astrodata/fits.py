@@ -326,65 +326,6 @@ def update_header(headera, headerb):
 
 class FitsProviderProxy:
 
-    def __getattr__(self, attribute):
-        if not attribute.startswith('_'):
-            try:
-                # Check first if this is something we can get from the main object
-                # But only if it's not an internal attribute
-                try:
-                    return self._provider._getattr_impl(attribute, self._mapped_nddata())
-                except AttributeError:
-                    # Not a special attribute. Check the regular interface
-                    return getattr(self._provider, attribute)
-            except AttributeError:
-                pass
-        # Not found in the real Provider. Ok, if we're working with single
-        # slices, let's look some things up in the ND object
-        if self.is_single:
-            if attribute.isupper():
-                try:
-                    return self._mapped_nddata(0).meta['other'][attribute]
-                except KeyError:
-                    # Not found. Will raise an exception...
-                    pass
-        raise AttributeError("{} not found in this object".format(attribute))
-
-    def __setattr__(self, attribute, value):
-        def _my_attribute(attr):
-            return attr in self.__dict__ or attr in self.__class__.__dict__
-
-        # This method is meant to let the user set certain attributes of the NDData
-        # objects. First we check if the attribute belongs to this object's dictionary.
-        # Otherwise, see if we can pass it down.
-
-        if not _my_attribute(attribute) and self._provider.is_settable(attribute):
-            if attribute.isupper():
-                if not self.is_single:
-                    raise TypeError("This attribute can only be assigned to a single-slice object")
-                target = self._mapped_nddata(0)
-                self._provider.append(value, name=attribute, add_to=target)
-                return
-            elif attribute in {'path', 'filename'}:
-                # FIXME: never reached because path/filename are not settable
-                raise AttributeError("Can't set path or filename on a sliced object")
-            else:
-                setattr(self._provider, attribute, value)
-
-        super().__setattr__(attribute, value)
-
-    def __delattr__(self, attribute):
-        if not attribute.isupper():
-            raise ValueError("Can't delete non-capitalized attributes from slices")
-        if not self.is_single:
-            raise TypeError("Can't delete attributes on non-single slices")
-        other, otherh = self.nddata.meta['other'], self.nddata.meta['other_header']
-        if attribute in other:
-            del other[attribute]
-            if attribute in otherh:
-                del otherh[attribute]
-        else:
-            raise AttributeError("'{}' does not exist in this extension".format(attribute))
-
     @property
     def exposed(self):
         return self._provider._exposed.copy() | set(self._mapped_nddata(0).meta['other'])
@@ -415,57 +356,6 @@ class FitsProviderProxy:
 class FitsProvider:
 
     default_extension = 'SCI'
-
-    def _getattr_impl(self, attribute, nds):
-        # Exposed objects are part of the normal object interface. We may have
-        # just lazy-loaded them, and that's why we get here...
-        if attribute in self._exposed:
-            return getattr(self, attribute)
-
-        # Check if it's an aliased object
-        for nd in nds:
-            if nd.meta.get('name') == attribute:
-                return nd
-
-        raise AttributeError("Not found")
-
-    def __getattr__(self, attribute):
-        try:
-            return self._getattr_impl(attribute, self._nddata)
-        except AttributeError:
-            raise AttributeError("{} not found in this object, or available only for sliced data".format(attribute))
-
-    def __setattr__(self, attribute, value):
-        def _my_attribute(attr):
-            return attr in self.__dict__ or attr in self.__class__.__dict__
-
-        # This method is meant to let the user set certain attributes of the NDData
-        # objects.
-        #
-        # self._resetting shortcircuits the method when populating the object. In that
-        # situation, we don't want to interfere. Of course, we need to check first
-        # if self._resetting is there, because otherwise we enter a loop..
-        # CJS 20200131: if the attribute is "exposed" then we should set it via the
-        # append method I think (it's a Table or something)
-        if ('_resetting' in self.__dict__ and not self._resetting and
-                (not _my_attribute(attribute) or attribute in self._exposed)):
-            if attribute.isupper():
-                self.append(value, name=attribute, add_to=None)
-                return
-
-        # Fallback
-        super().__setattr__(attribute, value)
-
-    def __delattr__(self, attribute):
-        # TODO: So far we're only deleting tables by name.
-        #       Figure out what to do with aliases
-        if not attribute.isupper():
-            raise ValueError("Can't delete non-capitalized attributes")
-        try:
-            del self._tables[attribute]
-            del self.__dict__[attribute]
-        except KeyError:
-            raise AttributeError("'{}' is not a global table for this instance".format(attribute))
 
     def _slice(self, indices, multi=True):
         return FitsProviderProxy(self, indices, single=not multi)
