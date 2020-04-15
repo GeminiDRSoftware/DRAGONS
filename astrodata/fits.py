@@ -46,7 +46,7 @@ AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
 INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
-LOGGER = logging.getLogger('AstroData FITS')
+LOGGER = logging.getLogger(__name__)
 
 class AstroDataFitsDeprecationWarning(DeprecationWarning):
     pass
@@ -1070,8 +1070,9 @@ class FitsProvider(DataProvider):
                         if kw in header:
                             del header[kw]
                     header.update(wcs_dict)
-                    if wcs_dict.get('FITS_WCS') != 'APPROXIMATE':
-                        wcs = None  # There's no need to create a WCS extension
+                    if wcs_dict.get('FITS-WCS') != 'APPROXIMATE':
+                        #wcs = None  # There's no need to create a WCS extension
+                        pass  # For now
 
             hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
@@ -1989,7 +1990,7 @@ def gwcs_to_fits_image(ndd):
     be inserted into the header so other software can understand the WCS. If
     this can't be done, a ValueError should be raised. If the FITS WCS is
     only approximate, this should be indicated with a dict entry
-    {'FITS_WCS': 'APPROXIMATE'}
+    {'FITS-WCS': 'APPROXIMATE'}
 
     Parameters
     ----------
@@ -2059,7 +2060,7 @@ def gwcs_to_fits_spect(ndd, cenwave=None):
     can be inserted into the header so other software can understand the WCS.
     If this can't be done, a ValueError should be raised. If the FITS WCS is
     only approximate, this should be indicated with a dict entry
-    {'FITS_WCS': 'APPROXIMATE'}
+    {'FITS-WCS': 'APPROXIMATE'}
 
     Parameters
     ----------
@@ -2092,7 +2093,7 @@ def gwcs_to_fits_spect(ndd, cenwave=None):
     # Flag this but still return the dict
     # TODO? Polynomial wavelength solutions
     if not model_is_affine(wcs.forward_transform):
-        wcs_dict['FITS_WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
+        wcs_dict['FITS-WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
 
     return wcs_dict
 
