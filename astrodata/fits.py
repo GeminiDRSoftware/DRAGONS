@@ -2035,7 +2035,7 @@ def gwcs_to_fits_image(ndd):
                 affine_model = wcs.get_transform(penultimate_frame, wcs.output_frame)
                 affine_model |= (affine_model[-1].inverse | affine_model[-2].inverse)
             affine_model = pre_model | affine_model
-        affine = affine_matrices(affine_model, ndd.shape)
+        affine = calculate_affine_matrices(affine_model, ndd.shape)
         wcs_dict.update({f'CD{i}_{j}': affine.matrix[j-1, i-1] for i in (1, 2) for j in (1, 2)})
 
         wcs_dict['CRPIX1'], wcs_dict['CRPIX2'] = np.array(wcs.backward_transform(*crval)) + 1
@@ -2073,7 +2073,7 @@ def gwcs_to_fits_spect(ndd, cenwave=None):
     wcs_dict.update({f'CUNIT{i}': unit.name
                      for i, unit in enumerate(frame.unit, start=1)})
 
-    affine = affine_matrices(wcs, ndd.shape)
+    affine = calculate_affine_matrices(wcs, ndd.shape)
     wcs_dict.update({f'CD{i}_{j}': affine.matrix[j-1, i-1] for i in (1, 2) for j in (1, 2)})
 
     if cenwave is None:
@@ -2084,7 +2084,23 @@ def gwcs_to_fits_spect(ndd, cenwave=None):
 
     return wcs_dict
 
-def affine_matrices(func, shape):
+def model_is_affine(model):
+    """"
+    Test a Model for affinity. This is currently done by checking the
+    name of its class (or the class names of all its submodels)
+
+    TODO: Is this the right thing to do? We could compute the affine
+    matrices *assuming* affinity, and then check that a number of random
+    points behave as expected. Is that better?
+    """
+    try:
+        return np.logical_and.reduce([model_is_affine(m)
+                                      for m in model])
+    except TypeError:
+        return model.__class__.__name__[:5] in ('Affin', 'Rotat', 'Scale',
+                                                'Shift', 'Ident')
+
+def calculate_affine_matrices(func, shape):
     """
     Compute the matrix and offset necessary to turn a Transform into an
     affine transformation. This is done by computing the linear matrix

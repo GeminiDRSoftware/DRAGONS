@@ -24,7 +24,6 @@ Functions:
 import numpy as np
 import copy
 from functools import reduce
-from collections import namedtuple
 
 from astropy.modeling import models, Model
 from astropy.modeling.core import _model_oper
@@ -38,12 +37,10 @@ from gempy.gemini import gemini_tools as gt
 import multiprocessing as multi
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
-import astrodata, gemini_instruments
+import astrodata
 
 from .astromodels import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
-
-AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
 # Table attribute names that should be modified to represent the
 # coordinates in the Block, not their individual arrays.
@@ -524,7 +521,7 @@ class Transform(object):
             else:
                 self._models[i:i] = sequence
         # Update affinity based on new model (leave existing stuff alone)
-        self._affine &= self.__model_is_affine(model)
+        self._affine &= astrodata.fits.model_is_affine(model)
 
     @staticmethod
     def split_compound_model(tree, ndim):
@@ -607,23 +604,11 @@ class Transform(object):
             return
         raise ValueError("Replacement Model differs from existing Transform")
 
-    @staticmethod
-    def __model_is_affine(model):
-        """Test a single Model for affinity, using its name (or the name
-        of its submodels)"""
-        try:
-            return np.logical_and.reduce([Transform.__model_is_affine(m)
-                                          for m in model])
-        except TypeError:
-            return model.__class__.__name__[:5] in ('Affin', 'Rotat', 'Scale',
-                                                    'Shift', 'Ident')
-
     def __is_affine(self):
-        """Test for affinity, using Model names.
-        TODO: Is this the right thing to do? We could compute the affine
-        matrices *assuming* affinity, and then check that a number of random
-        points behave as expected. Is that better?"""
-        return np.logical_and.reduce([self.__model_is_affine(m)
+        """
+        Test for affinity.
+        """
+        return np.logical_and.reduce([astrodata.fits.model_is_affine(m)
                                       for m in self._models])
 
     @property
@@ -656,19 +641,7 @@ class Transform(object):
             except TypeError:  # self.ndim is None
                 raise TypeError("Cannot compute affine matrices without a "
                                 "dimensionality")
-        ndim = len(shape)
-        halfsize = [0.5*length for length in shape]
-        points = np.array([halfsize] * (2*ndim+1)).T
-        points[:,1:ndim+1] += np.eye(ndim) * points[:,0]
-        points[:,ndim+1:] -= np.eye(ndim) * points[:,0]
-        if ndim > 1:
-            transformed = np.array(list(zip(*self.__call__(*points))))
-        else:
-            transformed = np.array([self.__call__(*points)]).T
-        matrix = np.array([[0.5 * (transformed[j+1,i] - transformed[ndim+j+1,i]) / halfsize[j]
-                            for j in range(ndim)] for i in range(ndim)])
-        offset = transformed[0] - np.dot(matrix, halfsize)
-        return AffineMatrices(matrix.T, offset[::-1])
+        return astrodata.fits.calculate_affine_matrices(self, shape)
 
     def add_bounds(self, param, range):
         """Add bounds to a parameter"""
