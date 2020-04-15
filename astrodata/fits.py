@@ -1070,7 +1070,8 @@ class FitsProvider(DataProvider):
                         if kw in header:
                             del header[kw]
                     header.update(wcs_dict)
-                    wcs = None  # There's no need to create a WCS extension
+                    if wcs_dict.get('FITS_WCS') != 'APPROXIMATE':
+                        wcs = None  # There's no need to create a WCS extension
 
             hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
@@ -1985,7 +1986,10 @@ def fitswcs_to_gwcs(header):
 def gwcs_to_fits_image(ndd):
     """
     Convert an imaging gWCS object to a series of FITS WCS keywords that can
-    be inserted into the header so other software can understand the WCS
+    be inserted into the header so other software can understand the WCS. If
+    this can't be done, a ValueError should be raised. If the FITS WCS is
+    only approximate, this should be indicated with a dict entry
+    {'FITS_WCS': 'APPROXIMATE'}
 
     Parameters
     ----------
@@ -2052,7 +2056,10 @@ def gwcs_to_fits_image(ndd):
 def gwcs_to_fits_spect(ndd, cenwave=None):
     """
     Convert a spectroscopic gWCS object to a series of FITS WCS keywords that
-    can be inserted into the header so other software can understand the WCS
+    can be inserted into the header so other software can understand the WCS.
+    If this can't be done, a ValueError should be raised. If the FITS WCS is
+    only approximate, this should be indicated with a dict entry
+    {'FITS_WCS': 'APPROXIMATE'}
 
     Parameters
     ----------
@@ -2081,6 +2088,11 @@ def gwcs_to_fits_spect(ndd, cenwave=None):
     crval_mapping = {'SPATIAL': 0, 'SPECTRAL': cenwave}
     crval = tuple(crval_mapping[axis_type] for axis_type in frame.axes_type)
     wcs_dict['CRPIX1'], wcs_dict['CRPIX2'] = np.array(wcs.backward_transform(*crval)) + 1
+
+    # Flag this but still return the dict
+    # TODO? Polynomial wavelength solutions
+    if not model_is_affine(wcs.forward_transform):
+        wcs_dict['FITS_WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
 
     return wcs_dict
 
