@@ -14,14 +14,10 @@ from astropy.io import fits
 from astropy.table import QTable
 from scipy.interpolate import BSpline
 
+from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.adlibrary import dataselect
-from gempy.library import astromodels
 from gempy.utils import logutils
-
-from .test_gmos_spect_ls_apply_qe_correction import (
-    cache_path, get_associated_calibrations, get_master_arc, output_path,
-    reduce_arc, reduce_bias, reduce_flat, reference_ad)
 
 
 datasets = [
@@ -137,9 +133,9 @@ def calc_sens_ad(request, get_input_ad, output_path):
     """
     Parameters
     ----------
-    request
-    get_input_ad
-    output_path
+    request :
+    get_input_ad :
+    output_path :
 
     Returns
     -------
@@ -189,7 +185,7 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
 
         input_fname = basename.replace('.fits', '_extracted.fits')
         input_path = os.path.join(new_path_to_inputs, input_fname)
-        cals = get_associated_calibrations(basename)
+        cals = testing.get_associated_calibrations(basename)
 
         if should_preprocess:
 
