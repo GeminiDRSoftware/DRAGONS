@@ -1595,6 +1595,27 @@ class AstroData:
         # Cope with prefix or suffix as None
         self.filename = (prefix or '') + root + (suffix or '') + filetype
 
+    def _crop_nd(self, nd, x1, y1, x2, y2):
+        nd.data = nd.data[y1:y2+1, x1:x2+1]
+        if nd.uncertainty is not None:
+            nd.uncertainty = nd.uncertainty[y1:y2+1, x1:x2+1]
+        if nd.mask is not None:
+            nd.mask = nd.mask[y1:y2+1, x1:x2+1]
+
+    def crop(self, x1, y1, x2, y2):
+        # TODO: Consider cropping of objects in the meta section
+        for nd in self.nddata:
+            orig_shape = nd.data.shape
+            self._crop_nd(nd, x1, y1, x2, y2)
+            for o in nd.meta['other'].values():
+                try:
+                    if o.shape == orig_shape:
+                        self._crop_nd(o, x1, y1, x2, y2)
+                except AttributeError:
+                    # No 'shape' attribute in the object. It's probably
+                    # not array-like
+                    pass
+
     @astro_data_descriptor
     def instrument(self):
         """Returns the name of the instrument making the observation."""
