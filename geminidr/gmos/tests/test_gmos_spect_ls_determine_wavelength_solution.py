@@ -36,10 +36,8 @@ import pytest
 import astrodata
 import geminidr
 
-from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
-from gempy.adlibrary import dataselect
 
 from .plots_gmos_spect_longslit_arcs import PlotGmosSpectLongslitArcs
 
