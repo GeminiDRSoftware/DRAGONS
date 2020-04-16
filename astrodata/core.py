@@ -792,8 +792,13 @@ class AstroData:
         else:
             # TODO: So far we're only deleting tables by name.
             #       Figure out what to do with aliases
-            if not attribute.isupper() and attribute in self._tables:
-                del self._tables[attribute]
+            if attribute.isupper():
+                if attribute in self._tables:
+                    del self._tables[attribute]
+                else:
+                    raise AttributeError(
+                        "'{}' is not a global table for this instance"
+                        .format(attribute))
             else:
                 super().__delattr__(attribute)
 
