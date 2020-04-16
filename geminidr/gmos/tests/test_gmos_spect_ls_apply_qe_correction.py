@@ -270,7 +270,6 @@ def qe_corrected_ad(request, get_input_ad, get_master_arc, output_path):
     AstroData
         QE Corrected astrodata.
     """
-
     filename = request.param
     pre_process = request.config.getoption("--force-preprocess-data")
 

@@ -135,7 +135,8 @@ def calc_sens_ad(request, get_input_ad, output_path):
     ----------
     request :
     get_input_ad :
-    output_path :
+    output_path : contextmanager
+        Custom context manager used to enter and leave the output folder easily.
 
     Returns
     -------
