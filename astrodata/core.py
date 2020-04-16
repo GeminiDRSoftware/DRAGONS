@@ -198,16 +198,19 @@ class AstroData:
         'ut_date': 'DATE-OBS'
     }
 
-    def __init__(self, nddata=None, other=None, phu=None, indices=None):
+    def __init__(self, nddata=None, tables=None, phu=None, indices=None):
         if nddata is None:
             nddata = []
         if not isinstance(nddata, (list, tuple)):
             nddata = list(nddata)
 
         self._nddata = nddata
-        self._other = other
         self._phu = phu or fits.Header()
         self._indices = indices
+
+        if tables is not None and not isinstance(tables, dict):
+            raise ValueError('tables must be a dict')
+        self._tables = tables or {}
 
         self._exposed = set()
         self._fixed_settable = {'data', 'uncertainty', 'mask', 'variance',
@@ -217,7 +220,6 @@ class AstroData:
         self._path = None
         self._processing_tags = False
         self._resetting = False
-        self._tables = {}
 
     def _clone(self):
         # FIXME: this was used by FitsProviderProxy
@@ -649,9 +651,7 @@ class AstroData:
         if self._indices:
             indices = [self._indices[i] for i in indices]
 
-        return self.__class__(self.nddata,
-                              # other=self.other,
-                              phu=self.phu,
+        return self.__class__(self._nddata, tables=self._tables, phu=self.phu,
                               indices=indices)
 
     def __delitem__(self, idx):
