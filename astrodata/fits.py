@@ -590,7 +590,7 @@ def read_fits(cls, source, extname_parser=None):
 
 def write_fits(ad, filename, overwrite=False):
     hdul = HDUList()
-    hdul.append(PrimaryHDU(header=ad.phu(), data=DELAYED))
+    hdul.append(PrimaryHDU(header=ad.phu, data=DELAYED))
 
     for ext in ad._nddata:
         meta = ext.meta

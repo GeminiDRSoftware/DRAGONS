@@ -249,8 +249,16 @@ class AstroData:
         len(self)
 
         obj = self.__class__()
-        to_copy = ('_phu', '_nddata', '_path', '_orig_filename',
-                   '_tables', '_exposed', '_resetting', '_indices')
+        to_copy = ['_phu', '_path', '_orig_filename',
+                   '_tables', '_exposed', '_resetting']
+
+        if self.is_single:
+            obj.__dict__['_nddata'] = [deepcopy(self.nddata)]
+        elif self.is_sliced:
+            obj.__dict__['_nddata'] = [deepcopy(nd) for nd in self.nddata]
+        else:
+            to_copy.append('_nddata')
+
         for attr in to_copy:
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
@@ -606,7 +614,7 @@ class AstroData:
         self.nddata.wcs = value
 
     def __iter__(self):
-        if self._single:
+        if self.is_single:
             yield self
         else:
             for n in range(len(self)):
@@ -771,14 +779,13 @@ class AstroData:
             if not self.is_single:
                 raise TypeError("Can't delete attributes on non-single slices")
 
-            try:
-                other = self.nddata.meta['other']
+            other = self.nddata.meta['other']
+            if attribute in other:
+                del other[attribute]
                 otherh = self.nddata.meta['other_header']
-                if attribute in other:
-                    del other[attribute]
-                    if attribute in otherh:
-                        del otherh[attribute]
-            except AttributeError:
+                if attribute in otherh:
+                    del otherh[attribute]
+            else:
                 raise AttributeError(
                     "{!r} sliced object has no attribute {!r}"
                     .format(self.__class__.__name__, attribute))
@@ -1400,7 +1407,7 @@ class AstroData:
                              "Use set_phu if you really need to set one")
 
         if self.is_sliced:
-            add_to = self.nddata[0]  # FIXME: check this
+            add_to = self.nddata
 
         dispatcher = (
             (NDData, self._append_raw_nddata),
