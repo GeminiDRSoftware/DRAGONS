@@ -653,8 +653,11 @@ class AstroData:
         if self._indices:
             indices = [self._indices[i] for i in indices]
 
-        return self.__class__(self._nddata, tables=self._tables, phu=self.phu,
-                              indices=indices)
+        obj = self.__class__(self._nddata, tables=self._tables, phu=self.phu,
+                             indices=indices)
+        obj._path = self.path
+        obj._orig_filename = self.orig_filename
+        return obj
 
     def __delitem__(self, idx):
         """
