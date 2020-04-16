@@ -1244,8 +1244,13 @@ class AstroData:
                 self._logger.warning(
                     "The header is ignored for '{}' extensions".format(name))
             if name is None:
-                raise ValueError("Can't append pixel planes to other "
-                                 "objects without a name")
+                # FIXME: both should raise the same exception
+                if self.is_sliced:
+                    raise TypeError("Can't append objects to a slice "
+                                    "without an extension name")
+                else:
+                    raise ValueError("Can't append pixel planes to other "
+                                     "objects without a name")
             elif name is DEFAULT_EXTENSION:
                 raise ValueError("Can't attach '{}' arrays to other objects"
                                  .format(DEFAULT_EXTENSION))
