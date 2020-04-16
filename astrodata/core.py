@@ -1683,7 +1683,8 @@ class AstroData:
 
     def crop(self, x1, y1, x2, y2):
         # TODO: Consider cropping of objects in the meta section
-        for nd in self.nddata:
+        nddata = [self.nddata] if self.is_single else self.nddata
+        for nd in nddata:
             orig_shape = nd.data.shape
             self._crop_nd(nd, x1, y1, x2, y2)
             for o in nd.meta['other'].values():
