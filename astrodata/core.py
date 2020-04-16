@@ -606,8 +606,11 @@ class AstroData:
         self.nddata.wcs = value
 
     def __iter__(self):
-        for n in range(len(self)):
-            yield self[n]
+        if self._single:
+            yield self
+        else:
+            for n in range(len(self)):
+                yield self[n]
 
     def __getitem__(self, idx):
         """
@@ -636,8 +639,8 @@ class AstroData:
         indices, multiple = normalize_indices(idx, nitems=len(self))
         # FIXME: propagate other attributes ? path, orig_filename, etc.
         if self._indices:
-            # FIXME: slice _indices
-            pass
+            indices = [self._indices[i] for i in indices]
+
         return self.__class__(self.nddata,
                               # other=self.other,
                               phu=self.phu,
@@ -833,7 +836,11 @@ class AstroData:
         set(['OBJMASK', 'OBJCAT'])
 
         """
-        return self._exposed.copy()
+        exposed = self._exposed.copy()
+        if self.is_sliced:
+            nd = self.nddata if self.is_single else self.nddata[0]
+            exposed |= set(nd.meta['other'])
+        return exposed
 
     def _pixel_info(self, indices):
         for idx, obj in ((n, self._nddata[k]) for n, k in enumerate(indices)):
@@ -1125,6 +1132,8 @@ class AstroData:
         copy = deepcopy(self)
         # copy._dataprov.__rtruediv__(oper)
         copy._oper(copy._rdiv, oper)
+        # FIXME: check this, from FitsProviderProxy
+        # self._provider._oper(self._provider._rdiv, operand, self._mapping)
         return copy
 
     def _reset_ver(self, nd):

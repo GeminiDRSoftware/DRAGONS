@@ -25,7 +25,6 @@ from gwcs.wcs import WCS as gWCS
 from . import wcs as adwcs
 from .nddata import ADVarianceUncertainty
 from .nddata import NDAstroData as NDDataObject
-from .utils import normalize_indices
 
 DEFAULT_EXTENSION = 'SCI'
 NO_DEFAULT = object()
@@ -324,51 +323,6 @@ def update_header(headera, headerb):
     return headera
 
 
-class FitsProviderProxy:
-
-    @property
-    def exposed(self):
-        return self._provider._exposed.copy() | set(self._mapped_nddata(0).meta['other'])
-
-    def __iter__(self):
-        if self._single:
-            yield self
-        else:
-            for n in self._mapping:
-                yield self._provider._slice((n,), multi=False)
-
-    def __getitem__(self, slc):
-        if self.is_single:
-            raise TypeError("Can't slice a single slice!")
-
-        indices, multiple = normalize_indices(slc, nitems=len(self))
-        mapped_indices = tuple(self._mapping[idx] for idx in indices)
-        return self._provider._slice(mapped_indices, multi=multiple)
-
-    def __delitem__(self, idx):
-        raise TypeError("Can't remove items from a sliced object")
-
-    def __rtruediv__(self, operand):
-        self._provider._oper(self._provider._rdiv, operand, self._mapping)
-        return self
-
-
-class FitsProvider:
-
-    default_extension = 'SCI'
-
-    def _slice(self, indices, multi=True):
-        return FitsProviderProxy(self, indices, single=not multi)
-
-    def __getitem__(self, slc):
-        nitems = len(self._nddata)
-        indices, multiple = normalize_indices(slc, nitems=nitems)
-        return self._slice(indices, multi=multiple)
-
-    def __delitem__(self, idx):
-        del self._nddata[idx]
-
-
 def fits_ext_comp_key(ext):
     """
     Returns a pair (integer, string) that will be used to sort extensions
@@ -391,7 +345,7 @@ def fits_ext_comp_key(ext):
         name = header.get('EXTNAME')  # Make sure that the name is a string
         if name is None:
             name = "zzzz"
-        elif name != FitsProvider.default_extension:
+        elif name != DEFAULT_EXTENSION:
             name = "z" + name
 
         if ver in (-1, None):
