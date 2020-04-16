@@ -188,10 +188,10 @@ class AstroData:
         The data that will be manipulated through the `AstroData` instance.
     """
 
-    # Derived classes may provide their own _keyword_dict. Being a private
+    # Derived classes may provide their own __keyword_dict. Being a private
     # variable, each class will preserve its own, and there's no risk of
     # overriding the whole thing
-    _keyword_dict = {
+    __keyword_dict = {
         'instrument': 'INSTRUME',
         'object': 'OBJECT',
         'telescope': 'TELESCOP',
@@ -290,10 +290,12 @@ class AstroData:
         AttributeError
             If there is no keyword for the specified ``name``
         """
-
         for cls in self.__class__.mro():
             with suppress(AttributeError, KeyError):
-                return self._keyword_dict[name]
+                # FIXME: replace with _keyword_dict, unless there is a good
+                # reason why we need mangling ?
+                mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
+                return getattr(self, mangled_dict_name)[name]
         else:
             raise AttributeError("No match for '{}'".format(name))
 
