@@ -142,7 +142,7 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
     new_path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_arc : pytest.fixture
-        (todo)
+        Recipe used to reduce ARC data.
     reduce_data : pytest.fixture
         Recipe to reduce the data up to the step before
         `determineWavelengthSolution`.
