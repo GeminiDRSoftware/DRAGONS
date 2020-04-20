@@ -6,7 +6,6 @@ these outputs are scientifically relevant.
 """
 
 import os
-
 import pytest
 from astropy import table
 
@@ -18,155 +17,184 @@ from geminidr.gmos import primitives_gmos_spect
 
 # Test parameters --------------------------------------------------------------
 input_datasets = [
-    # Input Filename                                                  Aperture Center
-    # ("process_arcs/GMOS/N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720 - todo: won't pass
-    ("process_arcs/GMOS/N20180509S0010_mosaicWithApertureTable.fits", 259),  # R400 900
-    ("process_arcs/GMOS/N20180516S0081_mosaicWithApertureTable.fits", 255),  # R600 860
-    ("process_arcs/GMOS/N20190201S0163_mosaicWithApertureTable.fits", 255),  # B600 530
-    ("process_arcs/GMOS/N20190313S0114_mosaicWithApertureTable.fits", 254),  # B600 482
-    ("process_arcs/GMOS/N20190427S0123_mosaicWithApertureTable.fits", 260),  # R400 525
-    ("process_arcs/GMOS/N20190427S0126_mosaicWithApertureTable.fits", 259),  # R400 625
-    ("process_arcs/GMOS/N20190427S0127_mosaicWithApertureTable.fits", 258),  # R400 725
-    ("process_arcs/GMOS/N20190427S0141_mosaicWithApertureTable.fits", 264),  # R150 660
+    # (Input Filename, Aperture Center)
+    # ("N20180508S0021.fits", 244),  # B600 720 - todo: won't pass
+    ("N20180509S0010.fits", 259),  # R400 900
+    # ("N20180516S0081.fits", 255),  # R600 860
+    # ("N20190201S0163.fits", 255),  # B600 530
+    # ("N20190313S0114.fits", 254),  # B600 482
+    # ("N20190427S0123.fits", 260),  # R400 525
+    # ("N20190427S0126.fits", 259),  # R400 625
+    # ("N20190427S0127.fits", 258),  # R400 725
+    # ("N20190427S0141.fits", 264),  # R150 660
 ]
 
-ref_datasets = [
-    "_".join(f[0].split("_")[:-1]) + "_aperturesTraced.fits"
-    for f in input_datasets
-]
+fixed_test_parameters_for_determine_distortion = {
+    "debug": False,
+    "max_missed": 5,
+    "max_shift": 0.09,
+    "nsum": 20,
+    "step": 10,
+    "trace_order": 2,
+}
+
+
+# Tests Definitions ------------------------------------------------------------
+@pytest.mark.dragons_remote_data
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("aperture_traced_ad", input_datasets, indirect=True)
+def test_regression_trace_apertures(aperture_traced_ad, reference_ad):
+
+    ref_ad = reference_ad(aperture_traced_ad.filename)
+    for ext, ref_ext in zip(aperture_traced_ad, ref_ad):
+
+        input_table = ext.APERTURE
+        reference_table = ref_ext.APERTURE
+
+        assert input_table['aper_lower'][0] <= 0
+        assert input_table['aper_upper'][0] >= 0
+
+        keys = ext.APERTURE.colnames
+        actual = np.array([input_table[k] for k in keys])
+        desired = np.array([reference_table[k] for k in keys])
+        np.testing.assert_allclose(desired, actual, atol=0.05)
+
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='module')
-def ad(request, ad_factory, path_to_outputs):
+def aperture_traced_ad(request, get_input_ad, output_path):
     """
-    Loads existing input FITS files as AstroData objects, runs the
-    `traceApertures` primitive on it, and return the output object containing
-    a `.APERTURE` table.
-
-    This makes tests more efficient because the primitive is run only once,
-    instead of N x Number of tests.
-
-    If the input file does not exist, this fixture raises a IOError.
-
-    If the input file does not exist and PyTest is called with the
-    `--force-preprocess-data`, this fixture looks for cached raw data and
-    process it. If the raw data does not exist, it is then cached via download
-    from the Gemini Archive.
+    Runs `traceApertures` primitive on a pre-processed data and return the
+    output object containing a `.APERTURE` table.
 
     Parameters
     ----------
     request : fixture
         PyTest's built-in fixture with information about the test itself.
-    ad_factory : fixture
-        Custom fixture defined in the `conftest.py` file that loads cached data,
-        or download and/or process it if needed.
-    path_to_outputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        output folder.
+    get_input_ad : pytest.fixture
+        Fixture that reads the input data or cache/process it in a temporary
+        folder.
+    output_path : pytest.fixture
+        Fixture containing a custom context manager used to enter and leave the
+        output folder easily.
 
     Returns
     -------
     AstroData
-        Object containing Wavelength Solution table.
+        Aperture-traced data.
     """
-    fname, ap_center = request.param
+    filename, center = request.param
+    pre_process = request.config.getoption("--force-preprocess-data")
+    input_ad = get_input_ad(filename, center, pre_process)
 
-    p = primitives_gmos_spect.GMOSSpect([])
-    p.viewer = geminidr.dormantViewer(p, None)
+    with output_path():
+        print('\n\n Running test inside folder:\n  {}'.format(os.getcwd()))
+        p = primitives_gmos_spect.GMOSSpect([input_ad])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.traceApertures()
+        _aperture_traced_ad = p.writeOutputs().pop()
 
-    print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
-
-    _ad = ad_factory(fname, preprocess_recipe, **{'center': ap_center})
-    ad_out = p.traceApertures([_ad], trace_order=2, nsum=20, step=10,
-                              max_shift=0.09, max_missed=5, debug=False)[0]
-
-    tests_failed_before_module = request.session.testsfailed
-    yield ad_out
-
-    if request.session.testsfailed > tests_failed_before_module:
-        _dir = os.path.join(path_to_outputs, os.path.dirname(fname))
-        os.makedirs(_dir, exist_ok=True)
-
-        fname_out = os.path.join(_dir, ad_out.filename)
-        ad_out.write(filename=fname_out, overwrite=True)
-        print('\n Saved file to:\n  {}\n'.format(fname_out))
-
-    del ad_out
+    return _aperture_traced_ad
 
 
-def preprocess_recipe(ad, path, center):
+@pytest.fixture(scope='module')
+def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
+    """
+    Reads the input data or cache/process it in a temporary folder.
+
+    Parameters
+    ----------
+    cache_path : pytest.fixture
+        Path to where the data will be temporarily cached.
+    new_path_to_inputs : pytest.fixture
+        Path to the permanent local input files.
+    reduce_data : pytest.fixture
+        Recipe to reduce the data up to the step before
+        `determineWavelengthSolution`.
+
+    Returns
+    -------
+    function : factory that reads existing input data or call the data
+        reduction recipe.
+    """
+    def _get_input_ad(basename, center, should_preprocess):
+        assert isinstance(should_preprocess, bool)
+        assert isinstance(center, int)
+        input_fname = basename.replace('.fits', '_mosaic.fits')
+        input_path = os.path.join(new_path_to_inputs, input_fname)
+
+        if should_preprocess:
+            filename = cache_path(basename)
+            ad = astrodata.open(filename)
+            input_data = reduce_data(ad, center)
+
+        elif os.path.exists(input_path):
+            input_data = astrodata.open(input_path)
+
+        else:
+            raise IOError(
+                'Could not find input file:\n' +
+                '  {:s}\n'.format(input_path) +
+                '  Run pytest with "--force-preprocess-data" to get it')
+
+        return input_data
+    return _get_input_ad
+
+
+@pytest.fixture(scope='module')
+def reduce_data(output_path):
     """
     Recipe used to generate input data for `traceAperture` tests.
 
     Parameters
     ----------
-    ad : AstroData
-        Input raw arc data loaded as AstroData.
-    path : str
-        Path that points to where the input data is cached.
-    center : int
-        Aperture center.
+    output_path : pytest.fixture
+        Fixture containing a custom context manager used to enter and leave the
+        output folder easily.
 
     Returns
     -------
     AstroData
         Pre-processed arc data.
     """
-    _p = primitives_gmos_spect.GMOSSpect([ad])
+    def _reduce_data(ad, center):
+        with output_path():
+            p = primitives_gmos_spect.GMOSSpect([ad])
+            p.prepare()
+            p.addDQ(static_bpm=None)
+            p.addVAR(read_noise=True)
+            p.overscanCorrect()
+            p.ADUToElectrons()
+            p.addVAR(poisson_noise=True)
+            p.mosaicDetectors()
+            ad = p.makeIRAFCompatible()[0]
 
-    _p.prepare()
-    _p.addDQ(static_bpm=None)
-    _p.addVAR(read_noise=True)
-    _p.overscanCorrect()
-    _p.ADUToElectrons()
-    _p.addVAR(poisson_noise=True)
-    _p.mosaicDetectors(suffix="_mosaicWithApertureTable")
-    ad = _p.makeIRAFCompatible()[0]
+            width = ad[0].shape[1]
 
-    width = ad[0].shape[1]
+            aperture = table.Table(
+                [[1],  # Number
+                 [1],  # ndim
+                 [0],  # degree
+                 [0],  # domain_start
+                 [width - 1],  # domain_end
+                 [center],  # c0
+                 [-10],  # aper_lower
+                 [10],  # aper_upper
+                 ],
+                names=[
+                    'number',
+                    'ndim',
+                    'degree',
+                    'domain_start',
+                    'domain_end',
+                    'c0',
+                    'aper_lower',
+                    'aper_upper']
+            )
 
-    aperture = table.Table(
-        [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [width - 1],  # domain_end
-         [center],  # c0
-         [-10],  # aper_lower
-         [10],  # aper_upper
-         ],
-        names=[
-            'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
-            'c0',
-            'aper_lower',
-            'aper_upper']
-    )
+            ad[0].APERTURE = aperture
+            ad.write()
 
-    ad[0].APERTURE = aperture
-    ad.write(os.path.join(path, ad.filename))
-
-    return ad
-
-
-# Tests Definitions ------------------------------------------------------------
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, ad_ref", zip(input_datasets, ref_datasets), indirect=True)
-def test_trace_apertures_is_stable(ad, ad_ref):
-
-    input_table = ad[0].APERTURE
-    reference_table = ad_ref[0].APERTURE
-
-    assert input_table['aper_lower'][0] <= 0
-    assert input_table['aper_upper'][0] >= 0
-
-    keys = ad[0].APERTURE.colnames
-
-    actual = np.array([input_table[k] for k in keys])
-    desired = np.array([reference_table[k] for k in keys])
-
-    np.testing.assert_allclose(desired, actual, atol=0.05)
+        return ad
+    return _reduce_data

@@ -163,7 +163,7 @@ def cache_path(request, path_to_outputs):
 def get_master_arc(new_path_to_inputs, output_path):
     """
     Factory that creates a function that reads the master arc file from the
-    permanent input folder or from the temporarly local cache, depending on
+    permanent input folder or from the temporarily local cache, depending on
     command line options.
 
     Parameters
@@ -250,7 +250,6 @@ def reduce_arc(output_path):
     function : A function that will read the arcs files, process them and
     return the name of the master arc.
     """
-
     def _reduce_arc(dlabel, arc_fnames):
         with output_path():
             # Use config to prevent duplicated outputs when running Reduce via API
