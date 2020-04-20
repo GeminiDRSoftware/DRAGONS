@@ -16,10 +16,6 @@ from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 
-from .test_gmos_spect_ls_apply_qe_correction import (
-    cache_path, get_associated_calibrations, get_master_arc, output_path,
-    reduce_arc, reduce_bias, reduce_flat, reference_ad)
-
 
 datasets = [
     "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
