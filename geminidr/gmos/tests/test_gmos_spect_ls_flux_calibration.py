@@ -9,6 +9,7 @@ import pytest
 import astrodata
 import gemini_instruments
 
+from astrodata import testing
 from astropy.io import fits
 from scipy.interpolate import BSpline
 
@@ -180,7 +181,7 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
 
         input_fname = basename.replace('.fits', '_sensitivityCalculated.fits')
         input_path = os.path.join(new_path_to_inputs, input_fname)
-        cals = get_associated_calibrations(basename)
+        cals = testing.get_associated_calibrations(basename)
 
         if should_preprocess:
 
