@@ -43,7 +43,7 @@ fixed_test_parameters_for_determine_distortion = {
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-# @pytest.mark.parametrize("aperture_traced_ad", input_datasets, indirect=True)
+@pytest.mark.parametrize("aperture_traced_ad", input_datasets, indirect=True)
 def test_regression_trace_apertures(aperture_traced_ad, reference_ad):
 
     ref_ad = reference_ad(aperture_traced_ad.filename)
@@ -62,7 +62,7 @@ def test_regression_trace_apertures(aperture_traced_ad, reference_ad):
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
-@pytest.fixture(scope='module', params=input_datasets)
+@pytest.fixture(scope='module')
 def aperture_traced_ad(request, get_input_ad, output_path):
     """
     Runs `traceApertures` primitive on a pre-processed data and return the
