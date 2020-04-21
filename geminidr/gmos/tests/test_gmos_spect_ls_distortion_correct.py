@@ -122,23 +122,30 @@ fixed_test_parameters_for_determine_distortion = {
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_regression_in_distortion_correct(dist_corrected_ad, reference_ad):
+@pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
+def test_regression_in_distortion_correct(output_path, preprocessed_ad,
+                                          reference_ad):
     """
     Runs the `distortionCorrect` primitive on a preprocessed data and compare
     its model with the one in the reference file.
     """
-    ref_ad = reference_ad(dist_corrected_ad.filename)
+    with output_path():
+        p = primitives_gmos_longslit.GMOSLongslit([deepcopy(preprocessed_ad)])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.distortionCorrect(arc=deepcopy(preprocessed_ad), order=3, subsample=1)
+        ad = p.writeOutputs().pop()
 
-    data = np.ma.masked_invalid(dist_corrected_ad[0].data)
+    ref_ad = reference_ad(ad.filename)
+    data = np.ma.masked_invalid(ad[0].data)
     ref_data = np.ma.masked_invalid(ref_ad[0].data)
-
     np.testing.assert_allclose(data, ref_data, atol=1)
 
 
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_full_frame_distortion_works_on_smaller_region(request, dist_corrected_ad, get_input_ad):
+@pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
+def test_full_frame_distortion_works_on_smaller_region(output_path, preprocessed_ad):
     """
     Takes a full-frame arc and self-distortion-corrects it. It then fakes
     subregions of this and corrects those using the full-frame distortion to
@@ -147,14 +154,10 @@ def test_full_frame_distortion_works_on_smaller_region(request, dist_corrected_a
     than once for a given binning, so we loop within the function, keeping
     track of binnings we've already processed.
     """
-    # Use dist_corrected_ad to keep parameters consistent
-    basename = dist_corrected_ad.filename.split('_')[0] + '.fits'
+    ad = preprocessed_ad
 
     NSUB = 4  # we're going to take combos of horizontal quadrants
     completed_binnings = []
-
-    pre_process = request.config.getoption("--force-preprocess-data")
-    ad = get_input_ad(basename, pre_process)
 
     xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
     if ad.detector_roi_setting() != "Full Fame" or (xbin, ybin) in completed_binnings:
@@ -230,52 +233,15 @@ def do_plots(ad, output_path, reference_path):
     p.close_all()
 
 
-@pytest.fixture(scope="module", params=original_inputs)
-def dist_corrected_ad(request, get_input_ad, output_path):
+@pytest.fixture(scope="module")
+def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_data):
     """
-    Runs the `distortionCorrect` primitive and returns the processed data.
+    Reads the preprocessed input data or cache/process it in a temporary folder.
 
     Parameters
     ----------
     request : pytest.fixture
         Fixture that contains information this fixture's parent.
-    get_input_ad : pytest.fixture
-        Fixture that reads the input data or cache/process it in a temporary
-        folder.
-    output_path : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
-
-    Returns
-    -------
-    AstroData
-        The distortion corrected object.
-
-    Raises
-    ------
-    IOError : if the input file does not exist.
-    """
-    filename = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-    input_ad = get_input_ad(filename, pre_process)
-
-    with output_path():
-        print('\n\n Running test inside folder:\n  {}'.format(os.getcwd()))
-        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
-        p.viewer = geminidr.dormantViewer(p, None)
-        p.distortionCorrect(arc=input_ad, order=3, subsample=1)
-        _dist_corrected_ad = p.writeOutputs().pop()
-
-    return _dist_corrected_ad
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
-    """
-    Reads the input data or cache/process it in a temporary folder.
-
-    Parameters
-    ----------
     cache_path : pytest.fixture
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
@@ -286,32 +252,33 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
 
     Returns
     -------
-    flat_corrected_ad : AstroData
-        Bias and flat corrected data.
-    master_arc : AstroData
-        Master arc data.
+    AstroData
+        The distortion corrected object.
+
+    Raises
+    ------
+    IOError : if the input file does not exist.
     """
+    basename = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-    def _get_input_ad(basename, should_preprocess):
-        input_fname = basename.replace('.fits', '_distortionDetermined.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_fname = basename.replace('.fits', '_distortionDetermined.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
 
-        if should_preprocess:
-            filename = cache_path(basename)
-            input_data = reduce_data(astrodata.open(filename))
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
 
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
+    elif should_preprocess:
+        filename = cache_path(basename)
+        input_data = reduce_data(astrodata.open(filename))
 
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
 
-        return input_data
-
-    return _get_input_ad
+    return input_data
 
 
 @pytest.fixture(scope="module")
