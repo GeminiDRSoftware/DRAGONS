@@ -21,15 +21,14 @@ test_datasets = [
     "S20190808S0053.fits",  # R400 at 0.850
 ]
 
+
 # Tests Definitions -----------------------------------------------------------
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_resample_and_linearize(request, get_input_ad, caplog):
-    force_pre_process = request.config.getoption("--force-preprocess-data")
-    list_of_input_ad = [get_input_ad(f, force_pre_process) for f in test_datasets]
+def test_resample_and_linearize(input_ad_list, caplog):
 
-    p = primitives_gmos_spect.GMOSSpect(list_of_input_ad)
+    p = primitives_gmos_spect.GMOSSpect(input_ad_list)
     ads = p.resampleToCommonFrame(dw=0.15)
 
     assert len(ads) == 3
@@ -42,8 +41,8 @@ def test_resample_and_linearize(request, get_input_ad, caplog):
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_resample_and_linearize_with_w1_w2(input_ad, caplog):
-    p = primitives_gmos_spect.GMOSSpect([input_ad])
+def test_resample_and_linearize_with_w1_w2(input_ad_list, caplog):
+    p = primitives_gmos_spect.GMOSSpect(input_ad_list)
     p.resampleToCommonFrame(dw=0.15, w1=700, w2=850)
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
@@ -51,8 +50,8 @@ def test_resample_and_linearize_with_w1_w2(input_ad, caplog):
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_resample_and_linearize_with_npix(input_ad, caplog):
-    p = primitives_gmos_spect.GMOSSpect([input_ad])
+def test_resample_and_linearize_with_npix(input_ad_list, caplog):
+    p = primitives_gmos_spect.GMOSSpect(input_ad_list)
     p.resampleToCommonFrame(dw=0.15, w1=700, npix=1001)
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
@@ -60,8 +59,8 @@ def test_resample_and_linearize_with_npix(input_ad, caplog):
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_resample_error_with_all(input_ad, caplog):
-    p = primitives_gmos_spect.GMOSSpect([input_ad])
+def test_resample_error_with_all(input_ad_list, caplog):
+    p = primitives_gmos_spect.GMOSSpect(input_ad_list)
     expected_error = "Maximum 3 of w1, w2, dw, npix must be specified"
     with pytest.raises(ValueError, match=expected_error):
         p.resampleToCommonFrame(dw=0.15, w1=700, w2=850, npix=1001)
@@ -70,9 +69,15 @@ def test_resample_error_with_all(input_ad, caplog):
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_resample_linearize_trim_and_stack(request, get_input_ad, caplog):
+def test_resample_linearize_trim_and_stack(request, get_input_ad, input_ad_list, caplog):
     force_pre_process = request.config.getoption("--force-preprocess-data")
     list_of_input_ad = [get_input_ad(f, force_pre_process) for f in test_datasets]
+
+    assert len(list_of_input_ad) == len(input_ad_list)
+
+    fnames = [ad.filename for ad in input_ad_list]
+    for ad in list_of_input_ad:
+        assert ad.filename in fnames
 
     p = primitives_gmos_spect.GMOSSpect(list_of_input_ad)
     ads = p.resampleToCommonFrame(dw=0.15, trim_data=True)
@@ -128,12 +133,12 @@ def _check_params(records, expected):
             assert expected in record.message
 
 
-@pytest.fixture(scope='module', params=test_datasets)
-def input_ad(request, get_input_ad):
-    filename = request.param
+@pytest.fixture(scope='module')
+def input_ad_list(request, get_input_ad):
     pre_process = request.config.getoption("--force-preprocess-data")
-    ad = get_input_ad(filename, pre_process)
-    return ad
+    ad_list = [get_input_ad(f, pre_process) for f in test_datasets]
+    print(ad_list)
+    return ad_list
 
 
 @pytest.fixture(scope='module')
@@ -163,12 +168,14 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
         input_path = os.path.join(new_path_to_inputs, input_fname)
 
         if should_preprocess:
+            print(" Caching input file: {:s}".format(basename))
             filename = cache_path(basename)
             ad = astrodata.open(filename)
             cals = testing.get_associated_calibrations(basename)
 
             cals = [cache_path(c)
                     for c in cals[cals.caltype.str.contains('arc')].filename.values]
+            print(" Downloaded calibrations: {:s}".format("\n ".join(cals)))
 
             master_arc = reduce_arc(ad.data_label(), cals)
             input_data = reduce_data(ad, master_arc)
