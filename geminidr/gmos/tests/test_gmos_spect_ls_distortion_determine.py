@@ -10,6 +10,7 @@ Notes
 import numpy as np
 import os
 import pytest
+from copy import deepcopy
 from warnings import warn
 
 import astrodata
@@ -120,14 +121,20 @@ original_inputs = [
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_determine_distortion_comparing_models_coefficients(dist_determined_ad,
-                                                            reference_ad):
+@pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
+def test_determine_distortion_comparing_models_coefficients(
+        preprocessed_ad, reference_ad, output_path):
     """
     Runs the `determineDistortion` primitive on a preprocessed data and compare
     its model with the one in the reference file.
     """
-    ad = dist_determined_ad
-    ref_ad = reference_ad(dist_determined_ad.filename)
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([deepcopy(preprocessed_ad)])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.determineDistortion(**fixed_parameters_for_determine_distortion)
+        ad = p.writeOutputs().pop()
+
+    ref_ad = reference_ad(ad.filename)
 
     c = np.ma.masked_invalid(ad[0].FITCOORD["coefficients"])
     c_ref = np.ma.masked_invalid(ref_ad[0].FITCOORD["coefficients"])
@@ -138,15 +145,21 @@ def test_determine_distortion_comparing_models_coefficients(dist_determined_ad,
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_determine_distortion_comparing_modeled_arrays(dist_determined_ad,
-                                                       reference_ad):
+@pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
+def test_determine_distortion_comparing_modeled_arrays(
+        output_path, preprocessed_ad, reference_ad):
     """
-    Runs the `determineDistorion` primitive on a preprocessed data and compare
+    Runs the `determineDistortion` primitive on a preprocessed data and compare
     its model with the one in the reference file. The distortion model needs to
     be reconstructed because different coefficients might return same results.
     """
-    ad = dist_determined_ad
-    ref_ad = reference_ad(dist_determined_ad.filename)
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([deepcopy(preprocessed_ad)])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.determineDistortion(**fixed_parameters_for_determine_distortion)
+        ad = p.writeOutputs().pop()
+
+    ref_ad = reference_ad(ad.filename)
 
     table = ad[0].FITCOORD
     model_dict = dict(zip(table['name'], table['coefficients']))
@@ -162,110 +175,6 @@ def test_determine_distortion_comparing_modeled_arrays(dist_determined_ad,
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
-@pytest.fixture(scope="module", params=original_inputs)
-def dist_determined_ad(request, get_input_ad, output_path):
-    """
-    Loads existing input FITS files as AstroData objects, runs the
-    `determineDistortion` primitive on it, and return the output object with a
-    `.FITCOORD` table.
-
-    Parameters
-    ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
-    get_input_ad : pytest.fixture
-        Fixture that reads the input data or cache/process it in a temporary
-        folder.
-    output_path : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
-
-    Returns
-    -------
-    AstroData
-        The distortion corrected object.
-
-    Raises
-    ------
-    IOError : if the input file does not exist.
-    """
-    filename = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-    input_ad = get_input_ad(filename, pre_process)
-
-    with output_path():
-        print('\n\n Running test inside folder:\n  {}'.format(os.getcwd()))
-        p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.viewer = geminidr.dormantViewer(p, None)
-        p.determineDistortion(**fixed_parameters_for_determine_distortion)
-        _dist_determined_ad = p.writeOutputs().pop()
-
-    return _dist_determined_ad
-
-
-# def ad(request, ad_factory, path_to_outputs, path_to_refs):
-#     """
-#
-#
-#     This makes tests more efficient because the primitive is run only once,
-#     instead of N x Numbes of tests.
-#
-#     If the input file does not exist, this fixture raises a IOError.
-#
-#     If the input file does not exist and PyTest is called with the
-#     `--force-preprocess-data`, this fixture looks for cached raw data and
-#     process it. If the raw data does not exist, it is then cached via download
-#     from the Gemini Archive.
-#
-#     Parameters
-#     ----------
-#     request : fixture
-#         PyTest's built-in fixture with information about the test itself.
-#     ad_factory : fixture
-#         Custom fixture defined in the `conftest.py` file that loads cached data,
-#         or download and/or process it if needed.
-#     path_to_outputs : fixture
-#         Custom fixture defined in `astrodata.testing` containing the path to the
-#         output folder.
-#     path_to_refs : fixture
-#         Custom fixture defined in `astrodata.testing` containing the path to the
-#         cached reference files.
-#
-#     Returns
-#     -------
-#     AstroData
-#         Object containing Wavelength Solution table.
-#     """
-#     fname = request.param
-#
-#     p = primitives_gmos_spect.GMOSSpect([])
-#     p.viewer = geminidr.dormantViewer(p, None)
-#
-#     print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
-#
-#     _ad = ad_factory(fname, preprocess_recipe)
-#     ad_out = p.determineDistortion(
-#         [_ad], spatial_order=3, spectral_order=4, id_only=False, min_snr=5.,
-#         fwidth=None, nsum=10, max_shift=0.05, max_missed=5)[0]
-#
-#     tests_failed_before_module = request.session.testsfailed
-#     yield ad_out
-#
-#     _dir = os.path.join(path_to_outputs, os.path.dirname(request.param))
-#     _ref_dir = os.path.join(path_to_refs, os.path.dirname(request.param))
-#     os.makedirs(_dir, exist_ok=True)
-#
-#     if request.config.getoption("--do-plots"):
-#         do_plots(ad_out, _dir, _ref_dir)
-#
-#     if request.session.testsfailed > tests_failed_before_module:
-#         fname_out = os.path.join(_dir, ad_out.filename)
-#         ad_out.write(filename=fname_out, overwrite=True)
-#         print('\n Saved file to:\n  {}\n'.format(fname_out))
-#
-#     del ad_out
-
-
 def do_plots(ad, output_path, reference_path):
     """
     Generate diagnostic plots.
@@ -291,12 +200,16 @@ def do_plots(ad, output_path, reference_path):
 
 
 @pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
+def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_data):
     """
-    Reads the input data or cache/process it in a temporary folder.
+    Loads existing input FITS files as AstroData objects, runs the
+    `determineDistortion` primitive on it, and return the output object with a
+    `.FITCOORD` table.
 
     Parameters
     ----------
+    request : pytest.fixture
+        Fixture that contains information this fixture's parent.
     cache_path : pytest.fixture
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
@@ -307,28 +220,33 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
 
     Returns
     -------
-    function : factory that reads existing input data or call the data
-        reduction recipe.
+    AstroData
+        The preprocessed data
+
+    Raises
+    ------
+    IOError : if the input file does not exist.
     """
-    def _get_input_ad(basename, should_preprocess):
-        input_fname = basename.replace('.fits', '_mosaic.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    basename = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-        if should_preprocess:
-            filename = cache_path(basename)
-            input_data = reduce_data(astrodata.open(filename))
+    input_fname = basename.replace('.fits', '_mosaic.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
 
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
 
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
+    elif should_preprocess:
+        filename = cache_path(basename)
+        input_data = reduce_data(astrodata.open(filename))
 
-        return input_data
-    return _get_input_ad
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
+
+    return input_data
 
 
 @pytest.fixture(scope="module")
