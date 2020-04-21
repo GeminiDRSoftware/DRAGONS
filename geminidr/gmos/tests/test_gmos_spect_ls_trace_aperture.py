@@ -43,12 +43,18 @@ fixed_test_parameters_for_determine_distortion = {
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("aperture_traced_ad", input_datasets, indirect=True)
-def test_regression_trace_apertures(aperture_traced_ad, reference_ad):
+@pytest.mark.parametrize("preprocessed_ad", input_datasets, indirect=True)
+def test_regression_trace_apertures(preprocessed_ad, output_path, reference_ad):
+
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.traceApertures()
+        aperture_traced_ad = p.writeOutputs().pop()
 
     ref_ad = reference_ad(aperture_traced_ad.filename)
-    for ext, ref_ext in zip(aperture_traced_ad, ref_ad):
 
+    for ext, ref_ext in zip(aperture_traced_ad, ref_ad):
         input_table = ext.APERTURE
         reference_table = ref_ext.APERTURE
 
@@ -62,8 +68,9 @@ def test_regression_trace_apertures(aperture_traced_ad, reference_ad):
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
-@pytest.fixture(scope='module')
-def aperture_traced_ad(request, get_input_ad, output_path):
+@pytest.fixture(scope='function')
+def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
+                    reduce_data):
     """
     Runs `traceApertures` primitive on a pre-processed data and return the
     output object containing a `.APERTURE` table.
@@ -72,41 +79,11 @@ def aperture_traced_ad(request, get_input_ad, output_path):
     ----------
     request : fixture
         PyTest's built-in fixture with information about the test itself.
-    get_input_ad : pytest.fixture
-        Fixture that reads the input data or cache/process it in a temporary
-        folder.
+    cache_path : pytest.fixture
+        Path to where the data will be temporarily cached.
     output_path : pytest.fixture
         Fixture containing a custom context manager used to enter and leave the
         output folder easily.
-
-    Returns
-    -------
-    AstroData
-        Aperture-traced data.
-    """
-    filename, center = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-    input_ad = get_input_ad(filename, center, pre_process)
-
-    with output_path():
-        print('\n\n Running test inside folder:\n  {}'.format(os.getcwd()))
-        p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.viewer = geminidr.dormantViewer(p, None)
-        p.traceApertures()
-        _aperture_traced_ad = p.writeOutputs().pop()
-
-    return _aperture_traced_ad
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
-    """
-    Reads the input data or cache/process it in a temporary folder.
-
-    Parameters
-    ----------
-    cache_path : pytest.fixture
-        Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_data : pytest.fixture
@@ -115,31 +92,30 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
 
     Returns
     -------
-    function : factory that reads existing input data or call the data
-        reduction recipe.
+    AstroData
+        Aperture-traced data.
     """
-    def _get_input_ad(basename, center, should_preprocess):
-        assert isinstance(should_preprocess, bool)
-        assert isinstance(center, int)
-        input_fname = basename.replace('.fits', '_mosaic.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    basename, center = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-        if should_preprocess:
-            filename = cache_path(basename)
-            ad = astrodata.open(filename)
-            input_data = reduce_data(ad, center)
+    input_fname = basename.replace('.fits', '_mosaic.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
 
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
+    if os.path.exists(input_path):
+        input_ad = astrodata.open(input_path)
 
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
+    elif should_preprocess:
+        filename = cache_path(basename)
+        ad = astrodata.open(filename)
+        input_ad = reduce_data(ad, center)
 
-        return input_data
-    return _get_input_ad
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
+
+    return input_ad
 
 
 @pytest.fixture(scope='module')
