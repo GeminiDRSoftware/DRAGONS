@@ -114,53 +114,37 @@ def test_flux_calibration_with_fake_data():
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_regression_on_flux_calibration(flux_cal_ad, reference_ad):
+@pytest.mark.parametrize("preprocessed_ad", datasets, indirect=True)
+def test_regression_on_flux_calibration(preprocessed_ad, reference_ad, output_path):
 
-    ref_ad = reference_ad(flux_cal_ad.filename)
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
+        p.fluxCalibrate(standard=preprocessed_ad)
+        flux_calibrated_ad = p.writeOutputs().pop()
 
-    for calc_sens_ext, ref_ext in zip(flux_cal_ad, ref_ad):
+    ref_ad = reference_ad(flux_calibrated_ad.filename)
+
+    for calc_sens_ext, ref_ext in zip(flux_calibrated_ad, ref_ad):
         np.testing.assert_allclose(
             calc_sens_ext.data, ref_ext.data, atol=1e-4)
 
 
 # --- Helper functions and fixtures -------------------------------------------
-@pytest.fixture(scope='module', params=datasets)
-def flux_cal_ad(request, get_input_ad, output_path):
+@pytest.fixture(scope='function')
+def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
+                    reduce_arc, reduce_bias, reduce_data,  reduce_flat):
     """
     Parameters
     ----------
-    request
-    get_input_ad
-    output_path
-
-    Returns
-    -------
-    """
-    filename = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-
-    input_ad = get_input_ad(filename, pre_process)
-
-    with output_path():
-        p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.fluxCalibrate(standard=input_ad)
-        flux_calibrated_ad = p.writeOutputs().pop()
-
-    return flux_calibrated_ad
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
-                 reduce_data,  reduce_flat):
-    """
-    Reads the input data or cache/process it in a temporary folder.
-
-    Parameters
-    ----------
+    request : fixture
+        PyTest's built-in fixture with information about the test itself.
     cache_path : pytest.fixture
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
         Path to the permanent local input files.
+    output_path : pytest.fixture
+        Fixture containing a custom context manager used to enter and leave the
+        output folder easily.
     reduce_arc : pytest.fixture
         Recipe to reduce the arc file.
     reduce_bias : pytest.fixture
@@ -172,51 +156,41 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
 
     Returns
     -------
-    flat_corrected_ad : AstroData
-        Bias and flat corrected data.
-    master_arc : AstroData
-        Master arc data.
     """
-    def _get_input_ad(basename, should_preprocess):
+    basename = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-        input_fname = basename.replace('.fits', '_sensitivityCalculated.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
-        cals = testing.get_associated_calibrations(basename)
+    input_fname = basename.replace('.fits', '_sensitivityCalculated.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
+    cals = testing.get_associated_calibrations(basename)
 
-        if should_preprocess:
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
 
-            filename = cache_path(basename)
-            ad = astrodata.open(filename)
+    elif should_preprocess:
+        filename = cache_path(basename)
+        ad = astrodata.open(filename)
+        cals = [cache_path(c) for c in cals.filename.values]
 
-            cals = [cache_path(c) for c in cals.filename.values]
+        master_bias = reduce_bias(
+            ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
 
-            master_bias = reduce_bias(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['BIAS']))
+        master_flat = reduce_flat(
+            ad.data_label(), dataselect.select_data(cals, tags=['FLAT']),
+            master_bias)
 
-            master_flat = reduce_flat(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['FLAT']), master_bias)
+        master_arc = reduce_arc(
+            ad.data_label(), dataselect.select_data(cals, tags=['ARC']))
 
-            master_arc = reduce_arc(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['ARC']))
+        input_data = reduce_data(ad, master_arc, master_bias, master_flat)
 
-            input_data = reduce_data(
-                ad, master_arc, master_bias, master_flat)
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
 
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
-
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
-
-        return input_data
-
-    return _get_input_ad
+    return input_data
 
 
 @pytest.fixture(scope='module')
