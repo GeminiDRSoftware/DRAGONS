@@ -31,26 +31,6 @@ test_datasets = [
     # ("N20190427S0126.fits", 259),  # R400 625
     # ("N20190427S0127.fits", 258),  # R400 725
     # ("N20190427S0141.fits", 264),  # R150 660
-    
-    # Input Filename
-    # ("process_arcs/GMOS/N20180508S0021_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20180615S0409_distortionDetermined.fits", 244),  # B600 720
-    # ("process_arcs/GMOS/N20180509S0010_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20180509S0080_distortionDetermined.fits", 259),  # R400 900
-    # ("process_arcs/GMOS/N20180516S0081_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20180516S0214_distortionDetermined.fits", 255),  # R600 860
-    # # ("process_arcs/GMOS/N20190201S0163_aperturesTraced.fits",
-    # #  "process_arcs/GMOS/N20190201S0176_distortionDetermined.fits", 255),  # B600 530
-    # ("process_arcs/GMOS/N20190313S0114_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20190313S0132_distortionDetermined.fits", 254),  # B600 482
-    # ("process_arcs/GMOS/N20190427S0123_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20190427S0266_distortionDetermined.fits", 260),  # R400 525
-    # ("process_arcs/GMOS/N20190427S0126_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20190427S0267_distortionDetermined.fits", 259),  # R400 625
-    # ("process_arcs/GMOS/N20190427S0127_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20190427S0268_distortionDetermined.fits", 258),  # R400 725
-    # ("process_arcs/GMOS/N20190427S0141_aperturesTraced.fits",
-    #  "process_arcs/GMOS/N20190427S0270_distortionDetermined.fits", 264),  # R150 660
 ]
 
 
@@ -58,14 +38,23 @@ test_datasets = [
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_regression_extract_1d_spectra(sky_subtracted_ad, reference_ad):
+@pytest.mark.parametrize("preprocessed_ad", test_datasets, indirect=True)
+def test_regression_extract_1d_spectra(preprocessed_ad, output_path, reference_ad):
+
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.skyCorrectFromSlit(order=5, grow=0)
+        sky_subtracted_ad = p.writeOutputs().pop()
+
     ref_ad = reference_ad(sky_subtracted_ad.filename)
+
     for ext, ref_ext in zip(sky_subtracted_ad, ref_ad):
         np.testing.assert_allclose(ext.data, ref_ext.data)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
-def add_aperture_table(ad, center):
+def _add_aperture_table(ad, center):
     """
     Adds a fake aperture table to the `AstroData` object.
 
@@ -105,53 +94,23 @@ def add_aperture_table(ad, center):
     return ad
 
 
-# def preprocess_arc_recipe(ad, path):
-#     """
-#     Recipe used to generate arc data for `skyCorrectFromSlit` tests.
-#
-#     Parameters
-#     ----------
-#     ad : AstroData
-#         Input raw arc data loaded as AstroData.
-#     path : str
-#         Path that points to where the input data is cached.
-#
-#     Returns
-#     -------
-#     AstroData
-#         Pre-processed arc data.
-#     """
-#     _p = primitives_gmos_spect.GMOSSpect([ad])
-#
-#     _p.prepare()
-#     _p.addDQ(static_bpm=None)
-#     _p.addVAR(read_noise=True)
-#     _p.overscanCorrect()
-#     _p.ADUToElectrons()
-#     _p.addVAR(poisson_noise=True)
-#     _p.mosaicDetectors()
-#     _p.makeIRAFCompatible()
-#
-#     ad = _p.determineDistortion(
-#         spatial_order=3, spectral_order=4, id_only=False, min_snr=5.,
-#         fwidth=None, nsum=10, max_shift=0.05, max_missed=5)[0]
-#
-#     _p.writeOutputs(outfilename=os.path.join(path, ad.filename))
-#
-#     return ad
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
+@pytest.fixture(scope='function')
+def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
+                    reduce_arc, reduce_data):
     """
     Reads the input data or cache/process it in a temporary folder.
 
     Parameters
     ----------
+    request : fixture
+        PyTest's built-in fixture with information about the test itself.
     cache_path : pytest.fixture
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
         Path to the permanent local input files.
+    output_path : pytest.fixture
+        Fixture containing a custom context manager used to enter and leave the
+        output folder easily.
     reduce_arc : pytest.fixture
         Recipe used to reduce ARC data.
     reduce_data : pytest.fixture
@@ -160,36 +119,35 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
 
     Returns
     -------
-    function : factory that reads existing input data or call the data
-        reduction recipe.
+    AstroData
+        Sky-subtracted data.
     """
-    def _get_input_ad(basename, center, should_preprocess):
-        assert isinstance(should_preprocess, bool)
-        assert isinstance(center, int)
-        input_fname = basename.replace('.fits', '_aperturesTraced.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    basename, center = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-        if should_preprocess:
-            filename = cache_path(basename)
-            ad = astrodata.open(filename)
-            cals = testing.get_associated_calibrations(basename)
-            cals = [cache_path(c)
-                    for c in cals[cals.caltype.str.contains('arc')].filename.values]
+    input_fname = basename.replace('.fits', '_aperturesTraced.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
 
-            master_arc = reduce_arc(ad.data_label(), cals)
-            input_data = reduce_data(ad, center, master_arc)
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
 
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
+    elif should_preprocess:
+        filename = cache_path(basename)
+        ad = astrodata.open(filename)
+        cals = testing.get_associated_calibrations(basename)
+        cals = [cache_path(c)
+                for c in cals[cals.caltype.str.contains('arc')].filename.values]
 
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
+        master_arc = reduce_arc(ad.data_label(), cals)
+        input_data = reduce_data(ad, center, master_arc)
 
-        return input_data
-    return _get_input_ad
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
+
+    return input_data
 
 
 @pytest.fixture(scope='module')
@@ -220,44 +178,10 @@ def reduce_data(output_path):
             p.mosaicDetectors()
             p.distortionCorrect(arc=arc)
             ad = p.makeIRAFCompatible()[0]
-            ad = add_aperture_table(ad, center)
+            ad = _add_aperture_table(ad, center)
 
             p = primitives_gmos_spect.GMOSSpect([ad])
             p.traceApertures(trace_order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
             ad = p.writeOutputs()[0]
         return ad
     return _reduce_data
-
-
-@pytest.fixture(scope='module', params=test_datasets)
-def sky_subtracted_ad(request, get_input_ad, output_path):
-    """
-    Runs the `skyCorrectFromSlit` primitive on input data.
-
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-    get_input_ad : pytest.fixture
-        Fixture that reads the input data or cache/process it in a temporary
-        folder.
-    output_path : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
-
-    Returns
-    -------
-    AstroData
-        Sky-subtracted data.
-    """
-    filename, center = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-    input_ad = get_input_ad(filename, center, pre_process)
-
-    with output_path():
-        p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.viewer = geminidr.dormantViewer(p, None)
-        p.skyCorrectFromSlit(order=5, grow=0)
-        _sky_subtracted_ad = p.writeOutputs().pop()
-
-    return _sky_subtracted_ad
