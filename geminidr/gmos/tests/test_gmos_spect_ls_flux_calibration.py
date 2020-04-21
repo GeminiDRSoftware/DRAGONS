@@ -131,8 +131,8 @@ def test_regression_on_flux_calibration(preprocessed_ad, reference_ad, output_pa
 
 # --- Helper functions and fixtures -------------------------------------------
 @pytest.fixture(scope='function')
-def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
-                    reduce_arc, reduce_bias, reduce_data,  reduce_flat):
+def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
+                    reduce_bias, reduce_data,  reduce_flat):
     """
     Parameters
     ----------
@@ -142,9 +142,6 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
         Path to the permanent local input files.
-    output_path : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
     reduce_arc : pytest.fixture
         Recipe to reduce the arc file.
     reduce_bias : pytest.fixture
