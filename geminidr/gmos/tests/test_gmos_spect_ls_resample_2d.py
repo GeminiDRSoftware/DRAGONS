@@ -167,14 +167,18 @@ def add_fake_offset(adinputs, offset=10):
         ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
 
 
-@pytest.fixture()
-def adinputs(prepare_data):
-    yield prepare_data(test_datasets)
+@pytest.fixture(scope='function')
+def adinputs(request, get_input_ad):
+    pre_process = request.config.getoption("--force-preprocess-data")
+    adinputs = [get_input_ad(f, pre_process) for f in test_datasets]
+    return adinputs
 
 
-@pytest.fixture()
-def adinputs2(prepare_data):
-    yield prepare_data(test_datasets2)
+@pytest.fixture(scope='function')
+def adinputs2(request, get_input_ad):
+    pre_process = request.config.getoption("--force-preprocess-data")
+    adinputs = [get_input_ad(f, pre_process) for f in test_datasets2]
+    return adinputs
 
 
 @pytest.fixture(scope='module')
@@ -203,20 +207,23 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
         input_fname = basename.replace('.fits', '_skyCorrected.fits')
         input_path = os.path.join(new_path_to_inputs, input_fname)
 
-        if should_preprocess:
-            print('\n{}\n'.format(basename))
+        if os.path.exists(input_path):
+            print(" Load existing input file: {:s}".format(basename))
+            input_data = astrodata.open(input_path)
+
+        elif should_preprocess:
+            print(" Caching input file: {:s}".format(basename))
             filename = cache_path(basename)
             ad = astrodata.open(filename)
             cals = testing.get_associated_calibrations(basename)
+            print(" Calibrations: ", cals)
 
             cals = [cache_path(c)
                     for c in cals[cals.caltype.str.contains('arc')].filename.values]
+            print(" Downloaded calibrations: {:s}".format("\n ".join(cals)))
 
             master_arc = reduce_arc(ad.data_label(), cals)
             input_data = reduce_data(ad, master_arc)
-
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
 
         else:
             raise IOError(
@@ -226,23 +233,6 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
 
         return input_data
     return _get_input_ad
-
-
-@pytest.fixture(scope='module')
-def prepare_data(request, get_input_ad):
-    """ Generate input data for the tests if needed (and if
-    --force-preprocess-data is set), using preprocess recipe below.
-    """
-    pre_process = request.config.getoption("--force-preprocess-data")
-
-    def _prepare_data(dataset):
-        adinputs = []
-        for fname in dataset:
-            ad = get_input_ad(fname, pre_process)
-            adinputs.append(ad)
-        return adinputs
-
-    return _prepare_data
 
 
 @pytest.fixture(scope='module')
