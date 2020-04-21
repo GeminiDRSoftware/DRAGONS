@@ -41,12 +41,22 @@ test_datasets = [
 
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.preprocessed_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
-def test_extract_1d_spectra_is_stable(extracted_ad, reference_ad):
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('preprocessed_ad', test_datasets, indirect=True)
+def test_regression_on_extract_1d_spectra(preprocessed_ad, reference_ad, output_path):
+
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.extract1DSpectra(method="standard", width=None, grow=10)
+        extracted_ad = p.writeOutputs().pop()
+
     ref_ad = reference_ad(extracted_ad.filename)
-    assert extracted_ad[0].data.ndim == 1
+
     for ext, ref_ext in zip(extracted_ad, ref_ad):
+        assert ext.data.ndim == 1
         np.testing.assert_allclose(ext.data, ref_ext.data, atol=1e-3)
 
 
@@ -91,52 +101,16 @@ def add_aperture_table(ad, center):
     return ad
 
 
-@pytest.fixture(scope='module', params=test_datasets)
-def extracted_ad(request, get_input_ad, output_path):
-    """
-    Loads existing input FITS files as AstroData objects, runs the
-    `extract1DSpectra` primitive on it, and return the output object.
-
-    Parameters
-    ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
-    get_input_ad : pytest.fixture
-        Fixture that reads the input data or cache/process it in a temporary
-        folder.
-    output_path : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
-
-    Returns
-    -------
-    AstroData
-        The extracted spectrum.
-
-    Raises
-    ------
-    IOError : if the input file does not exist.
-    """
-    filename, center = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-    input_ad = get_input_ad(filename, pre_process, center)
-
-    with output_path():
-        print('\n\n Running test inside folder:\n  {}'.format(os.getcwd()))
-        p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.viewer = geminidr.dormantViewer(p, None)
-        p.extract1DSpectra(method="standard", width=None, grow=10)
-        _extracted_ad = p.writeOutputs().pop()
-    return _extracted_ad
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
+@pytest.fixture(scope='function')
+def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
+                    reduce_data):
     """
     Reads the input data or cache/process it in a temporary folder.
 
     Parameters
     ----------
+    request : pytest.fixture
+        Fixture that contains information this fixture's parent.
     cache_path : pytest.fixture
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
@@ -149,35 +123,38 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
 
     Returns
     -------
-    function : factory that reads existing input data or call the data
-        reduction recipe.
+    AstroData
+        The extracted spectrum.
+
+    Raises
+    ------
+    IOError : if the input file does not exist.
     """
-    def _get_input_ad(basename, should_preprocess, center):
-        input_fname = basename.replace('.fits', '_skyCorrected.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    basename, center = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-        if should_preprocess:
-            filename = cache_path(basename)
-            ad = astrodata.open(filename)
-            cals = testing.get_associated_calibrations(basename)
+    input_fname = basename.replace('.fits', '_skyCorrected.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
 
-            cals = [cache_path(c)
-                    for c in cals[cals.caltype.str.contains('arc')].filename.values]
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
 
-            master_arc = reduce_arc(ad.data_label(), cals)
-            input_data = reduce_data(ad, center, master_arc)
+    elif should_preprocess:
+        filename = cache_path(basename)
+        ad = astrodata.open(filename)
+        cals = testing.get_associated_calibrations(basename)
+        cals = [cache_path(c)
+                for c in cals[cals.caltype.str.contains('arc')].filename.values]
+        master_arc = reduce_arc(ad.data_label(), cals)
+        input_data = reduce_data(ad, center, master_arc)
 
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
 
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
-
-        return input_data
-    return _get_input_ad
+    return input_data
 
 
 @pytest.fixture(scope="module")
@@ -218,4 +195,3 @@ def reduce_data(output_path):
             ad = p.writeOutputs()[0]
         return ad
     return _reduce_data
-
