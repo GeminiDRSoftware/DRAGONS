@@ -124,7 +124,7 @@ pipeline {
             //     branch 'master'
             // }
             agent {
-                label "bquint-ld1"
+                label "centos7"
             }
             environment {
                 PATH = "$CONDA_HOME/bin:$PATH"
