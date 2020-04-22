@@ -1433,10 +1433,8 @@ class Spect(PrimitivesBASE):
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if std is None:
-            raise NotImplementedError("Cannot perform automatic standard star"
-                                      " association")
-            # self.getProcessedStandard(adinputs, refresh=False)
-            # std_list = self._get_cal(adinputs, 'processed_standard')
+            self.getProcessedStandard(adinputs, refresh=False)
+            std_list = self._get_cal(adinputs, 'processed_standard')
         else:
             std_list = std
 
