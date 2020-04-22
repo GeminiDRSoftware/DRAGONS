@@ -128,7 +128,7 @@ def test_regression_on_calculate_sensitivity(output_path, preprocessed_ad, refer
 
 
 # --- Helper functions and fixtures -------------------------------------------
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='function', params=datasets)
 def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
                     reduce_bias, reduce_data,  reduce_flat):
     """
