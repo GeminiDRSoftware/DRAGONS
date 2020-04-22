@@ -39,10 +39,13 @@ def test_spectral_region_creation_fails_when_input_is_not_quantity():
 
 def test_get_region_from_fake_spectrum():
     ad = _create_fake_data()
+    np.testing.assert_allclose(ad[0].data, 1)
+
     spectrum = spectral.Spek1D(ad[0])
     region = spectral.SpectralRegion(549. * units.nm, 551. * units.nm)
     data, mask, variance = spectrum.signal(region)
-    print(data)
+
+    assert data == (551 - 549) / ad[0].hdr['CD1_1']
 
 
 def _create_fake_data():
