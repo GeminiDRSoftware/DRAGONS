@@ -299,18 +299,18 @@ class NDStacker:
             except ValueError:
                 self._logmsg("Debug pixel out of range")
                 self._debug_pixel = None
-            else:
-                self._logmsg("Debug pixel coords {}".format(self._debug_pixel))
-                self._pixel_debugger(data, mask, variance, stage='at input')
-                self._logmsg("Rejection: {} {}".format(self._rejector.__name__, rej_args))
+
+        if self._debug_pixel is not None:
+            self._logmsg("Debug pixel coords {}".format(self._debug_pixel))
+            self._pixel_debugger(data, mask, variance, stage='at input')
+            info = data[(slice(None),) + self._debug_pixel]
+            self._logmsg("stats: mean={:.4f}, median={:.4f}, std={:.4f}"
+                         .format(np.mean(info), np.median(info), np.std(info)))
+            self._logmsg("-" * 41)
+            self._logmsg("Rejection: {} {}".format(self._rejector.__name__, rej_args))
 
         data, mask, variance = self._rejector(data, mask, variance, **rej_args)
-        #try:
-        #    data, mask, variance = self._rejector(data, mask, variance, **rej_args)
-        #except Exception as e:
-        #    self._logmsg(str(e), level='warning')
-        #    self._logmsg("Continuing without pixel rejection")
-        #    self._rejector = self.none
+
         comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
                      if arg in self._dict}
 
@@ -350,7 +350,7 @@ class NDStacker:
         self._logmsg("{} {:15.4f} {} {}".format(idx, *info))
 
     def _pixel_debugger(self, data, mask, variance, stage=''):
-        self._logmsg("img     data        mask    variance       "+stage)
+        self._logmsg("img     data        mask    variance       " + stage)
         for i in range(data.shape[0]):
             coord = (i,) + self._debug_pixel
             self._pixel_debugger_print_line(i, coord, data, mask, variance)
