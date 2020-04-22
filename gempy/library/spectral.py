@@ -116,7 +116,7 @@ class Spek1D(Spectrum1D, NDAstroData):
             else:
                 # Convert to the correct units
                 wave = loc.to(self.spectral_axis.unit, u.spectral())
-                loc_in_pix = self.wcs.world_to_pixel([wave])
+                loc_in_pix = self.wcs.world_to_pixel(wave)
             if constrain:
                 loc_in_pix = min(max(loc_in_pix, -0.5), len(self.spectral_axis)-0.5)
             limits.append(float(loc_in_pix))

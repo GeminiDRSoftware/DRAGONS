@@ -213,7 +213,7 @@ class Stack(PrimitivesBASE):
                 target = np.mean(levels[0])
                 if scale:
                     scale_factors = np.tile(target / np.mean(levels, axis=1),
-                                              num_ext).reshape(num_ext, num_img)
+                                            num_ext).reshape(num_ext, num_img)
                 else:  # zero=True
                     zero_offsets = np.tile(target - np.mean(levels, axis=1),
                                            num_ext).reshape(num_ext, num_img)
@@ -236,6 +236,9 @@ class Stack(PrimitivesBASE):
                         " extensions have no variance. 'sigclip' will be used"
                         " instead.")
             reject_method = "sigclip"
+
+        log.stdinfo("Combining {} inputs with {} and {} rejection"
+                    .format(num_img, params["operation"], reject_method))
 
         stack_function = NDStacker(combine=params["operation"],
                                    reject=reject_method,
