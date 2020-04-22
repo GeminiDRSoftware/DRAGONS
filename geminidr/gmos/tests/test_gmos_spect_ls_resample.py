@@ -119,15 +119,8 @@ def _check_params(records, expected):
 
 
 @pytest.fixture(scope='function')
-def input_ad_list(request, get_input_ad):
-    pre_process = request.config.getoption("--force-preprocess-data")
-    ad_list = [get_input_ad(f, pre_process) for f in test_datasets]
-    print(ad_list)
-    return ad_list
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
+def input_ad_list(
+        cache_path, new_path_to_inputs, reduce_arc, reduce_data, request):
     """
     Reads the input data or cache-and-process it in a temporary folder.
 
@@ -142,13 +135,18 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
     reduce_data : pytest.fixture
         Recipe to reduce the data up to the step before
         `determineWavelengthSolution`.
+    request : pytest.fixture
+        Pytest's built-in fixture containing information about parent function.
 
     Returns
     -------
-    function : factory that reads existing input data or call the data
-        reduction recipe.
+    list
+        Containing the input data as a list of AstroData objects.
     """
-    def _get_input_ad(basename, should_preprocess):
+    should_preprocess = request.config.getoption("--force-preprocess-data")
+    ad_list = []
+
+    for basename in test_datasets:
         input_fname = basename.replace('.fits', '_extracted.fits')
         input_path = os.path.join(new_path_to_inputs, input_fname)
 
@@ -174,8 +172,8 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
                 '  {:s}\n'.format(input_path) +
                 '  Run pytest with "--force-preprocess-data" to get it')
 
-        return input_data
-    return _get_input_ad
+        ad_list.append(input_data)
+    return ad_list
 
 
 @pytest.fixture(scope='module')
