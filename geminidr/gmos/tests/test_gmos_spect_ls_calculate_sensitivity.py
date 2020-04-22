@@ -27,7 +27,7 @@ datasets = [
 
 # --- Tests -------------------------------------------------------------------
 @pytest.mark.gmosls
-def test_calculate_sensitivity_using_fake_table(path_to_outputs):
+def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(path_to_outputs):
 
     def _create_fake_data():
         astrofaker = pytest.importorskip('astrofaker')
@@ -111,14 +111,14 @@ def test_calculate_sensitivity_using_fake_table(path_to_outputs):
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_calculate_sensitivity_contains_sensfunc_table(calc_sens_ad):
+def test_regression_on_calculate_sensitivity(output_path, preprocessed_ad, reference_ad):
+
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
+        p.calculateSensitivity()
+        calc_sens_ad = p.writeOutputs().pop()
+
     assert hasattr(calc_sens_ad[0], 'SENSFUNC')
-
-
-@pytest.mark.dragons_remote_data
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-def test_regression_on_calculate_sensitivity(calc_sens_ad, reference_ad):
 
     ref_ad = reference_ad(calc_sens_ad.filename)
 
@@ -128,40 +128,16 @@ def test_regression_on_calculate_sensitivity(calc_sens_ad, reference_ad):
 
 
 # --- Helper functions and fixtures -------------------------------------------
-@pytest.fixture(scope='module', params=datasets)
-def calc_sens_ad(request, get_input_ad, output_path):
-    """
-    Parameters
-    ----------
-    request :
-    get_input_ad :
-    output_path : contextmanager
-        Custom context manager used to enter and leave the output folder easily.
-
-    Returns
-    -------
-    """
-    filename = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-
-    input_ad = get_input_ad(filename, pre_process)
-
-    with output_path():
-        p = primitives_gmos_spect.GMOSSpect([input_ad])
-        p.calculateSensitivity()
-        qe_corrected_ad = p.writeOutputs().pop()
-
-    return qe_corrected_ad
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
-                 reduce_data,  reduce_flat):
+@pytest.fixture(scope='function')
+def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
+                    reduce_bias, reduce_data,  reduce_flat):
     """
     Reads the input data or cache/process it in a temporary folder.
 
     Parameters
     ----------
+    request : pytest.fixture
+        PyTest's built-in fixture with information about the test itself.
     cache_path : pytest.fixture
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
@@ -171,63 +147,54 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
     reduce_bias : pytest.fixture
         Recipe to reduce the bias files.
     reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before `applyQECorrect`.
+        Recipe to reduce the data up to the step before `calculateSensitivity`.
     reduce_flat : pytest.fixture
         Recipe to reduce the flat file.
 
     Returns
     -------
-    flat_corrected_ad : AstroData
-        Bias and flat corrected data.
-    master_arc : AstroData
-        Master arc data.
+    AstroData
+        Preprocessed data to be used as input for `calculateSensitivity`.
     """
-    def _get_input_ad(basename, should_preprocess):
+    basename = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-        input_fname = basename.replace('.fits', '_extracted.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_fname = basename.replace('.fits', '_extracted.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
+
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
+
+    elif should_preprocess:
+        filename = cache_path(basename)
+        ad = astrodata.open(filename)
         cals = testing.get_associated_calibrations(basename)
+        cals = [cache_path(c) for c in cals.filename.values]
 
-        if should_preprocess:
+        master_bias = reduce_bias(
+            ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
 
-            filename = cache_path(basename)
-            ad = astrodata.open(filename)
+        master_flat = reduce_flat(
+            ad.data_label(), dataselect.select_data(cals, tags=['FLAT']), master_bias)
 
-            cals = [cache_path(c) for c in cals.filename.values]
+        master_arc = reduce_arc(
+            ad.data_label(), dataselect.select_data(cals, tags=['ARC']))
 
-            master_bias = reduce_bias(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['BIAS']))
+        input_data = reduce_data(ad, master_arc, master_bias, master_flat)
 
-            master_flat = reduce_flat(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['FLAT']), master_bias)
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
 
-            master_arc = reduce_arc(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['ARC']))
-
-            input_data = reduce_data(
-                ad, master_arc, master_bias, master_flat)
-
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
-
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
-
-        return input_data
-
-    return _get_input_ad
+    return input_data
 
 
 @pytest.fixture(scope='module')
 def reduce_data(output_path):
     """
-    Factory for function for FLAT data reduction.
+    Factory for function for data reduction prior to `calculateSensitivity`.
 
     Parameters
     ----------
