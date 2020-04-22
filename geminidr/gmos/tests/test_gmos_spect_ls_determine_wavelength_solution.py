@@ -50,7 +50,7 @@ determine_wavelength_solution_parameters = {
     'nbright': 0
 }
 
-input_files = [
+input_pars = [
 
     # Process Arcs: GMOS-N ---
     # (Input File, fwidth, order, min_snr)
@@ -141,7 +141,9 @@ input_files = [
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(wlength_calibrated_ad):
+@pytest.mark.parametrize("input_parameters", input_pars, indirect=True)
+def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
+        input_parameters, output_path):
     """
     Make sure that the WAVECAL model was fitted with an RMS smaller than half of
     the slit size in pixels.
@@ -150,16 +152,30 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(wlengt
         out that the `ad[0].slit()` descriptor returns nothing. I could use the
         existing `ad[0].focal_plane_mask()` descriptor for now but it is
         counter-intuitive.
-
     """
-    table = wlength_calibrated_ad[0].WAVECAL
+    preprocessed_ad, fwidth, order, min_snr = input_parameters
+
+    with output_path():
+        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
+        p.viewer = geminidr.dormantViewer(p, None)
+
+        p.determineWavelengthSolution(
+            order=order, min_snr=min_snr, fwidth=fwidth,
+            **determine_wavelength_solution_parameters)
+
+        wcalibrated_ad = p.writeOutputs().pop()
+
+        # if request.config.getoption("--do-plots"):
+        #      do_plots(wcalibrated_ad, "./")
+
+    table = wcalibrated_ad[0].WAVECAL
     coefficients = table["coefficients"]
     rms = coefficients[table["name"] == "rms"]
 
-    pixel_scale = wlength_calibrated_ad[0].pixel_scale()  # arcsec / px
-    slit_size_in_arcsec = float(wlength_calibrated_ad[0].focal_plane_mask().replace('arcsec', ''))
+    pixel_scale = wcalibrated_ad[0].pixel_scale()  # arcsec / px
+    slit_size_in_arcsec = float(wcalibrated_ad[0].focal_plane_mask().replace('arcsec', ''))
     slit_size_in_px = slit_size_in_arcsec / pixel_scale  # px
-    dispersion = abs(wlength_calibrated_ad[0].dispersion(asNanometers=True))  # nm / px
+    dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
     required_rms = dispersion * slit_size_in_px
 
@@ -169,71 +185,17 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(wlengt
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_reduced_arcs_contains_stable_wavelength_solution(
-        wlength_calibrated_ad, reference_ad):
+@pytest.mark.parametrize("input_parameters", input_pars, indirect=True)
+def test_regression_determine_wavelength_solution(
+        input_parameters, output_path, reference_ad):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
     """
-    ref_ad = reference_ad(wlength_calibrated_ad.filename)
-    table = wlength_calibrated_ad[0].WAVECAL
-    table_ref = ref_ad[0].WAVECAL
-
-    model = astromodels.dict_to_chebyshev(
-        dict(zip(table["name"], table["coefficients"])))
-
-    ref_model = astromodels.dict_to_chebyshev(
-        dict(zip(table_ref["name"], table_ref["coefficients"])))
-
-    x = np.arange(wlength_calibrated_ad[0].shape[1])
-    wavelength = model(x)
-    ref_wavelength = ref_model(x)
-
-    pixel_scale = wlength_calibrated_ad[0].pixel_scale()  # arcsec / px
-    slit_size_in_arcsec = float(wlength_calibrated_ad[0].focal_plane_mask().replace('arcsec', ''))
-    slit_size_in_px = slit_size_in_arcsec / pixel_scale
-    dispersion = abs(wlength_calibrated_ad[0].dispersion(asNanometers=True))  # nm / px
-
-    tolerance = 0.5 * (slit_size_in_px * dispersion)
-    np.testing.assert_allclose(wavelength, ref_wavelength, rtol=tolerance)
-
-
-# Local Fixtures and Helper Functions ------------------------------------------
-@pytest.fixture(scope='module', params=input_files)
-def wlength_calibrated_ad(request, get_input_ad, output_path):
-    """
-    Loads existing input FITS files as AstroData objects, runs the
-    `determineWavelengthSolution` on it and return the output object with a
-    `.WAVECAL` table.
-
-    This makes tests more efficient because the primitive is run only once,
-    instead of x n_tests.
-
-    If the input file does not exist, this fixture raises a IOError.
-
-    If the input file does not exist and PyTest is called with the
-    `--force-preprocess-data`, this fixture looks for cached raw data and
-    process it. If the raw data does not exist, it is then cached via download
-    from the Gemini Archive.
-
-    Parameters
-    ----------
-    request
-    get_input_ad
-    output_path : contextmanager
-        Custom context manager used to enter and leave the output folder easily.
-
-    Returns
-    -------
-
-    """
-    filename, fwidth, order, min_snr = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-
-    input_ad = get_input_ad(filename, pre_process)
+    preprocessed_ad, fwidth, order, min_snr = input_parameters
 
     with output_path():
-        p = primitives_gmos_spect.GMOSSpect([input_ad])
+        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(
@@ -242,19 +204,38 @@ def wlength_calibrated_ad(request, get_input_ad, output_path):
 
         wcalibrated_ad = p.writeOutputs().pop()
 
-        if request.config.getoption("--do-plots"):
-            do_plots(wcalibrated_ad, "./")
+    ref_ad = reference_ad(wcalibrated_ad.filename)
+    table = wcalibrated_ad[0].WAVECAL
+    table_ref = ref_ad[0].WAVECAL
 
-    return wcalibrated_ad
+    model = astromodels.dict_to_chebyshev(
+        dict(zip(table["name"], table["coefficients"])))
+
+    ref_model = astromodels.dict_to_chebyshev(
+        dict(zip(table_ref["name"], table_ref["coefficients"])))
+
+    x = np.arange(wcalibrated_ad[0].shape[1])
+    wavelength = model(x)
+    ref_wavelength = ref_model(x)
+
+    pixel_scale = wcalibrated_ad[0].pixel_scale()  # arcsec / px
+    slit_size_in_arcsec = float(wcalibrated_ad[0].focal_plane_mask().replace('arcsec', ''))
+    slit_size_in_px = slit_size_in_arcsec / pixel_scale
+    dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
+
+    tolerance = 0.5 * (slit_size_in_px * dispersion)
+    np.testing.assert_allclose(wavelength, ref_wavelength, rtol=tolerance)
 
 
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
+# Local Fixtures and Helper Functions ------------------------------------------
+@pytest.fixture(scope='function')
+def input_parameters(request, cache_path, new_path_to_inputs, reduce_data):
     """
     Reads the input data or cache/process it in a temporary folder.
 
     Parameters
     ----------
+    request
     cache_path : pytest.fixture
         Path to where the data will be temporarily cached.
     new_path_to_inputs : pytest.fixture
@@ -265,30 +246,28 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_data):
 
     Returns
     -------
-    flat_corrected_ad : AstroData
-        Bias and flat corrected data.
-    master_arc : AstroData
-        Master arc data.
+
     """
-    def _get_input_ad(basename, should_preprocess):
-        input_fname = basename.replace('.fits', '_mosaic.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    basename, fwidth, order, min_snr = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-        if should_preprocess:
-            filename = cache_path(basename)
-            input_data = reduce_data(astrodata.open(filename))
+    input_fname = basename.replace('.fits', '_mosaic.fits')
+    input_path = os.path.join(new_path_to_inputs, input_fname)
 
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
 
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
+    elif should_preprocess:
+        filename = cache_path(basename)
+        input_data = reduce_data(astrodata.open(filename))
 
-        return input_data
-    return _get_input_ad
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
+
+    return input_data, fwidth, order, min_snr
 
 
 def do_plots(ad, output_dir):
