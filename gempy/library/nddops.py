@@ -274,12 +274,9 @@ class NDStacker:
 
         # Convert the debugging pixel to (x,y) coords and bounds check
         if self._debug_pixel is not None:
-            pixel_coords = []
-            for length in reversed(data.shape[1:-1]):
-                pixel_coords.append(self._debug_pixel % length)
-                self._debug_pixel //= length
-            self._debug_pixel = tuple(reversed(pixel_coords + [self._debug_pixel]))
-            if self._debug_pixel[0] > data.shape[1]:
+            try:
+                self._debug_pixel = np.unravel_index(self._debug_pixel, data.shape[1:])
+            except ValueError:
                 self._logmsg("Debug pixel out of range")
                 self._debug_pixel = None
             else:
