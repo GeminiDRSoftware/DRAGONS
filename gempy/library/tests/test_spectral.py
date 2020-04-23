@@ -2,39 +2,9 @@
 import numpy as np
 import pytest
 
-import astrodata
-import gemini_instruments
-
 from astropy import units
 from astropy.io import fits
 from gempy.library import spectral
-
-
-def test_create_object_from_fake_ad():
-    ad = _create_fake_data()
-    s = spectral.Spek1D(ad[0])
-
-
-def test_spectral_region_creation_with_two_arguments():
-    _ = spectral.SpectralRegion(10 * units.pixel, 11 * units.pixel)
-    _ = spectral.SpectralRegion(0.549e-6 * units.m, 0.551e-6 * units.m)
-    _ = spectral.SpectralRegion(0.549 * units.um, 0.551 * units.um)
-    _ = spectral.SpectralRegion(549. * units.nm, 551. * units.nm)
-    _ = spectral.SpectralRegion(5490. * units.AA, 5510. * units.AA)
-
-
-def test_spectral_region_creation_with_single_tuple():
-    _ = spectral.SpectralRegion((5490. * units.AA, 5510. * units.AA))
-
-
-def test_spectral_region_creation_with_single_list():
-    _ = spectral.SpectralRegion([5490. * units.AA, 5510. * units.AA])
-
-
-def test_spectral_region_creation_fails_when_input_is_not_quantity():
-    with pytest.raises(TypeError) as err:
-        _ = spectral.SpectralRegion(549., 551.)
-    assert "Expected astropy.units.Quantity instances as inputs" in str(err.value)
 
 
 def test_get_region_from_fake_spectrum():
@@ -45,7 +15,8 @@ def test_get_region_from_fake_spectrum():
     region = spectral.SpectralRegion(549. * units.nm, 551. * units.nm)
     data, mask, variance = spectrum.signal(region)
 
-    assert data == (551 - 549) / ad[0].hdr['CD1_1']
+    print(data, mask, variance)
+    assert data == (551. - 549.) / ad[0].hdr['CD1_1']
 
 
 def _create_fake_data():
