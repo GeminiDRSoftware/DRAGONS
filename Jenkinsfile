@@ -65,31 +65,32 @@ pipeline {
 
         stage('Unit tests') {
             parallel {
-                stage('MacOS/Python 3.6') {
-                    agent{
-                        label "macos"
-                    }
-                    environment {
-                        PATH = "$CONDA_HOME/bin:$PATH"
-                    }
-                    steps {
-                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                        checkout scm
-                        sh '.jenkins/scripts/setup_agent.sh'
-                        echo "Running tests with Python 3.6 and older dependencies"
-                        sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
-                        echo "Reportint coverage to CodeCov"
-                        sh 'tox -e codecov -- -F unit'
-                    }
-                    post {
-                        always {
-                            junit (
-                                allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
-                            )
-                        }
-                    }
-                }
+            // Todo - Add jenkins user for macos machines
+//                 stage('MacOS/Python 3.6') {
+//                     agent{
+//                         label "macos"
+//                     }
+//                     environment {
+//                         PATH = "$CONDA_HOME/bin:$PATH"
+//                     }
+//                     steps {
+//                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+//                         checkout scm
+//                         sh '.jenkins/scripts/setup_agent.sh'
+//                         echo "Running tests with Python 3.6 and older dependencies"
+//                         sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
+//                         echo "Reportint coverage to CodeCov"
+//                         sh 'tox -e codecov -- -F unit'
+//                     }
+//                     post {
+//                         always {
+//                             junit (
+//                                 allowEmptyResults: true,
+//                                 testResults: 'reports/*_results.xml'
+//                             )
+//                         }
+//                     }
+//                 }
 
                 stage('Linux/Python 3.7') {
                     agent{
