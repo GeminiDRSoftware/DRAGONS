@@ -290,6 +290,12 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
+            if not all(np.issubdtype(ext.data.dtype, np.floating) for ext in ad):
+                log.warning("Cannot mosaic {} with non-floating point data. "
+                            "Use tileArrays instead".format(ad.filename))
+                adoutputs.append(ad)
+                continue
+
             # If there's an overscan section, we must trim it before mosaicking
             try:
                 overscan_kw = ad._keyword_for('overscan_section')
@@ -351,12 +357,13 @@ class Visualize(PrimitivesBASE):
             detshape = array_info.detector_shape
             if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
                 log.warning("{} has nothing to tile, as tile_all=False but "
-                            "each array has only one amplifier.")
+                            "each array has only one amplifier.".format(ad.filename))
                 adoutputs.append(ad)
                 continue
 
             blocks = [transform.Block(ad[arrays], shape=shape) for arrays, shape in
                       zip(array_info.extensions, array_info.array_shapes)]
+            # This is needed to handle non-full-frame ROIs
             offsets = [ad[exts[0]].array_section()
                        for exts in array_info.extensions]
 
@@ -367,12 +374,26 @@ class Visualize(PrimitivesBASE):
                     xgap, ygap = chip_gaps
                 except TypeError:  # single number, applies to both
                     xgap = ygap = chip_gaps
+
+                # Some hackery here in case the input still has overscan regions
+                # that would cause each Block to extend outside its nominal
+                # footprint. The array_info is pre-sorted so the loop always
+                # does the bottom row first from left to right and hence we can
+                # keep track of how far in x and y each Block has extended the
+                # footprint and give it a nudge if that's beyond its nominal
+                # coverage.
+                xmax = ymax = 0
                 transforms = []
                 for i, (origin, offset) in enumerate(zip(array_info.origins, offsets)):
-                    xshift = (origin[1] + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
-                    yshift = (origin[0] + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
-                    transforms.append(transform.Transform(models.Shift(xshift) & models.Shift(yshift)))
-                adg = transform.AstroDataGroup(blocks, transforms)
+                    if i % detshape[1] == 0:
+                        xmax = 0
+                        if i > 0:
+                            ymax += yshift + blocks[i-1].shape[0]
+                    xshift = (max(origin[1], xmax) + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
+                    yshift = (max(origin[0], ymax) + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
+                    transforms.append(Transform(models.Shift(xshift) & models.Shift(yshift)))
+                    xmax = xshift + blocks[i].shape[1]
+                adg = AstroDataGroup(blocks, transforms)
                 adg.set_reference()
                 ad_out = adg.transform(attributes=attributes, process_objcat=True)
             else:

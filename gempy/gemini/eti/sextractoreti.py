@@ -149,7 +149,10 @@ class SExtractorETI(ETI):
         if self.inQueue is not None:
             self.inQueue.put(command)
             result = self.outQueue.get()
-            if isinstance(result, Exception):
+            if isinstance(result, subprocess.CalledProcessError):
+                raise RuntimeError("CalledProcessError from: {}".
+                                   format(result.output.decode("utf-8")))
+            elif isinstance(result, Exception):
                 raise result
         else:
             pipe_out = subprocess.Popen(command,

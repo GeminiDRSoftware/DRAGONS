@@ -35,9 +35,8 @@ else:
 
 # -- Project information -----------------------------------------------------
 
-project = "DRAGONS - Recipe System Programmer's Manual"
-copyright = '2019, Association of Universities for Research in Astronomy'
-
+project = u"DRAGONS - Recipe System Programmer's Manual"
+copyright = u'2020, Association of Universities for Research in Astronomy'
 author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -45,7 +44,7 @@ author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 # built documents.
 #
 version = '2.1'  # The short X.Y version.
-release = '2.1.0'  # The full version, including alpha/beta/rc tags.
+release = '2.1.1'  # The full version, including alpha/beta/rc tags.
 
 
 # -- General configuration -----------------------------------------------------
@@ -99,7 +98,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'November 2019'
+today = 'April 2020'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'

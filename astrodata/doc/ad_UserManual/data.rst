@@ -36,12 +36,12 @@ the pixel data. ::
 
     >>> the_data = ad[1].data
     >>> type(the_data)
-    <type 'numpy.ndarray'>
+    <class 'numpy.ndarray'>
 
     >>> # Loop through the extensions
     >>> for ext in ad:
     ...     the_data = ext.data
-    ...     print the_data.sum()
+    ...     print(the_data.sum())
     ...
 
 In this example, we first access the pixels for the second extensions.
@@ -597,8 +597,8 @@ In this example, we do simple statistics on a section of the image.
     >>> xc = 49
     >>> yc = 74
     >>> buffer = 25
-    >>> (xlow, xhigh) = (xc - buffer/2, xc + buffer/2 + 1)
-    >>> (ylow, yhigh) = (yc - buffer/2, yc + buffer/2 + 1)
+    >>> (xlow, xhigh) = (xc - buffer//2, xc + buffer//2 + 1)
+    >>> (ylow, yhigh) = (yc - buffer//2, yc + buffer//2 + 1)
     >>> # The section is [62:87, 37:62]
     >>> stamp = data[ylow:yhigh, xlow:xhigh]
     >>> mean = stamp.mean()
@@ -831,8 +831,8 @@ quality plots.  Here we just scratch the surface of Matplotlib.
     >>> # Contour plot for a section of an image.
     >>> center = (1646, 2355)
     >>> width = 15
-    >>> xrange = (center[1]-width/2, center[1] + width/2 + 1)
-    >>> yrange = (center[0]-width/2, center[0] + width/2 + 1)
+    >>> xrange = (center[1]-width//2, center[1] + width//2 + 1)
+    >>> yrange = (center[0]-width//2, center[0] + width//2 + 1)
     >>> blob = ad_image[0].data[yrange[0]:yrange[1], xrange[0]:xrange[1]]
     >>> plt.clf()
     >>> plt.imshow(blob, cmap='gray', origin='lower')
@@ -871,6 +871,7 @@ what ``imexam`` has to offer.
     # Display the image
     >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
     >>> ds9.view(ad_image[0].data)
+    >>> ds9.scale('zscale')
 
     # Run in interactive mode.  Try the various commands.
    >>> ds9.imexam()

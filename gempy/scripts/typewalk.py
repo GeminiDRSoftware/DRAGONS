@@ -44,6 +44,8 @@ import re
 import sys
 import time
 
+from importlib import import_module
+
 import astrodata
 import gemini_instruments
 
@@ -94,6 +96,11 @@ def typewalk_argparser():
 
     parser.add_argument("--xtags", dest="xtags", nargs='+', default=None,
                         help="Exclude <xtags> from reporting.")
+
+    parser.add_argument("--adpkg", dest="adpkg", nargs=1, action="store",
+                        required=False,
+                        help='Name of the astrodata instrument package to use'
+                             'if not gemini_instruments')
 
     return parser.parse_args()
 
@@ -169,12 +176,15 @@ class DataSpider:
 
     """
     def typewalk(self, directory=os.getcwd(), only=None, filemask=None,
-                 or_logic=False, outfile=None, stayTop=False, batchnum=100,
-                 xtypes=None):
+                 or_logic=False, outfile=None, stayTop=False, batchnum=100, 
+                 xtypes=None, adpkg=None):
         """
         Recursively walk <directory> and put type information to stdout
 
         """
+        if adpkg is not None:
+            import_module(adpkg)
+
         directory = os.path.abspath(directory)
 
         # This accumulates files that match --types type if --out is
@@ -311,6 +321,9 @@ class DataSpider:
 
 def main(options):
 
+    if options.adpkg is not None:
+        options.adpkg = options.adpkg[0]
+
     # remove current working directory from PYTHONPATH to speed up import in
     # gigantic data directories
     curpath = os.getcwd()
@@ -320,6 +333,7 @@ def main(options):
     if curpath in sys.path:
         sys.path.remove(curpath)
 
+    print(options.adpkg)
     # Gemini Specific class code
     dt = DataSpider()
     try:
@@ -330,7 +344,8 @@ def main(options):
                     filemask=options.filemask,
                     stayTop=options.stayTop,
                     batchnum=int(options.batchnum)-1,
-                    xtypes=options.xtags
+                    xtypes=options.xtags,
+                    adpkg=options.adpkg,
         )
         print("Done DataSpider.typewalk(..)")
     except KeyboardInterrupt:

@@ -139,6 +139,7 @@ directory.
     :lineno-start: 16
 
     all_files = glob.glob('../playdata/*.fits')
+    all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
 the ``all_files`` :class:`list` as an input to the function
@@ -156,7 +157,7 @@ list, one simply need to select on the ``DARK`` tag:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 17
+    :lineno-start: 18
 
     darks60 = dataselect.select_data(all_files, ['DARK'])
 
@@ -165,7 +166,7 @@ command would use the ``exposure_time`` descriptor:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 18
+    :lineno-start: 19
 
     darks60 = dataselect.select_data(
         all_files,
@@ -184,7 +185,7 @@ of them to one list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 24
+    :lineno-start: 25
 
     flats = dataselect.select_data(all_files, ['FLAT'])
 
@@ -198,7 +199,7 @@ examples; of course, just one is required.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 25
+    :lineno-start: 26
 
     target = dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
 
@@ -231,7 +232,7 @@ name of a file on disk.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 42
+    :lineno-start: 43
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(darks60)
@@ -259,7 +260,7 @@ follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 48
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
@@ -293,7 +294,7 @@ the dark on the command line.  The flat will be retrieved automatically.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 52
+    :lineno-start: 53
 
     from recipe_system.utils.reduce_utils import normalize_ucals
     mycalibrations = ['processed_dark:N20120102S0538_dark.fits']

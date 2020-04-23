@@ -79,8 +79,8 @@ def alignAndStack(p):
 
 def makeIRAFCompatible(p):
     """
-    Add header keywords that some Gemini IRAF tasks expect.  This is needed only
-    if the reduced file will be used as input to Gemini IRAF tasks.
+    Add header keywords needed to run some Gemini IRAF tasks.  This is needed
+    only if the reduced file will be used as input to Gemini IRAF tasks.
 
     Parameters
     ----------
@@ -91,3 +91,4 @@ def makeIRAFCompatible(p):
     p.makeIRAFCompatible()
     p.writeOutputs()
     return
+
