@@ -42,7 +42,7 @@ pipeline {
                 branch 'master'
             }
             environment {
-                PATH = "$CONDA_HOME/bin:$PATH"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -96,7 +96,7 @@ pipeline {
                         label "centos7"
                     }
                     environment {
-                        PATH = "$CONDA_HOME/bin:$PATH"
+                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -127,7 +127,7 @@ pipeline {
                 label "centos7"
             }
             environment {
-                PATH = "$CONDA_HOME/bin:$PATH"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -154,7 +154,7 @@ pipeline {
                 label "centos7"
             }
             environment {
-                PATH = "$CONDA_HOME/bin:$PATH"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
