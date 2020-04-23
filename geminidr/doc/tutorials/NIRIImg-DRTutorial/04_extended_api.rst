@@ -148,6 +148,7 @@ directory.
     :lineno-start: 16
 
     all_files = glob.glob('../playdata/*.fits')
+    all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
 the ``all_files`` :class:`list` as an input to the function
@@ -168,7 +169,7 @@ directory.  We use the tag ``DARK`` and the descriptor ``exposure_time``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 17
+    :lineno-start: 18
 
     all_darks = dataselect.select_data(all_files, ['DARK'])
     for dark in all_darks:
@@ -215,7 +216,7 @@ Let us create our two lists now.  The filenames will be stored in the variables
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 21
+    :lineno-start: 22
 
     darks1s = dataselect.select_data(
         all_files,
@@ -241,7 +242,7 @@ of them to one list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 34
+    :lineno-start: 35
 
     flats = dataselect.select_data(all_files, ['FLAT'])
 
@@ -255,7 +256,7 @@ observations from that star and not our science target.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 35
+    :lineno-start: 36
 
     stdstar = dataselect.select_data(
         all_files,
@@ -274,7 +275,7 @@ This translate to the following sequence:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 41
+    :lineno-start: 42
 
     target = dataselect.select_data(
         all_files,
@@ -299,7 +300,7 @@ name of a file on disk.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 48
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(darks20s)
@@ -335,7 +336,7 @@ recipe but rather the special recipe from that library called
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 52
+    :lineno-start: 53
 
     reduce_bpm = Reduce()
     reduce_bpm.files.extend(flats)
@@ -363,7 +364,7 @@ follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 59
+    :lineno-start: 60
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
@@ -403,7 +404,7 @@ recommended) needs to be specified by the user.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 65
+    :lineno-start: 66
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
@@ -435,7 +436,7 @@ the data quality plane (mask) is in the "DQ" extension.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 70
+    :lineno-start: 71
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)

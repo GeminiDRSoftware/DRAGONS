@@ -606,12 +606,11 @@ class Transform:
         """Test a single Model for affinity, using its name (or the name
         of its submodels)"""
         try:
-            models = model._submodels
-        except AttributeError:
+            return np.logical_and.reduce([Transform.__model_is_affine(m)
+                                      for m in model])
+        except TypeError:  # it's not a CompoundModel
             return model.__class__.__name__[:5] in ('Rotat', 'Scale',
                                                     'Shift', 'Ident')
-        return np.logical_and.reduce([Transform.__model_is_affine(m)
-                                      for m in models])
 
     def __is_affine(self):
         """Test for affinity, using Model names.
@@ -1019,6 +1018,10 @@ class DataGroup:
                     # Jacobian at every input point. This is done by numerical
                     # derivatives so expand the output pixel grid.
                     if conserve:
+
+                        self.log.warning("Flux conservation has not been fully"
+                                         "tested for non-affine transforms")
+
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
                         transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
 

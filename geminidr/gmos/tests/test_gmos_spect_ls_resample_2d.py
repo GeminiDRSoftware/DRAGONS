@@ -6,114 +6,28 @@ import numpy as np
 import os
 import pytest
 
+import astrodata
+import gemini_instruments
+from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
+from gempy.utils import logutils
 
 # Test parameters -------------------------------------------------------------
 test_datasets = [
-    ("S20190808S0048_skyCorrected.fits",           # R400 : 0.740
-     "S20190808S0167_distortionDetermined.fits"),  #
-    ("S20190808S0049_skyCorrected.fits",           # R400 : 0.760
-     "S20190808S0168_distortionDetermined.fits"),  #
-    ("S20190808S0053_skyCorrected.fits",           # R400 : 0.850
-     "S20190808S0169_distortionDetermined.fits"),  #
+    "S20190808S0048.fits",  # R400 at 0.740 um
+    "S20190808S0049.fits",  # R400 at 0.760 um
+    "S20190808S0053.fits",  # R400 at 0.850 um
 ]
 
 test_datasets2 = [
-    ("N20180106S0025_skyCorrected.fits",           # B600 : 0.555
-     "N20180115S0264_distortionDetermined.fits"),  #
-    ("N20180106S0026_skyCorrected.fits",           # B600 : 0.555
-     "N20180115S0264_distortionDetermined.fits"),  #
-    ("N20180106S0028_skyCorrected.fits",           # B600 : 0.555
-     "N20180115S0264_distortionDetermined.fits"),  #
-    ("N20180106S0029_skyCorrected.fits",           # B600 : 0.555
-     "N20180115S0264_distortionDetermined.fits"),  #
+    "N20180106S0025.fits",  # B600 at 0.555 um
+    "N20180106S0026.fits",  # B600 at 0.555 um
+    "N20180106S0028.fits",  # B600 at 0.555 um
+    "N20180106S0029.fits",  # B600 at 0.555 um
 ]
 
 
-# Local Fixtures and Helper Functions -----------------------------------------
-def prepare_data(ad_factory, new_path_to_inputs, dataset):
-    """ Generate input data for the tests if needed (and if
-    --force-preprocess-data is set), using preprocess recipe below.
-    """
-    print('\nRunning test inside folder:\n  {}'.format(new_path_to_inputs))
-    adinputs = []
-
-    for fname, arcname in dataset:
-        # create reduced arc
-        arcfile = os.path.join(new_path_to_inputs, arcname)
-        adarc = ad_factory(arcfile, preprocess_arc_recipe)
-        if not os.path.exists(arcfile):
-            adarc.write(arcfile)
-
-        # create input for this test
-        adfile = os.path.join(new_path_to_inputs, fname)
-        ad = ad_factory(adfile, preprocess_recipe, arc=adarc)
-        if not os.path.exists(adfile):
-            ad.write(adfile)
-        adinputs.append(ad)
-
-    print('')
-    return adinputs
-
-
-@pytest.fixture()
-def adinputs(ad_factory, new_path_to_inputs):
-    yield prepare_data(ad_factory, new_path_to_inputs, test_datasets)
-
-
-@pytest.fixture()
-def adinputs2(ad_factory, new_path_to_inputs):
-    yield prepare_data(ad_factory, new_path_to_inputs, test_datasets2)
-
-
-def preprocess_arc_recipe(ad, path):
-    """ Recipe used to generate _distortionDetermined files from raw arc."""
-    p = primitives_gmos_spect.GMOSSpect([ad])
-    p.prepare()
-    p.addDQ(static_bpm=None)
-    p.addVAR(read_noise=True)
-    p.overscanCorrect()
-    p.ADUToElectrons()
-    p.addVAR(poisson_noise=True)
-    p.mosaicDetectors()
-    p.makeIRAFCompatible()
-    p.determineWavelengthSolution()
-    ad = p.determineDistortion()[0]
-    return ad
-
-
-def preprocess_recipe(ad, path, arc):
-    """Recipe used to generate _skyCorrected files from raw data. """
-    p = primitives_gmos_spect.GMOSSpect([ad])
-    p.prepare()
-    p.addDQ(static_bpm=None)
-    p.addVAR(read_noise=True)
-    p.overscanCorrect()
-    p.ADUToElectrons()
-    p.addVAR(poisson_noise=True)
-    p.mosaicDetectors()
-    p.distortionCorrect(arc=arc)
-    p.findSourceApertures(max_apertures=1)
-    ad = p.skyCorrectFromSlit()[0]
-    return ad
-
-
 # Tests Definitions -----------------------------------------------------------
-
-def _check_params(records, expected):
-    for record in records:
-        if record.message.startswith('Resampling and linearizing'):
-            assert expected in record.message
-
-
-def add_fake_offset(adinputs, offset=10):
-    # introduce fake offsets
-    for i, ad in enumerate(adinputs[1:], start=1):
-        ad[0].data = np.roll(ad[0].data, offset * i, axis=0)
-        ad[0].mask = np.roll(ad[0].mask, offset * i, axis=0)
-        ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
-
-
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_correlation(adinputs, caplog):
@@ -236,3 +150,132 @@ def test_header_offset_fallback(adinputs2, caplog):
     assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
     assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
     assert np.isclose(adout[3].phu['SLITOFF'], 0)
+
+
+# Local Fixtures and Helper Functions -----------------------------------------
+def _check_params(records, expected):
+    for record in records:
+        if record.message.startswith('Resampling and linearizing'):
+            assert expected in record.message
+
+
+def add_fake_offset(adinputs, offset=10):
+    # introduce fake offsets
+    for i, ad in enumerate(adinputs[1:], start=1):
+        ad[0].data = np.roll(ad[0].data, offset * i, axis=0)
+        ad[0].mask = np.roll(ad[0].mask, offset * i, axis=0)
+        ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
+
+
+@pytest.fixture(scope='function')
+def adinputs(request, get_input_ad):
+    pre_process = request.config.getoption("--force-preprocess-data")
+    adinputs = [get_input_ad(f, pre_process) for f in test_datasets]
+    return adinputs
+
+
+@pytest.fixture(scope='function')
+def adinputs2(request, get_input_ad):
+    pre_process = request.config.getoption("--force-preprocess-data")
+    adinputs = [get_input_ad(f, pre_process) for f in test_datasets2]
+    return adinputs
+
+
+@pytest.fixture(scope='module')
+def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
+    """
+    Reads the input data or cache/process it in a temporary folder.
+
+    Parameters
+    ----------
+    cache_path : pytest.fixture
+        Path to where the data will be temporarily cached.
+    new_path_to_inputs : pytest.fixture
+        Path to the permanent local input files.
+    reduce_arc : pytest.fixture
+        Recipe used to reduce ARC data.
+    reduce_data : pytest.fixture
+        Recipe to reduce the data up to the step before
+        `determineWavelengthSolution`.
+
+    Returns
+    -------
+    function : factory that reads existing input data or call the data
+        reduction recipe.
+    """
+    def _get_input_ad(basename, should_preprocess):
+        input_fname = basename.replace('.fits', '_skyCorrected.fits')
+        input_path = os.path.join(new_path_to_inputs, input_fname)
+
+        if os.path.exists(input_path):
+            print(" Load existing input file: {:s}".format(basename))
+            input_data = astrodata.open(input_path)
+
+        elif should_preprocess:
+            print(" Caching input file: {:s}".format(basename))
+            filename = cache_path(basename)
+            ad = astrodata.open(filename)
+            cals = testing.get_associated_calibrations(basename)
+            print(" Calibrations: ", cals)
+
+            cals = [cache_path(c)
+                    for c in cals[cals.caltype.str.contains('arc')].filename.values]
+            print(" Downloaded calibrations: {:s}".format("\n ".join(cals)))
+
+            master_arc = reduce_arc(ad.data_label(), cals)
+            input_data = reduce_data(ad, master_arc)
+
+        else:
+            raise IOError(
+                'Could not find input file:\n' +
+                '  {:s}\n'.format(input_path) +
+                '  Run pytest with "--force-preprocess-data" to get it')
+
+        return input_data
+    return _get_input_ad
+
+
+@pytest.fixture(scope='module')
+def reduce_arc(output_path):
+    """ Recipe used to generate _distortionDetermined files from raw arc."""
+    def _reduce_arc(dlabel, arc_fnames):
+        with output_path():
+            # Use config to prevent duplicated outputs when running Reduce via API
+            logutils.config(file_name='log_arc_{}.txt'.format(dlabel))
+
+            p = primitives_gmos_spect.GMOSSpect(
+                [astrodata.open(f) for f in arc_fnames])
+
+            p.prepare()
+            p.addDQ(static_bpm=None)
+            p.addVAR(read_noise=True)
+            p.overscanCorrect()
+            p.ADUToElectrons()
+            p.addVAR(poisson_noise=True)
+            p.mosaicDetectors()
+            p.makeIRAFCompatible()
+            p.determineWavelengthSolution()
+            ad = p.determineDistortion()[0]
+        return ad
+    return _reduce_arc
+
+
+@pytest.fixture(scope='module')
+def reduce_data(output_path):
+    """Recipe used to generate _skyCorrected files from raw data. """
+    def _reduce_data(ad, arc):
+        with output_path():
+            p = primitives_gmos_spect.GMOSSpect([ad])
+            p.prepare()
+            p.addDQ(static_bpm=None)
+            p.addVAR(read_noise=True)
+            p.overscanCorrect()
+            p.ADUToElectrons()
+            p.addVAR(poisson_noise=True)
+            p.mosaicDetectors()
+            p.distortionCorrect(arc=arc)
+            p.findSourceApertures(max_apertures=1)
+            p.skyCorrectFromSlit()
+            ad = p.writeOutputs()[0]
+        return ad
+    return _reduce_data

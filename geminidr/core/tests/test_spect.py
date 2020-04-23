@@ -27,68 +27,260 @@ Notes
     instance to a dict create/require this.
 """
 import numpy as np
+import os
 import pytest
+
+import astrodata
+
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
 
-import astrodata
 from geminidr.core import primitives_spect
 
 astrofaker = pytest.importorskip("astrofaker")
 
 
-class SkyLines:
+# -- Tests ---------------------------------------------------------------------
+def test_extract_1d_spectra():
+    # Input Parameters ----------------
+    width = 200
+    height = 100
+
+    # Boilerplate code ----------------
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data[height // 2] = 1
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # todo: if input is a single astrodata,
+    #  should not the output have the same format?
+    ad_out = _p.extract1DSpectra([ad])[0]
+
+    np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
+    np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
+
+
+def test_extract_1d_spectra_with_sky_lines():
+    # Input Parameters ----------------
+    width = 600
+    height = 300
+    source_intensity = 1
+
+    # Boilerplate code ----------------
+    np.random.seed(0)
+    sky = fake_emission_line_spectrum(width, n_lines=20, max_intensity=1, fwhm=2.)
+    sky = np.repeat(sky[np.newaxis, :], height, axis=0)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data += sky
+    ad[0].data[height // 2] += source_intensity
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # todo: if input is a single astrodata,
+    #  should not the output have the same format?
+    ad_out = _p.extract1DSpectra([ad])[0]
+
+    np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
+    np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
+
+
+@pytest.mark.xfail(reason="The fake data needs a DQ plane")
+def test_find_apertures():
+    _p = primitives_spect.Spect([])
+    _p.findSourceApertures()
+
+
+def test_get_spectrophotometry(path_to_outputs):
+
+    def create_fake_table():
+
+        wavelengths = np.arange(350., 750., 10)
+        flux = np.ones(wavelengths.size)
+        bandpass = np.ones(wavelengths.size) * 5.
+
+        _table = table.Table(
+            [wavelengths, flux, bandpass],
+            names=['WAVELENGTH', 'FLUX', 'FWHM'])
+
+        _table.name = os.path.join(path_to_outputs, 'specphot.dat')
+        _table.write(_table.name, format='ascii')
+
+        return _table.name
+
+    _p = primitives_spect.Spect([])
+    fake_table = _p._get_spectrophotometry(create_fake_table())
+    np.testing.assert_allclose(fake_table['FLUX'], 1)
+
+    assert 'WAVELENGTH' in fake_table.columns
+    assert 'FLUX' in fake_table.columns
+    assert 'WIDTH' in fake_table.columns
+
+    assert hasattr(fake_table['WAVELENGTH'], 'quantity')
+    assert hasattr(fake_table['FLUX'], 'quantity')
+    assert hasattr(fake_table['WIDTH'], 'quantity')
+
+
+def test_QESpline_optimization():
     """
-    Helper class to simulate random sky lines for tests. Use `np.random.seed()`
-    to have the same lines between calls.
-
-    Parameters
-    ----------
-    n_lines : int
-        Number of lines to be included.
-    max_position : int
-        Maximum position value.
-    max_value : float
-        Maximum float value.
-
+    Test the optimization of the QESpline. This defines 3 regions, each of a
+    different constant value, with gaps between them. The spline optimization
+    should determine the relative offsets.
     """
+    from geminidr.core.primitives_spect import QESpline
 
-    def __init__(self, n_lines, max_position, max_value=1.):
-        self.positions = np.random.randint(low=0, high=max_position, size=n_lines)
-        self.intensities = np.random.random(size=n_lines) * max_value
+    gap = 20
+    data_length = 300
+    real_coeffs = [0.5, 1.2]
 
-    def __call__(self, data, axis=0):
-        """
-        Generates a sky frame filled with zeros and with the random sky lines.
+    # noinspection PyTypeChecker
+    data = np.array([1] * data_length +
+                    [0] * gap +
+                    [real_coeffs[0]] * data_length +
+                    [0] * gap +
+                    [real_coeffs[1]] * data_length)
 
-        Parameters
-        ----------
-        data : ndarray
-            2D ndarray representing the detector.
-        axis : {0, 1}
-            Dispersion axis: 0 for rows or 1 for columns.
+    masked_data = np.ma.masked_where(data == 0, data)
+    xpix = np.arange(len(data))
+    weights = np.where(data > 0, 1., 0.)
+    boundaries = (data_length, 2 * data_length + gap)
 
-        Returns
-        -------
-        numpy.ndarray
-            2D array matching input shape filled with zeros and the random sky
-            lines.
-        """
-        sky_data = np.zeros_like(data)
-        if axis == 0:
-            sky_data[self.positions] = self.intensities
-        elif axis == 1:
-            sky_data[:, self.positions] = self.intensities
-        else:
-            raise ValueError(
-                "Wrong value for dispersion axis. "
-                "Expected 0 or 1, found {:d}".format(axis))
+    coeffs = np.ones((2,))
+    order = 10
 
-        return sky_data
+    result = optimize.minimize(
+        QESpline, coeffs,
+        args=(xpix, masked_data, weights, boundaries, order),
+        tol=1e-7,
+        method='Nelder-Mead'
+    )
+
+    np.testing.assert_allclose(real_coeffs, 1. / result.x, atol=0.01)
 
 
+def test_sky_correct_from_slit():
+    # Input Parameters ----------------
+    width = 200
+    height = 100
+
+    n_sky_lines = 500
+
+    # Simulate Data -------------------
+    np.random.seed(0)
+
+    source_model_parameters = {'c0': height // 2, 'c1': 0.0}
+
+    source = fake_point_source_spatial_profile(
+        height, width, source_model_parameters, fwhm=0.05 * height)
+
+    sky = SkyLines(n_sky_lines, width - 1)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data += source
+    ad[0].data += sky(ad[0].data, axis=1)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # ToDo @csimpson: Is it modifying the input ad?
+    ad_out = _p.skyCorrectFromSlit([ad])[0]
+
+    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+
+
+def test_sky_correct_from_slit_with_aperture_table():
+    # Input Parameters ----------------
+    width = 200
+    height = 100
+
+    # Simulate Data -------------------
+    np.random.seed(0)
+
+    source_model_parameters = {'c0': height // 2, 'c1': 0.0}
+
+    source = fake_point_source_spatial_profile(
+        height, width, source_model_parameters, fwhm=0.08 * height)
+
+    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data += source
+    ad[0].data += sky(ad[0].data, axis=1)
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # ToDo @csimpson: Is it modifying the input ad?
+    ad_out = _p.skyCorrectFromSlit([ad])[0]
+
+    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+
+
+# noinspection PyPep8Naming
+
+
+def test_sky_correct_from_slit_with_multiple_sources():
+    width = 200
+    height = 100
+    np.random.seed(0)
+
+    y0 = height // 2
+    y1 = 7 * height // 16
+    fwhm = 0.05 * height
+
+    source = (
+            fake_point_source_spatial_profile(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
+            fake_point_source_spatial_profile(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
+    )
+
+    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+
+    ad[0].data += source
+    ad[0].data += sky(ad[0].data, axis=1)
+    ad[0].APERTURE = get_aperture_table(height, width, center=height // 2)
+    ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, y1, -3, 3])
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # ToDo @csimpson: Is it modifying the input ad?
+    ad_out = _p.skyCorrectFromSlit([ad])[0]
+
+    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+
+
+def test_trace_apertures():
+    # Input parameters ----------------
+    width = 400
+    height = 200
+    trace_model_parameters = {'c0': height // 2, 'c1': 5.0, 'c2': -0.5, 'c3': 0.5}
+
+    # Boilerplate code ----------------
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data += fake_point_source_spatial_profile(height, width, trace_model_parameters)
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters) + 1)[0]
+
+    keys = trace_model_parameters.keys()
+
+    desired = np.array([trace_model_parameters[k] for k in keys])
+    actual = np.array([ad_out[0].APERTURE[0][k] for k in keys])
+    np.testing.assert_allclose(desired, actual, atol=0.05)
+
+
+# --- Fixtures and helper functions --------------------------------------------
 def create_zero_filled_fake_astrodata(height, width):
     """
     Helper function to generate a fake astrodata object filled with zeros.
@@ -102,7 +294,7 @@ def create_zero_filled_fake_astrodata(height, width):
 
     Returns
     -------
-    astrodata
+    AstroData
         Single-extension zero filled object.
     """
     data = np.zeros((height, width))
@@ -164,12 +356,12 @@ def fake_point_source_spatial_profile(height, width, model_parameters, fwhm=5):
 
 def fake_emission_line_spectrum(size, n_lines, max_intensity=1, fwhm=2):
     """
-    Generates a 1D array with the a fake emission-line spectrum using lines at 
+    Generates a 1D array with the a fake emission-line spectrum using lines at
     random positions and with random intensities.
 
     Parameters
     ----------
-    size : int 
+    size : int
         Output array's size.
     n_lines : int
         Number of sky lines.
@@ -250,209 +442,54 @@ def get_aperture_table(height, width, center=None):
     return aperture
 
 
-# noinspection PyPep8Naming
-def test_QESpline_optimization():
+class SkyLines:
     """
-    Test the optimization of the QESpline. This defines 3 regions, each of a
-    different constant value, with gaps between them. The spline optimization
-    should determine the relative offsets.
+    Helper class to simulate random sky lines for tests. Use `np.random.seed()`
+    to have the same lines between calls.
+
+    Parameters
+    ----------
+    n_lines : int
+        Number of lines to be included.
+    max_position : int
+        Maximum position value.
+    max_value : float
+        Maximum float value.
+
     """
-    from geminidr.core.primitives_spect import QESpline
 
-    gap = 20
-    data_length = 300
-    real_coeffs = [0.5, 1.2]
+    def __init__(self, n_lines, max_position, max_value=1.):
+        self.positions = np.random.randint(low=0, high=max_position, size=n_lines)
+        self.intensities = np.random.random(size=n_lines) * max_value
 
-    # noinspection PyTypeChecker
-    data = np.array([1] * data_length +
-                    [0] * gap +
-                    [real_coeffs[0]] * data_length +
-                    [0] * gap +
-                    [real_coeffs[1]] * data_length)
+    def __call__(self, data, axis=0):
+        """
+        Generates a sky frame filled with zeros and with the random sky lines.
 
-    masked_data = np.ma.masked_where(data == 0, data)
-    xpix = np.arange(len(data))
-    weights = np.where(data > 0, 1., 0.)
-    boundaries = (data_length, 2 * data_length + gap)
+        Parameters
+        ----------
+        data : ndarray
+            2D ndarray representing the detector.
+        axis : {0, 1}
+            Dispersion axis: 0 for rows or 1 for columns.
 
-    coeffs = np.ones((2,))
-    order = 10
+        Returns
+        -------
+        numpy.ndarray
+            2D array matching input shape filled with zeros and the random sky
+            lines.
+        """
+        sky_data = np.zeros_like(data)
+        if axis == 0:
+            sky_data[self.positions] = self.intensities
+        elif axis == 1:
+            sky_data[:, self.positions] = self.intensities
+        else:
+            raise ValueError(
+                "Wrong value for dispersion axis. "
+                "Expected 0 or 1, found {:d}".format(axis))
 
-    result = optimize.minimize(
-        QESpline, coeffs,
-        args=(xpix, masked_data, weights, boundaries, order),
-        tol=1e-7,
-        method='Nelder-Mead'
-    )
-
-    np.testing.assert_allclose(real_coeffs, 1. / result.x, atol=0.01)
-
-
-@pytest.mark.xfail(reason="The fake data needs a DQ plane")
-def test_find_apertures():
-    _p = primitives_spect.Spect([])
-    _p.findSourceApertures()
-
-
-def test_trace_apertures():
-    # Input parameters ----------------
-    width = 400
-    height = 200
-    trace_model_parameters = {'c0': height // 2, 'c1': 5.0, 'c2': -0.5, 'c3': 0.5}
-
-    # Boilerplate code ----------------
-    ad = create_zero_filled_fake_astrodata(height, width)
-    ad[0].data += fake_point_source_spatial_profile(height, width, trace_model_parameters)
-    ad[0].APERTURE = get_aperture_table(height, width)
-
-    # Running the test ----------------
-    _p = primitives_spect.Spect([])
-    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters) + 1)[0]
-
-    keys = trace_model_parameters.keys()
-
-    desired = np.array([trace_model_parameters[k] for k in keys])
-    actual = np.array([ad_out[0].APERTURE[0][k] for k in keys])
-    np.testing.assert_allclose(desired, actual, atol=0.05)
-
-
-def test_sky_correct_from_slit():
-    # Input Parameters ----------------
-    width = 200
-    height = 100
-
-    n_sky_lines = 500
-
-    # Simulate Data -------------------
-    np.random.seed(0)
-
-    source_model_parameters = {'c0': height // 2, 'c1': 0.0}
-
-    source = fake_point_source_spatial_profile(
-        height, width, source_model_parameters, fwhm=0.05 * height)
-
-    sky = SkyLines(n_sky_lines, width - 1)
-
-    ad = create_zero_filled_fake_astrodata(height, width)
-    ad[0].data += source
-    ad[0].data += sky(ad[0].data, axis=1)
-
-    # Running the test ----------------
-    _p = primitives_spect.Spect([])
-
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
-
-
-def test_sky_correct_from_slit_with_aperture_table():
-    # Input Parameters ----------------
-    width = 200
-    height = 100
-
-    # Simulate Data -------------------
-    np.random.seed(0)
-
-    source_model_parameters = {'c0': height // 2, 'c1': 0.0}
-
-    source = fake_point_source_spatial_profile(
-        height, width, source_model_parameters, fwhm=0.08 * height)
-
-    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
-
-    ad = create_zero_filled_fake_astrodata(height, width)
-    ad[0].data += source
-    ad[0].data += sky(ad[0].data, axis=1)
-    ad[0].APERTURE = get_aperture_table(height, width)
-
-    # Running the test ----------------
-    _p = primitives_spect.Spect([])
-
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
-
-
-def test_sky_correct_from_slit_with_multiple_sources():
-    width = 200
-    height = 100
-    np.random.seed(0)
-
-    y0 = height // 2
-    y1 = 7 * height // 16
-    fwhm = 0.05 * height
-
-    source = (
-            fake_point_source_spatial_profile(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
-            fake_point_source_spatial_profile(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
-    )
-
-    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
-
-    ad = create_zero_filled_fake_astrodata(height, width)
-
-    ad[0].data += source
-    ad[0].data += sky(ad[0].data, axis=1)
-    ad[0].APERTURE = get_aperture_table(height, width, center=height // 2)
-    ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, y1, -3, 3])
-
-    # Running the test ----------------
-    _p = primitives_spect.Spect([])
-
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
-
-
-def test_extract_1d_spectra():
-    # Input Parameters ----------------
-    width = 200
-    height = 100
-
-    # Boilerplate code ----------------
-    ad = create_zero_filled_fake_astrodata(height, width)
-    ad[0].data[height // 2] = 1
-    ad[0].APERTURE = get_aperture_table(height, width)
-
-    # Running the test ----------------
-    _p = primitives_spect.Spect([])
-
-    # todo: if input is a single astrodata,
-    #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra([ad])[0]
-
-    np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
-    np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
-
-
-def test_extract_1d_spectra_with_sky_lines():
-    # Input Parameters ----------------
-    width = 600
-    height = 300
-    source_intensity = 1
-
-    # Boilerplate code ----------------
-    np.random.seed(0)
-    sky = fake_emission_line_spectrum(width, n_lines=20, max_intensity=1, fwhm=2.)
-    sky = np.repeat(sky[np.newaxis, :], height, axis=0)
-
-    ad = create_zero_filled_fake_astrodata(height, width)
-    ad[0].data += sky
-    ad[0].data[height // 2] += source_intensity
-    ad[0].APERTURE = get_aperture_table(height, width)
-
-    # Running the test ----------------
-    _p = primitives_spect.Spect([])
-
-    # todo: if input is a single astrodata,
-    #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra([ad])[0]
-
-    np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
-    np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
+        return sky_data
 
 
 if __name__ == '__main__':

@@ -1,19 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
-
 from gempy.utils import showrecipes
 
 __author__ = 'Ivan Sharankov'
 
 
 def main():
-    parser = ArgumentParser(
-        description="Shows what sequence of primitives a recipe will execute "
-        "or which recipes are available for the dataset.",
-        formatter_class=RawDescriptionHelpFormatter
-    )
+    args = showprims_argparser()
+    if args.all:
+        recipes_found = showrecipes.showrecipes(args.inputfile,
+                                                args.adpkg, args.drpkg)
+        print(recipes_found)
+    else:
+        print(args)
+        primitives_found = showrecipes.showprims(
+            args.inputfile, args.mode, args.recipe, args.adpkg, args.drpkg)
+        print(primitives_found)
+
+
+def showprims_argparser():
+    from argparse import ArgumentParser
+    from argparse import RawDescriptionHelpFormatter
+
+    parser = ArgumentParser(description="desc", prog='showprims',
+                            formatter_class=RawDescriptionHelpFormatter)
+
     parser.add_argument('inputfile', type=str,
                         help="The fits file needed to extract the tags. This "
                              "file must be opened by astrodata as an object")
@@ -30,6 +42,16 @@ def main():
     parser.add_argument("--all", default=False, action='store_true',
                         help='Show the name of all the valid recipes.')
 
+    parser.add_argument('--adpkg', nargs=1,
+                        dest='adpkg', action='store', required=False,
+                        help='Name of the astrodata instrument package to use'
+                             'if not gemini_instruments')
+
+    parser.add_argument('--drpkg', nargs=1,
+                        dest='drpkg', action='store', required=False,
+                        help='Name of the DRAGONS instrument package to use'
+                             'if not geminidr')
+
     parser.add_argument("--debug", default=False, action='store_true',
                         help='Print debugging statements')
 
@@ -38,13 +60,12 @@ def main():
     if args.debug:
         print(args)
 
-    if args.all:
-        recipes_found = showrecipes.showrecipes(args.inputfile)
-        print(recipes_found)
-    else:
-        primitives_found = showrecipes.showprims(
-            args.inputfile, args.mode, args.recipe)
-        print(primitives_found)
+    if args.adpkg is not None:
+        args.adpkg = args.adpkg[0]
+    if args.drpkg is not None:
+        args.drpkg = args.drpkg[0]
+
+    return args
 
 
 if __name__ == "__main__":

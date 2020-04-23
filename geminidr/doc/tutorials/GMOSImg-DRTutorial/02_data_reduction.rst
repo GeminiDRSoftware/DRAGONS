@@ -20,7 +20,7 @@ acquainted with the reduction of GMOS data with DRAGONS. We encourage you to
 look at the :ref:`tips_and_tricks` and :ref:`issues_and_limitations` chapters to
 learn more about GMOS data reduction.
 
-DRAGONS installation comes with a set of handful scripts that are used to
+DRAGONS installation comes with a set of scripts that are used to
 reduce astronomical data. The most important script is called
 "|reduce|", which is extensively explained in the `Recipe System Users Manual
 <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
@@ -66,7 +66,7 @@ Set up the Local Calibration Manager
 
 DRAGONS comes with a local calibration manager that uses the same calibration
 association rules as the Gemini Observatory Archive. This allows ``reduce``
-to make requests to a local ligth-weight database for matching **processed**
+to make requests to a local light-weight database for matching **processed**
 calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
@@ -270,7 +270,7 @@ To check that the master bias was added to the database, use ``caldb list``.
 
     .. code-block:: bash
 
-        $ caldb add ./calibrations/processed_dark/N20170613S0180_bias.fits
+        $ caldb add ./calibrations/processed_bias/N20170613S0180_bias.fits
 
 .. note::
     "|reduce|" uses the first filename in the input list as basename and adds

@@ -69,7 +69,7 @@ def _get_dragons_input_test_path():
               '\n and run again. Leaving now.'
               '\n ')
 
-        sys.exit(1)
+        sys.exit(0)
 
     return path
 

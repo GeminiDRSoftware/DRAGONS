@@ -4,6 +4,8 @@ Fixtures to be used in tests in DRAGONS
 
 import os
 import shutil
+import urllib
+import xml.etree.ElementTree as et
 from pathlib import Path
 
 import pytest
@@ -274,3 +276,37 @@ def path_to_outputs(tmp_path_factory):
                       "{}\n Using current working directory".format(path))
 
     return str(path)  # todo: should astrodata be compatible with pathlib?
+
+
+def get_associated_calibrations(filename, nbias=5):
+    """
+    Queries Gemini Observatory Archive for associated calibrations to reduce the
+    data that will be used for testing.
+
+    Parameters
+    ----------
+    filename : str
+        Input file name
+    """
+    pd = pytest.importorskip("pandas", minversion='1.0.0')
+    url = "https://archive.gemini.edu/calmgr/{}".format(filename)
+
+    tree = et.parse(urllib.request.urlopen(url))
+    root = tree.getroot()
+    prefix = root.tag[:root.tag.rfind('}') + 1]
+
+    def iter_nodes(node):
+        cal_type = node.find(prefix + 'caltype').text
+        cal_filename = node.find(prefix + 'filename').text
+        return cal_filename, cal_type
+
+    cals = pd.DataFrame(
+        [iter_nodes(node) for node in tree.iter(prefix + 'calibration')],
+        columns=['filename', 'caltype'])
+
+    cals = cals.sort_values(by='filename')
+    cals = cals[~cals.caltype.str.contains('processed_')]
+    cals = cals[~cals.caltype.str.contains('specphot')]
+    cals = cals.drop(cals[cals.caltype.str.contains('bias')][nbias:].index)
+
+    return cals

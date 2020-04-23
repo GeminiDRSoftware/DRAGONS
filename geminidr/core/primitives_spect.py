@@ -141,28 +141,46 @@ class Spect(PrimitivesBASE):
 
     def calculateSensitivity(self, adinputs=None, **params):
         """
-        ???
+        Calculates the overall sensitivity of the observation system
+        (instrument, telescope, detector, etc) for each wavelength using
+        spectrophotometric data. It is obtained using the ratio
+        between the observed data and the reference look-up data.
+
+        For that, it looks for reference data using the stripped and lower
+        case name of the observed object inside :mod:`geminidr.gemini.lookups`,
+        :mod:`geminidr.core.lookups` and inside the instrument lookup module.
+
+        The reference data is fit using a Spline in order to match the input
+        data sampling.
+
+        See Also
+        --------
+        - :class:`~gempy.library.astromodels.UnivariateSplineWithOutlierRemoval`
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             1D spectra of spectrophotometric standard stars
 
-        suffix :  str
-            Suffix to be added to output files.
+        suffix :  str, optional
+            Suffix to be added to output files (default: _sensitivityCalculated).
 
-        filename: str/None
-            Location of spectrophotometric data file (None => use OBJECT name)
+        filename: str or None, optional
+            Location of spectrophotometric data file. If it is None, uses
+            look up data based on the object name stored in OBJECT header key
+            (default).
 
         order: int
             Order of the spline fit to be performed
+        order: int, optional
+            Order of the spline fit to be performed (default: 6)
 
-        individual: bool
+        individual: bool - TODO - Not in calculateSensitivityConfig
             Calculate sensitivity for each AD spectrum individually?
 
-        bandpass: float
+        bandpass: float, optional
             default bandpass width (in nm) to use if not present in the
-            spectrophotometric data table
+            spectrophotometric data table (default: 5.)
 
         Returns
         -------
@@ -218,7 +236,6 @@ class Spect(PrimitivesBASE):
                     log.warning(f"Cannot read spectrophotometric data table {datafile}."
                                 f"Unable to determine sensitivity for {ad.filename}")
                     continue
-
 
             exptime = ad.exposure_time()
             if 'WIDTH' not in spec_table.colnames:
@@ -716,15 +733,15 @@ class Spect(PrimitivesBASE):
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
         matched to an arc line list, using :class:`~gempy.library.matching.KDTreeFitter`.
-        This class has a strong dependency with the fwith parameter and works better
-        if a good inicial value is providen.
+        This class has a strong dependency with the `fwith` parameter and works
+        better if a good initial value is provided.
 
         The `.WAVECAL` table contains four columns:
             ["name", "coefficients", "peaks", "wavelengths"]
 
         The `name` and the `coefficients` columns contain information to
         re-create an Chebyshev1D object. The `peaks` column contains the position
-        of the lines that were matched to the cathalog, and the `wavelengths`
+        of the lines that were matched to the catalogue, and the `wavelengths`
         column contains the wavelengths that were matched to that line.
 
         Parameters
@@ -1421,18 +1438,29 @@ class Spect(PrimitivesBASE):
 
     def fluxCalibrate(self, adinputs=None, **params):
         """
+        Performs flux calibration multiplying the input signal by the
+        sensitivity function obtained from
+        :meth:`~geminidr.core.primitives_spect.Spec.calculateSensitivity`.
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            1D spectra of targets that need to be flux-calibrated
+            1D or 2D Spectra of targets that need to be flux-calibrated.
+            2D spectra are expected to be distortion corrected and its
+            dispersion axis should be along rows.
 
-        suffix :  str
-            Suffix to be added to output files.
+        suffix :  str, optional
+            Suffix to be added to output files (default: _fluxCalibrated).
 
-        standard: str/AstroData/None
-            Name/AD instance of the standard star spectrum with a SENSFUNC
-            table attached
+        standard: str or AstroData, optional
+            Standard star spectrum containing one extension or the same number
+            of extensions as the input spectra. Each extension must have a
+            `.SENSFUNC` table containing information about the overall
+            sensitivity. Right now, if this is not provided, it will raise a
+            NotImplementedError since it needs implementation.
+
+        units : str, optional
+            Units for output spectrum (default: W m-2 nm-1).
 
         Returns
         -------

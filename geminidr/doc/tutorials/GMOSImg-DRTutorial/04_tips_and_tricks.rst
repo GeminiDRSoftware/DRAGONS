@@ -33,7 +33,7 @@ current working directory.
 
 Again, note that this step is only needed for images obtained with some
 detector and filter combinations. Make sure you checked the
-`Fringe Correction Tables <fringe_correction_tables>`_.
+:ref:`Fringe Correction Tables <fringe_correction_tables>`.
 
 The above can be done with the API as follow:
 

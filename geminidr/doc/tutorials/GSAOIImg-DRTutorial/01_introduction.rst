@@ -78,7 +78,8 @@ About the dataset
 =================
 
 The table below contains a summary of the dataset downloaded in the previous
-section:
+section.  Note that for GSAOI, the dark current is low enough that there is
+no need to correct for it.
 
 +---------------+---------------------+--------------------------------+
 | Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
