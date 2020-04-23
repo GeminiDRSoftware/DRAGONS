@@ -12,11 +12,15 @@ def test_get_region_from_fake_spectrum():
     np.testing.assert_allclose(ad[0].data, 1)
 
     spectrum = spectral.Spek1D(ad[0])
-    region = spectral.SpectralRegion(549. * units.nm, 551. * units.nm)
+
+    region = spectral.SpectralRegion(400. * units.nm, 401. * units.nm)
     data, mask, variance = spectrum.signal(region)
 
-    print(data, mask, variance)
-    assert data == (551. - 549.) / ad[0].hdr['CD1_1']
+    assert spectrum.unit == units.electron
+    assert isinstance(data, units.Quantity)
+    assert isinstance(mask, np.uint16)
+    assert isinstance(variance, units.Quantity)
+    assert data == abs((400. - 401.) / ad[0].hdr['CD1_1'] * units.electron)
 
 
 def _create_fake_data():
