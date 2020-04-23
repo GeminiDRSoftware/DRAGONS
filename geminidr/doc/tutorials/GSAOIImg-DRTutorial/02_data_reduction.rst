@@ -55,6 +55,8 @@ Here is a copy of the table for quick reference.
 | Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
 +---------------+---------------------+--------------------------------+
 
+.. note:: A master dark is not needed for GSAOI.  The dark current is very low.
+
 
 .. _setup_caldb:
 
@@ -199,7 +201,7 @@ selecting on partner calibrations and showing the object name:
 
 
 If we had more than one object, a list for each standard star is created by
-using the ``object`` descriptor as a selection criterium in "|dataselect|":
+using the ``object`` |descriptor| as a selection criterium in "|dataselect|":
 
 .. code-block:: bash
 

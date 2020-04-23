@@ -38,6 +38,10 @@ def parse_args(command_line_args):
     parser.add_argument('--output', '-o', nargs=1,
                         dest='output', action='store', required=False,
                         help='Name of the output file')
+    parser.add_argument('--adpkg', nargs=1,
+                        dest='adpkg', action='store', required=False,
+                        help='Name of the astrodata instrument package to use'
+                             'if not gemini_instruments')
     parser.add_argument('--verbose', '-v', default=False, action='store_true',
                         help='Toggle verbose mode when using -o')
     parser.add_argument('--debug', default=False, action='store_true',
@@ -58,6 +62,9 @@ def parse_args(command_line_args):
         args.xtags = []
     else:
         args.xtags = args.xtags[0].split(',')
+
+    if args.adpkg is not None:
+        args.adpkg = args.adpkg[0]
 
     if args.debug:
         print(args)
@@ -86,7 +93,7 @@ def main(argv=None):
         args.verbose = True
 
     selected_data = dataselect.select_data(args.inputs, args.tags, args.xtags,
-                                codified_expression)
+                                codified_expression, adpkg=args.adpkg)
 
     # write to screen and/or to file
     if args.output is not None:

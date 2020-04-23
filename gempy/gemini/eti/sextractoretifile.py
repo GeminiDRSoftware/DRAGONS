@@ -14,7 +14,7 @@ DEC ='dec'
 
 FLAGS_DTYPE = np.int16
 
-PREFIX = "tmp"
+PREFIX = ""
 SUFFIX = ".fits"
 FLAGS_TO_MASK = None
 
@@ -43,9 +43,9 @@ class SExtractorETIFile(ETIFile):
 
     def prepare(self):
         # This looks silly, but we're pretending the array data is a "file"
-        self._catalog_file = PREFIX + self.name + '_cat' + SUFFIX
-        self._objmask_file = PREFIX + self.name + '_obj' + SUFFIX
-        filename = PREFIX + self.name + SUFFIX
+        self._catalog_file = os.path.join(self.directory, PREFIX + self.name + '_cat' + SUFFIX)
+        self._objmask_file = os.path.join(self.directory, PREFIX + self.name + '_obj' + SUFFIX)
+        filename = os.path.join(self.directory, PREFIX + self.name + SUFFIX)
         hdulist = fits.HDUList()
         hdulist.append(fits.ImageHDU(self.data,
                                      header=self.header, name='SCI'))
