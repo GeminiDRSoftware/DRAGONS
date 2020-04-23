@@ -13,6 +13,7 @@ from gwcs import coordinate_frames as cf
 
 from . import astromodels as am
 
+
 class Spek1D(Spectrum1D, NDAstroData):
     """
     Spectrum container for 1D spectral data, utilizing benefits of
@@ -106,8 +107,9 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         Returns
         -------
-        x1, x2: float, float
-            pixel locations of the start end end of the spectral region
+        list
+            Contains the pixel locations of the start end end of the spectral
+            region.
         """
         limits = []
         for loc in subregion:
@@ -147,12 +149,17 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         Returns
         -------
-        3-tuple: flux, mask, and variance summed over selected region(s)
+        flux : units.Quantity
+            Integrated flux over the selected region(s).
+        mask : numpy.uint16
+            Mask over the selected region(s).
+        variance : units.Quantity
+            Variance over selected region(s).
         """
         flux_density = (self.unit * self.spectral_axis.unit).is_equivalent(u.Jy * u.Hz)
-        flux = 0
+        flux = 0.
         mask = DQ.good
-        variance = None if self.variance is None else 0
+        variance = None if self.variance is None else 0.
 
         for subregion in region._subregions:
             # If the region extends beyond the spectrum, we flag with NO_DATA
