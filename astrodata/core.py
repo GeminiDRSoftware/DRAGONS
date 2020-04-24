@@ -301,7 +301,7 @@ class AstroData:
 
     def _process_tags(self):
         """
-        Determines the tag set for the current instance
+        Determines the tag set for the current instance.
 
         Returns
         --------
@@ -313,24 +313,33 @@ class AstroData:
         self._processing_tags = True
         try:
             results = []
-            # Calling inspect.getmembers on `self` would trigger all the properties (tags,
-            # phu, hdr, etc.), and that's undesirable. To prevent that, we'll inspect the
-            # *class*. But that returns us unbound methods. We use `method.__get__(self)` to
-            # get a bound version.
+            # Calling inspect.getmembers on `self` would trigger all the
+            # properties (tags, phu, hdr, etc.), and that's undesirable. To
+            # prevent that, we'll inspect the *class*. But that returns us
+            # unbound methods. We use `method.__get__(self)` to get a bound
+            # version.
             #
-            # It's a bit of a roundabout way to get to what we want, but it's better than
-            # the option...
-            for mname, method in inspect.getmembers(self.__class__, lambda x: hasattr(x, 'tag_method')):
+            # It's a bit of a roundabout way to get to what we want, but it's
+            # better than the option...
+            filt = lambda x: hasattr(x, 'tag_method')
+            for mname, method in inspect.getmembers(self.__class__, filt):
                 ts = method.__get__(self)()
                 plus, minus, blocked_by, blocks, if_present = ts
                 if plus or minus or blocks:
                     results.append(ts)
 
-            # Sort by the length of substractions... those that substract from others go first
-            results = sorted(results, key=lambda x: len(x.remove) + len(x.blocks), reverse=True)
-            # Sort by length of blocked_by... those that are never disabled go first
+            # Sort by the length of substractions... those that substract
+            # from others go first
+            results = sorted(results,
+                             key=lambda x: len(x.remove) + len(x.blocks),
+                             reverse=True)
+
+            # Sort by length of blocked_by... those that are never disabled
+            # go first
             results = sorted(results, key=lambda x: len(x.blocked_by))
-            # Sort by length of if_present... those that need other tags to be present go last
+
+            # Sort by length of if_present... those that need other tags to
+            # be present go last
             results = sorted(results, key=lambda x: len(x.if_present))
 
             tags = set()
@@ -338,8 +347,8 @@ class AstroData:
             blocked = set()
             for plus, minus, blocked_by, blocks, is_present in results:
                 if is_present:
-                    # If this TagSet requires other tags to be present, make sure that all of
-                    # them are. Otherwise, skip...
+                    # If this TagSet requires other tags to be present, make
+                    # sure that all of them are. Otherwise, skip...
                     if len(tags & is_present) != len(is_present):
                         continue
                 allowed = (len(tags & blocked_by) + len(plus & blocked)) == 0
@@ -354,7 +363,7 @@ class AstroData:
         return tags
 
     @staticmethod
-    def _matches_data(dataprov):
+    def _matches_data(source):
         # This one is trivial. As long as we get a FITS file...
         return True
 
