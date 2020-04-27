@@ -22,7 +22,7 @@ from .astrotools import divide0
 from geminidr.gemini.lookups import DQ_definitions as DQ
 try:
     from . import cyclip
-except ImportError:
+except ImportError:  # pragma: no cover
     raise ImportError("Run 'cythonize -i cyclip.pyx' in gempy/library")
 
 # A lightweight NDData-like object

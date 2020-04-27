@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from numpy.testing import (assert_allclose, assert_array_almost_equal,
+                           assert_array_equal)
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -62,6 +63,27 @@ def test_no_rejection(testdata):
     assert out_mask is None
 
 
+def test_unpack_nddata(testdata, testvar, testmask):
+    nd = NDAstroData(testdata, mask=testmask)
+    nd.variance = testvar
+    out_data, out_mask, out_var = NDStacker.none(nd)
+    assert_allclose(out_data, testdata)
+    assert_allclose(out_var, testvar)
+    assert_allclose(out_mask, testmask)
+
+
+def test_ndstacker(capsys):
+    stacker = NDStacker(combine="foo")
+    assert capsys.readouterr().out == \
+        'No such combiner as foo. Using mean instead.\n'
+    assert stacker._combiner is NDStacker.mean
+
+    stacker = NDStacker(reject="foo")
+    assert capsys.readouterr().out == \
+        'No such rejector as foo. Using none instead.\n'
+    assert stacker._rejector is NDStacker.none
+
+
 def test_varclip():
     # Confirm rejection of high pixel and correct output DQ
     data = np.array([1., 1., 2., 2., 2., 100.]).reshape(6, 1)
@@ -115,6 +137,36 @@ img     data        mask    variance       after rejection
     stackit = NDStacker(combine="mean", reject="sigclip", lsigma=5, hsigma=5)
     result = stackit(ndd)
     assert_allclose(result.data, 13.875)  # 100 is not rejected
+
+
+def test_combine():
+    data = np.array([1., 1., 1., 2., 2., 2., 2., 100.]).reshape(8, 1)
+
+    out_data, out_mask, out_var = NDStacker.combine(data, combiner='mean',
+                                                    rejector='sigclip')
+    assert_allclose(out_data, 1.5714285)
+
+    out_data, out_mask, out_var = NDStacker.combine(data, combiner='median')
+    assert_allclose(out_data, 2)
+
+
+def test_minmax(testdata, testvar, testmask):
+    out_data, out_mask, out_var = NDStacker.minmax(testdata)
+    assert_array_equal(out_data, testdata)
+    assert_array_equal(out_mask, False)
+
+    out_data, out_mask, out_var = NDStacker.minmax(testdata, nlow=1, nhigh=1)
+    assert_array_equal(out_data, testdata)
+    assert_array_equal(out_mask[:, 0], [True, False, False, False, True])
+
+    testmask[:2, 1] = DQ.saturated
+    out_data, out_mask, out_var = NDStacker.minmax(testdata, nlow=1, nhigh=1,
+                                                   mask=testmask)
+    assert_array_equal(out_data, testdata)
+    assert_array_equal(out_mask[:, 1], [5, 4, 0, 0, 1])
+
+    with pytest.raises(ValueError):
+        NDStacker.minmax(testdata, nlow=3, nhigh=3)
 
 
 def test_mean(testdata, testvar, testmask):
