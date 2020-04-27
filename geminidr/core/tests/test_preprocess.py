@@ -34,6 +34,7 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.utils import logutils
 
+astrofaker = pytest.importorskip("astrofaker")
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_preprocess.log'
 
@@ -41,11 +42,6 @@ logfilename = 'test_preprocess.log'
 @pytest.fixture
 def niri_images():
     """Create two NIRI images, one all 1s, the other all 2s"""
-    try:
-        import astrofaker
-    except ImportError:
-        pytest.skip("astrofaker not installed")
-
     adinputs = []
     for i in (1, 2):
         ad = astrofaker.create('NIRI', 'IMAGE')
@@ -55,16 +51,6 @@ def niri_images():
     adinputs.append(ad)
 
     return NIRIImage(adinputs)
-
-
-@pytest.fixture
-def astrofaker():
-    try:
-        import astrofaker
-    except ImportError:
-        pytest.skip("astrofaker not installed")
-
-    return astrofaker
 
 
 @pytest.mark.skip("Review me")
@@ -88,11 +74,6 @@ def test_scale_by_exposure_time(niri_images):
 
 @pytest.mark.skip("Review me")
 def test_add_object_mask_to_dq():
-    try:
-        import astrofaker
-    except ImportError:
-        pytest.skip("astrofaker not installed")
-
     ad_orig = astrofaker.create('F2', 'IMAGE')
 
     # astrodata.open(os.path.join(TESTDATAPATH, 'GMOS', 'N20150624S0106_refcatAdded.fits'))
@@ -105,7 +86,7 @@ def test_add_object_mask_to_dq():
 
 
 @pytest.mark.skip("Review me")
-def test_adu_to_electrons(astrofaker):
+def test_adu_to_electrons():
     ad = astrofaker.create("NIRI", "IMAGE")
     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
     p = NIRIImage([ad])
@@ -115,7 +96,7 @@ def test_adu_to_electrons(astrofaker):
 
 
 @pytest.mark.skip("Review me")
-def test_apply_dq_plane(astrofaker):
+def test_apply_dq_plane():
     ad = astrofaker.create("NIRI", "IMAGE")
 
     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_nonlinearityCorrected.fits'))
