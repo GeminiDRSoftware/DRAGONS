@@ -72,6 +72,7 @@ def take_along_axis(arr, ind, axis):
             inds.append(np.arange(n).reshape(ind_shape_dim))
     return arr[tuple(inds)]
 
+
 def stack_nddata(fn):
     """
     This decorator wraps a method that takes a sequence of NDAstroData
@@ -108,7 +109,7 @@ def stack_nddata(fn):
             for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
                 variance[i] = ndd.variance * s*s
         out_data, out_mask, out_var = fn(instance, data=data, mask=mask,
-                                    variance=variance, *args, **kwargs)
+                                         variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask)
@@ -116,6 +117,7 @@ def stack_nddata(fn):
             ret_value.variance = out_var
         return ret_value
     return wrapper
+
 
 def unpack_nddata(fn):
     """
@@ -134,6 +136,7 @@ def unpack_nddata(fn):
         return ret_value
     return wrapper
 
+
 # Decorators to identify methods for combining and rejecting. Note that
 # NDStacker.<method>.required_args will return a list of required arguments
 def combiner(fn):
@@ -141,6 +144,7 @@ def combiner(fn):
     args = inspect.getfullargspec(fn).args[3:]
     fn.required_args = list(args)
     return fn
+
 
 def rejector(fn):
     fn.is_rejector = True
@@ -255,10 +259,10 @@ class NDStacker:
             # Where we've been able to construct an output pixel (ngood>0)
             # we need to stop any further processing. Set the mask for "good"
             # pixels to 0, and for bad pixels to 32768.
-            mask = np.where(np.logical_and(ngood>0, tmp_mask), DQ.datatype(32768), mask)
-            mask = np.where(np.logical_and(ngood>0, ~tmp_mask), ZERO, mask)
+            mask = np.where(np.logical_and(ngood > 0, tmp_mask), DQ.datatype(32768), mask)
+            mask = np.where(np.logical_and(ngood > 0, ~tmp_mask), ZERO, mask)
             # 32768 in output mask means we have an output pixel
-            out_mask[ngood>0] |= 32768
+            out_mask[ngood > 0] |= 32768
 
             # If we've found "good' pixels for all output pixels, leave
             if np.all(out_mask & 32768):
@@ -498,8 +502,8 @@ class NDStacker:
             nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
             nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
             for i in range(num_img):
-                mask[i][i<nlo] |= ONE
-                mask[i][np.logical_and(i>nhi, i<num_good)] |= ONE
+                mask[i][i < nlo] |= ONE
+                mask[i][np.logical_and(i > nhi, i < num_good)] |= ONE
         return data, mask, variance
 
     @staticmethod
@@ -509,8 +513,8 @@ class NDStacker:
                 hsigma=3.0, max_iters=None):
         # Sigma-clipping based on scatter of data
         return NDStacker._cyclip(data, mask=mask, variance=variance,
-                                  mclip=mclip, lsigma=lsigma, hsigma=hsigma,
-                                  max_iters=max_iters, sigclip=True)
+                                 mclip=mclip, lsigma=lsigma, hsigma=hsigma,
+                                 max_iters=max_iters, sigclip=True)
 
     @staticmethod
     @rejector
@@ -519,12 +523,12 @@ class NDStacker:
                 hsigma=3.0, max_iters=None):
         # Sigma-type-clipping where VAR array is used to determine deviancy
         return NDStacker._cyclip(data, mask=mask, variance=variance,
-                                  mclip=mclip, lsigma=lsigma, hsigma=hsigma,
-                                  max_iters=max_iters, sigclip=False)
+                                 mclip=mclip, lsigma=lsigma, hsigma=hsigma,
+                                 max_iters=max_iters, sigclip=False)
 
     @staticmethod
     def _cyclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
-                 hsigma=3.0, max_iters=None, sigclip=False):
+                hsigma=3.0, max_iters=None, sigclip=False):
         # Prepares data for Cython iterative-clippingroutine
         if mask is None:
             mask = np.zeros_like(data, dtype=DQ.datatype)
@@ -542,16 +546,19 @@ class NDStacker:
         num_img = shape[0]
         # Force int in case arrays are 1D
         data_size = int(np.multiply.reduce(data.shape[1:]))
-        data, mask, variance = cyclip.iterclip(data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
-                                               variance.ravel().astype(np.float32),
-                                               has_var=has_var, num_img=num_img, data_size=data_size,
-                                               mclip=int(mclip), lsigma=lsigma, hsigma=hsigma,
-                                               max_iters=max_iters, sigclip=int(sigclip))
-        return data.reshape(shape), mask.reshape(shape), (None if not has_var else variance.reshape(shape))
+        data, mask, variance = cyclip.iterclip(
+            data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
+            variance.ravel().astype(np.float32),
+            has_var=has_var, num_img=num_img, data_size=data_size,
+            mclip=int(mclip), lsigma=lsigma, hsigma=hsigma,
+            max_iters=max_iters, sigclip=int(sigclip)
+        )
+        return (data.reshape(shape), mask.reshape(shape),
+                None if not has_var else variance.reshape(shape))
 
     @staticmethod
     def _iterclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
-                 hsigma=3.0, max_iters=None, sigclip=False):
+                  hsigma=3.0, max_iters=None, sigclip=False):
         # SUPERSEDED BY CYTHON ROUTINE
         """Mildly generic iterative clipping algorithm, called by both sigclip
         and varclip. We don't use the astropy.stats.sigma_clip() because it
@@ -562,7 +569,7 @@ class NDStacker:
         low_limit = -lsigma
         cenfunc = np.ma.median  # Always median for first pass
         clipped_data = np.ma.masked_array(data, mask=None if mask is None else
-                                                     (mask & BAD))
+                                          (mask & BAD))
         iter = 0
         ngood = clipped_data.count()
         while iter < max_iters and ngood > 0:
@@ -589,6 +596,7 @@ class NDStacker:
         else:
             mask |= clipped_data.mask
         return data, mask, variance
+
 
 def sum1d(ndd, x1, x2, proportional_variance=True):
     """
