@@ -8,7 +8,25 @@ import numpy as np
 import pytest
 
 import astrodata
+
 from astrodata.testing import assert_same_class, download_from_archive
+
+
+def test_cache_file_from_archive(monkeypatch, tmpdir, testdir):
+
+    monkeypatch.setenv('DRAGONS_TEST', tmpdir)
+    testdir.copy_example("test_cache_file_from_archive.py")
+    result = testdir.runpytest("-k", "test_cache_file_from_archive_new_file")
+    result.assert_outcomes(passed=1)
+
+
+def test_cache_file_from_archive_is_skipped_when_envvar_not_defined(
+        monkeypatch, testdir):
+
+    monkeypatch.delenv('DRAGONS_TEST')
+    testdir.copy_example("test_cache_file_from_archive.py")
+    result = testdir.runpytest("-k", "test_cache_file_from_archive_new_file")
+    result.assert_outcomes(skipped=1)
 
 
 def test_download_from_archive_raises_ValueError_if_envvar_does_not_exists():
@@ -47,15 +65,6 @@ def test_download_from_archive(monkeypatch, tmpdir):
     fname = download_from_archive('N20170529S0168.fits', path='subdir')
     assert os.path.exists(fname)
     assert ncall == 1
-
-
-def test_path_to_test_data(path_to_test_data):
-    assert os.path.exists(path_to_test_data)
-
-
-def test_path_to_inputs(path_to_inputs):
-    print(path_to_inputs)
-    assert os.path.exists(path_to_inputs)
 
 
 def test_assert_same_class():
