@@ -14,6 +14,48 @@ from astropy.utils.data import download_file
 URL = 'https://archive.gemini.edu/file/'
 
 
+@pytest.fixture(scope='module', autouse=True)
+def cache_file_from_archive(path_to_inputs, path_to_outputs):
+    """
+    Looks from cached file and returns its full path in the local machine. If
+    cached file does not exists, download file from the archive
+    and store it in a temporary folder.
+
+    ToDo: Add MD5 checksum here.
+
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Contains the full path to the input cache folder based on the module
+        path.
+    path_to_outputs : pytest.fixture
+        Contains the full path to the temporary cache folder based on the
+        module path.
+
+    Returns
+    -------
+    function
+        Factory function that returns a string with the full path to the cached
+        file.
+    """
+    def _cache_file_from_archive(filename):
+
+        input_path = os.path.join(path_to_inputs, filename)
+        if os.path.exists(input_path):
+            print("\n Cache file exists in:\n {:s}".format(input_path))
+            return input_path
+
+        else:
+            cache_path = os.path.join(path_to_outputs, filename)
+            tmp_path = download_file(URL + filename, cache=False)
+            shutil.move(tmp_path, cache_path)
+            os.chmod(cache_path, 0o664)
+            print("\n Cache file downloaded to:\n {:s}".format(cache_path))
+            return cache_path
+
+    return _cache_file_from_archive
+
+
 def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
     """Download file from the archive and store it in the local cache.
 
@@ -80,73 +122,8 @@ def assert_same_class(ad, ad_ref):
     assert isinstance(ad, type(ad_ref))
 
 
-@pytest.fixture(scope='session')
-def path_to_inputs():
-    """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST_INPUTS that
-    should contains input data for testing.
-
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, it also marks the
-    test to be skipped.
-
-    The skip reason changes depending on which situation causes it to be skipped.
-
-    Returns
-    -------
-        str : path to the input data
-    """
-
-    try:
-        path = os.path.expanduser(os.environ['DRAGONS_TEST_INPUTS'])
-        path = path.strip()
-    except KeyError:
-        pytest.skip(
-            "Could not find environment variable: $DRAGONS_TEST_INPUTS")
-
-    # noinspection PyUnboundLocalVariable
-    if not os.path.exists(path):
-        pytest.skip(
-            "Could not access path stored in $DRAGONS_TEST_INPUTS: "
-            "{}".format(path)
-        )
-
-    return path
-
-
-@pytest.fixture(scope='session')
-def path_to_refs():
-    """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST_REFS that
-    should contains reference data for testing.
-
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, it also marks the
-    test to be skipped.
-
-    The skip reason changes depending on which situation causes it to be skipped.
-
-    Returns
-    -------
-        str : path to the reference data
-    """
-    path = os.path.expanduser(os.getenv('DRAGONS_TEST_REFS')).strip()
-
-    if not path:
-        raise ValueError("Could not find environment variable: \n"
-                         "  $DRAGONS_TEST_REFS")
-
-    if not os.path.exists(path):
-        raise OSError("Could not access path stored in $DRAGONS_TEST_REFS: \n"
-                      "  {}".format(path))
-
-    return path
-
-
 @pytest.fixture(scope='module')
-def new_path_to_inputs(request, path_to_test_data):
+def path_to_inputs(request, path_to_test_data):
     """
     PyTest fixture that returns the path to where the input files for a given
     test module live.
@@ -182,7 +159,7 @@ def new_path_to_inputs(request, path_to_test_data):
 
 
 @pytest.fixture(scope='module')
-def new_path_to_refs(request, path_to_test_data):
+def path_to_refs(request, path_to_test_data):
     """
     PyTest fixture that returns the path to where the reference files for a
     given test module live.
