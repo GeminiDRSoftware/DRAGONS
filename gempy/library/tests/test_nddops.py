@@ -9,19 +9,19 @@ from gempy.library.nddops import NDStacker, sum1d
 
 @pytest.fixture
 def testdata():
-    return np.repeat(np.arange(5, dtype=float), 5, axis=0).reshape(5, 5)
+    return np.repeat(np.arange(5, dtype=float), 2, axis=0).reshape(5, 2)
 
 
 @pytest.fixture
 def testvar():
-    data = np.repeat(np.arange(5, dtype=float), 5, axis=0).reshape(5, 5)
+    data = np.repeat(np.arange(5, dtype=float), 2, axis=0).reshape(5, 2)
     return (data+1) / 2
 
 
 @pytest.fixture
 def testmask():
-    mask = np.zeros((5, 5), dtype=np.uint16)
-    mask[:2, 1:-1] = 1
+    mask = np.zeros((5, 2), dtype=np.uint16)
+    mask[:2, 1] = 1
     return mask
 
 
@@ -55,6 +55,13 @@ def test_process_mask():
         assert np.array_equal(mask.T[0], pixel_usage)
 
 
+def test_no_rejection(testdata):
+    out_data, out_mask, out_var = NDStacker.none(testdata)
+    assert_allclose(out_data, testdata)
+    assert out_var is None
+    assert out_mask is None
+
+
 def test_varclip():
     # Confirm rejection of high pixel and correct output DQ
     data = np.array([1., 1., 2., 2., 2., 100.]).reshape(6, 1)
@@ -84,7 +91,10 @@ def test_sigclip(capsys):
     # Confirm rejection of high pixel and correct output DQ
     data = np.array([1., 1., 1., 2., 2., 2., 2., 100.]).reshape(8, 1)
     ndd = NDAstroData(data)
-    stackit = NDStacker(combine="mean", reject="sigclip", lsigma=3, hsigma=3,
+    stackit = NDStacker(combine="mean",
+                        reject="sigclip",
+                        lsigma=3,
+                        hsigma=3,
                         debug_pixel=0)
     result = stackit(ndd)
     assert_allclose(result.data, 1.5714285714285714)  # 100 is rejected
@@ -118,15 +128,40 @@ def test_mean(testdata, testvar, testmask):
     assert_allclose(out_var, 0.3)
 
     out_data, out_mask, out_var = NDStacker.mean(testdata, mask=testmask)
-    assert_allclose(out_data, [2., 3., 3., 3., 2.])
-    assert_array_almost_equal(out_var, [0.5, 0.33, 0.33, 0.33, 0.5], decimal=2)
+    assert_allclose(out_data, [2., 3.])
+    assert_array_almost_equal(out_var, [0.5, 0.33], decimal=2)
     assert_allclose(out_mask, 0)
 
     out_data, out_mask, out_var = NDStacker.mean(testdata,
                                                  mask=testmask,
                                                  variance=testvar)
-    assert_allclose(out_data, [2., 3., 3., 3., 2.])
-    assert_array_almost_equal(out_var, [0.3, 0.66, 0.66, 0.66, 0.3], decimal=2)
+    assert_allclose(out_data, [2., 3.])
+    assert_array_almost_equal(out_var, [0.3, 0.66], decimal=2)
+    assert_allclose(out_mask, 0)
+
+
+def test_wtmean(testdata, testvar, testmask):
+    out_data, out_mask, out_var = NDStacker.wtmean(testdata)
+    assert_allclose(out_data, 2)
+    assert_allclose(out_var, 0.5)
+    assert out_mask is None
+
+    testvar = np.ones((5, 2))
+    testvar[0, 0] = np.inf
+    testvar[4, 1] = np.inf
+
+    out_data, out_mask, out_var = NDStacker.wtmean(testdata, variance=testvar)
+    assert_allclose(out_data, [2.5, 1.5])
+    assert_allclose(out_var, 0.25)
+
+    out_data, out_mask, out_var = NDStacker.wtmean(testdata, mask=testmask)
+    assert_allclose(out_data, [2., 3.])
+
+    out_data, out_mask, out_var = NDStacker.wtmean(testdata,
+                                                   mask=testmask,
+                                                   variance=testvar)
+    assert_allclose(out_data, [2.5, 2.5])
+    assert_allclose(out_var, [0.25, 0.5])
     assert_allclose(out_mask, 0)
 
 
@@ -143,17 +178,15 @@ def test_median_odd(func, testdata, testvar, testmask):
     # assert_allclose(out_var, 1.5)
 
     out_data, out_mask, out_var = func(testdata, mask=testmask)
-    assert_allclose(out_data, [2., 3., 3., 3., 2.])
-    assert_array_almost_equal(out_var, [0.79, 0.52, 0.52, 0.52, 0.79],
-                              decimal=2)
+    assert_allclose(out_data, [2., 3.])
+    assert_array_almost_equal(out_var, [0.79, 0.52], decimal=2)
     assert_allclose(out_mask, 0)
 
     out_data, out_mask, out_var = func(testdata,
                                        mask=testmask,
                                        variance=testvar)
-    assert_allclose(out_data, [2., 3., 3., 3., 2.])
-    assert_array_almost_equal(out_var, [0.47, 1.05, 1.05, 1.05, 0.47],
-                              decimal=2)
+    assert_allclose(out_data, [2., 3.])
+    assert_array_almost_equal(out_var, [0.47, 1.05], decimal=2)
     assert_allclose(out_mask, 0)
 
 

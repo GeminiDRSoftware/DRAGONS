@@ -356,7 +356,7 @@ class NDStacker:
             self._pixel_debugger_print_line(i, coord, data, mask, variance)
         self._logmsg("-" * 41)
 
-    #------------------------ COMBINER METHODS ----------------------------
+    # ------------------------ COMBINER METHODS ----------------------------
     # These methods must all return data, mask, and varianace arrays of one
     # lower dimension than the input, with the valid (mask==0) input pixels
     # along the axis combined to produce a single output pixel.
@@ -457,7 +457,7 @@ class NDStacker:
 
         return out_data, out_mask, out_var
 
-    #------------------------ REJECTOR METHODS ----------------------------
+    # ------------------------ REJECTOR METHODS ----------------------------
     # These methods must all return data, mask, and variance arrays of the
     # same size as the input, but with pixels reflagged if necessary to
     # indicate the results of the rejection. Pixels can be reordered along
@@ -560,46 +560,46 @@ class NDStacker:
         return (data.reshape(shape), mask.reshape(shape),
                 None if not has_var else variance.reshape(shape))
 
-    @staticmethod
-    def _iterclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
-                  hsigma=3.0, max_iters=None, sigclip=False):
-        # SUPERSEDED BY CYTHON ROUTINE
-        """Mildly generic iterative clipping algorithm, called by both sigclip
-        and varclip. We don't use the astropy.stats.sigma_clip() because it
-        doesn't check for convergence if max_iters is not None."""
-        if max_iters is None:
-            max_iters = 100
-        high_limit = hsigma
-        low_limit = -lsigma
-        cenfunc = np.ma.median  # Always median for first pass
-        clipped_data = np.ma.masked_array(data, mask=None if mask is None else
-                                          (mask & BAD))
-        iter = 0
-        ngood = clipped_data.count()
-        while iter < max_iters and ngood > 0:
-            avg = cenfunc(clipped_data, axis=0)
-            if variance is None or sigclip:
-                deviation = clipped_data - avg
-                sig = np.ma.std(clipped_data, axis=0)
-                high_limit = hsigma * sig
-                low_limit = -lsigma * sig
-            else:
-                deviation = (clipped_data - avg) / np.sqrt(variance)
-            clipped_data.mask |= deviation > high_limit
-            clipped_data.mask |= deviation < low_limit
-            new_ngood = clipped_data.count()
-            if new_ngood == ngood:
-                break
-            if not mclip:
-                cenfunc = np.ma.mean
-            ngood = new_ngood
-            iter += 1
+    # @staticmethod
+    # def _iterclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
+    #               hsigma=3.0, max_iters=None, sigclip=False):
+    #     # SUPERSEDED BY CYTHON ROUTINE
+    #     """Mildly generic iterative clipping algorithm, called by both sigclip
+    #     and varclip. We don't use the astropy.stats.sigma_clip() because it
+    #     doesn't check for convergence if max_iters is not None."""
+    #     if max_iters is None:
+    #         max_iters = 100
+    #     high_limit = hsigma
+    #     low_limit = -lsigma
+    #     cenfunc = np.ma.median  # Always median for first pass
+    #     clipped_data = np.ma.masked_array(data, mask=None if mask is None else
+    #                                       (mask & BAD))
+    #     iter = 0
+    #     ngood = clipped_data.count()
+    #     while iter < max_iters and ngood > 0:
+    #         avg = cenfunc(clipped_data, axis=0)
+    #         if variance is None or sigclip:
+    #             deviation = clipped_data - avg
+    #             sig = np.ma.std(clipped_data, axis=0)
+    #             high_limit = hsigma * sig
+    #             low_limit = -lsigma * sig
+    #         else:
+    #             deviation = (clipped_data - avg) / np.sqrt(variance)
+    #         clipped_data.mask |= deviation > high_limit
+    #         clipped_data.mask |= deviation < low_limit
+    #         new_ngood = clipped_data.count()
+    #         if new_ngood == ngood:
+    #             break
+    #         if not mclip:
+    #             cenfunc = np.ma.mean
+    #         ngood = new_ngood
+    #         iter += 1
 
-        if mask is None:
-            mask = clipped_data.mask
-        else:
-            mask |= clipped_data.mask
-        return data, mask, variance
+    #     if mask is None:
+    #         mask = clipped_data.mask
+    #     else:
+    #         mask |= clipped_data.mask
+    #     return data, mask, variance
 
 
 def sum1d(ndd, x1, x2, proportional_variance=True):
