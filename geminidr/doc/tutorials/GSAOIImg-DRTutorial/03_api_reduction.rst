@@ -313,7 +313,8 @@ before stacking. The tool for distortion correction and image stacking is
 
             conda install disco_stu
 
-This package was created to be accessed via command line. Because of that,
+This package was created to be accessed via command line (See the
+:ref:`stack_science_files` command line section). Because of that,
 the API is not the most polished, and using it requires a fair number of steps.
 **If you can use the command line interface, it is recommended that you do so.**
 If not, then let's get to work.
