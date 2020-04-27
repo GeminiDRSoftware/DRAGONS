@@ -64,8 +64,47 @@ def test_varclip():
     ndd.variance = np.ones_like(data)
     stackit = NDStacker(combine="mean", reject="varclip")
     result = stackit(ndd)
-    np.testing.assert_array_almost_equal(result.data, [1.6])
-    np.testing.assert_array_equal(result.mask, [0])
+    assert_allclose(result.data, 1.6)  # 100 is rejected
+    assert_allclose(result.mask, 0)
+
+    data = np.array([1., 1., 2., 2., 2., 100.]).reshape(6, 1)
+    ndd = NDAstroData(data)
+    ndd.variance = np.ones_like(data)
+    ndd.variance[5] = 400
+    stackit = NDStacker(combine="mean", reject="varclip", lsigma=3, hsigma=3)
+    result = stackit(ndd)
+    assert_allclose(result.data, 1.6)  # 100 is rejected
+
+    stackit = NDStacker(combine="mean", reject="varclip", lsigma=5, hsigma=5)
+    result = stackit(ndd)
+    assert_allclose(result.data, 18)  # 100 is not rejected
+
+
+def test_sigclip(capsys):
+    # Confirm rejection of high pixel and correct output DQ
+    data = np.array([1., 1., 1., 2., 2., 2., 2., 100.]).reshape(8, 1)
+    ndd = NDAstroData(data)
+    stackit = NDStacker(combine="mean", reject="sigclip", lsigma=3, hsigma=3,
+                        debug_pixel=0)
+    result = stackit(ndd)
+    assert_allclose(result.data, 1.5714285714285714)  # 100 is rejected
+    out = capsys.readouterr().out
+    assert """\
+Rejection: sigclip {'lsigma': 3, 'hsigma': 3}
+img     data        mask    variance       after rejection
+  0          1.0000     0               -
+  1          1.0000     0               -
+  2          1.0000     0               -
+  3          2.0000     0               -
+  4          2.0000     0               -
+  5          2.0000     0               -
+  6          2.0000     0               -
+  7        100.0000     1               -
+""" in out
+
+    stackit = NDStacker(combine="mean", reject="sigclip", lsigma=5, hsigma=5)
+    result = stackit(ndd)
+    assert_allclose(result.data, 13.875)  # 100 is not rejected
 
 
 def test_mean(testdata, testvar, testmask):
