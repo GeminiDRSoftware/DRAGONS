@@ -149,6 +149,22 @@ def rejector(fn):
     return fn
 
 
+def _masked_mean(data, mask=None):
+    data = np.ma.masked_array(data, mask=mask)
+    return data.mean(axis=0).data.astype(data.dtype)
+
+
+def _masked_sum(data, mask=None):
+    data = np.ma.masked_array(data, mask=mask)
+    return data.sum(axis=0).data.astype(data.dtype)
+
+
+def _median_uncertainty(variance, mask, num_img):
+    # According to Laplace, the uncertainty on the median is
+    # sqrt(2/pi) times greater than that on the mean
+    return 0.5 * np.pi * _masked_mean(variance, mask=mask) / num_img
+
+
 class NDStacker:
     # Base class from which all stacking functions should subclass.
     # Put helper functions here so they can be inherited.
@@ -322,7 +338,6 @@ class NDStacker:
         out_data, out_mask, out_var = comb_func(data, mask, variance, **comb_args)
         return out_data, out_mask, out_var
 
-
     def _pixel_debugger(self, data, mask, variance, stage=''):
         self._logmsg("img     data        mask    variance       "+stage)
         for i in range(data.shape[0]):
@@ -344,12 +359,12 @@ class NDStacker:
     def mean(data, mask=None, variance=None):
         # Regular arithmetic mean
         mask, out_mask = NDStacker._process_mask(mask)
-        out_data = np.ma.masked_array(data, mask=mask).mean(axis=0).data.astype(data.dtype)
+        out_data = _masked_mean(data, mask=mask)
         ngood = data.shape[0] if mask is None else NDStacker._num_good(mask)
         if variance is None:  # IRAF gemcombine calculation
             out_var = NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / ngood
+            out_var = _masked_mean(variance, mask=mask) / ngood
         return out_data, out_mask, out_var
 
     average = mean  # Formally, these are all averages
@@ -362,9 +377,9 @@ class NDStacker:
         if variance is None:
             return NDStacker.mean(data, mask, variance)
         mask, out_mask = NDStacker._process_mask(mask)
-        out_data = (np.ma.masked_array(data/variance, mask=mask).sum(axis=0).data /
-                    np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data).astype(data.dtype)
-        out_var = 1.0 / np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data.astype(data.dtype)
+        out_data = (_masked_sum(data / variance, mask=mask) /
+                    _masked_sum(1 / variance, mask=mask))
+        out_var = 1 / _masked_sum(1 / variance, mask=mask)
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -372,37 +387,36 @@ class NDStacker:
     @unpack_nddata
     def median(data, mask=None, variance=None):
         # Median
+        out_var = None
+        out_mask = None
+
         if mask is None:
             num_img = data.shape[0]
             if num_img % 2:
                 med_index = num_img // 2
                 index = np.argpartition(data, med_index, axis=0)[med_index]
                 out_data = take_along_axis(data, index, axis=0)
-                out_var = (None if variance is None else
-                           take_along_axis(variance, index, axis=0))
-                #out_data = np.expand_dims(take_along_axis(data, index, axis=0), axis=0).mean(axis=0)
+                if variance is not None:
+                    out_var = take_along_axis(variance, index, axis=0)
             else:
                 med_index = num_img // 2 - 1
                 indices = np.argpartition(data, [med_index, med_index+1],
                                           axis=0)[med_index:med_index+2]
                 out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-                # According to Laplace, the uncertainty on the median is
-                # sqrt(2/pi) times greater than that on the mean
-                out_var = (None if variance is None else
-                           0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
-            out_mask = None
+                if variance is not None:
+                    out_var = _median_uncertainty(variance, mask, num_img)
         else:
             mask, out_mask = NDStacker._process_mask(mask)
-            arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
-            num_img = NDStacker._num_good(mask>0)
+            arg = np.argsort(np.where(mask > 0, np.inf, data), axis=0)
+            num_img = NDStacker._num_good(mask > 0)
             med_index = num_img // 2
             med_indices = np.array([np.where(num_img % 2, med_index, med_index-1),
                                     np.where(num_img % 2, med_index, med_index)])
             indices = take_along_axis(arg, med_indices, axis=0)
             out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-            #out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
-            out_var = (None if variance is None else
-                       0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
+            # out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
+            if variance is not None:
+                out_var = _median_uncertainty(variance, mask, num_img)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
             out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
@@ -422,15 +436,17 @@ class NDStacker:
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # np.choose() can't handle more than 32 input images
             # Partitioning the bottom half is slower than a full sort
-            arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
-            num_img = NDStacker._num_good(mask>0)
+            arg = np.argsort(np.where(mask > 0, np.inf, data), axis=0)
+            num_img = NDStacker._num_good(mask > 0)
             med_index = (num_img - 1) // 2
             index = take_along_axis(arg, med_index, axis=0)
+
         out_data = take_along_axis(data, index, axis=0)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
             out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = 0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img
+            out_var = _median_uncertainty(variance, mask, num_img)
+
         return out_data, out_mask, out_var
 
     #------------------------ REJECTOR METHODS ----------------------------
