@@ -1,15 +1,12 @@
 import pytest
 from ..primitives_calibdb import _update_datalab
 
+astrofaker = pytest.importorskip("astrofaker")
+
+
 @pytest.fixture()
 def ad():
-    try:
-        from AstroFaker import astrofaker
-    except ImportError:
-        pytest.skip("astrofaker is not installed")
-
-    simple_ad = astrofaker.create('NIRI', 'IMAGE')
-    return simple_ad
+    return astrofaker.create('NIRI', 'IMAGE')
 
 
 def test_update_datalab(ad):
