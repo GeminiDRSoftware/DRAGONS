@@ -15,7 +15,7 @@ from gwcs.wcs import WCS as gWCS
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
-from gempy.library.transform_gwcs import (add_mosaic_wcs, add_spectroscopic_wcs,
+from gempy.library.transform_gwcs import (add_mosaic_wcs, add_longslit_wcs,
                                           find_reference_extension)
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
@@ -396,7 +396,7 @@ class Standardize(PrimitivesBASE):
             # and let the rest of the logic take effect
             # TODO: make this "if 'SPECT' in ad.tags"
             if {'GMOS', 'SPECT', 'LS'}.issubset(ad.tags):
-                add_spectroscopic_wcs(ad)
+                add_longslit_wcs(ad)
 
             if len(ad) > 1:
                 if reference_extension is not None:

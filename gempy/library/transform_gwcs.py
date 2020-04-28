@@ -12,9 +12,10 @@ import astrodata
 import numpy as np
 
 from astropy.modeling import models, Model
+from astropy.modeling.core import fix_inputs
 from astropy import table, units as u
 
-from gwcs.coordinate_frames import Frame2D, CoordinateFrame
+from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 
 from functools import reduce
@@ -120,9 +121,9 @@ def add_mosaic_wcs(ad, geotable):
         mosaic_model = reduce(Model.__or__, model_list)
 
         first_section = ad[indices[0]].array_section()
-        in_frame = Frame2D(name="pixels")
-        tiled_frame = Frame2D(name="tile")
-        mos_frame = Frame2D(name="mosaic")
+        in_frame = cf.Frame2D(name="pixels")
+        tiled_frame = cf.Frame2D(name="tile")
+        mos_frame = cf.Frame2D(name="mosaic")
         for i in indices:
             arrsec = ad[i].array_section()
             datsec = ad[i].data_section()
@@ -141,11 +142,11 @@ def add_mosaic_wcs(ad, geotable):
 
     return ad
 
-def add_spectroscopic_wcs(ad):
+def add_longslit_wcs(ad):
     """
     Attach a gWCS object to all extensions of an AstroData objects,
     representing the approximate spectroscopic WCS, as returned by
-    the descriptors.
+    the descriptors, instead of the standard Gemini imaging WCS.
 
     Parameters
     ----------
@@ -160,7 +161,6 @@ def add_spectroscopic_wcs(ad):
         raise ValueError(f"Image {ad.filename} is not of type SPECT")
 
     cenwave = ad.central_wavelength(asNanometers=True)
-    pixscale = ad.pixel_scale()
 
     # TODO: This appears to be true for GMOS. Revisit for other multi-extension
     # spectrographs once they arrive and GMOS tests are written
@@ -170,23 +170,33 @@ def add_spectroscopic_wcs(ad):
         raise ValueError(f"Not all CRPIX1/CRPIX2 keywords are the same in {ad.filename}")
 
     for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
-        in_frame = Frame2D(name="pixels")
-        out_frame = CoordinateFrame(name="world", naxes=2, axes_type=["SPECTRAL", "SPATIAL"],
-                                    axes_order=(0, 1),
-                                    axes_names=["wavelength", "slit"], unit=(u.nm, u.arcsec))
-        crpix1 = ext.hdr['CRPIX1'] - 1
-        crpix2 = ext.hdr['CRPIX2'] - 1
-        slit_model = (models.Shift(-crpix2 if dispaxis==1 else -crpix1) |
-                      models.Scale(pixscale))
-        wave_model = (models.Shift(-crpix1 if dispaxis==1 else -crpix2) |
-                      models.Scale(dw) | models.Shift(cenwave))
+        wcs = ext.wcs
+        if not isinstance(wcs.output_frame, cf.CelestialFrame):
+            raise TypeError(f"Output frame of {ad.filename}:{ext.hdr['EXTVER']}"
+                            " is not a CelestialFrame instance")
+
+        # Need to change axes_order in CelestialFrame
+        sky_model = ext.wcs.forward_transform
+        kwargs = {kw: getattr(ext.wcs.output_frame, kw, None)
+                  for kw in ('reference_frame', 'unit', 'axes_names', 'name',
+                             'axis_physical_types')}
+        sky_frame = cf.CelestialFrame(axes_order=(1,2), **kwargs)
+        spectral_frame = cf.SpectralFrame(name='wavelength', unit=u.nm)
+        output_frame = cf.CompositeFrame([spectral_frame, sky_frame])
+
+        crpix = sky_model[f'crpix{dispaxis}'].offset.value
+        wave_model = (models.Shift(crpix) | models.Scale(dw) |
+                      models.Shift(cenwave))
+        wave_model.name = "dispersion"
 
         if dispaxis == 1:
-            ext.wcs = gWCS([(in_frame, wave_model & slit_model),
-                            (out_frame, None)])
+            transform = wave_model & fix_inputs(sky_model, {0: 0})
         else:
-            ext.wcs = gWCS([(in_frame, models.Mapping(1, 0) | wave_model & slit_model),
-                            (out_frame, None)])
+            transform = models.Mapping((1, 0)) | wave_model & fix_inputs(sky_model, {1: 0})
+
+        new_wcs = gWCS([(wcs.input_frame, transform),
+                        (output_frame, None)])
+        ext.wcs = new_wcs
 
     return ad
 
