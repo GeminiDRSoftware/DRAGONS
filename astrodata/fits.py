@@ -1545,8 +1545,30 @@ class FitsLoader:
         return provider
 
 
-def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
+def windowedOp(func, sequence, kernel, shape=None, dtype=None,
                with_uncertainty=False, with_mask=False):
+    """Apply function on a NDData obbjects, splitting the data in chunks to
+    limit memory usage.
+
+    Parameters
+    ----------
+    func : callable
+        The function to apply.
+    sequence : list of NDData
+        List of NDData objects.
+    kernel : tuple of int
+        Shape
+    shape : tuple of int
+        Shape
+    dtype : str or dtype
+        Type of the output array. Defaults to the same as inputs[0].
+    with_uncertainty : bool
+        Compute uncertainty?
+    with_mask : bool
+        Compute mask?
+
+    """
+
     def generate_boxes(shape, kernel):
         if len(shape) != len(kernel):
             raise AssertionError("Incompatible shape ({}) and kernel ({})"
@@ -1578,14 +1600,19 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
     astropy.log.setLevel(astropy.logger.WARNING)
-    for coords in generate_boxes(shape, kernel):
-        # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
-        # Zipping them will get us a more desirable ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
-        # box = list(zip(*coords))
-        section = tuple([slice(start, end) for (start, end) in coords])
-        result.set_section(section, fn(element.window[section] for element in sequence))
-        gc.collect()
-    astropy.log.setLevel(log_level)  # and reset
+    try:
+        for coords in generate_boxes(shape, kernel):
+            # The coordinates come as:
+            # ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
+            # Zipping them will get us a more desirable:
+            # ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
+            # box = list(zip(*coords))
+            section = tuple([slice(start, end) for (start, end) in coords])
+            inputs = [element.window[section] for element in sequence]
+            result.set_section(section, func(inputs))
+            gc.collect()
+    finally:
+        astropy.log.setLevel(log_level)  # and reset
 
     return result
 

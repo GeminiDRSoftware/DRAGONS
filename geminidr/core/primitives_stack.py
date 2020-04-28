@@ -249,8 +249,8 @@ class Stack(PrimitivesBASE):
             [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
 
         ad_out = astrodata.create(adinputs[0].phu)
-        for index, (extver, sfactors, zfactors) in enumerate(zip(adinputs[0].hdr.get('EXTVER'),
-                                                          scale_factors, zero_offsets)):
+        for index, (extver, sfactors, zfactors) in enumerate(
+                zip(adinputs[0].hdr.get('EXTVER'), scale_factors, zero_offsets)):
             status = ("Combining EXTVER {}.".format(extver) if num_ext > 1 else
                       "Combining images.")
             if scale:
@@ -273,6 +273,7 @@ class Stack(PrimitivesBASE):
                 # per step.
                 oversubscription = (bytes_per_ext[index] * num_img) // memory + 1
                 kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
+
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
                                              for ad in adinputs)
