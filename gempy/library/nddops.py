@@ -178,24 +178,26 @@ class NDStacker:
             combiner = getattr(self, combine)
             assert getattr(combiner, 'is_combiner')
         except AttributeError:
-            self._logmsg("No such combiner as {}. Using mean instead.".format(combine),
-                         level='warning')
+            self._logmsg("No such combiner as {}. Using mean instead."
+                         .format(combine), level='warning')
             combiner = self.mean
+
         # No combine functions require arguments (yet) but futureproofing
         req_args = getattr(combiner, 'required_args', [])
         self._combiner = combiner
-        self._dict = {k: v for k, v in kwargs.items() if k in req_args}
+        self._comb_args = {k: v for k, v in kwargs.items() if k in req_args}
 
         try:
             rejector = getattr(self, reject)
             assert getattr(rejector, 'is_rejector')
         except AttributeError:
-            self._logmsg('No such rejector as {}. Using none instead.'.format(reject),
-                         level='warning')
+            self._logmsg('No such rejector as {}. Using none instead.'
+                         .format(reject), level='warning')
             rejector = self.none
+
         req_args = getattr(rejector, 'required_args', [])
         self._rejector = rejector
-        self._dict.update({k: v for k, v in kwargs.items() if k in req_args})
+        self._rej_args = {k: v for k, v in kwargs.items() if k in req_args}
 
         # Pixel to trace for debugging purposes
         self._debug_pixel = kwargs.get('debug_pixel')
@@ -289,13 +291,12 @@ class NDStacker:
         allows a series of NDData object to be sent, and split into data, mask,
         and variance.
         """
-        rej_args = {arg: self._dict[arg] for arg in self._rejector.required_args
-                    if arg in self._dict}
 
         # Convert the debugging pixel to (x,y) coords and bounds check
         if self._debug_pixel is not None:
             try:
-                self._debug_pixel = np.unravel_index(self._debug_pixel, data.shape[1:])
+                self._debug_pixel = np.unravel_index(self._debug_pixel,
+                                                     data.shape[1:])
             except ValueError:
                 self._logmsg("Debug pixel out of range")
                 self._debug_pixel = None
@@ -307,18 +308,19 @@ class NDStacker:
             self._logmsg("stats: mean={:.4f}, median={:.4f}, std={:.4f}"
                          .format(np.mean(info), np.median(info), np.std(info)))
             self._logmsg("-" * 41)
-            self._logmsg("Rejection: {} {}".format(self._rejector.__name__, rej_args))
+            self._logmsg("Rejection: {} {}".format(self._rejector.__name__,
+                                                   self._rej_args))
 
-        data, mask, variance = self._rejector(data, mask, variance, **rej_args)
-
-        comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
-                     if arg in self._dict}
+        data, mask, variance = self._rejector(data, mask, variance,
+                                              **self._rej_args)
 
         if self._debug_pixel is not None:
             self._pixel_debugger(data, mask, variance, stage='after rejection')
-            self._logmsg("Combining: {} {}".format(self._combiner.__name__, comb_args))
+            self._logmsg("Combining: {} {}".format(self._combiner.__name__,
+                                                   self._comb_args))
 
-        out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
+        out_data, out_mask, out_var = self._combiner(data, mask, variance,
+                                                     **self._comb_args)
 
         if self._debug_pixel is not None:
             self._pixel_debugger_print_line('out', self._debug_pixel, out_data,
