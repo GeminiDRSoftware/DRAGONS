@@ -1546,7 +1546,7 @@ class FitsLoader:
 
 
 def windowedOp(func, sequence, kernel, shape=None, dtype=None,
-               with_uncertainty=False, with_mask=False):
+               with_uncertainty=False, with_mask=False, **kwargs):
     """Apply function on a NDData obbjects, splitting the data in chunks to
     limit memory usage.
 
@@ -1557,15 +1557,17 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
     sequence : list of NDData
         List of NDData objects.
     kernel : tuple of int
-        Shape
+        Shape of the blocks.
     shape : tuple of int
-        Shape
+        Shape of inputs. Defaults to ``sequence[0].shape``.
     dtype : str or dtype
-        Type of the output array. Defaults to the same as inputs[0].
+        Type of the output array. Defaults to ``sequence[0].dtype``.
     with_uncertainty : bool
         Compute uncertainty?
     with_mask : bool
         Compute mask?
+    **kwargs
+        Additional args are passed to ``func``.
 
     """
 
@@ -1609,7 +1611,7 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
             # box = list(zip(*coords))
             section = tuple([slice(start, end) for (start, end) in coords])
             inputs = [element.window[section] for element in sequence]
-            result.set_section(section, func(inputs))
+            result.set_section(section, func(inputs, **kwargs))
             gc.collect()
     finally:
         astropy.log.setLevel(log_level)  # and reset

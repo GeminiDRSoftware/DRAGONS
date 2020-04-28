@@ -8,7 +8,6 @@ from astrodata.fits import windowedOp
 
 import numpy as np
 from astropy import table
-from functools import partial
 from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
@@ -277,10 +276,14 @@ class Stack(PrimitivesBASE):
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
                                              for ad in adinputs)
-            result = windowedOp(partial(stack_function, scale=sfactors, zero=zfactors),
+            result = windowedOp(stack_function,
                                 [ad[index].nddata for ad in adinputs],
-                                kernel=kernel, dtype=np.float32,
-                                with_uncertainty=with_uncertainty, with_mask=with_mask)
+                                scale=sfactors,
+                                zero=zfactors,
+                                kernel=kernel,
+                                dtype=np.float32,
+                                with_uncertainty=with_uncertainty,
+                                with_mask=with_mask)
             ad_out.append(result)
             log.stdinfo("")
 
