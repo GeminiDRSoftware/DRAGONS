@@ -488,28 +488,36 @@ class NDStacker:
         if mask is None:
             nlo = int(nlow+0.001)
             nhi = data.shape[0] - int(nhigh+0.001)
-            # Sorts variance with data
+            # Sorts data and apply this to the mask
             arg = np.argsort(data, axis=0)
-            data = take_along_axis(data, arg, axis=0)
-            variance = take_along_axis(variance, arg, axis=0)
             mask = np.zeros_like(data, dtype=bool)
-            mask[:nlo] = True
-            mask[nhi:] = True
+            np.put_along_axis(mask, arg[:nlo], True, axis=0)
+            np.put_along_axis(mask, arg[nhi:], True, axis=0)
         else:
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # Have to keep all values if all values are masked!
             # Sorts variance and mask with data
             arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
-            data = take_along_axis(data, arg, axis=0)
-            variance = take_along_axis(variance, arg, axis=0)
-            mask = take_along_axis(mask, arg, axis=0)
             # IRAF imcombine maths
             num_good = NDStacker._num_good(mask & BAD > 0)
             nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
             nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
+
+            newmask = np.zeros_like(data, dtype=bool)
             for i in range(num_img):
-                mask[i][i < nlo] |= ONE
-                mask[i][np.logical_and(i > nhi, i < num_good)] |= ONE
+                # low values
+                idx = np.expand_dims(arg[i][i < nlo], axis=0)
+                if idx.size > 0:
+                    np.put_along_axis(newmask, idx, ONE, axis=0)
+
+                # high values
+                idx = np.expand_dims(arg[i][(i > nhi) & (i < num_good)], axis=0)
+                if idx.size > 0:
+                    np.put_along_axis(newmask, idx, ONE, axis=0)
+
+            mask |= newmask
+            # mask[i][i < nlo] |= ONE
+            # mask[i][np.logical_and(i > nhi, i < num_good)] |= ONE
         return data, mask, variance
 
     @staticmethod
