@@ -5,7 +5,6 @@ from astropy.nddata import NDData
 from astropy.table import Table
 
 import astrodata
-from astrodata.testing import download_from_archive
 
 
 @pytest.fixture()
