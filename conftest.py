@@ -7,6 +7,7 @@ import pytest
 
 from astrodata import testing
 
+cache_file_from_archive = testing.cache_file_from_archive
 path_to_inputs = testing.path_to_inputs
 path_to_outputs = testing.path_to_outputs
 path_to_refs = testing.path_to_refs
@@ -14,7 +15,6 @@ path_to_test_data = testing.path_to_test_data
 
 
 def pytest_addoption(parser):
-
     try:
         parser.addoption(
             "--dragons-remote-data",
@@ -52,5 +52,5 @@ def pytest_collection_modifyitems(config, items):
     if not config.getoption("--dragons-remote-data"):
         skip_dragons_remote_data = pytest.mark.skip(reason="need --dragons-remote-data to run")
         for item in items:
-            if "dragons_remote_data" in item.keywords:
+            if 'cache_file_from_archive' in item.fixturenames or "dragons_remote_data" in item.keywords:
                 item.add_marker(skip_dragons_remote_data)
