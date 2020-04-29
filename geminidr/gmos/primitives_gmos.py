@@ -15,7 +15,7 @@ import gemini_instruments
 # from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
 # from gempy.scripts.gmoss_fix_headers import correct_headers
-from gempy.gemini import hdr_fixing as hdrfix
+# from gempy.gemini import hdr_fixing as hdrfix
 
 from geminidr.core import CCD
 from ..gemini.primitives_gemini import Gemini
@@ -54,7 +54,6 @@ class GMOS(Gemini, CCD):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        adoutputs = []
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -88,14 +87,10 @@ class GMOS(Gemini, CCD):
             # KL settled yet.
             if ad.detector_name(pretty=True) == "Hamamatsu-N":
                 log.status("Fixing headers for GMOS-N Hamamatsu data")
-                hdulist = ad.to_hdulist()
-                updated = hdrfix.gmosn_ham_fixes(hdulist, verbose=False)
-                # When we create a new AD object, it needs to retain the
-                # filename information
-                if updated:
-                    orig_path = ad.path
-                    ad = astrodata.open(hdulist)
-                    ad.path = orig_path
+                try:
+                    ad.phu['DATE-OBS'] = ad.phu['DATE']
+                except KeyError:
+                    pass
 
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
@@ -126,8 +121,7 @@ class GMOS(Gemini, CCD):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-            adoutputs.append(ad)
-        return adoutputs
+        return adinputs
 
     def subtractOverscan(self, adinputs=None, **params):
         """
