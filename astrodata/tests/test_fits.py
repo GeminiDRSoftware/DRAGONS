@@ -462,7 +462,7 @@ def test_attributes(GSAOI_DARK):
     assert all(isinstance(nd, NDAstroData) for nd in ad.nddata)
     assert [nd.shape for nd in ad.nddata] == [(2048, 2048)] * 4
 
-    match = 'Trying to assign to a non-sliced AstroData object'
+    match = "Trying to assign to an AstroData object that is not a single slice"
     with pytest.raises(ValueError, match=match):
         ad.data = 1
     with pytest.raises(ValueError, match=match):

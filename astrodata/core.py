@@ -787,10 +787,11 @@ class AstroData:
         """
         Implements attribute removal. If `self` represents a single slice, the
         """
+        if not attribute.isupper():
+            super().__delattr__(attribute)
+            return
+
         if self.is_sliced:
-            if not attribute.isupper():
-                raise ValueError("Can't delete non-capitalized attributes "
-                                 "from slices")
             if not self.is_single:
                 raise TypeError("Can't delete attributes on non-single slices")
 
@@ -807,15 +808,12 @@ class AstroData:
         else:
             # TODO: So far we're only deleting tables by name.
             #       Figure out what to do with aliases
-            if attribute.isupper():
-                if attribute in self._tables:
-                    del self._tables[attribute]
-                else:
-                    raise AttributeError(
-                        "'{}' is not a global table for this instance"
-                        .format(attribute))
+            if attribute in self._tables:
+                del self._tables[attribute]
             else:
-                super().__delattr__(attribute)
+                raise AttributeError(
+                    "'{}' is not a global table for this instance"
+                    .format(attribute))
 
     def __contains__(self, attribute):
         """
