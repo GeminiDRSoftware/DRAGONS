@@ -666,6 +666,7 @@ class AstroData:
                              indices=indices)
         obj._path = self.path
         obj._orig_filename = self.orig_filename
+        obj._exposed = self._exposed
         return obj
 
     def __delitem__(self, idx):
