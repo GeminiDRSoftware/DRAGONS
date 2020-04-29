@@ -116,6 +116,8 @@ class Stack(PrimitivesBASE):
         separate_ext = params["separate_ext"]
         statsec = params["statsec"]
         reject_method = params["reject_method"]
+        save_rejection_map = params["save_rejection_map"]
+
         if statsec:
             statsec = tuple([slice(int(start)-1, int(end))
                              for x in reversed(statsec.strip('[]').split(','))
@@ -283,7 +285,8 @@ class Stack(PrimitivesBASE):
                                 kernel=kernel,
                                 dtype=np.float32,
                                 with_uncertainty=with_uncertainty,
-                                with_mask=with_mask)
+                                with_mask=with_mask,
+                                save_rejection_map=save_rejection_map)
             ad_out.append(result)
             log.stdinfo("")
 

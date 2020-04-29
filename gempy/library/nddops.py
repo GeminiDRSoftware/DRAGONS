@@ -89,6 +89,7 @@ def stack_nddata(fn):
             scale = [1.0] * len(nddata_list)
         if zero is None:
             zero = [0.0] * len(nddata_list)
+
         # Coerce all data to 32-bit floats. FITS data on disk is big-endian
         # and preserving that datatype will cause problems with Cython
         # stacking if the compiler is little-endian.
@@ -96,25 +97,30 @@ def stack_nddata(fn):
         data = np.empty((len(nddata_list),)+nddata_list[0].data.shape, dtype=dtype)
         for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
             data[i] = ndd.data * s + z
+
         if any(ndd.mask is None for ndd in nddata_list):
             mask = None
         else:
             mask = np.empty_like(data, dtype=DQ.datatype)
             for i, ndd in enumerate(nddata_list):
                 mask[i] = ndd.mask
+
         if any(ndd.variance is None for ndd in nddata_list):
             variance = None
         else:
             variance = np.empty_like(data)
             for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
                 variance[i] = ndd.variance * s*s
-        out_data, out_mask, out_var = fn(instance, data=data, mask=mask,
-                                         variance=variance, *args, **kwargs)
+
+        out_data, out_mask, out_var, rejmap = fn(
+            instance, data=data, mask=mask, variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask)
         if out_var is not None:
             ret_value.variance = out_var
+        if rejmap is not None:
+            ret_value.meta['other'] = {'REJMAP': NDAstroData(rejmap)}
         return ret_value
     return wrapper
 
@@ -285,7 +291,8 @@ class NDStacker:
         return np.sum(mask == False, axis=0)
 
     @stack_nddata
-    def __call__(self, data, mask=None, variance=None):
+    def __call__(self, data, mask=None, variance=None,
+                 save_rejection_map=False):
         """
         Perform the rejection and combining. The stack_nddata decorator
         allows a series of NDData object to be sent, and split into data, mask,
@@ -311,21 +318,26 @@ class NDStacker:
             self._logmsg("Rejection: {} {}".format(self._rejector.__name__,
                                                    self._rej_args))
 
-        data, mask, variance = self._rejector(data, mask, variance,
-                                              **self._rej_args)
+        data, rejmask, variance = self._rejector(data, mask, variance,
+                                                 **self._rej_args)
+        if save_rejection_map:
+            rejmap = np.sum(rejmask - mask, axis=0)
+        else:
+            rejmap = None
 
         if self._debug_pixel is not None:
-            self._pixel_debugger(data, mask, variance, stage='after rejection')
+            self._pixel_debugger(data, rejmask, variance,
+                                 stage='after rejection')
             self._logmsg("Combining: {} {}".format(self._combiner.__name__,
                                                    self._comb_args))
 
-        out_data, out_mask, out_var = self._combiner(data, mask, variance,
+        out_data, out_mask, out_var = self._combiner(data, rejmask, variance,
                                                      **self._comb_args)
 
         if self._debug_pixel is not None:
             self._pixel_debugger_print_line('out', self._debug_pixel, out_data,
                                             out_mask, out_var)
-        return out_data, out_mask, out_var
+        return out_data, out_mask, out_var, rejmap
 
     @classmethod
     def combine(cls, data, mask=None, variance=None, rejector="none", combiner="mean", **kwargs):

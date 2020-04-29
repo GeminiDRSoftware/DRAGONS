@@ -1577,7 +1577,7 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
                                  .format(shape, kernel))
         ticks = [[(x, x+step) for x in range(0, axis, step)]
                  for axis, step in zip(shape, kernel)]
-        return cart_product(*ticks)
+        return list(cart_product(*ticks))
 
     if shape is None:
         if len({x.shape for x in sequence}) > 1:
@@ -1602,19 +1602,39 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
     astropy.log.setLevel(astropy.logger.WARNING)
+
+    boxes = generate_boxes(shape, kernel)
+
     try:
-        for coords in generate_boxes(shape, kernel):
-            # The coordinates come as:
-            # ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
-            # Zipping them will get us a more desirable:
-            # ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
-            # box = list(zip(*coords))
+        for coords in boxes:
             section = tuple([slice(start, end) for (start, end) in coords])
-            inputs = [element.window[section] for element in sequence]
-            result.set_section(section, func(inputs, **kwargs))
+            out = func([element.window[section] for element in sequence],
+                       **kwargs)
+            result.set_section(section, out)
+
+            # propagate additional attributes
+            if out.meta.get('other'):
+                for k, v in out.meta['other'].items():
+                    if len(boxes) > 1:
+                        result.meta['other'][k, coords] = v
+                    else:
+                        result.meta['other'][k] = v
+
             gc.collect()
     finally:
         astropy.log.setLevel(log_level)  # and reset
+
+    other = result.meta['other']
+    if other and len(boxes) > 1:
+        for (name, coords), obj in list(other.items()):
+            if not isinstance(obj, NDData):
+                raise ValueError('only NDData objects are handled here')
+            if name not in other:
+                other[name] = NDDataObject(np.empty(shape,
+                                                    dtype=obj.data.dtype))
+            section = tuple([slice(start, end) for (start, end) in coords])
+            other[name].set_section(section, obj)
+            del other[name, coords]
 
     return result
 
