@@ -151,19 +151,22 @@ def test_combine():
 
 
 def test_minmax(testdata, testvar, testmask):
+    # shuffle the input array to check that order is not modified
+    testdata = testdata[[2, 4, 1, 3, 0]] + 10
+
     out_data, out_mask, out_var = NDStacker.minmax(testdata)
     assert_array_equal(out_data, testdata)
     assert_array_equal(out_mask, False)
 
     out_data, out_mask, out_var = NDStacker.minmax(testdata, nlow=1, nhigh=1)
     assert_array_equal(out_data, testdata)
-    assert_array_equal(out_mask[:, 0], [True, False, False, False, True])
+    assert_array_equal(out_mask[:, 0], [False, True, False, False, True])
 
     testmask[:2, 1] = DQ.saturated
     out_data, out_mask, out_var = NDStacker.minmax(testdata, nlow=1, nhigh=1,
                                                    mask=testmask)
     assert_array_equal(out_data, testdata)
-    assert_array_equal(out_mask[:, 1], [5, 4, 0, 0, 1])
+    assert_array_equal(out_mask[:, 1], [4, 5, 0, 0, 1])
 
     with pytest.raises(ValueError):
         NDStacker.minmax(testdata, nlow=3, nhigh=3)
