@@ -8,8 +8,8 @@ import astrodata
 from astrodata.testing import download_from_archive
 
 
-@pytest.fixture
-def testfile1():
+@pytest.fixture()
+def testfile1(cache_file_from_archive):
     """
     Pixels Extensions
     Index  Content                  Type              Dimensions     Format
@@ -17,11 +17,11 @@ def testfile1():
     [ 1]   science                  NDAstroData       (2304, 1056)   uint16
     [ 2]   science                  NDAstroData       (2304, 1056)   uint16
     """
-    return download_from_archive("N20110826S0336.fits", path="GMOS")
+    return cache_file_from_archive("N20110826S0336.fits")
 
 
 @pytest.fixture
-def testfile2():
+def testfile2(cache_file_from_archive):
     """
     Pixels Extensions
     Index  Content                  Type              Dimensions     Format
@@ -32,7 +32,7 @@ def testfile2():
     [ 4]   science                  NDAstroData       (4608, 1056)   uint16
     [ 5]   science                  NDAstroData       (4608, 1056)   uint16
     """
-    return download_from_archive("N20160524S0119.fits", path="GMOS")
+    return cache_file_from_archive("N20160524S0119.fits")
 
 
 @pytest.mark.dragons_remote_data

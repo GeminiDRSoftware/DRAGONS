@@ -4,16 +4,18 @@ from os.path import exists
 from astrodata.testing import (cache_file_from_archive, path_to_inputs,
                                path_to_outputs, path_to_test_data)
 
-filename = 'N20180304S0126.fits'
 
+def test_cache_file_from_archive_new_file(cache_file_from_archive, capsys):
 
-@pytest.fixture
-def path(cache_file_from_archive):
-    return cache_file_from_archive(filename)
-
-
-def test_cache_file_from_archive_new_file(path):
+    filename = 'X20001231S0001.fits'
     path = cache_file_from_archive(filename)
+    captured = capsys.readouterr()
+
+    assert "Caching file to:" in captured.out
     assert isinstance(path, str)
     assert filename in path
     assert exists(path)
+
+    path = cache_file_from_archive(filename)
+    captured = capsys.readouterr()
+    assert "Input file is cached in:" in captured.out

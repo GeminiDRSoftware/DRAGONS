@@ -12,12 +12,36 @@ import astrodata
 from astrodata.testing import assert_same_class, download_from_archive
 
 
-def test_cache_file_from_archive(monkeypatch, tmpdir, testdir):
+def test_cache_file_from_archive_using_static_data(cache_file_from_archive, capsys):
 
-    monkeypatch.setenv('DRAGONS_TEST', tmpdir)
+    filename = "N20110826S0336.fits"
+    path = cache_file_from_archive(filename)
+    captured = capsys.readouterr()
+
+    assert isinstance(path, str)
+    assert filename in path
+    assert os.path.exists(path)
+    assert "Static input file exists in" in captured.out
+
+
+def test_cache_file_from_archive_caching_data(monkeypatch, tmpdir, testdir):
+
+    ncall = 0
+
+    def mock_download(remote_url, **kwargs):
+        nonlocal ncall
+        ncall += 1
+        fname = remote_url.split('/')[-1]
+        tmpdir.join(fname).write('')  # create fake file
+        return str(tmpdir.join(fname))
+
+    monkeypatch.setattr("astrodata.testing.download_file", mock_download)
+    monkeypatch.setenv('DRAGONS_TEST', str(tmpdir))
     testdir.copy_example("test_cache_file_from_archive.py")
     result = testdir.runpytest("-k", "test_cache_file_from_archive_new_file")
     result.assert_outcomes(passed=1)
+    assert ncall == 1
+
 
 
 def test_cache_file_from_archive_is_skipped_when_envvar_not_defined(

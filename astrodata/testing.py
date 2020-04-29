@@ -14,7 +14,7 @@ from astropy.utils.data import download_file
 URL = 'https://archive.gemini.edu/file/'
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='module')
 def cache_file_from_archive(path_to_inputs, path_to_outputs):
     """
     Looks from cached file and returns its full path in the local machine. If
@@ -41,16 +41,21 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
     def _cache_file_from_archive(filename):
 
         input_path = os.path.join(path_to_inputs, filename)
+        cache_path = os.path.join(path_to_outputs, filename)
+
         if os.path.exists(input_path):
-            print("\n Cache file exists in:\n {:s}".format(input_path))
+            print("\n Static input file exists in:\n {:s}".format(input_path))
             return input_path
 
+        elif os.path.exists(cache_path):
+            print("\n Input file is cached in:\n {:s}".format(input_path))
+            return cache_path
+
         else:
-            cache_path = os.path.join(path_to_outputs, filename)
             tmp_path = download_file(URL + filename, cache=False)
             shutil.move(tmp_path, cache_path)
             os.chmod(cache_path, 0o664)
-            print("\n Cache file downloaded to:\n {:s}".format(cache_path))
+            print("\n Caching file to:\n {:s}".format(cache_path))
             return cache_path
 
     return _cache_file_from_archive
