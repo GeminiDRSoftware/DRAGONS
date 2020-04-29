@@ -396,6 +396,10 @@ class AstroData:
     def orig_filename(self):
         return self._orig_filename
 
+    @orig_filename.setter
+    def orig_filename(self, value):
+        self._orig_filename = value
+
     @property
     def phu(self):
         return self._phu
