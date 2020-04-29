@@ -44,35 +44,6 @@ ZERO = DQ.datatype(0)
 ONE = DQ.datatype(DQ.bad_pixel)
 
 
-def take_along_axis(arr, ind, axis):
-    """
-    Returns a view of an array (arr), re-ordered along an axis according to
-    the indices (ind). Taken from numpy issue 8708 under BSD licence,
-    pending inclusion into numpy (added in version 1.15.0).
-    """
-    if arr is None:
-        return None
-    if axis < 0:
-        if axis >= -arr.ndim:
-            axis += arr.ndim
-        else:
-            raise IndexError('axis out of range')
-    ind_shape = (1,) * ind.ndim
-    ins_ndim = ind.ndim - (arr.ndim - 1)   #inserted dimensions
-
-    dest_dims = list(range(axis)) + [None] + list(range(axis+ins_ndim, ind.ndim))
-
-    # could also call np.ix_ here with some dummy arguments, then throw those results away
-    inds = []
-    for dim, n in zip(dest_dims, arr.shape):
-        if dim is None:
-            inds.append(ind)
-        else:
-            ind_shape_dim = ind_shape[:dim] + (-1,) + ind_shape[dim+1:]
-            inds.append(np.arange(n).reshape(ind_shape_dim))
-    return arr[tuple(inds)]
-
-
 def stack_nddata(fn):
     """
     This decorator wraps a method that takes a sequence of NDAstroData
@@ -417,14 +388,16 @@ class NDStacker:
             if num_img % 2:
                 med_index = num_img // 2
                 index = np.argpartition(data, med_index, axis=0)[med_index]
-                out_data = take_along_axis(data, index, axis=0)
+                index = np.expand_dims(index, axis=0)
+                out_data = np.take_along_axis(data, index, axis=0)[0]
                 if variance is not None:
-                    out_var = take_along_axis(variance, index, axis=0)
+                    out_var = np.take_along_axis(variance, index, axis=0)[0]
             else:
                 med_index = num_img // 2 - 1
                 indices = np.argpartition(data, [med_index, med_index+1],
                                           axis=0)[med_index:med_index+2]
-                out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
+                out_data = np.take_along_axis(data, indices, axis=0)\
+                    .mean(axis=0).astype(data.dtype)
                 if variance is not None:
                     out_var = _median_uncertainty(variance, mask, num_img)
         else:
@@ -434,9 +407,10 @@ class NDStacker:
             med_index = num_img // 2
             med_indices = np.array([np.where(num_img % 2, med_index, med_index-1),
                                     np.where(num_img % 2, med_index, med_index)])
-            indices = take_along_axis(arg, med_indices, axis=0)
-            out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-            # out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
+            indices = np.take_along_axis(arg, med_indices, axis=0)
+            out_data = np.take_along_axis(data, indices, axis=0)\
+                .mean(axis=0).astype(data.dtype)
+            # out_mask = np.bitwise_or(*np.take_along_axis(mask, indices, axis=0))
             if variance is not None:
                 out_var = _median_uncertainty(variance, mask, num_img)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
@@ -460,10 +434,12 @@ class NDStacker:
             # Partitioning the bottom half is slower than a full sort
             arg = np.argsort(np.where(mask > 0, np.inf, data), axis=0)
             num_img = NDStacker._num_good(mask > 0)
-            med_index = (num_img - 1) // 2
-            index = take_along_axis(arg, med_index, axis=0)
+            med_index = np.expand_dims((num_img - 1) // 2, axis=0)
+            index = np.take_along_axis(arg, med_index, axis=0)[0]
 
-        out_data = take_along_axis(data, index, axis=0)
+        index = np.expand_dims(index, axis=0)
+        out_data = np.take_along_axis(data, index, axis=0)[0]
+
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
             out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         else:
