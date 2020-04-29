@@ -171,19 +171,12 @@ class Stack(PrimitivesBASE):
         for ext in adinputs[0]:
             bytes = 0
             # Count _data twice to handle temporary arrays
-            for attr in ('_data', '_data', '_uncertainty'):
-                item = getattr(ext.nddata, attr)
-                if item is not None:
-                    # A bit of numpy weirdness in the difference between normal
-                    # python types ("float32") and numpy types ("np.uint16")
-                    try:
-                        bytes += item.dtype.itemsize
-                    except TypeError:
-                        bytes += item.dtype().itemsize
-                    except AttributeError:  # For non-lazy VAR
-                        bytes += item._array.dtype.itemsize
-            bytes += 2  #  mask always created
-            bytes_per_ext.append(bytes * np.multiply.reduce(ext.nddata.shape))
+            bytes += 2 * ext.data.dtype.itemsize
+            if ext.variance is not None:
+                bytes += ext.variance.dtype.itemsize
+
+            bytes += 2  # mask always created
+            bytes_per_ext.append(bytes * np.product(ext.shape))
 
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
             adinputs = self.flushPixels(adinputs)

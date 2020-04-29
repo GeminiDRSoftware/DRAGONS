@@ -1624,6 +1624,8 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
     finally:
         astropy.log.setLevel(log_level)  # and reset
 
+    # Now if the input arrays where splitted in chunks, we need to gather
+    # the data arrays for the additional attributes.
     other = result.meta['other']
     if other and len(boxes) > 1:
         for (name, coords), obj in list(other.items()):
