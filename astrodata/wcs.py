@@ -91,10 +91,10 @@ def gwcs_to_fits(ndd, hdr=None):
     -------
     dict: values to insert into the FITS header to express this WCS
     """
-    wcs_dict = {}
     wcs = ndd.wcs
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
+    wcs_dict = {'WCSAXES': len(world_axes)}
 
     # Find and process the sky projection first
     if {'lon', 'lat'}.issubset(world_axes):
