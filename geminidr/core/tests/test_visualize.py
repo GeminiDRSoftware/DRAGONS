@@ -95,12 +95,12 @@ def input_ad(cache_file_from_archive, path_to_inputs, reduce_arc,
 
 
 @pytest.fixture(scope='module')
-def reduce_data(enter_path_to_outputs):
+def reduce_data(change_working_dir):
     from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
     from gempy.utils import logutils
 
     def _reduce_data(ad, arc):
-        with enter_path_to_outputs():
+        with change_working_dir():
             print('Current working directory:\n    {:s}'.format(os.getcwd()))
             logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
 

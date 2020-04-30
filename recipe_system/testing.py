@@ -11,7 +11,7 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 
 
 @pytest.fixture(scope='module')
-def get_master_arc(new_path_to_inputs, enter_path_to_outputs):
+def get_master_arc(new_path_to_inputs, change_working_dir):
     """
     Factory that creates a function that reads the master arc file from the
     permanent input folder or from the temporarily local cache, depending on
@@ -21,7 +21,7 @@ def get_master_arc(new_path_to_inputs, enter_path_to_outputs):
     ----------
     new_path_to_inputs : pytest.fixture
         Path to the permanent local input files.
-    enter_path_to_outputs : contextmanager
+    change_working_dir : contextmanager
         Enable easy change to temporary folder when reducing data.
 
     Returns
@@ -39,7 +39,7 @@ def get_master_arc(new_path_to_inputs, enter_path_to_outputs):
         arc_filename = arc_filename.split('.fits')[0] + '_arc.fits'
 
         if pre_process:
-            with enter_path_to_outputs():
+            with change_working_dir():
                 master_arc = astrodata.open(arc_filename)
         else:
             master_arc = astrodata.open(
@@ -51,13 +51,13 @@ def get_master_arc(new_path_to_inputs, enter_path_to_outputs):
 
 
 @pytest.fixture(scope='module')
-def reduce_arc(enter_path_to_outputs):
+def reduce_arc(change_working_dir):
     """
     Factory for function for ARCS data reduction.
 
     Parameters
     ----------
-    enter_path_to_outputs : pytest.fixture
+    change_working_dir : pytest.fixture
         Context manager used to write reduced data to a temporary folder.
 
     Returns
@@ -67,7 +67,7 @@ def reduce_arc(enter_path_to_outputs):
     """
 
     def _reduce_arc(dlabel, arc_fnames):
-        with enter_path_to_outputs():
+        with change_working_dir():
             # Use config to prevent duplicated outputs when running Reduce via API
             logutils.config(file_name='log_arc_{}.txt'.format(dlabel))
 
@@ -82,13 +82,13 @@ def reduce_arc(enter_path_to_outputs):
 
 
 @pytest.fixture(scope='module')
-def reduce_bias(enter_path_to_outputs):
+def reduce_bias(change_working_dir):
     """
     Factory for function for BIAS data reduction.
 
     Parameters
     ----------
-    enter_path_to_outputs : pytest.fixture
+    change_working_dir : pytest.fixture
         Context manager used to write reduced data to a temporary folder.
 
     Returns
@@ -98,7 +98,7 @@ def reduce_bias(enter_path_to_outputs):
     """
 
     def _reduce_bias(datalabel, bias_fnames):
-        with enter_path_to_outputs():
+        with change_working_dir():
             logutils.config(file_name='log_bias_{}.txt'.format(datalabel))
 
             reduce = Reduce()
@@ -113,13 +113,13 @@ def reduce_bias(enter_path_to_outputs):
 
 
 @pytest.fixture(scope='module')
-def reduce_flat(enter_path_to_outputs):
+def reduce_flat(change_working_dir):
     """
     Factory for function for FLAT data reduction.
 
     Parameters
     ----------
-    enter_path_to_outputs : pytest.fixture
+    change_working_dir : pytest.fixture
         Context manager used to write reduced data to a temporary folder.
 
     Returns
@@ -129,7 +129,7 @@ def reduce_flat(enter_path_to_outputs):
     """
 
     def _reduce_flat(data_label, flat_fnames, master_bias):
-        with enter_path_to_outputs():
+        with change_working_dir():
             logutils.config(file_name='log_flat_{}.txt'.format(data_label))
 
             calibration_files = ['processed_bias:{}'.format(master_bias)]

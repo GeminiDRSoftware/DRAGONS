@@ -57,6 +57,7 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
         Factory function that returns a string with the full path to the cached
         file.
     """
+
     def _cache_file_from_archive(filename):
 
         input_path = os.path.join(path_to_inputs, filename)
@@ -81,7 +82,7 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
 
 
 @pytest.fixture(scope='module')
-def enter_path_to_outputs(request, path_to_outputs):
+def change_working_dir(request, path_to_outputs):
     """
     Factory that returns the output path as a context manager object, allowing
     easy access to the path to where the processed data should be stored.
@@ -105,7 +106,7 @@ def enter_path_to_outputs(request, path_to_outputs):
     os.makedirs(path, exist_ok=True)
 
     @contextmanager
-    def _output_path():
+    def _change_working_dir():
         oldpwd = os.getcwd()
         os.chdir(path)
         try:
@@ -113,10 +114,7 @@ def enter_path_to_outputs(request, path_to_outputs):
         finally:
             os.chdir(oldpwd)
 
-    return _output_path
-
-
-
+    return _change_working_dir
 
 
 def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):

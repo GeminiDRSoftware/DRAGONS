@@ -8,7 +8,7 @@ import pytest
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
     cache_file_from_archive,
-    enter_path_to_outputs,
+    change_working_dir,
     path_to_inputs,
     path_to_outputs,
     path_to_refs,
