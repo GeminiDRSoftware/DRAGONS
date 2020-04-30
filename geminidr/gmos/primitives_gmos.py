@@ -59,7 +59,6 @@ class GMOS(Gemini, CCD):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by "
                             "standardizeInstrumentHeaders".format(ad.filename))
-                adoutputs.append(ad)
                 continue
 
             # Standardize the headers of the input AstroData object. Update the
