@@ -1,12 +1,10 @@
 import pytest
-from astrodata.testing import download_from_archive
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.errors import RecipeNotFound
 
 
-@pytest.mark.dragons_remote_data
-def test_primitive_not_found():
-    testfile = download_from_archive("N20160524S0119.fits", path="GMOS")
+def test_primitive_not_found(cache_file_from_archive):
+    testfile = cache_file_from_archive("N20160524S0119.fits")
 
     red = Reduce()
     red.files = [testfile]
@@ -15,9 +13,8 @@ def test_primitive_not_found():
         red.runr()
 
 
-@pytest.mark.dragons_remote_data
-def test_mode_not_found():
-    testfile = download_from_archive("N20160524S0119.fits", path="GMOS")
+def test_mode_not_found(cache_file_from_archive):
+    testfile = cache_file_from_archive("N20160524S0119.fits")
 
     red = Reduce()
     red.files = [testfile]
