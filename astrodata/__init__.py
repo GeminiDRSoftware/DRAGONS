@@ -15,6 +15,7 @@ from .core import *
 from .fits import KeywordCallableWrapper, add_header_to_table
 from .factory import AstroDataFactory
 from .nddata import NDAstroData
+from .utils import *
 from ._version import version
 
 __version__ = version()
