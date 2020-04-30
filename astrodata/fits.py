@@ -1627,22 +1627,24 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
     # Now if the input arrays where splitted in chunks, we need to gather
     # the data arrays for the additional attributes.
     other = result.meta['other']
-    if other and len(boxes) > 1:
-        for (name, coords), obj in list(other.items()):
-            if not isinstance(obj, NDData):
-                raise ValueError('only NDData objects are handled here')
-            if name not in other:
-                other[name] = NDDataObject(np.empty(shape,
-                                                    dtype=obj.data.dtype))
-            section = tuple([slice(start, end) for (start, end) in coords])
-            other[name].set_section(section, obj)
-            del other[name, coords]
+    if other:
+        if len(boxes) > 1:
+            for (name, coords), obj in list(other.items()):
+                if not isinstance(obj, NDData):
+                    raise ValueError('only NDData objects are handled here')
+                if name not in other:
+                    other[name] = NDDataObject(np.empty(shape,
+                                                        dtype=obj.data.dtype))
+                section = tuple([slice(start, end) for (start, end) in coords])
+                other[name].set_section(section, obj)
+                del other[name, coords]
 
-        # To set the name of our object we need to save it as an ndarray,
-        # otherwise for a NDData one AstroData would use the name of the
-        # AstroData object.
-        other[name] = other[name].data
-        result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
+        for name in other:
+            # To set the name of our object we need to save it as an ndarray,
+            # otherwise for a NDData one AstroData would use the name of the
+            # AstroData object.
+            other[name] = other[name].data
+            result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
 
     return result
 
