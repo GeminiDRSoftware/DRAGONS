@@ -27,15 +27,23 @@ class AstroDataError(Exception):
 
 class AstroData:
     """
-    AstroData(provider)
-
     Base class for the AstroData software package. It provides an interface
     to manipulate astronomical data sets.
 
     Parameters
-    -----------
-    provider : DataProvider
-        The data that will be manipulated through the `AstroData` instance.
+    ----------
+    nddata : `astrodata.NDAstroData` or list of `astrodata.NDAstroData`
+        List of NDAstroData objects.
+    tables : dict[name, `astropy.table.Table`]
+        Dict of table objects.
+    phu : `astropy.io.fits.Header`
+        Primary header.
+    indices : list of int
+        List of indices mapping the `astrodata.NDAstroData` objects that this
+        object will access to. This is used when slicing an object, then the
+        sliced AstroData will have the ``.nddata`` list from its parent and
+        access the sliced NDAstroData through this list of indices.
+
     """
 
     # Derived classes may provide their own __keyword_dict. Being a private
@@ -84,18 +92,14 @@ class AstroData:
 
     def __deepcopy__(self, memo):
         """
-        Returns a new instance of this class, initialized with a deep copy
-        of the associted `DataProvider`.
+        Returns a new instance of this class.
 
-        Args
-        -----
+        Parameters
+        ----------
         memo : dict
             See the documentation on `deepcopy` for an explanation on how
             this works.
 
-        Returns
-        --------
-        A deep copy of this instance
         """
         # Force the data provider to load data, if needed
         len(self)
@@ -128,17 +132,18 @@ class AstroData:
         ----------
         name : str
             The common "key" name for which we want to know the associated
-            FITS keyword
+            FITS keyword.
 
         Returns
         -------
         str
-            The desired keyword name
+            The desired keyword name.
 
         Raises
         ------
         AttributeError
-            If there is no keyword for the specified ``name``
+            If there is no keyword for the specified ``name``.
+
         """
         for cls in self.__class__.mro():
             with suppress(AttributeError, KeyError):
@@ -154,8 +159,9 @@ class AstroData:
         Determines the tag set for the current instance.
 
         Returns
-        --------
-        A set of strings
+        -------
+        set of str
+
         """
         # This prevents infinite recursion
         if self._processing_tags:
@@ -219,6 +225,7 @@ class AstroData:
 
     @property
     def path(self):
+        """Return the file path."""
         return self._path
 
     @path.setter
@@ -229,6 +236,7 @@ class AstroData:
 
     @property
     def filename(self):
+        """Return the file name."""
         if self.path is not None:
             return os.path.basename(self.path)
 
@@ -244,6 +252,7 @@ class AstroData:
 
     @property
     def orig_filename(self):
+        """Return the original file name (before it was modified)."""
         return self._orig_filename
 
     @orig_filename.setter
@@ -252,6 +261,7 @@ class AstroData:
 
     @property
     def phu(self):
+        """Return the primary header."""
         return self._phu
 
     def set_phu(self, phu):
@@ -265,6 +275,7 @@ class AstroData:
 
     @property
     def hdr(self):
+        """Return all headers, as a `astrodata.FitsHeaderCollection`."""
         if not self.nddata:
             return None
         from .fits import FitsHeaderCollection
@@ -279,9 +290,7 @@ class AstroData:
 
     @property
     def tags(self):
-        """
-        A set of strings that represent the tags defining this instance
-        """
+        """A set of strings that represent the tags defining this instance."""
         return self._process_tags()
 
     @property
@@ -292,7 +301,7 @@ class AstroData:
 
         Returns
         --------
-        A tuple of str
+        tuple of str
         """
         members = inspect.getmembers(self.__class__,
                                      lambda x: hasattr(x, 'descriptor_method'))
@@ -303,10 +312,6 @@ class AstroData:
         """
         If this data provider instance represents the whole dataset, return
         False. If it represents a slice out of the whole, return True.
-
-        Returns
-        --------
-        A boolean
         """
         return self._indices is not None
 
@@ -319,28 +324,14 @@ class AstroData:
         return self._indices is not None and len(self._indices) == 1
 
     def is_settable(self, attr):
-        """
-        Predicate that can be used to figure out if certain attribute of the
-        `DataProvider` is meant to be modified by an external object.
-
-        This is used mostly by `AstroData`, which acts as a proxy exposing
-        attributes of its assigned provider, to decide if it should set a value
-        on the provider or on itself.
-
-        Args
-        -----
-        attribute : str
-
-        Returns
-        --------
-        A boolean
-        """
+        """Return True if the attribute is meant to be modified."""
         if self.is_sliced and attr in {'path', 'filename'}:
             return False
         return attr in self._fixed_settable or attr.isupper()
 
     @property
     def nddata(self):
+        """Return the list of `astrodata.NDAstroData` objects."""
         if self._indices is not None:
             ndd = [self._nddata[i] for i in self._indices]
         else:
@@ -353,6 +344,7 @@ class AstroData:
 
     @property
     def tables(self):
+        """Return the names of the `astropy.table.Table` objects."""
         return set(self._tables.keys())
 
     @property
@@ -365,9 +357,8 @@ class AstroData:
     @property
     def data(self):
         """
-        A list of the the arrays (or single array, if this is a single slice)
-        corresponding to the science data attached to each extension, in
-        loading/appending order.
+        A list of the arrays (or single array, if this is a single slice)
+        corresponding to the science data attached to each extension.
         """
         if self.is_single:
             return self.nddata.data
@@ -392,15 +383,15 @@ class AstroData:
     def uncertainty(self):
         """
         A list of the uncertainty objects (or a single object, if this is
-        a single slice) attached to the science data, for each extension, in
-        loading/appending order.
+        a single slice) attached to the science data, for each extension.
 
-        The objects are instances of AstroPy's `NDUncertainty`, or `None` where
-        no information is available.
+        The objects are instances of AstroPy's `NDUncertainty`, or `None`
+        where no information is available.
 
         See also
-        ---------
-        variance: The actual array supporting the uncertainty object
+        --------
+        variance : The actual array supporting the uncertainty object
+
         """
         if self.is_single:
             return self.nddata.uncertainty
@@ -418,8 +409,7 @@ class AstroData:
     def mask(self):
         """
         A list of the mask arrays (or a single array, if this is a single
-        slice) attached to the science data, for each extension, in
-        loading/appending order.
+        slice) attached to the science data, for each extension.
 
         For objects that miss a mask, `None` will be provided instead.
         """
@@ -439,16 +429,16 @@ class AstroData:
     def variance(self):
         """
         A list of the variance arrays (or a single array, if this is a single
-        slice) attached to the science data, for each read_fitsextension, in
-        loading/appending order.
+        slice) attached to the science data, for each extension.
 
         For objects that miss uncertainty information, `None` will be provided
         instead.
 
         See also
         ---------
-        uncertainty: The `NDUncertainty` object used under the hood to
-        propagate uncertainty when operating with the data
+        uncertainty : The `NDUncertainty` object used under the hood to
+        propagate uncertainty when operating with the data.
+
         """
         if self.is_single:
             return self.nddata.variance
@@ -492,15 +482,15 @@ class AstroData:
         Returns a sliced view of the instance. It supports the standard
         Python indexing syntax.
 
-        Args
-        -----
+        Parameters
+        ----------
         slice : int, `slice`
             An integer or an instance of a Python standard `slice` object
 
         Raises
         -------
         TypeError
-            If trying to slice an object when it doesn't make sense (eg.
+            If trying to slice an object when it doesn't make sense (e.g.
             slicing a single slice)
         ValueError
             If `slice` does not belong to one of the recognized types
@@ -525,11 +515,11 @@ class AstroData:
 
     def __delitem__(self, idx):
         """
-        Called to implement deletion of `self[idx]`.  Supports standard
+        Called to implement deletion of ``self[idx]``.  Supports standard
         Python syntax (including negative indices).
 
-        Args
-        -----
+        Parameters
+        ----------
         idx : integer
             This index represents the order of the element that you want
             to remove.
@@ -537,7 +527,8 @@ class AstroData:
         Raises
         -------
         IndexError
-            If `idx` is out of range
+            If `idx` is out of range.
+
         """
         if self._indices:
             raise TypeError("Can't remove items from a sliced object")
@@ -548,20 +539,18 @@ class AstroData:
         """
         Called when an attribute lookup has not found the attribute in the
         usual places (not an instance attribute, and not in the class tree
-        for `self`).
+        for ``self``).
 
-        This is implemented to provide access to objects exposed by
-        the `DataProvider`.
-
-        Args
-        -----
-        attribute : string
-            The attribute's name
+        Parameters
+        ----------
+        attribute : str
+            The attribute's name.
 
         Raises
         -------
         AttributeError
             If the attribute could not be found/computed.
+
         """
         # Exposed objects are part of the normal object interface. We may have
         # just lazy-loaded them, and that's why we get here...
@@ -586,26 +575,15 @@ class AstroData:
 
     def __setattr__(self, attribute, value):
         """
-        Called when an attribute assignment is attempted, instead of the normal
-        mechanism.  This method will check first with the `DataProvider`: if
-        the DP says it will contain this attribute, or that it will accept it
-        for setting, then the value will be stored at the DP level. Otherwise,
-        the regular attribute assignment mechanisme takes over and the value
-        will be store as an instance attribute of `self`.
+        Called when an attribute assignment is attempted, instead of the
+        normal mechanism.
 
-        Args
-        -----
-        attribute : string
-            The attribute's name
-
+        Parameters
+        ----------
+        attribute : str
+            The attribute's name.
         value : object
-            The value to be assigned to the attribute
-
-        Returns
-        --------
-        If the value is passed to the `DataProvider`, and it is not of an
-        acceptable type, a `ValueError` (or other exception) may be rised.
-        Please, check the appropriate documentation for this.
+            The value to be assigned to the attribute.
 
         """
 
@@ -639,7 +617,8 @@ class AstroData:
 
     def __delattr__(self, attribute):
         """
-        Implements attribute removal. If `self` represents a single slice, the
+        Implements attribute removal.
+        If `self` represents a single slice, ... FIXME!
         """
         if not attribute.isupper():
             super().__delattr__(attribute)
@@ -671,26 +650,23 @@ class AstroData:
 
     def __contains__(self, attribute):
         """
-        Implements the ability to use the `in` operator with an `AstroData`
-        object.  It will look up the specified attribute name within the
-        exposed members of the internal `DataProvider` object. Refer to the
-        concrete `DataProvider` implementation's documentation to know what
-        members are exposed.
+        Implements the ability to use the ``in`` operator with an
+        `AstroData` object.
 
-        Args
-        -----
-        attribute : string
-            An attribute name
+        Parameters
+        ----------
+        attribute : str
+            An attribute name.
 
         Returns
         --------
-        A boolean
+        bool
         """
         return attribute in self.exposed
 
     def __len__(self):
         """
-        Number of independent extensions stored by the `DataProvider`
+        Number of independent extensions stored by the object.
 
         Returns
         --------
@@ -706,7 +682,7 @@ class AstroData:
         """
         A collection of strings with the names of objects that can be accessed
         directly by name as attributes of this instance, and that are not part
-        of its standard interface (ie. data objects that have been added
+        of its standard interface (i.e. data objects that have been added
         dynamically).
 
         Examples
@@ -777,9 +753,8 @@ class AstroData:
                 yield (name, 'Table', (len(table), len(table.columns)))
 
     def info(self):
-        """
-        Prints out information about the contents of this instance.
-        """
+        """Prints out information about the contents of this instance."""
+
         print("Filename: {}".format(self.path if self.path else "Unknown"))
         # This is fixed. We don't support opening for update
         # print("Mode: readonly")
@@ -849,14 +824,12 @@ class AstroData:
 
     def __add__(self, oper):
         """
-        Implements the binary arithmetic operation `+` with `AstroData` as
-        the left operand.
+        Implements the binary arithmetic operation ``+``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or object
-            The operand to be added to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be added to this instance.
 
         Returns
         --------
@@ -868,14 +841,12 @@ class AstroData:
 
     def __sub__(self, oper):
         """
-        Implements the binary arithmetic operation `-` with `AstroData` as
-        the left operand.
+        Implements the binary arithmetic operation ``-``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or object
-            The operand to be subtracted to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be subtracted to this instance.
 
         Returns
         --------
@@ -887,14 +858,12 @@ class AstroData:
 
     def __mul__(self, oper):
         """
-        Implements the binary arithmetic operation `*` with `AstroData` as
-        the left operand.
+        Implements the binary arithmetic operation ``*``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or object
-            The operand to be multiplied to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be multiplied to this instance.
 
         Returns
         --------
@@ -906,14 +875,12 @@ class AstroData:
 
     def __truediv__(self, oper):
         """
-        Implements the binary arithmetic operation `/` with `AstroData` as
-        the left operand.
+        Implements the binary arithmetic operation ``/``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or object
-            The operand to be divided to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be divided to this instance.
 
         Returns
         --------
@@ -925,68 +892,64 @@ class AstroData:
 
     def __iadd__(self, oper):
         """
-        Implements the augmented arithmetic assignment `+=`.
+        Implements the augmented arithmetic assignment ``+=``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or object
-            The operand to be added to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be added to this instance.
 
         Returns
         --------
-        `self`
+        ``self``
         """
         self._standard_nddata_op(NDDataObject.add, oper)
         return self
 
     def __isub__(self, oper):
         """
-        Implements the augmented arithmetic assignment `-=`.
+        Implements the augmented arithmetic assignment ``-=``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or object
-            The operand to be subtracted to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be subtracted to this instance.
 
         Returns
         --------
-        `self`
+        ``self``
         """
         self._standard_nddata_op(NDDataObject.subtract, oper)
         return self
 
     def __imul__(self, oper):
         """
-        Implements the augmented arithmetic assignment `*=`.
+        Implements the augmented arithmetic assignment ``*=``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or object
-            The operand to be multiplied to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be multiplied to this instance.
 
         Returns
         --------
-        `self`
+        ``self``
         """
         self._standard_nddata_op(NDDataObject.multiply, oper)
         return self
 
     def __itruediv__(self, oper):
         """
-        Implements the augmented arithmetic assignment `/=`.
+        Implements the augmented arithmetic assignment ``/=``.
 
-        Args
-        -----
+        Parameters
+        ----------
         oper : number or other
-            The operand to be divided to this instance. The accepted types
-            depend on the `DataProvider`.
+            The operand to be divided to this instance.
 
         Returns
         --------
-        `self`
+        ``self``
         """
         self._standard_nddata_op(NDDataObject.divide, oper)
         return self
@@ -1152,7 +1115,7 @@ class AstroData:
     def _append_raw_nddata(self, raw_nddata, name, header, add_to,
                            reset_ver=True):
         # We want to make sure that the instance we add is whatever we specify
-        # as `NDDataObject`, instead of the random one that the user may pass
+        # as NDDataObject, instead of the random one that the user may pass
         top_level = add_to is None
         if not isinstance(raw_nddata, NDDataObject):
             raw_nddata = NDDataObject(raw_nddata)
@@ -1233,21 +1196,19 @@ class AstroData:
         a whole, the new member will be independent (eg. global table, new
         science object).
 
-        Args
-        -----
+        Parameters
+        ----------
         ext : array, `NDData`, `Table`, other
             The contents for the new extension. The exact accepted types depend
             on the class implementing this interface. Implementations specific
             to certain data formats may accept specialized types (eg. a FITS
             provider will accept an `ImageHDU` and extract the array out of it)
-
         name : str, optional
             A name that may be used to access the new object, as an attribute
             of the provider. The name is typically ignored for top-level
             (global) objects, and required for the others. If the name cannot
             be derived from the metadata associated to `extension`, you will
             have to provider one.
-
             It can consist in a combination of numbers and letters, with the
             restriction that the letters have to be all capital, and the first
             character cannot be a number ("[A-Z][A-Z0-9]*").
@@ -1310,6 +1271,17 @@ class AstroData:
     load = read  # for backward compatibility
 
     def write(self, filename=None, overwrite=False):
+        """
+        Write the object to disk.
+
+        Parameters
+        ----------
+        filename : str, optional
+            If the filename is not given, ``self.path`` is used.
+        overwrite : bool
+            If True, overwrites existing file.
+
+        """
         if filename is None:
             if self.path is None:
                 raise ValueError("A filename needs to be specified")
@@ -1324,12 +1296,13 @@ class AstroData:
 
         Returns
         -------
-        A dictionary `{EXTVER:index, ...}`
+        A dictionary ``{EXTVER:index, ...}``
 
         Raises
         ------
         ValueError
             If used against a single slice. It is of no use in that situation.
+
         """
         if self.is_single:
             raise ValueError("Trying to get a mapping out of a single slice")
@@ -1343,16 +1316,17 @@ class AstroData:
         Parameters
         ----------
         ver : int
-            The EXTVER for the desired extension
+            The EXTVER for the desired extension.
 
         Returns
         -------
-        A sliced object containing the desired extension
+        A sliced object containing the desired extension.
 
         Raises
         ------
         IndexError
-            If the provided EXTVER doesn't exist
+            If the provided EXTVER doesn't exist.
+
         """
         try:
             if isinstance(ver, int):
@@ -1382,17 +1356,13 @@ class AstroData:
 
         with the additional advantage that it will work on single slices, too.
 
-        Args
-        -----
-        operator : function, or bound method
+        Parameters
+        ----------
+        operator : callable
             A function that takes an array (and, maybe, other arguments)
-            and returns an array
-
-        args : optional
-            Additional arguments to be passed positionally to the `operator`
-
-        kwargs : optional
-            Additional arguments to be passed by name to the `operator`
+            and returns an array.
+        args, kwargs : optional
+            Additional arguments to be passed to the ``operator``.
 
         Examples
         ---------
@@ -1410,35 +1380,32 @@ class AstroData:
 
     def reset(self, data, mask=NO_DEFAULT, variance=NO_DEFAULT, check=True):
         """
-        Sets the .data, and optionally .mask and .variance attributes of a
-        single-extension AstroData slice. This function will optionally
-        check whether these attributes have the same shape.
+        Sets the ``.data``, and optionally ``.mask`` and ``.variance``
+        attributes of a single-extension AstroData slice. This function will
+        optionally check whether these attributes have the same shape.
 
         Parameters
         ----------
         data : ndarray
-            The array to assign to the .data attribute ("SCI")
-
+            The array to assign to the ``.data`` attribute ("SCI").
         mask : ndarray, optional
-            The array to assign to the .mask attribute ("DQ")
-
+            The array to assign to the ``.mask`` attribute ("DQ").
         variance: ndarray, optional
-            The array to assign to the .variance attribute ("VAR")
-
+            The array to assign to the ``.variance`` attribute ("VAR").
         check: bool
             If set, then the function will check that the mask and variance
-            arrays have the same shape as the data array
+            arrays have the same shape as the data array.
 
         Raises
         -------
         TypeError
             if an attempt is made to set the .mask or .variance attributes
             with something other than an array
-
         ValueError
             if the .mask or .variance attributes don't have the same shape as
             .data, OR if this is called on an AD instance that isn't a single
             extension slice
+
         """
         if not self.is_single:
             raise ValueError("Trying to reset a non-sliced AstroData object")
@@ -1482,19 +1449,20 @@ class AstroData:
 
     def update_filename(self, prefix=None, suffix=None, strip=False):
         """
-        This method updates the "filename" attribute of the AstroData object.
-        A prefix and/or suffix can be specified. If strip=True, these will
-        replace the existing prefix/suffix; if strip=False, they will simply
-        be prepended/appended.
+        Update the "filename" attribute of the AstroData object.
+
+        A prefix and/or suffix can be specified. If ``strip=True``, these will
+        replace the existing prefix/suffix; if ``strip=False``, they will
+        simply be prepended/appended.
 
         The current filename is broken down into its existing prefix, root,
-        and suffix using the ORIGNAME phu keyword, if it exists and is
+        and suffix using the ``ORIGNAME`` phu keyword, if it exists and is
         contained within the current filename. Otherwise, the filename is
         split at the last underscore and the part before is assigned as the
         root and the underscore and part after the suffix. No prefix is
         assigned.
 
-        Note that, if strip=True, a prefix or suffix will only be stripped
+        Note that, if ``strip=True``, a prefix or suffix will only be stripped
         if '' is specified.
 
         Parameters
@@ -1505,6 +1473,7 @@ class AstroData:
             new suffix (None => leave alone)
         strip: bool
             Strip existing prefixes and suffixes if new ones are given?
+
         """
         if self.filename is None:
             if 'ORIGNAME' in self.phu:
