@@ -7,18 +7,9 @@ import requests
 
 import astrodata
 
-from gempy.utils import logutils
+from astrodata import testing as ad_testing
 from geminidr.core import primitives_visualize
-
-
-@pytest.fixture
-def astrofaker():
-    try:
-        import astrofaker
-    except ImportError:
-        pytest.skip("astrofaker not installed")
-
-    return astrofaker
+from recipe_system.testing import reduce_arc
 
 
 def test_mosaic_detectors_gmos_binning(astrofaker):
@@ -28,6 +19,7 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
     mosaicDetectors()
     """
     from geminidr.gmos.primitives_gmos_image import GMOSImage
+    astrofaker = pytest.importorskip("astrofaker")
 
     for hemi in 'NS':
         for ccd in ('EEV', 'e2v', 'Ham'):
@@ -52,81 +44,67 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
                     assert np.max(abs(diffs)) < 0.01
 
 
-@pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("fname, arc_fname", zip(["N20180112S0209.fits"], ["N20180112S0353.fits"]))
-def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
+@pytest.mark.parametrize("input_ad", ["N20180112S0209.fits"], indirect=True)
+@pytest.mark.usefixtures("check_adcc")
+def test_plot_spectra_for_qa_single_frame(input_ad):
+    p = primitives_visualize.Visualize([])
+    p.plotSpectraForQA(adinputs=[input_ad])
+    assert True
 
-    def process_arc(filename, suffix="distortionDetermined"):
-        """
-        Helper recipe to reduce the arc file.
 
-        Returns
-        -------
-        AstroData
-            Processed arc.
-        """
-        from astrodata.testing import download_from_archive
-        from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+@pytest.fixture(scope='module')
+def check_adcc():
+    try:
+        _ = requests.get(url="http://localhost:8777/rqsite.json")
+        print("ADCC is up and running!")
+    except requests.exceptions.ConnectionError:
+        pytest.skip("ADCC is not running.")
 
-        processed_filename, ext = os.path.splitext(filename)
-        processed_filename += "_{:s}{:s}".format(suffix, ext)
 
-        if os.path.exists(processed_filename):
-            ad = astrodata.open(processed_filename)
-        else:
+@pytest.fixture(scope='module')
+def input_ad(cache_file_from_archive, path_to_inputs, reduce_arc,
+             reduce_data, request):
 
-            if os.path.exists(filename):
-                ad = astrodata.open(filename)
-            else:
-                ad = astrodata.open(download_from_archive(
-                    filename, path='', env_var='DRAGONS_TEST'))
+    basename = request.param
+    should_preprocess = request.config.getoption("--force-preprocess-data")
 
-            p = GMOSLongslit([ad])
+    input_fname = basename.replace('.fits', '_flatCorrected.fits')
+    input_path = os.path.join(path_to_inputs, input_fname)
 
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            # p.biasCorrect()
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.mosaicDetectors()
-            p.makeIRAFCompatible()
-            p.determineWavelengthSolution()
-            p.determineDistortion()
+    if os.path.exists(input_path):
+        input_data = astrodata.open(input_path)
 
-            ad = p.streams['main'][0]
-            ad.write(overwrite=True)
+    elif should_preprocess:
+        filename = cache_file_from_archive(basename)
+        ad = astrodata.open(filename)
+        cals = ad_testing.get_associated_calibrations(basename)
 
-        return ad
+        arcs = [cache_file_from_archive(a)
+                for a in cals[cals.caltype == 'arc'].filename.values]
 
-    def process_object(filename, arc, suffix="linearized"):
-        """
-        Helper recipe to reduce the object file.
+        master_arc = reduce_arc(ad.data_label(), arcs)
+        input_data = reduce_data(ad, master_arc)
 
-        Returns
-        -------
-        AstroData
-            Processed arc.
-        """
-        from astrodata.testing import download_from_archive
-        from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+    else:
+        raise IOError(
+            'Could not find input file:\n' +
+            '  {:s}\n'.format(input_path) +
+            '  Run pytest with "--force-preprocess-data" to get it')
 
-        processed_filename, ext = os.path.splitext(filename)
-        processed_filename += "_{:s}{:s}".format(suffix, ext)
+    return input_data
 
-        if os.path.exists(processed_filename):
-            ad = astrodata.open(processed_filename)
-        else:
 
-            if os.path.exists(filename):
-                ad = astrodata.open(filename)
-            else:
-                ad = astrodata.open(download_from_archive(
-                    filename, path='', env_var='DRAGONS_TEST'))
+@pytest.fixture(scope='module')
+def reduce_data(enter_path_to_outputs):
+    from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+    from gempy.utils import logutils
+
+    def _reduce_data(ad, arc):
+        with enter_path_to_outputs():
+            print('Current working directory:\n    {:s}'.format(os.getcwd()))
+            logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
 
             p = GMOSLongslit([ad])
-
             p.prepare()
             p.addDQ(static_bpm=None)
             p.addVAR(read_noise=True)
@@ -141,28 +119,10 @@ def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
             p.skyCorrectFromSlit()
             p.traceApertures()
             p.extract1DSpectra()
-            p.linearizeSpectra()  # TODO: needed?
+            p.linearizeSpectra()
             p.calculateSensitivity()
 
-            ad = p.streams['main'][0]
-            ad.write(overwrite=True)
-
+            ad = p.writeOutputs().pop()
         return ad
 
-    try:
-        _ = requests.get(url="http://localhost:8777/rqsite.json")
-        print("ADCC is up and running!")
-    except requests.exceptions.ConnectionError:
-        pytest.skip("ADCC is not running.")
-
-    os.chdir(path_to_inputs)
-    print(' Current working directory:\n   {}'.format(path_to_inputs))
-
-    logutils.config("standard",
-                    file_name=os.path.basename(__file__.replace('.py', '.log')))
-
-    arc_ad = process_arc(arc_fname)
-    ad = process_object(fname, arc=arc_ad)
-
-    p = primitives_visualize.Visualize([])
-    p.plotSpectraForQA(adinputs=[ad])
+    return _reduce_data

@@ -1,13 +1,10 @@
 import pytest
-from ..primitives_calibdb import _update_datalab
+from geminidr.core.primitives_calibdb import _update_datalab
+
 
 @pytest.fixture()
 def ad():
-    try:
-        from AstroFaker import astrofaker
-    except ImportError:
-        pytest.skip("astrofaker is not installed")
-
+    astrofaker = pytest.importorskip("astrofaker")
     simple_ad = astrofaker.create('NIRI', 'IMAGE')
     return simple_ad
 

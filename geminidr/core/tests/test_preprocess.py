@@ -41,10 +41,7 @@ logfilename = 'test_preprocess.log'
 @pytest.fixture
 def niri_images():
     """Create two NIRI images, one all 1s, the other all 2s"""
-    try:
-        import astrofaker
-    except ImportError:
-        pytest.skip("astrofaker not installed")
+    astrofaker = pytest.importorskip("astrofaker")
 
     adinputs = []
     for i in (1, 2):
