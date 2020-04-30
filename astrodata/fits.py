@@ -1638,6 +1638,12 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
             other[name].set_section(section, obj)
             del other[name, coords]
 
+        # To set the name of our object we need to save it as an ndarray,
+        # otherwise for a NDData one AstroData would use the name of the
+        # AstroData object.
+        other[name] = other[name].data
+        result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
+
     return result
 
 
