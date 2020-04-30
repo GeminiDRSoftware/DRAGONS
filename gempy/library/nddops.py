@@ -292,6 +292,8 @@ class NDStacker:
         data, rejmask, variance = self._rejector(data, mask, variance,
                                                  **self._rej_args)
         if save_rejection_map:
+            if mask is None:
+                mask = np.zeros_like(data, dtype=DQ.datatype)
             rejmap = np.sum(rejmask - mask, axis=0)
         else:
             rejmap = None
