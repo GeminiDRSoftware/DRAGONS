@@ -3,14 +3,15 @@ import gemini_instruments
 from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.gemini import gemini_tools as gt
 from astropy.table import Table
-import os
+
+from gempy.testing import setup_log
 
 
-def test_fit_continuum_slit_image(path_to_inputs):
-    results = {'N20180118S0344': 1.32}
+def test_fit_continuum_slit_image(cache_file_from_archive):
+    results = {'N20180118S0344.fits': 1.32}
+
     for fname, fwhm in results.items():
-        ad = astrodata.open(os.path.join(path_to_inputs, 'gt/slit_images',
-                                         '{}.fits'.format(fname)))
+        ad = astrodata.open(cache_file_from_archive(fname))
         p = GMOSImage([ad])
         p.prepare(attach_mdf=True)
         p.addDQ()

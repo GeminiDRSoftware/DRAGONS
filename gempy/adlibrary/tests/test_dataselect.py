@@ -3,18 +3,20 @@ import pytest
 import os
 
 from gempy.adlibrary import dataselect
-from gempy.utils import logutils
 
-logutils.config(file_name='dummy.log')
+test_files = [
+    'S20131126S1111.fits',  # F2 Flat Y
+    'S20131126S1112.fits',  # F2 Flat Y
+    'S20131121S0075.fits',  # F2 Science
+]
 
 
 @pytest.fixture
-def F2_reduce(path_to_inputs):
-    return glob.glob(os.path.join(path_to_inputs,
-                                  "F2", "test_reduce", "*fits"))
+def f2_data(cache_file_from_archive):
+    return [cache_file_from_archive(f) for f in test_files]
 
 
-def test_isclose_returns_proper_values_with_edgecases():
+def test_isclose_returns_proper_values_with_edge_cases():
     """
     Two lists, one list that calls 'isclose()', other has list of bools
     which correspond to the expected answer. This just means we can shorten
@@ -26,9 +28,9 @@ def test_isclose_returns_proper_values_with_edgecases():
                      dataselect.isclose(0.1, 0.11),
                      dataselect.isclose(1.5, 3.0, 1.4),
                      dataselect.isclose(4, 8, 0.1, 9)]
-    excpected_values = [True, False, True, False, True, True]
+    expected_values = [True, False, True, False, True, True]
     for i in range(len(answer_values)):
-        assert answer_values[i] == excpected_values[i]
+        assert answer_values[i] == expected_values[i]
 
 
 def test_expr_parser_can_parse_for_filter_name():
@@ -252,13 +254,11 @@ def test_evalexpression():
 
 
 @pytest.mark.dragons_remote_data
-def test_select_data(F2_reduce):
-    answer = dataselect.select_data(F2_reduce, ["F2", "FLAT"], [],
-                                    dataselect.expr_parser('filter_name=="Y"'))
+def test_select_data(f2_data):
+
+    answer = dataselect.select_data(
+        f2_data, ["F2", "FLAT"], [], dataselect.expr_parser('filter_name=="Y"'))
+
     # For legibility, the list of answers just has the files
-    correct_files = {'S20131126S1113.fits', 'S20131129S0322.fits',
-                     'S20131126S1111.fits', 'S20131129S0321.fits',
-                     'S20131126S1115.fits', 'S20131126S1116.fits',
-                     'S20131129S0323.fits', 'S20131126S1112.fits',
-                     'S20131129S0320.fits', 'S20131126S1114.fits'}
+    correct_files = {'S20131126S1111.fits', 'S20131126S1112.fits'}
     assert {os.path.basename(f) for f in answer} == correct_files

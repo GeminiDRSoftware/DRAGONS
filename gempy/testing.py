@@ -1,3 +1,6 @@
+import os
+import pytest
+
 from gempy.library.astromodels import dict_to_chebyshev
 from numpy.testing import assert_allclose
 
@@ -53,3 +56,26 @@ def assert_wavelength_solutions_are_close(ad, ad_ref):
 
         assert isinstance(wcal, type(wcal_ref))
         assert_allclose(wcal.parameters, wcal_ref.parameters)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_log(path_to_outputs):
+    """
+    Fixture that setups DRAGONS' logging system to avoid duplicated outputs.
+
+    Parameters
+    ----------
+    request : fixture
+        Pytest's built-in fixture containing information about the test itself.
+    path_to_outputs : fixture
+        Custom fixture defined in `astrodata.testing` containing the path to
+        the output folder.
+    """
+    from gempy.utils import logutils
+
+    module_path = list(os.path.split(path_to_outputs))
+    log_file = "{}.log".format(module_path[-1])
+    log_file = os.path.join(*module_path, log_file)
+    print('Setting up log file:\n  {:s}'.format(log_file))
+
+    logutils.config(mode="standard", file_name=log_file)

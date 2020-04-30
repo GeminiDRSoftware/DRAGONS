@@ -1,7 +1,3 @@
-import os
-import pytest
-
-from astrodata.testing import download_from_archive
 from gempy.utils.showrecipes import showrecipes
 
 GNIRS = "S20171208S0054.fits"
@@ -18,9 +14,8 @@ GSAOI_IMAGE = 'S20170505S0095.fits'
 GSAOI_FLAT = 'S20170505S0031.fits'
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gnirs():
-    file_location = download_from_archive(GNIRS)
+def test_showrecipes_on_gnirs(cache_file_from_archive):
+    file_location = cache_file_from_archive(GNIRS)
 
     expected_answers = [
         "Input file: {}".format(file_location),
@@ -37,9 +32,8 @@ def test_showrecipes_on_gnirs():
         assert expected_answers[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gnirs_spect():
-    file_location = download_from_archive(GNIRS_SPECT)
+def test_showrecipes_on_gnirs_spect(cache_file_from_archive):
+    file_location = cache_file_from_archive(GNIRS_SPECT)
 
     gnirs_spect_answer = [
         "Input file: {}".format(file_location),
@@ -53,9 +47,8 @@ def test_showrecipes_on_gnirs_spect():
         assert gnirs_spect_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gmos():
-    file_location = download_from_archive(GMOS)
+def test_showrecipes_on_gmos(cache_file_from_archive):
+    file_location = cache_file_from_archive(GMOS)
 
     gmos_answer = [
         "Input file: {}".format(file_location),
@@ -75,9 +68,8 @@ def test_showrecipes_on_gmos():
         assert gmos_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gmos_ns():
-    file_location = download_from_archive(GMOS_NS)
+def test_showrecipes_on_gmos_ns(cache_file_from_archive):
+    file_location = cache_file_from_archive(GMOS_NS)
 
     gmos_ns_answer = [
         "Input file: {}".format(file_location),
@@ -92,9 +84,8 @@ def test_showrecipes_on_gmos_ns():
         assert gmos_ns_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gmos_spect():
-    file_location = download_from_archive(GMOS_SPECT)
+def test_showrecipes_on_gmos_spect(cache_file_from_archive):
+    file_location = cache_file_from_archive(GMOS_SPECT)
 
     gmos_spect_answer = [
         "Input file: {}".format(file_location),
@@ -108,9 +99,8 @@ def test_showrecipes_on_gmos_spect():
         assert gmos_spect_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gsaoi_dark():
-    file_location = download_from_archive(GSAOI_DARK)
+def test_showrecipes_on_gsaoi_dark(cache_file_from_archive):
+    file_location = cache_file_from_archive(GSAOI_DARK)
 
     gsaoi_dark_answer = [
         "Input file: {}".format(file_location),
@@ -125,9 +115,8 @@ def test_showrecipes_on_gsaoi_dark():
         assert gsaoi_dark_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gsaoi_image():
-    file_location = download_from_archive(GSAOI_IMAGE)
+def test_showrecipes_on_gsaoi_image(cache_file_from_archive):
+    file_location = cache_file_from_archive(GSAOI_IMAGE)
 
     gsaoi_image_answer = [
         "Input file: {}".format(file_location),
@@ -142,9 +131,8 @@ def test_showrecipes_on_gsaoi_image():
         assert gsaoi_image_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_gsaoi_flat():
-    file_location = download_from_archive(GSAOI_FLAT)
+def test_showrecipes_on_gsaoi_flat(cache_file_from_archive):
+    file_location = cache_file_from_archive(GSAOI_FLAT)
 
     gsaoi_flat_answer = [
         "Input file: {}".format(file_location),
@@ -160,9 +148,8 @@ def test_showrecipes_on_gsaoi_flat():
         assert gsaoi_flat_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_niri():
-    file_location = download_from_archive(NIRI)
+def test_showrecipes_on_niri(cache_file_from_archive):
+    file_location = cache_file_from_archive(NIRI)
 
     niri_answer = [
         "Input file: {}".format(file_location),
@@ -180,9 +167,8 @@ def test_showrecipes_on_niri():
         assert niri_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_data
-def test_showrecipes_on_f2():
-    file_location = download_from_archive(F2)
+def test_showrecipes_on_f2(cache_file_from_archive):
+    file_location = cache_file_from_archive(F2)
 
     f2_answer = [
         "Input file: {}".format(file_location),
