@@ -857,8 +857,6 @@ class Spect(PrimitivesBASE):
                 # Some diagnostic plotting
                 yplot = 0
                 plt.ioff()
-                if debug:
-                    fig, ax = plt.subplots()
 
                 # The very first model is called "m_final" because at each
                 # iteration the next initial model comes from the fitted
@@ -880,7 +878,7 @@ class Spect(PrimitivesBASE):
 
                     # FixMe: toggle commented lines bellow to make tests pass
 
-                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping')) +
+                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c0'])) +
                                 tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
 
                     # sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
@@ -959,15 +957,13 @@ class Spect(PrimitivesBASE):
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                                                    model=m_final, match_radius=match_radius,
                                                                    sigma_clip=3)
-                if debug:
-                    for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
-                        ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
-                                ha='center', va='top')
-
                 log.stdinfo('{} {} {}'.format(repr(m.forward), len(m.input_coords), m.rms_output))
                 if debug:
                     plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m.forward,
-                                 "MatchBox model order {ord}")
+                                 f"MatchBox model order {ord}")
+                    #for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
+                    #    ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
+                    #            ha='center', va='top')
 
                 # Choice of kdsigma can have a big effect. This oscillates
                 # around the initial choice, with increasing amplitude.
@@ -982,12 +978,8 @@ class Spect(PrimitivesBASE):
 
                 if debug:
                     plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final, "Final fit")
-                    m.display_fit()
-                    plt.show()
-
-                m.display_fit()
-
-                if debug:
+                    m.display_fit(show=True)
+                    m.display_fit(show=False)
                     plt.savefig(ad.filename.replace('.fits', '.jpg'))
 
                 m.sort()

@@ -323,9 +323,6 @@ class Chebyshev1DMatchBox(MatchBox):
         show: bool
             call plt.show() method at end?
         """
-        if not show:
-            return
-
         if axes is None:
             fig, axes = plt.subplots()
 
