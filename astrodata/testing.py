@@ -6,7 +6,7 @@ import os
 import shutil
 import urllib
 import xml.etree.ElementTree as et
-from pathlib import Path
+from contextlib import contextmanager
 
 import pytest
 from astropy.utils.data import download_file
@@ -78,6 +78,45 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
             return cache_path
 
     return _cache_file_from_archive
+
+
+@pytest.fixture(scope='module')
+def enter_path_to_outputs(request, path_to_outputs):
+    """
+    Factory that returns the output path as a context manager object, allowing
+    easy access to the path to where the processed data should be stored.
+
+    Parameters
+    ----------
+    request : pytest.fixture
+        Fixture that contains information this fixture's parent.
+    path_to_outputs : pytest.fixture
+        Fixture containing the root path to the output files.
+
+    Returns
+    -------
+    contextmanager
+        Enable easy change to temporary folder when reducing data.
+    """
+    module_path = request.module.__name__.split('.') + ["outputs"]
+    module_path = [item for item in module_path if item not in "tests"]
+    path = os.path.join(path_to_outputs, *module_path)
+
+    os.makedirs(path, exist_ok=True)
+
+    @contextmanager
+    def _output_path():
+        oldpwd = os.getcwd()
+        os.chdir(path)
+        try:
+            yield
+        finally:
+            os.chdir(oldpwd)
+
+    return _output_path
+
+
+
 
 
 def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
