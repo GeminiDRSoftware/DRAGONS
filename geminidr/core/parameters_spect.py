@@ -60,7 +60,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
-    plot = config.Field("Make diagnostic plots?", bool, False)
+    debug = config.Field("Make diagnostic plots?", bool, False)
 
 class distortionCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)

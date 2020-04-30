@@ -431,11 +431,9 @@ class Spect(PrimitivesBASE):
                 if dispaxis == 1:
                     model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
                     model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
-                    refaxes = ("xref", "y")
                 else:
                     model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
-                    refaxes = ("x", "yref")
 
                 self.viewer.color = "blue"
                 spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
@@ -454,15 +452,14 @@ class Spect(PrimitivesBASE):
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
-                # The data may not be a mosaic for instruments other than GMOS
-                # but that's the logical step we're at:
-                in_frame = Frame2D(name="det_mosaic", axes_names=("x", "y"),
-                                   unit=(u.pix, u.pix))
-                ref_frame = Frame2D(name="dist_ref_spec", axes_names=refaxes,
-                                   unit=(u.pix, u.pix))
-
-                ext.nddata.wcs = gWCS([(in_frame, model),
-                                       (ref_frame, None)])
+                # Put this model before the first step if there's an existing WCS
+                if ext.wcs is None:
+                    ext.wcs = gWCS([(Frame2D(name="pixels"), model),
+                                    (Frame2D(name="world"), None)])
+                else:
+                    ext.wcs = gWCS([(ext.wcs.input_frame, model),
+                                    (Frame2D(name="distortion_corrected"), ext.wcs.pipeline[0][1])]
+                                   + ext.wcs.pipeline[1:])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -758,7 +755,7 @@ class Spect(PrimitivesBASE):
         weighting = params["weighting"]
         nbright = params.get("nbright", 0)
 
-        plot = params["plot"]
+        debug = params["debug"]
         plt.ioff()
 
         # TODO: This decision would prevent MOS data being reduced so need
@@ -860,7 +857,7 @@ class Spect(PrimitivesBASE):
                 # Some diagnostic plotting
                 yplot = 0
                 plt.ioff()
-                if plot:
+                if debug:
                     fig, ax = plt.subplots()
 
                 # The very first model is called "m_final" because at each
@@ -868,7 +865,7 @@ class Spect(PrimitivesBASE):
                 # (final) model of the previous iteration
                 m_final = models.Chebyshev1D(degree=1, c0=cenwave,
                                              c1=0.5 * dw * len(data), domain=[0, len(data) - 1])
-                if plot:
+                if debug:
                     plot_arc_fit(data, peaks, arc_lines, arc_weights, m_final, "Initial model")
                 log.stdinfo('Initial model: {}'.format(repr(m_final)))
 
@@ -934,7 +931,7 @@ class Spect(PrimitivesBASE):
                     #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
 
                     log.stdinfo('{} {}'.format(repr(m_final), fit_it.statistic))
-                    if plot:
+                    if debug:
                         plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final,
                                      "KDFit model order {} KDsigma = {}".format(ord, kdsigma))
 
@@ -942,9 +939,9 @@ class Spect(PrimitivesBASE):
                     for p in m_final.param_names:
                         getattr(m_final, p).bounds = (None, None)
 
-                    m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                                                                       model=m_final, match_radius=match_radius,
-                                                                       sigma_clip=3)
+                    #m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
+                    #                                                   model=m_final, match_radius=match_radius,
+                    #                                                   sigma_clip=3)
                     # kdsigma = m.rms_output
                     # print("New kdsigma {}".format(kdsigma))
                     kdsigma = fwidth * abs(dw)
@@ -962,13 +959,13 @@ class Spect(PrimitivesBASE):
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                                                    model=m_final, match_radius=match_radius,
                                                                    sigma_clip=3)
-                if plot:
+                if debug:
                     for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
                         ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
                                 ha='center', va='top')
 
                 log.stdinfo('{} {} {}'.format(repr(m.forward), len(m.input_coords), m.rms_output))
-                if plot:
+                if debug:
                     plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m.forward,
                                  "MatchBox model order {ord}")
 
@@ -983,14 +980,14 @@ class Spect(PrimitivesBASE):
                 log.stdinfo(m_final)
                 log.stdinfo("Matched {} lines with rms = {:.3f} nm.".format(nmatched, rms))
 
-                if plot:
+                if debug:
                     plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final, "Final fit")
                     m.display_fit()
                     plt.show()
 
                 m.display_fit()
 
-                if plot:
+                if debug:
                     plt.savefig(ad.filename.replace('.fits', '.jpg'))
 
                 m.sort()

@@ -16,7 +16,7 @@ from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy import numdisplay as nd
 
-from gempy.library import transform, transform_gwcs
+from gempy.library import transform
 from astropy.modeling import models
 from gwcs.coordinate_frames import Frame2D
 from gwcs.wcs import WCS as gWCS
@@ -274,6 +274,7 @@ class Visualize(PrimitivesBASE):
         suffix = params['suffix']
         order = params['order']
         attributes = ['data'] if params['sci_only'] else None
+        geotable = import_module('.geometry_conf', self.inst_lookups)
 
         adoutputs = []
         for ad in adinputs:
@@ -290,29 +291,18 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
-            # Because we don't save the gWCS object unnecessarily, data that
-            # have been written to disk and then reloaded will not have the
-            # mosaic transform that "prepare" creates, so we have to reattach
-            # it. We also check here that there is a "mosaic" step in the WCS
-            if not all('mosaic' in ext.wcs.available_frames for ext in ad):
-                log.stdinfo(f"No mosaic step present in {ad.filename}. "
-                            "Re-running standardizeWCS")
-                self.standardizeWCS([ad])
-
-            if not all('mosaic' in ext.wcs.available_frames for ext in ad):
-                log.warning(f"I don't know how to mosaic {ad.filename}. Continuing")
-                continue
+            transform.add_mosaic_wcs(ad, geotable)
 
             # If there's an overscan section in the data, this will crash, but
             # we can catch that, trim, and try again. Don't catch anything else
             try:
-                ad_out = transform_gwcs.resample_from_wcs(ad, "mosaic", attributes=attributes,
+                ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
                                                           order=order, process_objcat=False)
             except ValueError as e:
                 if 'data sections' in repr(e):
                     ad = gt.trim_to_data_section(ad, self.keyword_comments)
-                    ad_out = transform_gwcs.resample_from_wcs(ad, "mosaic", attributes=attributes,
-                                                              order=order, process_objcat=False)
+                    ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
+                                                         order=order, process_objcat=False)
                 else:
                     raise e
 
@@ -416,10 +406,6 @@ class Visualize(PrimitivesBASE):
                     ext_shift = (models.Shift((arrsec.x1 // xbin - datsec.x1)) &
                                  models.Shift((arrsec.y1 // ybin - datsec.y1)))
 
-                    # To accommodate non-data regions (e.g., overscan)
-                    nondata_shift = (models.Shift(xshifts[iy,ix]) &
-                                     models.Shift(yshifts[iy,ix]))
-
                     # We need to have a "tile" Frame to resample to.
                     # We also need to perform the inverse, after the "tile"
                     # frame, of any change we make beforehand.
@@ -427,6 +413,8 @@ class Visualize(PrimitivesBASE):
                         ext.wcs = gWCS([(Frame2D(name="pixels"), ext_shift),
                                         (Frame2D(name="tile"), None)])
                     elif 'tile' not in ext.wcs.available_frames:
+                        #ext.wcs.insert_frame(ext.wcs.input_frame, ext_shift,
+                        #                     Frame2D(name="tile"))
                         ext.wcs = gWCS([(ext.wcs.input_frame, ext_shift),
                                         (Frame2D(name="tile"), ext.wcs.pipeline[0][1])] +
                                        ext.wcs.pipeline[1:])
@@ -438,6 +426,8 @@ class Visualize(PrimitivesBASE):
                         if ext.wcs.output_frame != 'tile':
                             ext.wcs.insert_transform('tile', shift_model.inverse, after=True)
                     else:
+                        nondata_shift = (models.Shift(xshifts[iy, ix]) &
+                                         models.Shift(yshifts[iy, ix]))
                         ext.wcs.insert_transform('tile', nondata_shift, after=False)
                         ext.wcs.insert_transform('tile', nondata_shift.inverse, after=True)
                     # Reset data_section since we're not trimming overscans
@@ -450,23 +440,25 @@ class Visualize(PrimitivesBASE):
                     # track of shifts we've introduced, but it might also be
                     # the case that we've been sent a previous tile_all=False output
                     if ccdx < detshape[1] - 1:
-                        max_xshift = max(xshifts.max(), ext.shape[1] - (xorigins[ccdy, ccdx+1] - xorigins[ccdy, ccdx]))
+                        max_xshift = max(xshifts.max(), ext.shape[1] -
+                                         (xorigins[ccdy, ccdx+1] - xorigins[ccdy, ccdx]))
                         xorigins[ccdy, ccdx+1:] += max_xshift + xgap // xbin
                     if ccdy < detshape[0] - 1:
-                        max_yshift = max(yshifts.max(), ext.shape[0] - (yorigins[ccdy+1, ccdx] - yorigins[ccdy, ccdx]))
+                        max_yshift = max(yshifts.max(), ext.shape[0] -
+                                         (yorigins[ccdy+1, ccdx] - yorigins[ccdy, ccdx]))
                         yorigins[ccdy+1:, ccdx] += max_yshift + ygap // ybin
                 elif i == 0:
-                    ad_out = transform_gwcs.resample_from_wcs(ad[exts], "tile",
+                    ad_out = transform.resample_from_wcs(ad[exts], "tile",
                                             attributes=attributes, process_objcat=True)
                 else:
-                    ad_out.append(transform_gwcs.resample_from_wcs(ad[exts], "tile",
+                    ad_out.append(transform.resample_from_wcs(ad[exts], "tile",
                                                  attributes=attributes, process_objcat=True)[0])
                 i += 1
                 it_ccd.iternext()
 
             if tile_all:
-                ad_out = transform_gwcs.resample_from_wcs(ad, "tile", attributes=attributes,
-                                                          process_objcat=True)
+                ad_out = transform.resample_from_wcs(ad, "tile", attributes=attributes,
+                                                     process_objcat=True)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.orig_filename = ad.filename

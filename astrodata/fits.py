@@ -1053,9 +1053,10 @@ class FitsProvider(DataProvider):
             wcs = ext.wcs
             if isinstance(wcs, gWCS):
                 # We don't have access to the AD tags so see if it's an image
+                # Catch ValueError as any sort of failure
                 try:
                     wcs_dict = adwcs.gwcs_to_fits(ext, self._phu)
-                except ValueError as e:
+                except (ValueError, NotImplementedError) as e:
                     LOGGER.warning(e)
                 else:
                     for kw in ('CDELT1', 'CDELT2', 'PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'):

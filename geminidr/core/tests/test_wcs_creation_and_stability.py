@@ -17,10 +17,7 @@ from astrodata.testing import download_from_archive
 
 from geminidr.gmos.primitives_gmos_image import GMOSImage
 
-try:
-    from gempy.library.transform_gwcs import find_reference_extension
-except (ModuleNotFoundError, ImportError):
-    from gempy.library.transform import find_reference_extension
+from gempy.library.transform import find_reference_extension
 
 TEMPFILE = "wcs_test.fits"
 
