@@ -1063,7 +1063,8 @@ class FitsProvider(DataProvider):
                         if kw in header:
                             del header[kw]
                     header.update(wcs_dict)
-                    if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS'):
+                    # Use "in" here as the dict entry may be (value, comment)
+                    if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
                         wcs = None  # There's no need to create a WCS extension
 
             hlst.append(new_imagehdu(ext.data, header))

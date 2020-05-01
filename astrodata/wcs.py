@@ -184,8 +184,10 @@ def model_is_affine(model):
         return np.logical_and.reduce([model_is_affine(m)
                                       for m in model])
     except TypeError:
+        # TODO: Delete "Const" one fix_inputs() broadcastingis fixed
         return model.__class__.__name__[:5] in ('Affin', 'Rotat', 'Scale',
-                                                'Shift', 'Ident')
+                                                'Shift', 'Ident', 'Mappi',
+                                                'Const')
 
 def calculate_affine_matrices(func, shape):
     """
