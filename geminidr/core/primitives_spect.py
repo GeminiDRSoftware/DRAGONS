@@ -1019,8 +1019,8 @@ class Spect(PrimitivesBASE):
                 ext.WAVECAL = fit_table
 
                 transform = ext.wcs.forward_transform.replace_submodel('WAVE', m_final)
-                ext.wcs = gWCS([(ext.wcs.input_frame, transform),
-                                (ext.wcs.output_frame, None)])
+                ext.wcs.set_transform(ext.wcs.input_frame, transform,
+                                      ext.wcs.output_frame)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
