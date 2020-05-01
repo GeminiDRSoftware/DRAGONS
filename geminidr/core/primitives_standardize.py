@@ -389,6 +389,7 @@ class Standardize(PrimitivesBASE):
         for ad in adinputs:
             # TODO: work towards making this "if 'SPECT' in ad.tags"
             # which is why it's here and not in primitives_gmos_spect
+            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             if {'GMOS', 'SPECT', 'LS'}.issubset(ad.tags):
                 add_longslit_wcs(ad)
 
