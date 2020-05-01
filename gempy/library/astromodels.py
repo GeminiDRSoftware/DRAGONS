@@ -466,28 +466,36 @@ def dict_to_chebyshev(model_dict):
     return model
 
 
-def make_inverse_chebyshev1d(model, sampling=1, rms=None):
+def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
     """
     This creates a Chebyshev1D model that attempts to be the inverse of
-    the model provided.
+    a specified model that maps from an input space (e.g., pixels) to an
+    output space (e.g., wavelength).
 
     Parameters
     ----------
     model: Chebyshev1D
         The model to be inverted
+    sampling: int
+        Frequency at which to sample the input coordinate space
     rms: float/None
-        required maximum rms in input space (i.e., pixels)
+        required maximum rms in input space
+    max_deviation: float/None
+        required maximum absolute deviation in input space
     """
     order = model.degree
-    max_order = order if rms is None else order + 2
+    max_order = order if (rms is None and max_deviation is None) else order + 2
     incoords = np.arange(*model.domain, sampling)
     outcoords = model(incoords)
     while order <= max_order:
         m_init = models.Chebyshev1D(degree=order, domain=model(model.domain))
         fit_it = fitting.LinearLSQFitter()
         m_inverse = fit_it(m_init, outcoords, incoords)
-        rms_inverse = np.std(m_inverse(outcoords) - incoords)
-        if rms is None or rms_inverse <= rms:
+        trans_coords = m_inverse(outcoords)
+        rms_inverse = np.std(trans_coords - incoords)
+        max_dev = np.max(abs(trans_coords - incoords))
+        if ((rms is None or rms_inverse <= rms) and
+                (max_deviation is None or max_dev <= max_deviation)):
             break
         order += 1
     return m_inverse

@@ -43,7 +43,7 @@ def fitswcs_to_gwcs(hdr):
         except TypeError:
             unit = None
         try:
-            frame = frame_mapping[output](axes_order=(i,), unit=unit,
+            frame = frame_mapping[output[:4].upper()](axes_order=(i,), unit=unit,
                                           axes_names=output, name=output)
             out_frames.append(frame)
         except KeyError:
@@ -524,7 +524,7 @@ def fitswcs_linear(header):
                                             name='crpix' + str(pixel_axis + 1)) |
                             models.Scale(cd[ax, pixel_axis]) |
                             models.Shift(crval[ax]))
-            linear_model.name = f'world axis {ax + 1}'
+            linear_model.name = wcs_info['CTYPE'][ax][:4].upper()
             linear_model.outputs = (wcs_info['CTYPE'][ax],)
             linear_model.meta.update({'input_axes': pixel_axes,
                                       'output_axes': [ax]})

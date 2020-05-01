@@ -878,7 +878,8 @@ class Spect(PrimitivesBASE):
 
                     # FixMe: toggle commented lines bellow to make tests pass
 
-                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c0'])) +
+                    sequence = (((1, 'none', 'basinhopping', ['c1']),
+                                 (2, 'none', 'basinhopping', ['c0'])) +
                                 tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
 
                     # sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
@@ -970,17 +971,27 @@ class Spect(PrimitivesBASE):
                 # kdsigma = 10.*abs(dw) * (((1.0+0.1*((kditer+1)//2)))**((-1)**kditer)
                 #                    if kditer<21 else 1)
 
+                if debug:
+                    plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final, "Final fit")
+                    m.display_fit(show=True)
+                    m.display_fit(show=False)
+                    plt.savefig(ad.filename.replace('.fits', '.jpg'))
+
                 m_final = m.forward
                 rms = m.rms_output
                 nmatched = len(m.input_coords)
                 log.stdinfo(m_final)
                 log.stdinfo("Matched {} lines with rms = {:.3f} nm.".format(nmatched, rms))
 
-                if debug:
-                    plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final, "Final fit")
-                    m.display_fit(show=True)
-                    m.display_fit(show=False)
-                    plt.savefig(ad.filename.replace('.fits', '.jpg'))
+                max_rms = rms / dw  # in pixels
+                max_dev = 3 * max_rms
+                m_inverse = astromodels.make_inverse_chebyshev1d(m_final, rms=max_rms,
+                                                                 max_deviation=max_dev)
+                log.stdinfo(m_inverse)
+                inv_rms = np.std(m_inverse(m_final(m.input_coords)) - m.input_coords)
+                log.stdinfo("Inverse model has rms = {:.3f} pixels.".format(inv_rms))
+                m_final.name = "WAVE"
+                m_final.inverse = m_inverse
 
                 m.sort()
                 # Add 1 to pixel coordinates so they're 1-indexed
@@ -1006,6 +1017,10 @@ class Spect(PrimitivesBASE):
                 fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
                                               'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
+
+                transform = ext.wcs.forward_transform.replace_submodel('WAVE', m_final)
+                ext.wcs = gWCS([(ext.wcs.input_frame, transform),
+                                (ext.wcs.output_frame, None)])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

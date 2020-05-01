@@ -1793,10 +1793,14 @@ def add_longslit_wcs(ad):
         output_frame = cf.CompositeFrame([spectral_frame, sky_frame])
 
         crpix = ext.wcs.forward_transform[f'crpix{dispaxis}'].offset.value
-        sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :0})
+        #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :0})
+        if dispaxis == 1:
+            sky_model = models.Mapping((0, 0)) | (models.Const1D(0) & models.Identity(1)) | ext.wcs.forward_transform
+        else:
+            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(0)) | ext.wcs.forward_transform
         wave_model = (models.Shift(crpix) | models.Scale(dw) |
                       models.Shift(cenwave))
-        wave_model.name = "dispersion"
+        wave_model.name = 'WAVE'
 
         if dispaxis == 1:
             sky_model.inverse = (ext.wcs.backward_transform |
