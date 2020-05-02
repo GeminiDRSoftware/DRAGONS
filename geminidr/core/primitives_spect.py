@@ -446,8 +446,6 @@ class Spect(PrimitivesBASE):
                     else:
                         xref = spatial_coords
                         yref = [coord] * len(spatial_coords)
-                    # mapped_coords = (np.array(model.inverse(xref, yref)).T -
-                    #                 np.array([x1, y1])) / np.array([xbin, ybin])
                     mapped_coords = np.array(model.inverse(xref, yref)).T
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
@@ -457,6 +455,7 @@ class Spect(PrimitivesBASE):
                     ext.wcs = gWCS([(Frame2D(name="pixels"), model),
                                     (Frame2D(name="world"), None)])
                 else:
+                    # use insert_frame here
                     ext.wcs = gWCS([(ext.wcs.input_frame, model),
                                     (Frame2D(name="distortion_corrected"), ext.wcs.pipeline[0][1])]
                                    + ext.wcs.pipeline[1:])
@@ -550,15 +549,20 @@ class Spect(PrimitivesBASE):
             # one block of reading and verifying them
             distortion_models = []
             for ext in arc:
-
                 wcs = ext.nddata.wcs
 
-                if not (isinstance(wcs, gWCS) and
-                        wcs.pixel_n_dim == 2 and wcs.world_n_dim == 2):
-                    log.warning("Could not read distortion model from arc {}:{}"
-                                " - continuing".format(arc.filename, ext.hdr['EXTVER']))
-                    adoutputs.append(ad)
-                    continue
+                # Any failures must be handled in the outer loop processing
+                # ADs, so just set the found transforms to empty and present
+                # the warning at the end
+                try:
+                    if 'distortion_corrected' in wcs.available_frames:
+                        pipeline = wcs.pipeline
+                    else:
+                        distortion_models = []
+                        break
+                except AttributeError:
+                    distortion_models = []
+                    break
 
                 # We could just pass the forward transform of the WCS, which
                 # already has its inverse attached, but the code currently
@@ -586,37 +590,47 @@ class Spect(PrimitivesBASE):
                     # zero (i.e., that the science frame is a subregion of the
                     # arc only along one dimension).
                     geotable = import_module('.geometry_conf', self.inst_lookups)
-                    adg = transform.create_mosaic_transform(ad, geotable)
-                    shifts = [c1 - c2 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
-                                                        arc_detsec)]
-                    xshift, yshift = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
-                    if xshift or yshift:
-                        log.stdinfo("Found a shift of ({},{}) pixels between "
-                                    "{} and the calibration.".
-                                    format(xshift, yshift, ad.filename))
-                    add_shapes, add_transforms = [], []
-                    for (arr, trans) in adg:
-                        # Try to work out shape of this Block in the unmosaicked
-                        # arc, and then apply a shift to align it with the
-                        # science Block before applying the same transform.
-                        if xshift == 0:
-                            add_shapes.append(((arc_detsec.y2 - arc_detsec.y1) // ybin, arr.shape[1]))
-                        else:
-                            add_shapes.append((arr.shape[0], (arc_detsec.x2 - arc_detsec.x1) // xbin))
-                        t = transform.Transform(models.Shift(-xshift) & models.Shift(-yshift))
-                        t.append(trans)
-                        add_transforms.append(t)
-                    adg.calculate_output_shape(additional_array_shapes=add_shapes,
-                                               additional_transforms=add_transforms)
+                    transform.add_mosaic_wcs(ad, geotable)
+                    for ext in ad:
+                        new_pipeline = []
+                        for item in ext.wcs.pipeline:
+                            if item[0].name == 'mosaic':
+                                new_pipeline.extend(arc_pipeline)
+                                break
+                            new_pipeline.append(item)
+                        ext.wcs = gWCS(new_pipeline)
+
+                    #adg = transform.create_mosaic_transform(ad, geotable)
+                    #shifts = [c1 - c2 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
+                    #                                    arc_detsec)]
+                    #xshift, yshift = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
+                    #if xshift or yshift:
+                    #    log.stdinfo("Found a shift of ({},{}) pixels between "
+                    #                "{} and the calibration.".
+                    #                format(xshift, yshift, ad.filename))
+                    #add_shapes, add_transforms = [], []
+                    #for (arr, trans) in adg:
+                    #    # Try to work out shape of this Block in the unmosaicked
+                    #    # arc, and then apply a shift to align it with the
+                    #    # science Block before applying the same transform.
+                    #    if xshift == 0:
+                    #        add_shapes.append(((arc_detsec.y2 - arc_detsec.y1) // ybin, arr.shape[1]))
+                    #    else:
+                    #        add_shapes.append((arr.shape[0], (arc_detsec.x2 - arc_detsec.x1) // xbin))
+                    #    t = transform.Transform(models.Shift(-xshift) & models.Shift(-yshift))
+                    #    t.append(trans)
+                    #    add_transforms.append(t)
+                    #adg.calculate_output_shape(additional_array_shapes=add_shapes,
+                    #                           additional_transforms=add_transforms)
                     # This tells us where the arc would have been in pixel
                     # space after mosaicking, so make sure the science frame
                     # has the same coordinates, and then apply the distortion
                     # correction transform
-                    origin_shift = models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0])
-                    for t in adg.transforms:
-                        t.append([origin_shift, m_wcs])
-                    # And recalculate output_shape and origin properly
-                    adg.calculate_output_shape()
+                    #origin_shift = models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0])
+                    #for t in adg.transforms:
+                    #    t.append([origin_shift, m_wcs])
+                    ## And recalculate output_shape and origin properly
+                    #adg.calculate_output_shape()
                 else:
                     # Single-extension AD, with single Transform
                     ad_detsec = ad.detector_section()[0]
@@ -1017,6 +1031,9 @@ class Spect(PrimitivesBASE):
                 fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
                                               'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
+
+                #print(repr(ext.wcs.input_frame))
+                #print(repr(ext.wcs.output_frame))
 
                 transform = ext.wcs.forward_transform.replace_submodel('WAVE', m_final)
                 ext.wcs.set_transform(ext.wcs.input_frame, transform,

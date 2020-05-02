@@ -58,12 +58,15 @@ def fitswcs_to_gwcs(hdr):
         except (AttributeError, TypeError):
             ref_frame = None
         axes_order = (outputs.index('alpha_C'), outputs.index('delta_C'))
-        cel_frame = cf.CelestialFrame(reference_frame=ref_frame, name="sky",
+
+        # Call it 'world' if there are no other axes, otherwise 'sky'
+        name = 'sky' if len(outputs) > 2 else 'world'
+        cel_frame = cf.CelestialFrame(reference_frame=ref_frame, name=name,
                                       axes_order=axes_order)
         out_frames.append(cel_frame)
 
     out_frame = (out_frames[0] if len(out_frames) == 1
-                 else cf.CompositeFrame(out_frames))
+                 else cf.CompositeFrame(out_frames, name='world'))
     return gWCS([(in_frame, transform),
                  (out_frame, None)])
 

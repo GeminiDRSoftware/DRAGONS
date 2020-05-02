@@ -1653,8 +1653,12 @@ def find_reference_extension(ad):
 
 def add_mosaic_wcs(ad, geotable):
     """
-    We assume that the reference extension only experiences a translation.
-    not a rotation (otherwise why is it the reference?)
+    We assume that the reference extension only experiences a translation,
+    not a rotation (otherwise why is it the reference?).
+
+    IMPORTANT: the gWCS object this creates must result in the "mosaic"
+    frame coordinates being the same for the same native pixels, regardless
+    of the ROI used.
 
     Parameters
     ----------
@@ -1689,12 +1693,13 @@ def add_mosaic_wcs(ad, geotable):
 
         model_list = []
 
+        # This is now being done by the ext_shift (below)
         # Shift the Block's coordinates based on its location within
         # the full array, to ensure any rotation takes place around
         # the true centre.
-        if offset.x1 != 0 or offset.y1 != 0:
-            model_list.append(models.Shift(offset.x1 / xbin) &
-                              models.Shift(offset.y1 / ybin))
+        #if offset.x1 != 0 or offset.y1 != 0:
+        #    model_list.append(models.Shift(offset.x1 / xbin) &
+        #                      models.Shift(offset.y1 / ybin))
 
         if rot != 0 or mag != (1, 1):
             # Shift to centre, do whatever, and then shift back
@@ -1785,12 +1790,12 @@ def add_longslit_wcs(ad):
 
         # Need to change axes_order in CelestialFrame
         kwargs = {kw: getattr(ext.wcs.output_frame, kw, None)
-                  for kw in ('reference_frame', 'unit', 'axes_names', 'name',
+                  for kw in ('reference_frame', 'unit', 'axes_names',
                              'axis_physical_types')}
-        sky_frame = cf.CelestialFrame(axes_order=(1,2), **kwargs)
+        sky_frame = cf.CelestialFrame(axes_order=(1,2), name='sky', **kwargs)
         spectral_frame = cf.SpectralFrame(name='wavelength', unit=u.nm,
                                           axes_names='WAVE')
-        output_frame = cf.CompositeFrame([spectral_frame, sky_frame])
+        output_frame = cf.CompositeFrame([spectral_frame, sky_frame], name='world')
 
         crpix = ext.wcs.forward_transform[f'crpix{dispaxis}'].offset.value
         #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :0})
