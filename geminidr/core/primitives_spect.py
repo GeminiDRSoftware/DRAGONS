@@ -567,10 +567,26 @@ class Spect(PrimitivesBASE):
                 # We could just pass the forward transform of the WCS, which
                 # already has its inverse attached, but the code currently
                 # relies on a no-op forward model to size the output correctly:
-                # m_wcs = wcs.forward_transform
-                m_wcs = models.Identity(2)
-                m_wcs.inverse = wcs.backward_transform
-                distortion_models.append(m_wcs)
+                m_distcorr = models.Identity(2)
+                input_frame = wcs.input_frame
+                m_distcorr.inverse = wcs.get_transform(input_frame, 'distortion_corrected').inverse
+
+                # TODO: A delete_frame method would work here
+                # Perhaps I'm worrying too much that 'distortion_corrected'
+                # might not be the second frame (after the input)?
+                # Rename initial frame so we can append directly to
+                # the science AD's gWCS pipeline
+                new_input_frame = input_frame
+                new_input_frame.name = 'mosaic'
+                arc_pipeline = [(new_input_frame, m_distcorr)]
+                arc_pipeline.extend(wcs.pipeline[wcs._get_frame_index('distortion_corrected'):])
+                distortion_models.append(arc_pipeline)
+
+            if not distortion_models:
+                log.warning("Could not find a 'distortion_corrected' frame "
+                            f"in arc {arc.filename}:{ext.hdr['EXTVER']} - "
+                            "continuing")
+                continue
 
             # Determine whether we're producing a single-extension AD
             # or keeping the number of extensions as-is
@@ -632,6 +648,7 @@ class Spect(PrimitivesBASE):
                     ## And recalculate output_shape and origin properly
                     #adg.calculate_output_shape()
                 else:
+                    crash
                     # Single-extension AD, with single Transform
                     ad_detsec = ad.detector_section()[0]
                     if ad_detsec != arc_detsec:
@@ -646,9 +663,13 @@ class Spect(PrimitivesBASE):
                                    models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
                         adg = transform.AstroDataGroup(ad, [transform.Transform([m_shift, m_wcs])])
                     else:
+                        crash
                         adg = transform.AstroDataGroup(ad, [transform.Transform(m_wcs)])
 
-                ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
+                #ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
+                ad_out = transform.resample_from_wcs(ad, 'distortion_corrected',
+                                                     order=order, subsample=subsample,
+                                                     parallel=False)
                 try:
                     ad_out[0].WAVECAL = arc[0].WAVECAL
                 except AttributeError:
@@ -1036,8 +1057,8 @@ class Spect(PrimitivesBASE):
                 #print(repr(ext.wcs.output_frame))
 
                 transform = ext.wcs.forward_transform.replace_submodel('WAVE', m_final)
-                ext.wcs.set_transform(ext.wcs.input_frame, transform,
-                                      ext.wcs.output_frame)
+                ext.wcs.set_transform(ext.wcs.input_frame, ext.wcs.output_frame, transform)
+                print(ext.wcs.pipeline[0][1][0])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
