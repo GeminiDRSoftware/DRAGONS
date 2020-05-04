@@ -22,7 +22,7 @@ from .astrotools import divide0
 from geminidr.gemini.lookups import DQ_definitions as DQ
 try:
     from . import cyclip
-except ImportError:
+except ImportError:  # pragma: no cover
     raise ImportError("Run 'cythonize -i cyclip.pyx' in gempy/library")
 
 # A lightweight NDData-like object
@@ -72,6 +72,7 @@ def take_along_axis(arr, ind, axis):
             inds.append(np.arange(n).reshape(ind_shape_dim))
     return arr[tuple(inds)]
 
+
 def stack_nddata(fn):
     """
     This decorator wraps a method that takes a sequence of NDAstroData
@@ -108,7 +109,7 @@ def stack_nddata(fn):
             for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
                 variance[i] = ndd.variance * s*s
         out_data, out_mask, out_var = fn(instance, data=data, mask=mask,
-                                    variance=variance, *args, **kwargs)
+                                         variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask)
@@ -116,6 +117,7 @@ def stack_nddata(fn):
             ret_value.variance = out_var
         return ret_value
     return wrapper
+
 
 def unpack_nddata(fn):
     """
@@ -134,19 +136,37 @@ def unpack_nddata(fn):
         return ret_value
     return wrapper
 
+
 # Decorators to identify methods for combining and rejecting. Note that
 # NDStacker.<method>.required_args will return a list of required arguments
 def combiner(fn):
     fn.is_combiner = True
-    args = inspect.getfullargspec(fn).args[3:]
+    args = list(inspect.signature(fn).parameters)[3:]
     fn.required_args = list(args)
     return fn
 
+
 def rejector(fn):
     fn.is_rejector = True
-    args = inspect.getfullargspec(fn).args[3:]
+    args = list(inspect.signature(fn).parameters)[3:]
     fn.required_args = list(args)
     return fn
+
+
+def _masked_mean(data, mask=None):
+    data = np.ma.masked_array(data, mask=mask)
+    return data.mean(axis=0).data.astype(data.dtype)
+
+
+def _masked_sum(data, mask=None):
+    data = np.ma.masked_array(data, mask=mask)
+    return data.sum(axis=0).data.astype(data.dtype)
+
+
+def _median_uncertainty(variance, mask, num_img):
+    # According to Laplace, the uncertainty on the median is
+    # sqrt(2/pi) times greater than that on the mean
+    return 0.5 * np.pi * _masked_mean(variance, mask=mask) / num_img
 
 
 class NDStacker:
@@ -239,10 +259,10 @@ class NDStacker:
             # Where we've been able to construct an output pixel (ngood>0)
             # we need to stop any further processing. Set the mask for "good"
             # pixels to 0, and for bad pixels to 32768.
-            mask = np.where(np.logical_and(ngood>0, tmp_mask), DQ.datatype(32768), mask)
-            mask = np.where(np.logical_and(ngood>0, ~tmp_mask), ZERO, mask)
+            mask = np.where(np.logical_and(ngood > 0, tmp_mask), DQ.datatype(32768), mask)
+            mask = np.where(np.logical_and(ngood > 0, ~tmp_mask), ZERO, mask)
             # 32768 in output mask means we have an output pixel
-            out_mask[ngood>0] |= 32768
+            out_mask[ngood > 0] |= 32768
 
             # If we've found "good' pixels for all output pixels, leave
             if np.all(out_mask & 32768):
@@ -297,13 +317,12 @@ class NDStacker:
         if self._debug_pixel is not None:
             self._pixel_debugger(data, mask, variance, stage='after rejection')
             self._logmsg("Combining: {} {}".format(self._combiner.__name__, comb_args))
+
         out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
-        #self._pixel_debugger(data, mask, variance, stage='combined')
+
         if self._debug_pixel is not None:
-            info = [out_data[self._debug_pixel]]
-            info.append(None if out_mask is None else out_mask[self._debug_pixel])
-            info.append(None if out_var is None else out_var[self._debug_pixel])
-            self._logmsg("out {:15.4f} {:5d} {:15.4f}".format(*info))
+            self._pixel_debugger_print_line('out', self._debug_pixel, out_data,
+                                            out_mask, out_var)
         return out_data, out_mask, out_var
 
     @classmethod
@@ -322,18 +341,22 @@ class NDStacker:
         out_data, out_mask, out_var = comb_func(data, mask, variance, **comb_args)
         return out_data, out_mask, out_var
 
+    def _pixel_debugger_print_line(self, idx, coord, data, mask, variance):
+        idx = f'{idx:3d}' if isinstance(idx, int) else idx
+        info = [data[coord]]
+        info.append('    -' if mask is None else f'{mask[coord]:5d}')
+        info.append(' ' * 14 + '-' if variance is None
+                    else f'{variance[coord]:15.4f}')
+        self._logmsg("{} {:15.4f} {} {}".format(idx, *info))
 
     def _pixel_debugger(self, data, mask, variance, stage=''):
         self._logmsg("img     data        mask    variance       "+stage)
         for i in range(data.shape[0]):
-            coords = (i,) + self._debug_pixel
-            info = [data[coords]]
-            info.append(None if mask is None else mask[coords])
-            info.append(None if variance is None else variance[coords])
-            self._logmsg("{:3d} {:15.4f} {:5d} {:15.4f}".format(i, *info))
+            coord = (i,) + self._debug_pixel
+            self._pixel_debugger_print_line(i, coord, data, mask, variance)
         self._logmsg("-" * 41)
 
-    #------------------------ COMBINER METHODS ----------------------------
+    # ------------------------ COMBINER METHODS ----------------------------
     # These methods must all return data, mask, and varianace arrays of one
     # lower dimension than the input, with the valid (mask==0) input pixels
     # along the axis combined to produce a single output pixel.
@@ -344,12 +367,12 @@ class NDStacker:
     def mean(data, mask=None, variance=None):
         # Regular arithmetic mean
         mask, out_mask = NDStacker._process_mask(mask)
-        out_data = np.ma.masked_array(data, mask=mask).mean(axis=0).data.astype(data.dtype)
+        out_data = _masked_mean(data, mask=mask)
         ngood = data.shape[0] if mask is None else NDStacker._num_good(mask)
         if variance is None:  # IRAF gemcombine calculation
             out_var = NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / ngood
+            out_var = _masked_mean(variance, mask=mask) / ngood
         return out_data, out_mask, out_var
 
     average = mean  # Formally, these are all averages
@@ -362,9 +385,9 @@ class NDStacker:
         if variance is None:
             return NDStacker.mean(data, mask, variance)
         mask, out_mask = NDStacker._process_mask(mask)
-        out_data = (np.ma.masked_array(data/variance, mask=mask).sum(axis=0).data /
-                    np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data).astype(data.dtype)
-        out_var = 1.0 / np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data.astype(data.dtype)
+        out_data = (_masked_sum(data / variance, mask=mask) /
+                    _masked_sum(1 / variance, mask=mask))
+        out_var = 1 / _masked_sum(1 / variance, mask=mask)
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -372,37 +395,36 @@ class NDStacker:
     @unpack_nddata
     def median(data, mask=None, variance=None):
         # Median
+        out_var = None
+        out_mask = None
+
         if mask is None:
             num_img = data.shape[0]
             if num_img % 2:
                 med_index = num_img // 2
                 index = np.argpartition(data, med_index, axis=0)[med_index]
                 out_data = take_along_axis(data, index, axis=0)
-                out_var = (None if variance is None else
-                           take_along_axis(variance, index, axis=0))
-                #out_data = np.expand_dims(take_along_axis(data, index, axis=0), axis=0).mean(axis=0)
+                if variance is not None:
+                    out_var = take_along_axis(variance, index, axis=0)
             else:
                 med_index = num_img // 2 - 1
                 indices = np.argpartition(data, [med_index, med_index+1],
                                           axis=0)[med_index:med_index+2]
                 out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-                # According to Laplace, the uncertainty on the median is
-                # sqrt(2/pi) times greater than that on the mean
-                out_var = (None if variance is None else
-                           0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
-            out_mask = None
+                if variance is not None:
+                    out_var = _median_uncertainty(variance, mask, num_img)
         else:
             mask, out_mask = NDStacker._process_mask(mask)
-            arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
-            num_img = NDStacker._num_good(mask>0)
+            arg = np.argsort(np.where(mask > 0, np.inf, data), axis=0)
+            num_img = NDStacker._num_good(mask > 0)
             med_index = num_img // 2
             med_indices = np.array([np.where(num_img % 2, med_index, med_index-1),
                                     np.where(num_img % 2, med_index, med_index)])
             indices = take_along_axis(arg, med_indices, axis=0)
             out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-            #out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
-            out_var = (None if variance is None else
-                       0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
+            # out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
+            if variance is not None:
+                out_var = _median_uncertainty(variance, mask, num_img)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
             out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
@@ -422,18 +444,20 @@ class NDStacker:
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # np.choose() can't handle more than 32 input images
             # Partitioning the bottom half is slower than a full sort
-            arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
-            num_img = NDStacker._num_good(mask>0)
+            arg = np.argsort(np.where(mask > 0, np.inf, data), axis=0)
+            num_img = NDStacker._num_good(mask > 0)
             med_index = (num_img - 1) // 2
             index = take_along_axis(arg, med_index, axis=0)
+
         out_data = take_along_axis(data, index, axis=0)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
             out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = 0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img
+            out_var = _median_uncertainty(variance, mask, num_img)
+
         return out_data, out_mask, out_var
 
-    #------------------------ REJECTOR METHODS ----------------------------
+    # ------------------------ REJECTOR METHODS ----------------------------
     # These methods must all return data, mask, and variance arrays of the
     # same size as the input, but with pixels reflagged if necessary to
     # indicate the results of the rejection. Pixels can be reordered along
@@ -482,8 +506,8 @@ class NDStacker:
             nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
             nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
             for i in range(num_img):
-                mask[i][i<nlo] |= ONE
-                mask[i][np.logical_and(i>nhi, i<num_good)] |= ONE
+                mask[i][i < nlo] |= ONE
+                mask[i][np.logical_and(i > nhi, i < num_good)] |= ONE
         return data, mask, variance
 
     @staticmethod
@@ -493,8 +517,8 @@ class NDStacker:
                 hsigma=3.0, max_iters=None):
         # Sigma-clipping based on scatter of data
         return NDStacker._cyclip(data, mask=mask, variance=variance,
-                                  mclip=mclip, lsigma=lsigma, hsigma=hsigma,
-                                  max_iters=max_iters, sigclip=True)
+                                 mclip=mclip, lsigma=lsigma, hsigma=hsigma,
+                                 max_iters=max_iters, sigclip=True)
 
     @staticmethod
     @rejector
@@ -503,12 +527,12 @@ class NDStacker:
                 hsigma=3.0, max_iters=None):
         # Sigma-type-clipping where VAR array is used to determine deviancy
         return NDStacker._cyclip(data, mask=mask, variance=variance,
-                                  mclip=mclip, lsigma=lsigma, hsigma=hsigma,
-                                  max_iters=max_iters, sigclip=False)
+                                 mclip=mclip, lsigma=lsigma, hsigma=hsigma,
+                                 max_iters=max_iters, sigclip=False)
 
     @staticmethod
     def _cyclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
-                 hsigma=3.0, max_iters=None, sigclip=False):
+                hsigma=3.0, max_iters=None, sigclip=False):
         # Prepares data for Cython iterative-clippingroutine
         if mask is None:
             mask = np.zeros_like(data, dtype=DQ.datatype)
@@ -526,53 +550,57 @@ class NDStacker:
         num_img = shape[0]
         # Force int in case arrays are 1D
         data_size = int(np.multiply.reduce(data.shape[1:]))
-        data, mask, variance = cyclip.iterclip(data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
-                                               variance.ravel().astype(np.float32),
-                                               has_var=has_var, num_img=num_img, data_size=data_size,
-                                               mclip=int(mclip), lsigma=lsigma, hsigma=hsigma,
-                                               max_iters=max_iters, sigclip=int(sigclip))
-        return data.reshape(shape), mask.reshape(shape), (None if not has_var else variance.reshape(shape))
+        data, mask, variance = cyclip.iterclip(
+            data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
+            variance.ravel().astype(np.float32),
+            has_var=has_var, num_img=num_img, data_size=data_size,
+            mclip=int(mclip), lsigma=lsigma, hsigma=hsigma,
+            max_iters=max_iters, sigclip=int(sigclip)
+        )
+        return (data.reshape(shape), mask.reshape(shape),
+                None if not has_var else variance.reshape(shape))
 
-    @staticmethod
-    def _iterclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
-                 hsigma=3.0, max_iters=None, sigclip=False):
-        # SUPERSEDED BY CYTHON ROUTINE
-        """Mildly generic iterative clipping algorithm, called by both sigclip
-        and varclip. We don't use the astropy.stats.sigma_clip() because it
-        doesn't check for convergence if max_iters is not None."""
-        if max_iters is None:
-            max_iters = 100
-        high_limit = hsigma
-        low_limit = -lsigma
-        cenfunc = np.ma.median  # Always median for first pass
-        clipped_data = np.ma.masked_array(data, mask=None if mask is None else
-                                                     (mask & BAD))
-        iter = 0
-        ngood = clipped_data.count()
-        while iter < max_iters and ngood > 0:
-            avg = cenfunc(clipped_data, axis=0)
-            if variance is None or sigclip:
-                deviation = clipped_data - avg
-                sig = np.ma.std(clipped_data, axis=0)
-                high_limit = hsigma * sig
-                low_limit = -lsigma * sig
-            else:
-                deviation = (clipped_data - avg) / np.sqrt(variance)
-            clipped_data.mask |= deviation > high_limit
-            clipped_data.mask |= deviation < low_limit
-            new_ngood = clipped_data.count()
-            if new_ngood == ngood:
-                break
-            if not mclip:
-                cenfunc = np.ma.mean
-            ngood = new_ngood
-            iter += 1
+    # @staticmethod
+    # def _iterclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
+    #               hsigma=3.0, max_iters=None, sigclip=False):
+    #     # SUPERSEDED BY CYTHON ROUTINE
+    #     """Mildly generic iterative clipping algorithm, called by both sigclip
+    #     and varclip. We don't use the astropy.stats.sigma_clip() because it
+    #     doesn't check for convergence if max_iters is not None."""
+    #     if max_iters is None:
+    #         max_iters = 100
+    #     high_limit = hsigma
+    #     low_limit = -lsigma
+    #     cenfunc = np.ma.median  # Always median for first pass
+    #     clipped_data = np.ma.masked_array(data, mask=None if mask is None else
+    #                                       (mask & BAD))
+    #     iter = 0
+    #     ngood = clipped_data.count()
+    #     while iter < max_iters and ngood > 0:
+    #         avg = cenfunc(clipped_data, axis=0)
+    #         if variance is None or sigclip:
+    #             deviation = clipped_data - avg
+    #             sig = np.ma.std(clipped_data, axis=0)
+    #             high_limit = hsigma * sig
+    #             low_limit = -lsigma * sig
+    #         else:
+    #             deviation = (clipped_data - avg) / np.sqrt(variance)
+    #         clipped_data.mask |= deviation > high_limit
+    #         clipped_data.mask |= deviation < low_limit
+    #         new_ngood = clipped_data.count()
+    #         if new_ngood == ngood:
+    #             break
+    #         if not mclip:
+    #             cenfunc = np.ma.mean
+    #         ngood = new_ngood
+    #         iter += 1
 
-        if mask is None:
-            mask = clipped_data.mask
-        else:
-            mask |= clipped_data.mask
-        return data, mask, variance
+    #     if mask is None:
+    #         mask = clipped_data.mask
+    #     else:
+    #         mask |= clipped_data.mask
+    #     return data, mask, variance
+
 
 def sum1d(ndd, x1, x2, proportional_variance=True):
     """

@@ -28,7 +28,7 @@ LOGFILE = 'test_photometry.log'
 
 @pytest.fixture
 def niri_image():
-    astrofaker = pytest.importorskip("astrofaker")
+    astrofaker = pytest.importorskip('astrofaker')
     ad = astrofaker.create('NIRI', 'IMAGE')
     ad.init_default_extensions()
 
