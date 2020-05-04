@@ -38,19 +38,19 @@ def test_process_mask():
     )
 
     for mask_pixels, correct_output, good_pixels in tests_and_results:
-        pixel_usage = np.full_like(mask_pixels, 32768).astype(DQ.datatype)
+        pixel_usage = np.full_like(mask_pixels, DQ.max, dtype=DQ.datatype)
         pixel_usage[good_pixels] = 0
 
         # Test of _process_mask()
-        in_mask = np.array([[x] for x in mask_pixels]).astype(DQ.datatype)
+        in_mask = np.array(mask_pixels, dtype=DQ.datatype).reshape(-1, 1)
         mask, out_mask = NDStacker._process_mask(in_mask)
-        assert out_mask == correct_output
+        assert out_mask[0] == correct_output
         assert np.array_equal(mask.T[0], pixel_usage)
 
         # Second test to confirm that additional iterations (required to
         # process the other output pixel) do not change output
-        in_mask = np.array([[x, DQ.no_data]
-                            for x in mask_pixels]).astype(DQ.datatype)
+        in_mask = np.array([[x, DQ.no_data] for x in mask_pixels],
+                           dtype=DQ.datatype)
         mask, out_mask = NDStacker._process_mask(in_mask)
         assert out_mask[0] == correct_output
         assert np.array_equal(mask.T[0], pixel_usage)
@@ -166,7 +166,7 @@ def test_minmax(testdata, testvar, testmask):
     out_data, out_mask, out_var = NDStacker.minmax(testdata, nlow=1, nhigh=1,
                                                    mask=testmask)
     assert_array_equal(out_data, testdata)
-    assert_array_equal(out_mask[:, 1], [4, 5, 0, 0, 1])
+    assert_array_equal(out_mask[:, 1], [4, DQ.max, 0, 0, DQ.max])
 
     with pytest.raises(ValueError):
         NDStacker.minmax(testdata, nlow=3, nhigh=3)
