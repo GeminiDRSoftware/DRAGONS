@@ -40,13 +40,12 @@ fixed_test_parameters_for_determine_distortion = {
 
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("preprocessed_ad", input_datasets, indirect=True)
-def test_regression_trace_apertures(preprocessed_ad, output_path, reference_ad):
+def test_regression_trace_apertures(preprocessed_ad, change_working_dir, reference_ad):
 
-    with output_path():
+    with change_working_dir():
         p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.traceApertures()
@@ -69,8 +68,8 @@ def test_regression_trace_apertures(preprocessed_ad, output_path, reference_ad):
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')
-def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
-                    reduce_data):
+def preprocessed_ad(request, cache_file_from_archive, change_working_dir,
+                    path_to_inputs, reduce_data):
     """
     Runs `traceApertures` primitive on a pre-processed data and return the
     output object containing a `.APERTURE` table.
@@ -79,12 +78,12 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
     ----------
     request : fixture
         PyTest's built-in fixture with information about the test itself.
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Fixture containing a custom context manager used to enter and leave the
         output folder easily.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_data : pytest.fixture
         Recipe to reduce the data up to the step before
@@ -99,13 +98,13 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
     should_preprocess = request.config.getoption("--force-preprocess-data")
 
     input_fname = basename.replace('.fits', '_mosaic.fits')
-    input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_path = os.path.join(path_to_inputs, input_fname)
 
     if os.path.exists(input_path):
         input_ad = astrodata.open(input_path)
 
     elif should_preprocess:
-        filename = cache_path(basename)
+        filename = cache_file_from_archive(basename)
         ad = astrodata.open(filename)
         input_ad = reduce_data(ad, center)
 
@@ -119,13 +118,13 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, output_path,
 
 
 @pytest.fixture(scope='module')
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """
     Recipe used to generate input data for `traceAperture` tests.
 
     Parameters
     ----------
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Fixture containing a custom context manager used to enter and leave the
         output folder easily.
 
@@ -135,7 +134,7 @@ def reduce_data(output_path):
         Pre-processed arc data.
     """
     def _reduce_data(ad, center):
-        with output_path():
+        with change_working_dir():
             p = primitives_gmos_spect.GMOSSpect([ad])
             p.prepare()
             p.addDQ(static_bpm=None)

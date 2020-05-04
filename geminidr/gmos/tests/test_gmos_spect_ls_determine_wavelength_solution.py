@@ -138,12 +138,11 @@ input_pars = [
 
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_parameters", input_pars, indirect=True)
 def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
-        input_parameters, output_path):
+        input_parameters, change_working_dir):
     """
     Make sure that the WAVECAL model was fitted with an RMS smaller than half of
     the slit size in pixels.
@@ -155,7 +154,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
     """
     preprocessed_ad, fwidth, order, min_snr = input_parameters
 
-    with output_path():
+    with change_working_dir():
         p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
@@ -187,14 +186,14 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_parameters", input_pars, indirect=True)
 def test_regression_determine_wavelength_solution(
-        input_parameters, output_path, reference_ad):
+        input_parameters, change_working_dir, reference_ad):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
     """
     preprocessed_ad, fwidth, order, min_snr = input_parameters
 
-    with output_path():
+    with change_working_dir():
         p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
@@ -229,16 +228,16 @@ def test_regression_determine_wavelength_solution(
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')
-def input_parameters(request, cache_path, new_path_to_inputs, reduce_data):
+def input_parameters(request, cache_file_from_archive, path_to_inputs, reduce_data):
     """
     Reads the input data or cache/process it in a temporary folder.
 
     Parameters
     ----------
     request
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_data : pytest.fixture
         Recipe to reduce the data up to the step before
@@ -252,13 +251,13 @@ def input_parameters(request, cache_path, new_path_to_inputs, reduce_data):
     should_preprocess = request.config.getoption("--force-preprocess-data")
 
     input_fname = basename.replace('.fits', '_mosaic.fits')
-    input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_path = os.path.join(path_to_inputs, input_fname)
 
     if os.path.exists(input_path):
         input_data = astrodata.open(input_path)
 
     elif should_preprocess:
-        filename = cache_path(basename)
+        filename = cache_file_from_archive(basename)
         input_data = reduce_data(astrodata.open(filename))
 
     else:
@@ -289,13 +288,13 @@ def do_plots(ad, output_dir):
 
 
 @pytest.fixture(scope='module')
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """
     Recipe used to generate input data for `determineWavelengthSolution` tests.
 
     Parameters
     ----------
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Context manager used to write reduced data to a temporary folder.
 
     Returns
@@ -304,7 +303,7 @@ def reduce_data(output_path):
         using a custom recipe and return an AstroData object.
     """
     def _reduce_data(ad):
-        with output_path():
+        with change_working_dir():
             _p = primitives_gmos_spect.GMOSSpect([ad])
             _p.prepare()
             _p.addDQ(static_bpm=None)

@@ -324,7 +324,8 @@ def path_to_outputs(request, tmp_path_factory):
                 "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
                 "{}\n Using current working directory".format(path))
     else:
-        path = str(tmp_path_factory.mktemp('dragons_tests', numbered=False))
+        # path = str(tmp_path_factory.mktemp('dragons_tests', numbered=False))
+        path = str(tmp_path_factory.getbasetemp())
 
     module_path = request.module.__name__.split('.')
     module_path = [item for item in module_path if item not in "tests"]

@@ -123,13 +123,13 @@ fixed_test_parameters_for_determine_distortion = {
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
-def test_regression_in_distortion_correct(output_path, preprocessed_ad,
+def test_regression_in_distortion_correct(change_working_dir, preprocessed_ad,
                                           reference_ad):
     """
     Runs the `distortionCorrect` primitive on a preprocessed data and compare
     its model with the one in the reference file.
     """
-    with output_path():
+    with change_working_dir():
         p = primitives_gmos_longslit.GMOSLongslit([deepcopy(preprocessed_ad)])
         p.viewer = geminidr.dormantViewer(p, None)
         p.distortionCorrect(arc=deepcopy(preprocessed_ad), order=3, subsample=1)
@@ -141,14 +141,13 @@ def test_regression_in_distortion_correct(output_path, preprocessed_ad,
     np.testing.assert_allclose(data, ref_data, atol=1)
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
-def test_full_frame_distortion_works_on_smaller_region(output_path, preprocessed_ad):
+def test_full_frame_distortion_works_on_smaller_region(change_working_dir, preprocessed_ad):
     """
     Takes a full-frame arc and self-distortion-corrects it. It then fakes
-    subregions of this and corrects those using the full-frame distortion to
+    sub-regions of this and corrects those using the full-frame distortion to
     confirm that the result is the same as the appropriate region of the
     distortion-corrected full-frame image. There's no need to do this more
     than once for a given binning, so we loop within the function, keeping
@@ -209,14 +208,14 @@ def test_full_frame_distortion_works_on_smaller_region(output_path, preprocessed
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope="module")
-def do_plots(ad, output_path, reference_path):
+def do_plots(ad, change_working_dir, reference_path):
     """
     Generate diagnostic plots.
 
     Parameters
     ----------
     ad : AstroData
-    output_path : str or Path
+    change_working_dir : str or Path
     reference_path : str or Path
     """
     try:
@@ -227,14 +226,14 @@ def do_plots(ad, output_path, reference_path):
 
     ad_ref = astrodata.open(os.path.join(reference_path, ad.filename))
 
-    p = PlotGmosSpectLongslitArcs(ad, output_folder=output_path, ref_folder=reference_path)
+    p = PlotGmosSpectLongslitArcs(ad, output_folder=change_working_dir, ref_folder=reference_path)
     p.show_distortion_map(ad)
     p.show_distortion_model_difference(ad, ad_ref)
     p.close_all()
 
 
 @pytest.fixture(scope="module")
-def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_data):
+def preprocessed_ad(request, cache_file_from_archive, path_to_inputs, reduce_data):
     """
     Reads the preprocessed input data or cache/process it in a temporary folder.
 
@@ -242,9 +241,9 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_data):
     ----------
     request : pytest.fixture
         Fixture that contains information this fixture's parent.
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_data : pytest.fixture
         Recipe to reduce the data up to the step before
@@ -263,13 +262,13 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_data):
     should_preprocess = request.config.getoption("--force-preprocess-data")
 
     input_fname = basename.replace('.fits', '_distortionDetermined.fits')
-    input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_path = os.path.join(path_to_inputs, input_fname)
 
     if os.path.exists(input_path):
         input_data = astrodata.open(input_path)
 
     elif should_preprocess:
-        filename = cache_path(basename)
+        filename = cache_file_from_archive(basename)
         input_data = reduce_data(astrodata.open(filename))
 
     else:
@@ -282,13 +281,13 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_data):
 
 
 @pytest.fixture(scope="module")
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """
     Recipe used to generate input data for `distortionCorrect` tests.
 
     Parameters
     ----------
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Fixture containing a custom context manager used to enter and leave the
         output folder easily.
 
@@ -298,7 +297,7 @@ def reduce_data(output_path):
         using a custom recipe and return an AstroData object.
     """
     def _reduce_data(ad):
-        with output_path():
+        with change_working_dir():
             # Use config to prevent outputs when running Reduce via API
             logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
 

@@ -11,7 +11,7 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 
 
 @pytest.fixture(scope='module')
-def get_master_arc(new_path_to_inputs, change_working_dir):
+def get_master_arc(path_to_inputs, change_working_dir):
     """
     Factory that creates a function that reads the master arc file from the
     permanent input folder or from the temporarily local cache, depending on
@@ -19,7 +19,7 @@ def get_master_arc(new_path_to_inputs, change_working_dir):
 
     Parameters
     ----------
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     change_working_dir : contextmanager
         Enable easy change to temporary folder when reducing data.
@@ -43,7 +43,7 @@ def get_master_arc(new_path_to_inputs, change_working_dir):
                 master_arc = astrodata.open(arc_filename)
         else:
             master_arc = astrodata.open(
-                os.path.join(new_path_to_inputs, arc_filename))
+                os.path.join(path_to_inputs, arc_filename))
 
         return master_arc
 
@@ -149,13 +149,13 @@ def reduce_flat(change_working_dir):
 
 
 @pytest.fixture(scope="module")
-def reference_ad(new_path_to_refs):
+def reference_ad(path_to_refs):
     """
     Read the reference file.
 
     Parameters
     ----------
-    new_path_to_refs : pytest.fixture
+    path_to_refs : pytest.fixture
         Fixture containing the root path to the reference files.
 
     Returns
@@ -164,7 +164,7 @@ def reference_ad(new_path_to_refs):
     """
 
     def _reference_ad(filename):
-        path = os.path.join(new_path_to_refs, filename)
+        path = os.path.join(path_to_refs, filename)
         return astrodata.open(path)
 
     return _reference_ad

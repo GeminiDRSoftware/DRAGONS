@@ -24,13 +24,13 @@ datasets = {
 
     # --- Good datasets ---
     "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
-    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
-    "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
-    "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
-    "N20190427S0126.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
-    "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
-    "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
-    "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+    # "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
+    # "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
+    # "N20190427S0126.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
+    # "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+    # "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+    # "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
 
     # --- QE Correction Needs improvement ---
     # "N20180721S0444.fits",  # GN-2018B-Q-313-5-002 B1200 0.44um
@@ -76,11 +76,11 @@ gap_local_kw = {
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_applied_qe_is_locally_continuous(preprocessed_data, output_path):
+def test_applied_qe_is_locally_continuous(preprocessed_data, change_working_dir):
 
     input_ad, master_arc = preprocessed_data
 
-    with output_path():
+    with change_working_dir():
 
         p = primitives_gmos_longslit.GMOSLongslit([input_ad])
         p.applyQECorrection(arc=master_arc)
@@ -94,9 +94,9 @@ def test_applied_qe_is_locally_continuous(preprocessed_data, output_path):
         p.linearizeSpectra()
         processed_ad = p.writeOutputs().pop()
 
-    basename = processed_ad.filename.replace('_linearized', '')
-    kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
-    gap = MeasureGapSizeLocallyWithSpline(processed_ad, **kwargs)
+        basename = processed_ad.filename.replace('_linearized', '')
+        kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
+        gap = MeasureGapSizeLocallyWithSpline(processed_ad, **kwargs)
 
     assert abs(gap.measure_gaps(0) < 0.05)
     assert abs(gap.measure_gaps(1) < 0.05)
@@ -106,11 +106,11 @@ def test_applied_qe_is_locally_continuous(preprocessed_data, output_path):
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_regression_on_apply_qe_correction(
-        preprocessed_data, output_path, reference_ad):
+        preprocessed_data, change_working_dir, reference_ad):
 
     input_ad, master_arc = preprocessed_data
 
-    with output_path():
+    with change_working_dir():
         p = primitives_gmos_longslit.GMOSLongslit([input_ad])
         p.applyQECorrection(arc=master_arc)
         qe_corrected_ad = p.writeOutputs().pop()
@@ -128,8 +128,8 @@ def test_regression_on_apply_qe_correction(
 
 # -- Fixtures -----------------------------------------------------------------
 @pytest.fixture(scope='function', params=datasets)
-def preprocessed_data(request, cache_path, get_master_arc, new_path_to_inputs,
-                      reduce_arc, reduce_bias, reduce_data,  reduce_flat):
+def preprocessed_data(request, cache_file_from_archive, get_master_arc,
+                      path_to_inputs, reduce_arc, reduce_bias, reduce_data, reduce_flat):
     """
     Returns the processed spectrum right after running `applyQECorrection`.
 
@@ -137,13 +137,13 @@ def preprocessed_data(request, cache_path, get_master_arc, new_path_to_inputs,
     ----------
     request : pytest.fixture
         Fixture that contains information this fixture's parent.
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
     get_master_arc : pytest.fixture
         Fixture that reads the master flat either from the permanent input folder
         or from the temporary cache folder.
         Reads the input data or cache/process it in a temporary folder.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_arc : pytest.fixture
         Recipe to reduce the arc file.
@@ -163,7 +163,7 @@ def preprocessed_data(request, cache_path, get_master_arc, new_path_to_inputs,
     should_preprocess = request.config.getoption("--force-preprocess-data")
 
     input_fname = basename.replace('.fits', '_flatCorrected.fits')
-    input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_path = os.path.join(path_to_inputs, input_fname)
     cals = testing.get_associated_calibrations(basename)
 
     if os.path.exists(input_path):
@@ -171,9 +171,9 @@ def preprocessed_data(request, cache_path, get_master_arc, new_path_to_inputs,
         master_arc = get_master_arc(input_data, should_preprocess)
 
     elif should_preprocess:
-        filename = cache_path(basename)
+        filename = cache_file_from_archive(basename)
         ad = astrodata.open(filename)
-        cals = [cache_path(c) for c in cals.filename.values]
+        cals = [cache_file_from_archive(c) for c in cals.filename.values]
 
         master_bias = reduce_bias(
             ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
@@ -196,14 +196,14 @@ def preprocessed_data(request, cache_path, get_master_arc, new_path_to_inputs,
 
 
 @pytest.fixture(scope='module')
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """
     Factory for function for data reduction up to one step before
     `applyQECorrection`.
 
     Parameters
     ----------
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Context manager used to write reduced data to a temporary folder.
 
     Returns
@@ -212,7 +212,7 @@ def reduce_data(output_path):
     using a custom recipe and return an AstroData object.
     """
     def _reduce_data(ad, master_bias, master_flat):
-        with output_path():
+        with change_working_dir():
             # Use config to prevent outputs when running Reduce via API
             logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
 

@@ -59,7 +59,7 @@ def test_processed_flat_is_stable(processed_flat, processed_ref_flat):
 
 # -- Fixtures ----------------------------------------------------------------
 @pytest.fixture(scope='module')
-def cache_path(new_path_to_inputs):
+def cache_file_from_archive(new_path_to_inputs):
     """
     Factory as a fixture used to cache data and return its local path.
 
@@ -102,7 +102,7 @@ def cache_path(new_path_to_inputs):
 
 
 @pytest.fixture(scope='module')
-def output_path(request, path_to_outputs):
+def change_working_dir(request, path_to_outputs):
     module_path = request.module.__name__.split('.') + ["outputs"]
     module_path = [item for item in module_path if item not in "tests"]
     path = os.path.join(path_to_outputs, *module_path)
@@ -122,12 +122,12 @@ def output_path(request, path_to_outputs):
 
 
 @pytest.fixture(scope='module')
-def processed_flat(request, cache_path, reduce_bias, reduce_flat):
-    flat_fname = cache_path(request.param)
+def processed_flat(request, cache_file_from_archive, reduce_bias, reduce_flat):
+    flat_fname = cache_file_from_archive(request.param)
     data_label = query_datalabel(flat_fname)
 
     bias_fnames = query_associated_bias(data_label)
-    bias_fnames = [cache_path(fname) for fname in bias_fnames]
+    bias_fnames = [cache_file_from_archive(fname) for fname in bias_fnames]
 
     master_bias = reduce_bias(data_label, bias_fnames)
     flat_ad = reduce_flat(data_label, flat_fname, master_bias)
@@ -195,9 +195,9 @@ def query_datalabel(fname):
 
 
 @pytest.fixture(scope='module')
-def reduce_bias(output_path):
+def reduce_bias(change_working_dir):
     def _reduce_bias(datalabel, bias_fnames):
-        with output_path():
+        with change_working_dir():
             logutils.config(file_name='log_bias_{}.txt'.format(datalabel))
 
             reduce = Reduce()
@@ -211,9 +211,9 @@ def reduce_bias(output_path):
 
 
 @pytest.fixture(scope='module')
-def reduce_flat(output_path):
+def reduce_flat(change_working_dir):
     def _reduce_flat(datalabel, flat_fname, master_bias):
-        with output_path():
+        with change_working_dir():
             logutils.config(file_name='log_flat_{}.txt'.format(datalabel))
 
             calibration_files = ['processed_bias:{}'.format(master_bias)]
