@@ -142,7 +142,8 @@ img     data        mask    variance       after rejection
 def test_combine():
     data = np.array([1., 1., 1., 2., 2., 2., 2., 100.]).reshape(8, 1)
 
-    out_data, out_mask, out_var = NDStacker.combine(data, combiner='mean',
+    out_data, out_mask, out_var = NDStacker.combine(data,
+                                                    combiner='mean',
                                                     rejector='sigclip')
     assert_allclose(out_data, 1.5714285)
 
@@ -150,9 +151,14 @@ def test_combine():
     assert_allclose(out_data, 2)
 
 
-def test_minmax(testdata, testvar, testmask):
-    # shuffle the input array to check that order is not modified
-    testdata = testdata[[2, 4, 1, 3, 0]] + 10
+def test_minmax(testvar, testmask):
+    testdata = np.array([
+        [24., 12.],
+        [22., 14.],
+        [23., 11.],
+        [20., 13.],
+        [21., 10.],
+    ])
 
     out_data, out_mask, out_var = NDStacker.minmax(testdata)
     assert_array_equal(out_data, testdata)
@@ -160,13 +166,30 @@ def test_minmax(testdata, testvar, testmask):
 
     out_data, out_mask, out_var = NDStacker.minmax(testdata, nlow=1, nhigh=1)
     assert_array_equal(out_data, testdata)
-    assert_array_equal(out_mask[:, 0], [False, True, False, False, True])
+    assert_array_equal(out_mask, [
+        [True, False],
+        [False, True],
+        [False, False],
+        [True, False],
+        [False, True],
+    ])
 
-    testmask[:2, 1] = DQ.saturated
-    out_data, out_mask, out_var = NDStacker.minmax(testdata, nlow=1, nhigh=1,
+    testmask = np.array(
+        [[0, DQ.saturated], [0, DQ.saturated], [0, 0], [DQ.max, 0], [0, 0]],
+        dtype=DQ.datatype)
+    out_data, out_mask, out_var = NDStacker.minmax(testdata,
+                                                   nlow=1,
+                                                   nhigh=1,
                                                    mask=testmask)
     assert_array_equal(out_data, testdata)
     assert_array_equal(out_mask[:, 1], [4, DQ.max, 0, 0, DQ.max])
+    assert_array_equal(out_mask, [
+        [0, DQ.saturated],
+        [0, DQ.max],
+        [0, 0],
+        [DQ.max, 0],
+        [0, DQ.max],
+    ])
 
     with pytest.raises(ValueError):
         NDStacker.minmax(testdata, nlow=3, nhigh=3)

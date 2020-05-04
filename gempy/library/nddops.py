@@ -501,16 +501,9 @@ class NDStacker:
             nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
             nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
 
-            for i in range(num_img):
-                # low values
-                idx = np.expand_dims(arg[i][i < nlo], axis=0)
-                if idx.size > 0:
-                    np.put_along_axis(mask, idx, DQ.max, axis=0)
-
-                # high values
-                idx = np.expand_dims(arg[i][(i > nhi) & (i < num_good)], axis=0)
-                if idx.size > 0:
-                    np.put_along_axis(mask, idx, DQ.max, axis=0)
+            arg2 = np.argsort(arg, axis=0)
+            mask[arg2 < nlo] = DQ.max
+            mask[(arg2 > nhi) & (arg2 < num_good)] = DQ.max
 
         return data, mask, variance
 
