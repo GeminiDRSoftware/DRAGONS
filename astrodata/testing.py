@@ -60,6 +60,10 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
 
     def _cache_file_from_archive(filename):
 
+        assert isinstance(path_to_inputs, str)
+        assert isinstance(path_to_outputs, str)
+        assert isinstance(filename, str)
+
         input_path = os.path.join(path_to_inputs, filename)
         cache_path = os.path.join(path_to_outputs, filename)
 
