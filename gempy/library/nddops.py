@@ -299,9 +299,7 @@ class NDStacker:
                                                  **self._rej_args)
 
         if save_rejection_map:
-            if mask is None:
-                mask = np.zeros_like(data, dtype=DQ.datatype)
-            rejmap = np.sum(rejmask - mask, axis=0)
+            rejmap = np.sum(rejmask == DQ.max, axis=0, dtype=np.int16)
         else:
             rejmap = None
 

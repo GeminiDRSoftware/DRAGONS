@@ -118,10 +118,12 @@ def test_sigclip(capsys):
                         lsigma=3,
                         hsigma=3,
                         debug_pixel=0)
-    result = stackit(ndd)
+    result = stackit(ndd, save_rejection_map=True)
     assert_allclose(result.data, 1.5714285714285714)  # 100 is rejected
+    assert result.meta['other']['REJMAP'].data[0] == 1
+
     out = capsys.readouterr().out
-    assert """\
+    expected = """\
 Rejection: sigclip {'lsigma': 3, 'hsigma': 3}
 img     data        mask    variance       after rejection
   0          1.0000     0               -
@@ -131,8 +133,9 @@ img     data        mask    variance       after rejection
   4          2.0000     0               -
   5          2.0000     0               -
   6          2.0000     0               -
-  7        100.0000     1               -
-""" in out
+  7        100.0000 65535               -
+"""
+    assert expected.splitlines() == out.splitlines()[13:23]
 
     stackit = NDStacker(combine="mean", reject="sigclip", lsigma=5, hsigma=5)
     result = stackit(ndd)
