@@ -11,17 +11,17 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
 test_files = [
-    "S20170505S0095.fits",
-    "S20170505S0096.fits",
-    "S20170505S0030.fits",
-    "S20170505S0031.fits",
-    "S20170505S0073.fits",
-    "S20170505S0074.fits",
-    "S20171208S0053.fits",
-    "S20171208S0054.fits",
-    "S20171208S0055.fits",
-    "S20150609S0022.fits",
-    "S20150609S0023.fits",
+    "S20170505S0095.fits",  # Science
+    "S20170505S0096.fits",  # Science
+    "S20170505S0030.fits",  # Flat On
+    "S20170505S0031.fits",  # Flat On
+    "S20170505S0073.fits",  # Flat Off
+    "S20170505S0074.fits",  # Flat Off
+    "S20171208S0053.fits",  # Flat On
+    "S20171208S0054.fits",  # Flat On
+    "S20171208S0055.fits",  # Flat On
+    "S20150609S0022.fits",  # Dark
+    "S20150609S0023.fits",  # Dark
 ]
 
 
