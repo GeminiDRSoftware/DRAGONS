@@ -1919,7 +1919,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
     # Create a new gWCS object describing the remaining transformation.
     # Not all gWCS objects have to have the same steps, so we need to
-    # redetermine the frame_index in the reference extensions's WCS.ª
+    # redetermine the frame_index in the reference extensions's WCS.
     ndim = len(ad[ref_index].shape)
     frame_index = ad[ref_index].wcs.available_frames.index(frame_name)
     new_pipeline = ad[ref_index].wcs.pipeline[frame_index:]
@@ -1940,24 +1940,24 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     keywords = {sec: ad._keyword_for('{}_section'.format(sec))
                 for sec in ('array', 'data', 'detector')}
     # Data section probably has meaning even if ndim!=2
-    ad.hdr[keywords['data']] = '['+','.join('1:{}'.format(length)
+    ad_out.hdr[keywords['data']] = '['+','.join('1:{}'.format(length)
                                 for length in ad[0].shape[::-1])+']'
     # These descriptor returns are unclear in non-2D data
     if ndim == 2:
         # If detector_section returned something, set an appropriate value
         all_detsec = np.array([ext.detector_section() for ext in ad]).T
-        ad.hdr[keywords['detector']] = '['+','.join('{}:{}'.format(min(c1)+1, max(c2))
+        ad_out.hdr[keywords['detector']] = '['+','.join('{}:{}'.format(min(c1)+1, max(c2))
                             for c1, c2 in zip(all_detsec[::2], all_detsec[1::2]))+']'
         # array_section only has meaning now if the inputs were from a
         # single physical array
         if len(blocks) == 1:
             all_arrsec = np.array([ext.array_section() for ext in ad]).T
-            ad.hdr[keywords['array']] = '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
+            ad_out.hdr[keywords['array']] = '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
                                 for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
         else:
             del ad.hdr[keywords['array']]
     if 'CCDNAME' in ad_out[0].hdr:
-        ad.hdr['CCDNAME'] = ad.detector_name()
+        ad_out.hdr['CCDNAME'] = ad.detector_name()
     # Finally, delete any keywords that no longer make sense
     for kw in ('AMPNAME', 'FRMNAME', 'FRAMEID', 'CCDSIZE', 'BIASSEC',
                'DATATYP', 'OVERSEC', 'TRIMSEC', 'OVERSCAN', 'OVERRMS'):
