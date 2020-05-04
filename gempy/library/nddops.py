@@ -498,8 +498,8 @@ class NDStacker:
 
             # IRAF imcombine maths
             num_good = NDStacker._num_good(mask == DQ.max)
-            nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
-            nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
+            nlo = (num_good * nlow / num_img + 0.001).astype(int)
+            nhi = num_good - (num_good * nhigh / num_img + 0.001).astype(int) - 1
 
             arg2 = np.argsort(arg, axis=0)
             mask[arg2 < nlo] = DQ.max
