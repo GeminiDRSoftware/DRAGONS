@@ -12,7 +12,7 @@ from geminidr.core import primitives_visualize
 from recipe_system.testing import reduce_arc
 
 
-def test_mosaic_detectors_gmos_binning(astrofaker):
+def test_mosaic_detectors_gmos_binning():
     """
     Tests that the spacing between amplifier centres for NxN binned data
     is precisely N times smaller than for unbinned data when run through
