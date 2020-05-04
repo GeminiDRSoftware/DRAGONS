@@ -37,31 +37,31 @@ pipeline {
             }
         }
 
-        stage('Code Metrics') {
-            when {
-                branch 'master'
-            }
-            environment {
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
-                sh 'tox -e check'
-            }
-            post {
-                success {
-                    recordIssues(
-                        enabledForFailure: true,
-                        tools: [
-                            pyLint(pattern: '**/reports/pylint.log'),
-                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
-                        ]
-                    )
-                }
-            }
-        }
+//         stage('Code Metrics') {
+//             when {
+//                 branch 'master'
+//             }
+//             environment {
+//                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+//             }
+//             steps {
+//                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+//                 checkout scm
+//                 sh '.jenkins/scripts/setup_agent.sh'
+//                 sh 'tox -e check'
+//             }
+//             post {
+//                 success {
+//                     recordIssues(
+//                         enabledForFailure: true,
+//                         tools: [
+//                             pyLint(pattern: '**/reports/pylint.log'),
+//                             pyDocStyle(pattern: '**/reports/pydocstyle.log')
+//                         ]
+//                     )
+//                 }
+//             }
+//         }
 
         stage('Unit tests') {
             parallel {
@@ -120,63 +120,63 @@ pipeline {
             }
         }
 
-        stage('Integration tests') {
-            // when {
-            //     branch 'master'
-            // }
-            agent {
-                label "centos7"
-            }
-            environment {
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                echo "${env.PATH}"
-                sh '.jenkins/scripts/setup_agent.sh'
-                echo "Integration tests"
-                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F integration'
-            }
-            post {
-                always {
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/*_results.xml'
-                    )
-                }
-            }
-        }
-
-        stage('GMOS LS Tests') {
-            agent {
-                label "centos7"
-            }
-            environment {
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
-                echo "Running tests"
-                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F gmosls'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside GmosArcTests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/*_results.xml'
-                    )
-                }  // end always
-            }  // end post
-        }  // end stage
+//         stage('Integration tests') {
+//             // when {
+//             //     branch 'master'
+//             // }
+//             agent {
+//                 label "centos7"
+//             }
+//             environment {
+//                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+//             }
+//             steps {
+//                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+//                 checkout scm
+//                 echo "${env.PATH}"
+//                 sh '.jenkins/scripts/setup_agent.sh'
+//                 echo "Integration tests"
+//                 sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
+//                 echo "Reporting coverage"
+//                 sh 'tox -e codecov -- -F integration'
+//             }
+//             post {
+//                 always {
+//                     junit (
+//                         allowEmptyResults: true,
+//                         testResults: 'reports/*_results.xml'
+//                     )
+//                 }
+//             }
+//         }
+//
+//         stage('GMOS LS Tests') {
+//             agent {
+//                 label "centos7"
+//             }
+//             environment {
+//                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+//             }
+//             steps {
+//                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+//                 checkout scm
+//                 sh '.jenkins/scripts/setup_agent.sh'
+//                 echo "Running tests"
+//                 sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
+//                 echo "Reporting coverage"
+//                 sh 'tox -e codecov -- -F gmosls'
+//             }  // end steps
+//             post {
+//                 always {
+//                     echo "Running 'archivePlots' from inside GmosArcTests"
+//                     archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+//                     junit (
+//                         allowEmptyResults: true,
+//                         testResults: 'reports/*_results.xml'
+//                     )
+//                 }  // end always
+//             }  // end post
+//         }  // end stage
 
     }
     post {
