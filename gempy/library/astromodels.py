@@ -21,6 +21,7 @@ from collections import OrderedDict
 
 import astropy
 from astropy.modeling import models, fitting, FittableModel, Parameter
+from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip
 from astropy.utils import minversion
 from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, BSpline
@@ -499,3 +500,22 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
             break
         order += 1
     return m_inverse
+
+def get_named_submodel(model, name):
+    if not isinstance(model, CompoundModel):
+        raise TypeError("This is not a CompoundModel")
+    if model._leaflist is None:
+        model._make_leaflist()
+    found = []
+    for nleaf, leaf in enumerate(model._leaflist):
+        if getattr(leaf, 'name', None) == name:
+            found.append(nleaf)
+    for m, start, stop in model._tdict.values():
+        if getattr(m, 'name', None) == name:
+            found.append(slice(start, stop+1))
+    if len(found) == 0:
+        raise IndexError("No component with name '{}' found".format(name))
+    if len(found) > 1:
+        raise IndexError("Multiple components found using '{}' as name\n"
+                         "at indices {}".format(name, found))
+    return model[found[0]]

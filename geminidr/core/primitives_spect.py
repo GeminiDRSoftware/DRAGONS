@@ -31,7 +31,7 @@ from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
-from gempy.library import transform, astrotools as at
+from gempy.library import transform
 from gempy.library.astrotools import array_from_list
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -547,7 +547,7 @@ class Spect(PrimitivesBASE):
 
             # Read all the arc's distortion maps. Do this now so we only have
             # one block of reading and verifying them
-            distortion_models = []
+            distortion_models, wave_models = [], []
             for ext in arc:
                 wcs = ext.nddata.wcs
 
@@ -571,6 +571,13 @@ class Spect(PrimitivesBASE):
                 input_frame = wcs.input_frame
                 m_distcorr.inverse = wcs.get_transform(input_frame, 'distortion_corrected').inverse
                 distortion_models.append(m_distcorr)
+
+                try:
+                    wave_model = astromodels.get_named_submodel(wcs.forward_transform, 'WAVE')
+                except IndexError:
+                    wave_models.append(None)
+                else:
+                    wave_models.append(wave_model)
 
             if not distortion_models:
                 log.warning("Could not find a 'distortion_corrected' frame "
@@ -665,22 +672,34 @@ class Spect(PrimitivesBASE):
                 ad_out = transform.resample_from_wcs(ad, 'distortion_corrected',
                                                      order=order, subsample=subsample,
                                                      parallel=False)
-                try:
-                    ad_out[0].WAVECAL = arc[0].WAVECAL
-                except AttributeError:
-                    log.warning(f"No WAVECAL table in {arc.filename}")
+
+                if wave_model is None:
+                    log.warning(f"{arc.filename} has no wavelength solution")
+                else:
+                    wcs = ad_out[0].wcs
+                    for inframe, outframe in zip(wcs.available_frames[:-1],
+                                                 wcs.available_frames[1:]):
+                        t = wcs.get_transform(inframe, outframe)
+                        try:
+                            w = astromodels.get_named_submodel(t, 'WAVE')
+                        except IndexError:
+                            pass
+                        else:
+                            ad_out[0].wcs.set_transform(inframe, outframe,
+                                                        t.replace_submodel('WAVE', wave_model))
+
             else:
                 log.warning("Distortion correction with multiple-extension "
                             "arcs has not been tested.")
-                for i, (ext, ext_arc, model) in enumerate(zip(ad, arc, distortion_models)):
+                for i, (ext, ext_arc, dist_model, wave_model) in enumerate(zip(ad, arc, distortion_models, wave_models)):
                     # Shift science so its pixel coords match the arc's before
                     # applying the distortion correction
                     shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
                                                         ext_arc.detector_section())]
-                    model = (models.Shift(shifts[0] / xbin) &
-                             models.Shift(shifts[1] / ybin)) | model
+                    dist_model = (models.Shift(shifts[0] / xbin) &
+                                  models.Shift(shifts[1] / ybin)) | dist_model
                     # TODO: use insert_frame method
-                    new_pipeline = [(ext.wcs.input_frame, model),
+                    new_pipeline = [(ext.wcs.input_frame, dist_model),
                                     (Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0][1])]
                     new_pipeline.extend(ext.wcs.pipeline[1:])
                     ext.wcs = gWCS(new_pipeline)
@@ -692,11 +711,21 @@ class Spect(PrimitivesBASE):
                         ad_out.append(transform.resample_from_wcs(ext, order=order,
                                                                   subsample=subsample,
                                                                   parallel=False))
-                    try:
-                        ad_out[i].WAVECAL = arc[i].WAVECAL
-                    except AttributeError:
-                        log.warning("No WAVECAL table in {}:{}".
-                                    format(arc.filename, arc[i].hdr['EXTVER']))
+                    if wave_model is None:
+                        log.warning(f"{arc.filename}:{0} has no wavelength "
+                                    "solution".format(ext.hdr['EXTVER']))
+                    else:
+                        wcs = ad_out[i].wcs
+                        for inframe, outframe in zip(wcs.available_frames[:-1],
+                                                     wcs.available_frames[1:]):
+                            t = wcs.get_transform(inframe, outframe)
+                            try:
+                                w = astromodels.get_named_submodel(t, 'WAVE')
+                            except IndexError:
+                                pass
+                            else:
+                                ad_out[i].wcs.set_transform(inframe, outframe,
+                                                            t.replace_submodel('WAVE', wave_model))
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
