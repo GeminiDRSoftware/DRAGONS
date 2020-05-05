@@ -12,8 +12,27 @@ import astrodata
 from astrodata.testing import assert_same_class, download_from_archive
 
 
-def test_cache_file_from_archive_using_static_data(cache_file_from_archive, capsys):
+example_test = """
+    from os.path import exists
 
+    def test_cache_file_from_archive_new_file(cache_file_from_archive, capsys):
+    
+        filename = 'X20001231S0001.fits'
+        path = cache_file_from_archive(filename)
+        captured = capsys.readouterr()
+    
+        assert "Caching file to:" in captured.out
+        assert isinstance(path, str)
+        assert filename in path
+        assert exists(path)
+    
+        _ = cache_file_from_archive(filename)
+        captured = capsys.readouterr()
+        assert "Input file is cached in:" in captured.out
+    """
+
+
+def test_cache_file_from_archive_using_static_data(cache_file_from_archive, capsys):
     filename = "N20110826S0336.fits"
     path = cache_file_from_archive(filename)
     captured = capsys.readouterr()
@@ -25,7 +44,6 @@ def test_cache_file_from_archive_using_static_data(cache_file_from_archive, caps
 
 
 def test_cache_file_from_archive_caching_data(monkeypatch, tmpdir, testdir):
-
     ncall = 0
 
     def mock_download(remote_url, **kwargs):
@@ -37,18 +55,18 @@ def test_cache_file_from_archive_caching_data(monkeypatch, tmpdir, testdir):
 
     monkeypatch.setattr("astrodata.testing.download_file", mock_download)
     monkeypatch.setenv('DRAGONS_TEST', str(tmpdir))
-    testdir.copy_example("test_cache_file_from_archive.py")
-    result = testdir.runpytest("-k", "test_cache_file_from_archive_new_file")
+    testdir.makeconftest("from astrodata.testing import *")
+    testdir.makepyfile(example_test)
+    result = testdir.runpytest()
     result.assert_outcomes(passed=1)
     assert ncall == 1
 
 
-
 def test_cache_file_from_archive_is_skipped_when_envvar_not_defined(
         monkeypatch, testdir):
-
     monkeypatch.delenv('DRAGONS_TEST')
-    testdir.copy_example("test_cache_file_from_archive.py")
+    testdir.makeconftest("from astrodata.testing import *")
+    testdir.makepyfile(example_test)
     result = testdir.runpytest("-k", "test_cache_file_from_archive_new_file")
     result.assert_outcomes(skipped=1)
 
@@ -66,7 +84,6 @@ def test_download_from_archive_raises_IOError_if_path_is_not_accessible():
 
 
 def test_download_from_archive(monkeypatch, tmpdir):
-
     ncall = 0
 
     def mock_download(remote_url, **kwargs):
