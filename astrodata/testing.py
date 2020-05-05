@@ -71,16 +71,19 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
             print("\n Static input file exists in:\n {:s}".format(input_path))
             return input_path
 
-        elif os.path.exists(cache_path):
-            print("\n Input file is cached in:\n {:s}".format(input_path))
-            return cache_path
-
         else:
-            tmp_path = download_file(URL + filename, cache=False)
-            shutil.move(tmp_path, cache_path)
-            os.chmod(cache_path, 0o664)
-            print("\n Caching file to:\n {:s}".format(cache_path))
-            return cache_path
+            raise IOError("Input file not found:\n {}".format(input_path))
+
+        # elif os.path.exists(cache_path):
+        #     print("\n Input file is cached in:\n {:s}".format(input_path))
+        #     return cache_path
+        #
+        # else:
+        #     tmp_path = download_file(URL + filename, cache=False)
+        #     shutil.move(tmp_path, cache_path)
+        #     os.chmod(cache_path, 0o664)
+        #     print("\n Caching file to:\n {:s}".format(cache_path))
+        #     return cache_path
 
     return _cache_file_from_archive
 
