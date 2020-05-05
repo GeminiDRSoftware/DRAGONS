@@ -150,33 +150,33 @@ pipeline {
             }
         }
 
-//         stage('GMOS LS Tests') {
-//             agent {
-//                 label "centos7"
-//             }
-//             environment {
-//                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-//             }
-//             steps {
-//                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-//                 checkout scm
-//                 sh '.jenkins/scripts/setup_agent.sh'
-//                 echo "Running tests"
-//                 sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
-//                 echo "Reporting coverage"
-//                 sh 'tox -e codecov -- -F gmosls'
-//             }  // end steps
-//             post {
-//                 always {
-//                     echo "Running 'archivePlots' from inside GmosArcTests"
-//                     archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-//                     junit (
-//                         allowEmptyResults: true,
-//                         testResults: 'reports/*_results.xml'
-//                     )
-//                 }  // end always
-//             }  // end post
-//         }  // end stage
+        stage('GMOS LS Tests') {
+            agent {
+                label "centos7"
+            }
+            environment {
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Running tests"
+                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F gmosls'
+            }  // end steps
+            post {
+                always {
+                    echo "Running 'archivePlots' from inside GmosArcTests"
+                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }  // end always
+            }  // end post
+        }  // end stage
 
     }
     post {
