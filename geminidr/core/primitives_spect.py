@@ -675,23 +675,11 @@ class Spect(PrimitivesBASE):
 
                 if wave_model is None:
                     log.warning(f"{arc.filename} has no wavelength solution")
-                else:
-                    wcs = ad_out[0].wcs
-                    for inframe, outframe in zip(wcs.available_frames[:-1],
-                                                 wcs.available_frames[1:]):
-                        t = wcs.get_transform(inframe, outframe)
-                        try:
-                            w = astromodels.get_named_submodel(t, 'WAVE')
-                        except IndexError:
-                            pass
-                        else:
-                            ad_out[0].wcs.set_transform(inframe, outframe,
-                                                        t.replace_submodel('WAVE', wave_model))
 
             else:
                 log.warning("Distortion correction with multiple-extension "
                             "arcs has not been tested.")
-                for i, (ext, ext_arc, dist_model, wave_model) in enumerate(zip(ad, arc, distortion_models, wave_models)):
+                for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
                     # Shift science so its pixel coords match the arc's before
                     # applying the distortion correction
                     shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
@@ -714,18 +702,19 @@ class Spect(PrimitivesBASE):
                     if wave_model is None:
                         log.warning(f"{arc.filename}:{0} has no wavelength "
                                     "solution".format(ext.hdr['EXTVER']))
+
+            for ext, wave_model in zip(ad_out, wave_models):
+                wcs = ext.wcs
+                for inframe, outframe in zip(wcs.available_frames[:-1],
+                                             wcs.available_frames[1:]):
+                    t = wcs.get_transform(inframe, outframe)
+                    try:
+                        w = astromodels.get_named_submodel(t, 'WAVE')
+                    except IndexError:
+                        pass
                     else:
-                        wcs = ad_out[i].wcs
-                        for inframe, outframe in zip(wcs.available_frames[:-1],
-                                                     wcs.available_frames[1:]):
-                            t = wcs.get_transform(inframe, outframe)
-                            try:
-                                w = astromodels.get_named_submodel(t, 'WAVE')
-                            except IndexError:
-                                pass
-                            else:
-                                ad_out[i].wcs.set_transform(inframe, outframe,
-                                                            t.replace_submodel('WAVE', wave_model))
+                        ext.wcs.set_transform(inframe, outframe,
+                                              t.replace_submodel('WAVE', wave_model))
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
