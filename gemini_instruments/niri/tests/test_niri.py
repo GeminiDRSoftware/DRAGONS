@@ -4,7 +4,7 @@ import pytest
 import astrodata
 import gemini_instruments
 
-filename = 'N20190120S0287.fits',
+filename = 'N20190120S0287.fits'
 
 
 @pytest.fixture()
