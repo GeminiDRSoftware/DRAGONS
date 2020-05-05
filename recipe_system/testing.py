@@ -68,6 +68,7 @@ def reduce_arc(change_working_dir):
 
     def _reduce_arc(dlabel, arc_fnames):
         with change_working_dir():
+            print("Reducing ARCs in folder:\n  {}".format(os.getcwd()))
             # Use config to prevent duplicated outputs when running Reduce via API
             logutils.config(file_name='log_arc_{}.txt'.format(dlabel))
 
@@ -99,6 +100,7 @@ def reduce_bias(change_working_dir):
 
     def _reduce_bias(datalabel, bias_fnames):
         with change_working_dir():
+            print("Reducing BIAS in folder:\n  {}".format(os.getcwd()))
             logutils.config(file_name='log_bias_{}.txt'.format(datalabel))
 
             reduce = Reduce()
@@ -130,6 +132,7 @@ def reduce_flat(change_working_dir):
 
     def _reduce_flat(data_label, flat_fnames, master_bias):
         with change_working_dir():
+            print("Reducing FLATs in folder:\n  {}".format(os.getcwd()))
             logutils.config(file_name='log_flat_{}.txt'.format(data_label))
 
             calibration_files = ['processed_bias:{}'.format(master_bias)]
