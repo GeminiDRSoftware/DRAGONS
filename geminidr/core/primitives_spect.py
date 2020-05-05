@@ -455,21 +455,12 @@ class Spect(PrimitivesBASE):
                     ext.wcs = gWCS([(Frame2D(name="pixels"), model),
                                     (Frame2D(name="world"), None)])
                 else:
-                    # use insert_frame here
+                    # TODO: use insert_frame here
                     ext.wcs = gWCS([(ext.wcs.input_frame, model),
                                     (Frame2D(name="distortion_corrected"), ext.wcs.pipeline[0][1])]
                                    + ext.wcs.pipeline[1:])
 
-                columns = []
-                for m in (m_final, m_inverse):
-                    model_dict = astromodels.chebyshev_to_dict(m)
-                    columns.append(list(model_dict.keys()))
-                    columns.append(list(model_dict.values()))
-                # If we're genuinely worried about the two models, they might
-                # have different orders and we might need to pad one
-                ext.FITCOORD = Table(columns, names=("name", "coefficients",
-                                                     "inv_name", "inv_coefficients"))
-                # Timestamp and update the filename
+            # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
