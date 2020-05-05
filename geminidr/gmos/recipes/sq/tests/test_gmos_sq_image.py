@@ -7,13 +7,73 @@ import os
 from gempy.adlibrary import dataselect
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
+from recipe_system.testing import reduce_bias, reduce_flat
 
 from gempy.utils import logutils
 
+datasets = [
+
+    # GN HAM 2x2 z-band
+    ("GN-2017B-LP-15", [
+        "N20170912S0295.fits",
+        "N20170912S0296.fits",
+        "N20170912S0297.fits",
+        "N20170912S0298.fits",
+        "N20170912S0299.fits",
+        "N20170913S0153.fits",
+        "N20170913S0154.fits",
+        "N20170913S0155.fits",
+        "N20170913S0156.fits",
+        "N20170913S0157.fits",
+        "N20170913S0158.fits",
+        "N20170914S0481.fits",
+        "N20170914S0482.fits",
+        "N20170914S0483.fits",
+        "N20170914S0484.fits",
+        "N20170914S0485.fits",
+        "N20170915S0274.fits",
+        "N20170915S0275.fits",
+        "N20170915S0276.fits",
+        "N20170915S0277.fits",
+        "N20170915S0278.fits",
+        "N20170915S0279.fits",
+        "N20170915S0280.fits",
+        "N20170915S0281.fits",
+        "N20170915S0282.fits",
+        "N20170915S0283.fits",
+        "N20170915S0284.fits",
+        "N20170915S0285.fits",
+        "N20170915S0286.fits",
+        "N20170915S0287.fits",
+        "N20170915S0337.fits",
+        "N20170915S0338.fits",
+        "N20170915S0339.fits",
+        "N20170915S0340.fits",
+        "N20170915S0341.fits",
+    ]),
+
+]
+
 
 # These tests need refactoring to reduce the replication of API boilerplate
+@pytest.mark.skip('TODO: Reactivate me')
+@pytest.mark.parametrize("program_id,list_of_files", datasets)
+def test_reduce_image(cache_file_from_archive, change_working_dir, list_of_files,
+                      program_id, reduce_bias, reduce_flat):
+    with change_working_dir():
+        os.mkdir(program_id)
+        os.chdir(program_id)
+        paths = [cache_file_from_archive(f) for f in list_of_files]
+
+        master_bias = reduce_bias(program_id,
+                                  dataselect.select_data(paths, tags=['BIAS']))
+
+        master_flat = reduce_flat(program_id,
+                                  dataselect.select_data(paths, tags=['FLAT']))
+
 
 # noinspection PyPep8Naming
+@pytest.mark.skip('TODO: Reactivate me')
 @pytest.mark.integtest
 def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
     objgraph = pytest.importorskip("objgraph")
