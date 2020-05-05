@@ -1644,6 +1644,8 @@ def find_reference_extension(ad):
     -------
     int: index of the reference extension
     """
+    if len(ad) == 1:
+        return 0
     det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
     centre = np.median(det_corners, axis=0)
     distances = list(det_corners - centre)
