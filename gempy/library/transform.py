@@ -1823,7 +1823,6 @@ def add_longslit_wcs(ad):
     return ad
 
 
-
 def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                       threshold=0.01, conserve=False, parallel=False,
                       process_objcat=False):
@@ -1866,14 +1865,22 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # It's not clear how much checking we should do here but at a minimum
     # we should probably confirm that each extension is purely data. It's
     # up to a primitve to catch this, call trim_to_data_section(), and try again
-    if not all(((datsec.x1, datsec.y1) == (0, 0) and (datsec.y2, datsec.x2) == shape)
-               for datsec, shape in zip(ad.data_section(), ad.shape)):
-        raise ValueError("Not all data sections agree with shapes")
+    if ad.is_single:
+        shapes_ok = list(ad.detector_section()) == (0, ad.shape[1], 0, ad.shape[0])
+    else:
+        shapes_ok = all(((datsec.x1, datsec.y1) == (0, 0) and
+                         (datsec.y2, datsec.x2) == shape)
+                         for datsec, shape in zip(ad.data_section(), ad.shape))
+    if not shapes_ok:
+        raise ValueError("Not all data sections agree with extension shapes")
 
     # Create the blocks (individual physical detectors)
-    array_info = gt.array_information(ad)
-    blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
-              zip(array_info.extensions, array_info.array_shapes)]
+    if ad.is_single:
+        blocks = Block(ad)
+    else:
+        array_info = gt.array_information(ad)
+        blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
+                  zip(array_info.extensions, array_info.array_shapes)]
 
     dg = DataGroup()
     dg.no_data['mask'] = DQ.no_data
@@ -1931,6 +1938,9 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             new_wcs.insert_transform(new_wcs.input_frame,
                 reduce(Model.__and__, [models.Shift(s) for s in reversed(dg.origin)]), after=True)
     ad_out[0].wcs = new_wcs
+
+    # Storing this could be very helpful
+    ad_out.phu['ORIGTRAN'] = str(dg.origin[::-1])
 
     # Update and delete keywords from extension (_update_headers)
     if ndim != 2:
