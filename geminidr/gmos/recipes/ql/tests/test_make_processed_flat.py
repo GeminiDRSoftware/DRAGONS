@@ -12,9 +12,9 @@ from recipe_system.testing import reduce_bias, reduce_flat, reference_ad
 
 datasets = [
     "S20180707S0043.fits",  # B600 at 0.520 um
-    # "S20190502S0096.fits",  # B600 at 0.525 um
-    # "S20200122S0020.fits",  # B600 at 0.520 um
-    # "N20200101S0055.fits",  # B1200 at 0.495 um
+    "S20190502S0096.fits",  # B600 at 0.525 um
+    "S20200122S0020.fits",  # B600 at 0.520 um
+    "N20200101S0055.fits",  # B1200 at 0.495 um
     # "S20180410S0120.fits",  # B1200 at 0.595 um  # Scattered light?
     # "S20190410S0053.fits",  # B1200 at 0.463 um  # Scattered light?
 ]
