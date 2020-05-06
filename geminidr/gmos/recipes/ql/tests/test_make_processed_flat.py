@@ -12,16 +12,16 @@ from recipe_system.testing import reduce_bias, reduce_flat, reference_ad
 
 datasets = [
     "S20180707S0043.fits",  # B600 at 0.520 um
-    "S20190502S0096.fits",  # B600 at 0.525 um
-    "S20200122S0020.fits",  # B600 at 0.520 um
-    "N20200101S0055.fits",  # B1200 at 0.495 um
+    # "S20190502S0096.fits",  # B600 at 0.525 um
+    # "S20200122S0020.fits",  # B600 at 0.520 um
+    # "N20200101S0055.fits",  # B1200 at 0.495 um
     # "S20180410S0120.fits",  # B1200 at 0.595 um  # Scattered light?
     # "S20190410S0053.fits",  # B1200 at 0.463 um  # Scattered light?
 ]
 
 
 # -- Tests --------------------------------------------------------------------
-@pytest.mark.skip(reason="Arrays are not almost equal to 3 decimals")
+# @pytest.mark.skip(reason="Arrays are not almost equal to 3 decimals")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_median_around_one(processed_flat):
@@ -30,7 +30,7 @@ def test_processed_flat_has_median_around_one(processed_flat):
         np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
 
 
-@pytest.mark.skip(reason="High std")
+# @pytest.mark.skip(reason="High std")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_small_std(processed_flat):
@@ -55,13 +55,12 @@ def processed_flat(cache_file_from_archive, reduce_bias, reduce_flat, request):
     ad = astrodata.open(path)
 
     cals = ad_testing.get_associated_calibrations(filename)
+    cals = cals[cals.caltype.str.contains('bias')]
     cals = [cache_file_from_archive(c) for c in cals.filename.values]
 
-    master_bias = reduce_bias(
-        ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
+    master_bias = reduce_bias(ad.data_label(), cals)
 
-    master_flat = reduce_flat(
-        ad.data_label(), [filename], master_bias)
+    master_flat = reduce_flat(ad.data_label(), [path], master_bias)
 
     return master_flat
 
