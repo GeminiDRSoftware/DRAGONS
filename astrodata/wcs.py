@@ -60,7 +60,7 @@ def fitswcs_to_gwcs(hdr):
         axes_order = (outputs.index('alpha_C'), outputs.index('delta_C'))
 
         # Call it 'world' if there are no other axes, otherwise 'sky'
-        name = 'sky' if len(outputs) > 2 else 'world'
+        name = 'SKY' if len(outputs) > 2 else 'world'
         cel_frame = cf.CelestialFrame(reference_frame=ref_frame, name=name,
                                       axes_order=axes_order)
         out_frames.append(cel_frame)
@@ -143,8 +143,12 @@ def gwcs_to_fits(ndd, hdr=None):
     # Deal with other axes
     # TODO: AD should refactor to allow the descriptor to be used here
     for i, name in enumerate(world_axes, start=1):
+        if f'CRVAL{i}' in wcs_dict:
+            continue
         if name.upper().startswith('WAVE'):
             wcs_dict[f'CRVAL{i}'] = hdr['CENTWAVE']
+        else:  # Just something
+            wcs_dict[f'CRVAL{i}'] = 0
 
     # Flag if we can't construct a perfect CD matrix
     if not model_is_affine(transform):
@@ -488,7 +492,7 @@ def fitswcs_image(header):
         transforms.append(projection)
 
     sky_model = functools.reduce(lambda x, y: x | y, transforms)
-    sky_model.name = 'sky model'
+    sky_model.name = 'SKY'
     sky_model.meta.update({'input_axes': pixel_axes,
                            'output_axes': sky_axes})
     return sky_model
