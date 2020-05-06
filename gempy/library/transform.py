@@ -1742,16 +1742,22 @@ def add_mosaic_wcs(ad, geotable):
                             (mos_frame, None)]
             ad[i].wcs = gWCS(pipeline)
 
+    # We want to put the origin shift before the mosaic frame of each
+    # extension in order to keep the post-mosaic model tidy. This requires
+    # more code here.
     if ref_wcs is not None:
         new_xorigin, new_yorigin = ad[ref_index].wcs(0, 0)
         if new_xorigin or new_yorigin:
             origin_shift = models.Shift(-new_xorigin) & models.Shift(-new_yorigin)
-            ref_wcs.insert_transform(ref_wcs.input_frame, origin_shift, after=True)
+        else:
+            origin_shift = None
 
         for ext in ad:
             ext.wcs = gWCS(ext.wcs.pipeline[:-1] +
                            [(mos_frame, ref_wcs.forward_transform),
                             (ref_wcs.output_frame, None)])
+            if origin_shift:
+                ext.wcs.insert_transform(mos_frame, origin_shift, after=False)
             #ext.wcs.insert_frame(mos_frame, ref_wcs.forward_transform,
             #                     ref_wcs.output_frame)
 
@@ -1799,22 +1805,24 @@ def add_longslit_wcs(ad):
                                           axes_names='WAVE')
         output_frame = cf.CompositeFrame([spectral_frame, sky_frame], name='world')
 
-        crpix = ext.wcs.forward_transform[f'crpix{dispaxis}'].offset.value
+        transform = ext.wcs.forward_transform
+        crpix = transform[f'crpix{dispaxis}'].offset.value
+        transform.name = None  # so we can reuse "SKY"
         #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :0})
         if dispaxis == 1:
-            sky_model = models.Mapping((0, 0)) | (models.Const1D(0) & models.Identity(1)) | ext.wcs.forward_transform
+            sky_model = models.Mapping((0, 0)) | (models.Const1D(0) & models.Identity(1)) | transform
         else:
-            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(0)) | ext.wcs.forward_transform
+            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(0)) | transform
+        sky_model.name = 'SKY'
         wave_model = (models.Shift(crpix) | models.Scale(dw) |
                       models.Shift(cenwave))
         wave_model.name = 'WAVE'
 
         if dispaxis == 1:
-            sky_model.inverse = (ext.wcs.backward_transform |
-                                 models.Mapping((1,)))
+            sky_model.inverse = (transform.inverse | models.Mapping((1,)))
             transform = wave_model & sky_model
         else:
-            sky_model.inverse = (ext.wcs.backward_transform |
+            sky_model.inverse = (transform.inverse |
                                  models.Mapping((0,), n_inputs=2))
             transform = models.Mapping((1, 0)) | wave_model & sky_model
 
@@ -1929,22 +1937,27 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # Create a new gWCS object describing the remaining transformation.
     # Not all gWCS objects have to have the same steps, so we need to
     # redetermine the frame_index in the reference extensions's WCS.
-    ndim = len(ad[ref_index].shape)
-    frame_index = ad[ref_index].wcs.available_frames.index(frame_name)
-    new_pipeline = ad[ref_index].wcs.pipeline[frame_index:]
+    ref_wcs = ad[ref_index].wcs
+    frame_index = ref_wcs.available_frames.index(frame_name)
+    new_pipeline = ref_wcs.pipeline[frame_index:]
+    ref_transform = ref_wcs.get_transform(ref_wcs.input_frame, frame)
+    # Remember, dg.origin is (y, x)
+    new_origin = tuple(s for s in dg.origin[::-1])
+
     if len(new_pipeline) == 1:
         new_wcs = None
     else:
         new_wcs = gWCS(new_pipeline)
-        if set(dg.origin) != {0}:
+        if set(new_origin) != {0}:
+            #new_pipeline = [(cf.Frame2D(name='pixels'), reduce(Model.__and__, [models.Shift(s) for s in new_origin]))] + new_pipeline
             new_wcs.insert_transform(new_wcs.input_frame,
-                reduce(Model.__and__, [models.Shift(s) for s in reversed(dg.origin)]), after=True)
-    ad_out[0].wcs = new_wcs
+                reduce(Model.__and__, [models.Shift(s) for s in new_origin]), after=True)
 
     # Storing this could be very helpful
     ad_out.phu['ORIGTRAN'] = str(dg.origin[::-1])
 
     # Update and delete keywords from extension (_update_headers)
+    ndim = len(ad[ref_index].shape)
     if ndim != 2:
         log.warning("The updating of header keywords has only been "
                     "fully tested for 2D data.")
@@ -1953,7 +1966,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                 for sec in ('array', 'data', 'detector')}
     # Data section probably has meaning even if ndim!=2
     ad_out.hdr[keywords['data']] = '['+','.join('1:{}'.format(length)
-                                for length in ad[0].shape[::-1])+']'
+                                for length in ad_out[0].shape[::-1])+']'
     # These descriptor returns are unclear in non-2D data
     if ndim == 2:
         # If detector_section returned something, set an appropriate value
