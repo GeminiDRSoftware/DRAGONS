@@ -12,6 +12,7 @@ def ad(cache_file_from_archive):
     return astrodata.open(path)
 
 
+@pytest.mark.xfail(reason="AstroFaker changes the AstroData factory")
 def test_is_right_type(ad):
     assert type(ad) == gemini_instruments.graces.adclass.AstroDataGraces
 

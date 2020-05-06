@@ -25,7 +25,6 @@ def test_extension_data_shape(ad):
     assert data.shape == (2048, 2048)
 
 
-@pytest.mark.dragons_remote_data
 def test_tags(ad):
     tags = ad.tags
     expected = {'DARK', 'RAW', 'AT_ZENITH', 'NORTH', 'AZEL_TARGET',
@@ -33,18 +32,15 @@ def test_tags(ad):
     assert expected.issubset(tags)
 
 
-@pytest.mark.dragons_remote_data
 def test_can_return_instrument(ad):
     assert ad.phu['INSTRUME'] == 'NIFS'
     assert ad.instrument() == ad.phu['INSTRUME']
 
 
-@pytest.mark.dragons_remote_data
 def test_can_return_ad_length(ad):
     assert len(ad) == 1
 
 
-@pytest.mark.dragons_remote_data
 def test_slice_range(ad):
     metadata = ('SCI', 2), ('SCI', 3)
     slc = ad[1:]
@@ -53,7 +49,6 @@ def test_slice_range(ad):
         assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
 
-@pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_hdr(ad):
     try:
         assert ad.hdr['CCDNAME'] == 'NIFS'

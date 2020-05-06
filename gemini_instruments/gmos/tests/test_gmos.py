@@ -40,7 +40,7 @@ def test_can_return_ad_length(ad):
 
 
 @pytest.mark.parametrize("descriptor,expected_type", GMOS_DESCRIPTORS_TYPES)
-def test_descriptor_matches_type(ad, descriptor, expected_type, gmos_files):
+def test_descriptor_matches_type(ad, descriptor, expected_type):
     value = getattr(ad, descriptor)()
     assert isinstance(value, expected_type) or value is None, \
         "Assertion failed for file: {}".format(ad.filename)
