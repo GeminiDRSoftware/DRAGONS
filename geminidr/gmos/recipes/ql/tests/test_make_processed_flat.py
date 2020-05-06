@@ -44,7 +44,7 @@ def test_processed_flat_has_small_std(processed_flat):
 def test_regression_processed_flat(processed_flat, reference_ad):
     ref_flat = reference_ad(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
-        np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1e-2)
+        np.testing.assert_allclose(ext.data, ext_ref.data, atol=0.05)
 
 
 # -- Fixtures ----------------------------------------------------------------
