@@ -44,7 +44,7 @@ def test_processed_flat_has_small_std(processed_flat):
 def test_regression_processed_flat(processed_flat, reference_ad):
     ref_flat = reference_ad(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
-        np.testing.assert_allclose(ext.mask, ext_ref.maks)
+        np.testing.assert_allclose(ext.mask, ext_ref.mask)
         data = np.ma.masked_array(ext.data, mask=ext.mask)
         ref_data = np.ma.masked_array(ext_ref.data, mask=ext_ref.mask)
         np.testing.assert_allclose(data, ref_data, atol=0.05)
