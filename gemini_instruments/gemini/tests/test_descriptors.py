@@ -106,18 +106,18 @@ test_files = [
 ]
 
 
-@pytest.fixture(params=test_files)
 def ad(cache_file_from_archive, request):
     filename = request.param
     path = cache_file_from_archive(filename)
     return astrodata.open(path)
     
 
-@pytest.mark.parametrize("descriptor,expected_type", DESCRIPTORS_TYPES)
-def test_descriptor_matches_type(ad, descriptor, expected_type):   
-    value = getattr(ad, descriptor)()
-    assert isinstance(value, expected_type) or value is None, \
-        "Assertion failed for file: {}".format(ad.filename)
+@pytest.mark.parametrize("ad", test_files)
+def test_descriptor_matches_type(ad):
+    for descriptor, expected_type in DESCRIPTORS_TYPES:
+        value = getattr(ad, descriptor)()
+        assert isinstance(value, expected_type) or value is None, \
+            "Assertion failed for file: {}".format(ad.filename)
 
 
 if __name__ == "__main__":
