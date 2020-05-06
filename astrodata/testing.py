@@ -91,7 +91,8 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
                 return cache_path
 
         else:
-            raise FileNotFoundError(input_path)
+            raise FileNotFoundError(input_path +
+                                    "\n  Use --force-cache to download it.")
 
     return _cache_file_from_archive
 
