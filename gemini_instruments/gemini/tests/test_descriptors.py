@@ -112,7 +112,7 @@ def ad(cache_file_from_archive, request):
     return astrodata.open(path)
     
 
-@pytest.mark.parametrize("ad", test_files)
+@pytest.mark.parametrize("ad", test_files, indirect=True)
 def test_descriptor_matches_type(ad):
     for descriptor, expected_type in DESCRIPTORS_TYPES:
         value = getattr(ad, descriptor)()
