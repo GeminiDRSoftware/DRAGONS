@@ -1940,7 +1940,6 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     ref_wcs = ad[ref_index].wcs
     frame_index = ref_wcs.available_frames.index(frame_name)
     new_pipeline = ref_wcs.pipeline[frame_index:]
-    ref_transform = ref_wcs.get_transform(ref_wcs.input_frame, frame)
     # Remember, dg.origin is (y, x)
     new_origin = tuple(s for s in dg.origin[::-1])
 
@@ -1952,6 +1951,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             #new_pipeline = [(cf.Frame2D(name='pixels'), reduce(Model.__and__, [models.Shift(s) for s in new_origin]))] + new_pipeline
             new_wcs.insert_transform(new_wcs.input_frame,
                 reduce(Model.__and__, [models.Shift(s) for s in new_origin]), after=True)
+    ad_out[0].wcs = new_wcs
 
     # Storing this could be very helpful
     ad_out.phu['ORIGTRAN'] = str(dg.origin[::-1])
