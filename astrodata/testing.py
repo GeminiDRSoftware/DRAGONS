@@ -72,7 +72,7 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
         assert isinstance(filename, str)
 
         input_path = os.path.join(path_to_inputs, filename)
-        cache_path = os.path.join(path_to_outputs, filename)
+        cache_path = os.path.join(path_to_outputs, "inputs", filename)
 
         if os.path.exists(input_path):
             print("\n  Static input file exists in:\n    {}".format(input_path))
@@ -84,6 +84,7 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
                 print("\n  Input file is cached in:\n    {}\n".format(cache_path))
                 return cache_path
             else:
+                os.makedirs(cache_path, exist_ok=True)
                 tmp_path = download_file(URL + filename, cache=False)
                 shutil.move(tmp_path, cache_path)
                 os.chmod(cache_path, 0o664)
