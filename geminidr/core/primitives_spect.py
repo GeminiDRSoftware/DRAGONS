@@ -17,7 +17,7 @@ from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
 from astropy.wcs import WCS
-from gwcs.coordinate_frames import Frame2D
+from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
@@ -452,12 +452,12 @@ class Spect(PrimitivesBASE):
 
                 # Put this model before the first step if there's an existing WCS
                 if ext.wcs is None:
-                    ext.wcs = gWCS([(Frame2D(name="pixels"), model),
-                                    (Frame2D(name="world"), None)])
+                    ext.wcs = gWCS([(cf.Frame2D(name="pixels"), model),
+                                    (cf.Frame2D(name="world"), None)])
                 else:
                     # TODO: use insert_frame here
                     ext.wcs = gWCS([(ext.wcs.input_frame, model),
-                                    (Frame2D(name="distortion_corrected"), ext.wcs.pipeline[0][1])]
+                                    (cf.Frame2D(name="distortion_corrected"), ext.wcs.pipeline[0][1])]
                                    + ext.wcs.pipeline[1:])
 
             # Timestamp and update the filename
@@ -601,7 +601,7 @@ class Spect(PrimitivesBASE):
                         for item in ext.wcs.pipeline:
                             if item[0].name == 'mosaic':
                                 new_pipeline.extend([(item[0], m_distcorr),
-                                                     (Frame2D(name='distortion_corrected'), item[1])])
+                                                     (cf.Frame2D(name='distortion_corrected'), item[1])])
                             else:
                                 new_pipeline.append(item)
                         ext.wcs = gWCS(new_pipeline)
@@ -611,44 +611,59 @@ class Spect(PrimitivesBASE):
                     # science maps to the default pixel space, but the arc
                     # will have had an origin shift before the distortion
                     # correction was calculated.
-                    try:
-                        origin = arc.phu['ORIGTRAN']
-                    except KeyError:
-                        shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
-                                                            arc_detsec)]
-                        xoff1, yoff1 = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
-                        if xoff1 or yoff1:
-                            log.stdinfo(f"Found a shift of ({xoff1},{yoff1}) "
-                                        f"pixels between {ad.filename} and the "
-                                        f"calibration {arc.filename}")
-                        shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).max(axis=0),
-                                                            arc_detsec)]
-                        xoff2, yoff2 = shifts[1] / xbin, shifts[3] / ybin  # x2, y2
-                        if [xoff1, xoff2, yoff1, yoff2].count(0) < 2:
-                            raise ValueError("I don't understand how to process "
-                                             f"the offsets between {ad.filename} "
-                                             f"and {arc.filename}")
+                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
+                                                        arc_detsec)]
+                    xoff1, yoff1 = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
+                    if xoff1 or yoff1:
+                        log.debug(f"Found a shift of ({xoff1},{yoff1}) "
+                                  f"pixels between {ad.filename} and the "
+                                  f"calibration {arc.filename}")
+                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).max(axis=0),
+                                                        arc_detsec)]
+                    xoff2, yoff2 = shifts[1] / xbin, shifts[3] / ybin  # x2, y2
+                    if [xoff1, xoff2, yoff1, yoff2].count(0) < 2:
+                        raise ValueError("I don't know how to process the "
+                                         f"offsets between {ad.filename} "
+                                         f"and {arc.filename}")
 
-                        xcorners, ycorners = [], []
-                        for ext in ad:
-                            t = ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic')
-                            corners = np.array([(x, y) for x in (xoff1, ext.shape[1] + xoff2)
+                    ad_xcorners, ad_ycorners = [], []
+                    arc_xcorners, arc_ycorners = [], []
+                    for ext in ad:
+                        t = ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic')
+                        ad_corners = np.array([(x, y) for x in (0, ext.shape[1])
+                                                for y in (0, ext.shape[0])])
+                        x, y = t(*ad_corners.T)
+                        ad_xcorners.extend(x)
+                        ad_ycorners.extend(y)
+                        arc_corners = np.array([(x, y) for x in (xoff1, ext.shape[1] + xoff2)
                                                 for y in (yoff1, ext.shape[0] + yoff2)])
-                            x, y = t(*corners.T)
-                            xcorners.extend(x)
-                            ycorners.extend(y)
-                        # And now add the shift so that the "mosaic" frame of
-                        # this transform is the pixel frame of the arc
-                        origin_shift = (models.Shift(-np.ceil(min(xcorners))) &
-                                        models.Shift(-np.ceil(min(ycorners))))
-                    else:
-                        xshift, yshift = [float(v.lstrip())
-                                          for v in origin[1:-1].split(',')]
-                        origin_shift = models.Shift(-xshift) & models.Shift(-yshift)
+                        x, y = t(*arc_corners.T)
+                        arc_xcorners.extend(x)
+                        arc_ycorners.extend(y)
+
+                    # So this is what was applied to the ARC to get the
+                    # mosaic frame to its pixel frame, in which the distortion
+                    # correction model was calculated.
+                    xshift = np.ceil(min(arc_xcorners))
+                    yshift = np.ceil(min(arc_ycorners))
+                    origin_shift = models.Shift(-xshift) & models.Shift(-yshift)
+
+                    # But a full-frame ARC and subregion AD may have different
+                    # origin shifts. We only care about the one in the
+                    # wavelength direction, since we need the AD to be on the
+                    # same pixel basis before applying the new wave_model
+                    xoffset = xshift - np.ceil(min(ad_xcorners))
+                    yoffset = yshift - np.ceil(min(ad_ycorners))
+                    if wave_model is not None:
+                        if arc[0].dispersion_axis() == 1:
+                            wave_models[0] = models.Shift(-xoffset) | wave_model
+                        else:
+                            wave_models[0] = models.Shift(-yoffset) | wave_model
 
                     for ext in ad:
-                        ext.wcs.insert_transform('mosaic', origin_shift, after=True)
+                        ext.wcs.insert_transform('mosaic', origin_shift, after=False)
                         ext.wcs.insert_transform('distortion_corrected', origin_shift.inverse, after=False)
+
                 else:
                     # Single-extension AD, with single Transform
                     ad_detsec = ad.detector_section()[0]
@@ -665,7 +680,7 @@ class Spect(PrimitivesBASE):
                         m_distcorr = m_shift | m_distcorr
                     # TODO: use insert_frame method
                     new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
-                                    (Frame2D(name='distortion_corrected'), ad[0].wcs.pipeline[0][1])]
+                                    (cf.Frame2D(name='distortion_corrected'), ad[0].wcs.pipeline[0][1])]
                     new_pipeline.extend(ad[0].wcs.pipeline[1:])
                     ad[0].wcs = gWCS(new_pipeline)
 
@@ -688,7 +703,7 @@ class Spect(PrimitivesBASE):
                                   models.Shift(shifts[1] / ybin)) | dist_model
                     # TODO: use insert_frame method
                     new_pipeline = [(ext.wcs.input_frame, dist_model),
-                                    (Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0][1])]
+                                    (cf.Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0][1])]
                     new_pipeline.extend(ext.wcs.pipeline[1:])
                     ext.wcs = gWCS(new_pipeline)
                     if i == 0:
@@ -704,18 +719,13 @@ class Spect(PrimitivesBASE):
                                     "solution".format(ext.hdr['EXTVER']))
 
             for ext, wave_model in zip(ad_out, wave_models):
-                wcs = ext.wcs
-                for inframe, outframe in zip(wcs.available_frames[:-1],
-                                             wcs.available_frames[1:]):
-                    t = wcs.get_transform(inframe, outframe)
-                    try:
-                        w = astromodels.get_named_submodel(t, 'WAVE')
-                    except IndexError:
-                        pass
-                    else:
-                        ext.wcs.set_transform(inframe, outframe,
-                                              t.replace_submodel('WAVE', wave_model))
-
+                sky_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'SKY')
+                if ext.dispersion_axis() == 1:
+                    t = wave_model & sky_model
+                else:
+                    t = sky_model & wave_model
+                ext.wcs = gWCS([(ext.wcs.input_frame, t),
+                                (ext.wcs.output_frame, None)])
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
@@ -847,7 +857,8 @@ class Spect(PrimitivesBASE):
 
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
-                    direction = "row" if ext.dispersion_axis() == 1 else "column"
+                    dispaxis = 2 - ext.dispersion_axis()  # python sense
+                    direction = "row" if dispaxis == 1 else "column"
                     data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
                     log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
@@ -1071,11 +1082,27 @@ class Spect(PrimitivesBASE):
                                               'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
 
-                #print(repr(ext.wcs.input_frame))
-                #print(repr(ext.wcs.output_frame))
-
-                transform = ext.wcs.forward_transform.replace_submodel('WAVE', m_final)
-                ext.wcs.set_transform(ext.wcs.input_frame, ext.wcs.output_frame, transform)
+                if ext.data.ndim == 1:
+                    ext.wcs.set_transform(ext.wcs.input_frame,
+                                          ext.wcs.output_frame, m_final)
+                else:
+                    # Write out a simplified WCS model so it's easier to
+                    # extract what we need later
+                    spatial_frame = cf.CoordinateFrame(naxes=1, axes_type="SPATIAL",
+                                                       axes_order=(1,), unit=u.pix,
+                                                       name="SPATIAL")
+                    output_frame = cf.CompositeFrame([ext.wcs.output_frame.frames[0],
+                                                      spatial_frame], name='world')
+                    try:
+                        slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
+                    except IndexError:
+                        slit_model = models.Identity(1)
+                    if dispaxis == 1:
+                        transform = m_final & slit_model
+                    else:
+                        transform = slit_model & m_final
+                    ext.wcs = gWCS([(ext.wcs.input_frame, transform),
+                                    (output_frame, None)])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
