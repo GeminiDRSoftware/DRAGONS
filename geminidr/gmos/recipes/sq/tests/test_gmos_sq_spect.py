@@ -125,7 +125,9 @@ class TestGmosReduceLongslit:
     `dataset_folder` and `calibrations` parameter should be present on every
     test. Even when the test does not use it.
     """
+    #  ToDo - Refactor these tests properly
     @staticmethod
+    @pytest.mark.skip(reason="Todo: refactor this test")
     def test_can_run_reduce_bias(config):
         """
         Make sure that the reduce_BIAS works for spectroscopic data.
