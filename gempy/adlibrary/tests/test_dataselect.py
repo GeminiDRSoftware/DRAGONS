@@ -1,4 +1,3 @@
-import glob
 import pytest
 import os
 
@@ -253,7 +252,6 @@ def test_evalexpression():
     assert answer0 is answer1 is answer2 is answer3 is False
 
 
-@pytest.mark.dragons_remote_data
 def test_select_data(f2_data):
 
     answer = dataselect.select_data(
