@@ -79,16 +79,15 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
             return input_path
 
         elif should_cache:
-
             if os.path.exists(cache_path):
                 print("\n  Input file is cached in:\n    {}\n".format(cache_path))
                 return cache_path
             else:
-                os.makedirs(cache_path, exist_ok=True)
+                print("\n  Caching file to:\n    {}\n".format(cache_path))
+                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
                 tmp_path = download_file(URL + filename, cache=False)
                 shutil.move(tmp_path, cache_path)
                 os.chmod(cache_path, 0o664)
-                print("\n  Caching file to:\n    {}\n".format(cache_path))
                 return cache_path
 
         else:
