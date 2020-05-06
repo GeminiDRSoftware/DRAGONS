@@ -92,7 +92,7 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
                 return cache_path
 
         else:
-            raise FileNotFoundError("Missing input file:\n{}".format(input_path))
+            raise FileNotFoundError(input_path)
 
     return _cache_file_from_archive
 
