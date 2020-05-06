@@ -35,7 +35,7 @@ def assert_same_class(ad, ad_ref):
 
 
 @pytest.fixture(scope='module')
-def cache_file_from_archive(path_to_inputs, path_to_outputs):
+def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
     """
     Looks from cached file and returns its full path in the local machine. If
     cached file does not exists, download file from the archive
@@ -58,7 +58,7 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
         Factory function that returns a string with the full path to the cached
         file.
     """
-
+    should_cache = request.config.getoption("--force-cache")
     def _cache_file_from_archive(filename):
 
         assert isinstance(path_to_inputs, str)
@@ -69,23 +69,24 @@ def cache_file_from_archive(path_to_inputs, path_to_outputs):
         cache_path = os.path.join(path_to_outputs, filename)
 
         if os.path.exists(input_path):
-            print("\n Static input file exists in:\n {:s}".format(input_path))
+            print("\n  Static input file exists in:\n    {}".format(input_path))
             return input_path
 
-        elif os.path.exists(cache_path):
-            print("\nCould not find file in:\n {:s}\n".format(input_path))
-            print("\nInput file is cached in:\n {:s}\n".format(cache_path))
-            warnings.warn("Input file is cached in:\n {:s}\n".format(cache_path))
-            return cache_path
+        elif should_cache:
+
+            if os.path.exists(cache_path):
+                print("\n  Input file is cached in:\n    {}\n".format(cache_path))
+                return cache_path
+
+            else:
+                tmp_path = download_file(URL + filename, cache=False)
+                shutil.move(tmp_path, cache_path)
+                os.chmod(cache_path, 0o664)
+                print("\n  Caching file to:\n    {}\n".format(cache_path))
+                return cache_path
 
         else:
-            print("\nCould not find file in:\n {:s}\n".format(input_path))
-            tmp_path = download_file(URL + filename, cache=False)
-            shutil.move(tmp_path, cache_path)
-            os.chmod(cache_path, 0o664)
-            print("\n Caching file to:\n {:s}".format(cache_path))
-            warnings.warn("\n Caching file to:\n {:s}".format(cache_path))
-            return cache_path
+            raise FileNotFoundError("Missing input file:\n{}".format(input_path))
 
     return _cache_file_from_archive
 

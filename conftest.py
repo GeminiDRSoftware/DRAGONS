@@ -21,7 +21,13 @@ def pytest_addoption(parser):
             "--dragons-remote-data",
             action="store_true",
             default=False,
-            help="run only tests marked with `dragons_remote_data`"
+            help="enable tests that use the cache_file_from_archive fixture"
+        )
+        parser.addoption(
+            "--force-cache",
+            action="store_true",
+            default=False,
+            help="Forces data cache when using cache_file_from_archive fixture"
         )
         parser.addoption(
             "--force-preprocess-data",
