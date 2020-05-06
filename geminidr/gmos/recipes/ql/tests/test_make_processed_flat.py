@@ -12,9 +12,9 @@ from recipe_system.testing import reduce_bias, reduce_flat, reference_ad
 
 datasets = [
     "S20180707S0043.fits",  # B600 at 0.520 um
-    # "S20190502S0096.fits",  # B600 at 0.525 um
-    # "S20200122S0020.fits",  # B600 at 0.520 um
-    # "N20200101S0055.fits",  # B1200 at 0.495 um
+    "S20190502S0096.fits",  # B600 at 0.525 um
+    "S20200122S0020.fits",  # B600 at 0.520 um
+    "N20200101S0055.fits",  # B1200 at 0.495 um
     # "S20180410S0120.fits",  # B1200 at 0.595 um  # Scattered light?
     # "S20190410S0053.fits",  # B1200 at 0.463 um  # Scattered light?
 ]
@@ -45,9 +45,7 @@ def test_regression_processed_flat(processed_flat, reference_ad):
     ref_flat = reference_ad(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
         np.testing.assert_allclose(ext.mask, ext_ref.mask)
-        data = np.ma.masked_array(ext.data, mask=ext.mask)
-        ref_data = np.ma.masked_array(ext_ref.data, mask=ext_ref.mask)
-        np.testing.assert_allclose(data, ref_data, atol=0.05)
+        np.testing.assert_allclose(ext.data, ext_ref.data, atol=0.01)
 
 
 # -- Fixtures ----------------------------------------------------------------
