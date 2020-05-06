@@ -105,7 +105,7 @@ test_files = [
     "S20190221S0251.fits",
 ]
 
-
+@pytest.fixture(scope='module')
 def ad(cache_file_from_archive, request):
     filename = request.param
     path = cache_file_from_archive(filename)
