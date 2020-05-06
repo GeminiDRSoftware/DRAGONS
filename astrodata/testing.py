@@ -58,8 +58,14 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
         Factory function that returns a string with the full path to the cached
         file.
     """
+    should_run = request.config.getoption("--dragons-remote-data")
     should_cache = request.config.getoption("--force-cache")
+
     def _cache_file_from_archive(filename):
+
+        if not should_run:
+            pytest.skip(
+                "Test only runs when called using '--dragons-remote-data'.")
 
         assert isinstance(path_to_inputs, str)
         assert isinstance(path_to_outputs, str)
@@ -77,7 +83,6 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
             if os.path.exists(cache_path):
                 print("\n  Input file is cached in:\n    {}\n".format(cache_path))
                 return cache_path
-
             else:
                 tmp_path = download_file(URL + filename, cache=False)
                 shutil.move(tmp_path, cache_path)

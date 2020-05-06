@@ -31,6 +31,40 @@ example_test = """
         assert "Input file is cached in:" in captured.out
     """
 
+example_conftest = """
+    from astrodata.testing import *
+    
+    def pytest_addoption(parser):
+            try:
+                parser.addoption(
+                    "--dragons-remote-data",
+                    action="store_true",
+                    default=False,
+                    help="enable tests that use the cache_file_from_archive fixture"
+                )
+                parser.addoption(
+                    "--force-cache",
+                    action="store_true",
+                    default=False,
+                    help="Forces data cache when using cache_file_from_archive fixture"
+                )
+                parser.addoption(
+                    "--force-preprocess-data",
+                    action="store_true",
+                    default=False,
+                    help="Force preprocessing data as part of the tests."
+                )
+                parser.addoption(
+                    "--do-plots",
+                    action="store_true",
+                    default=False,
+                    help="Plot results of each test after running them."
+                )
+            # This file is imported several times and might bring conflict
+            except ValueError:
+                pass
+"""
+
 
 def test_cache_file_from_archive_using_static_data(cache_file_from_archive, capsys):
     filename = "N20110826S0336.fits"
@@ -55,9 +89,18 @@ def test_cache_file_from_archive_caching_data(monkeypatch, tmpdir, testdir):
 
     monkeypatch.setattr("astrodata.testing.download_file", mock_download)
     monkeypatch.setenv('DRAGONS_TEST', str(tmpdir))
-    testdir.makeconftest("from astrodata.testing import *")
+    testdir.makeconftest(example_conftest)
     testdir.makepyfile(example_test)
+
     result = testdir.runpytest()
+    result.assert_outcomes(skipped=1)
+    assert ncall == 0
+
+    result = testdir.runpytest("--dragons-remote-data")
+    result.assert_outcomes(failed=1)
+    assert ncall == 0
+
+    result = testdir.runpytest("--dragons-remote-data", "--force-cache")
     result.assert_outcomes(passed=1)
     assert ncall == 1
 
@@ -67,7 +110,7 @@ def test_cache_file_from_archive_is_skipped_when_envvar_not_defined(
     monkeypatch.delenv('DRAGONS_TEST')
     testdir.makeconftest("from astrodata.testing import *")
     testdir.makepyfile(example_test)
-    result = testdir.runpytest("-k", "test_cache_file_from_archive_new_file")
+    result = testdir.runpytest()
     result.assert_outcomes(skipped=1)
 
 
