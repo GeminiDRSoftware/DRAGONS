@@ -2,7 +2,6 @@ import pytest
 
 import astrodata
 import gemini_instruments
-from astrodata.testing import download_from_archive
 
 test_files = [
     'N20160727S0077.fits',
