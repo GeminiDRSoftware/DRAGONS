@@ -45,7 +45,7 @@ def test_regression_processed_flat(processed_flat, reference_ad):
     ref_flat = reference_ad(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
         np.testing.assert_allclose(ext.mask, ext_ref.mask)
-        np.testing.assert_allclose(ext.data, ext_ref.data, atol=0.01)
+        np.testing.assert_allclose(ext.data, ext_ref.data, atol=0.05)
 
 
 # -- Fixtures ----------------------------------------------------------------
