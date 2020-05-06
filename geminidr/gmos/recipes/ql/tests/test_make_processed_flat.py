@@ -61,7 +61,7 @@ def processed_flat(cache_file_from_archive, reduce_bias, reduce_flat, request):
         ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
 
     master_flat = reduce_flat(
-        ad.data_label(), dataselect.select_data(cals, tags=['FLAT']), master_bias)
+        ad.data_label(), [filename], master_bias)
 
     return master_flat
 
