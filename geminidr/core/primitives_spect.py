@@ -622,15 +622,11 @@ class Spect(PrimitivesBASE):
                     shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).max(axis=0),
                                                         arc_detsec)]
                     xoff2, yoff2 = shifts[1] / xbin, shifts[3] / ybin  # x2, y2
-                    if [xoff1, xoff2, yoff1, yoff2].count(0) < 2:
+                    nzeros = [xoff1, xoff2, yoff1, yoff2].count(0)
+                    if nzeros < 2:
                         raise ValueError("I don't know how to process the "
                                          f"offsets between {ad.filename} "
                                          f"and {arc.filename}")
-
-                    ad_corners = np.concatenate([transform.get_output_corners(
-                        ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
-                        input_shape=ext.shape) for ext in ad], axis=1)
-                    ad_origin = tuple(np.ceil(min(corners)) for corners in ad_corners)
 
                     arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
                                        ext.shape[1] - xoff1 + xoff2) for ext in ad]
@@ -647,20 +643,30 @@ class Spect(PrimitivesBASE):
                     origin_shift = reduce(Model.__and__, [models.Shift(-origin)
                                           for origin in arc_origin[::-1]])
 
-                    # But a full-frame ARC and subregion AD may have different
-                    # origin shifts. We only care about the one in the
-                    # wavelength direction, since we need the AD to be on the
-                    # same pixel basis before applying the new wave_model
-                    offsets = tuple(o_ad - o_arc
-                                    for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
-                    # len(arc)=1 so we only have one wave_model, but need to
-                    # update the entry in the list, which gets used later
-                    if wave_model is not None:
-                        wave_models[0] = models.Shift(offsets[ext.dispersion_axis()-1]) | wave_model
-
                     for ext in ad:
                         ext.wcs.insert_transform('mosaic', origin_shift, after=False)
-                        ext.wcs.insert_transform('distortion_corrected', origin_shift.inverse, after=False)
+                        ext.wcs.insert_transform('distortion_corrected',
+                                                 origin_shift.inverse, after=False)
+
+                    # ARC and AD aren't the same size
+                    if nzeros < 4:
+                        ad_corners = np.concatenate([transform.get_output_corners(
+                            ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                            input_shape=ext.shape) for ext in ad], axis=1)
+                        ad_origin = tuple(np.ceil(min(corners)) for corners in ad_corners)
+
+                        # But a full-frame ARC and subregion AD may have different
+                        # origin shifts. We only care about the one in the
+                        # wavelength direction, since we need the AD to be on the
+                        # same pixel basis before applying the new wave_model
+                        offsets = tuple(o_ad - o_arc
+                                        for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
+                        # len(arc)=1 so we only have one wave_model, but need to
+                        # update the entry in the list, which gets used later
+                        if wave_model is not None:
+                            offset = offsets[ext.dispersion_axis()-1]
+                            if offset != 0:
+                                wave_models[0] = models.Shift(offset) | wave_model
 
                 else:
                     # Single-extension AD, with single Transform
