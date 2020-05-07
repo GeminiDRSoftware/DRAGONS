@@ -1671,6 +1671,10 @@ def add_mosaic_wcs(ad, geotable):
     -------
     AstroData: the modified input AD, with WCS attributes
     """
+    if any('mosaic' in getattr(ext.wcs, 'available_frames', '') for ext in ad):
+        raise ValueError("A 'mosaic' frame is already present in one or "
+                         f"more extensions of {ad.filename}")
+
     array_info = gt.array_information(ad)
     offsets = [ad[exts[0]].array_section()
                for exts in array_info.extensions]
@@ -2024,3 +2028,32 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             setattr(ad_out[0], table_name, cat_table)
 
     return ad_out
+
+
+def get_output_corners(transform, input_shape=None, origin=None):
+    """
+    Determine the locations in output coordinate space of the transformed
+    corners of an input array. These coordinates are returned in the
+    normal python order, in line with astrotools.get_corners() and DataGroup.
+
+    Parameters
+    ----------
+    transform: Model
+        the transform being applied to the input coordinates
+    input_shape: tuple
+        shape of the array to be transformed
+    origin: tuple
+        location in input coordinate space of the bottom-left corner
+
+    Returns
+    -------
+    array: (ndim, nvertices) with the transformed corner locations
+           IN THE PYTHONIC ORDER
+    """
+    if origin is not None:
+        transform = reduce(Model.__and__, [models.Shift(coord) for coord
+                                           in origin[::-1]]) | transform
+    dg = DataGroup()
+    dg.calculate_output_shape(additional_array_shapes=[input_shape],
+                              additional_transforms=[transform])
+    return (np.array(at.get_corners(dg.output_shape)) + dg.origin).T

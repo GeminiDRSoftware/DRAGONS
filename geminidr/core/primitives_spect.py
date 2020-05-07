@@ -13,7 +13,7 @@ import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
-from astropy.modeling import models, fitting
+from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip
 from astropy.table import Table
 from astropy.wcs import WCS
@@ -24,6 +24,7 @@ from numpy.ma.extras import _ezclump
 from scipy import spatial, optimize
 from scipy.interpolate import BSpline
 from specutils import SpectralRegion
+from functools import reduce
 
 import astrodata
 from astrodata import NDAstroData
@@ -626,39 +627,36 @@ class Spect(PrimitivesBASE):
                                          f"offsets between {ad.filename} "
                                          f"and {arc.filename}")
 
-                    ad_xcorners, ad_ycorners = [], []
-                    arc_xcorners, arc_ycorners = [], []
-                    for ext in ad:
-                        t = ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic')
-                        ad_corners = np.array([(x, y) for x in (0, ext.shape[1])
-                                                for y in (0, ext.shape[0])])
-                        x, y = t(*ad_corners.T)
-                        ad_xcorners.extend(x)
-                        ad_ycorners.extend(y)
-                        arc_corners = np.array([(x, y) for x in (xoff1, ext.shape[1] + xoff2)
-                                                for y in (yoff1, ext.shape[0] + yoff2)])
-                        x, y = t(*arc_corners.T)
-                        arc_xcorners.extend(x)
-                        arc_ycorners.extend(y)
+                    ad_corners = np.concatenate([transform.get_output_corners(
+                        ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                        input_shape=ext.shape) for ext in ad], axis=1)
+                    ad_origin = tuple(np.ceil(min(corners)) for corners in ad_corners)
+
+                    arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
+                                       ext.shape[1] - xoff1 + xoff2) for ext in ad]
+                    arc_corners = np.concatenate([transform.get_output_corners(
+                        ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                        input_shape=arc_shape, origin=(yoff1, xoff1))
+                        for ext, arc_shape in zip(ad, arc_ext_shapes)], axis=1)
+                    arc_origin = tuple(np.ceil(min(corners)) for corners in arc_corners)
 
                     # So this is what was applied to the ARC to get the
                     # mosaic frame to its pixel frame, in which the distortion
-                    # correction model was calculated.
-                    xshift = np.ceil(min(arc_xcorners))
-                    yshift = np.ceil(min(arc_ycorners))
-                    origin_shift = models.Shift(-xshift) & models.Shift(-yshift)
+                    # correction model was calculated. Convert coordinates
+                    # from python order to Model order.
+                    origin_shift = reduce(Model.__and__, [models.Shift(-origin)
+                                          for origin in arc_origin[::-1]])
 
                     # But a full-frame ARC and subregion AD may have different
                     # origin shifts. We only care about the one in the
                     # wavelength direction, since we need the AD to be on the
                     # same pixel basis before applying the new wave_model
-                    xoffset = xshift - np.ceil(min(ad_xcorners))
-                    yoffset = yshift - np.ceil(min(ad_ycorners))
+                    offsets = tuple(o_ad - o_arc
+                                    for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
+                    # len(arc)=1 so we only have one wave_model, but need to
+                    # update the entry in the list, which gets used later
                     if wave_model is not None:
-                        if arc[0].dispersion_axis() == 1:
-                            wave_models[0] = models.Shift(-xoffset) | wave_model
-                        else:
-                            wave_models[0] = models.Shift(-yoffset) | wave_model
+                        wave_models[0] = models.Shift(offsets[ext.dispersion_axis()-1]) | wave_model
 
                     for ext in ad:
                         ext.wcs.insert_transform('mosaic', origin_shift, after=False)
@@ -987,9 +985,14 @@ class Spect(PrimitivesBASE):
                             getattr(m_init, fx).fixed = True
 
                     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=3, method=method)
+                    if method == 'basinhopping':
+                        kwargs = {'minimizer_kwargs': {'tol': 0.01}}
+                    else:
+                        kwargs = {}
                     m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines,
                                      in_weights=in_weights[peaks_to_fit],
-                                     ref_weights=None if weight_type == 'none' else arc_weights)
+                                     ref_weights=None if weight_type == 'none' else arc_weights,
+                                     **kwargs)
                     #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
                     #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
 
