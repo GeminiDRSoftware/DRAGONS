@@ -1,5 +1,6 @@
 import pytest
-from ..primitives_calibdb import _update_datalab
+from geminidr.core.primitives_calibdb import _update_datalab
+
 
 astrofaker = pytest.importorskip("astrofaker")
 

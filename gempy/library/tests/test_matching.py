@@ -14,7 +14,6 @@ from astropy.modeling import models
 from gempy.library import matching, astromodels
 from gempy.library.transform import Transform
 
-
 SEED = 0  # random number seed
 RANGE = 2000  # "size" of detector
 NUM_SOURCES = 20  # number of sources to put in catalog

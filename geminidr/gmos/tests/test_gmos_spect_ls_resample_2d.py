@@ -182,15 +182,15 @@ def adinputs2(request, get_input_ad):
 
 
 @pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
+def get_input_ad(cache_file_from_archive, path_to_inputs, reduce_arc, reduce_data):
     """
     Reads the input data or cache/process it in a temporary folder.
 
     Parameters
     ----------
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_arc : pytest.fixture
         Recipe used to reduce ARC data.
@@ -205,7 +205,7 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
     """
     def _get_input_ad(basename, should_preprocess):
         input_fname = basename.replace('.fits', '_skyCorrected.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+        input_path = os.path.join(path_to_inputs, input_fname)
 
         if os.path.exists(input_path):
             print(" Load existing input file: {:s}".format(basename))
@@ -213,12 +213,12 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
 
         elif should_preprocess:
             print(" Caching input file: {:s}".format(basename))
-            filename = cache_path(basename)
+            filename = cache_file_from_archive(basename)
             ad = astrodata.open(filename)
             cals = testing.get_associated_calibrations(basename)
             print(" Calibrations: ", cals)
 
-            cals = [cache_path(c)
+            cals = [cache_file_from_archive(c)
                     for c in cals[cals.caltype.str.contains('arc')].filename.values]
             print(" Downloaded calibrations: {:s}".format("\n ".join(cals)))
 
@@ -236,10 +236,10 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_data):
 
 
 @pytest.fixture(scope='module')
-def reduce_arc(output_path):
+def reduce_arc(change_working_dir):
     """ Recipe used to generate _distortionDetermined files from raw arc."""
     def _reduce_arc(dlabel, arc_fnames):
-        with output_path():
+        with change_working_dir():
             # Use config to prevent duplicated outputs when running Reduce via API
             logutils.config(file_name='log_arc_{}.txt'.format(dlabel))
 
@@ -261,10 +261,10 @@ def reduce_arc(output_path):
 
 
 @pytest.fixture(scope='module')
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """Recipe used to generate _skyCorrected files from raw data. """
     def _reduce_data(ad, arc):
-        with output_path():
+        with change_working_dir():
             p = primitives_gmos_spect.GMOSSpect([ad])
             p.prepare()
             p.addDQ(static_bpm=None)

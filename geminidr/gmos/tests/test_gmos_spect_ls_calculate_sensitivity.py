@@ -108,12 +108,11 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(path
         np.testing.assert_allclose(sens_factor.physical.value, 1, atol=1e-4)
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_regression_on_calculate_sensitivity(output_path, preprocessed_ad, reference_ad):
+def test_regression_on_calculate_sensitivity(change_working_dir, preprocessed_ad, reference_ad):
 
-    with output_path():
+    with change_working_dir():
         p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
         p.calculateSensitivity()
         calc_sens_ad = p.writeOutputs().pop()
@@ -129,8 +128,8 @@ def test_regression_on_calculate_sensitivity(output_path, preprocessed_ad, refer
 
 # --- Helper functions and fixtures -------------------------------------------
 @pytest.fixture(scope='function', params=datasets)
-def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
-                    reduce_bias, reduce_data,  reduce_flat):
+def preprocessed_ad(request, cache_file_from_archive, path_to_inputs, reduce_arc,
+                    reduce_bias, reduce_data, reduce_flat):
     """
     Reads the input data or cache/process it in a temporary folder.
 
@@ -138,9 +137,9 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
     ----------
     request : pytest.fixture
         PyTest's built-in fixture with information about the test itself.
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_arc : pytest.fixture
         Recipe to reduce the arc file.
@@ -160,16 +159,16 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
     should_preprocess = request.config.getoption("--force-preprocess-data")
 
     input_fname = basename.replace('.fits', '_extracted.fits')
-    input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_path = os.path.join(path_to_inputs, input_fname)
 
     if os.path.exists(input_path):
         input_data = astrodata.open(input_path)
 
     elif should_preprocess:
-        filename = cache_path(basename)
+        filename = cache_file_from_archive(basename)
         ad = astrodata.open(filename)
         cals = testing.get_associated_calibrations(basename)
-        cals = [cache_path(c) for c in cals.filename.values]
+        cals = [cache_file_from_archive(c) for c in cals.filename.values]
 
         master_bias = reduce_bias(
             ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
@@ -192,13 +191,13 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
 
 
 @pytest.fixture(scope='module')
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """
     Factory for function for data reduction prior to `calculateSensitivity`.
 
     Parameters
     ----------
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Context manager used to write reduced data to a temporary folder.
 
     Returns
@@ -207,7 +206,7 @@ def reduce_data(output_path):
     using a custom recipe and return an AstroData object.
     """
     def _reduce_data(ad, master_arc, master_bias, master_flat):
-        with output_path():
+        with change_working_dir():
             # Use config to prevent outputs when running Reduce via API
             logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
 

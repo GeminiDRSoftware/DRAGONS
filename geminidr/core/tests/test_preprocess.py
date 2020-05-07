@@ -34,7 +34,6 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.utils import logutils
 
-astrofaker = pytest.importorskip("astrofaker")
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_preprocess.log'
 
@@ -42,6 +41,8 @@ logfilename = 'test_preprocess.log'
 @pytest.fixture
 def niri_images():
     """Create two NIRI images, one all 1s, the other all 2s"""
+    astrofaker = pytest.importorskip("astrofaker")
+
     adinputs = []
     for i in (1, 2):
         ad = astrofaker.create('NIRI', 'IMAGE')

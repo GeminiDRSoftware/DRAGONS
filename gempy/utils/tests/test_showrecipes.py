@@ -116,21 +116,19 @@ TESTS = {
 }
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("name", TESTS)
-def test_showprims(name):
+def test_showprims(cache_file_from_archive, name):
     filename, mode, recipe, expected = TESTS[name]
-    file_location = download_from_archive(filename)
+    file_location = cache_file_from_archive(filename)
     answer = showprims(file_location, mode=mode, recipe=recipe)
     for line in expected:
         assert re.search(line, answer)
 
 
 # # # # # #  GNIRS  # # # # # #
-@pytest.mark.dragons_remote_data
-def test_showprims_on_gnirs_spect():
+def test_showprims_on_gnirs_spect(cache_file_from_archive):
     try:
-        file_location = download_from_archive(GNIRS_SPECT)
+        file_location = cache_file_from_archive(GNIRS_SPECT)
         answer = showprims(file_location, 'qa')
         assert "RecipeNotFound Error" in answer
     except RecipeNotFound:
@@ -139,17 +137,17 @@ def test_showprims_on_gnirs_spect():
 
 # # # # # #  GMOS  # # # # # #
 @pytest.mark.dragons_remote_data
-def test_showprims_on_gmos_spect():
-    file_location = download_from_archive(GMOS_SPECT)
+def test_showprims_on_gmos_spect(cache_file_from_archive):
+    file_location = cache_file_from_archive(GMOS_SPECT)
     answer = showprims(file_location)
     assert "geminidr.gmos.recipes.ql.recipes_LS_SPECT::reduce" in answer
 
 
 # # # # # #  GSAOI  # # # # # #
 @pytest.mark.dragons_remote_data
-def test_showprims_on_gsaoi_dark_qa_mode():
+def test_showprims_on_gsaoi_dark_qa_mode(cache_file_from_archive):
     try:
-        file_location = download_from_archive(GSAOI_DARK)
+        file_location = cache_file_from_archive(GSAOI_DARK)
         answer = showprims(file_location, 'qa')
         assert "RecipeNotFound Error" in answer
     except RecipeNotFound:

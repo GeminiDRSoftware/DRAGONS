@@ -37,31 +37,31 @@ pipeline {
             }
         }
 
-        stage('Code Metrics') {
-            when {
-                branch 'master'
-            }
-            environment {
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
-                sh 'tox -e check'
-            }
-            post {
-                success {
-                    recordIssues(
-                        enabledForFailure: true,
-                        tools: [
-                            pyLint(pattern: '**/reports/pylint.log'),
-                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
-                        ]
-                    )
-                }
-            }
-        }
+//         stage('Code Metrics') {
+//             when {
+//                 branch 'master'
+//             }
+//             environment {
+//                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+//             }
+//             steps {
+//                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+//                 checkout scm
+//                 sh '.jenkins/scripts/setup_agent.sh'
+//                 sh 'tox -e check'
+//             }
+//             post {
+//                 success {
+//                     recordIssues(
+//                         enabledForFailure: true,
+//                         tools: [
+//                             pyLint(pattern: '**/reports/pylint.log'),
+//                             pyDocStyle(pattern: '**/reports/pydocstyle.log')
+//                         ]
+//                     )
+//                 }
+//             }
+//         }
 
         stage('Unit tests') {
             parallel {

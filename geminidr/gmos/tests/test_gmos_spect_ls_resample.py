@@ -23,7 +23,6 @@ test_datasets = [
 
 
 # Tests Definitions -----------------------------------------------------------
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize(input_ad_list, caplog):
@@ -38,7 +37,6 @@ def test_resample_and_linearize(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize_with_w1_w2(input_ad_list, caplog):
@@ -47,7 +45,6 @@ def test_resample_and_linearize_with_w1_w2(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize_with_npix(input_ad_list, caplog):
@@ -56,7 +53,6 @@ def test_resample_and_linearize_with_npix(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_error_with_all(input_ad_list, caplog):
@@ -66,7 +62,6 @@ def test_resample_error_with_all(input_ad_list, caplog):
         p.resampleToCommonFrame(dw=0.15, w1=700, w2=850, npix=1001)
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
@@ -83,7 +78,6 @@ def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
     assert adout[0][0].shape[0] == 2429
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only(input_ad_list, caplog):
@@ -97,7 +91,6 @@ def test_resample_only(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only_and_trim(input_ad_list, caplog):
@@ -119,16 +112,16 @@ def _check_params(records, expected):
 
 
 @pytest.fixture(scope='function')
-def input_ad_list(
-        cache_path, new_path_to_inputs, reduce_arc, reduce_data, request):
+def input_ad_list(cache_file_from_archive, path_to_inputs, reduce_arc,
+                  reduce_data, request):
     """
     Reads the input data or cache-and-process it in a temporary folder.
 
     Parameters
     ----------
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_arc : pytest.fixture
         Recipe used to reduce ARC data.
@@ -148,18 +141,18 @@ def input_ad_list(
 
     for basename in test_datasets:
         input_fname = basename.replace('.fits', '_extracted.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+        input_path = os.path.join(path_to_inputs, input_fname)
 
         if os.path.exists(input_path):
             input_data = astrodata.open(input_path)
 
         elif should_preprocess:
             print(" Caching input file: {:s}".format(basename))
-            filename = cache_path(basename)
+            filename = cache_file_from_archive(basename)
             ad = astrodata.open(filename)
             cals = testing.get_associated_calibrations(basename)
 
-            cals = [cache_path(c)
+            cals = [cache_file_from_archive(c)
                     for c in cals[cals.caltype.str.contains('arc')].filename.values]
             print(" Downloaded calibrations: {:s}".format("\n ".join(cals)))
 
@@ -177,14 +170,14 @@ def input_ad_list(
 
 
 @pytest.fixture(scope='module')
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """
     Creates a recipe that prepares the data for the tests. The recipe contains
     most of the early primitives of the `reduce` recipe for a science object.
 
     Parameters
     ----------
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Fixture containing a custom context manager used to enter and leave the
         output folder easily.
 
@@ -194,7 +187,7 @@ def reduce_data(output_path):
         A recipe used to prepare the data for the tests.
     """
     def _reduce_data(ad, arc):
-        with output_path():
+        with change_working_dir():
             p = primitives_gmos_spect.GMOSSpect([ad])
             p.prepare()
             p.addDQ(static_bpm=None)

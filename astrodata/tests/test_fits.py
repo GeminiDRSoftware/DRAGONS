@@ -9,7 +9,6 @@ from numpy.testing import assert_allclose, assert_array_equal
 import astrodata
 from astrodata.fits import AstroDataFitsDeprecationWarning
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
-from astrodata.testing import download_from_archive
 from astropy.io import fits
 from astropy.table import Table
 
@@ -30,17 +29,17 @@ from astropy.table import Table
 
 
 @pytest.fixture(scope='module')
-def NIFS_DARK():
+def NIFS_DARK(cache_file_from_archive):
     """
     No.    Name      Ver    Type      Cards   Dimensions   Format
       0  PRIMARY       1 PrimaryHDU     144   ()
       1                1 ImageHDU       108   (2048, 2048)   float32
     """
-    return download_from_archive("N20160727S0077.fits")
+    return cache_file_from_archive("N20160727S0077.fits")
 
 
 @pytest.fixture(scope='module')
-def GMOSN_SPECT():
+def GMOSN_SPECT(cache_file_from_archive):
     """
     No.    Name      Ver    Type      Cards   Dimensions   Format
       0  PRIMARY       1 PrimaryHDU     180   ()
@@ -57,11 +56,11 @@ def GMOSN_SPECT():
      11               -1 ImageHDU        38   (288, 512)   int16 (rescales to uint16)
      12               -1 ImageHDU        38   (288, 512)   int16 (rescales to uint16)
     """
-    return download_from_archive("N20170529S0168.fits")
+    return cache_file_from_archive("N20170529S0168.fits")
 
 
 @pytest.fixture(scope='module')
-def GSAOI_DARK():
+def GSAOI_DARK(cache_file_from_archive):
     """
     No.    Name      Ver    Type      Cards   Dimensions   Format
       0  PRIMARY       1 PrimaryHDU     289   ()
@@ -70,16 +69,16 @@ def GSAOI_DARK():
       3                3 ImageHDU       144   (2048, 2048)   float32
       4                4 ImageHDU       144   (2048, 2048)   float32
     """
-    return download_from_archive("S20150609S0023.fits")
+    return cache_file_from_archive("S20150609S0023.fits")
 
 
 @pytest.fixture(scope='module')
-def GRACES_SPECT():
+def GRACES_SPECT(cache_file_from_archive):
     """
     No.    Name      Ver    Type      Cards   Dimensions   Format
       0  PRIMARY       1 PrimaryHDU     183   (190747, 28)   float32
     """
-    return download_from_archive("N20190116G0054i.fits")
+    return cache_file_from_archive("N20190116G0054i.fits")
 
 
 @pytest.mark.dragons_remote_data
@@ -530,10 +529,9 @@ def test_update_filename2():
 
 
 @pytest.mark.dragons_remote_data
-def test_read_a_keyword_from_phu_deprecated():
-    "Test deprecated methods to access headers"
-    ad = astrodata.open(
-        download_from_archive('N20110826S0336.fits', path='GMOS'))
+def test_read_a_keyword_from_phu_deprecated(cache_file_from_archive):
+    """Test deprecated methods to access headers"""
+    ad = astrodata.open(cache_file_from_archive('N20110826S0336.fits'))
 
     with pytest.raises(AttributeError):
         assert ad.phu.DETECTOR == 'GMOS + Red1'

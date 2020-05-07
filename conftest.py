@@ -4,25 +4,34 @@ Configuration for tests that will propagate inside DRAGONS.
 """
 
 import pytest
+import matplotlib
 
-from astrodata import testing
+# Prevents issues related to the backend
+matplotlib.use("agg")
 
-path_to_inputs = testing.path_to_inputs
-path_to_outputs = testing.path_to_outputs
-path_to_refs = testing.path_to_refs
-path_to_test_data = testing.path_to_test_data
-new_path_to_inputs = testing.new_path_to_inputs
-new_path_to_refs = testing.new_path_to_refs
+# noinspection PyUnresolvedReferences
+from astrodata.testing import (
+    cache_file_from_archive,
+    change_working_dir,
+    path_to_inputs,
+    path_to_outputs,
+    path_to_refs,
+    path_to_test_data)
 
 
 def pytest_addoption(parser):
-
     try:
         parser.addoption(
             "--dragons-remote-data",
             action="store_true",
             default=False,
-            help="run only tests marked with `dragons_remote_data`"
+            help="enable tests that use the cache_file_from_archive fixture"
+        )
+        parser.addoption(
+            "--force-cache",
+            action="store_true",
+            default=False,
+            help="Forces data cache when using cache_file_from_archive fixture"
         )
         parser.addoption(
             "--force-preprocess-data",
@@ -54,5 +63,5 @@ def pytest_collection_modifyitems(config, items):
     if not config.getoption("--dragons-remote-data"):
         skip_dragons_remote_data = pytest.mark.skip(reason="need --dragons-remote-data to run")
         for item in items:
-            if "dragons_remote_data" in item.keywords:
+            if 'cache_file_from_archive' in item.fixturenames or "dragons_remote_data" in item.keywords:
                 item.add_marker(skip_dragons_remote_data)

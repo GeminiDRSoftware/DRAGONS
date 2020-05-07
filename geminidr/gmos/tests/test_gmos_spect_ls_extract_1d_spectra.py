@@ -41,13 +41,12 @@ test_datasets = [
 
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('preprocessed_ad', test_datasets, indirect=True)
-def test_regression_on_extract_1d_spectra(preprocessed_ad, reference_ad, output_path):
+def test_regression_on_extract_1d_spectra(preprocessed_ad, reference_ad, change_working_dir):
 
-    with output_path():
+    with change_working_dir():
         p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.extract1DSpectra(method="standard", width=None, grow=10)
@@ -102,7 +101,7 @@ def add_aperture_table(ad, center):
 
 
 @pytest.fixture(scope='function')
-def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
+def preprocessed_ad(request, cache_file_from_archive, path_to_inputs, reduce_arc,
                     reduce_data):
     """
     Reads the input data or cache/process it in a temporary folder.
@@ -111,9 +110,9 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
     ----------
     request : pytest.fixture
         Fixture that contains information this fixture's parent.
-    cache_path : pytest.fixture
+    cache_file_from_archive : pytest.fixture
         Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
+    path_to_inputs : pytest.fixture
         Path to the permanent local input files.
     reduce_arc : pytest.fixture
         Recipe used to reduce ARC data.
@@ -134,16 +133,16 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
     should_preprocess = request.config.getoption("--force-preprocess-data")
 
     input_fname = basename.replace('.fits', '_skyCorrected.fits')
-    input_path = os.path.join(new_path_to_inputs, input_fname)
+    input_path = os.path.join(path_to_inputs, input_fname)
 
     if os.path.exists(input_path):
         input_data = astrodata.open(input_path)
 
     elif should_preprocess:
-        filename = cache_path(basename)
+        filename = cache_file_from_archive(basename)
         ad = astrodata.open(filename)
         cals = testing.get_associated_calibrations(basename)
-        cals = [cache_path(c)
+        cals = [cache_file_from_archive(c)
                 for c in cals[cals.caltype.str.contains('arc')].filename.values]
         master_arc = reduce_arc(ad.data_label(), cals)
         input_data = reduce_data(ad, center, master_arc)
@@ -158,13 +157,13 @@ def preprocessed_ad(request, cache_path, new_path_to_inputs, reduce_arc,
 
 
 @pytest.fixture(scope="module")
-def reduce_data(output_path):
+def reduce_data(change_working_dir):
     """
     Recipe used to generate input data for `extract1DSpectra` tests.
 
     Parameters
     ----------
-    output_path : pytest.fixture
+    change_working_dir : pytest.fixture
         Fixture containing a custom context manager used to enter and leave the
         output folder easily.
 
@@ -174,7 +173,7 @@ def reduce_data(output_path):
         using a custom recipe and return an AstroData object.
     """
     def _reduce_data(ad, center, arc):
-        with output_path():
+        with change_working_dir():
             p = primitives_gmos_spect.GMOSSpect([ad])
             p.prepare()
             p.addDQ(static_bpm=None)

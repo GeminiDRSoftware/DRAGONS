@@ -18,7 +18,8 @@ import os.path
 from gempy.library import fitsverify
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
-TESTFITS = os.path.join('GMOS','N20130510S0178_forStack.fits')
+TESTFITS = os.path.join('GMOS', 'N20130510S0178_forStack.fits')
+
 
 class TestFitsverify:
     """
