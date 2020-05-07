@@ -154,12 +154,12 @@ class AstroDataGemini(AstroDataFits):
     # GCALFLAT is still needed
     @astro_data_tag
     def _type_gcalflat(self):
-        if self.phu.get('GCALLAMP') == 'IRhigh':
+        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
-        if self.phu.get('GCALLAMP') == 'IRhigh':
+        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
