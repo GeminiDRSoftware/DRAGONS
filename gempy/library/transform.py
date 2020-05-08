@@ -1985,10 +1985,27 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                                 for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
         else:
             del ad.hdr[keywords['array']]
+
+    # Try to assign an array name for this based on commonality
+    kw = ad._keyword_for('array_name')
+    try:
+        array_names = set([name.split(',')[0] for name in ad.array_name()])
+    except TypeError:
+        array_name = ''
+    else:
+        array_name = array_names.pop()
+        if array_names:
+            array_name = ''
+    if array_name:
+        ad_out.hdr[kw] = array_name
+    elif kw in header:
+        del ad_out.hdr[kw]
+
     if 'CCDNAME' in ad_out[0].hdr:
         ad_out.hdr['CCDNAME'] = ad.detector_name()
+
     # Finally, delete any keywords that no longer make sense
-    for kw in ('AMPNAME', 'FRMNAME', 'FRAMEID', 'CCDSIZE', 'BIASSEC',
+    for kw in ('FRMNAME', 'FRAMEID', 'CCDSIZE', 'BIASSEC',
                'DATATYP', 'OVERSEC', 'TRIMSEC', 'OVERSCAN', 'OVERRMS'):
         if kw in header:
             del ad_out.hdr[kw]
