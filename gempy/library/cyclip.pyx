@@ -1,5 +1,12 @@
 # Copyright(c) 2018-2019 Association of Universities for Research in Astronomy, Inc.
 
+# Specify that this source is nominally based on Python 3 syntax
+# (though the code below is actually 2-vs-3 agnostic), to avoid a warning with
+# v0.29+:
+#
+# cython: language_level=3
+#
+
 """
 If switching to new versions of Python under anaconda, you may need to run
 this command again under the new environment.::
@@ -7,13 +14,6 @@ this command again under the new environment.::
     $ cythonize -i cyclip.pyx
 
 """
-
-# Specify that this source is nominally based on Python 3 syntax
-# (though the code below is actually 2-vs-3 agnostic), to avoid a warning with
-# v0.29+:
-#
-# cython: language_level=3
-#
 
 import numpy as np
 from libc.math cimport sqrt
