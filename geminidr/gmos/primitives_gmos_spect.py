@@ -8,8 +8,9 @@ import os
 import numpy as np
 from importlib import import_module
 from datetime import datetime
+from functools import reduce
 
-from astropy.modeling import models
+from astropy.modeling import models, Model
 from astropy import units as u
 from scipy.interpolate import UnivariateSpline
 
@@ -153,8 +154,6 @@ class GMOSSpect(Spect, GMOS):
         else:
             arc_list = arc
 
-        distort_model = models.Identity(2)
-
         for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -163,8 +162,13 @@ class GMOSSpect(Spect, GMOS):
                 continue
 
             if 'e2v' in ad.detector_name(pretty=True):
-                log.warning("{} has the e2v CCDs, so no QE correction "
-                            "is necessary".format(ad.filename))
+                log.warning(f"{ad.filename} has the e2v CCDs, so no QE "
+                            "correction is necessary")
+                continue
+
+            if self.timestamp_keys['mosaicDetectors'] in ad.phu:
+                log.warning(f"{ad.filename} has been processed by mosaic"
+                            "Detectors so applyQECorrection cannot be run")
                 continue
 
             # Determines whether to multiply or divide by QE correction
@@ -179,117 +183,103 @@ class GMOSSpect(Spect, GMOS):
                             "so cannot use arc".format(ad.filename, arc.filename))
                 arc = None
 
-            # OK, we definitely want to try to do this, get a wavelength solution
+            # The plan here is to attach the mosaic gWCS to the science frame,
+            # apply an origin shift to put it in the frame of the arc, and
+            # then use the arc's WCS to get the wavelength. If there's no arc,
+            # we just use the science frame's WCS.
+            # Since we're going to change that WCS, store it for restoration.
+            original_wcs = [ext.wcs for ext in ad]
             try:
-                wavecal = arc[0].WAVECAL
-            except (TypeError, AttributeError):
-                wave_model = None
-            else:
-                model_dict = dict(zip(wavecal['name'], wavecal['coefficients']))
-                wave_model = astromodels.dict_to_chebyshev(model_dict)
-                if not isinstance(wave_model, models.Chebyshev1D):
-                    log.warning("Problem reading wavelength solution from arc "
-                                "{}".format(arc.filename))
+                transform.add_mosaic_wcs(ad, geotable)
+            except ValueError:
+                log.warning(f"{ad.filename} already has a 'mosaic' coordinate"
+                            "frame. This is unexpected but I'll continue.")
 
-            if wave_model is None:
+            if arc is None:
                 if 'sq' in self.mode:
-                    raise IOError("No wavelength solution for {}".format(ad.filename))
+                    raise IOError(f"No processed arc listed for {ad.filename}")
                 else:
-                    log.warning("Using approximate wavelength solution for "
-                                "{}".format(ad.filename))
-
-            try:
-                fitcoord = arc[0].FITCOORD
-            except (TypeError, AttributeError):
-                # distort_model already has Identity inverse so nothing required
-                pass
+                    log.warning(f"No arc supplied for {ad.filename}")
             else:
-                # TODO: This is copied from determineDistortion() and will need
-                # to be refactored out. Or we might be able to simply replace it
-                # with a gWCS.pixel_to_world() call
-                model_dict = dict(zip(fitcoord['inv_name'],
-                                      fitcoord['inv_coefficients']))
-                m_inverse = astromodels.dict_to_chebyshev(model_dict)
-                if not isinstance(m_inverse, models.Chebyshev2D):
-                    log.warning("Problem reading distortion model from arc "
-                                "{}".format(arc.filename))
-                else:
-                    distort_model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
-
-            if distort_model.inverse == distort_model:  # Identity(2)
-                if 'sq' in self.mode:
-                    raise IOError("No distortion model for {}".format(ad.filename))
-                else:
-                    log.warning("Proceeding without a disortion correction for "
-                                "{}".format(ad.filename))
-
-            ad_detsec = ad.detector_section()
-            adg = transform.create_mosaic_transform(ad, geotable)
-            if arc is not None:
-                arc_detsec = arc.detector_section()[0]
-                shifts = [c1 - c2 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
-                                                    arc_detsec)]
-                xshift, yshift = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
-                if xshift or yshift:
-                    log.stdinfo("Found a shift of ({},{}) pixels between "
-                                "{} and the calibration.".
-                                format(xshift, yshift, ad.filename))
-                add_shapes, add_transforms = [], []
-                for (arr, trans) in adg:
-                    # Try to work out shape of this Block in the unmosaicked
-                    # arc, and then apply a shift to align it with the
-                    # science Block before applying the same transform.
-                    if xshift == 0:
-                        add_shapes.append(((arc_detsec.y2 - arc_detsec.y1) // ybin, arr.shape[1]))
+                # OK, we definitely want to try to do this, get a wavelength solution
+                if self.timestamp_keys['determineWavelengthSolution'] not in arc.phu:
+                    msg = f"Arc {arc.filename} (for {ad.filename} has not been wavelength calibrated."
+                    if 'sq' in self.mode:
+                        raise IOError(msg)
                     else:
-                        add_shapes.append((arr.shape[0], (arc_detsec.x2 - arc_detsec.x1) // xbin))
-                    t = transform.Transform(models.Shift(-xshift) & models.Shift(-yshift))
-                    t.append(trans)
-                    add_transforms.append(t)
-                adg.calculate_output_shape(additional_array_shapes=add_shapes,
-                                           additional_transforms=add_transforms)
-                origin_shift = models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0])
-                for t in adg.transforms:
-                    t.append(origin_shift)
+                        log.warning(msg)
 
-            # Irrespective of arc or not, apply the distortion model (it may
-            # be Identity), recalculate output_shape and reset the origin
-            for t in adg.transforms:
-                t.append(distort_model.copy())
-            adg.calculate_output_shape()
-            adg.reset_origin()
+                arc_wcs = arc[0].wcs
+                if 'distortion_corrected' not in arc_wcs.available_frames:
+                    msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
+                    if 'sq' in self.mode:
+                        raise IOError(msg)
+                    else:
+                        log.warning(msg)
 
-            # Now we know the shape of the output, we can construct the
-            # approximate wavelength solution; ad.dispersion() returns a list!
-            if wave_model is None:
-                wave_model = (models.Shift(-0.5 * adg.output_shape[1]) |
-                              models.Scale(ad.dispersion(asNanometers=True)[0]) |
-                              models.Shift(ad.central_wavelength(asNanometers=True)))
+                # NB. At this point, we could have an arc that has no good
+                # wavelength solution nor distortion correction. But we will
+                # use its WCS rather than the science frame's because it must
+                # have been supplied by the user.
 
-            for ccd, (block, trans) in enumerate(adg, start=1):
-                if ccd == 2:
+                # This is GMOS so no need to be as generic as distortionCorrect
+                ad_detsec = ad.detector_section()
+                arc_detsec = arc.detector_section()[0]
+                if (ad_detsec[0].x1, ad_detsec[-1].x2) != (arc_detsec.x1, arc_detsec.x2):
+                    raise ValueError("I don't know how to process the "
+                                     f"offsets between {ad.filename} "
+                                     f"and {arc.filename}")
+
+                yoff1 = arc_detsec.y1 - ad_detsec[0].y1
+                yoff2 = arc_detsec.y2 - ad_detsec[0].y2
+                arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
+                                   ext.shape[1]) for ext in ad]
+                arc_corners = np.concatenate([transform.get_output_corners(
+                    ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                    input_shape=arc_shape, origin=(yoff1, 0))
+                    for ext, arc_shape in zip(ad, arc_ext_shapes)], axis=1)
+                arc_origin = tuple(np.ceil(min(corners)) for corners in arc_corners)
+
+                # So this is what was applied to the ARC to get the
+                # mosaic frame to its pixel frame, in which the distortion
+                # correction model was calculated. Convert coordinates
+                # from python order to Model order.
+                origin_shift = reduce(Model.__and__, [models.Shift(-origin)
+                                                      for origin in arc_origin[::-1]])
+                arc_wcs.insert_transform(arc_wcs.input_frame, origin_shift, after=True)
+
+            for ext in ad:
+                # TODO: Ignore CCD2 in a better way
+                if ext.array_name().split(',')[0] in ('BI12-09-4k-2', 'BI11-33-4k-1',
+                                                      'EEV 9273-20-04', 'EEV 8194-19-04'):
                     continue
-                for ext, corner in zip(block, block.corners):
-                    ygrid, xgrid = np.indices(ext.shape)
-                    xgrid += corner[1]  # No need for ygrid
-                    xnew = trans(xgrid, ygrid)[0]
-                    # Some unit-based stuff here to prepare for gWCS
-                    waves = wave_model(xnew) * u.nm
-                    try:
-                        qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value)
-                    except TypeError:  # qeModel() returns None
-                        msg = "No QE correction found for {}:{}".format(ad.filename, ext.hdr['EXTVER'])
-                        if 'sq' in self.mode:
-                            raise ValueError(msg)
-                        else:
-                            log.warning(msg)
-                    log.fullinfo("Mean relative QE of EXTVER {} is {:.5f}".
-                                 format(ext.hdr['EXTVER'], qe_correction.mean()))
-                    if not is_flat:
-                        qe_correction = 1. / qe_correction
-                    qe_correction[qe_correction < 0] = 0
-                    qe_correction[qe_correction > 10] = 0
-                    ext.multiply(qe_correction)
+                if arc is None:
+                    trans = ext.wcs.forward_transform
+                else:
+                    trans = (ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic') |
+                             arc_wcs.forward_transform)
+
+                ygrid, xgrid = np.indices(ext.shape)
+                # TODO: want with_units
+                waves = trans(xgrid, ygrid)[0] * u.nm
+                try:
+                    qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value)
+                except TypeError:  # qeModel() returns None
+                    msg = "No QE correction found for {}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                    if 'sq' in self.mode:
+                        raise ValueError(msg)
+                    else:
+                        log.warning(msg)
+                log.fullinfo("Mean relative QE of EXTVER {} is {:.5f}".
+                             format(ext.hdr['EXTVER'], qe_correction.mean()))
+                if not is_flat:
+                    qe_correction = 1. / qe_correction
+                qe_correction[qe_correction < 0] = 0
+                qe_correction[qe_correction > 10] = 0
+                ext.multiply(qe_correction)
+
+            for ext, orig_wcs in zip(ad, original_wcs):
+                ext.wcs = orig_wcs
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
