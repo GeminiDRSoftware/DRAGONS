@@ -1990,7 +1990,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     kw = ad._keyword_for('array_name')
     try:
         array_names = set([name.split(',')[0] for name in ad.array_name()])
-    except TypeError:
+    except AttributeError:
         array_name = ''
     else:
         array_name = array_names.pop()
