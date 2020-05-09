@@ -253,6 +253,9 @@ class GMOSSpect(Spect, GMOS):
                 if ext.array_name().split(',')[0] in ('BI12-09-4k-2', 'BI11-33-4k-1',
                                                       'EEV 9273-20-04', 'EEV 8194-19-04'):
                     continue
+
+                # Use the WCS in the extension if we don't have an arc,
+                # otherwise use the arc's mosaic->world transformation
                 if arc is None:
                     trans = ext.wcs.forward_transform
                 else:
@@ -261,7 +264,7 @@ class GMOSSpect(Spect, GMOS):
 
                 ygrid, xgrid = np.indices(ext.shape)
                 # TODO: want with_units
-                waves = trans(xgrid, ygrid)[0] * u.nm
+                waves = trans(xgrid, ygrid)[0] * u.nm  # Wavelength always axis 0
                 try:
                     qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value)
                 except TypeError:  # qeModel() returns None
