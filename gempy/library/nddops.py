@@ -294,15 +294,17 @@ class NDStacker:
         # around for consideration
         if mask is not None:
             mask, _ = NDStacker._process_mask(mask, unflag_best_pixels=False)
-            self._pixel_debugger(data, mask, variance,
-                                 stage='after first mask processing')
+            if self._debug_pixel is not None:
+                self._pixel_debugger(data, mask, variance,
+                                     stage='after first mask processing')
 
         data, rejmask, variance = self._rejector(data, mask, variance,
                                                  **self._rej_args)
 
         # Unset the 32768 bit *only* if it's set in all input pixels
-        self._pixel_debugger(data, rejmask, variance,
-                             stage='immediately after rejection')
+        if self._debug_pixel is not None:
+            self._pixel_debugger(data, rejmask, variance,
+                                 stage='immediately after rejection')
         rejmask &= ~(np.bitwise_and.reduce(rejmask, axis=0) & 32768)
 
         if save_rejection_map:
