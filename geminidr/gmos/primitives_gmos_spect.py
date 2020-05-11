@@ -162,7 +162,7 @@ class GMOSSpect(Spect, GMOS):
                 continue
 
             if 'e2v' in ad.detector_name(pretty=True):
-                log.warning(f"{ad.filename} has the e2v CCDs, so no QE "
+                log.stdinfo(f"{ad.filename} has the e2v CCDs, so no QE "
                             "correction is necessary")
                 continue
 
