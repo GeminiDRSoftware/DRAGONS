@@ -22,7 +22,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups import geometry_conf as geotable
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels, transform
+from gempy.library import transform
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -248,10 +248,14 @@ class GMOSSpect(Spect, GMOS):
                                                       for origin in arc_origin[::-1]])
                 arc_wcs.insert_transform(arc_wcs.input_frame, origin_shift, after=True)
 
-            for ext in ad:
-                # TODO: Ignore CCD2 in a better way
-                if ext.array_name().split(',')[0] in ('BI12-09-4k-2', 'BI11-33-4k-1',
-                                                      'EEV 9273-20-04', 'EEV 8194-19-04'):
+            array_info = gt.array_information(ad)
+            if array_info.detector_shape == (1, 3):
+                ccd2_indices = array_info.extensions[1]
+            else:
+                raise ValueError(f"{ad.filename} does not have 3 separate detectors")
+
+            for index, ext in enumerate(ad):
+                if index in ccd2_indices:
                     continue
 
                 # Use the WCS in the extension if we don't have an arc,
