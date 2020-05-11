@@ -49,7 +49,7 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
 
     if has_mask:
         for i in range(data_size):
-            if mask[i] == 0:
+            if mask[i] < 65535:
                 tmp[nused] = data[i]
                 nused += 1
     if nused == 0:  # if not(has_mask) or all(mask)
