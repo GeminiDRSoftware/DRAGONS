@@ -34,69 +34,6 @@ def assert_same_class(ad, ad_ref):
 
 
 @pytest.fixture(scope='module')
-def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
-    """
-    Looks from cached file and returns its full path in the local machine. If
-    cached file does not exists, download file from the archive
-    and store it in a temporary folder.
-
-    ToDo: Add MD5 checksum here.
-
-    Parameters
-    ----------
-    path_to_inputs : pytest.fixture
-        Contains the full path to the input cache folder based on the module
-        path.
-    path_to_outputs : pytest.fixture
-        Contains the full path to the temporary cache folder based on the
-        module path.
-
-    Returns
-    -------
-    function
-        Factory function that returns a string with the full path to the cached
-        file.
-    """
-    should_run = request.config.getoption("--dragons-remote-data")
-    should_cache = request.config.getoption("--force-cache")
-
-    def _cache_file_from_archive(filename):
-
-        if not should_run:
-            pytest.skip(
-                "Test only runs when called using '--dragons-remote-data'.")
-
-        assert isinstance(path_to_inputs, str)
-        assert isinstance(path_to_outputs, str)
-        assert isinstance(filename, str)
-
-        input_path = os.path.join(path_to_inputs, filename)
-        cache_path = os.path.join(path_to_outputs, "inputs", filename)
-
-        if os.path.exists(input_path):
-            print("\n  Static input file exists in:\n    {}".format(input_path))
-            return input_path
-
-        elif should_cache:
-            if os.path.exists(cache_path):
-                print("\n  Input file is cached in:\n    {}\n".format(cache_path))
-                return cache_path
-            else:
-                print("\n  Caching file to:\n    {}\n".format(cache_path))
-                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-                tmp_path = download_file(URL + filename, cache=False)
-                shutil.move(tmp_path, cache_path)
-                os.chmod(cache_path, 0o664)
-                return cache_path
-
-        else:
-            raise FileNotFoundError(input_path +
-                                    "\n  Use --force-cache to download it.")
-
-    return _cache_file_from_archive
-
-
-@pytest.fixture(scope='module')
 def change_working_dir(path_to_outputs):
     """
     Factory that returns the output path as a context manager object, allowing
@@ -172,40 +109,6 @@ def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
         os.chmod(local_path, 0o664)
 
     return local_path
-
-
-def get_associated_calibrations(filename, nbias=5):
-    """
-    Queries Gemini Observatory Archive for associated calibrations to reduce the
-    data that will be used for testing.
-
-    Parameters
-    ----------
-    filename : str
-        Input file name
-    """
-    pd = pytest.importorskip("pandas", minversion='1.0.0')
-    url = "https://archive.gemini.edu/calmgr/{}".format(filename)
-
-    tree = et.parse(urllib.request.urlopen(url))
-    root = tree.getroot()
-    prefix = root.tag[:root.tag.rfind('}') + 1]
-
-    def iter_nodes(node):
-        cal_type = node.find(prefix + 'caltype').text
-        cal_filename = node.find(prefix + 'filename').text
-        return cal_filename, cal_type
-
-    cals = pd.DataFrame(
-        [iter_nodes(node) for node in tree.iter(prefix + 'calibration')],
-        columns=['filename', 'caltype'])
-
-    cals = cals.sort_values(by='filename')
-    cals = cals[~cals.caltype.str.contains('processed_')]
-    cals = cals[~cals.caltype.str.contains('specphot')]
-    cals = cals.drop(cals[cals.caltype.str.contains('bias')][nbias:].index)
-
-    return cals
 
 
 @pytest.fixture(scope='module')
