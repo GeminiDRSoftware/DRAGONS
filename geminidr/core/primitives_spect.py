@@ -1119,6 +1119,7 @@ class Spect(PrimitivesBASE):
                         slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
                     except IndexError:
                         slit_model = models.Identity(1)
+                    slit_model.name = 'SKY'
                     if dispaxis == 1:
                         transform = m_final & slit_model
                     else:
