@@ -115,10 +115,7 @@ def change_working_dir(request, path_to_outputs):
     contextmanager
         Enable easy change to temporary folder when reducing data.
     """
-    module_path = request.module.__name__.split('.') + ["outputs"]
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path_to_outputs, *module_path)
-
+    path = os.path.join(path_to_outputs, "outputs")
     os.makedirs(path, exist_ok=True)
 
     @contextmanager
