@@ -732,7 +732,10 @@ class Spect(PrimitivesBASE):
                         log.warning(f"{arc.filename}:{0} has no wavelength "
                                     "solution".format(ext.hdr['EXTVER']))
 
-            for ext, wave_model in zip(ad_out, wave_models):
+            for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
+                # TODO: remove this; for debugging purposes only
+                if arc is not None:
+                    ad_out[i].WAVECAL = arc[i].WAVECAL
                 sky_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'SKY')
                 if ext.dispersion_axis() == 1:
                     t = wave_model & sky_model
