@@ -112,7 +112,7 @@ def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
 
 
 @pytest.fixture(scope='module')
-def path_to_inputs(request, path_to_test_data):
+def path_to_inputs(request, env_var='DRAGONS_TEST'):
     """
     PyTest fixture that returns the path to where the input files for a given
     test module live.
@@ -122,15 +122,27 @@ def path_to_inputs(request, path_to_test_data):
     request : fixture
         PyTest's built-in fixture with information about the test itself.
 
-    path_to_test_data : pytest.fixture
-        Custom astrodata fixture that returs the root path to where input and
-        reference files should live.
+    env_var : str
+        Environment variable that contains the root path to the input data.
 
     Returns
     -------
     str:
         Path to the input files.
     """
+    path_to_test_data = os.getenv(env_var)
+
+    if path_to_test_data is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
+
+    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
+
+    if not os.access(path_to_test_data, os.W_OK):
+        pytest.fail(
+            '\n  Could not access the path stored inside $DRAGONS_TEST. '
+            '\n  Make sure the following path exists and that you have '
+            'write permissions in it:\n    {}'.format(path_to_test_data))
+
     module_path = request.module.__name__.split('.') + ["inputs"]
     module_path = [item for item in module_path if item not in "tests"]
     path = os.path.join(path_to_test_data, *module_path)
@@ -148,7 +160,7 @@ def path_to_inputs(request, path_to_test_data):
 
 
 @pytest.fixture(scope='module')
-def path_to_refs(request, path_to_test_data):
+def path_to_refs(request, env_var='DRAGONS_TEST'):
     """
     PyTest fixture that returns the path to where the reference files for a
     given test module live.
@@ -158,15 +170,27 @@ def path_to_refs(request, path_to_test_data):
     request : fixture
         PyTest's built-in fixture with information about the test itself.
 
-    path_to_test_data : pytest.fixture
-        Custom astrodata fixture that returs the root path to where input and
-        reference files should live.
+    env_var : str
+        Environment variable that contains the root path to the input data.
 
     Returns
     -------
     str:
         Path to the reference files.
     """
+    path_to_test_data = os.getenv(env_var)
+
+    if path_to_test_data is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
+
+    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
+
+    if not os.access(path_to_test_data, os.W_OK):
+        pytest.fail(
+            '\n  Could not access the path stored inside $DRAGONS_TEST. '
+            '\n  Make sure the following path exists and that you have '
+            'write permissions in it:\n    {}'.format(path_to_test_data))
+
     module_path = request.module.__name__.split('.') + ["refs"]
     module_path = [item for item in module_path if item not in "tests"]
     path = os.path.join(path_to_test_data, *module_path)
@@ -178,36 +202,6 @@ def path_to_refs(request, path_to_test_data):
     if not os.access(path, os.W_OK):
         pytest.fail('\n Path to reference test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
-
-    return path
-
-
-@pytest.fixture(scope='session')
-def path_to_test_data(env_var='DRAGONS_TEST'):
-    """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST that
-    should contain data that will be used inside tests.
-
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, the test fails.
-
-    Returns
-    -------
-    str : path to the reference data
-    """
-    path = os.getenv(env_var)
-
-    if path is None:
-        pytest.skip('Environment variable not set: $DRAGONS_TEST')
-
-    path = os.path.expanduser(path).strip()
-
-    if not os.access(path, os.W_OK):
-        pytest.fail(
-            '\n  Could not access the path stored inside $DRAGONS_TEST. '
-            '\n  Make sure the following path exists and that you have '
-            'write permissions in it:\n    {}'.format(path))
 
     return path
 
@@ -237,7 +231,6 @@ def path_to_outputs(request, tmp_path_factory):
                 "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
                 "{}\n Using current working directory".format(path))
     else:
-        # path = str(tmp_path_factory.mktemp('dragons_tests', numbered=False))
         path = str(tmp_path_factory.getbasetemp())
 
     module_path = request.module.__name__.split('.')
