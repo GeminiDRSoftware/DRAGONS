@@ -3,6 +3,7 @@
 import datetime
 import pytest
 import astrodata
+import astrodata.testing
 import gemini_instruments
 
 DESCRIPTORS_TYPES = [
@@ -107,9 +108,9 @@ test_files = [
 
 
 @pytest.fixture(scope='module')
-def ad(cache_file_from_archive, request):
+def ad(request):
     filename = request.param
-    path = cache_file_from_archive(filename)
+    path = astrodata.testing.download_from_archive(filename)
     return astrodata.open(path)
     
 

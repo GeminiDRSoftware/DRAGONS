@@ -2,6 +2,7 @@
 import pytest
 
 import astrodata
+import astrodata.testing
 import gemini_instruments
 
 test_files = [
@@ -22,9 +23,9 @@ F2_DESCRIPTORS_TYPES = [
 
 
 @pytest.fixture(scope='module', params=test_files)
-def ad(cache_file_from_archive, request):
+def ad(request):
     filename = request.param
-    file_path = cache_file_from_archive(filename)
+    file_path = astrodata.testing.download_from_archive(filename)
     return astrodata.open(file_path)
 
 

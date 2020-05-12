@@ -1,7 +1,7 @@
-import os
 import pytest
 
 import astrodata
+import astrodata.testing
 import gemini_instruments
 
 test_files = [
@@ -21,9 +21,9 @@ GNIRS_DESCRIPTORS_TYPES = [
 
 
 @pytest.fixture(params=test_files)
-def ad(cache_file_from_archive, request):
+def ad(request):
     filename = request.param
-    path = cache_file_from_archive(filename)
+    path = astrodata.testing.download_from_archive(filename)
     return astrodata.open(path)
 
 

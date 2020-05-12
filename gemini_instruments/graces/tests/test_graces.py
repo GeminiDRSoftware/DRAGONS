@@ -1,14 +1,15 @@
 import pytest
 
 import astrodata
+import astrodata.testing
 import gemini_instruments
 
 filename = 'N20190116G0054i.fits'
 
 
 @pytest.fixture
-def ad(cache_file_from_archive):
-    path = cache_file_from_archive(filename)
+def ad():
+    path = astrodata.testing.download_from_archive(filename)
     return astrodata.open(path)
 
 
