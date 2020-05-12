@@ -97,15 +97,13 @@ def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
 
 
 @pytest.fixture(scope='module')
-def change_working_dir(request, path_to_outputs):
+def change_working_dir(path_to_outputs):
     """
     Factory that returns the output path as a context manager object, allowing
     easy access to the path to where the processed data should be stored.
 
     Parameters
     ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
     path_to_outputs : pytest.fixture
         Fixture containing the root path to the output files.
 
