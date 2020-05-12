@@ -13,10 +13,11 @@ from astropy.io import fits
 from astropy.nddata import NDData
 from astropy.table import Table
 
-from .fits import DEFAULT_EXTENSION, _process_table, read_fits, write_fits
+from .fits import (DEFAULT_EXTENSION, FitsHeaderCollection, _process_table,
+                   read_fits, write_fits)
 from .nddata import ADVarianceUncertainty
 from .nddata import NDAstroData as NDDataObject
-from .utils import deprecated, normalize_indices, astro_data_descriptor
+from .utils import astro_data_descriptor, deprecated, normalize_indices
 
 NO_DEFAULT = object()
 
@@ -259,29 +260,26 @@ class AstroData:
         """Return the primary header."""
         return self._phu
 
-    def set_phu(self, phu):
+    @phu.setter
+    def phu(self, phu):
         self._phu = phu
-
-    def _get_raw_headers(self, with_phu=False):
-        extensions = [ndd.meta['header'] for ndd in self.nddata]
-        if with_phu:
-            return [self._phu] + extensions
-        return extensions
 
     @property
     def hdr(self):
         """Return all headers, as a `astrodata.FitsHeaderCollection`."""
         if not self.nddata:
             return None
-        from .fits import FitsHeaderCollection
-        headers = self._get_raw_headers()
-        return headers[0] if self.is_single else FitsHeaderCollection(headers)
+        elif self.is_single:
+            return self.nddata.meta['header']
+        else:
+            headers = [nd.meta['header'] for nd in self.nddata]
+            return FitsHeaderCollection(headers)
 
     @property
     @deprecated("Access to headers through this property is deprecated and "
                 "will be removed in the future. Use '.hdr' instead.")
     def header(self):
-        return self._get_raw_headers(with_phu=True)
+        return [self._phu] + [ndd.meta['header'] for ndd in self.nddata]
 
     @property
     def tags(self):
@@ -497,7 +495,6 @@ class AstroData:
             raise TypeError("Can't slice a single slice!")
 
         indices, multiple = normalize_indices(idx, nitems=len(self))
-        # FIXME: propagate other attributes ? path, orig_filename, etc.
         if self._indices:
             indices = [self._indices[i] for i in indices]
 
@@ -515,7 +512,7 @@ class AstroData:
 
         Parameters
         ----------
-        idx : integer
+        idx : int
             This index represents the order of the element that you want
             to remove.
 
@@ -660,12 +657,7 @@ class AstroData:
         return attribute in self.exposed
 
     def __len__(self):
-        """
-        Number of independent extensions stored by the object.
-
-        Returns
-        --------
-        A non-negative integer.
+        """Return the number of independent extensions stored by the object.
         """
         if self._indices is not None:
             return len(self._indices)
@@ -702,7 +694,8 @@ class AstroData:
                 if other is not None:
                     if isinstance(other, Table):
                         other_objects.append(dict(
-                            attr=name, type='Table',
+                            attr=name,
+                            type='Table',
                             dim=str((len(other), len(other.columns))),
                             data_type='n/a'
                         ))
@@ -975,7 +968,7 @@ class AstroData:
 
     def _reset_ver(self, nd):
         try:
-            ver = max(_nd.meta['ver'] for _nd in self._nddata) + 1
+            ver = max(nd.meta['ver'] for nd in self._nddata) + 1
         except ValueError:
             # This seems to be the first extension!
             ver = 1
@@ -1237,7 +1230,7 @@ class AstroData:
         #       should do it here...
         if isinstance(ext, fits.PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed. "
-                             "Use set_phu if you really need to set one")
+                             "Use .phu if you really need to set one")
 
         if self.is_sliced:
             add_to = self.nddata
@@ -1301,7 +1294,7 @@ class AstroData:
         """
         if self.is_single:
             raise ValueError("Trying to get a mapping out of a single slice")
-        return {nd._meta['ver']: n for (n, nd) in enumerate(self.nddata)}
+        return {nd.meta['ver']: n for (n, nd) in enumerate(self.nddata)}
 
     def extver(self, ver):
         """

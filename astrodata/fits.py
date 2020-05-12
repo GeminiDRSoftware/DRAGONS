@@ -500,7 +500,7 @@ def read_fits(cls, source, extname_parser=None):
     if 'ORIGNAME' not in hdulist[0].header and ad.orig_filename is not None:
         hdulist[0].header.set('ORIGNAME', ad.orig_filename,
                               'Original filename prior to processing')
-    ad.set_phu(hdulist[0].header)
+    ad.phu = hdulist[0].header
 
     seen = {hdulist[0]}
 
