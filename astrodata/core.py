@@ -164,6 +164,7 @@ class AstroData:
 
         """
         # This prevents infinite recursion
+        # FIXME: probably not more needed since we inspect the class ?
         if self._processing_tags:
             return set()
         self._processing_tags = True
@@ -171,17 +172,11 @@ class AstroData:
             results = []
             # Calling inspect.getmembers on `self` would trigger all the
             # properties (tags, phu, hdr, etc.), and that's undesirable. To
-            # prevent that, we'll inspect the *class*. But that returns us
-            # unbound methods. We use `method.__get__(self)` to get a bound
-            # version.
-            #
-            # It's a bit of a roundabout way to get to what we want, but it's
-            # better than the option...
+            # prevent that, we'll inspect the *class*.
             filt = lambda x: hasattr(x, 'tag_method')
             for mname, method in inspect.getmembers(self.__class__, filt):
-                ts = method.__get__(self)()
-                plus, minus, blocked_by, blocks, if_present = ts
-                if plus or minus or blocks:
+                ts = method(self)
+                if ts.add or ts.remove or ts.blocks:
                     results.append(ts)
 
             # Sort by the length of substractions... those that substract
