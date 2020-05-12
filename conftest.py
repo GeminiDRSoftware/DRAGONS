@@ -11,12 +11,10 @@ matplotlib.use("agg")
 
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
-    cache_file_from_archive,
     change_working_dir,
     path_to_inputs,
     path_to_outputs,
-    path_to_refs,
-    path_to_test_data)
+    path_to_refs)
 
 
 def pytest_addoption(parser):
