@@ -7,7 +7,7 @@ under DRAGONS.
 The default recipe is "reduce".
 
 """
-recipe_tags = set(['GMOS', 'SPECT', 'NODANDSHUFFLE'])
+recipe_tags = {'GMOS', 'SPECT', 'NODANDSHUFFLE'}
 
 
 def reduce(p):

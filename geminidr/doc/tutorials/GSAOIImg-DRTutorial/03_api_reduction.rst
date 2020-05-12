@@ -37,6 +37,9 @@ Here is a copy of the table for quick reference.
 | Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
 +---------------+---------------------+--------------------------------+
 
+.. note:: A master dark is not needed for GSAOI.  The dark current is very low.
+
+
 Setting up
 ==========
 
@@ -47,8 +50,6 @@ We first import the necessary modules and classes:
 
 .. code-block:: python
     :linenos:
-
-    from __future__ import print_function
 
     import glob
 
@@ -144,6 +145,7 @@ FITS files in the directory ``../playdata/``.
     :lineno-start: 15
 
     all_files = glob.glob('../playdata/*.fits')
+    all_files.sort()
 
 Before you carry on, you might want to do ``print(all_files)`` to check if they
 were properly read.
@@ -164,7 +166,7 @@ filters. It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 17
 
     list_of_flats_Ks = dataselect.select_data(
          all_files,
@@ -180,7 +182,7 @@ For the standard star selection, we use:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 22
+    :lineno-start: 23
 
     list_of_std_stars = dataselect.select_data(
         all_files,
@@ -200,7 +202,7 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 28
+    :lineno-start: 29
 
     list_of_science_images = dataselect.select_data(
         all_files,
@@ -233,7 +235,7 @@ follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 34
+    :lineno-start: 35
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Ks)
@@ -253,7 +255,7 @@ the local calibration database will be fetched automatically.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 39
+    :lineno-start: 40
 
     reduce_std = Reduce()
     reduce_std.files.extend(list_of_std_stars)
@@ -286,7 +288,7 @@ science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 42
+    :lineno-start: 43
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
@@ -309,7 +311,8 @@ before stacking. The tool for distortion correction and image stacking is
 
             conda install disco_stu
 
-This package was created to be accessed via command line. Because of that,
+This package was created to be accessed via command line (See the
+:ref:`stack_science_files` command line section). Because of that,
 the API is not the most polished, and using it requires a fair number of steps.
 **If you can use the command line interface, it is recommended that you do so.**
 If not, then let's get to work.
@@ -318,7 +321,7 @@ First, let's import some libraries:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 45
+    :lineno-start: 46
 
     from collections import namedtuple
 
@@ -331,7 +334,7 @@ This object will hold information about matching the objects between files:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 49
+    :lineno-start: 50
 
     MatchInfo = namedtuple(
         'MatchInfo', [
@@ -345,7 +348,7 @@ We now create objects of ``MatchInfo`` class:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 56
+    :lineno-start: 57
 
     object_match_info = MatchInfo(
         disco_pars.OBJCAT_ALIGN_RADIUS[0],
@@ -366,7 +369,7 @@ arguments.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 69
+    :lineno-start: 70
 
     disco.disco(
         infiles=reduce_target.output_filenames,
@@ -379,6 +382,3 @@ arguments.
 
 This function has many other parameters that can be used to customize this step
 but further details are out of the scope of this tutorial.
-
-
-

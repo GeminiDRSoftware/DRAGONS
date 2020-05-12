@@ -4,7 +4,6 @@
 #
 #                                                                      reduce.py
 # ------------------------------------------------------------------------------
-from __future__ import print_function
 # ---------------------------- Package Import ----------------------------------
 import sys
 import signal

@@ -14,7 +14,7 @@ class AstroDataBhros(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(set(['BHROS', 'SPECT']), ())
+        return TagSet({'BHROS', 'SPECT'}, ())
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,

@@ -55,7 +55,6 @@ class AstroDataPhoenix(AstroDataGemini):
         if "acq" in self.phu.get('OBJECT', '').lower():
             return TagSet(['ACQUISITION'])
 
-
     @astro_data_descriptor
     def dec(self):
         """
@@ -107,9 +106,9 @@ class AstroDataPhoenix(AstroDataGemini):
 
     @astro_data_descriptor
     def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
-        utd = super(AstroDataPhoenix, self).ut_datetime(strict=strict,
-                                                        dateonly=dateonly,
-                                                        timeonly=timeonly)
+        utd = super().ut_datetime(strict=strict,
+                                  dateonly=dateonly,
+                                  timeonly=timeonly)
         if utd is None:
             utime = self[0].hdr.get('UT')
             udate = self[0].hdr.get('UTDATE')

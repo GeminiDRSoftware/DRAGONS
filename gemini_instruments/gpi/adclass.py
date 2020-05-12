@@ -30,15 +30,15 @@ class AstroDataGpi(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(set(['GPI']), ())
+        return TagSet({'GPI'}, ())
 
     @astro_data_tag
     def _tag_disperser(self):
         disp = self.phu.get('DISPERSR', '')
         if disp.startswith('DISP_WOLLASTON'):
-            return TagSet(set(['POL']), ())
+            return TagSet({'POL'}, ())
         elif disp.startswith('DISP_PRISM'):
-            return TagSet(set(['SPECT', 'IFU']), ())
+            return TagSet({'SPECT', 'IFU'}, ())
 
     @astro_data_descriptor
     def dec(self):

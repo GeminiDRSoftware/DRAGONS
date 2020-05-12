@@ -1,4 +1,3 @@
-from __future__ import print_function
 """
 Collection of functions to make pipeline-processed and 
 IRAF-processed files compatible with the other system.
@@ -14,7 +13,7 @@ def pipeline2iraf(ad, verbose=False):
         compat_with_iraf_GMOS(ad, verbose)
     else:
         if verbose:
-            print("Data type not supported, {0}".format(ad.filename))
+            print("Data type not supported, {}".format(ad.filename))
          
     return
 
@@ -23,7 +22,7 @@ def compat_with_iraf_GMOS(ad, verbose):
     # The mighty GMOS OBSMODE
     obsmode = _get_gmos_obsmode(ad)
     if verbose:
-        print("Add OBSMODE {0} to PHU.".format(obsmode))
+        print("Add OBSMODE {} to PHU.".format(obsmode))
     ad.phu.set('OBSMODE', obsmode, "Observing mode (IMAGE|IFU|MOS|LONGSLIT)")
     
     # The other keywords required by the Gemini IRAF tasks.
@@ -84,7 +83,7 @@ def _get_gmos_obsmode(ad):
                 looks_like = "IMAGE"
             elif maskname[0:3] == "IFU":
                 looks_like = "IFU"
-            print("ERROR: Should be LONGSLIT or MOS but looks like {0}".format(looks_like))
+            print("ERROR: Should be LONGSLIT or MOS but looks like {}".format(looks_like))
             msg = "MASKTYP and MASKNAME are inconsistent. Cannot assign OBSMODE."
             raise ValueError(msg)
     else:

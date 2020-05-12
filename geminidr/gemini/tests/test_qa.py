@@ -64,7 +64,7 @@ class TestQA:
 
         assert (ad.phu['SKYLEVEL'] - 727.174) < 0.1
 
-        f = open(logfilename, 'r')
+        f = open(logfilename)
 
         for line in f.readlines():
             if 'BG band' in line:
@@ -86,7 +86,7 @@ class TestQA:
         for rv, cv in zip(ad.hdr['MEANZP'], correct):
             assert abs(rv - cv) < 0.02, 'Wrong zeropoint'
 
-        f = open(logfilename, 'r')
+        f = open(logfilename)
         for line in f.readlines():
             if 'CC bands' in line:
                 assert 'CC50, CC70' in line, 'Wrong CC bands'
@@ -113,7 +113,7 @@ class TestQA:
         assert abs(ad.phu['MEANFWHM'] - 0.42) < 0.02, 'Wrong FWHM'
         assert abs(ad.phu['MEANELLP'] - 0.09) < 0.02, 'Wrong ellipticity'
 
-        f = open(logfilename, 'r')
+        f = open(logfilename)
         for line in f.readlines():
             if 'IQ range' in line:
                 assert line.split()[8] == 'IQ20', 'Wrong IQ band'

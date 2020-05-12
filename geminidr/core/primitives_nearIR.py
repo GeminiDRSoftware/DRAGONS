@@ -21,14 +21,14 @@ class NearIR(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(NearIR, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_nearIR)
 
     def addLatencyToDQ(self, adinputs=None, **params):
         """
         Flags pixels in the DQ plane of an image based on whether the same
         pixel has been flagged as saturated in a previous image.
-        
+
         Parameters
         ----------
         suffix: str
@@ -36,7 +36,7 @@ class NearIR(PrimitivesBASE):
         non_linear : bool
             flag non-linear pixels (as well as saturated ones)?
         time: float
-            time (in seconds) for which latency is an issue 
+            time (in seconds) for which latency is an issue
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -126,11 +126,11 @@ class NearIR(PrimitivesBASE):
         try:
             flat = adinputs[0]
         except IndexError:
-            raise IOError("A SET OF FLATS IS REQUIRED INPUT")
+            raise OSError("A SET OF FLATS IS REQUIRED INPUT")
         try:
             dark = self.streams['darks'][0]
         except (KeyError, TypeError, IndexError):
-            raise IOError("A SET OF DARKS IS REQUIRED INPUT")
+            raise OSError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
             msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {}"
@@ -250,7 +250,7 @@ class NearIR(PrimitivesBASE):
 
         if not all(dark.exposure_time() == adinputs[0].exposure_time()
                    for dark in adinputs[1:]):
-                raise IOError("Darks are not of equal exposure time")
+                raise OSError("Darks are not of equal exposure time")
 
         stack_params = self._inherit_params(params, "stackFrames")
         stack_params.update({'zero': False, 'scale': False})

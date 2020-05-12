@@ -18,10 +18,10 @@ class F2Image(F2, Image, Photometry):
     for the F2Image level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "F2", "IMAGE"])
+    tagset = {"GEMINI", "F2", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
-        super(F2Image, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_f2_image)
 
     def makeLampFlat(self, adinputs=None, **params):
@@ -68,6 +68,6 @@ class F2Image(F2, Image, Photometry):
 
         else:
             log.stdinfo('Using standard makeLampFlat primitive to make flatfield')
-            adinputs = super(F2Image, self).makeLampFlat(adinputs, **params)
+            adinputs = super().makeLampFlat(adinputs, **params)
 
         return adinputs

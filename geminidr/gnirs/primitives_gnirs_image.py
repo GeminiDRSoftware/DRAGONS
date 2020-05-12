@@ -26,10 +26,10 @@ class GNIRSImage(GNIRS, Image, Photometry):
     for the GNIRSImage level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GNIRS", "IMAGE"])
+    tagset = {"GEMINI", "GNIRS", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
-        super(GNIRSImage, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gnirs_image)
 
     def addIllumMaskToDQ(self, adinputs=None, **params):
@@ -54,22 +54,22 @@ class GNIRSImage(GNIRS, Image, Photometry):
         # flats, one wants the reference frame to be a lamp-on since there's
         # next to no signal in the lamp-off.
         #
-        # BEWARE: See note on the only GCAL_IR_OFF case below this block.   
+        # BEWARE: See note on the only GCAL_IR_OFF case below this block.
         lampons = self.selectFromInputs(adinputs, 'GCAL_IR_ON')
         reference = lampons[0] if lampons else adinputs[0]
-                   
+
         # When only a GCAL_IR_OFF is available:
         # To cover the one-at-a-time mode check for a compatible list
         # if list found, try to find a lamp-on in there to use as
         # reference for the mask and the shifts.
-        # The mask's name and the shifts should stored in the headers 
+        # The mask's name and the shifts should stored in the headers
         # of the reference to simplify this and speed things up.
         #
         # NOT NEEDED NOW because we calling addIllumMask after the
         # lamp-offs have been subtracted.  But kept the idea here
         # in case we needed.
-        
-        # Fetching a corrected illumination mask with a keyhole that aligns 
+
+        # Fetching a corrected illumination mask with a keyhole that aligns
         # with the science data
         illum = self._get_illum_mask_filename(reference)
         if illum is None:
@@ -84,7 +84,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
         for ad in adinputs:
             final_illum = gt.clip_auxiliary_data(ad, aux=corr_illum_ad,
                     aux_type="bpm")
- 
+
             # binary_OR the illumination mask or create a DQ plane from it.
             if ad[0].mask is None:
                 ad[0].mask = final_illum[0].data
@@ -112,12 +112,12 @@ class GNIRSImage(GNIRS, Image, Photometry):
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-    
+
 def _position_illum_mask(adinput, illum, log, max_dy=20):
     """
-    This function is used to reposition a GNIRS illumination mask so that 
+    This function is used to reposition a GNIRS illumination mask so that
     the keyhole matches with the science data.
-        
+
     Parameters
     ----------
     adinput: AstroData
@@ -130,7 +130,7 @@ def _position_illum_mask(adinput, illum, log, max_dy=20):
         maximum y shift allowed
     """
     # Normalizing and thresholding the science data to get a rough
-    # illumination mask. A 5x5 box around non-illuminated pixels is also 
+    # illumination mask. A 5x5 box around non-illuminated pixels is also
     # flagged as non-illuminated to better handle the edge effects. The
     # limit for thresholding is twice the median *and* more than 3x the
     # read noise. A check is made that a reasonable number of pixels
@@ -175,8 +175,8 @@ def _position_illum_mask(adinput, illum, log, max_dy=20):
 
     # Finding the centre of mass of the rough pixel mask and using
     # this in comparison with the centre of mass of the illumination
-    # mass to adjust the keyholes to align. Note that the  
-    # center_of_mass function has switched x and y axes compared to normal.        
+    # mass to adjust the keyholes to align. Note that the
+    # center_of_mass function has switched x and y axes compared to normal.
     comx_illummask = illum.phu['CENMASSX']
     comy_illummask = illum.phu['CENMASSY']
     comy, comx = scipy.ndimage.measurements.center_of_mass(keyhole)
@@ -188,7 +188,7 @@ def _position_illum_mask(adinput, illum, log, max_dy=20):
                 "the illumination mask cannot be positioned and "
                 "will be used without adjustment".format(adinput.filename))
         return illum
-    
+
     # Recording the shifts in the header of the illumination mask
     log.stdinfo("Applying shifts to the illumination mask: dx = {}px, dy = "
                 "{}px.".format(dx, dy))

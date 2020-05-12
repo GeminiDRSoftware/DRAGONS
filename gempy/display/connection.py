@@ -24,7 +24,7 @@ except (ImportError, AttributeError):
     have_xpa = False
 
 
-class Connect(object):
+class Connect:
     """
     Connect to a display device to look at and examine images.
     The control features below are a basic set that should be available

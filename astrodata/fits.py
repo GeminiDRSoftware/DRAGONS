@@ -1,23 +1,16 @@
-from __future__ import print_function
-
-from builtins import object
-from copy import deepcopy
-from collections import OrderedDict
-import os
-import re
-from functools import partial, wraps
-import logging
-import warnings
 import gc
 import inspect
+import logging
+import os
+import re
 import traceback
+import warnings
+from collections import OrderedDict
+from copy import deepcopy
+from functools import partial, wraps
 from io import BytesIO
 
-try:
-    # Python 3
-    from itertools import zip_longest, product as cart_product
-except ImportError:
-    from itertools import izip_longest as zip_longest, product as cart_product
+from itertools import zip_longest, product as cart_product
 
 from .core import AstroData, DataProvider, astro_data_descriptor
 from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
@@ -43,10 +36,13 @@ INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
 LOGGER = logging.getLogger(__name__)
 
+
 class AstroDataFitsDeprecationWarning(DeprecationWarning):
     pass
 
+
 warnings.simplefilter("always", AstroDataFitsDeprecationWarning)
+
 
 def deprecated(reason):
     def decorator_wrapper(fn):
@@ -61,7 +57,8 @@ def deprecated(reason):
         return wrapper
     return decorator_wrapper
 
-class KeywordCallableWrapper(object):
+
+class KeywordCallableWrapper:
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
         self.kw = keyword
         self.on_ext = on_ext
@@ -78,7 +75,8 @@ class KeywordCallableWrapper(object):
             return self.coercion_fn(ret)
         return wrapper
 
-class FitsHeaderCollection(object):
+
+class FitsHeaderCollection:
     """
     FitsHeaderCollection(headers)
 
@@ -95,8 +93,7 @@ class FitsHeaderCollection(object):
         self.__headers.insert(idx, header)
 
     def __iter__(self):
-        for h in self.__headers:
-            yield h
+        yield from self.__headers
 
 #    @property
 #    def keywords(self):
@@ -135,7 +132,8 @@ class FitsHeaderCollection(object):
                 ret.append(None)
                 raised = True
         if raised:
-            error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
+            error = KeyError("The keyword couldn't be found at headers: {}"
+                             .format(tuple(missing_at)))
             error.missing_at = missing_at
             error.values = ret
             raise error
@@ -178,19 +176,20 @@ class FitsHeaderCollection(object):
             try:
                 _inner_set_comment(header)
             except KeyError as err:
-                err.message = err.message + " at header {}".format(n)
-                raise
+                raise KeyError(err.args[0] + " at header {}".format(n))
 
     def __contains__(self, key):
         return any(tuple(key in h for h in self.__headers))
 
+
 def new_imagehdu(data, header, name=None):
-# Assigning data in a delayed way, won't reset BZERO/BSCALE in the header,
-# for some reason. Need to investigated. Maybe astropy.io.fits bug. Figure
-# out WHY were we delaying in the first place.
-#    i = ImageHDU(data=DELAYED, header=header.copy(), name=name)
-#    i.data = data
+    # Assigning data in a delayed way, won't reset BZERO/BSCALE in the header,
+    # for some reason. Need to investigated. Maybe astropy.io.fits bug. Figure
+    # out WHY were we delaying in the first place.
+    #    i = ImageHDU(data=DELAYED, header=header.copy(), name=name)
+    #    i.data = data
     return ImageHDU(data=data, header=header.copy(), name=name)
+
 
 def table_to_bintablehdu(table, extname=None):
     add_header_to_table(table)
@@ -272,18 +271,21 @@ def header_for_table(table):
         fits_header = update_header(table.meta['header'], fits_header)
     return fits_header
 
+
 def add_header_to_table(table):
     header = header_for_table(table)
     table.meta['header'] = header
     return header
 
+
 def card_filter(cards, include=None, exclude=None):
     for card in cards:
-        if include is not None and card not in include:
+        if include is not None and card[0] not in include:
             continue
-        elif exclude is not None and card in exclude:
+        elif exclude is not None and card[0] in exclude:
             continue
         yield card
+
 
 def update_header(headera, headerb):
     cardsa = tuple(tuple(cr) for cr in headera.cards)
@@ -301,8 +303,10 @@ def update_header(headera, headerb):
     for key in ('HISTORY', 'COMMENT'):
         fltcardsa = card_filter(cardsa, include={key})
         fltcardsb = card_filter(cardsb, include={key})
+        # assume we start with two headers that are mostly the same and
+        # that will have added comments/history at the end (in headerb)
         for (ca, cb) in zip_longest(fltcardsa, fltcardsb):
-            if cb is None:
+            if ca is None:
                 headera.update((cb,))
 
     return headera
@@ -330,9 +334,10 @@ def normalize_indices(slc, nitems):
 
 
 class FitsProviderProxy(DataProvider):
-    # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not make
-    #       sense for slices. If a method of interest is identified, we need to
-    #       implement it properly, or make it raise an exception if not valid.
+
+    # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not
+    # make sense for slices. If a method of interest is identified, we need to
+    # implement it properly, or make it raise an exception if not valid.
 
     def __init__(self, provider, mapping, single):
         # We're overloading __setattr__. This is safer than setting the
@@ -409,11 +414,12 @@ class FitsProviderProxy(DataProvider):
                 self._provider.append(value, name=attribute, add_to=target)
                 return
             elif attribute in {'path', 'filename'}:
+                # FIXME: never reached because path/filename are not settable
                 raise AttributeError("Can't set path or filename on a sliced object")
             else:
                 setattr(self._provider, attribute, value)
 
-        super(FitsProviderProxy, self).__setattr__(attribute, value)
+        super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         if not attribute.isupper():
@@ -462,13 +468,11 @@ class FitsProviderProxy(DataProvider):
         self._provider._standard_nddata_op(NDDataObject.multiply, operand, self._mapping)
         return self
 
-    def __idiv__(self, operand):
+    def __itruediv__(self, operand):
         self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
         return self
 
-    __itruediv__ = __idiv__
-
-    def __rdiv__(self, operand):
+    def __rtruediv__(self, operand):
         self._provider._oper(self._provider._rdiv, operand, self._mapping)
         return self
 
@@ -572,8 +576,15 @@ class FitsProviderProxy(DataProvider):
 
         return headers[0] if self.is_single else FitsHeaderCollection(headers)
 
-    def set_name(self, ext, name):
-        self._provider.set_name(self._mapping[ext], name)
+    def _crop_nd(self, nd, x1, y1, x2, y2):
+        # needed because __getattr__ breaks finding private methods in the
+        # parent class...
+        self._provider._crop_nd(nd, x1, y1, x2, y2)
+
+    def _crop_impl(self, x1, y1, x2, y2, nds=None):
+        # needed because __getattr__ breaks finding private methods in the
+        # parent class...
+        self._provider._crop_impl(x1, y1, x2, y2, nds=nds)
 
     def crop(self, x1, y1, x2, y2):
         self._crop_impl(x1, y1, x2, y2, self._mapped_nddata())
@@ -584,8 +595,8 @@ class FitsProviderProxy(DataProvider):
             raise TypeError("Can't append objects to non-single slices")
         elif name is None:
             raise TypeError("Can't append objects to a slice without an extension name")
-        target = self._mapped_nddata(0)
 
+        target = self._mapped_nddata(0)
         return self._provider.append(ext, name=name, add_to=target)
 
     def extver_map(self):
@@ -610,8 +621,11 @@ class FitsProviderProxy(DataProvider):
     def info(self, tags):
         self._provider.info(tags, indices=self._mapping)
 
+
 class FitsProvider(DataProvider):
+
     default_extension = 'SCI'
+
     def __init__(self):
         # We're overloading __setattr__. This is safer than setting the
         # attributes the normal way.
@@ -625,7 +639,7 @@ class FitsProvider(DataProvider):
             '_tables': {},
             '_exposed': set(),
             '_resetting': False,
-            '_fixed_settable': set([
+            '_fixed_settable': {
                 'data',
                 'uncertainty',
                 'mask',
@@ -633,7 +647,7 @@ class FitsProvider(DataProvider):
                 'wcs',
                 'path',
                 'filename'
-                ])
+                }
             })
 
     def __deepcopy__(self, memo):
@@ -704,7 +718,7 @@ class FitsProvider(DataProvider):
                 return
 
         # Fallback
-        super(FitsProvider, self).__setattr__(attribute, value)
+        super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         # TODO: So far we're only deleting tables by name.
@@ -754,13 +768,11 @@ class FitsProvider(DataProvider):
         self._standard_nddata_op(NDDataObject.multiply, operand)
         return self
 
-    def __idiv__(self, operand):
+    def __itruediv__(self, operand):
         self._standard_nddata_op(NDDataObject.divide, operand)
         return self
 
-    __itruediv__ = __idiv__
-
-    def __rdiv__(self, operand):
+    def __rtruediv__(self, operand):
         self._oper(self._rdiv, operand)
         return self
 
@@ -936,34 +948,30 @@ class FitsProvider(DataProvider):
 
         return ver
 
-    def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=True, custom_header=None):
+    def _process_pixel_plane(self, pixim, name=None, top_level=False,
+                             reset_ver=True, custom_header=None):
         if not isinstance(pixim, NDDataObject):
             # Assume that we get an ImageHDU or something that can be
             # turned into one
             if isinstance(pixim, ImageHDU):
-                header = pixim.header
-                nd = NDDataObject(pixim.data, meta={'header': header})
+                nd = NDDataObject(pixim.data, meta={'header': pixim.header})
             elif custom_header is not None:
-                header = custom_header
                 nd = NDDataObject(pixim, meta={'header': custom_header})
             else:
-                header = {}
-                nd = NDDataObject(pixim, meta={})
-
-
-            currname = header.get('EXTNAME')
-            ver = header.get('EXTVER', -1)
+                nd = NDDataObject(pixim, meta={'header': {}})
         else:
-            if custom_header is not None:
-                pixim.meta['header'] = custom_header
-            header = pixim.meta['header']
             nd = pixim
-            currname = header.get('EXTNAME')
-            ver = header.get('EXTVER', -1)
+            if custom_header is not None:
+                nd.meta['header'] = custom_header
+
+        header = nd.meta['header']
+        currname = header.get('EXTNAME')
+        ver = header.get('EXTVER', -1)
 
         # TODO: Review the logic. This one seems bogus
         if name and (currname is None):
-            header['EXTNAME'] = (name if name is not None else FitsProvider.default_extension)
+            header['EXTNAME'] = (name if name is not None
+                                 else FitsProvider.default_extension)
 
         if top_level:
             if 'other' not in nd.meta:
@@ -1038,9 +1046,6 @@ class FitsProvider(DataProvider):
         if not self.nddata:
             return None
         return FitsHeaderCollection(self._get_raw_headers())
-
-    def set_name(self, ext, name):
-        self._nddata[ext].meta['name'] = name
 
     def to_hdulist(self):
 
@@ -1141,9 +1146,9 @@ class FitsProvider(DataProvider):
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
-        if nd.uncertainty:
+        if nd.uncertainty is not None:
             nd.uncertainty = nd.uncertainty[y1:y2+1, x1:x2+1]
-        if nd.mask:
+        if nd.mask is not None:
             nd.mask = nd.mask[y1:y2+1, x1:x2+1]
 
     def _crop_impl(self, x1, y1, x2, y2, nds=None):
@@ -1151,14 +1156,15 @@ class FitsProvider(DataProvider):
             nds = self.nddata
         # TODO: Consider cropping of objects in the meta section
         for nd in nds:
-            dim = nd.data.shape
+            orig_shape = nd.data.shape
             self._crop_nd(nd, x1, y1, x2, y2)
-            for o in nd.meta['other'].items():
+            for o in nd.meta['other'].values():
                 try:
-                    if o.shape == dim:
-                        self._crop_nd(o)
+                    if o.shape == orig_shape:
+                        self._crop_nd(o, x1, y1, x2, y2)
                 except AttributeError:
-                    # No 'shape' attribute in the object. It's probably not array-like
+                    # No 'shape' attribute in the object. It's probably
+                    # not array-like
                     pass
 
     def crop(self, x1, y1, x2, y2):
@@ -1173,15 +1179,19 @@ class FitsProvider(DataProvider):
 
     def _append_array(self, data, name=None, header=None, add_to=None):
         def_ext = FitsProvider.default_extension
-        # Top level:
         if add_to is None:
+            # Top level extension
+
             # Special cases for Gemini
             if name is None:
                 name = def_ext
 
             if name in {'DQ', 'VAR'}:
-                raise ValueError("'{}' need to be associated to a '{}' one".format(name, def_ext))
+                raise ValueError("'{}' need to be associated to a '{}' one"
+                                 .format(name, def_ext))
             else:
+                # FIXME: the logic here is broken since name is
+                # always set to somehing above with def_ext
                 if name is not None:
                     hname = name
                 elif header is not None:
@@ -1189,11 +1199,11 @@ class FitsProvider(DataProvider):
                 else:
                     hname = def_ext
 
-                hdu = ImageHDU(data, header = header)
+                hdu = ImageHDU(data, header=header)
                 hdu.header['EXTNAME'] = hname
                 ret = self._append_imagehdu(hdu, name=hname, header=None, add_to=None)
-        # Attaching to another extension
         else:
+            # Attaching to another extension
             if header is not None and name in {'DQ', 'VAR'}:
                 LOGGER.warning("The header is ignored for '{}' extensions".format(name))
             if name is None:
@@ -1214,11 +1224,12 @@ class FitsProvider(DataProvider):
 
         return ret
 
-    def _append_imagehdu(self, unit, name, header, add_to, reset_ver=True):
+    def _append_imagehdu(self, hdu, name, header, add_to, reset_ver=True):
         if name in {'DQ', 'VAR'} or add_to is not None:
-            return self._append_array(unit.data, name=name, add_to=add_to)
+            return self._append_array(hdu.data, name=name, add_to=add_to)
         else:
-            nd = self._process_pixel_plane(unit, name=name, top_level=True, reset_ver=reset_ver,
+            nd = self._process_pixel_plane(hdu, name=name, top_level=True,
+                                           reset_ver=reset_ver,
                                            custom_header=header)
             return self._append_nddata(nd, name, add_to=None)
 
@@ -1229,15 +1240,14 @@ class FitsProvider(DataProvider):
         if not isinstance(raw_nddata, NDDataObject):
             raw_nddata = NDDataObject(raw_nddata)
         processed_nddata = self._process_pixel_plane(raw_nddata, top_level=top_level,
-                custom_header=header, reset_ver=reset_ver)
+                                                     custom_header=header, reset_ver=reset_ver)
         return self._append_nddata(processed_nddata, name=name, add_to=add_to)
 
-    # NOTE: This method is only used by others that have constructed NDData according
-    #       to our internal format. We don't accept new headers at this point, and
-    #       that's why it's missing from the signature
     def _append_nddata(self, new_nddata, name, add_to, reset_ver=True):
-        # 'name' is ignored. It's there just to comply with the
-        # _append_XXX signature
+        # NOTE: This method is only used by others that have constructed NDData
+        # according to our internal format. We don't accept new headers at this
+        # point, and that's why it's missing from the signature.  'name' is
+        # ignored. It's there just to comply with the _append_XXX signature.
         def_ext = FitsProvider.default_extension
         if add_to is not None:
             raise TypeError("You can only append NDData derived instances at the top level")
@@ -1249,7 +1259,8 @@ class FitsProvider(DataProvider):
                 self._reset_ver(new_nddata)
             self._nddata.append(new_nddata)
         else:
-            raise ValueError("Arbitrary image extensions can only be added in association to a '{}'".format(def_ext))
+            raise ValueError("Arbitrary image extensions can only be added "
+                             "in association to a '{}'".format(def_ext))
 
         return new_nddata
 
@@ -1282,13 +1293,13 @@ class FitsProvider(DataProvider):
             add_to.meta['other'][hname] = tb
         return tb
 
-    def _append_astrodata(self, astrod, name, header, add_to, reset_ver=True):
-        if not astrod.is_single:
+    def _append_astrodata(self, ad, name, header, add_to, reset_ver=True):
+        if not ad.is_single:
             raise ValueError("Cannot append AstroData instances that are not single slices")
         elif add_to is not None:
             raise ValueError("Cannot append an AstroData slice to another slice")
 
-        new_nddata = deepcopy(astrod.nddata)
+        new_nddata = deepcopy(ad.nddata)
         if header is not None:
             new_nddata.meta['header'] = deepcopy(header)
 
@@ -1298,14 +1309,15 @@ class FitsProvider(DataProvider):
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, PrimaryHDU):
-            raise ValueError("Only one Primary HDU allowed. Use set_phu if you really need to set one")
+            raise ValueError("Only one Primary HDU allowed. "
+                             "Use set_phu if you really need to set one")
 
         dispatcher = (
-                (NDData, self._append_raw_nddata),
-                ((Table, _TableBaseHDU), self._append_table),
-                (ImageHDU, self._append_imagehdu),
-                (AstroData, self._append_astrodata),
-                )
+            (NDData, self._append_raw_nddata),
+            ((Table, _TableBaseHDU), self._append_table),
+            (ImageHDU, self._append_imagehdu),
+            (AstroData, self._append_astrodata),
+        )
 
         for bases, method in dispatcher:
             if isinstance(ext, bases):
@@ -1317,7 +1329,7 @@ class FitsProvider(DataProvider):
     def _extver_impl(self, nds=None):
         if nds is None:
             nds = self.nddata
-        return dict((nd._meta['ver'], n) for (n, nd) in enumerate(nds))
+        return {nd._meta['ver']: n for (n, nd) in enumerate(nds)}
 
     def extver_map(self):
         """
@@ -1373,7 +1385,7 @@ def fits_ext_comp_key(ext):
     return ret
 
 
-class FitsLazyLoadable(object):
+class FitsLazyLoadable:
 
     def __init__(self, obj):
         self._obj = obj
@@ -1424,9 +1436,9 @@ class FitsLazyLoadable(object):
         return dtype
 
 
-class FitsLoader(object):
+class FitsLoader:
 
-    def __init__(self, cls = FitsProvider):
+    def __init__(self, cls=FitsProvider):
         self._cls = cls
 
     @staticmethod
@@ -1473,7 +1485,6 @@ class FitsLoader(object):
             for keyw in ('SIMPLE', 'EXTEND'):
                 if keyw in image.header:
                     del image.header[keyw]
-            # TODO: Remove self here (static method)
             image.header['EXTNAME'] = (default_extension, 'Added by AstroData')
             image.header['EXTVER'] = (1, 'Added by AstroData')
             new_list.append(image)
@@ -1515,9 +1526,9 @@ class FitsLoader(object):
                                   'Original filename prior to processing')
         provider.set_phu(hdulist[0].header)
 
-        seen = set([hdulist[0]])
+        seen = {hdulist[0]}
 
-        skip_names = set([def_ext, 'REFCAT', 'MDF'])
+        skip_names = {def_ext, 'REFCAT', 'MDF'}
 
         def associated_extensions(ver):
             for unit in hdulist:
@@ -1586,27 +1597,57 @@ class FitsLoader(object):
 
         return provider
 
-def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=False, with_mask=False):
+
+def windowedOp(func, sequence, kernel, shape=None, dtype=None,
+               with_uncertainty=False, with_mask=False, **kwargs):
+    """Apply function on a NDData obbjects, splitting the data in chunks to
+    limit memory usage.
+
+    Parameters
+    ----------
+    func : callable
+        The function to apply.
+    sequence : list of NDData
+        List of NDData objects.
+    kernel : tuple of int
+        Shape of the blocks.
+    shape : tuple of int
+        Shape of inputs. Defaults to ``sequence[0].shape``.
+    dtype : str or dtype
+        Type of the output array. Defaults to ``sequence[0].dtype``.
+    with_uncertainty : bool
+        Compute uncertainty?
+    with_mask : bool
+        Compute mask?
+    **kwargs
+        Additional args are passed to ``func``.
+
+    """
+
     def generate_boxes(shape, kernel):
         if len(shape) != len(kernel):
-            raise AssertionError("Incompatible shape ({}) and kernel ({})".format(shape, kernel))
+            raise AssertionError("Incompatible shape ({}) and kernel ({})"
+                                 .format(shape, kernel))
         ticks = [[(x, x+step) for x in range(0, axis, step)]
                  for axis, step in zip(shape, kernel)]
-        return cart_product(*ticks)
+        return list(cart_product(*ticks))
 
     if shape is None:
-        if len(set(x.shape for x in sequence)) > 1:
-            raise ValueError("Can't calculate final shape: sequence elements disagree on shape, and none was provided")
+        if len({x.shape for x in sequence}) > 1:
+            raise ValueError("Can't calculate final shape: sequence elements "
+                             "disagree on shape, and none was provided")
         shape = sequence[0].shape
 
     if dtype is None:
-        dtype = sequence[0].window[:1,:1].data.dtype
+        dtype = sequence[0].window[:1, :1].data.dtype
 
-    result = NDDataObject(np.empty(shape, dtype=dtype),
-                          uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
-                                       if with_uncertainty else None),
-                          mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
-                          meta=sequence[0].meta)
+    result = NDDataObject(
+        np.empty(shape, dtype=dtype),
+        uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
+                     if with_uncertainty else None),
+        mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
+        meta=sequence[0].meta
+    )
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
     result.meta['other_header'] = {}
@@ -1614,16 +1655,52 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
     astropy.log.setLevel(astropy.logger.WARNING)
-    for coords in generate_boxes(shape, kernel):
-        # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
-        # Zipping them will get us a more desirable ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
-        # box = list(zip(*coords))
-        section = tuple([slice(start, end) for (start, end) in coords])
-        result.set_section(section, fn((element.window[section] for element in sequence)))
-        gc.collect()
-    astropy.log.setLevel(log_level)  # and reset
+
+    boxes = generate_boxes(shape, kernel)
+
+    try:
+        for coords in boxes:
+            section = tuple([slice(start, end) for (start, end) in coords])
+            out = func([element.window[section] for element in sequence],
+                       **kwargs)
+            result.set_section(section, out)
+
+            # propagate additional attributes
+            if out.meta.get('other'):
+                for k, v in out.meta['other'].items():
+                    if len(boxes) > 1:
+                        result.meta['other'][k, coords] = v
+                    else:
+                        result.meta['other'][k] = v
+
+            gc.collect()
+    finally:
+        astropy.log.setLevel(log_level)  # and reset
+
+    # Now if the input arrays where splitted in chunks, we need to gather
+    # the data arrays for the additional attributes.
+    other = result.meta['other']
+    if other:
+        if len(boxes) > 1:
+            for (name, coords), obj in list(other.items()):
+                if not isinstance(obj, NDData):
+                    raise ValueError('only NDData objects are handled here')
+                if name not in other:
+                    other[name] = NDDataObject(np.empty(shape,
+                                                        dtype=obj.data.dtype))
+                section = tuple([slice(start, end) for (start, end) in coords])
+                other[name].set_section(section, obj)
+                del other[name, coords]
+
+        for name in other:
+            # To set the name of our object we need to save it as an ndarray,
+            # otherwise for a NDData one AstroData would use the name of the
+            # AstroData object.
+            other[name] = other[name].data
+            result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
 
     return result
+
 
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
@@ -1698,13 +1775,8 @@ class AstroDataFits(AstroData):
                 raise ValueError("A filename needs to be specified")
             filename = self.path
 
-        # Cope with astropy v1 and v2; can't use inspect because the
-        # writeto() method is decorated in astropy v2+
         hdulist = self._dataprov.to_hdulist()
-        try:
-            hdulist.writeto(filename, overwrite=overwrite)
-        except TypeError:
-            hdulist.writeto(filename, clobber=overwrite)
+        hdulist.writeto(filename, overwrite=overwrite)
 
     def update_filename(self, prefix=None, suffix=None, strip=False):
         """
@@ -1766,7 +1838,6 @@ class AstroDataFits(AstroData):
 
         # Cope with prefix or suffix as None
         self.filename = (prefix or '') + root + (suffix or '') + filetype
-        return
 
     @astro_data_descriptor
     def instrument(self):
@@ -1806,13 +1877,13 @@ class AstroDataFits(AstroData):
 
     def extver(self, ver):
         """
-        Get an extension using its EXTVER instead of the positional index in this
-        object.
+        Get an extension using its EXTVER instead of the positional index
+        in this object.
 
         Parameters
         ----------
-        ver: int
-             The EXTVER for the desired extension
+        ver : int
+            The EXTVER for the desired extension
 
         Returns
         -------

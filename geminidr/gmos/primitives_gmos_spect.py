@@ -121,10 +121,10 @@ class GMOSSpect(Spect, GMOS):
     for the GMOSSpect level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "SPECT"])
+    tagset = {"GEMINI", "GMOS", "SPECT"}
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSSpect, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_spect)
 
     def applyQECorrection(self, adinputs=None, **params):
@@ -197,7 +197,7 @@ class GMOSSpect(Spect, GMOS):
 
             if arc is None:
                 if 'sq' in self.mode:
-                    raise IOError(f"No processed arc listed for {ad.filename}")
+                    raise OSError(f"No processed arc listed for {ad.filename}")
                 else:
                     log.warning(f"No arc supplied for {ad.filename}")
             else:
@@ -213,7 +213,7 @@ class GMOSSpect(Spect, GMOS):
                 if 'distortion_corrected' not in arc_wcs.available_frames:
                     msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
                     if 'sq' in self.mode:
-                        raise IOError(msg)
+                        raise OSError(msg)
                     else:
                         log.warning(msg)
 

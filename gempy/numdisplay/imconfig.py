@@ -16,7 +16,6 @@ loadImtoolrc (imtoolrc=None):
         1056 1024
 
 """    
-from __future__ import division, print_function # confidence high
 
 import os,string,sys
 
@@ -79,9 +78,9 @@ def loadImtoolrc(imtoolrc=None):
     for name in _name_list:
         try:
             if name:
-                _fdin = open(name,'r')
+                _fdin = open(name)
                 break
-        except IOError as error:
+        except OSError as error:
             pass
     
     #Parse the file, line by line and populate the dictionary

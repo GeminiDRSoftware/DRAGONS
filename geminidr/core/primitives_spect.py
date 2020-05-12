@@ -1,3 +1,5 @@
+# Copyright(c) 2016-2020 Association of Universities for Research in Astronomy, Inc.
+#
 #
 #                                                                  gemini_python
 #
@@ -47,10 +49,10 @@ class Spect(PrimitivesBASE):
     This is the class containing all of the pre-processing primitives
     for the `Spect` level of the type hierarchy tree.
     """
-    tagset = set(["GEMINI", "SPECT"])
+    tagset = {"GEMINI", "SPECT"}
 
     def __init__(self, adinputs, **kwargs):
-        super(Spect, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
     def adjustSlitOffsetToReference(self, adinputs=None, **params):
@@ -88,7 +90,7 @@ class Spect(PrimitivesBASE):
             return adinputs
 
         if not all(len(ad) == 1 for ad in adinputs):
-            raise IOError("All input images must have only one extension.")
+            raise OSError("All input images must have only one extension.")
 
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -142,25 +144,46 @@ class Spect(PrimitivesBASE):
 
     def calculateSensitivity(self, adinputs=None, **params):
         """
-        ???
+        Calculates the overall sensitivity of the observation system
+        (instrument, telescope, detector, etc) for each wavelength using
+        spectrophotometric data. It is obtained using the ratio
+        between the observed data and the reference look-up data.
+
+        For that, it looks for reference data using the stripped and lower
+        case name of the observed object inside :mod:`geminidr.gemini.lookups`,
+        :mod:`geminidr.core.lookups` and inside the instrument lookup module.
+
+        The reference data is fit using a Spline in order to match the input
+        data sampling.
+
+        See Also
+        --------
+        - :class:`~gempy.library.astromodels.UnivariateSplineWithOutlierRemoval`
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             1D spectra of spectrophotometric standard stars
 
-        suffix :  str
-            Suffix to be added to output files.
+        suffix :  str, optional
+            Suffix to be added to output files (default: _sensitivityCalculated).
+
+        filename: str or None, optional
+            Location of spectrophotometric data file. If it is None, uses
+            look up data based on the object name stored in OBJECT header key
+            (default).
 
         order: int
             Order of the spline fit to be performed
+        order: int, optional
+            Order of the spline fit to be performed (default: 6)
 
-        individual: bool
+        individual: bool - TODO - Not in calculateSensitivityConfig
             Calculate sensitivity for each AD spectrum individually?
 
-        bandpass: float
+        bandpass: float, optional
             default bandpass width (in nm) to use if not present in the
-            spectrophotometric data table
+            spectrophotometric data table (default: 5.)
 
         Returns
         -------
@@ -174,6 +197,7 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        datafile = params["filename"]
         order = params["order"]
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
@@ -185,24 +209,36 @@ class Spect(PrimitivesBASE):
         gemini_lookups = '.'.join(module)
 
         for ad in adinputs:
-            filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
-            for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
-                try:
-                    path = import_module('.', module).__path__[0]
-                except (ImportError, ModuleNotFoundError):
-                    continue
-                full_path = os.path.join(path, 'spectrophotometric_standards', filename)
-                try:
-                    spec_table = self._get_spectrophotometry(full_path)
-                except (FileNotFoundError, InconsistentTableError):
-                    pass
+            if datafile is None:
+                filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
+                for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
+                    try:
+                        path = import_module('.', module).__path__[0]
+                    except (ImportError, ModuleNotFoundError):
+                        continue
+                    full_path = os.path.join(path, 'spectrophotometric_standards', filename)
+                    try:
+                        spec_table = self._get_spectrophotometry(full_path)
+                    except (FileNotFoundError, InconsistentTableError):
+                        pass
+                    else:
+                        break
                 else:
-                    break
+                    log.warning("Cannot read spectrophotometric data table. "
+                                "Unable to determine sensitivity for {}".
+                                format(ad.filename))
+                    continue
             else:
-                log.warning("Cannot read spectrophotometric data table. "
-                            "Unable to determine sensitivity for {}".
-                            format(ad.filename))
-                continue
+                try:
+                    spec_table = self._get_spectrophotometry(datafile)
+                except FileNotFoundError:
+                    log.warning(f"Cannot find spectrophotometric data table {datafile}."
+                                f"Unable to determine sensitivity for {ad.filename}")
+                    continue
+                except InconsistentTableError:
+                    log.warning(f"Cannot read spectrophotometric data table {datafile}."
+                                f"Unable to determine sensitivity for {ad.filename}")
+                    continue
 
             exptime = ad.exposure_time()
             if 'WIDTH' not in spec_table.colnames:
@@ -231,11 +267,12 @@ class Spect(PrimitivesBASE):
                                             spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
                     data, mask, variance = spectrum.signal(region)
-                    if not mask and fluxdens > 0:
+                    if mask == 0 and fluxdens > 0:
                         # Regardless of whether FLUX column is f_nu or f_lambda
-                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 AA-1'),
-                                           equivalencies=u.spectral_density(w0)) * dw
+                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
                         wave.append(w0)
+                        # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
                         zpt.append(u.Magnitude(data / flux))
                         zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
@@ -539,7 +576,7 @@ class Spect(PrimitivesBASE):
                         adoutputs.extend(self.mosaicDetectors([ad]))
                     continue
                 else:
-                    raise IOError('No processed arc listed for {}'.
+                    raise OSError('No processed arc listed for {}'.
                                   format(ad.filename))
 
             len_arc = len(arc)
@@ -758,15 +795,15 @@ class Spect(PrimitivesBASE):
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
         matched to an arc line list, using :class:`~gempy.library.matching.KDTreeFitter`.
-        This class has a strong dependency with the fwith parameter and works better
-        if a good inicial value is providen.
+        This class has a strong dependency with the `fwith` parameter and works
+        better if a good initial value is provided.
 
         The `.WAVECAL` table contains four columns:
             ["name", "coefficients", "peaks", "wavelengths"]
 
         The `name` and the `coefficients` columns contain information to
         re-create an Chebyshev1D object. The `peaks` column contains the position
-        of the lines that were matched to the cathalog, and the `wavelengths`
+        of the lines that were matched to the catalogue, and the `wavelengths`
         column contains the wavelengths that were matched to that line.
 
         Parameters
@@ -854,7 +891,7 @@ class Spect(PrimitivesBASE):
         if arc_file is not None:
             try:
                 arc_lines = np.loadtxt(arc_file, usecols=[0])
-            except (IOError, TypeError):
+            except (OSError, TypeError):
                 log.warning("Cannot read file {} - using default linelist".format(arc_file))
                 arc_file = None
             else:
@@ -1495,18 +1532,29 @@ class Spect(PrimitivesBASE):
 
     def fluxCalibrate(self, adinputs=None, **params):
         """
+        Performs flux calibration multiplying the input signal by the
+        sensitivity function obtained from
+        :meth:`~geminidr.core.primitives_spect.Spec.calculateSensitivity`.
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            1D spectra of targets that need to be flux-calibrated
+            1D or 2D Spectra of targets that need to be flux-calibrated.
+            2D spectra are expected to be distortion corrected and its
+            dispersion axis should be along rows.
 
-        suffix :  str
-            Suffix to be added to output files.
+        suffix :  str, optional
+            Suffix to be added to output files (default: _fluxCalibrated).
 
-        standard: str/AstroData/None
-            Name/AD instance of the standard star spectrum with a SENSFUNC
-            table attached
+        standard: str or AstroData, optional
+            Standard star spectrum containing one extension or the same number
+            of extensions as the input spectra. Each extension must have a
+            `.SENSFUNC` table containing information about the overall
+            sensitivity. Right now, if this is not provided, it will raise a
+            NotImplementedError since it needs implementation.
+
+        units : str, optional
+            Units for output spectrum (default: W m-2 nm-1).
 
         Returns
         -------
@@ -1527,10 +1575,8 @@ class Spect(PrimitivesBASE):
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if std is None:
-            raise NotImplementedError("Cannot perform automatic standard star"
-                                      " association")
-            # self.getProcessedStandard(adinputs, refresh=False)
-            # std_list = self._get_cal(adinputs, 'processed_standard')
+            self.getProcessedStandard(adinputs, refresh=False)
+            std_list = self._get_cal(adinputs, 'processed_standard')
         else:
             std_list = std
 
@@ -1541,12 +1587,27 @@ class Spect(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
+            if std is None:
+                if 'sq' in self.mode:
+                    raise OSError('No processed standard listed for {}'.
+                                  format(ad.filename))
+                else:
+                    log.warning("No changes will be made to {}, since no "
+                                "standard was specified".format(ad.filename))
+
             len_std, len_ad = len(std), len(ad)
             if len_std not in (1, len_ad):
                 log.warning("{} has {} extensions so cannot be used to "
                             "calibrate {} with {} extensions.".
                             format(std.filename, len_std, ad.filename, len_ad))
                 continue
+
+            # Since 2D flux calibration just uses the wavelength info for the
+            # middle row/column, non-distortion-corrected data will have the
+            # wrong wavelength solution in other columns/rows
+            if (any(len(ext.shape) == 2 for ext in ad) and
+                    not timestamp_key['distortionCorrect'] in ad.phu):
+                log.warning("{} has not been distortion corrected".format(ad.filename))
 
             exptime = ad.exposure_time()
             try:
@@ -1595,7 +1656,7 @@ class Spect(PrimitivesBASE):
                 # Get wavelengths of all pixels
                 ndim = len(ext.shape)
                 dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
-                wave_unit = u.Unit(ext.hdr['CUNIT{}'.format(ndim - dispaxis)])
+                wave_unit = u.Unit(ext.hdr.get('CUNIT{}'.format(ndim - dispaxis), 'nm'))
 
                 # Get wavelengths and pixel sizes of all the pixels along the
                 # dispersion axis by calculating wavelengths in the middles and
@@ -1949,7 +2010,7 @@ class Spect(PrimitivesBASE):
         trim_data = params["trim_data"]
 
         # Check that all ad objects are either 1D or 2D
-        ndim = set(len(ext.shape) for ad in adinputs for ext in ad)
+        ndim = {len(ext.shape) for ad in adinputs for ext in ad}
         if len(ndim) != 1:
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()
@@ -2450,7 +2511,6 @@ class Spect(PrimitivesBASE):
         except IORegistryError:
             # Force ASCII
             tbl = Table.read(filename, format='ascii')
-        num_columns = len(tbl.columns)
 
         # Create table, interpreting column names (or lack thereof)
         spec_table = Table()
@@ -2489,14 +2549,21 @@ class Spect(PrimitivesBASE):
                     unit = spec_table['WAVELENGTH'].unit
                 else:
                     if orig_colname == 'FNU':
-                        unit = u.Unit("erg cm-2 s-1") / u.Hz
-                        col.name = 'FLUX'
+                        unit = u.Unit("erg cm-2 s-1 Hz-1")
                     elif orig_colname in ('FLAM', 'FLUX') or np.median(col.data) < 1:
-                        unit = u.Unit("erg cm-2 s-1") / u.AA
-                        col.name = 'FLUX'
+                        unit = u.Unit("erg cm-2 s-1 AA-1")
                     else:
                         unit = u.mag
                 col.unit = unit
+
+            # We've created a column called "MAGNITUDE" but it might be a flux
+            if col.name == 'MAGNITUDE':
+                try:
+                    unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
+                except:
+                    pass
+                else:
+                    col.name = 'FLUX'
 
         # If we don't have a flux column, create one
         if not 'FLUX' in spec_table.colnames:

@@ -44,8 +44,12 @@ class core_stacking_config(config.Config):
     max_iters = config.RangeField("Maximum number of clipping iterations", int, None, min=1, optional=True)
     nlow = config.RangeField("Number of low pixels to reject", int, 0, min=0)
     nhigh = config.RangeField("Number of high pixels to reject", int, 0, min=0)
-    memory = config.RangeField("Memory available for stacking (GB)", float, 1, min=0.1, optional=True)
-    debug_pixel = config.RangeField("Debugging pixel location", int, None, min=0, optional=True)
+    memory = config.RangeField("Memory available for stacking (GB)", float, 1,
+                               min=0.01, optional=True)
+    debug_pixel = config.RangeField("Debugging pixel location", int, None,
+                                    min=0, optional=True)
+    save_rejection_map = config.Field("Save rejection map?", bool, False)
+
 
 class stackFramesConfig(core_stacking_config):
     separate_ext = config.Field("Handle extensions separately?", bool, True)

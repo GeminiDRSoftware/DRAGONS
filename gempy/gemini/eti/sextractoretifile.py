@@ -14,7 +14,7 @@ DEC ='dec'
 
 FLAGS_DTYPE = np.int16
 
-PREFIX = "tmp"
+PREFIX = ""
 SUFFIX = ".fits"
 FLAGS_TO_MASK = None
 
@@ -28,7 +28,7 @@ class SExtractorETIFile(ETIFile):
         """
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
-        super(SExtractorETIFile, self).__init__(
+        super().__init__(
             name=strip_fits(input.filename)+'_{}'.format(input.hdr['EXTVER']))
         # Replace bad pixels with median value of good data, so need to
         # copy the data plane in case we edit it
@@ -43,9 +43,9 @@ class SExtractorETIFile(ETIFile):
 
     def prepare(self):
         # This looks silly, but we're pretending the array data is a "file"
-        self._catalog_file = PREFIX + self.name + '_cat' + SUFFIX
-        self._objmask_file = PREFIX + self.name + '_obj' + SUFFIX
-        filename = PREFIX + self.name + SUFFIX
+        self._catalog_file = os.path.join(self.directory, PREFIX + self.name + '_cat' + SUFFIX)
+        self._objmask_file = os.path.join(self.directory, PREFIX + self.name + '_obj' + SUFFIX)
+        filename = os.path.join(self.directory, PREFIX + self.name + SUFFIX)
         hdulist = fits.HDUList()
         hdulist.append(fits.ImageHDU(self.data,
                                      header=self.header, name='SCI'))
@@ -60,10 +60,7 @@ class SExtractorETIFile(ETIFile):
         #    # Need a dummy DQ array because .param file needs a FLAG_IMAGE
         #    hdulist.append(fits.ImageHDU(np.zeros_like(self.data, dtype=np.int16),
         #                                 header=self.header, name='DQ'))
-        try:
-            hdulist.writeto(filename, overwrite=True)
-        except TypeError:
-            hdulist.writeto(filename, clobber=True)
+        hdulist.writeto(filename, overwrite=True)
         self._disk_file = filename
 
     def recover(self):

@@ -1,3 +1,5 @@
+# Copyright(c) 2019-2020 Association of Universities for Research in Astronomy, Inc.
+#
 from astrodata import AstroData, NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -10,6 +12,7 @@ from gwcs import wcs as gWCS
 from gwcs import coordinate_frames as cf
 
 from . import astromodels as am
+
 
 class Spek1D(Spectrum1D, NDAstroData):
     """
@@ -71,7 +74,7 @@ class Spek1D(Spectrum1D, NDAstroData):
                         wavecal = dict(zip(spectrum.WAVECAL["name"],
                                            spectrum.WAVECAL["coefficients"]))
                     except (AttributeError, KeyError):  # make a Model from the FITS WCS info
-                        det2wave = (models.Shift((1-spectrum.hdr['CRPIX1'])) |
+                        det2wave = (models.Shift(1-spectrum.hdr['CRPIX1']) |
                                     models.Scale(spectrum.hdr['CD1_1']) |
                                     models.Shift(spectrum.hdr['CRVAL1']))
                     else:
@@ -89,7 +92,6 @@ class Spek1D(Spectrum1D, NDAstroData):
         super().__init__(flux=flux, spectral_axis=spectral_axis, wcs=wcs, **kwargs)
         self.filename = getattr(spectrum, 'filename', None)
 
-
     def _get_pixel_limits(self, subregion, constrain=True):
         """
         Calculate and return the left and right pixel locations defined
@@ -105,8 +107,9 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         Returns
         -------
-        x1, x2: float, float
-            pixel locations of the start end end of the spectral region
+        list
+            Contains the pixel locations of the start end end of the spectral
+            region.
         """
         limits = []
         for loc in subregion:
@@ -115,7 +118,7 @@ class Spek1D(Spectrum1D, NDAstroData):
             else:
                 # Convert to the correct units
                 wave = loc.to(self.spectral_axis.unit, u.spectral())
-                loc_in_pix = self.wcs.world_to_pixel([wave])
+                loc_in_pix = self.wcs.world_to_pixel(wave)
             if constrain:
                 loc_in_pix = min(max(loc_in_pix, -0.5), len(self.spectral_axis)-0.5)
             limits.append(float(loc_in_pix))
@@ -146,12 +149,17 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         Returns
         -------
-        3-tuple: flux, mask, and variance summed over selected region(s)
+        flux : units.Quantity
+            Integrated flux over the selected region(s).
+        mask : numpy.uint16
+            Mask over the selected region(s).
+        variance : units.Quantity
+            Variance over selected region(s).
         """
         flux_density = (self.unit * self.spectral_axis.unit).is_equivalent(u.Jy * u.Hz)
-        flux = 0
+        flux = 0.
         mask = DQ.good
-        variance = None if self.variance is None else 0
+        variance = None if self.variance is None else 0.
 
         for subregion in region._subregions:
             # If the region extends beyond the spectrum, we flag with NO_DATA

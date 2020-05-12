@@ -46,7 +46,7 @@ TESTDEFAULTPARAMS = {
 }
 
 
-class TestGemcombine(object):
+class TestGemcombine:
     """
     Suite of tests for the gemcombine eti.
     """

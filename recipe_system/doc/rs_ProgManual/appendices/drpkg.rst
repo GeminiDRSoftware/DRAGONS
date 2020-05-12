@@ -176,7 +176,7 @@ Here is an example putting most of the above requirements to use::
         tagset = set(["GEMINI", "GMOS", "IMAGE"])
 
         def __init__(self, adinputs, **kwargs):
-            super(GMOSImage, self).__init__(adinputs, **kwargs)
+            super().__init__(adinputs, **kwargs)
             self._param_update(parameters_gmos_image)
 
         def some_primitive(self, adinputs=None, **params):

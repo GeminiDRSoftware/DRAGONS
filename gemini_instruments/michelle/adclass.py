@@ -18,15 +18,15 @@ class AstroDataMichelle(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(set(['MICHELLE']), ())
+        return TagSet({'MICHELLE'}, ())
 
     @astro_data_tag
     def _tag_mode(self):
         camera = self.phu.get('CAMERA')
         if camera == 'imaging':
-            return TagSet(set(['IMAGE']), ())
+            return TagSet({'IMAGE'}, ())
         elif camera == 'spectroscopy':
-            return TagSet(set(['SPECT', 'LS']), ())
+            return TagSet({'SPECT', 'LS'}, ())
 
     @astro_data_descriptor
     def exposure_time(self):

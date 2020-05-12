@@ -25,7 +25,7 @@ class Bookkeeping(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Bookkeeping, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_bookkeeping)
 
     def addToList(self, adinputs=None, purpose=None):
@@ -245,7 +245,7 @@ class Bookkeeping(PrimitivesBASE):
         """
         A simple primitive to show the filenames for the current inputs to
         this primitive.
-        
+
         Parameters
         ----------
         purpose: str
@@ -289,7 +289,7 @@ class Bookkeeping(PrimitivesBASE):
         """
         This sorts the input list according to the values returned by the
         descriptor parameter.
-        
+
         Parameters
         ----------
         descriptor: str
@@ -327,7 +327,7 @@ class Bookkeeping(PrimitivesBASE):
         the AD(s) in another ("source") stream and applies it to the ADs in
         this stream. There must be either the same number of ADs in each
         stream, or only 1 in the source stream.
-        
+
         Parameters
         ----------
         source: str
@@ -425,7 +425,7 @@ class Bookkeeping(PrimitivesBASE):
                               "written to the same name {}".format(
                         params['outfilename'])
                     log.critical(message)
-                    raise IOError(message)
+                    raise OSError(message)
                 else:
                     outfilename = params['outfilename']
             else:

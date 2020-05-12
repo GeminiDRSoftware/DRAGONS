@@ -33,7 +33,7 @@ class Resample(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Resample, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_resample)
 
     def resampleToCommonFrame(self, adinputs=None, **params):
@@ -84,7 +84,7 @@ class Resample(PrimitivesBASE):
         # before doing this? That would mean we only do one interpolation,
         # not two, and that's definitely better!
         if not all(len(ad)==1 for ad in adinputs):
-            raise IOError("All input images must have only one extension.")
+            raise OSError("All input images must have only one extension.")
 
         attributes = [attr for attr in ('data', 'mask', 'variance', 'OBJMASK')
                       if all(hasattr(ad[0], attr) for ad in adinputs)]
@@ -185,7 +185,7 @@ class Resample(PrimitivesBASE):
             log.warning("Stream {} not found or does not contain single "
                         "AstroData object. Continuing.".format(source_stream))
             return adinputs
-        
+
         ad_source = source_stream[0]
         # There's no reason why we can't handle multiple extensions
         if any(len(ad) != len(ad_source) for ad in adinputs):

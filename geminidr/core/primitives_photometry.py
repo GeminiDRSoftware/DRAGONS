@@ -30,7 +30,7 @@ class Photometry(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Photometry, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_photometry)
 
     def addReferenceCatalog(self, adinputs=None, **params):

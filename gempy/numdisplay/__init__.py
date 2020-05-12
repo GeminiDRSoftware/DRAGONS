@@ -82,7 +82,6 @@
 
 
 """
-from __future__ import absolute_import, division, print_function # confidence medium
 
 __version__ = '1.6.2-gemini'
 
@@ -97,7 +96,7 @@ except ImportError:
     geotrans = None
 
 
-class NumDisplay(object):
+class NumDisplay:
     """ Class to manage the attributes and methods necessary for displaying
         the array in the image display tool.
 

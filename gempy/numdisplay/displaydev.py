@@ -29,7 +29,6 @@ replacement for CDL.
 $Id$
 
 """
-from __future__ import division, print_function # confidence medium
 
 import os, socket, struct
 
@@ -66,7 +65,7 @@ SZ_BLOCK = 16384
 _default_imtdev = ("unix:/tmp/.IMT%d", "fifo:/dev/imt1i:/dev/imt1o","inet:5137")
 _default_fbconfig = 3
 
-class ImageWCS(object):
+class ImageWCS:
     _W_UNITARY = 0
     _W_LINEAR = 1
     _W_LOG = 2
@@ -193,7 +192,7 @@ def _open(imtdev=None):
                 return _open(imtdev)
             except:
                 pass
-        raise IOError("Cannot attach to display program. Verify that one is running...")
+        raise OSError("Cannot attach to display program. Verify that one is running...")
     # substitute user id in name (multiple times) if necessary
     nd = len(imtdev.split("%d"))
     if nd > 1:
@@ -220,7 +219,7 @@ def _open(imtdev=None):
                                     % imtdev)
 
 
-class ImageDisplay(object):
+class ImageDisplay:
 
     """Interface to IRAF-compatible image display"""
 
@@ -567,8 +566,8 @@ class ImageDisplay(object):
         """
         try:
             return os.read(self._fdin, n)
-        except (EOFError, IOError):
-            raise IOError("Error reading from image display")
+        except (EOFError, OSError):
+            raise OSError("Error reading from image display")
 
     def _write(self, s):
         """Write string s to image display
@@ -579,16 +578,22 @@ class ImageDisplay(object):
             n = len(s)
 
             # Python 3 compat
+            #  It used to be that in Py2 is wasn't type str, we found cases
+            #  where it is, so now, there's a try block too.  Py2 and Py3 
+            #  compat.
             if isinstance(s, str):
-                s = s.encode()
+                try:
+                    s = s.encode()
+                except UnicodeDecodeError:
+                    pass
 
             while n>0:
                 nwritten = self._socket.send(s[-n:])
                 n -= nwritten
                 if nwritten <= 0:
-                    raise IOError("Error writing to image display")
+                    raise OSError("Error writing to image display")
         except OSError:
-            raise IOError("Error writing to image display")
+            raise OSError("Error writing to image display")
 
 
 class FifoImageDisplay(ImageDisplay):
@@ -606,7 +611,7 @@ class FifoImageDisplay(ImageDisplay):
             if fcntl:
                 fcntl.fcntl(self._fdout, FCNTL.F_SETFL, os.O_WRONLY)
         except OSError as error:
-            raise IOError("Cannot open image display (%s)" % (error,))
+            raise OSError("Cannot open image display (%s)" % (error,))
 
     def _write(self, s):
         """Write string s to image display
@@ -619,9 +624,9 @@ class FifoImageDisplay(ImageDisplay):
                 nwritten = os.write(self._fdout, s[-n:])
                 n -= nwritten
                 if nwritten <= 0:
-                    raise IOError("Error writing to image display")
+                    raise OSError("Error writing to image display")
         except OSError:
-            raise IOError("Error writing to image display")
+            raise OSError("Error writing to image display")
 
     def __del__(self):
         self.close()
@@ -636,8 +641,8 @@ class UnixImageDisplay(ImageDisplay):
             self._socket = socket.socket(family, type)
             self._socket.connect(filename)
             self._fdin = self._fdout = self._socket.fileno()
-        except socket.error as error:
-            raise IOError("Cannot open image display")
+        except OSError as error:
+            raise OSError("Cannot open image display")
 
     def close(self):
 
@@ -700,7 +705,7 @@ class ImageDisplayProxy(ImageDisplay):
             # Null value indicates display was probably closed
             if value:
                 return value
-        except IOError as error:
+        except OSError as error:
                 pass
         # This error can occur if image display was closed.
         # If a new display has been started then closing and

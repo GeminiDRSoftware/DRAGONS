@@ -16,7 +16,7 @@ def parse_args(command_line_args):
     """
     Parse command line arguments.
     """
-    
+
     parser = argparse.ArgumentParser(description=SHORT_DESCRIPTION)
     parser.add_argument('files', type=str, nargs='*',
                         help='Input pipeline-processed files')
@@ -29,30 +29,30 @@ def parse_args(command_line_args):
     parser.add_argument('--debug', dest='debug',
                         action='store_true', default=False,
                         help='Toggle on the debug messages.')
-    
+
     args = parser.parse_args(command_line_args)
-    
+
     if args.debug:
         args.verbose = True
         print(args)
-        
+
     if args.dry_run:
         args.verbose = True
-    
+
     return args
 
 #------------------
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-        
+
     args = parse_args(sys.argv[1:])
 
     for filename in args.files:
         ad = astrodata.open(filename)
         irafcompat.pipeline2iraf(ad, args.verbose)
         if not args.dry_run:
-            astrodata.write(ad.path, ad, clobber=True)
+            astrodata.write(ad.path, ad, overwrite=True)
 
 if __name__ == '__main__':
     sys.exit(main())

@@ -64,8 +64,8 @@ def ad_compare(ad1, ad2):
         log.stdinfo('  Checking {}'.format(hstr))
 
         # Compare keyword lists
-        s1 = set(h1.keys()) - set(['HISTORY', 'COMMENT'])
-        s2 = set(h2.keys()) - set(['HISTORY', 'COMMENT'])
+        s1 = set(h1.keys()) - {'HISTORY', 'COMMENT'}
+        s2 = set(h2.keys()) - {'HISTORY', 'COMMENT'}
         if s1 != s2:
             log.warning('Header keyword mismatch...')
             if s1-s2:

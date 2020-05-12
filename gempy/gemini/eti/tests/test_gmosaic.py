@@ -29,7 +29,7 @@ TESTDEFAULTPARAMS = {
     "interpolator" : "linear"
 }
 
-class TestGmosaic(object):
+class TestGmosaic:
     """
     Suite of tests for the gmosaic eti
     """

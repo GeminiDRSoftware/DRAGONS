@@ -19,7 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from __future__ import print_function
 
 from .config import Config, FieldValidationError, _autocast, _typeStr, _joinNamePath
 from .dictField import Dict, DictField

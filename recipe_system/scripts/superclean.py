@@ -1,19 +1,13 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
+
 import os
 import sys
 import pwd
-import string
 import signal
-import subprocess
 import subprocess
 
 from getpass import getuser
 from optparse import OptionParser
-
-#from astrodata.utils import Errors
 
 # parsing the command line
 parser = OptionParser()

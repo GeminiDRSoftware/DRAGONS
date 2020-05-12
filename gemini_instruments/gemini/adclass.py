@@ -119,12 +119,8 @@ class AstroDataGemini(AstroDataFits):
         obs = source[0].header.get('OBSERVAT', '').upper()
         tel = source[0].header.get('TELESCOP', '').upper()
 
-        isGemini = False
-        if obs in ('GEMINI-NORTH', 'GEMINI-SOUTH'):
-            isGemini = True
-        elif tel in ('GEMINI-NORTH', 'GEMINI-SOUTH'):
-            isGemini = True
-
+        isGemini = (obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
+                    or tel in ('GEMINI-NORTH', 'GEMINI-SOUTH'))
         return isGemini
 
     @astro_data_tag
@@ -156,12 +152,12 @@ class AstroDataGemini(AstroDataFits):
     # GCALFLAT is still needed
     @astro_data_tag
     def _type_gcalflat(self):
-        if self.phu.get('GCALLAMP') == 'IRhigh':
+        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
-        if self.phu.get('GCALLAMP') == 'IRhigh':
+        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
@@ -195,8 +191,8 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_sidereal(self):
-        frames = set([self.phu.get('TRKFRAME'), self.phu.get('FRAME')])
-        valid_frames = set(['FK5', 'APPT'])
+        frames = {self.phu.get('TRKFRAME'), self.phu.get('FRAME')}
+        valid_frames = {'FK5', 'APPT'}
 
         # Check if the intersection of both sets is non-empty...
         if frames & valid_frames:
@@ -239,8 +235,8 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _status_processed_cals(self):
-        kwords = set(['PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
-                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND'])
+        kwords = {'PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
+                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND'}
 
         if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])
@@ -1062,7 +1058,7 @@ class AstroDataGemini(AstroDataFits):
         units = self.hdr.get('BUNIT', 'ADU')
         if self.is_single:
             return units.upper() == 'ADU'
-        units = set(u.upper() for u in units)
+        units = {u.upper() for u in units}
         if len(units) > 1:
             raise ValueError("Not all extensions appear to have the same units")
         return units.pop() == 'ADU'
@@ -1304,15 +1300,15 @@ class AstroDataGemini(AstroDataFits):
         # Calculate the derived QA state
         ret_qa_state = "{}:{}".format(rawpireq, rawgemqa)
         if 'UNKNOWN' in pair:
-                        ret_qa_state = "Undefined"
+            ret_qa_state = "Undefined"
         elif pair == ('YES', 'USABLE'):
-                        ret_qa_state = "Pass"
+            ret_qa_state = "Pass"
         elif pair == ('NO', 'USABLE'):
-                        ret_qa_state = "Usable"
+            ret_qa_state = "Usable"
         elif rawgemqa.upper() == "BAD":
-                        ret_qa_state = "Fail"
+            ret_qa_state = "Fail"
         elif 'CHECK' in pair:
-                        ret_qa_state = "CHECK"
+            ret_qa_state = "CHECK"
         return ret_qa_state
 
     @astro_data_descriptor

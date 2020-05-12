@@ -12,7 +12,6 @@ from gempy.library import tracing
 
 @pytest.mark.parametrize("x0, fwhm", [(1600, 2), (1600, 4), (1600, 7)])
 def test_estimate_peak_width_with_one_line(x0, fwhm):
-
     stddev_to_fwhm = 2 * np.sqrt(2 * np.log(2))
     stddev = fwhm / stddev_to_fwhm
 
@@ -27,7 +26,6 @@ def test_estimate_peak_width_with_one_line(x0, fwhm):
 
 @pytest.mark.parametrize("noise", np.arange(0, 0.5, 0.1))
 def test_estimate_peak_width_with_one_line_with_noise(noise):
-
     x0 = 1600
     fwhm = 4
 
@@ -97,4 +95,3 @@ def test_find_peaks_raises_typeerror_if_mask_is_wrong_type():
 
     with pytest.raises(TypeError):
         peaks_detected, _ = tracing.find_peaks(y, np.ones_like(y) * stddev, mask=mask)
-

@@ -3,7 +3,6 @@ This module implements a derivative class based on NDData with some Mixins,
 implementing windowing and on-the-fly data scaling.
 """
 
-from __future__ import (absolute_import, division, print_function)
 
 import warnings
 from copy import deepcopy
@@ -37,13 +36,12 @@ class ADVarianceUncertainty(VarianceUncertainty):
         VarianceUncertainty.array.fset(self, value)
 
 
-class FakeArray(object):
+class FakeArray:
 
     def __init__(self, very_faked):
-
         self.data = very_faked
-        self.shape = (100, 100) # Won't matter. This is just to fool NDData
-        self.dtype = np.float32 # Same here
+        self.shape = (100, 100)  # Won't matter. This is just to fool NDData
+        self.dtype = np.float32  # Same here
 
     def __getitem__(self, index):
         # FAKE NEWS!
@@ -53,7 +51,7 @@ class FakeArray(object):
         return self.data
 
 
-class NDWindowing(object):
+class NDWindowing:
 
     def __init__(self, target):
         self._target = target
@@ -79,7 +77,6 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     @property
     def wcs(self):
         return self._target._slice_wcs(self._window)
-        return self._target.wcs
 
     @property
     def data(self):
@@ -91,9 +88,8 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def variance(self):
-        un = self.uncertainty
-        if un is not None:
-            return un.array
+        if self.uncertainty is not None:
+            return self.uncertainty.array
 
     @property
     def mask(self):
@@ -101,7 +97,6 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
 
 def is_lazy(item):
-
     return isinstance(item, ImageHDU) or (hasattr(item, 'lazy') and item.lazy)
 
 
@@ -163,11 +158,9 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
                  meta=None, unit=None, copy=False, window=None):
-        self._window = window
-
-        super(NDAstroData, self).__init__(FakeArray(data) if is_lazy(data) else data,
-                                          None if is_lazy(uncertainty) else uncertainty,
-                                          mask, wcs, meta, unit, copy)
+        super().__init__(FakeArray(data) if is_lazy(data) else data,
+                         None if is_lazy(uncertainty) else uncertainty,
+                         mask, wcs, meta, unit, copy)
 
         if is_lazy(data):
             self.data = data
@@ -193,10 +186,11 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         Override the NDData method so that "bitwise_or" becomes the default
         operation to combine masks, rather than "logical_or"
         """
-        return super()._arithmetic(operation, operand, propagate_uncertainties=propagate_uncertainties,
-                                   handle_mask=handle_mask, handle_meta=handle_meta,
-                                   uncertainty_correlation=uncertainty_correlation,
-                                   compare_wcs=compare_wcs, **kwds)
+        return super()._arithmetic(
+            operation, operand, propagate_uncertainties=propagate_uncertainties,
+            handle_mask=handle_mask, handle_meta=handle_meta,
+            uncertainty_correlation=uncertainty_correlation,
+            compare_wcs=compare_wcs, **kwds)
 
     def _slice_wcs(self, slices):
         """
@@ -284,11 +278,8 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def shape(self):
         return self._data.shape
 
-    def _extract(self, source, scaling, section=None):
-        return scaling(source.data if section is None else source[section])
-
     def _get_uncertainty(self, section=None):
-
+        """Return the ADVarianceUncertainty object, or a slice of it."""
         if self._uncertainty is not None:
             if is_lazy(self._uncertainty):
                 if section is None:
@@ -361,7 +352,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         squared (as the uncertainty data is stored as standard deviation).
         """
         arr = self._get_uncertainty()
-
         if arr is not None:
             return arr.array
 
@@ -402,17 +392,19 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         if is_lazy(self._data):
             return self.__class__.__name__ + '(Memmapped)'
         else:
-            return super(NDAstroData, self).__repr__()
+            return super().__repr__()
 
     @property
     def T(self):
         return self.transpose()
 
     def transpose(self):
-        new = self.__class__(self.data.T,
-                             uncertainty=None if self.uncertainty is None else self.uncertainty.__class__(self.uncertainty.array.T),
-                             mask=None if self.mask is None else self.mask.T, copy=False)
-        return new
+        unc = self.uncertainty
+        return self.__class__(
+            self.data.T,
+            uncertainty=None if unc is None else unc.__class__(unc.array.T),
+            mask=None if self.mask is None else self.mask.T, copy=False
+        )
 
     @property
     def wcs(self):

@@ -29,6 +29,7 @@ from . import parameters_visualize
 
 from recipe_system.utils.decorators import parameter_override
 
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class Visualize(PrimitivesBASE):
@@ -38,7 +39,7 @@ class Visualize(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Visualize, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_visualize)
 
     def display(self, adinputs=None, **params):
@@ -215,7 +216,7 @@ class Visualize(PrimitivesBASE):
                     lnd.display(data, name=name, frame=frame, zscale=zscale,
                                 bpm=None if extname=='DQ' else dqdata,
                                 quiet=True, masks=masks, mask_colors=mask_colors)
-                except IOError:
+                except OSError:
                     log.warning("ds9 not found; cannot display input")
 
                 frame += 1
@@ -288,6 +289,12 @@ class Visualize(PrimitivesBASE):
             if len(ad) == 1:
                 log.warning("{} has only one extension, so there's nothing "
                             "to mosaic".format(ad.filename))
+                adoutputs.append(ad)
+                continue
+
+            if not all(np.issubdtype(ext.data.dtype, np.floating) for ext in ad):
+                log.warning("Cannot mosaic {} with non-floating point data. "
+                            "Use tileArrays instead".format(ad.filename))
                 adoutputs.append(ad)
                 continue
 
@@ -466,92 +473,6 @@ class Visualize(PrimitivesBASE):
             adoutputs.append(ad_out)
         return adoutputs
 
-
-    def oldtileArrays(self, adinputs=None, **params):
-        """
-        This primitive combines extensions by tiling (no interpolation).
-        The array_section() and detector_section() descriptors are used
-        to derive the geometry of the tiling, so outside help (from the
-        instrument's geometry_conf module) is only required if there are
-        multiple arrays being tiled together, as the gaps need to be
-        specified.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        tile_all: bool
-            tile to a single extension, rather than one per array?
-            (array=physical detector)
-        sci_only: bool
-            tile only the data plane?
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["tileArrays"]
-
-        suffix = params['suffix']
-        tile_all = params['tile_all']
-        attributes = ['data'] if params["sci_only"] else None
-
-        adoutputs = []
-        for ad in adinputs:
-            if len(ad) == 1:
-                log.warning("{} has only one extension, so there's nothing "
-                            "to tile".format(ad.filename))
-                adoutputs.append(ad)
-                continue
-
-            # Get information to calculate the output geometry
-            # TODO: Think about arbitrary ROIs
-            array_info = gt.array_information(ad)
-            detshape = array_info.detector_shape
-            if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
-                log.warning("{} has nothing to tile, as tile_all=False but "
-                            "each array has only one amplifier.")
-                adoutputs.append(ad)
-                continue
-
-            blocks = [transform.Block(ad[arrays], shape=shape) for arrays, shape in
-                      zip(array_info.extensions, array_info.array_shapes)]
-            offsets = [ad[exts[0]].array_section()
-                       for exts in array_info.extensions]
-
-            if tile_all and detshape != (1, 1):  # We need gaps!
-                geotable = import_module('.geometry_conf', self.inst_lookups)
-                chip_gaps = geotable.tile_gaps[ad.detector_name()]
-                try:
-                    xgap, ygap = chip_gaps
-                except TypeError:  # single number, applies to both
-                    xgap = ygap = chip_gaps
-                transforms = []
-                for i, (origin, offset) in enumerate(zip(array_info.origins, offsets)):
-                    xshift = (origin[1] + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
-                    yshift = (origin[0] + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
-                    transforms.append(transform.Transform(models.Shift(xshift) & models.Shift(yshift)))
-                adg = transform.AstroDataGroup(blocks, transforms)
-                adg.set_reference()
-                ad_out = adg.transform(attributes=attributes, process_objcat=True)
-            else:
-                # ADG.transform() produces full AD objects so we start with
-                # the first one, and then append the single extensions created
-                # by later calls to it.
-                for i, block in enumerate(blocks):
-                    # Simply create a single tiled array
-                    adg = transform.AstroDataGroup([block])
-                    adg.set_reference()
-                    if i == 0:
-                        ad_out = adg.transform(attributes=attributes,
-                                               process_objcat=True)
-                    else:
-                        ad_out.append(adg.transform(attributes=attributes,
-                                                    process_objcat=True)[0])
-
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.orig_filename = ad.filename
-            ad_out.update_filename(suffix=suffix, strip=True)
-            adoutputs.append(ad_out)
-        return adoutputs
 
     def plotSpectraForQA(self, adinputs=None, **params):
         """

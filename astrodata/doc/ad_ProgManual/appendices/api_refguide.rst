@@ -37,11 +37,7 @@ covering the usage of Gemini-style FITS files.
 
    .. method:: divide(oper)
 
-      Alias for ``__idiv__``
-
-   .. method:: __itruediv__(oper)
-
-      Alias for ``__idiv__``
+      Alias for ``__itruediv__``
 
 ``DataProvider``
 ----------------

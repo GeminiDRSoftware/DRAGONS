@@ -9,32 +9,32 @@ class AstroDataNici(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(set(['NICI', 'IMAGE']), ())
+        return TagSet({'NICI', 'IMAGE'}, ())
 
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(set(['DARK', 'CAL']), ())
+            return TagSet({'DARK', 'CAL'}, ())
 
     @astro_data_tag
     def _tag_flat(self):
         # NOTE: This will be set also for old type DARK frames... What should we do?
         if self.phu.get('OBSTYPE') == 'FLAT':
-            return TagSet(set(['FLAT', 'CAL']), set(['SDI', 'ASDI']))
+            return TagSet({'FLAT', 'CAL'}, {'SDI', 'ASDI'})
 
     @astro_data_tag
     def _tag_dichroic(self):
         dich = self.phu.get('DICHROIC', '')
         if 'Mirror' in dich:
-            return TagSet(set(['ADI_B']), ())
+            return TagSet({'ADI_B'}, ())
         elif 'Open' in dich:
-            return TagSet(set(['ADI_R']), ())
+            return TagSet({'ADI_R'}, ())
         elif '50/50' in dich:
             crmode = self.phu.get('CRMODE')
             if crmode == 'FOLLOW':
-                return TagSet(set(['SDI']), ())
+                return TagSet({'SDI'}, ())
             elif crmode == 'FIXED':
-                return TagSet(set(['ASDI']), ())
+                return TagSet({'ASDI'}, ())
 
     @astro_data_descriptor
     def exposure_time(self):

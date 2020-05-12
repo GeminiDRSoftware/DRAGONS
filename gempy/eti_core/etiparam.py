@@ -2,7 +2,7 @@ from ..utils import logutils
 log = logutils.get_logger(__name__)
 
 
-class ETIParam(object):
+class ETIParam:
     inputs = None
     params = None
     def __init__(self, inputs=None, params=None):

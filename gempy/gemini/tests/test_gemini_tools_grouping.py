@@ -1,8 +1,12 @@
-import astrodata, gemini_instruments
+import astrodata
+import gemini_instruments
+
 from astropy.io import fits
 from gempy.gemini import gemini_tools as gt
 
+
 PKG = 'geminidr.f2.lookups'
+
 
 # Support functions specific to these tests:
 def dummy_ad():

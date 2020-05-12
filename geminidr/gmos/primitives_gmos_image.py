@@ -1,11 +1,8 @@
-from __future__ import division
-from __future__ import print_function
 #
 #                                                                  gemini_python
 #
 #                                                        primtives_gmos_image.py
 #  ------------------------------------------------------------------------------
-from builtins import zip
 import numpy as np
 from copy import deepcopy
 from scipy import ndimage, optimize
@@ -31,10 +28,10 @@ class GMOSImage(GMOS, Image, Photometry):
     for the GMOSImage level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "IMAGE"])
+    tagset = {"GEMINI", "GMOS", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSImage, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_image)
 
     def addOIWFSToDQ(self, adinputs=None, **params):
@@ -237,7 +234,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         """
         params = _modify_fringe_params(adinputs, params)
-        return super(GMOSImage, self).makeFringeForQA(adinputs, **params)
+        return super().makeFringeForQA(adinputs, **params)
 
     def makeFringeFrame(self, adinputs=None, **params):
         """
@@ -270,7 +267,7 @@ class GMOSImage(GMOS, Image, Photometry):
         :meth:`~geminidr.core.primitives_image.Image.makeFringeFrame`
         """
         params = _modify_fringe_params(adinputs, params)
-        return super(GMOSImage, self).makeFringeFrame(adinputs, **params)
+        return super().makeFringeFrame(adinputs, **params)
 
     def normalizeFlat(self, adinputs=None, **params):
         """
@@ -513,7 +510,7 @@ class GMOSImage(GMOS, Image, Photometry):
         except KeyError:
             log.warning("Cannot find control pairs for detector {} in {}. "
                         "Using defualt scaling algorithm".format(detname, ad.filename))
-            return super(GMOSImage, self)._calculate_fringe_scaling(ad, fringe)
+            return super()._calculate_fringe_scaling(ad, fringe)
 
         # Different detectors => different fringe patterns
         if detname != fringe.detector_name():

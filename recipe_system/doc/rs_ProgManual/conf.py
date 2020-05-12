@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # DRAGONS Recipe System Programmer's Manual documentation build configuration file,
 # sphinx-quickstart on Thu Mar 20 15:06:19 2014.
@@ -37,8 +36,7 @@ else:
 # -- Project information -----------------------------------------------------
 
 project = u"DRAGONS - Recipe System Programmer's Manual"
-copyright = u'2019, Association of Universities for Research in Astronomy'
-
+copyright = u'2020, Association of Universities for Research in Astronomy'
 author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -46,7 +44,7 @@ author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 # built documents.
 #
 version = '2.1'  # The short X.Y version.
-release = '2.1.0'  # The full version, including alpha/beta/rc tags.
+release = '2.1.1'  # The full version, including alpha/beta/rc tags.
 
 
 # -- General configuration -----------------------------------------------------
@@ -100,7 +98,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'November 2019'
+today = 'April 2020'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
@@ -229,7 +227,7 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
-'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
+'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -271,8 +269,8 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 man_pages = [
     ('index',
      'recipesystemprogmanual',
-     u"DRAGONS - Recipe System Programmer's Manual",
-     [u'Kenneth Anderson, Kathleen Labrie, Bruno Quint'], 1)
+     "DRAGONS - Recipe System Programmer's Manual",
+     ['Kenneth Anderson, Kathleen Labrie, Bruno Quint'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -287,8 +285,8 @@ man_pages = [
 texinfo_documents = [
   ('index',
    'RecipeSystemProgManual',
-   u"DRAGONS - Recipe System Programmer's Manual",
-   u'Kenneth Anderson, Kathleen Labrie, Bruno Quint',
+   "DRAGONS - Recipe System Programmer's Manual",
+   'Kenneth Anderson, Kathleen Labrie, Bruno Quint',
    'RecipeSystemProgManual',
    'Recipe System programming "how to"',
    'Miscellaneous'),

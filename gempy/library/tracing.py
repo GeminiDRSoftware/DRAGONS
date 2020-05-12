@@ -1,3 +1,5 @@
+# Copyright(c) 2019-2020 Association of Universities for Research in Astronomy, Inc.
+
 """
 tracing.py
 
@@ -34,7 +36,7 @@ log = logutils.get_logger(__name__)
 
 
 ################################################################################
-class Aperture(object):
+class Aperture:
     """
     A class describing an aperture. It has the following attributes:
 

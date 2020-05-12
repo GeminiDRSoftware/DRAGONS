@@ -4,14 +4,6 @@
 #                                                                  recipe_system
 #                                                                      config.py
 # ------------------------------------------------------------------------------
-#from future import standard_library
-#standard_library.install_aliases()
-#from builtins import map
-#from builtins import str
-#gitfrom builtins import object
-
-
-# ------------------------------------------------------------------------------
 # CONFIG SERVICE
 
 """
@@ -22,20 +14,15 @@ An instance of `ConfigObject`, `globalConf`, is initialized when first loading
 this module, and it should be used as the only interface to the config system.
 
 """
-import future.utils
 import os
 from collections import defaultdict
-
-if future.utils.PY2:
-    from configparser import SafeConfigParser as ConfigParser
-else:
-    from configparser import ConfigParser
+from configparser import ConfigParser
 
 DEFAULT_DIRECTORY = '~/.geminidr'
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 
-class ConfigObject(object):
+class ConfigObject:
     """
     Generalized wrapper on ConfigParser.
 
@@ -67,7 +54,7 @@ class ConfigObject(object):
         try:
             return self._sections[item.lower()]
         except KeyError:
-            raise KeyError("There is no {0!r} section".format(item))
+            raise KeyError("There is no {!r} section".format(item))
 
     def export_section(self, section):
         """
@@ -216,7 +203,7 @@ class ConfigObject(object):
         self._conv.update(conv)
 
 
-class Converter(object):
+class Converter:
     def __init__(self, conv_dict, cp):
         """
         The class provides an internal mapping table for automatic translation
@@ -255,7 +242,7 @@ class Converter(object):
         return self._trans.get(key, str)(value)
 
 
-class Section(object):
+class Section:
     """
     An instance of `Section` describes the contents for a section of an
     INI-style config file. Each entry in the section translates to an
@@ -298,16 +285,16 @@ class Section(object):
         return self._contents.copy()
 
     def __setattr__(self, attr, value):
-        raise RuntimeError("Attribute {0!r} is read-only".format(attr))
+        raise RuntimeError("Attribute {!r} is read-only".format(attr))
 
     def __getattr__(self, attr):
         try:
             return self._contents[attr]
         except KeyError:
-            raise AttributeError("Unknown attribute {0!r}".format(attr))
+            raise AttributeError("Unknown attribute {!r}".format(attr))
 
     def __repr__(self):
-        return "<Section [{0}]>".format(', '.join(list(self._contents.keys())))
+        return "<Section [{}]>".format(', '.join(list(self._contents.keys())))
 
 
 def environment_variable_name(section, option):

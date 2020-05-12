@@ -1,14 +1,14 @@
 import numpy as np
 import pytest
+
+import astrodata
+from astrodata.testing import download_from_archive
 from astropy.io.fits import ImageHDU
 from astropy.nddata import NDData
 from astropy.table import Table
 
-import astrodata
-from astrodata.testing import download_from_archive
 
-
-@pytest.fixture
+@pytest.fixture()
 def testfile1():
     """
     Pixels Extensions
@@ -17,7 +17,7 @@ def testfile1():
     [ 1]   science                  NDAstroData       (2304, 1056)   uint16
     [ 2]   science                  NDAstroData       (2304, 1056)   uint16
     """
-    return download_from_archive("N20110826S0336.fits", path="GMOS")
+    return download_from_archive("N20110826S0336.fits")
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def testfile2():
     [ 4]   science                  NDAstroData       (4608, 1056)   uint16
     [ 5]   science                  NDAstroData       (4608, 1056)   uint16
     """
-    return download_from_archive("N20160524S0119.fits", path="GMOS")
+    return download_from_archive("N20160524S0119.fits")
 
 
 @pytest.mark.dragons_remote_data

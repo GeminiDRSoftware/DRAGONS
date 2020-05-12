@@ -54,7 +54,7 @@ class RecipeMapper(Mapper):
         function
             Recipe with the associated best matched TagSet.
         """
-        matched_set = (set([]), None)
+        matched_set = (set(), None)
         for rlib in self._get_tagged_recipes():
             if rlib is None:
                 break

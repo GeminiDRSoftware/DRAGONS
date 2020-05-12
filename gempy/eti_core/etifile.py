@@ -1,7 +1,9 @@
+import os
+import tempfile
 from ..utils import logutils
 log = logutils.get_logger(__name__)
 
-class ETIFile(object):
+class ETIFile:
     """The base class for all External Class Interface file objects.
     """
     inputs = None
@@ -16,6 +18,7 @@ class ETIFile(object):
         self.inputs = inputs
         self.params = params
         self.name = name
+        self.directory = os.path.abspath(tempfile.gettempdir())
 
     def prepare(self):
         print("ETIFile prepare()")

@@ -3,14 +3,13 @@
 #
 #                                                          mappers.baseMapper.py
 # ------------------------------------------------------------------------------
-from builtins import object
 
 from ..utils.mapper_utils import dotpath
 
 # ------------------------------------------------------------------------------
 
 
-class Mapper(object):
+class Mapper:
     """
     This is the base class for classes
 

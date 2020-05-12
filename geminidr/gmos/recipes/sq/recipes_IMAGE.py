@@ -2,7 +2,7 @@
 Recipes available to data with tags ['GMOS', 'IMAGE'].
 Default is "reduce".
 """
-recipe_tags = set(['GMOS', 'IMAGE'])
+recipe_tags = {'GMOS', 'IMAGE'}
 
 
 def reduce(p):
@@ -12,7 +12,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : PrimitivesBASE object
+    p : GMOSImage object
         A primitive set matching the recipe_tags.
     """
 
@@ -31,7 +31,7 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
     p.stackFrames(zero=True)
-    p.uploadFiles()
+    p.storeScience()
     return
 
 
@@ -79,8 +79,8 @@ def alignAndStack(p):
 
 def makeIRAFCompatible(p):
     """
-    Add header keywords that some Gemini IRAF tasks expect.  This is needed only
-    if the reduced file will be used as input to Gemini IRAF tasks.
+    Add header keywords needed to run some Gemini IRAF tasks.  This is needed
+    only if the reduced file will be used as input to Gemini IRAF tasks.
 
     Parameters
     ----------
@@ -91,3 +91,4 @@ def makeIRAFCompatible(p):
     p.makeIRAFCompatible()
     p.writeOutputs()
     return
+

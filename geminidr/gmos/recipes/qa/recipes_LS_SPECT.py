@@ -3,7 +3,7 @@ Recipes available to data with tags ['GMOS', 'SPECT', 'LS'].
 These are GMOS longslit observations.
 Default is "reduce".
 """
-recipe_tags = set(['GMOS', 'SPECT', 'LS'])
+recipe_tags = {'GMOS', 'SPECT', 'LS'}
 
 
 def reduce(p):

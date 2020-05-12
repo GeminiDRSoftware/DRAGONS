@@ -8,7 +8,6 @@ Currently contains:
 
 """
 
-from __future__ import print_function
 
 def gmosn_ham_fixes(hdulist, verbose):
     updated_glob = False
@@ -41,6 +40,6 @@ def gmosn_ham_dateobs(hdulist, verbose=False):
         hdulist[0].header['DATE-OBS'] = date
         updated = True
         if verbose:
-            print('DATE-OBS update the value of DATE, {0}'.format(date))
+            print('DATE-OBS update the value of DATE, {}'.format(date))
 
     return updated

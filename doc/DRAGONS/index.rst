@@ -37,9 +37,14 @@ DRAGONS Manuals
 
 =========
 
-.. toctree::
+Releases
+--------
 
-     releasenotes.rst
+.. toctree::
+   :maxdepth: 1
+
+   releasenotes.rst
+   changes.rst
 
 .. todolist::
 

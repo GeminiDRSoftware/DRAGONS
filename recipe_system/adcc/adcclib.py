@@ -1,11 +1,6 @@
-from __future__ import print_function
 #                                                                     QAP Gemini
 #
 #                                                                     adcclib.py
-# ------------------------------------------------------------------------------
-from builtins import object
-from future.utils import with_metaclass
-
 # ------------------------------------------------------------------------------
 import os
 import sys
@@ -44,11 +39,11 @@ class Singleton(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
 
-class ADCC(with_metaclass(Singleton, object)):
+class ADCC(metaclass=Singleton):
 
     def __init__(self, args=None):
         if args is None:

@@ -20,10 +20,10 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
     This is the class containing the generic Gemini primitives.
 
     """
-    tagset = set(["GEMINI"])
+    tagset = {"GEMINI"}
 
     def __init__(self, adinputs, **kwargs):
-        super(Gemini, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gemini.lookups'
         self._param_update(parameters_gemini)
 

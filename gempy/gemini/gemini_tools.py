@@ -1,14 +1,9 @@
-from __future__ import division
 #
 #                                                                  gemini_python
 #
 #                                                                   gempy.gemini
 #                                                                gemini_tools.py
 # ------------------------------------------------------------------------------
-from builtins import str
-from builtins import zip
-from builtins import range
-from builtins import object
 import os
 import re
 import numbers
@@ -459,7 +454,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         # Science decision: trimmed calibrations can't be
                         # meaningfully matched to untrimmed science data
                         if aux_type != 'bpm':
-                            raise IOError(
+                            raise OSError(
                                 "Auxiliary data {} is trimmed, but "
                                 "science data {} is untrimmed.".
                                 format(auxext.filename, ext.filename))
@@ -504,7 +499,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
 
             if not found:
-                raise IOError(
+                raise OSError(
                   "No auxiliary data in {} matches the detector section "
                   "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
                                        ad.filename, ext.hdr['EXTVER']))
@@ -633,7 +628,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                         # Science decision: trimmed calibrations can't be
                         # meaningfully matched to untrimmed science data
                         if aux_type != 'bpm':
-                            raise IOError(
+                            raise OSError(
                                 "Auxiliary data {} is trimmed, but "
                                 "science data {} is untrimmed.".
                                     format(auxext.filename, ext.filename))
@@ -679,7 +674,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                 new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
 
             if not found:
-                raise IOError(
+                raise OSError(
                     "No auxiliary data in {} matches the detector section "
                     "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
                                               ad.filename, ext.EXTVER))
@@ -1233,6 +1228,8 @@ def make_lists(*args, **kwargs):
     tuple of lists
         the lists made from the keys and values
     """
+    log = logutils.get_logger(__name__)
+
     force_ad = kwargs.pop("force_ad", False)
     if kwargs:
         raise TypeError("make_lists() got unexpected keyword arguments "
@@ -1259,6 +1256,7 @@ def make_lists(*args, **kwargs):
                                         or x is None else astrodata.open(x)})
             except:
                 ad_map_dict.update({x: None})
+                log.warning(f"Cannot open file {x}")
         ret_value = [[ad_map_dict[x] for x in List] for List in ret_value]
 
     return ret_value
@@ -1575,9 +1573,9 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         version of the input AD object with WAVECAL tables attached
     """
     if database_name is None:
-        raise IOError('No database name specified')
+        raise OSError('No database name specified')
     if not os.path.isdir(database_name):
-        raise IOError('Database directory {} does not exist'.format(
+        raise OSError('Database directory {} does not exist'.format(
             database_name))
     if input_name is None:
         input_name = ad.filename
@@ -1753,7 +1751,7 @@ def write_database(ad, database_name=None, input_name=None):
     return
 
 
-class ExposureGroup(object):
+class ExposureGroup:
     """
     An ExposureGroup object maintains a record of AstroData instances that
     are spatially associated with the same general nod position or dither
@@ -1790,7 +1788,7 @@ class ExposureGroup(object):
             adinput = [adinput]
         # Make sure the field scaling is valid:
         if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
-            raise IOError('frac_FOV must be >= 0.')
+            raise OSError('frac_FOV must be >= 0.')
 
         # Initialize members:
         self.members = {}
@@ -1875,7 +1873,7 @@ class ExposureGroup(object):
         for ad in addict:
             for coord in addict[ad]:
                 if not isinstance(coord, numbers.Number):
-                    raise IOError('non-numeric co-ordinate %s ' \
+                    raise OSError('non-numeric co-ordinate %s ' \
                         % coord + 'from %s' % ad)
 
         # Add the new points to the group list:
@@ -2013,12 +2011,12 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     except AttributeError:
         if not isinstance(refpos, (list, tuple)) or \
            not all(isinstance(x, numbers.Number) for x in refpos):
-            raise IOError('Parameter refpos should be a '
+            raise OSError('Parameter refpos should be a '
                 'co-ordinate tuple or AstroData instance')
         # Currently the comparison is always 2D since we're explicitly
         # looking up POFFSET & QOFFSET:
         if len(refpos) != 2:
-            raise IOError('Points to group must have the '
+            raise OSError('Points to group must have the '
                     'same number of co-ords')
         pointing = refpos
 

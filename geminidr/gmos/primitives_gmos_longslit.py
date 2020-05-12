@@ -29,10 +29,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "SPECT", "LS"])
+    tagset = {"GEMINI", "GMOS", "SPECT", "LS"}
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSLongslit, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
@@ -167,9 +167,14 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             # and mask pixels below the requested fraction of the peak
             row_max = np.array([ext_fitted.data.max(axis=1)
                                 for ext_fitted in ad_fitted]).max(axis=0)
+
+            # Prevent runtime error in division
+            row_max[row_max == 0] = np.inf
+
             for ext_fitted in ad_fitted:
-                ext_fitted.mask = np.where((ext_fitted.data.T / row_max).T < threshold,
-                                           DQ.unilluminated, DQ.good)
+                ext_fitted.mask = np.where(
+                    (ext_fitted.data.T / row_max).T < threshold,
+                    DQ.unilluminated, DQ.good)
 
             for ext_fitted, indices in zip(ad_fitted, array_info.extensions):
                 tiled_arrsec = ext_fitted.array_section()
