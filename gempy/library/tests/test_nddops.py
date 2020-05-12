@@ -125,7 +125,7 @@ def test_sigclip(capsys):
     out = capsys.readouterr().out
     expected = """\
 Rejection: sigclip {'lsigma': 3, 'hsigma': 3}
-img     data        mask    variance       after rejection
+img     data        mask    variance       immediately after rejection
   0          1.0000     0               -
   1          1.0000     0               -
   2          1.0000     0               -
@@ -133,7 +133,7 @@ img     data        mask    variance       after rejection
   4          2.0000     0               -
   5          2.0000     0               -
   6          2.0000     0               -
-  7        100.0000 65535               -
+  7        100.0000 32768               -
 """
     assert expected.splitlines() == out.splitlines()[13:23]
 
