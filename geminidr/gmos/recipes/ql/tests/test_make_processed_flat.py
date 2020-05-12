@@ -76,9 +76,10 @@ def processed_flat(
         reduce.ucals = normalize_ucals(reduce.files, calibration_files)
         reduce.runr()
 
-    master_flat = reduce.output_filenames.pop()
+        master_flat = reduce.output_filenames.pop()
+        master_flat_ad = astrodata.open(master_flat)
 
-    return master_flat
+    return master_flat_ad
 
 
 if __name__ == '__main__':
