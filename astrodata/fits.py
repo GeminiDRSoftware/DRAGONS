@@ -15,6 +15,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.io.fits import (DELAYED, BinTableHDU, Column, FITS_rec, HDUList,
                              ImageHDU, PrimaryHDU, TableHDU)
+from astropy.nddata import NDData
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
