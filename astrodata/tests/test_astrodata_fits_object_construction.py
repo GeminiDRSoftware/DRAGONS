@@ -1,14 +1,15 @@
 import numpy as np
 import pytest
+
+import astrodata
+from astrodata.testing import download_from_archive
 from astropy.io.fits import ImageHDU
 from astropy.nddata import NDData
 from astropy.table import Table
 
-import astrodata
-
 
 @pytest.fixture()
-def testfile1(cache_file_from_archive):
+def testfile1():
     """
     Pixels Extensions
     Index  Content                  Type              Dimensions     Format
@@ -16,11 +17,11 @@ def testfile1(cache_file_from_archive):
     [ 1]   science                  NDAstroData       (2304, 1056)   uint16
     [ 2]   science                  NDAstroData       (2304, 1056)   uint16
     """
-    return cache_file_from_archive("N20110826S0336.fits")
+    return download_from_archive("N20110826S0336.fits")
 
 
 @pytest.fixture
-def testfile2(cache_file_from_archive):
+def testfile2():
     """
     Pixels Extensions
     Index  Content                  Type              Dimensions     Format
@@ -31,7 +32,7 @@ def testfile2(cache_file_from_archive):
     [ 4]   science                  NDAstroData       (4608, 1056)   uint16
     [ 5]   science                  NDAstroData       (4608, 1056)   uint16
     """
-    return cache_file_from_archive("N20160524S0119.fits")
+    return download_from_archive("N20160524S0119.fits")
 
 
 @pytest.mark.dragons_remote_data
