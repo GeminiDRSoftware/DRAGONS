@@ -35,6 +35,7 @@ test_datasets = [
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip(reason='ref data needs to be updated')
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("preprocessed_ad", test_datasets, indirect=True)

@@ -6,7 +6,6 @@ import astrodata
 # noinspection PyUnresolvedReferences
 import gemini_instruments
 from astrodata import testing as ad_testing
-from gempy.adlibrary import dataselect
 # noinspection PyUnresolvedReferences
 from recipe_system.testing import reduce_bias, reduce_flat, reference_ad
 
@@ -39,6 +38,7 @@ def test_processed_flat_has_small_std(processed_flat):
         np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
+@pytest.mark.skip(reason='ref data needs to be updated')
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_regression_processed_flat(processed_flat, reference_ad):
