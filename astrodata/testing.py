@@ -6,7 +6,6 @@ import os
 import shutil
 import urllib
 import xml.etree.ElementTree as et
-import warnings
 from contextlib import contextmanager
 
 import pytest
@@ -130,7 +129,7 @@ def change_working_dir(request, path_to_outputs):
     return _change_working_dir
 
 
-def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
+def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
     """Download file from the archive and store it in the local cache.
 
     Parameters
@@ -153,7 +152,6 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
 
     if cache_path is None:
         raise ValueError('Environment variable not set: {:s}'.format(env_var))
-
     elif not os.access(cache_path, os.W_OK):
         raise OSError('Could not access the path stored inside ${:s}. Make '
                       'sure the following path exists and that you have write '
@@ -163,6 +161,7 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
 
     if path is not None:
         cache_path = os.path.join(cache_path, path)
+
     os.makedirs(cache_path, exist_ok=True)
 
     # Now check if the local file exists and download if not

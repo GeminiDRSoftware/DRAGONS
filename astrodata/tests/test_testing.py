@@ -16,16 +16,16 @@ example_test = """
     from os.path import exists
 
     def test_cache_file_from_archive_new_file(cache_file_from_archive, capsys):
-    
+
         filename = 'X20001231S0001.fits'
         path = cache_file_from_archive(filename)
         captured = capsys.readouterr()
-    
+
         assert "Caching file to:" in captured.out
         assert isinstance(path, str)
         assert filename in path
         assert exists(path)
-    
+
         _ = cache_file_from_archive(filename)
         captured = capsys.readouterr()
         assert "Input file is cached in:" in captured.out
@@ -33,7 +33,7 @@ example_test = """
 
 example_conftest = """
     from astrodata.testing import *
-    
+
     def pytest_addoption(parser):
             try:
                 parser.addoption(
@@ -64,17 +64,6 @@ example_conftest = """
             except ValueError:
                 pass
 """
-
-
-def test_cache_file_from_archive_using_static_data(cache_file_from_archive, capsys):
-    filename = "N20110826S0336.fits"
-    path = cache_file_from_archive(filename)
-    captured = capsys.readouterr()
-
-    assert isinstance(path, str)
-    assert filename in path
-    assert os.path.exists(path)
-    assert "Static input file exists in" in captured.out
 
 
 def test_cache_file_from_archive_caching_data(monkeypatch, tmpdir, testdir):
@@ -137,16 +126,16 @@ def test_download_from_archive(monkeypatch, tmpdir):
         return str(tmpdir.join(fname))
 
     monkeypatch.setattr("astrodata.testing.download_file", mock_download)
-    monkeypatch.setenv("DRAGONS_TEST_INPUTS", str(tmpdir))
+    monkeypatch.setenv("DRAGONS_TEST", str(tmpdir))
 
     # first call will use our mock function above
-    fname = download_from_archive('N20170529S0168.fits', path='subdir')
+    fname = download_from_archive('N20170529S0168.fits')
     assert os.path.exists(fname)
     assert ncall == 1
 
     # second call will use the cache so we check that our mock function is not
     # called twice
-    fname = download_from_archive('N20170529S0168.fits', path='subdir')
+    fname = download_from_archive('N20170529S0168.fits')
     assert os.path.exists(fname)
     assert ncall == 1
 
