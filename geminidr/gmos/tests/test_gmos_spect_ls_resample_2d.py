@@ -45,9 +45,9 @@ def test_correlation(adinputs, caplog):
     assert ad[0].shape == (512, 3869)
 
     caplog.clear()
-    ad = p.findSourceApertures()[0]
+    ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    assert caplog.records[3].message == 'Found sources at rows: 260.7'
+    assert caplog.records[3].message == 'Found sources at rows: 260.8'
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (3869,)
@@ -70,9 +70,9 @@ def test_correlation_and_trim(adinputs, caplog):
     assert ad[0].shape == (512, 2429)
 
     caplog.clear()
-    ad = p.findSourceApertures()[0]
+    ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    assert caplog.records[3].message == 'Found sources at rows: 260.4'
+    assert caplog.records[3].message == 'Found sources at rows: 260.8'
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (2429,)
@@ -164,6 +164,7 @@ def add_fake_offset(adinputs, offset=10):
     for i, ad in enumerate(adinputs[1:], start=1):
         ad[0].data = np.roll(ad[0].data, offset * i, axis=0)
         ad[0].mask = np.roll(ad[0].mask, offset * i, axis=0)
+        ad[0].mask = np.roll(ad[0].variance, offset * i, axis=0)
         ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
 
 

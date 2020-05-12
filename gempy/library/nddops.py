@@ -44,35 +44,6 @@ ZERO = DQ.datatype(0)
 ONE = DQ.datatype(DQ.bad_pixel)
 
 
-def take_along_axis(arr, ind, axis):
-    """
-    Returns a view of an array (arr), re-ordered along an axis according to
-    the indices (ind). Taken from numpy issue 8708 under BSD licence,
-    pending inclusion into numpy (added in version 1.15.0).
-    """
-    if arr is None:
-        return None
-    if axis < 0:
-        if axis >= -arr.ndim:
-            axis += arr.ndim
-        else:
-            raise IndexError('axis out of range')
-    ind_shape = (1,) * ind.ndim
-    ins_ndim = ind.ndim - (arr.ndim - 1)   #inserted dimensions
-
-    dest_dims = list(range(axis)) + [None] + list(range(axis+ins_ndim, ind.ndim))
-
-    # could also call np.ix_ here with some dummy arguments, then throw those results away
-    inds = []
-    for dim, n in zip(dest_dims, arr.shape):
-        if dim is None:
-            inds.append(ind)
-        else:
-            ind_shape_dim = ind_shape[:dim] + (-1,) + ind_shape[dim+1:]
-            inds.append(np.arange(n).reshape(ind_shape_dim))
-    return arr[tuple(inds)]
-
-
 def stack_nddata(fn):
     """
     This decorator wraps a method that takes a sequence of NDAstroData
@@ -89,6 +60,7 @@ def stack_nddata(fn):
             scale = [1.0] * len(nddata_list)
         if zero is None:
             zero = [0.0] * len(nddata_list)
+
         # Coerce all data to 32-bit floats. FITS data on disk is big-endian
         # and preserving that datatype will cause problems with Cython
         # stacking if the compiler is little-endian.
@@ -96,25 +68,30 @@ def stack_nddata(fn):
         data = np.empty((len(nddata_list),)+nddata_list[0].data.shape, dtype=dtype)
         for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
             data[i] = ndd.data * s + z
+
         if any(ndd.mask is None for ndd in nddata_list):
             mask = None
         else:
             mask = np.empty_like(data, dtype=DQ.datatype)
             for i, ndd in enumerate(nddata_list):
                 mask[i] = ndd.mask
+
         if any(ndd.variance is None for ndd in nddata_list):
             variance = None
         else:
             variance = np.empty_like(data)
             for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
                 variance[i] = ndd.variance * s*s
-        out_data, out_mask, out_var = fn(instance, data=data, mask=mask,
-                                         variance=variance, *args, **kwargs)
+
+        out_data, out_mask, out_var, rejmap = fn(
+            instance, data=data, mask=mask, variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask)
         if out_var is not None:
             ret_value.variance = out_var
+        if rejmap is not None:
+            ret_value.meta['other'] = {'REJMAP': NDAstroData(rejmap)}
         return ret_value
     return wrapper
 
@@ -178,24 +155,26 @@ class NDStacker:
             combiner = getattr(self, combine)
             assert getattr(combiner, 'is_combiner')
         except AttributeError:
-            self._logmsg("No such combiner as {}. Using mean instead.".format(combine),
-                         level='warning')
+            self._logmsg("No such combiner as {}. Using mean instead."
+                         .format(combine), level='warning')
             combiner = self.mean
+
         # No combine functions require arguments (yet) but futureproofing
         req_args = getattr(combiner, 'required_args', [])
         self._combiner = combiner
-        self._dict = {k: v for k, v in kwargs.items() if k in req_args}
+        self._comb_args = {k: v for k, v in kwargs.items() if k in req_args}
 
         try:
             rejector = getattr(self, reject)
             assert getattr(rejector, 'is_rejector')
         except AttributeError:
-            self._logmsg('No such rejector as {}. Using none instead.'.format(reject),
-                         level='warning')
+            self._logmsg('No such rejector as {}. Using none instead.'
+                         .format(reject), level='warning')
             rejector = self.none
+
         req_args = getattr(rejector, 'required_args', [])
         self._rejector = rejector
-        self._dict.update({k: v for k, v in kwargs.items() if k in req_args})
+        self._rej_args = {k: v for k, v in kwargs.items() if k in req_args}
 
         # Pixel to trace for debugging purposes
         self._debug_pixel = kwargs.get('debug_pixel')
@@ -210,7 +189,7 @@ class NDStacker:
             getattr(self._log, level)(msg)
 
     @staticmethod
-    def _process_mask(mask):
+    def _process_mask(mask, unflag_best_pixels=True):
         """
         Interpret and manipulate the mask arrays of the input images to
         select which pixels should be combined, and what the output mask pixel
@@ -258,9 +237,10 @@ class NDStacker:
 
             # Where we've been able to construct an output pixel (ngood>0)
             # we need to stop any further processing. Set the mask for "good"
-            # pixels to 0, and for bad pixels to 32768.
-            mask = np.where(np.logical_and(ngood > 0, tmp_mask), DQ.datatype(32768), mask)
-            mask = np.where(np.logical_and(ngood > 0, ~tmp_mask), ZERO, mask)
+            # pixels to 0, and for bad pixels to 65535.
+            mask = np.where(np.logical_and(ngood > 0, tmp_mask), DQ.max, mask)
+            if unflag_best_pixels:
+                mask = np.where(np.logical_and(ngood > 0, ~tmp_mask), ZERO, mask)
             # 32768 in output mask means we have an output pixel
             out_mask[ngood > 0] |= 32768
 
@@ -283,47 +263,76 @@ class NDStacker:
         return np.sum(mask == False, axis=0)
 
     @stack_nddata
-    def __call__(self, data, mask=None, variance=None):
+    def __call__(self, data, mask=None, variance=None,
+                 save_rejection_map=False):
         """
         Perform the rejection and combining. The stack_nddata decorator
         allows a series of NDData object to be sent, and split into data, mask,
         and variance.
         """
-        rej_args = {arg: self._dict[arg] for arg in self._rejector.required_args
-                    if arg in self._dict}
 
         # Convert the debugging pixel to (x,y) coords and bounds check
         if self._debug_pixel is not None:
             try:
-                self._debug_pixel = np.unravel_index(self._debug_pixel, data.shape[1:])
+                self._debug_pixel = np.unravel_index(self._debug_pixel,
+                                                     data.shape[1:])
             except ValueError:
                 self._logmsg("Debug pixel out of range")
                 self._debug_pixel = None
-            else:
-                self._logmsg("Debug pixel coords {}".format(self._debug_pixel))
-                self._pixel_debugger(data, mask, variance, stage='at input')
-                self._logmsg("Rejection: {} {}".format(self._rejector.__name__, rej_args))
-
-        data, mask, variance = self._rejector(data, mask, variance, **rej_args)
-        #try:
-        #    data, mask, variance = self._rejector(data, mask, variance, **rej_args)
-        #except Exception as e:
-        #    self._logmsg(str(e), level='warning')
-        #    self._logmsg("Continuing without pixel rejection")
-        #    self._rejector = self.none
-        comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
-                     if arg in self._dict}
 
         if self._debug_pixel is not None:
-            self._pixel_debugger(data, mask, variance, stage='after rejection')
-            self._logmsg("Combining: {} {}".format(self._combiner.__name__, comb_args))
+            self._logmsg("Debug pixel coords {}".format(self._debug_pixel))
+            self._pixel_debugger(data, mask, variance, stage='at input')
+            info = data[(slice(None),) + self._debug_pixel]
+            self._logmsg("stats: mean={:.4f}, median={:.4f}, std={:.4f}"
+                         .format(np.mean(info), np.median(info), np.std(info)))
+            self._logmsg("-" * 41)
+            self._logmsg("Rejection: {} {}".format(self._rejector.__name__,
+                                                   self._rej_args))
 
-        out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
+        # We need to process the mask initially to only keep the "best" pixels
+        # around for consideration
+        if mask is not None:
+            mask, _ = NDStacker._process_mask(mask, unflag_best_pixels=False)
+            if self._debug_pixel is not None:
+                self._pixel_debugger(data, mask, variance,
+                                     stage='after first mask processing')
+
+        data, rejmask, variance = self._rejector(data, mask, variance,
+                                                 **self._rej_args)
+
+        if self._debug_pixel is not None:
+            self._pixel_debugger(data, rejmask, variance,
+                                 stage='immediately after rejection')
+
+        # when mask is None rejector return a bool mask. convert dtype and set
+        # mask values to 36768
+        if rejmask.dtype.kind == 'b':
+            rejmask = rejmask.astype(DQ.datatype) * 36768
+
+        # Unset the 32768 bit *only* if it's set in all input pixels
+        rejmask &= ~(np.bitwise_and.reduce(rejmask, axis=0) & 32768)
+
+        if save_rejection_map:
+            # int16 to avoid scaling issue when writing and re-reading
+            # with astrodata
+            rejmap = np.sum(rejmask > 32767, axis=0, dtype=np.int16)
+        else:
+            rejmap = None
+
+        if self._debug_pixel is not None:
+            self._pixel_debugger(data, rejmask, variance,
+                                 stage='after rejection')
+            self._logmsg("Combining: {} {}".format(self._combiner.__name__,
+                                                   self._comb_args))
+
+        out_data, out_mask, out_var = self._combiner(data, rejmask, variance,
+                                                     **self._comb_args)
 
         if self._debug_pixel is not None:
             self._pixel_debugger_print_line('out', self._debug_pixel, out_data,
                                             out_mask, out_var)
-        return out_data, out_mask, out_var
+        return out_data, out_mask, out_var, rejmap
 
     @classmethod
     def combine(cls, data, mask=None, variance=None, rejector="none", combiner="mean", **kwargs):
@@ -350,7 +359,7 @@ class NDStacker:
         self._logmsg("{} {:15.4f} {} {}".format(idx, *info))
 
     def _pixel_debugger(self, data, mask, variance, stage=''):
-        self._logmsg("img     data        mask    variance       "+stage)
+        self._logmsg("img     data        mask    variance       " + stage)
         for i in range(data.shape[0]):
             coord = (i,) + self._debug_pixel
             self._pixel_debugger_print_line(i, coord, data, mask, variance)
@@ -403,14 +412,16 @@ class NDStacker:
             if num_img % 2:
                 med_index = num_img // 2
                 index = np.argpartition(data, med_index, axis=0)[med_index]
-                out_data = take_along_axis(data, index, axis=0)
+                index = np.expand_dims(index, axis=0)
+                out_data = np.take_along_axis(data, index, axis=0)[0]
                 if variance is not None:
-                    out_var = take_along_axis(variance, index, axis=0)
+                    out_var = np.take_along_axis(variance, index, axis=0)[0]
             else:
                 med_index = num_img // 2 - 1
                 indices = np.argpartition(data, [med_index, med_index+1],
                                           axis=0)[med_index:med_index+2]
-                out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
+                out_data = np.take_along_axis(data, indices, axis=0)\
+                    .mean(axis=0).astype(data.dtype)
                 if variance is not None:
                     out_var = _median_uncertainty(variance, mask, num_img)
         else:
@@ -420,9 +431,10 @@ class NDStacker:
             med_index = num_img // 2
             med_indices = np.array([np.where(num_img % 2, med_index, med_index-1),
                                     np.where(num_img % 2, med_index, med_index)])
-            indices = take_along_axis(arg, med_indices, axis=0)
-            out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-            # out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
+            indices = np.take_along_axis(arg, med_indices, axis=0)
+            out_data = np.take_along_axis(data, indices, axis=0)\
+                .mean(axis=0).astype(data.dtype)
+            # out_mask = np.bitwise_or(*np.take_along_axis(mask, indices, axis=0))
             if variance is not None:
                 out_var = _median_uncertainty(variance, mask, num_img)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
@@ -446,10 +458,12 @@ class NDStacker:
             # Partitioning the bottom half is slower than a full sort
             arg = np.argsort(np.where(mask > 0, np.inf, data), axis=0)
             num_img = NDStacker._num_good(mask > 0)
-            med_index = (num_img - 1) // 2
-            index = take_along_axis(arg, med_index, axis=0)
+            med_index = np.expand_dims((num_img - 1) // 2, axis=0)
+            index = np.take_along_axis(arg, med_index, axis=0)[0]
 
-        out_data = take_along_axis(data, index, axis=0)
+        index = np.expand_dims(index, axis=0)
+        out_data = np.take_along_axis(data, index, axis=0)[0]
+
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
             out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         else:
@@ -486,28 +500,26 @@ class NDStacker:
         if mask is None:
             nlo = int(nlow+0.001)
             nhi = data.shape[0] - int(nhigh+0.001)
-            # Sorts variance with data
+            # Sorts data and apply this to the mask
             arg = np.argsort(data, axis=0)
-            data = take_along_axis(data, arg, axis=0)
-            variance = take_along_axis(variance, arg, axis=0)
             mask = np.zeros_like(data, dtype=bool)
-            mask[:nlo] = True
-            mask[nhi:] = True
+            np.put_along_axis(mask, arg[:nlo], True, axis=0)
+            np.put_along_axis(mask, arg[nhi:], True, axis=0)
         else:
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # Have to keep all values if all values are masked!
             # Sorts variance and mask with data
-            arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
-            data = take_along_axis(data, arg, axis=0)
-            variance = take_along_axis(variance, arg, axis=0)
-            mask = take_along_axis(mask, arg, axis=0)
+            arg = np.argsort(np.where(mask == DQ.max, np.inf, data), axis=0)
+
             # IRAF imcombine maths
-            num_good = NDStacker._num_good(mask & BAD > 0)
-            nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
-            nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
-            for i in range(num_img):
-                mask[i][i < nlo] |= ONE
-                mask[i][np.logical_and(i > nhi, i < num_good)] |= ONE
+            num_good = NDStacker._num_good(mask == DQ.max)
+            nlo = (num_good * nlow / num_img + 0.001).astype(int)
+            nhi = num_good - (num_good * nhigh / num_img + 0.001).astype(int) - 1
+
+            arg2 = np.argsort(arg, axis=0)
+            mask[arg2 < nlo] = DQ.max
+            mask[(arg2 > nhi) & (arg2 < num_good)] = DQ.max
+
         return data, mask, variance
 
     @staticmethod

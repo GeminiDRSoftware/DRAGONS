@@ -1,5 +1,12 @@
 # Copyright(c) 2018-2019 Association of Universities for Research in Astronomy, Inc.
 
+# Specify that this source is nominally based on Python 3 syntax
+# (though the code below is actually 2-vs-3 agnostic), to avoid a warning with
+# v0.29+:
+#
+# cython: language_level=3
+#
+
 """
 If switching to new versions of Python under anaconda, you may need to run
 this command again under the new environment.::
@@ -7,13 +14,6 @@ this command again under the new environment.::
     $ cythonize -i cyclip.pyx
 
 """
-
-# Specify that this source is nominally based on Python 3 syntax
-# (though the code below is actually 2-vs-3 agnostic), to avoid a warning with
-# v0.29+:
-#
-# cython: language_level=3
-#
 
 import numpy as np
 from libc.math cimport sqrt
@@ -49,7 +49,7 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
 
     if has_mask:
         for i in range(data_size):
-            if mask[i] == 0:
+            if mask[i] < 65535:
                 tmp[nused] = data[i]
                 nused += 1
     if nused == 0:  # if not(has_mask) or all(mask)
@@ -121,7 +121,7 @@ cdef void mask_stats(float data[], unsigned short mask[], int has_mask,
     for i in range(data_size):
         sumall += data[i]
         sumsqall += data[i] * data[i]
-        if has_mask and mask[i] == 0:
+        if has_mask and mask[i] < 32768:
             sum += data[i]
             sumsq += data[i] * data[i]
             nused += 1
@@ -156,7 +156,7 @@ cdef long num_good(unsigned short mask[], long data_size):
     cdef long i, ngood = 0
 
     for i in range(data_size):
-        if mask[i] == 0:
+        if mask[i] < 32768:
             ngood += 1
 
     return ngood
@@ -234,12 +234,12 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
                 high_limit = avg + hsigma * std
                 for n in range(num_img):
                     if tmpdata[n] < low_limit or tmpdata[n] > high_limit:
-                        tmpmask[n] |= 1
+                        tmpmask[n] |= 32768
             else:
                 for n in range(num_img):
                     std = sqrt(variance[n*data_size+i])
                     if tmpdata[n] < avg-lsigma*std or tmpdata[n] > avg+hsigma*std:
-                        tmpmask[n] |= 1
+                        tmpmask[n] |= 32768
 
             new_ngood = num_good(tmpmask, num_img)
             if new_ngood == ngood:

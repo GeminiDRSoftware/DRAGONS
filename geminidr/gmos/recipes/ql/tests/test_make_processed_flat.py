@@ -41,6 +41,7 @@ def test_processed_flat_has_small_std(processed_flat):
         np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
+@pytest.mark.skip(reason='ref data needs to be updated')
 @pytest.mark.gmosls
 def test_regression_processed_flat(processed_flat, reference_ad):
     ref_flat = reference_ad(processed_flat.filename)

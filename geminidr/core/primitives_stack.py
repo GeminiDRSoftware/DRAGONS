@@ -8,7 +8,6 @@ from astrodata.fits import windowedOp
 
 import numpy as np
 from astropy import table
-from functools import partial
 from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
@@ -54,11 +53,23 @@ class Stack(PrimitivesBASE):
         apply_dq : bool
             Apply DQ mask to data before combining?
 
-        nhigh : int
-            Number of high pixels to reject.
+        nlow, nhigh : int
+            Number of low and high pixels to reject, for the 'minmax' method.
+            The way it works is inherited from IRAF: the fraction is specified
+            as the number of  high  and low  pixels,  the  nhigh and nlow
+            parameters, when data from all the input images are used.  If
+            pixels  have  been  rejected  by offseting,  masking, or
+            thresholding then a matching fraction of the remaining pixels,
+            truncated to an integer, are used.  Thus::
 
-        nlow : int
-            Number of low pixels to reject.
+                nl = n * nlow/nimages + 0.001
+                nh = n * nhigh/nimages + 0.001
+
+            where n is the number of pixels  surviving  offseting,  masking,
+            and  thresholding,  nimages  is the number of input images, nlow
+            and nhigh are task parameters  and  nl  and  nh  are  the  final
+            number  of  low  and high pixels rejected by the algorithm.  The
+            factor of 0.001 is to adjust for rounding of the ratio.
 
         operation : str
             Combine method.
@@ -117,6 +128,8 @@ class Stack(PrimitivesBASE):
         separate_ext = params["separate_ext"]
         statsec = params["statsec"]
         reject_method = params["reject_method"]
+        save_rejection_map = params["save_rejection_map"]
+
         if statsec:
             statsec = tuple([slice(int(start)-1, int(end))
                              for x in reversed(statsec.strip('[]').split(','))
@@ -170,19 +183,12 @@ class Stack(PrimitivesBASE):
         for ext in adinputs[0]:
             bytes = 0
             # Count _data twice to handle temporary arrays
-            for attr in ('_data', '_data', '_uncertainty'):
-                item = getattr(ext.nddata, attr)
-                if item is not None:
-                    # A bit of numpy weirdness in the difference between normal
-                    # python types ("float32") and numpy types ("np.uint16")
-                    try:
-                        bytes += item.dtype.itemsize
-                    except TypeError:
-                        bytes += item.dtype().itemsize
-                    except AttributeError:  # For non-lazy VAR
-                        bytes += item._array.dtype.itemsize
-            bytes += 2  #  mask always created
-            bytes_per_ext.append(bytes * np.multiply.reduce(ext.nddata.shape))
+            bytes += 2 * ext.data.dtype.itemsize
+            if ext.variance is not None:
+                bytes += ext.variance.dtype.itemsize
+
+            bytes += 2  # mask always created
+            bytes_per_ext.append(bytes * np.product(ext.shape))
 
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
             adinputs = self.flushPixels(adinputs)
@@ -249,8 +255,8 @@ class Stack(PrimitivesBASE):
             [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
 
         ad_out = astrodata.create(adinputs[0].phu)
-        for index, (extver, sfactors, zfactors) in enumerate(zip(adinputs[0].hdr.get('EXTVER'),
-                                                          scale_factors, zero_offsets)):
+        for index, (extver, sfactors, zfactors) in enumerate(
+                zip(adinputs[0].hdr.get('EXTVER'), scale_factors, zero_offsets)):
             status = ("Combining EXTVER {}.".format(extver) if num_ext > 1 else
                       "Combining images.")
             if scale:
@@ -273,13 +279,19 @@ class Stack(PrimitivesBASE):
                 # per step.
                 oversubscription = (bytes_per_ext[index] * num_img) // memory + 1
                 kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
+
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
                                              for ad in adinputs)
-            result = windowedOp(partial(stack_function, scale=sfactors, zero=zfactors),
+            result = windowedOp(stack_function,
                                 [ad[index].nddata for ad in adinputs],
-                                kernel=kernel, dtype=np.float32,
-                                with_uncertainty=with_uncertainty, with_mask=with_mask)
+                                scale=sfactors,
+                                zero=zfactors,
+                                kernel=kernel,
+                                dtype=np.float32,
+                                with_uncertainty=with_uncertainty,
+                                with_mask=with_mask,
+                                save_rejection_map=save_rejection_map)
             ad_out.append(result)
             log.stdinfo("")
 
