@@ -142,11 +142,12 @@ def gwcs_to_fits(ndd, hdr=None):
 
     # Deal with other axes
     # TODO: AD should refactor to allow the descriptor to be used here
-    for i, name in enumerate(world_axes, start=1):
+    for i, axis_type in enumerate(wcs.output_frame.axes_type, start=1):
         if f'CRVAL{i}' in wcs_dict:
             continue
-        if name.upper().startswith('WAVE'):
+        if axis_type == "SPECTRAL":
             wcs_dict[f'CRVAL{i}'] = hdr['CENTWAVE']
+            wcs_dict[f'CTYPE{i}'] = 'WAVE'
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = 0
 
@@ -158,18 +159,24 @@ def gwcs_to_fits(ndd, hdr=None):
     wcs_dict.update({f'CD{i+1}_{j+1}': affine.matrix[j, i]
                      for i, _ in enumerate(world_axes)
                      for j, _ in enumerate(ndd.shape)})
+    # Don't overwrite CTYPEi keywords we've already created
     wcs_dict.update({f'CTYPE{i}': axis.upper()[:8]
-                     for i, axis in enumerate(world_axes, start=1)})
+                     for i, axis in enumerate(world_axes, start=1)
+                     if f'CTYPE{i}' not in wcs_dict})
 
     crval = [wcs_dict[f'CRVAL{i+1}'] for i, _ in enumerate(world_axes)]
     crpix = np.array(wcs.backward_transform(*crval)) + 1
-    wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(crpix, start=1)})
+    if len(world_axes) == 1:
+        wcs_dict['CRPIX1'] = crpix
+    else:
+        wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(crpix, start=1)})
     for i, unit in enumerate(wcs.output_frame.unit, start=1):
         try:
             wcs_dict[f'CUNIT{i}'] = unit.name
         except AttributeError:
             pass
 
+    print(wcs_dict)
     return wcs_dict
 
 # -----------------------------------------------------------------------------
@@ -216,7 +223,10 @@ def calculate_affine_matrices(func, shape):
         AffineMatrices(array, array): affine matrix and offset
     """
     indim = len(shape)
-    ndim = len(func(*shape))  # handle increase in number of axes
+    try:
+        ndim = len(func(*shape))  # handle increase in number of axes
+    except TypeError:
+        ndim = 1
     halfsize = [0.5 * length for length in shape] + [1.] * (ndim - indim)
     points = np.array([halfsize] * (2 * ndim + 1)).T
     points[:, 1:ndim + 1] += np.eye(ndim) * points[:, 0]

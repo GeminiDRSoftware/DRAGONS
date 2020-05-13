@@ -1240,7 +1240,7 @@ class Spect(PrimitivesBASE):
                 if debug:
                     self.viewer.display_image(ext, wcs=False)
                 if len(ext.shape) == 1:
-                    log.warning("{} is already one-dimensional".format(extname))
+                    log.warning(f"{extname} is already one-dimensional")
                     continue
 
                 try:
@@ -1256,33 +1256,16 @@ class Spect(PrimitivesBASE):
                                 "extract spectra.".format(ad.filename))
                     continue
 
+                try:
+                    wave_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
+                except IndexError:
+                    log.warning(f"Cannot find wavelength solution for {extname}")
+                    wave_model = None
+
                 log.stdinfo("Extracting {} spectra from {}".format(num_spec,
                                                                    extname))
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
-                # Create dict of wavelength keywords to add to new headers
-                # TODO: Properly. Simply put the linear approximation here for now
-                hdr_dict = {'CTYPE1': 'Wavelength',
-                            'CUNIT1': 'nm'}
-
-                try:
-                    wavecal = dict(zip(ext.WAVECAL["name"],
-                                       ext.WAVECAL["coefficients"]))
-                except (AttributeError, KeyError):
-                    if (self.timestamp_keys['linearizeSpectra'] not in ad.phu and
-                            self.timestamp_keys['resampleToCommonFrame'] not in ad.phu):
-                        # warn only if the spectra have not been linearized
-                        log.warning("Could not read wavelength solution for {}:{}"
-                                    .format(ad.filename, ext.hdr['EXTVER']))
-                    hdr_dict.update({'CRPIX1': 0.5 * (ext.shape[dispaxis] + 1),
-                                     'CRVAL1': ext.central_wavelength(asNanometers=True),
-                                     'CDELT1': ext.dispersion(asNanometers=True)})
-                else:
-                    wave_model = astromodels.dict_to_chebyshev(wavecal)
-                    hdr_dict.update({'CRPIX1': 0.5 * np.sum(wave_model.domain) + 1,
-                                     'CRVAL1': wave_model.c0.value,
-                                     'CDELT1': 2 * wave_model.c1.value / np.diff(wave_model.domain)[0]})
-                hdr_dict['CD1_1'] = hdr_dict['CDELT1']
 
                 # We loop twice so we can construct the aperture mask if needed
                 apertures = []
@@ -1301,7 +1284,7 @@ class Spect(PrimitivesBASE):
                                                    for ap in apertures])
 
                 for apnum, aperture in enumerate(apertures, start=1):
-                    log.stdinfo("    Extracting spectrum from aperture {}".format(apnum))
+                    log.stdinfo(f"    Extracting spectrum from aperture {apnum}")
                     self.viewer.width = 2
                     self.viewer.color = colors[(apnum-1) % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
@@ -1347,12 +1330,16 @@ class Spect(PrimitivesBASE):
                     else:
                         ad_spec.append(ndd_spec)
 
-                    # Copy wavelength solution and add a header keyword
-                    # with the extraction location
-                    try:
-                        ad_spec[-1].WAVECAL = ext.WAVECAL
-                    except AttributeError:  # That's OK, there wasn't one
-                        pass
+                    # Create a new gWCS and add header keywords with the
+                    # extraction location. All extracted spectra will have the
+                    # same gWCS but that could change.
+                    if wave_model is not None:
+                        in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
+                                                      axes_order=(0,), unit=u.pix,
+                                                      axes_names=('x',))
+                        out_frame = cf.SpectralFrame(unit=u.nm, name='world')
+                        ad_spec[-1].wcs = gWCS([(in_frame, wave_model),
+                                                (out_frame, None)])
                     ad_spec[-1].hdr[ad._keyword_for('aperture_number')] = apnum
                     center = aperture.model.c0.value
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
@@ -1361,17 +1348,6 @@ class Spect(PrimitivesBASE):
                                                    'Aperture lower limit')
                     ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
                                                    'Aperture upper limit')
-
-                    # Delete some header keywords
-                    for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
-                        for ax in (1, 2):
-                            try:
-                                del ad_spec[-1].hdr["{}{}".format(kw, ax)]
-                            except KeyError:
-                                pass
-
-                    for k, v in hdr_dict.items():
-                        ad_spec[-1].hdr[k] = (v, self.keyword_comments.get(k))
 
             # Don't output a file with no extracted spectra
             if len(ad_spec) > 0:
