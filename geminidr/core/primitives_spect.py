@@ -1336,7 +1336,7 @@ class Spect(PrimitivesBASE):
                     if wave_model is not None:
                         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                                       axes_order=(0,), unit=u.pix,
-                                                      axes_names=('x',))
+                                                      axes_names=('x',), name='pixels')
                         out_frame = cf.SpectralFrame(unit=u.nm, name='world')
                         ad_spec[-1].wcs = gWCS([(in_frame, wave_model),
                                                 (out_frame, None)])
