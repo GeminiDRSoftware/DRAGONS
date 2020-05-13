@@ -27,20 +27,24 @@ def ad(request):
     return astrodata.open(path)
 
 
+@pytest.mark.dragons_remote_data
 def test_is_right_instance(ad):
     assert isinstance(ad, gemini_instruments.gmos.adclass.AstroDataGmos)
 
 
+@pytest.mark.dragons_remote_data
 def test_can_return_instrument(ad):
     assert ad.phu['INSTRUME'] in ['GMOS-N', 'GMOS-S']
     assert ad.instrument() == ad.phu['INSTRUME']
 
 
+@pytest.mark.dragons_remote_data
 def test_can_return_ad_length(ad):
     assert len(ad)
 
 
 @pytest.mark.parametrize("descriptor,expected_type", GMOS_DESCRIPTORS_TYPES)
+@pytest.mark.dragons_remote_data
 def test_descriptor_matches_type(ad, descriptor, expected_type):
     value = getattr(ad, descriptor)()
     assert isinstance(value, expected_type) or value is None, \

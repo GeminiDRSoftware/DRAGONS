@@ -29,35 +29,42 @@ def ad(request):
     return astrodata.open(file_path)
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.xfail(reason="AstroFaker changes the AstroData factory")
 def test_is_right_type(ad):
     assert type(ad) == gemini_instruments.f2.adclass.AstroDataF2
 
 
+@pytest.mark.dragons_remote_data
 def test_is_right_instance(ad):
     assert isinstance(ad, gemini_instruments.f2.adclass.AstroDataF2)
 
 
+@pytest.mark.dragons_remote_data
 def test_extension_data_shape(ad):
     data = ad[0].data
     assert data.shape == (1, 2048, 2048)
 
 
+@pytest.mark.dragons_remote_data
 def test_tags(ad):
     tags = ad.tags
     expected_tags = {'F2', 'SOUTH', 'GEMINI'}
     assert expected_tags.issubset(tags)
 
 
+@pytest.mark.dragons_remote_data
 def test_can_return_instrument(ad):
     assert ad.phu['INSTRUME'] == 'F2'
     assert ad.instrument() == ad.phu['INSTRUME']
 
 
+@pytest.mark.dragons_remote_data
 def test_can_return_ad_length(ad):
     assert len(ad) == 1
 
 
+@pytest.mark.dragons_remote_data
 def test_slice_range(ad):
     metadata = ('SCI', 2), ('SCI', 3)
     slc = ad[1:]
@@ -67,10 +74,12 @@ def test_slice_range(ad):
         assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
 
+@pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_phu(ad):
     assert ad.phu['INSTRUME'].strip() == 'F2'
 
 
+@pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_hdr(ad):
     try:
         assert ad.hdr['CCDNAME'] == 'F2'
@@ -79,6 +88,7 @@ def test_read_a_keyword_from_hdr(ad):
         assert len(ad) == 1
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("descriptor,expected_type", F2_DESCRIPTORS_TYPES)
 def test_descriptor_matches_type(descriptor, expected_type, ad):
     value = getattr(ad, descriptor)()

@@ -114,6 +114,7 @@ def ad(request):
     return astrodata.open(path)
     
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("ad", test_files, indirect=True)
 def test_descriptor_matches_type(ad):
     for descriptor, expected_type in DESCRIPTORS_TYPES:
