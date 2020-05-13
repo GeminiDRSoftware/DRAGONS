@@ -12,8 +12,6 @@ To run:
    2) Then run: py.test -v   (must in gemini_python or have it in PYTHONPATH)
 """
 
-# import os
-# import os.path
 import numpy as np
 from gempy.library import astrotools as at
 from astropy import units as u
