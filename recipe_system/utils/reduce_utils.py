@@ -4,7 +4,7 @@
 # Utility function library for reduce and the Reduce class.
 
 from argparse import ArgumentParser
-from argparse import HelpFormatter
+from argparse import RawDescriptionHelpFormatter
 
 import astrodata
 import gemini_instruments
@@ -18,7 +18,7 @@ from .reduceActions import UnitaryArgumentAction
 from ..cal_service import localmanager_available
 # ------------------------------------------------------------------------------
 
-class ReduceHelpFormatter(HelpFormatter):
+class ReduceHelpFormatter(RawDescriptionHelpFormatter):
     """
     ReduceHelpFormatter class overrides default help formatting on customized
     reduce actions.
