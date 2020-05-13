@@ -61,11 +61,12 @@ class ReduceArgumentParser(ArgumentParser):
 
 
 def buildParser(version):
-    parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " +
-                                  "_"*28 + "\n" + "_"*16 +
-                            " DRAGONS Recipe Processing Management System " +
-                                  "_"*16 + "\n" + "_"*24 +
-                                  " Recipe System Release v"+version+" "+"_"*23,
+    description = '\n'.join([
+        " Gemini Observatory ".center(77, '_'),
+        " DRAGONS Recipe Processing Management System ".center(77, '_'),
+        f" Recipe System Release v{version} ".center(77, '_'),
+    ])
+    parser = ReduceArgumentParser(description=description,
                                   prog="reduce",
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
