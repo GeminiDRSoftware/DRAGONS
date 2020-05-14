@@ -106,7 +106,7 @@ html_static_path = ['_static']
 #
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-#html_sidebars = {
+# html_sidebars = {
 #    '**': [
 #        'about.html',
 #        'navigation.html',
@@ -114,7 +114,7 @@ html_static_path = ['_static']
 #        'searchbox.html',
 #        'donate.html',
 #    ]
-#}
+# }
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -218,6 +218,7 @@ from docutils.parsers.rst import directives
 from sphinx.util.inspect import safe_getattr
 import re
 
+
 class AutoAutoSummary(Autosummary):
 
     option_spec = {
@@ -260,6 +261,8 @@ class AutoAutoSummary(Autosummary):
 
 # ------------
 # Adding style in order to have the todos show up in a red box
+
+
 def setup(app):
     app.add_css_file('todo-styles.css')
     app.add_css_file('rtf_theme_overrides.css')

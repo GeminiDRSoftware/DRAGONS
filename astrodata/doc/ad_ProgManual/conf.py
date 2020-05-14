@@ -62,9 +62,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Astrodata Programmer Manual'
-copyright = u'2020, Association of Universities for Research in Astronomy'
-author = u'Ricardo Cardenes'
+project = 'Astrodata Programmer Manual'
+copyright = '2020, Association of Universities for Research in Astronomy'
+author = 'Ricardo Cardenes'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -266,7 +266,7 @@ latex_elements = {
 
      # Additional stuff for the LaTeX preamble.
      #
-     'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
+     'preamble': '\\usepackage{appendix} \\setcounter{tocdepth}{0}',
 
      # Latex figure (float) alignment
      #

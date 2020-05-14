@@ -33,7 +33,7 @@ extensions = [
     'sphinx.ext.imgmath',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-#    'sphinx.ext.githubpages',
+    #    'sphinx.ext.githubpages',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -49,8 +49,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'DRAGONS'
-copyright = u'2020, Association of Universities for Research in Astronomy'
+project = 'DRAGONS'
+copyright = '2020, Association of Universities for Research in Astronomy'
 
 # Note that AURA owns the Copyright, not you.
 
@@ -106,7 +106,7 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 #html_theme = 'default'
 #html_theme = 'alabaster'
-html_theme='sphinx_rtd_theme'
+html_theme = 'sphinx_rtd_theme'
 
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -187,19 +187,19 @@ htmlhelp_basename = 'DRAGONS'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
-'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
+    'preamble': '\\usepackage{appendix} \\setcounter{tocdepth}{0}',
 
-# This will remove blank pages.
-'classoptions': ',openany,oneside',
-'babel': '\\usepackage[english]{babel}',
+    # This will remove blank pages.
+    'classoptions': ',openany,oneside',
+    'babel': '\\usepackage[english]{babel}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -268,9 +268,11 @@ texinfo_documents = [
 intersphinx_mapping = {'http://docs.python.org/': None}
 
 # Activate the todos
-todo_include_todos=True
+todo_include_todos = True
 
 # Adding style in order to have the todos show up in a red box.
+
+
 def setup(app):
    app.add_css_file('todo-styles.css')
    app.add_css_file('rtd_theme_overrides.css')

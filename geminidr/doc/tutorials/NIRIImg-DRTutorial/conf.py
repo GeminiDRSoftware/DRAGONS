@@ -46,15 +46,15 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-<<<<<<< HEAD
+<<<<<< < HEAD
 project = 'Tutorial Series - NIRI Imaging Data Reduction with DRAGONS'
 copyright = '2019, Association of Universities for Research in Astronomy'
 author = 'Kathleen Labrie'
-=======
+== == == =
 project = u'Tutorial Series - NIRI Imaging Data Reduction with DRAGONS'
 copyright = u'2020, Association of Universities for Research in Astronomy'
 author = u'Kathleen Labrie'
->>>>>>> release/2.1.x
+>>>>>> > release/2.1.x
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -114,7 +114,7 @@ html_static_path = ['_static']
 #
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-#html_sidebars = {
+# html_sidebars = {
 #    '**': [
 #        'about.html',
 #        'navigation.html',
@@ -122,7 +122,7 @@ html_static_path = ['_static']
 #        'searchbox.html',
 #        'donate.html',
 #    ]
-#}
+# }
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -214,6 +214,8 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 # ------
 
 # Adding style in order to have the todos show up in a red box
+
+
 def setup(app):
     app.add_css_file('todo-styles.css')
     app.add_css_file('rtf_theme_overrides.css')
