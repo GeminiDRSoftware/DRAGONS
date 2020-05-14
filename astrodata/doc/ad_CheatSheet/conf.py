@@ -277,6 +277,6 @@ todo_include_todos=True
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('todo-styles.css')
-    app.add_stylesheet('rtd_theme_overrides.css')
-    app.add_stylesheet('css/rtd_theme_overrides_references.css')
+    app.add_css_file('todo-styles.css')
+    app.add_css_file('rtd_theme_overrides.css')
+    app.add_css_file('css/rtd_theme_overrides_references.css')

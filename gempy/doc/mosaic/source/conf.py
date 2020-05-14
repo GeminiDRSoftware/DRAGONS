@@ -265,4 +265,4 @@ todo_include_todos=True
 
 # Adding style in order to have the todos show up in a red box.
 def setup(app):
-   app.add_stylesheet('todo-styles.css')
+   app.add_css_file('todo-styles.css')
