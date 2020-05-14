@@ -1348,6 +1348,11 @@ class Spect(PrimitivesBASE):
                                                    'Aperture lower limit')
                     ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
                                                    'Aperture upper limit')
+                    # TODO: remove after testing
+                    try:
+                        ad_spec[-1].WAVECAL = ext.WAVECAL
+                    except AttributeError:
+                        pass
 
             # Don't output a file with no extracted spectra
             if len(ad_spec) > 0:
