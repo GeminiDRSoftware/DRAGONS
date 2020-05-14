@@ -22,14 +22,12 @@ To unpack::
     $ tar xvf ad_usermanual_datapkg-v1.tar
     $ bunzip2 ad_usermanual/playdata/*.bz2
 
-Then go to the ``ad_usermanual/playground` directory to run the examples.
+Then go to the ``ad_usermanual/playground`` directory to run the examples.
 
 Imports
 =======
 
-Import :mod:`astrodata` and :mod:`gemini_instruments`:
-
-
+Import :mod:`astrodata` and :mod:`gemini_instruments`::
 
     >>> import astrodata
     >>> import gemini_instruments
@@ -462,5 +460,3 @@ A |Table| as an |astrodata_class| object::
 
     WARNING: This last line will not run like the others as we have not defined
     "my_fits_table".  This is nonetheless how it is done if you had a FITS table.
-
-
