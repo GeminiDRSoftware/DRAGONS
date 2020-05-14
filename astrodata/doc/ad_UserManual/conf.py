@@ -325,18 +325,19 @@ def run_api_doc(_):
         ignore_paths = [
             'doc',
             'test',
+            'tests',
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
 
         argv = [
-                   "--force",
-                   "--no-toc",
-                   # "--separate",
-                   "--module",
-                   "--output-dir", "api/",
-                   build_path
-               ] + ignore_paths
+            "--force",
+            "--no-toc",
+            # "--separate",
+            "--module",
+            "--output-dir", "api/",
+            build_path
+        ] + ignore_paths
 
         sys.path.insert(0, build_path)
 
@@ -362,4 +363,3 @@ def setup(app):
 
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)
-
