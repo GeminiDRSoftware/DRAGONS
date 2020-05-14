@@ -24,8 +24,8 @@ sys.path.append(dragons_path)
 import astrodata
 
 print('\n Printing current working directory for debugging:')
-print(' Current working directory: {}'.format(os.getcwd()))
-print(' Dragons path: {}\n'.format(dragons_path))
+print((' Current working directory: {}'.format(os.getcwd())))
+print((' Dragons path: {}\n'.format(dragons_path)))
 
 
 # -- Project information -----------------------------------------------------

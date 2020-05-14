@@ -22,7 +22,7 @@ import os
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 print(' Printing current working directory for debugging:')
-print(' ' + os.getcwd())
+print((' ' + os.getcwd()))
 
 if on_rtd:
     sys.path.insert(0, os.path.abspath('./../../../'))
@@ -61,8 +61,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Astrodata User Manual'
-copyright = u'2020, Association of Universities for Research in Astronomy'
+project = 'Astrodata User Manual'
+copyright = '2020, Association of Universities for Research in Astronomy'
 # Note that AURA owns the Copyright, not you.
 
 # The version info for the project you're documenting, acts as replacement for
@@ -195,19 +195,19 @@ htmlhelp_basename = 'AstrodataUserManual'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# This will remove blank pages.
-'classoptions': ',openany,oneside',
-'babel': '\\usepackage[english]{babel}',
+    # This will remove blank pages.
+    'classoptions': ',openany,oneside',
+    'babel': '\\usepackage[english]{babel}',
 
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
-'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
+    'preamble': '\\usepackage{appendix} \\setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -284,7 +284,7 @@ intersphinx_mapping = {
 }
 
 # Activate the todos
-todo_include_todos=True
+todo_include_todos = True
 
 
 # -- Automatically generate API documentation --------------------------------
@@ -316,7 +316,7 @@ def run_api_doc(_):
     current_path = os.getcwd()
     relative_path = "../../../"
 
-    print("Current Path:", current_path)
+    print(("Current Path:", current_path))
 
     for p in build_packages:
 
@@ -325,18 +325,19 @@ def run_api_doc(_):
         ignore_paths = [
             'doc',
             'test',
+            'tests',
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
 
         argv = [
-                   "--force",
-                   "--no-toc",
-                   # "--separate",
-                   "--module",
-                   "--output-dir", "api/",
-                   build_path
-               ] + ignore_paths
+            "--force",
+            "--no-toc",
+            # "--separate",
+            "--module",
+            "--output-dir", "api/",
+            build_path
+        ] + ignore_paths
 
         sys.path.insert(0, build_path)
 
@@ -356,10 +357,9 @@ def run_api_doc(_):
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('todo-styles.css')
-    app.add_stylesheet('rtd_theme_overrides.css')
-    app.add_stylesheet('css/rtd_theme_overrides_references.css')
+    app.add_css_file('todo-styles.css')
+    app.add_css_file('rtd_theme_overrides.css')
+    app.add_css_file('css/rtd_theme_overrides_references.css')
 
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)
-
