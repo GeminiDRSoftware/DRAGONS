@@ -2,7 +2,7 @@
 This package add another abstraction layer to astronomical data by parsing
 the information contained in the headers as attributes. To do so,
 one must subclass :class:`astrodata.AstroData` and add parse methods
-accordingly to the :class:`~astrodata.core.TagSet` received.
+accordingly to the :class:`~astrodata.TagSet` received.
 """
 
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
@@ -10,7 +10,7 @@ __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'open', 'create', '__version__', 'version']
 
 
-from .core import *
+from .core import AstroData, AstroDataError, AstroDataFits
 # TODO: Remove 'write' when there's nothing else using it
 from .fits import KeywordCallableWrapper, add_header_to_table
 from .factory import AstroDataFactory
