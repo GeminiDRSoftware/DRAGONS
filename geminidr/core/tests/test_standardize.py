@@ -55,7 +55,7 @@ class TestStandardize:
         """Run once after every test."""
         pass
 
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_addDQ(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                          'N20070819S0104_prepared.fits'))
@@ -64,20 +64,20 @@ class TestStandardize:
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                                            'N20070819S0104_dqAdded.fits'))
 
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_addIllumMaskToDQ(self):
         pass
 
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_addMDF(self):
         pass
 
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_validateData(self):
         # This is taken care of by prepare
         pass
 
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_addVAR(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                          'N20070819S0104_ADUToElectrons.fits'))
@@ -86,7 +86,7 @@ class TestStandardize:
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                                            'N20070819S0104_varAdded.fits'))
 
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_prepare(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                          'N20070819S0104.fits'))

@@ -7,9 +7,19 @@ import requests
 
 import astrodata
 
-from astrodata import testing as ad_testing
+from astrodata.testing import download_from_archive
 from geminidr.core import primitives_visualize
 from recipe_system.testing import reduce_arc
+
+test_data = [
+    # Input File, Associated Calibrations
+    ("N20180112S0209.fits", [
+        "N20180112S0409.fits",
+        "N20180112S0409.fits",
+        "N20180112S0409.fits",
+        "N20180112S0409.fits",
+        "N20180112S0409.fits"]),
+]
 
 
 def test_mosaic_detectors_gmos_binning():
@@ -44,7 +54,8 @@ def test_mosaic_detectors_gmos_binning():
                     assert np.max(abs(diffs)) < 0.01
 
 
-@pytest.mark.parametrize("input_ad", ["N20180112S0209.fits"], indirect=True)
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("input_ad", test_data, indirect=True)
 @pytest.mark.usefixtures("check_adcc")
 def test_plot_spectra_for_qa_single_frame(input_ad):
     p = primitives_visualize.Visualize([])
@@ -62,20 +73,24 @@ def check_adcc():
 
 
 @pytest.fixture(scope='module')
-def input_ad(cache_file_from_archive, path_to_inputs, reduce_arc,
-             reduce_data, request):
+def input_ad(path_to_inputs, request):
 
     basename = request.param
-    should_preprocess = request.config.getoption("--force-preprocess-data")
-
     input_fname = basename.replace('.fits', '_flatCorrected.fits')
     input_path = os.path.join(path_to_inputs, input_fname)
 
     if os.path.exists(input_path):
         input_data = astrodata.open(input_path)
+    else:
+        raise FileNotFoundError(input_path)
 
-    elif should_preprocess:
-        filename = cache_file_from_archive(basename)
+    return input_data
+
+
+def create_inputs():
+
+    for basename in test_data:
+        raw_path = download_from_archive(basename)
         ad = astrodata.open(filename)
         cals = ad_testing.get_associated_calibrations(basename)
 
@@ -85,13 +100,9 @@ def input_ad(cache_file_from_archive, path_to_inputs, reduce_arc,
         master_arc = reduce_arc(ad.data_label(), arcs)
         input_data = reduce_data(ad, master_arc)
 
-    else:
-        raise IOError(
-            'Could not find input file:\n' +
-            '  {:s}\n'.format(input_path) +
-            '  Run pytest with "--force-preprocess-data" to get it')
 
-    return input_data
+
+
 
 
 @pytest.fixture(scope='module')
