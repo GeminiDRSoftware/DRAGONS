@@ -201,73 +201,6 @@ def arc_ad(path_to_inputs, request):
     return arc_ad
 
 
-def create_inputs_recipe():
-    """
-    Creates input data for tests using pre-processed standard star and its
-    calibration files.
-    """
-    import os
-    from astrodata.testing import download_from_archive
-    from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
-    from gempy.utils import logutils
-    from recipe_system.reduction.coreReduce import Reduce
-    from recipe_system.utils.reduce_utils import normalize_ucals
-
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
-    os.makedirs(os.path.join(root_path, module_path, "inputs"), exist_ok=True)
-
-    for filename, cals in associated_calibrations.items():
-
-        print(filename)
-        print(cals)
-
-        sci_path = download_from_archive(filename)
-        cals = associated_calibrations[filename]
-        bias_paths = [download_from_archive(f) for f in cals['bias']]
-        flat_paths = [download_from_archive(f) for f in cals['flat']]
-        arc_paths = [download_from_archive(f) for f in cals['arcs']]
-
-        sci_ad = astrodata.open(sci_path)
-        data_label = sci_ad.data_label()
-
-        logutils.config(file_name='log_bias_{}.txt'.format(data_label))
-        bias_reduce = Reduce()
-        bias_reduce.files.extend(bias_paths)
-        bias_reduce.runr()
-        bias_master = bias_reduce.output_filenames.pop()
-        calibration_files = ['processed_bias:{}'.format(bias_master)]
-        del bias_reduce
-        
-        logutils.config(file_name='log_flat_{}.txt'.format(data_label))
-        flat_reduce = Reduce()
-        flat_reduce.files.extend(flat_paths)
-        flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
-        flat_reduce.runr()
-        flat_master = flat_reduce.output_filenames.pop()
-        calibration_files.append('processed_flat:{}'.format(flat_master))
-        del flat_reduce
-        
-        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
-        arc_reduce = Reduce()
-        arc_reduce.files.extend(arc_paths)
-        arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
-        arc_reduce.runr()
-        _ = arc_reduce.output_filenames.pop()
-        
-        logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
-        p.prepare()
-        p.addDQ(static_bpm=None)
-        p.addVAR(read_noise=True)
-        p.overscanCorrect()
-        p.biasCorrect(bias=bias_master)
-        p.ADUToElectrons()
-        p.addVAR(poisson_noise=True)
-        p.flatCorrect(flat=flat_master)
-        _ = p.writeOutputs().pop()
-
-
 # -- Classes and functions for analysis ---------------------------------------
 def normalize_data(y, v):
     """
@@ -684,6 +617,78 @@ class WSolution:
         _w = self.model(x)
         _w = np.ma.masked_array(_w, mask=self.mask)
         return _w
+
+
+# -- Recipe to create pre-processed data ---------------------------------------
+def create_inputs_recipe():
+    """
+    Creates input data for tests using pre-processed standard star and its
+    calibration files.
+
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
+    """
+    import os
+    from astrodata.testing import download_from_archive
+    from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+    from gempy.utils import logutils
+    from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system.utils.reduce_utils import normalize_ucals
+
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
+    os.makedirs(os.path.join(root_path, module_path, "inputs"), exist_ok=True)
+
+    for filename, cals in associated_calibrations.items():
+        print(filename)
+        print(cals)
+
+        sci_path = download_from_archive(filename)
+        cals = associated_calibrations[filename]
+        bias_paths = [download_from_archive(f) for f in cals['bias']]
+        flat_paths = [download_from_archive(f) for f in cals['flat']]
+        arc_paths = [download_from_archive(f) for f in cals['arcs']]
+
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
+
+        logutils.config(file_name='log_bias_{}.txt'.format(data_label))
+        bias_reduce = Reduce()
+        bias_reduce.files.extend(bias_paths)
+        bias_reduce.runr()
+        bias_master = bias_reduce.output_filenames.pop()
+        calibration_files = ['processed_bias:{}'.format(bias_master)]
+        del bias_reduce
+
+        logutils.config(file_name='log_flat_{}.txt'.format(data_label))
+        flat_reduce = Reduce()
+        flat_reduce.files.extend(flat_paths)
+        flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
+        flat_reduce.runr()
+        flat_master = flat_reduce.output_filenames.pop()
+        calibration_files.append('processed_flat:{}'.format(flat_master))
+        del flat_reduce
+
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+        arc_reduce = Reduce()
+        arc_reduce.files.extend(arc_paths)
+        arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+        arc_reduce.runr()
+        _ = arc_reduce.output_filenames.pop()
+
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
+        p.prepare()
+        p.addDQ(static_bpm=None)
+        p.addVAR(read_noise=True)
+        p.overscanCorrect()
+        p.biasCorrect(bias=bias_master)
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.flatCorrect(flat=flat_master)
+        _ = p.writeOutputs().pop()
 
 
 if __name__ == '__main__':
