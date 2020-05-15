@@ -11,19 +11,18 @@ import gemini_instruments
 
 from astropy import modeling
 from geminidr.gmos import primitives_gmos_longslit
-from gempy.adlibrary import dataselect
 from gempy.library import astromodels
 from gempy.utils import logutils
+from recipe_system.testing import reference_ad
 from scipy import ndimage
-
-from astrodata import testing
 
 DPI = 90
 
-datasets = {
+datasets = [
 
     # --- Good datasets ---
-    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+    # GN-2017B-FT-20-13-001 B600 0.505um
+    ("N20180109S0287_flatCorrected.fits", "N20180109S0315_arc.fits"),
     # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
     # "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
     # "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
@@ -54,7 +53,7 @@ datasets = {
     # "N20190201S0163.fits",  # Could not reduce? (p.writeOutputs frozen)
     # "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um (p.writeOutputs frozen)
 
-}
+]
 
 gap_local_kw = {
     "N20180109S0287.fits": {'bad_cols': 5},
@@ -71,22 +70,36 @@ gap_local_kw = {
     "S20191005S0051.fits": {'order': 8},
 }
 
+associated_calibrations = {
+    "N20180109S0287.fits": {
+        'bias': [
+            "N20180109S0351.fits",
+            "N20180109S0352.fits",
+            "N20180109S0353.fits",
+            "N20180109S0354.fits",
+            "N20180109S0355.fits",
+        ],
+        'flat': [],
+        'arcs': [],
+    }
+}
+
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_applied_qe_is_locally_continuous(preprocessed_data, change_working_dir):
-
-    input_ad, master_arc = preprocessed_data
+@pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
+def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 
     with change_working_dir():
 
-        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
-        p.applyQECorrection(arc=master_arc)
+        logutils.config(file_name='log_test_continuity{}.txt'.format(ad.data_label()))
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
+        p.applyQECorrection(arc=arc_ad)
 
         # Need these extra steps to extract and analyse the data
-        p.distortionCorrect(arc=master_arc)
+        p.distortionCorrect(arc=arc_ad)
         p.findSourceApertures(max_apertures=1)
         p.skyCorrectFromSlit()
         p.traceApertures()
@@ -105,14 +118,13 @@ def test_applied_qe_is_locally_continuous(preprocessed_data, change_working_dir)
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_regression_on_apply_qe_correction(
-        preprocessed_data, change_working_dir, reference_ad):
-
-    input_ad, master_arc = preprocessed_data
+@pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
+def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, reference_ad):
 
     with change_working_dir():
-        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
-        p.applyQECorrection(arc=master_arc)
+        logutils.config(file_name='log_test_regression{}.txt'.format(ad.data_label()))
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
+        p.applyQECorrection(arc=arc_ad)
         qe_corrected_ad = p.writeOutputs().pop()
 
     assert 'QECORR' in qe_corrected_ad.phu.keys()
@@ -127,109 +139,129 @@ def test_regression_on_apply_qe_correction(
 
 
 # -- Fixtures -----------------------------------------------------------------
-@pytest.fixture(scope='function', params=datasets)
-def preprocessed_data(request, cache_file_from_archive, get_master_arc,
-                      path_to_inputs, reduce_arc, reduce_bias, reduce_data, reduce_flat):
+@pytest.fixture(scope='function')
+def ad(path_to_inputs, request):
     """
-    Returns the processed spectrum right after running `applyQECorrection`.
+    Returns the pre-processed spectrum file.
 
     Parameters
     ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
-    cache_file_from_archive : pytest.fixture
-        Path to where the data will be temporarily cached.
-    get_master_arc : pytest.fixture
-        Fixture that reads the master flat either from the permanent input folder
-        or from the temporary cache folder.
-        Reads the input data or cache/process it in a temporary folder.
     path_to_inputs : pytest.fixture
-        Path to the permanent local input files.
-    reduce_arc : pytest.fixture
-        Recipe to reduce the arc file.
-    reduce_bias : pytest.fixture
-        Recipe to reduce the bias files.
-    reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before `applyQECorrect`.
-    reduce_flat : pytest.fixture
-        Recipe to reduce the flat file.
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
 
     Returns
     -------
     AstroData
-        QE Corrected astrodata.
+        Input spectrum processed up to right before the `applyQECorrection`.
     """
-    basename = request.param
-    should_preprocess = request.config.getoption("--force-preprocess-data")
+    filename = request.param
+    path = os.path.join(path_to_inputs, filename)
 
-    input_fname = basename.replace('.fits', '_flatCorrected.fits')
-    input_path = os.path.join(path_to_inputs, input_fname)
-    cals = testing.get_associated_calibrations(basename)
-
-    if os.path.exists(input_path):
-        input_data = astrodata.open(input_path)
-        master_arc = get_master_arc(input_data, should_preprocess)
-
-    elif should_preprocess:
-        filename = cache_file_from_archive(basename)
-        ad = astrodata.open(filename)
-        cals = [cache_file_from_archive(c) for c in cals.filename.values]
-
-        master_bias = reduce_bias(
-            ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
-
-        master_flat = reduce_flat(
-            ad.data_label(), dataselect.select_data(cals, tags=['FLAT']), master_bias)
-
-        master_arc = reduce_arc(
-            ad.data_label(), dataselect.select_data(cals, tags=['ARC']))
-
-        input_data = reduce_data(ad, master_bias, master_flat)
-
+    if os.path.exists(path):
+        ad = astrodata.open(path)
     else:
-        raise IOError(
-            'Could not find input file:\n' +
-            '  {:s}\n'.format(input_path) +
-            '  Run pytest with "--force-preprocess-data" to get it')
+        raise FileNotFoundError(path)
 
-    return input_data, master_arc
+    return ad
 
 
-@pytest.fixture(scope='module')
-def reduce_data(change_working_dir):
+@pytest.fixture(scope='function')
+def arc_ad(path_to_inputs, request):
     """
-    Factory for function for data reduction up to one step before
-    `applyQECorrection`.
+    Returns the master arc used during the data-set data reduction.
 
     Parameters
     ----------
-    change_working_dir : pytest.fixture
-        Context manager used to write reduced data to a temporary folder.
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
 
     Returns
     -------
-    function : A function that will read the standard star file, process them
-    using a custom recipe and return an AstroData object.
+    AstroData
+        Master arc.
     """
-    def _reduce_data(ad, master_bias, master_flat):
-        with change_working_dir():
-            # Use config to prevent outputs when running Reduce via API
-            logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
+    filename = request.param
+    path = os.path.join(path_to_inputs, filename)
 
-            p = primitives_gmos_longslit.GMOSLongslit([ad])
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            p.biasCorrect(bias=master_bias)
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.flatCorrect(flat=master_flat)
+    if os.path.exists(path):
+        arc_ad = astrodata.open(path)
+    else:
+        raise FileNotFoundError(path)
 
-            processed_ad = p.writeOutputs().pop()
+    return arc_ad
 
-        return processed_ad
-    return _reduce_data
+
+def create_inputs_recipe():
+    """
+    Creates input data for tests using pre-processed standard star and its
+    calibration files.
+    """
+    import os
+    from astrodata.testing import download_from_archive
+    from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+    from gempy.utils import logutils
+    from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system.utils.reduce_utils import normalize_ucals
+
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
+    os.makedirs(os.path.join(root_path, module_path, "inputs"), exist_ok=True)
+
+    for filename, cals in associated_calibrations.items():
+
+        print(filename)
+        print(cals)
+
+        # sci_path = download_from_archive(filename)
+        # cals = associated_calibrations[filename]
+        # bias_paths = [download_from_archive(f) for f in ]
+        # flat_paths = [download_from_archive(f) for f in flat_fnames]
+        # arc_paths = [download_from_archive(f) for f in arc_fnames]
+        #
+        # sci_ad = astrodata.open(sci_path)
+        # data_label = sci_ad.data_label()
+        #
+        # logutils.config(file_name='log_bias_{}.txt'.format(data_label))
+        # bias_reduce = Reduce()
+        # bias_reduce.files.extend(bias_paths)
+        # bias_reduce.runr()
+        # bias_master = bias_reduce.output_filenames.pop()
+        # calibration_files = ['processed_bias:{}'.format(bias_master)]
+        # del bias_reduce
+        #
+        # logutils.config(file_name='log_flat_{}.txt'.format(data_label))
+        # flat_reduce = Reduce()
+        # flat_reduce.files.extend(flat_paths)
+        # flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
+        # flat_reduce.runr()
+        # flat_master = flat_reduce.output_filenames.pop()
+        # calibration_files.append('processed_flat:{}'.format(flat_master))
+        # del flat_reduce
+        #
+        # logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+        # arc_reduce = Reduce()
+        # arc_reduce.files.extend(arc_paths)
+        # arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+        # arc_reduce.runr()
+        # _ = arc_reduce.output_filenames.pop()
+        #
+        # logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
+        # p = primitives_gmos_longslit.GMOSLongslit([ad])
+        # p.prepare()
+        # p.addDQ(static_bpm=None)
+        # p.addVAR(read_noise=True)
+        # p.overscanCorrect()
+        # p.biasCorrect(bias=bias_master)
+        # p.ADUToElectrons()
+        # p.addVAR(poisson_noise=True)
+        # p.flatCorrect(flat=flat_master)
+        # _ = p.writeOutputs().pop()
 
 
 # -- Classes and functions for analysis ---------------------------------------
@@ -651,4 +683,8 @@ class WSolution:
 
 
 if __name__ == '__main__':
-    pytest.main()
+    import sys
+    if "--create_inputs" in sys.argv[1:]:
+        create_inputs_recipe()
+    else:
+        pytest.main()
