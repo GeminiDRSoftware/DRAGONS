@@ -548,49 +548,22 @@ class Visualize(PrimitivesBASE):
                         "Expected 1D data. Found {:d}D data: {:s}".format(
                             data.ndim, ad.filename))
 
-                if hasattr(ext, 'WAVECAL'):
-
-                    wcal_model = astromodels.dict_to_chebyshev(
-                        dict(
-                            zip(
-                                ext.WAVECAL["name"],
-                                ext.WAVECAL["coefficients"]
-                            )
-                        )
-                    )
-
-                    wavelength = wcal_model(np.arange(data.size, dtype=float))
-                    w_dispersion = ext.hdr["CDELT1"]
-                    w_units = ext.hdr["CUNIT1"]
-
-                elif "CDELT1" in ext.hdr:
-
-                    wavelength = (
-                        ext.hdr["CRVAL1"] + ext.hdr["CDELT1"] * (
-                            np.arange(data.size, dtype=float)
-                            + 1 - ext.hdr["CRPIX1"]))
-
-                    w_dispersion = ext.hdr["CDELT1"]
-                    w_units = ext.hdr["CUNIT1"]
-
-                else:
-                    w_units = "px"
-                    w_dispersion = 1
+                wavelength = ext.wcs(np.arange(data.size)).astype(np.float32)
+                w_dispersion = np.abs(wavelength[-1] - wavelength[0]) / (data.size - 1)
+                w_units = ext.wcs.output_frame.unit[0]
 
                 # Clean up bad data
                 mask = np.logical_not(np.ma.masked_invalid(data).mask)
 
                 wavelength = wavelength[mask]
-                data = data[mask]
-                stddev = stddev[mask]
+                data = data[mask].astype(np.float32)
+                stddev = stddev[mask].astype(np.float32)
 
                 # Round and convert data/stddev to int to minimize data transfer load
                 wavelength = np.round(wavelength, decimals=3)
-                data = np.round(data)
-                stddev = np.round(stddev)
 
-                _intensity = [[w, int(d)] for w, d in zip(wavelength, data)]
-                _stddev = [[w, int(s)] for w, s in zip(wavelength, stddev)]
+                _intensity = [[w, d] for w, d in zip(wavelength, data)]
+                _stddev = [[w, s] for w, s in zip(wavelength, stddev)]
 
                 center = np.round(ext.hdr["XTRACTED"])
                 lower = np.round(ext.hdr["XTRACTLO"])
