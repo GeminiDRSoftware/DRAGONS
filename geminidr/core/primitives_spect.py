@@ -691,9 +691,9 @@ class Spect(PrimitivesBASE):
                                           for origin in arc_origin[::-1]])
 
                     for ext in ad:
-                        ext.wcs.insert_transform('mosaic', origin_shift, after=False)
-                        ext.wcs.insert_transform('distortion_corrected',
-                                                 origin_shift.inverse, after=False)
+                        ext.wcs.insert_transform('mosaic', origin_shift, after=True)
+                        #ext.wcs.insert_transform('distortion_corrected',
+                        #                         origin_shift.inverse, after=False)
 
                     # ARC and AD aren't the same size
                     if nzeros < 4:
@@ -713,7 +713,9 @@ class Spect(PrimitivesBASE):
                         if wave_model is not None:
                             offset = offsets[ext.dispersion_axis()-1]
                             if offset != 0:
+                                wave_model.name = None
                                 wave_models[0] = models.Shift(offset) | wave_model
+                                wave_models[0].name = 'WAVE'
 
                 else:
                     # Single-extension AD, with single Transform
@@ -1333,24 +1335,25 @@ class Spect(PrimitivesBASE):
                     # Create a new gWCS and add header keywords with the
                     # extraction location. All extracted spectra will have the
                     # same gWCS but that could change.
+                    ext = ad_spec[-1]
                     if wave_model is not None:
                         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                                       axes_order=(0,), unit=u.pix,
                                                       axes_names=('x',), name='pixels')
                         out_frame = cf.SpectralFrame(unit=u.nm, name='world')
-                        ad_spec[-1].wcs = gWCS([(in_frame, wave_model),
+                        ext.wcs = gWCS([(in_frame, wave_model),
                                                 (out_frame, None)])
-                    ad_spec[-1].hdr[ad._keyword_for('aperture_number')] = apnum
+                    ext.hdr[ad._keyword_for('aperture_number')] = apnum
                     center = aperture.model.c0.value
-                    ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
-                                                           "from {} {}".format(direction, int(center + 0.5)))
-                    ad_spec[-1].hdr['XTRACTLO'] = (aperture._last_extraction[0],
-                                                   'Aperture lower limit')
-                    ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
-                                                   'Aperture upper limit')
+                    ext.hdr['XTRACTED'] = (center, "Spectrum extracted "
+                                                    "from {} {}".format(direction, int(center + 0.5)))
+                    ext.hdr['XTRACTLO'] = (aperture._last_extraction[0],
+                                           'Aperture lower limit')
+                    ext.hdr['XTRACTHI'] = (aperture._last_extraction[1],
+                                           'Aperture upper limit')
                     # TODO: remove after testing
                     try:
-                        ad_spec[-1].WAVECAL = ext.WAVECAL
+                        ext.WAVECAL = ext.WAVECAL
                     except AttributeError:
                         pass
 
@@ -1965,6 +1968,8 @@ class Spect(PrimitivesBASE):
             Conserve flux (rather than interpolate)?
         trim_data : bool
             Trim spectra to size of reference spectra?
+        force_linear : bool
+            Force a linear output wavelength solution?
 
         Notes
         -----
@@ -1989,6 +1994,7 @@ class Spect(PrimitivesBASE):
         npix = params["npix"]
         conserve = params["conserve"]
         trim_data = params["trim_data"]
+        force_linear = params["force_linear"]
 
         # Check that all ad objects are either 1D or 2D
         ndim = {len(ext.shape) for ad in adinputs for ext in ad}
@@ -2030,7 +2036,7 @@ class Spect(PrimitivesBASE):
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 try:
-                    model_info = _extract_model_info(ext, extname)
+                    model_info = _extract_model_info(ext)
                 except ValueError:
                     raise ValueError("{} has no WAVECAL. Cannot linearize."
                                      .format(extname))
@@ -2054,10 +2060,10 @@ class Spect(PrimitivesBASE):
             info.append(adinfo)
 
         # linearize spectra only if the grid parameters are specified
-        linearize = npix is not None or dw is not None
+        linearize = force_linear or npix is not None or dw is not None
         if linearize:
             if npixout is None and dwout is None:
-                # if both are missing, use the reference spectra
+                # if both are missing, use the reference spectrum
                 dwout = info[0][0]['dw']
 
             if npixout is None:
@@ -2069,43 +2075,52 @@ class Spect(PrimitivesBASE):
             log.fullinfo("Trimming data to size of reference spectra")
 
         if linearize:
-            wave_to_output_pix = (models.Shift(-w1out) |
-                                  models.Scale(1. / dwout))
+            new_wave_model = models.Scale(dwout) | models.Shift(w1out)
         else:
             # compute the inverse model needed to go to the reference
-            # spectrum grid
+            # spectrum grid. Due to imperfections in the Chebyshev inverse
+            # we check whether the wavelength limits are the same as the
+            # reference spectrum.
             wave_model_ref = info[0][0]['wave_model']
             limits = wave_model_ref.inverse([w1out, w2out])
-            pixel_shift = int(np.ceil(limits.min()))
-            wave_to_output_pix = wave_model_ref.inverse.copy()
-            wave_to_output_pix.inverse = wave_model_ref.copy()
-            npixout = int(np.floor(wave_to_output_pix([w1out, w2out]).max())
-                          + 1 - pixel_shift)
+            if info[0][0]['w1'] == w1out:
+                pixel_shift = 0
+            else:
+                pixel_shift = int(np.ceil(limits.min()))
+            new_wave_model = models.Shift(pixel_shift) | wave_model_ref
+            if info[0][0]['w2'] == w2out:
+                npixout = info[0][0]['npix']
+            else:
+                npixout = int(np.floor(new_wave_model.inverse([w1out, w2out]).max())
+                              + 1 - pixel_shift)
             dwout = (w2out - w1out) / (npixout - 1)
 
         for i, ad in enumerate(adinputs):
             for iext, ext in enumerate(ad):
+                print(ext.wcs(0,0), ext.wcs(*ext.shape[::-1]))
                 wave_model = info[i][iext]['wave_model']
                 extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
-                dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
+                wave_resample = wave_model | new_wave_model.inverse
 
-                t = transform.Transform()
+                # Avoid performing a Cheb and its imperfect inverse
+                if not linearize and new_wave_model[1:] == wave_model:
+                    wave_resample = models.Shift(-pixel_shift)
+
+                if ndim == 1:
+                    dispaxis = 0
+                    new_wcs_model = new_wave_model
+                    resampling_model = wave_resample
+                else:
+                    dispaxis = 2 - ext.dispersion_axis()
+                    slit_offset = models.Shift(ad.phu.get('SLITOFF', 0))
+                    new_wcs_model = ext.wcs.forward_transform.replace_submodel('WAVE', new_wave_model)
+                    if dispaxis == 0:
+                        resampling_model = slit_offset & wave_resample
+                    else:
+                        resampling_model = wave_resample & slit_offset
+
                 if i == 0 and not linearize:
                     log.fullinfo("{}: No interpolation")
-                else:
-                    wave_full_model = wave_model | wave_to_output_pix
-                    if ndim == 1:
-                        t.append(wave_full_model)
-                    elif ndim == 2:
-                        # Apply spatial offset if needed
-                        offset = ad.phu.get('SLITOFF', 0)
-                        offset = (models.Shift(offset) if offset != 0
-                                  else models.Identity(1))
-                        if dispaxis == 0:
-                            t.append(offset & wave_full_model)
-                        else:
-                            t.append(wave_full_model & offset)
-
                 msg = "Resampling"
                 if linearize:
                     msg += " and linearizing"
@@ -2115,53 +2130,23 @@ class Spect(PrimitivesBASE):
                 # If we resample to a coarser pixel scale, we may
                 # interpolate over features. We avoid this by subsampling
                 # back to the original pixel scale (approximately).
-                input_dw = (np.diff(wave_model(wave_model.domain))[0] /
-                            np.diff(wave_model.domain))
+                input_dw = info[i][iext]['dw']
                 subsample = int(np.ceil(abs(dwout / input_dw) - 0.1))
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
-                dg = transform.DataGroup([ext], [t])
-                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
+                ext.wcs = gWCS([(ext.wcs.input_frame, resampling_model),
+                                (cf.Frame2D(name='resampled'), new_wcs_model),
+                                (ext.wcs.output_frame, None)])
 
-                if ndim == 1:
-                    dg.output_shape = (npixout, )
-                    if not linearize:
-                        # equivalent to a final shift for all models
-                        dg.origin = (pixel_shift,)
-                elif ndim == 2:
-                    if dispaxis == 0:
-                        dg.output_shape = (npixout, ext.data.shape[1])
-                        if not linearize:
-                            dg.origin = (pixel_shift, 0)
-                    else:
-                        dg.output_shape = (ext.data.shape[0], npixout)
-                        if not linearize:
-                            dg.origin = (0, pixel_shift)
-
-                output_dict = dg.transform(attributes=attributes,
-                                           subsample=subsample,
-                                           conserve=conserve)
-                for key, value in output_dict.items():
-                    setattr(ext, key, value)
-
-                # Accurate solution if linearize=True, else approximate
-                ext.hdr["CRPIX1"] = 1.
-                ext.hdr["CRVAL1"] = w1out
-                ext.hdr["CDELT1"] = dwout
-                ext.hdr["CD1_1"] = dwout
-                ext.hdr["CUNIT1"] = "nm"
-
-                if not linearize:
-                    # update domain in the WAVECAL table
-                    output_wave = wave_to_output_pix.inverse.copy()
-                    output_wave.domain = [x - pixel_shift
-                                          for x in output_wave.domain]
-                    model_dict = astromodels.chebyshev_to_dict(output_wave)
-                    ext.WAVECAL = Table(
-                        [list(model_dict.keys()), list(model_dict.values())],
-                        names=("name", "coefficients")
-                    )
+                origin = (0,) * ndim
+                output_shape = list(ext.shape)
+                output_shape[dispaxis] = npixout
+                new_ext = transform.resample_from_wcs(ext, 'resampled', subsample=subsample,
+                                                      attributes=attributes, conserve=conserve,
+                                                      origin=origin, output_shape=output_shape)[0]
+                for attr in attributes + ['wcs']:
+                    setattr(ext, attr, getattr(new_ext, attr))
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2642,11 +2627,13 @@ def _read_chebyshev_model(ext):
         return astromodels.dict_to_chebyshev(wavecal)
 
 
-def _extract_model_info(ext, extname):
-    ndim = len(ext.shape)
-    dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
-    wave_model = _read_chebyshev_model(ext)
-    wave_model.inverse = astromodels.make_inverse_chebyshev1d(wave_model, rms=0.1)
+def _extract_model_info(ext):
+    if len(ext.shape) == 1:
+        dispaxis = 0
+        wave_model = ext.wcs.forward_transform
+    else:
+        dispaxis = 2 - ext.dispersion_axis()
+        wave_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
     npix = ext.shape[dispaxis]
     limits = wave_model([0, npix])
     w1, w2 = min(limits), max(limits)

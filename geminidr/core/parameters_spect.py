@@ -149,6 +149,7 @@ class resampleToCommonFrameConfig(config.Config):
     conserve = config.Field("Conserve flux?", bool, False)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
+    force_linear = config.Field("Force linear wavelength solution?", bool, True)
 
     def validate(self):
         config.Config.validate(self)

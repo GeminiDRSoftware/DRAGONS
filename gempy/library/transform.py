@@ -1844,7 +1844,7 @@ def add_longslit_wcs(ad):
 
 def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                       threshold=0.01, conserve=False, parallel=False,
-                      process_objcat=False):
+                      process_objcat=False, output_shape=None, origin=None):
     """
     This takes a single AstroData object with WCS objects attached to the
     extensions and applies some part of the WCS to resample into a
@@ -1855,46 +1855,52 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
     Parameters
     ----------
-    ad: AstroData
+    ad : AstroData
         the input image that is going to be resampled/mosaicked
-    frame_name: str
+    frame_name : str
         name of the frame to resample to
-    attributes: list/None
+    attributes : list/None
         list of attributes to resample (None => all standard ones that exist)
-    order: int
+    order : int
         order of interpolation
-    subsample: int
+    subsample : int
         if >1, will transform onto finer pixel grid and block-average down
-    threshold: float
+    threshold : float
         for transforming the DQ plane, output pixels larger than this value
         will be flagged as "bad"
-    conserve: bool
+    conserve : bool
         conserve flux rather than interpolate?
-    parallel: bool
+    parallel : bool
         use parallel processing to speed up operation?
-    process_objcat: bool
+    process_objcat : bool
         merge input OBJCATs into output AD instance?
+    output_shape : None/iterable
+        final shape of output
+    origin : None/iterable
+        location of origin
 
     Returns
     -------
     AstroData: single-extension AD with suitable WCS
     """
     array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
+    is_single = ad.is_single
 
     # It's not clear how much checking we should do here but at a minimum
     # we should probably confirm that each extension is purely data. It's
     # up to a primitve to catch this, call trim_to_data_section(), and try again
-    if ad.is_single:
-        shapes_ok = list(ad.detector_section()) == (0, ad.shape[1], 0, ad.shape[0])
+    if is_single:
+        addatsec = (0, ad.shape[0]) if len(ad.shape) == 1 else ad.data_section()
+        shapes_ok = np.array_equal(np.ravel([(0, length) for length in ad.shape[::-1]]),
+                                   list(addatsec))
     else:
-        shapes_ok = all(((datsec.x1, datsec.y1) == (0, 0) and
-                         (datsec.y2, datsec.x2) == shape)
-                         for datsec, shape in zip(ad.data_section(), ad.shape))
+        shapes_ok = all(np.array_equal(np.ravel([(0, length) for length in shape[::-1]]),
+                                   list(datsec)) for datsec, shape in zip(ad.data_section(), ad.shape))
     if not shapes_ok:
         raise ValueError("Not all data sections agree with extension shapes")
 
     # Create the blocks (individual physical detectors)
-    if ad.is_single:
+    if is_single:
         blocks = Block(ad)
     else:
         array_info = gt.array_information(ad)
@@ -1903,6 +1909,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
     dg = DataGroup()
     dg.no_data['mask'] = DQ.no_data
+    dg.origin = origin
+    dg.output_shape = output_shape
 
     for block in blocks:
         wcs = block.wcs
@@ -1938,7 +1946,9 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     ad_out.orig_filename = ad.orig_filename
 
     ref_index = find_reference_extension(ad)
-    ad_out.append(dg.output_dict['data'], header=ad[ref_index].hdr.copy())
+    ref_ext = ad if is_single else ad[ref_index]
+
+    ad_out.append(dg.output_dict['data'], header=ref_ext.hdr.copy())
     for key, value in dg.output_dict.items():
         if key != 'data':  # already done this
             setattr(ad_out[0], key, value)
@@ -1946,7 +1956,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # Create a new gWCS object describing the remaining transformation.
     # Not all gWCS objects have to have the same steps, so we need to
     # redetermine the frame_index in the reference extensions's WCS.
-    ref_wcs = ad[ref_index].wcs
+    ref_wcs = ref_ext.wcs
     frame_index = ref_wcs.available_frames.index(frame_name)
     new_pipeline = ref_wcs.pipeline[frame_index:]
     # Remember, dg.origin is (y, x)
@@ -1966,7 +1976,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     ad_out.phu['ORIGTRAN'] = str(dg.origin[::-1])
 
     # Update and delete keywords from extension (_update_headers)
-    ndim = len(ad[ref_index].shape)
+    ndim = len(ref_ext.shape)
     if ndim != 2:
         log.warning("The updating of header keywords has only been "
                     "fully tested for 2D data.")
@@ -1992,19 +2002,20 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             del ad.hdr[keywords['array']]
 
     # Try to assign an array name for this based on commonality
-    kw = ad._keyword_for('array_name')
-    try:
-        array_names = set([name.split(',')[0] for name in ad.array_name()])
-    except AttributeError:
-        array_name = ''
-    else:
-        array_name = array_names.pop()
-        if array_names:
+    if not is_single:
+        kw = ad._keyword_for('array_name')
+        try:
+            array_names = set([name.split(',')[0] for name in ad.array_name()])
+        except AttributeError:
             array_name = ''
-    if array_name:
-        ad_out.hdr[kw] = array_name
-    elif kw in header:
-        del ad_out.hdr[kw]
+        else:
+            array_name = array_names.pop()
+            if array_names:
+                array_name = ''
+        if array_name:
+            ad_out.hdr[kw] = array_name
+        elif kw in header:
+            del ad_out.hdr[kw]
 
     if 'CCDNAME' in ad_out[0].hdr:
         ad_out.hdr['CCDNAME'] = ad.detector_name()
