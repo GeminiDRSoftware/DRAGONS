@@ -12,7 +12,7 @@ from astropy import units as u
 
 Section = namedtuple('Section', 'x1 x2 y1 y2')
 
-def array_from_list(list_of_quantities):
+def array_from_list(list_of_quantities, unit=None):
     """
     Convert a list of Quantity objects to a numpy array. The elements of the
     input list must all be converted to the same units.
@@ -26,7 +26,8 @@ def array_from_list(list_of_quantities):
     -------
     array: array representation of this list
     """
-    unit = list_of_quantities[0].unit
+    if unit is None:
+        unit = list_of_quantities[0].unit
     values = [x.to(unit).value for x in list_of_quantities]
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)

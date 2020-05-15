@@ -277,7 +277,7 @@ class Spect(PrimitivesBASE):
                         zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
                 # TODO: Abstract to interactive fitting
-                wave = array_from_list(wave)
+                wave = array_from_list(wave, unit=u.nm)
                 zpt = array_from_list(zpt)
                 zpt_err = array_from_list(zpt_err)
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
