@@ -79,8 +79,12 @@ associated_calibrations = {
             "N20180109S0354.fits",
             "N20180109S0355.fits",
         ],
-        'flat': [],
-        'arcs': [],
+        'flat': [
+            "N20180109S0288.fits",
+        ],
+        'arcs': [
+            "20180109S0315.fits",
+        ],
     }
 }
 
