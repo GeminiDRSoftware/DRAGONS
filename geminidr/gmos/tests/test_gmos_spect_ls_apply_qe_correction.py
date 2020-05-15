@@ -83,7 +83,7 @@ associated_calibrations = {
             "N20180109S0288.fits",
         ],
         'arcs': [
-            "20180109S0315.fits",
+            "N20180109S0315.fits",
         ],
     }
 }
@@ -226,46 +226,46 @@ def create_inputs_recipe():
         cals = associated_calibrations[filename]
         bias_paths = [download_from_archive(f) for f in cals['bias']]
         flat_paths = [download_from_archive(f) for f in cals['flat']]
-        arc_paths = [download_from_archive(f) for f in cals['arc']]
+        arc_paths = [download_from_archive(f) for f in cals['arcs']]
 
         sci_ad = astrodata.open(sci_path)
         data_label = sci_ad.data_label()
 
-        # logutils.config(file_name='log_bias_{}.txt'.format(data_label))
-        # bias_reduce = Reduce()
-        # bias_reduce.files.extend(bias_paths)
-        # bias_reduce.runr()
-        # bias_master = bias_reduce.output_filenames.pop()
-        # calibration_files = ['processed_bias:{}'.format(bias_master)]
-        # del bias_reduce
-        #
-        # logutils.config(file_name='log_flat_{}.txt'.format(data_label))
-        # flat_reduce = Reduce()
-        # flat_reduce.files.extend(flat_paths)
-        # flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
-        # flat_reduce.runr()
-        # flat_master = flat_reduce.output_filenames.pop()
-        # calibration_files.append('processed_flat:{}'.format(flat_master))
-        # del flat_reduce
-        #
-        # logutils.config(file_name='log_arc_{}.txt'.format(data_label))
-        # arc_reduce = Reduce()
-        # arc_reduce.files.extend(arc_paths)
-        # arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
-        # arc_reduce.runr()
-        # _ = arc_reduce.output_filenames.pop()
-        #
-        # logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
-        # p = primitives_gmos_longslit.GMOSLongslit([ad])
-        # p.prepare()
-        # p.addDQ(static_bpm=None)
-        # p.addVAR(read_noise=True)
-        # p.overscanCorrect()
-        # p.biasCorrect(bias=bias_master)
-        # p.ADUToElectrons()
-        # p.addVAR(poisson_noise=True)
-        # p.flatCorrect(flat=flat_master)
-        # _ = p.writeOutputs().pop()
+        logutils.config(file_name='log_bias_{}.txt'.format(data_label))
+        bias_reduce = Reduce()
+        bias_reduce.files.extend(bias_paths)
+        bias_reduce.runr()
+        bias_master = bias_reduce.output_filenames.pop()
+        calibration_files = ['processed_bias:{}'.format(bias_master)]
+        del bias_reduce
+        
+        logutils.config(file_name='log_flat_{}.txt'.format(data_label))
+        flat_reduce = Reduce()
+        flat_reduce.files.extend(flat_paths)
+        flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
+        flat_reduce.runr()
+        flat_master = flat_reduce.output_filenames.pop()
+        calibration_files.append('processed_flat:{}'.format(flat_master))
+        del flat_reduce
+        
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+        arc_reduce = Reduce()
+        arc_reduce.files.extend(arc_paths)
+        arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+        arc_reduce.runr()
+        _ = arc_reduce.output_filenames.pop()
+        
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
+        p.prepare()
+        p.addDQ(static_bpm=None)
+        p.addVAR(read_noise=True)
+        p.overscanCorrect()
+        p.biasCorrect(bias=bias_master)
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.flatCorrect(flat=flat_master)
+        _ = p.writeOutputs().pop()
 
 
 # -- Classes and functions for analysis ---------------------------------------
