@@ -19,12 +19,16 @@ def loop_process(in_queue, out_queue):
         (add docstring)
     """
     while True:
-        cmd = in_queue.get()
         try:
-            result = check_output(cmd, stderr=STDOUT)
-        except CalledProcessError as e:
-            result = e
-        out_queue.put(result)
+            cmd = in_queue.get()
+
+            try:
+                result = check_output(cmd, stderr=STDOUT)
+            except CalledProcessError as e:
+                result = e
+            out_queue.put(result)
+        except KeyboardInterrupt:
+            continue
 
 
 class ETISubprocess:
