@@ -222,15 +222,15 @@ def create_inputs_recipe():
         print(filename)
         print(cals)
 
-        # sci_path = download_from_archive(filename)
-        # cals = associated_calibrations[filename]
-        # bias_paths = [download_from_archive(f) for f in ]
-        # flat_paths = [download_from_archive(f) for f in flat_fnames]
-        # arc_paths = [download_from_archive(f) for f in arc_fnames]
-        #
-        # sci_ad = astrodata.open(sci_path)
-        # data_label = sci_ad.data_label()
-        #
+        sci_path = download_from_archive(filename)
+        cals = associated_calibrations[filename]
+        bias_paths = [download_from_archive(f) for f in cals['bias']]
+        flat_paths = [download_from_archive(f) for f in cals['flat']]
+        arc_paths = [download_from_archive(f) for f in cals['arc']]
+
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
+
         # logutils.config(file_name='log_bias_{}.txt'.format(data_label))
         # bias_reduce = Reduce()
         # bias_reduce.files.extend(bias_paths)
@@ -688,7 +688,7 @@ class WSolution:
 
 if __name__ == '__main__':
     import sys
-    if "--create_inputs" in sys.argv[1:]:
+    if "--create-inputs" in sys.argv[1:]:
         create_inputs_recipe()
     else:
         pytest.main()
