@@ -270,7 +270,7 @@ class GMOSSpect(Spect, GMOS):
                 # TODO: want with_units
                 waves = trans(xgrid, ygrid)[0] * u.nm  # Wavelength always axis 0
                 try:
-                    qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value)
+                    qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value).astype(np.float32)
                 except TypeError:  # qeModel() returns None
                     msg = "No QE correction found for {}:{}".format(ad.filename, ext.hdr['EXTVER'])
                     if 'sq' in self.mode:
