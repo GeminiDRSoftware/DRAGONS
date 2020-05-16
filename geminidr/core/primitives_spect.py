@@ -1590,7 +1590,7 @@ class Spect(PrimitivesBASE):
             # middle row/column, non-distortion-corrected data will have the
             # wrong wavelength solution in other columns/rows
             if (any(len(ext.shape) == 2 for ext in ad) and
-                    not timestamp_key['distortionCorrect'] in ad.phu):
+                    not self.timestamp_keys['distortionCorrect'] in ad.phu):
                 log.warning("{} has not been distortion corrected".format(ad.filename))
 
             exptime = ad.exposure_time()
@@ -1640,31 +1640,15 @@ class Spect(PrimitivesBASE):
                 # Get wavelengths of all pixels
                 ndim = len(ext.shape)
                 dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
-                wave_unit = u.Unit(ext.hdr.get('CUNIT{}'.format(ndim - dispaxis), 'nm'))
 
                 # Get wavelengths and pixel sizes of all the pixels along the
                 # dispersion axis by calculating wavelengths in the middles and
-                # edges of all pixels. Use WAVECAL if it exists.
-                coords = np.arange(-0.5, ext.shape[dispaxis], 0.5)
-                try:
-                    wavecal = dict(zip(ext.WAVECAL["name"],
-                                       ext.WAVECAL["coefficients"]))
-                except (AttributeError, KeyError):
-                    wcs = WCS(ext.hdr)
-                    if ndim == 2:
-                        # 2D coordinates along middle row or column
-                        other_axis = np.full_like(coords, 0.5 * (ext.shape[1-dispaxis]-1))
-                        coords = [coords, other_axis] if dispaxis == 1 else [other_axis, coords]
-                    else:
-                        coords = [coords]
-                    all_waves = wcs.all_pix2world(*coords, 0) * wave_unit
-                    if ndim == 2:
-                        all_waves = all_waves[1 - dispaxis]
-                    else:
-                        all_waves = all_waves[0]
-                else:
-                    cheb = astromodels.dict_to_chebyshev(wavecal)
-                    all_waves = cheb(coords) * u.nm
+                # edges of all pixels.
+                all_coords = [0.5*(length - 1) for length in ext.shape]
+                all_coords[dispaxis] = np.arange(-0.5, ext.shape[dispaxis], 0.5)
+                all_waves = ext.wcs(*all_coords[::-1], with_units=True)
+                if ndim > 1:
+                    all_waves = all_waves[0]
 
                 waves = all_waves[1::2]
                 pixel_sizes = abs(np.diff(all_waves[::2]))
