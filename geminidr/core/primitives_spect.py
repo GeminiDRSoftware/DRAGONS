@@ -1703,21 +1703,18 @@ class Spect(PrimitivesBASE):
 
         suffix : str
             Suffix to be added to output files.
-
         w1 : float
             Wavelength of first pixel (nm). See Notes below.
-
         w2 : float
             Wavelength of last pixel (nm). See Notes below.
-
         dw : float
             Dispersion (nm/pixel). See Notes below.
-
         npix : int
             Number of pixels in output spectrum. See Notes below.
-
         conserve : bool
             Conserve flux (rather than interpolate)?
+        order : int
+            order of interpolation during the resampling
 
         Notes
         -----
@@ -1737,6 +1734,7 @@ class Spect(PrimitivesBASE):
         dw = params["dw"]
         npix = params["npix"]
         conserve = params["conserve"]
+        order = params["order"]
 
         # There are either 1 or 4 Nones, due to validation
         nones = [w1, w2, dw, npix].count(None)
@@ -1752,66 +1750,17 @@ class Spect(PrimitivesBASE):
             else:
                 dw = (w2 - w1) / (npix - 1)
 
+        # We send the ADs through one-by-one so there's no attempt to
+        # align them in the spatial direction
+        adoutputs = []
         for ad in adinputs:
-            for ext in ad:
-                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+            ad_out = self.resampleToCommonFrame([ad], suffix=sfx, w1=w1, w2=w2, dw=dw,
+                                                converse=conserve, order=order,
+                                                trim_data=False)[0]
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            adoutputs.append(ad_out)
 
-                attributes = [attr for attr in ('data', 'mask', 'variance')
-                              if getattr(ext, attr) is not None]
-                try:
-                    wavecal = dict(zip(ext.WAVECAL["name"],
-                                       ext.WAVECAL["coefficients"]))
-                except (AttributeError, KeyError):
-                    cheb = None
-                else:
-                    cheb = astromodels.dict_to_chebyshev(wavecal)
-                if cheb is None:
-                    log.warning("{} has no WAVECAL. Cannot linearize.".
-                                format(extname))
-                    continue
-
-                if nones == 4:
-                    npix = ext.data.size
-                    limits = cheb([0, npix - 1])
-                    w1, w2 = min(limits), max(limits)
-                    dw = (w2 - w1) / (npix - 1)
-
-                log.stdinfo("Linearizing {}: w1={:.3f} w2={:.3f} dw={:.3f} "
-                            "npix={}".format(extname, w1, w2, dw, npix))
-
-                cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
-                t = transform.Transform(cheb)
-
-                # Linearization (and inverse)
-                t.append(models.Shift(-w1))
-                t.append(models.Scale(1. / dw))
-
-                # If we resample to a coarser pixel scale, we may interpolate
-                # over features. We avoid this by subsampling back to the
-                # original pixel scale (approximately).
-                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = int(np.ceil(abs(dw / input_dw) - 0.1))
-
-                dg = transform.DataGroup([ext], [t])
-                dg.output_shape = (npix,)
-                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
-                output_dict = dg.transform(attributes=attributes, subsample=subsample,
-                                           conserve=conserve)
-                for key, value in output_dict.items():
-                    setattr(ext, key, value)
-
-                ext.hdr["CRPIX1"] = 1.
-                ext.hdr["CRVAL1"] = w1
-                ext.hdr["CDELT1"] = dw
-                ext.hdr["CD1_1"] = dw
-                ext.hdr["CUNIT1"] = "nm"
-                del ext.WAVECAL  # not needed any more
-
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
-
-        return adinputs
+        return adoutputs
 
     def normalizeFlat(self, adinputs=None, **params):
         """
@@ -1950,6 +1899,8 @@ class Spect(PrimitivesBASE):
             Number of pixels in output spectrum. See Notes below.
         conserve : bool
             Conserve flux (rather than interpolate)?
+        order : int
+            order of interpolation during the resampling
         trim_data : bool
             Trim spectra to size of reference spectra?
         force_linear : bool
