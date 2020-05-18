@@ -26,18 +26,6 @@ def pytest_addoption(parser):
             help="enable tests that use the cache_file_from_archive fixture"
         )
         parser.addoption(
-            "--force-cache",
-            action="store_true",
-            default=False,
-            help="Forces data cache when using cache_file_from_archive fixture"
-        )
-        parser.addoption(
-            "--force-preprocess-data",
-            action="store_true",
-            default=False,
-            help="Force preprocessing data as part of the tests."
-        )
-        parser.addoption(
             "--do-plots",
             action="store_true",
             default=False,
