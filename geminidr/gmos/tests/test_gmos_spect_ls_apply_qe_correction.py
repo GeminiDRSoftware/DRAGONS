@@ -147,6 +147,7 @@ associated_calibrations = {
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
 def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 
@@ -174,6 +175,7 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 
 
 @pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
 def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, reference_ad):
 
