@@ -44,10 +44,6 @@ from gempy.library import astromodels
 from gempy.utils import logutils
 from recipe_system.testing import reference_ad
 
-try:
-    from .plots_gmos_spect_longslit_arcs import PlotGmosSpectLongslitArcs
-except ImportError:
-    pass
 
 # Test parameters --------------------------------------------------------------
 determine_wavelength_solution_parameters = {
