@@ -219,7 +219,7 @@ def reduce_data(change_working_dir):
             p.ADUToElectrons()
             p.addVAR(poisson_noise=True)
             p.flatCorrect(flat=master_flat)
-            p.applyQECorrection(arc=master_arc)
+            p.QECorrect(arc=master_arc)
             p.distortionCorrect(arc=master_arc)
             p.findSourceApertures(max_apertures=1)
             p.skyCorrectFromSlit()

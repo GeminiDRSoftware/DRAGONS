@@ -83,7 +83,7 @@ def test_applied_qe_is_locally_continuous(preprocessed_data, change_working_dir)
     with change_working_dir():
 
         p = primitives_gmos_longslit.GMOSLongslit([input_ad])
-        p.applyQECorrection(arc=master_arc)
+        p.QECorrect(arc=master_arc)
 
         # Need these extra steps to extract and analyse the data
         p.distortionCorrect(arc=master_arc)
@@ -112,7 +112,7 @@ def test_regression_on_apply_qe_correction(
 
     with change_working_dir():
         p = primitives_gmos_longslit.GMOSLongslit([input_ad])
-        p.applyQECorrection(arc=master_arc)
+        p.QECorrect(arc=master_arc)
         qe_corrected_ad = p.writeOutputs().pop()
 
     assert 'QECORR' in qe_corrected_ad.phu.keys()
@@ -131,7 +131,7 @@ def test_regression_on_apply_qe_correction(
 def preprocessed_data(request, cache_file_from_archive, get_master_arc,
                       path_to_inputs, reduce_arc, reduce_bias, reduce_data, reduce_flat):
     """
-    Returns the processed spectrum right after running `applyQECorrection`.
+    Returns the processed spectrum right after running `QECorrect`.
 
     Parameters
     ----------
@@ -199,7 +199,7 @@ def preprocessed_data(request, cache_file_from_archive, get_master_arc,
 def reduce_data(change_working_dir):
     """
     Factory for function for data reduction up to one step before
-    `applyQECorrection`.
+    `QECorrect`.
 
     Parameters
     ----------

@@ -128,7 +128,7 @@ class GMOSSpect(Spect, GMOS):
         super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_spect)
 
-    def applyQECorrection(self, adinputs=None, **params):
+    def QECorrect(self, adinputs=None, **params):
         """
         This primitive applies a wavelength-dependent QE correction to
         a 2D spectral image, based on the wavelength solution of an
@@ -158,7 +158,7 @@ class GMOSSpect(Spect, GMOS):
         for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
-                            "already been processed by applyQECorrection".
+                            "already been processed by QECorrect".
                             format(ad.filename))
                 continue
 
@@ -169,7 +169,7 @@ class GMOSSpect(Spect, GMOS):
 
             if self.timestamp_keys['mosaicDetectors'] in ad.phu:
                 log.warning(f"{ad.filename} has been processed by mosaic"
-                            "Detectors so applyQECorrection cannot be run")
+                            "Detectors so QECorrect cannot be run")
                 continue
 
             # Determines whether to multiply or divide by QE correction

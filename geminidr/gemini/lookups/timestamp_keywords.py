@@ -15,7 +15,7 @@ timestamp_keys = {
     "adjustSlitOffsetToReference": "CORRSLOF",
     "ADUToElectrons": "ADUTOELE",
     "applyDQPlane": "APLDQPLN",
-    "applyQECorrection": "QECORR",
+    "QECorrect": "QECORR",
     "appwave": "APPWAVE",
     "associateSky": "ASSOCSKY",
     "attachWavelengthSolution": "ATTWVSOL",
