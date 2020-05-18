@@ -146,9 +146,7 @@ associated_calibrations = {
 
 
 # -- Tests --------------------------------------------------------------------
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
-@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
 def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 
@@ -175,9 +173,7 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
     assert abs(gap.measure_gaps(1) < 0.05)
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
-@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
 def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, reference_ad):
 
