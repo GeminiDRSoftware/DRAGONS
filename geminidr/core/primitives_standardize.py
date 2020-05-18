@@ -244,9 +244,9 @@ class Standardize(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        read_noise: bool
+        read_noise: bool (optional, default: False)
             add the read noise component?
-        poisson_noise: bool
+        poisson_noise: bool (optional, default: False)
             add the Poisson noise component?
         """
         log = self.log
