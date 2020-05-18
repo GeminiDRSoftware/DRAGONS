@@ -695,7 +695,9 @@ def create_inputs_recipe():
 
     root_path = os.path.join("./dragons_test_inputs/")
     module_path = "geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
-    os.makedirs(os.path.join(root_path, module_path, "inputs"), exist_ok=True)
+    path = os.path.join(root_path, module_path, "inputs")
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
 
     for filename, cals in associated_calibrations.items():
         print(filename)
