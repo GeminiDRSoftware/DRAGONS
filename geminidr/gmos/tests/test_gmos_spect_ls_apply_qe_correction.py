@@ -167,9 +167,9 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
         p.linearizeSpectra()
         processed_ad = p.writeOutputs().pop()
 
-        basename = processed_ad.filename.replace('_linearized', '')
-        kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
-        gap = MeasureGapSizeLocallyWithSpline(processed_ad, **kwargs)
+    basename = processed_ad.filename.replace('_linearized', '')
+    kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
+    gap = MeasureGapSizeLocallyWithSpline(processed_ad, **kwargs)
 
     assert abs(gap.measure_gaps(0) < 0.05)
     assert abs(gap.measure_gaps(1) < 0.05)
