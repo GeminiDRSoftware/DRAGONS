@@ -9,6 +9,7 @@ import numpy as np
 from importlib import import_module
 from datetime import datetime
 from functools import reduce
+from copy import deepcopy
 
 from astropy.modeling import models, Model
 from astropy import units as u
@@ -209,7 +210,8 @@ class GMOSSpect(Spect, GMOS):
                     else:
                         log.warning(msg)
 
-                arc_wcs = arc[0].wcs
+                # We'll be modifying this
+                arc_wcs = deepcopy(arc[0].wcs)
                 if 'distortion_corrected' not in arc_wcs.available_frames:
                     msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
                     if 'sq' in self.mode:
