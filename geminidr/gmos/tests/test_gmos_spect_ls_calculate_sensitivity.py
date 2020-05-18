@@ -143,7 +143,8 @@ def ad(path_to_inputs, request):
     Returns
     -------
     AstroData
-        Input spectrum processed up to right before the `applyQECorrection`.
+        Input spectrum processed up to right before the `calculateSensitivity`
+        primitive.
     """
     filename = request.param
     path = os.path.join(path_to_inputs, filename)
