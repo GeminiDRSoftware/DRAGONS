@@ -535,8 +535,10 @@ class MeasureGapSizeLocally(abc.ABC):
         return abs(dy)
 
     def save_plot(self):
-        # plt.show()
-        self.fig.savefig("{:s}.png".format(self.plot_name))
+        plot_dir = "plots/geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
+        os.makedirs(plot_dir, exist_ok=True)
+        self.fig.savefig(
+            os.path.join(plot_dir, "{:s}.png".format(self.plot_name)))
 
     def start_plot(self):
 
