@@ -111,6 +111,39 @@ def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
     return local_path
 
 
+def get_associated_calibrations(filename, nbias=5):
+    """
+    Queries Gemini Observatory Archive for associated calibrations to reduce the
+    data that will be used for testing.
+    Parameters
+    ----------
+    filename : str
+        Input file name
+    """
+    pd = pytest.importorskip("pandas", minversion='1.0.0')
+    url = "https://archive.gemini.edu/calmgr/{}".format(filename)
+
+    tree = et.parse(urllib.request.urlopen(url))
+    root = tree.getroot()
+    prefix = root.tag[:root.tag.rfind('}') + 1]
+
+    def iter_nodes(node):
+        cal_type = node.find(prefix + 'caltype').text
+        cal_filename = node.find(prefix + 'filename').text
+        return cal_filename, cal_type
+
+    cals = pd.DataFrame(
+        [iter_nodes(node) for node in tree.iter(prefix + 'calibration')],
+        columns=['filename', 'caltype'])
+
+    cals = cals.sort_values(by='filename')
+    cals = cals[~cals.caltype.str.contains('processed_')]
+    cals = cals[~cals.caltype.str.contains('specphot')]
+    cals = cals.drop(cals[cals.caltype.str.contains('bias')][nbias:].index)
+
+    return cals
+
+
 @pytest.fixture(scope='module')
 def path_to_inputs(request, env_var='DRAGONS_TEST'):
     """
