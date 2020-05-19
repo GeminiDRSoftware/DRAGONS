@@ -6,15 +6,16 @@ import numpy as np
 import os
 import pytest
 
+from scipy.interpolate import BSpline
+
 import astrodata
 import gemini_instruments
 
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable
-from scipy.interpolate import BSpline
-
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
+from gempy.utils import logutils
 from recipe_system.testing import reference_ad
 
 
@@ -113,6 +114,7 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
 def test_regression_on_calculate_sensitivity(ad, change_working_dir, reference_ad):
 
     with change_working_dir():
+        logutils.config(file_name='log_regression_{:s}.txt'.format(ad.data_label()))
         p = primitives_gmos_spect.GMOSSpect([ad])
         p.calculateSensitivity(bandpass=5, order=6)
         calc_sens_ad = p.writeOutputs().pop()
