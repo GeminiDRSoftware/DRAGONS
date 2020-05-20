@@ -130,9 +130,10 @@ def create_inputs_recipe():
 
     root_path = os.path.join("./dragons_test_inputs/")
     module_path = "geminidr/gmos/test_gmos_spect_ls_trace_apertures/"
-    path = os.path.join(root_path, module_path, "inputs")
+    path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
+    os.makedirs("inputs/", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename, center in input_data:
@@ -178,10 +179,12 @@ def create_inputs_recipe():
         )
 
         _ad[0].APERTURE = aperture
-        _ad.write(overwrite=True)
 
+        os.chdir("inputs/")
+        _ad.write(overwrite=True)
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(_ad.filename))
+        os.chdir("../")
 
 
 if __name__ == '__main__':

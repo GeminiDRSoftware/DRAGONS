@@ -695,9 +695,10 @@ def create_inputs_recipe():
 
     root_path = os.path.join("./dragons_test_inputs/")
     module_path = "geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
-    path = os.path.join(root_path, module_path, "inputs")
+    path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
+    os.makedirs("./inputs/", exist_ok=True)
 
     for filename, cals in associated_calibrations.items():
         print(filename)
@@ -746,7 +747,10 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.flatCorrect(flat=flat_master)
+
+        os.chdir("inputs/")
         _ = p.writeOutputs().pop()
+        os.chdir("../")
 
 
 if __name__ == '__main__':

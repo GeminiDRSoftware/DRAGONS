@@ -180,6 +180,7 @@ def ad(request, path_to_inputs):
 
     return ad
 
+
 # -- Recipe to create pre-processed data ---------------------------------------
 def create_inputs_recipe():
     """

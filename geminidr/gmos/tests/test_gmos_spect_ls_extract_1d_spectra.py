@@ -184,10 +184,11 @@ def create_inputs_recipe():
 
     root_path = os.path.join("./dragons_test_inputs/")
     module_path = "geminidr/gmos/test_gmos_spect_ls_extract_1d_spectra/"
-    path = os.path.join(root_path, module_path, "inputs")
+    path = os.path.join(root_path, module_path)
 
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
+    os.makedirs("inputs/", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename in test_datasets:
@@ -228,7 +229,9 @@ def create_inputs_recipe():
         p.traceApertures(trace_order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
         p.skyCorrectFromSlit(order=5, grow=0)
 
+        os.chdir("inputs/")
         _ = p.writeOutputs()[0]
+        os.chdir("../")
 
 
 if __name__ == '__main__':

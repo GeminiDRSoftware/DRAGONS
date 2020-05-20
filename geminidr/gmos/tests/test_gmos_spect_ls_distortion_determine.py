@@ -457,10 +457,11 @@ def create_inputs_recipe():
 
     root_path = os.path.join("./dragons_test_inputs/")
     module_path = "geminidr/gmos/test_gmos_spect_ls_distortion_determine/"
-    path = os.path.join(root_path, module_path, "inputs")
+    path = os.path.join(root_path, module_path)
 
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
+    os.makedirs("inputs/", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename in datasets:
@@ -482,7 +483,9 @@ def create_inputs_recipe():
         p.mosaicDetectors()
         p.makeIRAFCompatible()
 
+        os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
+        os.chdir("../")
         print("Wrote pre-processed file to:\n"
               "    {:s}".format(processed_ad.filename))
 

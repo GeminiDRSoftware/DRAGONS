@@ -160,9 +160,10 @@ def create_inputs_recipe():
 
     root_path = os.path.join("./dragons_test_inputs/")
     module_path = "geminidr/gmos/test_gmos_spect_ls_sky_correct_from_slit/"
-    path = os.path.join(root_path, module_path, "inputs")
+    path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
+    os.makedirs("inputs/", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename, pars in input_data.items():
@@ -197,9 +198,10 @@ def create_inputs_recipe():
 
         p = primitives_gmos_spect.GMOSSpect([_ad])
         p.traceApertures(trace_order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
-        ad = p.writeOutputs()[0]
 
+        os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
+        os.chdir("../")
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(processed_ad.filename))
 
