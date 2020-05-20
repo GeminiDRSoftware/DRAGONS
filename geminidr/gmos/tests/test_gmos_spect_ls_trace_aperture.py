@@ -6,27 +6,30 @@ these outputs are scientifically relevant.
 """
 
 import os
+import numpy as np
 import pytest
+
 from astropy import table
 
 import astrodata
 import geminidr
-import numpy as np
-from astrodata import testing
+
 from geminidr.gmos import primitives_gmos_spect
+from gempy.utils import logutils
+from recipe_system.testing import reference_ad
+
 
 # Test parameters --------------------------------------------------------------
-input_datasets = [
-    # (Input Filename, Aperture Center)
-    # ("N20180508S0021.fits", 244),  # B600 720 - todo: won't pass
-    ("N20180509S0010.fits", 259),  # R400 900
-    # ("N20180516S0081.fits", 255),  # R600 860
-    # ("N20190201S0163.fits", 255),  # B600 530
-    # ("N20190313S0114.fits", 254),  # B600 482
-    # ("N20190427S0123.fits", 260),  # R400 525
-    # ("N20190427S0126.fits", 259),  # R400 625
-    # ("N20190427S0127.fits", 258),  # R400 725
-    # ("N20190427S0141.fits", 264),  # R150 660
+test_datasets = [
+    "N20180508S0021_mosaic.fits",  # B600 720
+    "N20180509S0010_mosaic.fits",  # R400 900
+    "N20180516S0081_mosaic.fits",  # R600 860
+    "N20190201S0163_mosaic.fits",  # B600 530
+    "N20190313S0114_mosaic.fits",  # B600 482
+    "N20190427S0123_mosaic.fits",  # R400 525
+    "N20190427S0126_mosaic.fits",  # R400 625
+    "N20190427S0127_mosaic.fits",  # R400 725
+    "N20190427S0141_mosaic.fits",  # R150 660
 ]
 
 fixed_test_parameters_for_determine_distortion = {
@@ -42,11 +45,12 @@ fixed_test_parameters_for_determine_distortion = {
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("preprocessed_ad", input_datasets, indirect=True)
-def test_regression_trace_apertures(preprocessed_ad, change_working_dir, reference_ad):
+@pytest.mark.parametrize("ad", test_datasets, indirect=True)
+def test_regression_trace_apertures(ad, change_working_dir, reference_ad):
 
     with change_working_dir():
-        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
+        logutils.config(file_name="log_regression_{}.txt".format(ad.data_label()))
+        p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.traceApertures()
         aperture_traced_ad = p.writeOutputs().pop()
@@ -68,108 +72,121 @@ def test_regression_trace_apertures(preprocessed_ad, change_working_dir, referen
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')
-def preprocessed_ad(request, cache_file_from_archive, change_working_dir,
-                    path_to_inputs, reduce_data):
+def ad(path_to_inputs, request):
     """
-    Runs `traceApertures` primitive on a pre-processed data and return the
-    output object containing a `.APERTURE` table.
+    Returns the pre-processed spectrum file.
 
     Parameters
     ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-    cache_file_from_archive : pytest.fixture
-        Path to where the data will be temporarily cached.
-    change_working_dir : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
     path_to_inputs : pytest.fixture
-        Path to the permanent local input files.
-    reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before
-        `determineWavelengthSolution`.
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
 
     Returns
     -------
     AstroData
-        Aperture-traced data.
+        Input spectrum processed up to right before the `calculateSensitivity`
+        primitive.
     """
-    basename, center = request.param
-    should_preprocess = request.config.getoption("--force-preprocess-data")
+    filename = request.param
+    path = os.path.join(path_to_inputs, filename)
 
-    input_fname = basename.replace('.fits', '_mosaic.fits')
-    input_path = os.path.join(path_to_inputs, input_fname)
-
-    if os.path.exists(input_path):
-        input_ad = astrodata.open(input_path)
-
-    elif should_preprocess:
-        filename = cache_file_from_archive(basename)
-        ad = astrodata.open(filename)
-        input_ad = reduce_data(ad, center)
-
+    if os.path.exists(path):
+        ad = astrodata.open(path)
     else:
-        raise IOError(
-            'Could not find input file:\n' +
-            '  {:s}\n'.format(input_path) +
-            '  Run pytest with "--force-preprocess-data" to get it')
+        raise FileNotFoundError(path)
 
-    return input_ad
+    return ad
 
 
-@pytest.fixture(scope='module')
-def reduce_data(change_working_dir):
+# -- Recipe to create pre-processed data ---------------------------------------
+def create_inputs_recipe():
     """
-    Recipe used to generate input data for `traceAperture` tests.
+    Creates input data for tests using pre-processed standard star and its
+    calibration files.
 
-    Parameters
-    ----------
-    change_working_dir : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
-
-    Returns
-    -------
-    AstroData
-        Pre-processed arc data.
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
     """
-    def _reduce_data(ad, center):
-        with change_working_dir():
-            p = primitives_gmos_spect.GMOSSpect([ad])
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.mosaicDetectors()
-            ad = p.makeIRAFCompatible()[0]
+    import os
+    from astrodata.testing import download_from_archive
+    from gempy.utils import logutils
 
-            width = ad[0].shape[1]
+    input_data = [
+        ("N20180508S0021.fits", 244),  # B600 720 - todo: won't pass
+        ("N20180509S0010.fits", 259),  # R400 900
+        ("N20180516S0081.fits", 255),  # R600 860
+        ("N20190201S0163.fits", 255),  # B600 530
+        ("N20190313S0114.fits", 254),  # B600 482
+        ("N20190427S0123.fits", 260),  # R400 525
+        ("N20190427S0126.fits", 259),  # R400 625
+        ("N20190427S0127.fits", 258),  # R400 725
+        ("N20190427S0141.fits", 264),  # R150 660
+    ]
 
-            aperture = table.Table(
-                [[1],  # Number
-                 [1],  # ndim
-                 [0],  # degree
-                 [0],  # domain_start
-                 [width - 1],  # domain_end
-                 [center],  # c0
-                 [-10],  # aper_lower
-                 [10],  # aper_upper
-                 ],
-                names=[
-                    'number',
-                    'ndim',
-                    'degree',
-                    'domain_start',
-                    'domain_end',
-                    'c0',
-                    'aper_lower',
-                    'aper_upper']
-            )
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/test_gmos_spect_ls_trace_apertures/"
+    path = os.path.join(root_path, module_path, "inputs")
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
-            ad[0].APERTURE = aperture
-            ad.write()
+    for filename, center in input_data:
 
-        return ad
-    return _reduce_data
+        print('Downloading files...')
+        sci_path = download_from_archive(filename)
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
+
+        print('Reducing pre-processed data:')
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p.prepare()
+        p.addDQ(static_bpm=None)
+        p.addVAR(read_noise=True)
+        p.overscanCorrect()
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.mosaicDetectors()
+        _ad = p.makeIRAFCompatible()[0]
+
+        width = _ad[0].shape[1]
+
+        aperture = table.Table(
+            [[1],  # Number
+             [1],  # ndim
+             [0],  # degree
+             [0],  # domain_start
+             [width - 1],  # domain_end
+             [center],  # c0
+             [-10],  # aper_lower
+             [10],  # aper_upper
+             ],
+            names=[
+                'number',
+                'ndim',
+                'degree',
+                'domain_start',
+                'domain_end',
+                'c0',
+                'aper_lower',
+                'aper_upper']
+        )
+
+        _ad[0].APERTURE = aperture
+        _ad.write(overwrite=True)
+
+        print('Wrote pre-processed file to:\n'
+              '    {:s}'.format(_ad.filename))
+
+
+if __name__ == '__main__':
+    import sys
+    if "--create-inputs" in sys.argv[1:]:
+        create_inputs_recipe()
+    else:
+        pytest.main()
