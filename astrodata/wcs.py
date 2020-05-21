@@ -98,6 +98,7 @@ def gwcs_to_fits(ndd, hdr=None):
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
     wcs_dict = {'WCSAXES': len(world_axes)}
+    wcs_dict['WCSDIM'] = wcs_dict['WCSAXES']
 
     # Find and process the sky projection first
     if {'lon', 'lat'}.issubset(world_axes):
