@@ -22,17 +22,20 @@ from gwcs.utils import sky_pairs, specsystems
 
 def fitswcs_to_gwcs(hdr):
     """
-    Create and return a gWCS object from a FITS header.
-    Currently the gWCS function here only supports imaging frames,
-    but that's OK for now because Gemini raw data always has an imaging WCS
+    Create and return a gWCS object from a FITS header. If it can't
+    construct one, it should quietly return None.
     """
+    # Type of CoordinateFrame to construct for a FITS keyword
     frame_mapping = {'WAVE': cf.SpectralFrame}
+    # coordinate names for CelestialFrame
     coordinate_outputs = {'alpha_C', 'delta_C'}
-
     in_frame = cf.Frame2D(name="pixels")
 
     # transform = gw.make_fitswcs_transform(hdr)
-    transform = make_fitswcs_transform(hdr)
+    try:
+        transform = make_fitswcs_transform(hdr)
+    except Exception:
+        return None
     outputs = transform.outputs
 
     out_frames = []
@@ -44,11 +47,14 @@ def fitswcs_to_gwcs(hdr):
             unit = None
         try:
             frame = frame_mapping[output[:4].upper()](axes_order=(i,), unit=unit,
-                                          axes_names=output, name=output)
-            out_frames.append(frame)
+                                          axes_names=(output,), name=output)
         except KeyError:
-            if output not in coordinate_outputs:
-                raise ValueError(f"Unknown coordinate type {output}")
+            if output in coordinate_outputs:
+                continue
+            frame = cf.CoordinateFrame(naxes=1, axes_type=None,
+                                       axes_order=(i,), unit=unit,
+                                       axes_names=(output,), name=output)
+        out_frames.append(frame)
 
     if coordinate_outputs.issubset(outputs):
         frame_name = hdr.get('RADESYS') or hdr.get('RADECSYS')  # FK5, etc.
