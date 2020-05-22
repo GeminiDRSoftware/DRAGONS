@@ -1522,6 +1522,10 @@ class Spect(PrimitivesBASE):
 
                 if peaks_and_snrs.size == 0:
                     log.warning("Found no sources")
+                    try:
+                        del ext.APERTURE
+                    except AttributeError:
+                        pass
                     continue
 
                 # Reverse-sort by SNR and return only the locations
