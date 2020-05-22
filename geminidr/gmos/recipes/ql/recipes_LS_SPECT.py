@@ -33,7 +33,7 @@ def reduceScience(p):
     p.linearizeSpectra()
     p.fluxCalibrate()
     p.writeOutputs()
-    p.storeScience()
+    p.storeProcessedScience()
 
 
 
