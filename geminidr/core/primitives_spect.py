@@ -2304,7 +2304,7 @@ class Spect(PrimitivesBASE):
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        # timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         order = params["trace_order"]
         step = params["step"]
@@ -2391,7 +2391,7 @@ class Spect(PrimitivesBASE):
                 # reference all along!
 
             # Timestamp and update the filename
-            # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
