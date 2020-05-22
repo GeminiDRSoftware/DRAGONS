@@ -1545,15 +1545,39 @@ class FitsLoader:
         return provider
 
 
-def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
-               with_uncertainty=False, with_mask=False):
+def windowedOp(func, sequence, kernel, shape=None, dtype=None,
+               with_uncertainty=False, with_mask=False, **kwargs):
+    """Apply function on a NDData obbjects, splitting the data in chunks to
+    limit memory usage.
+
+    Parameters
+    ----------
+    func : callable
+        The function to apply.
+    sequence : list of NDData
+        List of NDData objects.
+    kernel : tuple of int
+        Shape of the blocks.
+    shape : tuple of int
+        Shape of inputs. Defaults to ``sequence[0].shape``.
+    dtype : str or dtype
+        Type of the output array. Defaults to ``sequence[0].dtype``.
+    with_uncertainty : bool
+        Compute uncertainty?
+    with_mask : bool
+        Compute mask?
+    **kwargs
+        Additional args are passed to ``func``.
+
+    """
+
     def generate_boxes(shape, kernel):
         if len(shape) != len(kernel):
             raise AssertionError("Incompatible shape ({}) and kernel ({})"
                                  .format(shape, kernel))
         ticks = [[(x, x+step) for x in range(0, axis, step)]
                  for axis, step in zip(shape, kernel)]
-        return cart_product(*ticks)
+        return list(cart_product(*ticks))
 
     if shape is None:
         if len({x.shape for x in sequence}) > 1:
@@ -1578,14 +1602,49 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
     astropy.log.setLevel(astropy.logger.WARNING)
-    for coords in generate_boxes(shape, kernel):
-        # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
-        # Zipping them will get us a more desirable ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
-        # box = list(zip(*coords))
-        section = tuple([slice(start, end) for (start, end) in coords])
-        result.set_section(section, fn(element.window[section] for element in sequence))
-        gc.collect()
-    astropy.log.setLevel(log_level)  # and reset
+
+    boxes = generate_boxes(shape, kernel)
+
+    try:
+        for coords in boxes:
+            section = tuple([slice(start, end) for (start, end) in coords])
+            out = func([element.window[section] for element in sequence],
+                       **kwargs)
+            result.set_section(section, out)
+
+            # propagate additional attributes
+            if out.meta.get('other'):
+                for k, v in out.meta['other'].items():
+                    if len(boxes) > 1:
+                        result.meta['other'][k, coords] = v
+                    else:
+                        result.meta['other'][k] = v
+
+            gc.collect()
+    finally:
+        astropy.log.setLevel(log_level)  # and reset
+
+    # Now if the input arrays where splitted in chunks, we need to gather
+    # the data arrays for the additional attributes.
+    other = result.meta['other']
+    if other:
+        if len(boxes) > 1:
+            for (name, coords), obj in list(other.items()):
+                if not isinstance(obj, NDData):
+                    raise ValueError('only NDData objects are handled here')
+                if name not in other:
+                    other[name] = NDDataObject(np.empty(shape,
+                                                        dtype=obj.data.dtype))
+                section = tuple([slice(start, end) for (start, end) in coords])
+                other[name].set_section(section, obj)
+                del other[name, coords]
+
+        for name in other:
+            # To set the name of our object we need to save it as an ndarray,
+            # otherwise for a NDData one AstroData would use the name of the
+            # AstroData object.
+            other[name] = other[name].data
+            result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
 
     return result
 

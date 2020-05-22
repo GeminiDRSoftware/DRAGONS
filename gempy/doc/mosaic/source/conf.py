@@ -32,7 +32,7 @@ extensions = [
    'sphinx.ext.pngmath',
    'sphinx.ext.ifconfig',
    'sphinx.ext.viewcode',
-#  'sphinx.ext.githubpages',
+    #  'sphinx.ext.githubpages',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -177,19 +177,19 @@ htmlhelp_basename = 'MosaicADReferenceGuide'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# This will remove blank pages.
-'classoptions': ',openany,oneside',
-'babel': '\\usepackage[english]{babel}',
+    # This will remove blank pages.
+    'classoptions': ',openany,oneside',
+    'babel': '\\usepackage[english]{babel}',
 
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
-'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
+    'preamble': '\\usepackage{appendix} \\setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -261,8 +261,10 @@ texinfo_documents = [
 intersphinx_mapping = {'http://docs.python.org/': None}
 
 # Activate the todos
-todo_include_todos=True
+todo_include_todos = True
 
 # Adding style in order to have the todos show up in a red box.
+
+
 def setup(app):
-   app.add_stylesheet('todo-styles.css')
+   app.add_css_file('todo-styles.css')

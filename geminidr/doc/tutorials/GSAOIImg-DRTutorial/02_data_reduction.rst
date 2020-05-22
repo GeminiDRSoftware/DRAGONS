@@ -342,7 +342,7 @@ data.
 The figure above shows an example of the sky-subtracted frames. The
 masked pixels are represented in white color.
 
-
+.. _stack_science_files:
 Stack Sky-Subtracted Science Images
 ===================================
 The final step is to stack the images. For that, you must be aware that

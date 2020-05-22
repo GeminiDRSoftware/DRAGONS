@@ -87,24 +87,26 @@ class SExtractorETI(ETI):
                 self.add_file(SExtractorETIFile(ad,
                               mask_dq_bits=self._mask_dq_bits))
         # Run the ETI
-        self.prepare()
-        self.execute()
-        objdata = self.recover()
-        # Attach the OBJCATs and OBJMASKs to each extension in each input
-        # This is kind of ugly, so maybe want to look at it
-        i = 0
-        for ad in self.inputs:
-            try:
-                for ext in ad:
-                    ext.OBJCAT, objmask = objdata[i]
+        try:
+            self.prepare()
+            self.execute()
+            objdata = self.recover()
+            # Attach the OBJCATs and OBJMASKs to each extension in each input
+            # This is kind of ugly, so maybe want to look at it
+            i = 0
+            for ad in self.inputs:
+                try:
+                    for ext in ad:
+                        ext.OBJCAT, objmask = objdata[i]
+                        if self._getmask:
+                            ext.OBJMASK = fits.getdata(objmask, ext=0)
+                        i += 1
+                except TypeError:
+                    ad.OBJCAT, objmask = objdata[i]
                     if self._getmask:
-                        ext.OBJMASK = fits.getdata(objmask, ext=0)
-                    i += 1
-            except TypeError:
-                ad.OBJCAT, objmask = objdata[i]
-                if self._getmask:
-                    ad.OBJMASK = fits.getdata(objmask, ext=0)
-        self.clean()
+                        ad.OBJMASK = fits.getdata(objmask, ext=0)
+        finally:
+            self.clean()
         return self.inputs
 
     def execute(self):

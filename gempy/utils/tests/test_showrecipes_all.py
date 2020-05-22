@@ -1,4 +1,3 @@
-import os
 import pytest
 
 from astrodata.testing import download_from_archive
@@ -73,7 +72,6 @@ def test_showrecipes_on_gmos():
 
     for i in range(len(gmos_answer)):
         assert gmos_answer[i] in answer
-
 
 @pytest.mark.dragons_remote_data
 def test_showrecipes_on_gmos_ns():

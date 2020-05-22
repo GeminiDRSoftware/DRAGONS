@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import astrodata
+
 from astrodata.testing import assert_same_class, download_from_archive
 
 
@@ -24,7 +25,6 @@ def test_download_from_archive_raises_IOError_if_path_is_not_accessible():
 
 
 def test_download_from_archive(monkeypatch, tmpdir):
-
     ncall = 0
 
     def mock_download(remote_url, **kwargs):
@@ -35,27 +35,18 @@ def test_download_from_archive(monkeypatch, tmpdir):
         return str(tmpdir.join(fname))
 
     monkeypatch.setattr("astrodata.testing.download_file", mock_download)
-    monkeypatch.setenv("DRAGONS_TEST_INPUTS", str(tmpdir))
+    monkeypatch.setenv("DRAGONS_TEST", str(tmpdir))
 
     # first call will use our mock function above
-    fname = download_from_archive('N20170529S0168.fits', path='subdir')
+    fname = download_from_archive('N20170529S0168.fits')
     assert os.path.exists(fname)
     assert ncall == 1
 
     # second call will use the cache so we check that our mock function is not
     # called twice
-    fname = download_from_archive('N20170529S0168.fits', path='subdir')
+    fname = download_from_archive('N20170529S0168.fits')
     assert os.path.exists(fname)
     assert ncall == 1
-
-
-def test_path_to_test_data(path_to_test_data):
-    assert os.path.exists(path_to_test_data)
-
-
-def test_path_to_inputs(path_to_inputs):
-    print(path_to_inputs)
-    assert os.path.exists(path_to_inputs)
 
 
 def test_assert_same_class():

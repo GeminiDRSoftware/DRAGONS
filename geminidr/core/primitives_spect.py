@@ -534,9 +534,9 @@ class Spect(PrimitivesBASE):
         arc : :class:`~astrodata.AstroData` or str or None
             Arc(s) containing distortion map.
         order : int (0 - 5)
-            Order of interpolation when resampling.
+            Order of interpolation when resampling. Default: 3.
         subsample : int
-            Pixel subsampling factor.
+            Pixel subsampling factor. Default: 1.
 
         Returns
         -------
@@ -1095,20 +1095,15 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             2D spectral images with a `.APERTURE` table.
-
         suffix : str
             Suffix to be added to output files.
-
         method : {'standard', 'weighted', 'optimal'}
             Extraction method.
-
-        width : float
-            Width of extraction aperture (in pixels).
-
-        grow : float or None
+        width : float or None
+            Width of extraction aperture in pixels. Default: None.
+        grow : float
             Avoidance region around each source aperture if a sky aperture
-            is required.
-
+            is required. Default: 10.
         debug: bool
             draw apertures on image display window?
 
@@ -1314,20 +1309,17 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Science data as 2D spectral images.
-
         suffix : str
             Suffix to be added to output files.
-
-        max_apertures : int
+        max_apertures : int, default: None
             Maximum number of apertures expected to be found.
-
-        threshold : float
+        threshold : float (0 - 1)
             height above background (relative to peak) at which to define
-            the edges of the aperture
-
+            the edges of the aperture. Default: 0.01.
         min_sky_pix : int
             minimum number of contiguous pixels between sky lines
-            for a region to be added to the spectrum before collapsing to 1D
+            for a region to be added to the spectrum before collapsing to 1D.
+            Default: 20.
 
         Returns
         -------
@@ -1481,10 +1473,8 @@ class Spect(PrimitivesBASE):
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if std is None:
-            raise NotImplementedError("Cannot perform automatic standard star"
-                                      " association")
-            # self.getProcessedStandard(adinputs, refresh=False)
-            # std_list = self._get_cal(adinputs, 'processed_standard')
+            self.getProcessedStandard(adinputs, refresh=False)
+            std_list = self._get_cal(adinputs, 'processed_standard')
         else:
             std_list = std
 
@@ -2114,18 +2104,15 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             2D science spectra loaded as :class:`~astrodata.AstroData` objects.
-
-        suffix : str
+        suffix : str or None
             Suffix to be added to output files.
-
         order : int or None
             Order of piecewise cubic spline fit to each row/column. If `None`,
             it uses as many pieces as required to get chi^2=1. Else, it is
             reduced proportionately by the ratio between the number of good pixels
-            in each row/column and the total number of pixels.
-
+            in each row/column and the total number of pixels. Default: 5.
         grow : float
-            Masking growth radius (in pixels) for each aperture.
+            Masking growth radius (in pixels) for each aperture. Default: 0.
 
         Returns
         -------
@@ -2213,26 +2200,20 @@ class Spect(PrimitivesBASE):
         adinputs : list of :class:`~astrodata.AstroData`
             Science data as 2D spectral images with a `.APERTURE` table attached
             to one or more of its extensions.
-
         suffix : str
             Suffix to be added to output files.
-
         trace_order : int
-            Fitting order along spectrum.
-
+            Fitting order along spectrum. Default: 2
         step : int
-            Step size for sampling along dispersion direction.
-
+            Step size for sampling along dispersion direction. Default: 10
         nsum : int
-            Number of rows/columns to combine at each step.
-
+            Number of rows/columns to combine at each step. Default: 10
         max_missed : int
             Maximum number of interactions without finding line before line is
-            considered lost forever.
-
+            considered lost forever. Default: 5
         max_shift : float
             Maximum perpendicular shift (in pixels) from pixel to pixel.
-
+            Default: 0.05
         debug: bool
             draw aperture traces on image display window?
 

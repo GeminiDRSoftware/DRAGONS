@@ -68,9 +68,9 @@ class SExtractorETIFile(ETIFile):
         return (objcat, self._objmask_file)
 
     def clean(self, remove_inputs=True):
-        if os.path.isfile(self._disk_file):
+        if self._disk_file and os.path.isfile(self._disk_file):
             os.remove(self._disk_file)
-        if os.path.isfile(self._catalog_file):
+        if self._catalog_file and os.path.isfile(self._catalog_file):
             os.remove(self._catalog_file)
-        if os.path.isfile(self._objmask_file):
+        if self._objmask_file and os.path.isfile(self._objmask_file):
             os.remove(self._objmask_file)

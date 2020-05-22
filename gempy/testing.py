@@ -1,3 +1,6 @@
+import os
+import pytest
+
 from gempy.library.astromodels import dict_to_chebyshev
 from numpy.testing import assert_allclose
 

@@ -6,7 +6,7 @@ import os
 import shutil
 import urllib
 import xml.etree.ElementTree as et
-from pathlib import Path
+from contextlib import contextmanager
 
 import pytest
 from astropy.utils.data import download_file
@@ -14,7 +14,57 @@ from astropy.utils.data import download_file
 URL = 'https://archive.gemini.edu/file/'
 
 
-def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
+def assert_same_class(ad, ad_ref):
+    """
+    Compare if two :class:`~astrodata.AstroData` (or any subclass) have the
+    same class.
+
+    Parameters
+    ----------
+        ad : :class:`astrodata.AstroData` or any subclass
+            AstroData object to be checked.
+        ad_ref : :class:`astrodata.AstroData` or any subclass
+            AstroData object used as reference
+    """
+    from astrodata import AstroData
+
+    assert isinstance(ad, AstroData)
+    assert isinstance(ad_ref, AstroData)
+    assert isinstance(ad, type(ad_ref))
+
+
+@pytest.fixture(scope='module')
+def change_working_dir(path_to_outputs):
+    """
+    Factory that returns the output path as a context manager object, allowing
+    easy access to the path to where the processed data should be stored.
+
+    Parameters
+    ----------
+    path_to_outputs : pytest.fixture
+        Fixture containing the root path to the output files.
+
+    Returns
+    -------
+    contextmanager
+        Enable easy change to temporary folder when reducing data.
+    """
+    path = os.path.join(path_to_outputs, "outputs")
+    os.makedirs(path, exist_ok=True)
+
+    @contextmanager
+    def _change_working_dir():
+        oldpwd = os.getcwd()
+        os.chdir(path)
+        try:
+            yield
+        finally:
+            os.chdir(oldpwd)
+
+    return _change_working_dir
+
+
+def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
     """Download file from the archive and store it in the local cache.
 
     Parameters
@@ -37,7 +87,6 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
 
     if cache_path is None:
         raise ValueError('Environment variable not set: {:s}'.format(env_var))
-
     elif not os.access(cache_path, os.W_OK):
         raise OSError('Could not access the path stored inside ${:s}. Make '
                       'sure the following path exists and that you have write '
@@ -47,6 +96,7 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
 
     if path is not None:
         cache_path = os.path.join(cache_path, path)
+
     os.makedirs(cache_path, exist_ok=True)
 
     # Now check if the local file exists and download if not
@@ -61,228 +111,10 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
     return local_path
 
 
-def assert_same_class(ad, ad_ref):
-    """
-    Compare if two :class:`~astrodata.AstroData` (or any subclass) have the
-    same class.
-
-    Parameters
-    ----------
-        ad : :class:`astrodata.AstroData` or any subclass
-            AstroData object to be checked.
-        ad_ref : :class:`astrodata.AstroData` or any subclass
-            AstroData object used as reference
-    """
-    from astrodata import AstroData
-
-    assert isinstance(ad, AstroData)
-    assert isinstance(ad_ref, AstroData)
-    assert isinstance(ad, type(ad_ref))
-
-
-@pytest.fixture(scope='session')
-def path_to_inputs():
-    """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST_INPUTS that
-    should contains input data for testing.
-
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, it also marks the
-    test to be skipped.
-
-    The skip reason changes depending on which situation causes it to be skipped.
-
-    Returns
-    -------
-        str : path to the input data
-    """
-
-    try:
-        path = os.path.expanduser(os.environ['DRAGONS_TEST_INPUTS'])
-        path = path.strip()
-    except KeyError:
-        pytest.skip(
-            "Could not find environment variable: $DRAGONS_TEST_INPUTS")
-
-    # noinspection PyUnboundLocalVariable
-    if not os.path.exists(path):
-        pytest.skip(
-            "Could not access path stored in $DRAGONS_TEST_INPUTS: "
-            "{}".format(path)
-        )
-
-    return path
-
-
-@pytest.fixture(scope='session')
-def path_to_refs():
-    """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST_REFS that
-    should contains reference data for testing.
-
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, it also marks the
-    test to be skipped.
-
-    The skip reason changes depending on which situation causes it to be skipped.
-
-    Returns
-    -------
-        str : path to the reference data
-    """
-    path = os.path.expanduser(os.getenv('DRAGONS_TEST_REFS')).strip()
-
-    if not path:
-        raise ValueError("Could not find environment variable: \n"
-                         "  $DRAGONS_TEST_REFS")
-
-    if not os.path.exists(path):
-        raise OSError("Could not access path stored in $DRAGONS_TEST_REFS: \n"
-                      "  {}".format(path))
-
-    return path
-
-
-@pytest.fixture(scope='module')
-def new_path_to_inputs(request, path_to_test_data):
-    """
-    PyTest fixture that returns the path to where the input files for a given
-    test module live.
-
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-
-    path_to_test_data : pytest.fixture
-        Custom astrodata fixture that returs the root path to where input and
-        reference files should live.
-
-    Returns
-    -------
-    str:
-        Path to the input files.
-    """
-    module_path = request.module.__name__.split('.') + ["inputs"]
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path_to_test_data, *module_path)
-
-    if not os.path.exists(path):
-        print(" Creating new directory to store input data for DRAGONS tests:"
-              "\n    {:s}".format(path))
-        os.makedirs(path)
-
-    if not os.access(path, os.W_OK):
-        pytest.fail('\n  Path to input test data exists but is not accessible: '
-                    '\n    {:s}'.format(path))
-
-    return path
-
-
-@pytest.fixture(scope='module')
-def new_path_to_refs(request, path_to_test_data):
-    """
-    PyTest fixture that returns the path to where the reference files for a
-    given test module live.
-
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-
-    path_to_test_data : pytest.fixture
-        Custom astrodata fixture that returs the root path to where input and
-        reference files should live.
-
-    Returns
-    -------
-    str:
-        Path to the reference files.
-    """
-    module_path = request.module.__name__.split('.') + ["refs"]
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path_to_test_data, *module_path)
-
-    if not os.path.exists(path):
-        pytest.fail('\n Path to reference test data does not exist: '
-                    '\n   {:s}'.format(path))
-
-    if not os.access(path, os.W_OK):
-        pytest.fail('\n Path to reference test data exists but is not accessible: '
-                    '\n    {:s}'.format(path))
-
-    return path
-
-
-@pytest.fixture(scope='session')
-def path_to_test_data(env_var='DRAGONS_TEST'):
-    """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST that
-    should contain data that will be used inside tests.
-
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, the test fails.
-
-    Returns
-    -------
-    str : path to the reference data
-    """
-    path = os.getenv(env_var)
-
-    if path is None:
-        pytest.skip('Environment variable not set: $DRAGONS_TEST')
-
-    path = os.path.expanduser(path).strip()
-
-    if not os.access(path, os.W_OK):
-        pytest.fail(
-            '\n  Could not access the path stored inside $DRAGONS_TEST. '
-            '\n  Make sure the following path exists and that you have '
-            'write permissions in it:\n    {}'.format(path))
-
-    return path
-
-
-@pytest.fixture(scope='session')
-def path_to_outputs(tmp_path_factory):
-    """
-    PyTest fixture that creates a temporary folder to save tests ouputs.
-
-    This output folder can be override via $DRAGONS_TEST_OUTPUTS environment
-    variable or via `--basetemp` argument.
-
-    Returns
-    -------
-    str
-        Path to the output data.
-
-    Raises
-    ------
-    IOError
-        If output path does not exits.
-    """
-    path = tmp_path_factory.mktemp('dragons_tests', numbered=False)
-
-    if os.getenv('DRAGONS_TEST_OUTPUTS'):
-        path = Path(os.path.expanduser(os.getenv('DRAGONS_TEST_OUTPUTS')))
-
-    path.mkdir(exist_ok=True, parents=True)
-
-    if not os.path.exists(path):
-        raise OSError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
-                      "{}\n Using current working directory".format(path))
-
-    return str(path)  # todo: should astrodata be compatible with pathlib?
-
-
 def get_associated_calibrations(filename, nbias=5):
     """
     Queries Gemini Observatory Archive for associated calibrations to reduce the
     data that will be used for testing.
-
     Parameters
     ----------
     filename : str
@@ -310,3 +142,133 @@ def get_associated_calibrations(filename, nbias=5):
     cals = cals.drop(cals[cals.caltype.str.contains('bias')][nbias:].index)
 
     return cals
+
+
+@pytest.fixture(scope='module')
+def path_to_inputs(request, env_var='DRAGONS_TEST'):
+    """
+    PyTest fixture that returns the path to where the input files for a given
+    test module live.
+
+    Parameters
+    ----------
+    request : fixture
+        PyTest's built-in fixture with information about the test itself.
+
+    env_var : str
+        Environment variable that contains the root path to the input data.
+
+    Returns
+    -------
+    str:
+        Path to the input files.
+    """
+    path_to_test_data = os.getenv(env_var)
+
+    if path_to_test_data is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
+
+    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
+
+    if not os.access(path_to_test_data, os.W_OK):
+        pytest.fail(
+            '\n  Could not access the path stored inside $DRAGONS_TEST. '
+            '\n  Make sure the following path exists and that you have '
+            'write permissions in it:\n    {}'.format(path_to_test_data))
+
+    module_path = request.module.__name__.split('.') + ["inputs"]
+    module_path = [item for item in module_path if item not in "tests"]
+    path = os.path.join(path_to_test_data, *module_path)
+
+    if not os.path.exists(path):
+        print(" Creating new directory to store input data for DRAGONS tests:"
+              "\n    {:s}".format(path))
+        os.makedirs(path)
+
+    if not os.access(path, os.W_OK):
+        pytest.fail('\n  Path to input test data exists but is not accessible: '
+                    '\n    {:s}'.format(path))
+
+    return path
+
+
+@pytest.fixture(scope='module')
+def path_to_refs(request, env_var='DRAGONS_TEST'):
+    """
+    PyTest fixture that returns the path to where the reference files for a
+    given test module live.
+
+    Parameters
+    ----------
+    request : fixture
+        PyTest's built-in fixture with information about the test itself.
+
+    env_var : str
+        Environment variable that contains the root path to the input data.
+
+    Returns
+    -------
+    str:
+        Path to the reference files.
+    """
+    path_to_test_data = os.getenv(env_var)
+
+    if path_to_test_data is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
+
+    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
+
+    if not os.access(path_to_test_data, os.W_OK):
+        pytest.fail(
+            '\n  Could not access the path stored inside $DRAGONS_TEST. '
+            '\n  Make sure the following path exists and that you have '
+            'write permissions in it:\n    {}'.format(path_to_test_data))
+
+    module_path = request.module.__name__.split('.') + ["refs"]
+    module_path = [item for item in module_path if item not in "tests"]
+    path = os.path.join(path_to_test_data, *module_path)
+
+    if not os.path.exists(path):
+        pytest.fail('\n Path to reference test data does not exist: '
+                    '\n   {:s}'.format(path))
+
+    if not os.access(path, os.W_OK):
+        pytest.fail('\n Path to reference test data exists but is not accessible: '
+                    '\n    {:s}'.format(path))
+
+    return path
+
+
+@pytest.fixture(scope='module')
+def path_to_outputs(request, tmp_path_factory):
+    """
+    PyTest fixture that creates a temporary folder to save tests outputs.
+
+    This output folder can be override via $DRAGONS_TEST_OUTPUTS environment
+    variable or via `--basetemp` argument.
+
+    Returns
+    -------
+    str
+        Path to the output data.
+
+    Raises
+    ------
+    IOError
+        If output path does not exits.
+    """
+    if os.getenv('DRAGONS_TEST_OUTPUTS'):
+        path = os.path.expanduser(os.getenv('DRAGONS_TEST_OUTPUTS'))
+        if not os.path.exists(path):
+            raise OSError(
+                "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
+                "{}\n Using current working directory".format(path))
+    else:
+        path = str(tmp_path_factory.getbasetemp())
+
+    module_path = request.module.__name__.split('.')
+    module_path = [item for item in module_path if item not in "tests"]
+    path = os.path.join(path, *module_path)
+    os.makedirs(path, exist_ok=True)
+
+    return path

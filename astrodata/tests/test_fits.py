@@ -531,9 +531,8 @@ def test_update_filename2():
 
 @pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_phu_deprecated():
-    "Test deprecated methods to access headers"
-    ad = astrodata.open(
-        download_from_archive('N20110826S0336.fits', path='GMOS'))
+    """Test deprecated methods to access headers"""
+    ad = astrodata.open(download_from_archive('N20110826S0336.fits'))
 
     with pytest.raises(AttributeError):
         assert ad.phu.DETECTOR == 'GMOS + Red1'

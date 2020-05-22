@@ -391,9 +391,11 @@ class Visualize(PrimitivesBASE):
                             ymax += yshift + blocks[i-1].shape[0]
                     xshift = (max(origin[1], xmax) + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
                     yshift = (max(origin[0], ymax) + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
-                    transforms.append(Transform(models.Shift(xshift) & models.Shift(yshift)))
+                    transforms.append(transform.Transform(
+                        models.Shift(xshift) & models.Shift(yshift)
+                    ))
                     xmax = xshift + blocks[i].shape[1]
-                adg = AstroDataGroup(blocks, transforms)
+                adg = transform.AstroDataGroup(blocks, transforms)
                 adg.set_reference()
                 ad_out = adg.transform(attributes=attributes, process_objcat=True)
             else:

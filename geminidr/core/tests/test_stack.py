@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 from astropy.io import fits
 from astropy.table import Table
+from numpy.testing import assert_array_equal
 
 import astrodata
 import gemini_instruments
@@ -76,3 +77,14 @@ def test_stackframes_refcat_propagation(adinputs):
     assert len(adout.REFCAT) == 3
     np.testing.assert_equal(adout.REFCAT['Id'], np.arange(1, 4))
     assert all(adout.REFCAT['Cat_Id'] == ['a', 'b', 'c'])
+
+
+def test_rejmap(adinputs):
+    for i in (2, 3, 4):
+        adinputs.append(adinputs[0] + i)
+
+    p = NIRIImage(adinputs)
+    p.prepare()
+    adout = p.stackFrames(reject_method='minmax', nlow=1, nhigh=1,
+                          save_rejection_map=True)[0]
+    assert_array_equal(adout[0].REJMAP, 2)  # rejected 2 values for each pixel

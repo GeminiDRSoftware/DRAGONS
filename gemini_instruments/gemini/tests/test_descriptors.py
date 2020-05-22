@@ -3,6 +3,7 @@
 import datetime
 import pytest
 import astrodata
+import astrodata.testing
 import gemini_instruments
 
 DESCRIPTORS_TYPES = [
@@ -87,16 +88,39 @@ DESCRIPTORS_TYPES = [
     ('well_depth_setting', str),
 ]
 
+test_files = [
+    "gS20190219S0207_bias.fits",
+    "N20190216S0092.fits",
+    "S20180211S0294.fits",
+    "N20190112S0005.fits",
+    "N20190219S0072.fits",
+    "S20190203S0320.fits",
+    "N20190214S0058.fits",
+    "N20190221S0001.fits",
+    "S20190214S0576.fits",
+    "N20190216S0039.fits",
+    "N20190221S0032.fits",
+    "S20190217S0211.fits",
+    "N20190216S0060.fits",
+    "S20160905S0003.fits",
+    "S20190221S0251.fits",
+]
 
-@pytest.mark.parametrize("descriptor,expected_type", DESCRIPTORS_TYPES)
-def test_descriptor_matches_type(descriptor, expected_type, gemini_files):
-    for _file in gemini_files:
-        ad = astrodata.open(_file)
 
+@pytest.fixture(scope='module')
+def ad(request):
+    filename = request.param
+    path = astrodata.testing.download_from_archive(filename)
+    return astrodata.open(path)
+    
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("ad", test_files, indirect=True)
+def test_descriptor_matches_type(ad):
+    for descriptor, expected_type in DESCRIPTORS_TYPES:
         value = getattr(ad, descriptor)()
-
         assert isinstance(value, expected_type) or value is None, \
-            "Assertion failed for file: {}".format(_file)
+            "Assertion failed for file: {}".format(ad.filename)
 
 
 if __name__ == "__main__":

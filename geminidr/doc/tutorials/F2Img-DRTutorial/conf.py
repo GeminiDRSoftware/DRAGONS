@@ -24,8 +24,8 @@ sys.path.append(dragons_path)
 import astrodata
 
 print('\n Printing current working directory for debugging:')
-print(' Current working directory: {}'.format(os.getcwd()))
-print(' Dragons path: {}\n'.format(dragons_path))
+print((' Current working directory: {}'.format(os.getcwd())))
+print((' Dragons path: {}\n'.format(dragons_path)))
 
 
 # -- Project information -----------------------------------------------------
@@ -230,7 +230,7 @@ def setup(app):
     # -- Adding custom styles ---
     app.add_css_file('css/code.xref-styles.css')
     app.add_css_file('css/todo-styles.css')
-    #app.add_css_file('css/copy_code_block.css')
+    # app.add_css_file('css/copy_code_block.css')
 
     # -- Adding custom behavior ---
     # -- Will leave this out for now until I manage to get the behavior I want

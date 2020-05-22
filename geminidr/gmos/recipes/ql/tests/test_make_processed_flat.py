@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 import os
-import shutil
-import urllib
-import xml.etree.ElementTree as et
-from contextlib import contextmanager
-
 import numpy as np
 import pytest
-from astropy.utils.data import download_file
 
 import astrodata
+# noinspection PyUnresolvedReferences
+import gemini_instruments
+from astrodata.testing import download_from_archive
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
-URL = 'https://archive.gemini.edu/file/'
+# noinspection PyUnresolvedReferences
+from recipe_system.testing import reduce_bias, ref_ad_factory
 
 datasets = [
     "S20180707S0043.fits",  # B600 at 0.520 um
@@ -23,213 +21,186 @@ datasets = [
     "N20200101S0055.fits",  # B1200 at 0.495 um
     # "S20180410S0120.fits",  # B1200 at 0.595 um  # Scattered light?
     # "S20190410S0053.fits",  # B1200 at 0.463 um  # Scattered light?
-
 ]
 
-refs = ["_flat".join(os.path.splitext(f)) for f in datasets]
+associated_calibrations = {
+    "S20180707S0043.fits": "S20180707S0187_bias.fits",
+    "S20190502S0096.fits": "S20190502S0221_bias.fits",
+    "S20200122S0020.fits": "S20200121S0170_bias.fits",
+    "N20200101S0055.fits": "N20200101S0240_bias.fits",
+    "S20180410S0120.fits": "S20180410S0132_bias.fits",
+    "S20190410S0053.fits": "S20190410S0297_bias.fits",
+}
+
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
-@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_median_around_one(processed_flat):
+    """
+    Tests if the processed flat contains values around one.
+
+    Parameters
+    ----------
+    processed_flat : pytest.fixture
+        Fixture containing an instance of the processed flat.
+    """
     for ext in processed_flat:
         data = np.ma.masked_array(ext.data, mask=ext.mask)
         np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
 
 
-# @pytest.mark.skip(reason="High std on half of datasets. Scattered light?")
 @pytest.mark.gmosls
-@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_small_std(processed_flat):
+    """
+    Tests if the processed flat has a small standard deviation.
+
+    Parameters
+    ----------
+    processed_flat : pytest.fixture
+        Fixture containing an instance of the processed flat.
+        """
     for ext in processed_flat:
         data = np.ma.masked_array(ext.data, mask=ext.mask)
         np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
 @pytest.mark.gmosls
-@pytest.mark.dragons_remote_data
-@pytest.mark.parametrize(
-    "processed_flat, processed_ref_flat", zip(datasets, refs), indirect=True)
-def test_processed_flat_is_stable(processed_flat, processed_ref_flat):
-    for ext, ext_ref in zip(processed_flat, processed_ref_flat):
-        np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1e-7)
+@pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+def test_regression_processed_flat(processed_flat, ref_ad_factory):
+    """
+    Tests if the processed flat contains values around one.
+
+    Parameters
+    ----------
+    processed_flat : pytest.fixture
+        Fixture containing an instance of the processed flat.
+    ref_ad_factory : pytest.fixture
+        Fixture containing a function that will receive the input file an return
+        the path to the reference data.
+    """
+    ref_flat = ref_ad_factory(processed_flat.filename)
+    for ext, ext_ref in zip(processed_flat, ref_flat):
+        np.testing.assert_allclose(ext.mask, ext_ref.mask)
+        np.testing.assert_almost_equal(ext.data, ext_ref.data, decimal=3)
 
 
 # -- Fixtures ----------------------------------------------------------------
 @pytest.fixture(scope='module')
-def cache_path(new_path_to_inputs):
+def processed_flat(change_working_dir, path_to_inputs, request):
     """
-    Factory as a fixture used to cache data and return its local path.
+    Returns the processed flat that will be analysed.
 
     Parameters
     ----------
-    new_path_to_inputs : pytest.fixture
-        Full path to cached folder.
+    change_working_dir : pytest.fixture
+        Fixture that changes the working directory (see :mod:`astrodata.testing`).
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
 
     Returns
     -------
-    function : Function used that downloads data from the archive and stores it
-        locally.
+    AstroData
+        Input spectrum processed up to right before the `applyQECorrection`.
     """
+    flat_filename = request.param
+    flat_path = download_from_archive(flat_filename)
+    flat_raw = astrodata.open(flat_path)
 
-    def _cache_path(filename):
-        """
-        Download data from Gemini Observatory Archive and cache it locally.
+    master_bias = os.path.join(path_to_inputs, associated_calibrations[flat_filename])
+    calibration_files = ['processed_bias:{}'.format(master_bias)]
 
-        Parameters
-        ----------
-        filename : str
-            The filename, e.g. N20160524S0119.fits
+    with change_working_dir():
+        print("Reducing FLATs in folder:\n  {}".format(os.getcwd()))
+        logutils.config(
+            file_name='log_flat_{}.txt'.format(flat_raw.data_label()))
 
-        Returns
-        -------
-        str : full path of the cached file.
-        """
-        local_path = os.path.join(new_path_to_inputs, filename)
+        reduce = Reduce()
+        reduce.files.extend([flat_path])
+        reduce.mode = 'ql'
+        reduce.ucals = normalize_ucals(reduce.files, calibration_files)
+        reduce.runr()
 
-        if not os.path.exists(local_path):
-            tmp_path = download_file(URL + filename, cache=False)
-            shutil.move(tmp_path, local_path)
+        _processed_flat_filename = reduce.output_filenames.pop()
+        _processed_flat = astrodata.open(_processed_flat_filename)
 
-            # `download_file` ignores Access Control List - fixing it
-            os.chmod(local_path, 0o664)
-
-        return local_path
-
-    return _cache_path
+    return _processed_flat
 
 
-@pytest.fixture(scope='module')
-def output_path(request, path_to_outputs):
-    module_path = request.module.__name__.split('.') + ["outputs"]
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path_to_outputs, *module_path)
+# -- Recipe to create pre-processed data ---------------------------------------
+def create_master_bias_for_tests():
+    """
+    Creates input bias data for tests.
+
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
+    """
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/recipes/ql/test_make_processed_flat/"
+    path = os.path.join(root_path, module_path, "inputs/")
 
     os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
-    @contextmanager
-    def _output_path():
-        oldpwd = os.getcwd()
-        os.chdir(path)
-        try:
-            yield
-        finally:
-            os.chdir(oldpwd)
+    associated_biases = {
+        "S20180707S0043.fits": ["S20180707S0187.fits",
+                                "S20180707S0188.fits",
+                                "S20180707S0189.fits",
+                                "S20180707S0190.fits",
+                                "S20180707S0191.fits"],
+        "S20190502S0096.fits": ["S20190502S0221.fits",
+                                "S20190502S0222.fits",
+                                "S20190502S0223.fits",
+                                "S20190502S0224.fits",
+                                "S20190502S0225.fits"],
+        "S20200122S0020.fits": ["S20200121S0170.fits",
+                                "S20200121S0171.fits",
+                                "S20200121S0172.fits",
+                                "S20200121S0173.fits",
+                                "S20200121S0174.fits"],
+        "N20200101S0055.fits": ["N20200101S0240.fits",
+                                "N20200101S0241.fits",
+                                "N20200101S0242.fits",
+                                "N20200101S0243.fits",
+                                "N20200101S0244.fits"],
+        "S20180410S0120.fits": ["S20180410S0132.fits",
+                                "S20180410S0133.fits",
+                                "S20180410S0134.fits",
+                                "S20180410S0135.fits",
+                                "S20180410S0136.fits"],
+        "S20190410S0053.fits": ["S20190410S0297.fits",
+                                "S20190410S0298.fits",
+                                "S20190410S0299.fits",
+                                "S20190410S0300.fits",
+                                "S20190410S0301.fits"],
+    }
 
-    return _output_path
+    for filename, bias_files in associated_biases.items():
 
+        print('Downloading files...')
+        sci_path = download_from_archive(filename)
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
 
-@pytest.fixture(scope='module')
-def processed_flat(request, cache_path, reduce_bias, reduce_flat):
-    flat_fname = cache_path(request.param)
-    data_label = query_datalabel(flat_fname)
+        bias_paths = [download_from_archive(f) for f in bias_files]
 
-    bias_fnames = query_associated_bias(data_label)
-    bias_fnames = [cache_path(fname) for fname in bias_fnames]
-
-    master_bias = reduce_bias(data_label, bias_fnames)
-    flat_ad = reduce_flat(data_label, flat_fname, master_bias)
-
-    return flat_ad
-
-
-@pytest.fixture
-def processed_ref_flat(request, new_path_to_refs):
-    filename = request.param
-    ref_path = os.path.join(new_path_to_refs, filename)
-
-    if not os.path.exists(ref_path):
-        pytest.fail('\n  Reference file does not exists: '
-                    '\n    {:s}'.format(ref_path))
-
-    return astrodata.open(ref_path)
-
-
-def query_associated_bias(data_label):
-    """
-    Queries Gemini Observatory Archive for associated bias calibration files
-    for a batch reduction.
-
-    Parameters
-    ----------
-    data_label : str
-        Flat data label.
-
-    Returns
-    -------
-    list : list with five bias files.
-    """
-    cal_url = "https://archive.gemini.edu/calmgr/bias/{}"
-    tree = et.parse(urllib.request.urlopen(cal_url.format(data_label)))
-
-    root = tree.getroot()[0]
-
-    bias_files = []
-
-    # root[0] = datalabel, root[1] = filename, root[2] = md5
-    for e in root[3:]:
-        [caltype, datalabel, filename, md5, url] = [ee.text for ee in e if 'calibration' in e.tag]
-        bias_files.append(filename)
-
-    # I am interested in only five bias per flat file
-    return bias_files[:5] if len(bias_files) > 0 else bias_files
-
-
-def query_datalabel(fname):
-    """
-    Retrieve the data label associated to the input file.
-
-    Parameters
-    ----------
-    fname : str
-        Input file name.
-
-    Returns
-    -------
-    str : Data label.
-    """
-    ad = astrodata.open(fname)
-    return ad.data_label()
-
-
-@pytest.fixture(scope='module')
-def reduce_bias(output_path):
-    def _reduce_bias(datalabel, bias_fnames):
-        with output_path():
-            logutils.config(file_name='log_bias_{}.txt'.format(datalabel))
-
-            reduce = Reduce()
-            reduce.files.extend(bias_fnames)
-            reduce.runr()
-
-            master_bias = reduce.output_filenames.pop()
-
-        return master_bias
-    return _reduce_bias
-
-
-@pytest.fixture(scope='module')
-def reduce_flat(output_path):
-    def _reduce_flat(datalabel, flat_fname, master_bias):
-        with output_path():
-            logutils.config(file_name='log_flat_{}.txt'.format(datalabel))
-
-            calibration_files = ['processed_bias:{}'.format(master_bias)]
-
-            reduce = Reduce()
-            reduce.files.extend([flat_fname])
-            reduce.mode = 'ql'
-            reduce.ucals = normalize_ucals(reduce.files, calibration_files)
-            reduce.runr()
-
-            master_flat = reduce.output_filenames.pop()
-            master_flat_ad = astrodata.open(master_flat)
-
-        return master_flat_ad
-    return _reduce_flat
+        print('Reducing BIAS for {:s}'.format(data_label))
+        logutils.config(file_name='log_bias_{}.txt'.format(data_label))
+        bias_reduce = Reduce()
+        bias_reduce.files.extend(bias_paths)
+        bias_reduce.runr()
 
 
 if __name__ == '__main__':
-    pytest.main()
+    import sys
+    if "--create-inputs" in sys.argv[1:]:
+        create_master_bias_for_tests()
+    else:
+        pytest.main()

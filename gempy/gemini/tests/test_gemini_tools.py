@@ -1,16 +1,30 @@
 import astrodata
+import astrodata.testing
 import gemini_instruments
+import pytest
+
 from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
 from astropy.table import Table
-import os
 
 
-def test_fit_continuum_slit_image(path_to_inputs):
-    results = {'N20180118S0344': 1.32}
-    for fname, fwhm in results.items():
-        ad = astrodata.open(os.path.join(path_to_inputs, 'gt/slit_images',
-                                         '{}.fits'.format(fname)))
+test_data = [
+    # (Filename, FWHM)
+    ('N20180118S0344.fits', 1.32),
+]
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("fname, fwhm", test_data)
+def test_fit_continuum_slit_image(fname, fwhm, change_working_dir):
+
+    with change_working_dir():
+
+        log_file = 'log_{}.log'.format(fname.replace('.fits', ''))
+        logutils.config(file_name=log_file)
+
+        ad = astrodata.open(astrodata.testing.download_from_archive(fname))
         p = GMOSImage([ad])
         p.prepare(attach_mdf=True)
         p.addDQ()

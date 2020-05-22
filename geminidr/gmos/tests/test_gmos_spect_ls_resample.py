@@ -7,23 +7,19 @@ import pytest
 
 import astrodata
 import gemini_instruments
-import geminidr
-from astrodata import testing
+
 from geminidr.gmos import primitives_gmos_spect
 
 # Test parameters -------------------------------------------------------------
-# Each test input filename contains the original input filename with
-# "_extracted" suffix.
 test_datasets = [
-    "S20190808S0048.fits",  # R400 at 0.740 um
-    "S20190808S0049.fits",  # R400 at 0.760
-    # "S20190808S0052.fits",  # R400 : 0.650
-    "S20190808S0053.fits",  # R400 at 0.850
+    "S20190808S0048_extracted.fits",  # R400 at 0.740 um
+    "S20190808S0049_extracted.fits",  # R400 at 0.760
+    # "S20190808S0052_extracted.fits",  # R400 : 0.650  # Can't find aperture
+    "S20190808S0053_extracted.fits",  # R400 at 0.850
 ]
 
 
 # Tests Definitions -----------------------------------------------------------
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize(input_ad_list, caplog):
@@ -38,7 +34,6 @@ def test_resample_and_linearize(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize_with_w1_w2(input_ad_list, caplog):
@@ -47,7 +42,6 @@ def test_resample_and_linearize_with_w1_w2(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize_with_npix(input_ad_list, caplog):
@@ -56,7 +50,6 @@ def test_resample_and_linearize_with_npix(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_error_with_all(input_ad_list, caplog):
@@ -66,7 +59,6 @@ def test_resample_error_with_all(input_ad_list, caplog):
         p.resampleToCommonFrame(dw=0.15, w1=700, w2=850, npix=1001)
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
@@ -83,7 +75,6 @@ def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
     assert adout[0][0].shape[0] == 2429
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only(input_ad_list, caplog):
@@ -97,7 +88,6 @@ def test_resample_only(input_ad_list, caplog):
     _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only_and_trim(input_ad_list, caplog):
@@ -119,95 +109,107 @@ def _check_params(records, expected):
 
 
 @pytest.fixture(scope='function')
-def input_ad_list(
-        cache_path, new_path_to_inputs, reduce_arc, reduce_data, request):
+def input_ad_list(path_to_inputs):
     """
-    Reads the input data or cache-and-process it in a temporary folder.
+    Reads the inputs data from disk as AstroData objects.
 
     Parameters
     ----------
-    cache_path : pytest.fixture
-        Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
-        Path to the permanent local input files.
-    reduce_arc : pytest.fixture
-        Recipe used to reduce ARC data.
-    reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before
-        `determineWavelengthSolution`.
-    request : pytest.fixture
-        Pytest's built-in fixture containing information about parent function.
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
 
     Returns
     -------
-    list
-        Containing the input data as a list of AstroData objects.
+    list of AstroData objects.
     """
-    should_preprocess = request.config.getoption("--force-preprocess-data")
-    ad_list = []
+    _input_ad_list = []
 
-    for basename in test_datasets:
-        input_fname = basename.replace('.fits', '_extracted.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
+    for input_fname in test_datasets:
+        input_path = os.path.join(path_to_inputs, input_fname)
 
         if os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
-
-        elif should_preprocess:
-            print(" Caching input file: {:s}".format(basename))
-            filename = cache_path(basename)
-            ad = astrodata.open(filename)
-            cals = testing.get_associated_calibrations(basename)
-
-            cals = [cache_path(c)
-                    for c in cals[cals.caltype.str.contains('arc')].filename.values]
-            print(" Downloaded calibrations: {:s}".format("\n ".join(cals)))
-
-            master_arc = reduce_arc(ad.data_label(), cals)
-            input_data = reduce_data(ad, master_arc)
-
+            ad = astrodata.open(input_path)
         else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
+            raise FileNotFoundError(input_path)
 
-        ad_list.append(input_data)
-    return ad_list
+        _input_ad_list.append(ad)
+
+    return _input_ad_list
 
 
-@pytest.fixture(scope='module')
-def reduce_data(output_path):
+# -- Recipe to create pre-processed data ---------------------------------------
+def create_inputs_recipe():
     """
-    Creates a recipe that prepares the data for the tests. The recipe contains
-    most of the early primitives of the `reduce` recipe for a science object.
+    Creates input data for tests using pre-processed standard star and its
+    calibration files.
 
-    Parameters
-    ----------
-    output_path : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
-
-    Returns
-    -------
-    function
-        A recipe used to prepare the data for the tests.
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
     """
-    def _reduce_data(ad, arc):
-        with output_path():
-            p = primitives_gmos_spect.GMOSSpect([ad])
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.mosaicDetectors()
-            p.distortionCorrect(arc=arc)
-            p.findSourceApertures(max_apertures=1)
-            p.skyCorrectFromSlit()
-            p.traceApertures()
-            p.extract1DSpectra()
-            ad = p.writeOutputs()[0]
-        return ad
-    return _reduce_data
+    import os
+    from astrodata.testing import download_from_archive
+    from recipe_system.reduction.coreReduce import Reduce
+    from gempy.utils import logutils
+
+    associated_calibrations = {
+        "S20190808S0048.fits": {"arcs": ["S20190808S0167.fits"]},
+        "S20190808S0049.fits": {"arcs": ["S20190808S0168.fits"]},
+        # "S20190808S0052.fits": {"arcs": ["S20190808S0165.fits"]}, # Can't find aperture
+        "S20190808S0053.fits": {"arcs": ["S20190808S0169.fits"]},
+    }
+
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/test_gmos_spect_ls_resample/"
+    path = os.path.join(root_path, module_path)
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    os.makedirs("./inputs", exist_ok=True)
+    print('Current working directory:\n    {:s}'.format(os.getcwd()))
+
+    for filename, cals in associated_calibrations.items():
+
+        print('Downloading files...')
+        sci_path = download_from_archive(filename)
+        arc_path = [download_from_archive(f) for f in cals['arcs']]
+
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
+
+        print('Reducing ARC for {:s}'.format(data_label))
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+        arc_reduce = Reduce()
+        arc_reduce.files.extend(arc_path)
+        arc_reduce.runr()
+        arc = arc_reduce.output_filenames.pop()
+
+        print('Reducing pre-processed data:')
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p.prepare()
+        p.addDQ(static_bpm=None)
+        p.addVAR(read_noise=True)
+        p.overscanCorrect()
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.mosaicDetectors()
+        p.distortionCorrect(arc=arc)
+        p.findSourceApertures(max_apertures=1)
+        p.skyCorrectFromSlit()
+        p.traceApertures()
+        p.extract1DSpectra()
+
+        os.chdir("inputs/")
+        _ = p.writeOutputs().pop()
+        os.chdir("../")
+
+
+if __name__ == '__main__':
+    import sys
+
+    if "--create-inputs" in sys.argv[1:]:
+        create_inputs_recipe()
+    else:
+        pytest.main()
