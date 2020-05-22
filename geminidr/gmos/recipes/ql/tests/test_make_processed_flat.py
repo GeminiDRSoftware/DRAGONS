@@ -16,20 +16,20 @@ from recipe_system.testing import reduce_bias, ref_ad_factory
 
 datasets = [
     "S20180707S0043.fits",  # B600 at 0.520 um
-    # "S20190502S0096.fits",  # B600 at 0.525 um
-    # "S20200122S0020.fits",  # B600 at 0.520 um
-    # "N20200101S0055.fits",  # B1200 at 0.495 um
-    # "S20180410S0120.fits",  # B1200 at 0.595 um  # Scattered light?
-    # "S20190410S0053.fits",  # B1200 at 0.463 um  # Scattered light?
+    "S20190502S0096.fits",  # B600 at 0.525 um
+    "S20200122S0020.fits",  # B600 at 0.520 um
+    "N20200101S0055.fits",  # B1200 at 0.495 um
+    "S20180410S0120.fits",  # B1200 at 0.595 um  # Scattered light?
+    "S20190410S0053.fits",  # B1200 at 0.463 um  # Scattered light?
 ]
 
 associated_calibrations = {
     "S20180707S0043.fits": "S20180707S0187_bias.fits",
-    # "S20190502S0096.fits": "",
-    # "S20200122S0020.fits": "",
-    # "N20200101S0055.fits": "",
-    # "S20180410S0120.fits": "",
-    # "S20190410S0053.fits": "",
+    "S20190502S0096.fits": "S20190502S0221_bias.fits",
+    "S20200122S0020.fits": "S20200121S0170_bias.fits",
+    "N20200101S0055.fits": "N20200101S0240_bias.fits",
+    "S20180410S0120.fits": "S20180410S0132_bias.fits",
+    "S20190410S0053.fits": "S20190410S0297_bias.fits",
 }
 
 
@@ -155,31 +155,31 @@ def create_master_bias_for_tests():
                                 "S20180707S0189.fits",
                                 "S20180707S0190.fits",
                                 "S20180707S0191.fits"],
-        # "S20190502S0096.fits": ["S20190502S0221.fits",
-        #                         "S20190502S0222.fits",
-        #                         "S20190502S0223.fits",
-        #                         "S20190502S0224.fits",
-        #                         "S20190502S0225.fits"],
-        # "S20200122S0020.fits": ["S20200121S0170.fits",
-        #                         "S20200121S0171.fits",
-        #                         "S20200121S0172.fits",
-        #                         "S20200121S0173.fits",
-        #                         "S20200121S0174.fits"],
-        # "N20200101S0055.fits": ["N20200101S0240.fits",
-        #                         "N20200101S0241.fits",
-        #                         "N20200101S0242.fits",
-        #                         "N20200101S0243.fits",
-        #                         "N20200101S0244.fits"],
-        # "S20180410S0120.fits": ["S20180410S0132.fits",
-        #                         "S20180410S0133.fits",
-        #                         "S20180410S0134.fits",
-        #                         "S20180410S0135.fits",
-        #                         "S20180410S0136.fits"],
-        # "S20190410S0053.fits": ["S20190410S0297.fits",
-        #                         "S20190410S0298.fits",
-        #                         "S20190410S0299.fits",
-        #                         "S20190410S0300.fits",
-        #                         "S20190410S0301.fits"],
+        "S20190502S0096.fits": ["S20190502S0221.fits",
+                                "S20190502S0222.fits",
+                                "S20190502S0223.fits",
+                                "S20190502S0224.fits",
+                                "S20190502S0225.fits"],
+        "S20200122S0020.fits": ["S20200121S0170.fits",
+                                "S20200121S0171.fits",
+                                "S20200121S0172.fits",
+                                "S20200121S0173.fits",
+                                "S20200121S0174.fits"],
+        "N20200101S0055.fits": ["N20200101S0240.fits",
+                                "N20200101S0241.fits",
+                                "N20200101S0242.fits",
+                                "N20200101S0243.fits",
+                                "N20200101S0244.fits"],
+        "S20180410S0120.fits": ["S20180410S0132.fits",
+                                "S20180410S0133.fits",
+                                "S20180410S0134.fits",
+                                "S20180410S0135.fits",
+                                "S20180410S0136.fits"],
+        "S20190410S0053.fits": ["S20190410S0297.fits",
+                                "S20190410S0298.fits",
+                                "S20190410S0299.fits",
+                                "S20190410S0300.fits",
+                                "S20190410S0301.fits"],
     }
 
     for filename, bias_files in associated_biases.items():
