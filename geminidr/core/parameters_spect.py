@@ -5,18 +5,21 @@ from astrodata import AstroData
 from astropy import units as u
 
 
-class adjustSlitOffsetToReferenceConfig(config.Config):
+class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
-                          str, "_slitOffsetCorrected", optional=True)
+                          str, "_wcsCorrected", optional=True)
+    method = config.ChoiceField("Alignment method", str,
+                                allowed={"sources_wcs": "Match sources using WCS",
+                                         "sources_offsets": "Match sources using telescope offsets",
+                                         "offsets": "Use telescope offsets only"},
+                                default="sources_wcs")
+    fallback = config.ChoiceField("Fallback method", str,
+                                  allowed={"sources_offsets": "Match sources using telescope offsets",
+                                           "offsets": "Use telescope offsets only"},
+                                  default="offsets", optional=True)
     tolerance = config.RangeField("Maximum distance from the header offset, "
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
-    method = config.ChoiceField(
-        "Alignment method", str,
-        allowed={"offsets": "Use telescope offsets",
-                 "correlation": "Correlate the slit profile"},
-        default="correlation"
-    )
 
 
 class calculateSensitivityConfig(config.Config):

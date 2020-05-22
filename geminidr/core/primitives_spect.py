@@ -18,7 +18,6 @@ from astropy.io.ascii.core import InconsistentTableError
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip
 from astropy.table import Table
-from astropy.wcs import WCS
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
@@ -55,7 +54,7 @@ class Spect(PrimitivesBASE):
         super().__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
-    def adjustSlitOffsetToReference(self, adinputs=None, **params):
+    def adjustWCSToReference(self, adinputs=None, **params):
         """
         Compute offsets along the slit by cross-correlation, or use offset
         from the headers (QOFFSET). The computed offset is stored in the
@@ -81,7 +80,7 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        method = params["method"]
+        methods = (params["method"], params["fallback"])
         tolerance = params["tolerance"]
 
         if len(adinputs) <= 1:
@@ -90,7 +89,10 @@ class Spect(PrimitivesBASE):
             return adinputs
 
         if not all(len(ad) == 1 for ad in adinputs):
-            raise OSError("All input images must have only one extension.")
+            raise OSError("All input images must have only one extension")
+
+        if {len(ad[0].shape) for ad in adinputs} != {2}:
+            raise OSError("All inputs must be two dimensional")
 
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -100,45 +102,83 @@ class Spect(PrimitivesBASE):
 
         # Use first image in list as reference
         refad = adinputs[0]
+        ref_sky_model = astromodels.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
+        ref_sky_model.name = None
         log.stdinfo("Reference image: {}".format(refad.filename))
         refad.phu['SLITOFF'] = 0
-        if method == 'correlation':
+        if any('sources' in m for m in methods):
             ref_profile = stack_slit(refad[0])
+        if 'sources_wcs' in methods:
+            world_coords = (refad[0].central_wavelength(asNanometers=True),
+                            refad.target_ra(), refad.target_dec())
+            ref_coords = refad[0].wcs.backward_transform(*world_coords)
 
         for ad in adinputs[1:]:
-            dispaxis = 2 - ad[0].dispersion_axis()  # python sense
-            if dispaxis == 1:
-                hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
-            else:
-                hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+            for method in methods:
+                adjust = True  # optimistic expectation
+                dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
-            if method == 'correlation':
-                profile = stack_slit(ad[0])
-                # cross-correlate profiles to find the offset
-                corr = np.correlate(ref_profile, profile, mode='full')
-                offset = np.argmax(corr) - ref_profile.shape[0] + 1
+                # Calculate offset determined by header (WCS or offsets)
+                if method == 'sources_wcs':
+                    coords = ad[0].wcs.backward_transform(*world_coords)
+                    hdr_offset = ref_coords[dispaxis] - coords[dispaxis]
+                elif dispaxis == 1:
+                    hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+                else:
+                    hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
 
-                # Check that the offset is similar to the one from headers
-                dist_arsec = np.abs(hdr_offset - offset) * ad.pixel_scale()
-                if tolerance and dist_arsec > tolerance:
-                    # Fallback to header offset?
-                    log.warning("Offset from correlation ({}) is too big "
-                                "compared to the header offset ({}). Using "
-                                "this one instead".format(offset, hdr_offset))
+                # Cross-correlate to find real offset and compare
+                if 'sources' in method:
+                    profile = stack_slit(ad[0])
+                    corr = np.correlate(ref_profile, profile, mode='full')
+                    peak = tracing.pinpoint_peaks(corr, None, [np.argmax(corr)])[0]
+                    offset = peak - ref_profile.shape[0] + 1
+
+                    # Check that the offset is similar to the one from headers
+                    offset_diff = hdr_offset - offset
+                    if (tolerance is not None and
+                            np.abs(offset_diff * ad.pixel_scale()) > tolerance):
+                        log.warning("Offset for {} ({:.2f}) disagrees with "
+                                    "expected value ({:.2f})".format(
+                            ad.filename, offset, hdr_offset))
+                        adjust = False
+                elif method == 'offsets':
                     offset = hdr_offset
 
-            elif method == 'offsets':
-                # Use directly the offset from the headers
-                offset = hdr_offset
+                if adjust:
+                    wcs = ad[0].wcs
+                    frames = wcs.available_frames
+                    for input_frame, output_frame in zip(frames[:-1], frames[1:]):
+                        t = wcs.get_transform(input_frame, output_frame)
+                        try:
+                            sky_model = astromodels.get_named_submodel(t, 'SKY')
+                        except IndexError:
+                            pass
+                        else:
+                            new_sky_model = models.Shift(offset) | ref_sky_model
+                            new_sky_model.name = 'SKY'
+                            ad[0].wcs.set_transform(input_frame, output_frame,
+                                                    t.replace_submodel('SKY', new_sky_model))
+                            break
+                    else:
+                        raise OSError("Cannot find 'SKY' model in WCS for "
+                                      f"{ad.filename}")
 
-            log.stdinfo("Offset for image {} : {} pixels"
-                        .format(ad.filename, offset))
-            ad.phu['SLITOFF'] = offset
+                    log.stdinfo("Offset for image {} : {:.2f} pixels"
+                                .format(ad.filename, offset))
+                    ad.phu['SLITOFF'] = offset
+                    break
 
-        # Timestamp and update filenames
-        for i, ad in enumerate(adinputs):
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            if not adjust:
+                no_offset_msg = f"Cannot determine offset for {ad.filename}"
+                if 'sq' in self.mode:
+                    raise OSError(no_offset_msg)
+                else:
+                    log.warning(no_offset_msg)
+            else:
+                # Timestamp and update filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
 
@@ -1754,7 +1794,7 @@ class Spect(PrimitivesBASE):
         # align them in the spatial direction
         adoutputs = []
         for ad in adinputs:
-            ad_out = self.resampleToCommonFrame([ad], suffix=sfx, w1=w1, w2=w2, dw=dw,
+            ad_out = self.resampleToCommonFrame([ad], suffix=sfx, w1=w1, w2=w2, npix=npix,
                                                 converse=conserve, order=order,
                                                 trim_data=False)[0]
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
@@ -1939,7 +1979,7 @@ class Spect(PrimitivesBASE):
 
         # For the 2D case check that all ad objects have only 1 extension
         if ndim > 1:
-            adjust_key = self.timestamp_keys['adjustSlitOffsetToReference']
+            adjust_key = self.timestamp_keys['adjustWCSToReference']
             for i, ad in enumerate(adinputs):
                 if len(ad) != 1:
                     raise ValueError('inputs must have only 1 extension')
@@ -1947,6 +1987,11 @@ class Spect(PrimitivesBASE):
                     log.warning(
                         "{} has not offset, adjustSlitOffsetToReference "
                         "should be run first".format(ad.filename))
+            # Store these values for later!
+            refad = adinputs[0]
+            ref_coords = (refad.central_wavelength(asNanometers=True),
+                          refad.target_ra(), refad.target_dec())
+            ref_pixels = refad[0].wcs.backward_transform(*ref_coords)
 
         # If only one variable is missing we compute it from the others
         nparams = sum(x is not None for x in (w1, w2, dw, npix))
@@ -2030,9 +2075,14 @@ class Spect(PrimitivesBASE):
                               + 1 - pixel_shift)
             dwout = (w2out - w1out) / (npixout - 1)
 
+        new_wave_model.name = 'WAVE'
+        if ndim == 1:
+            new_wcs_model = new_wave_model
+        else:
+            new_wcs_model = refad[0].wcs.forward_transform.replace_submodel('WAVE', new_wave_model)
+
         for i, ad in enumerate(adinputs):
             for iext, ext in enumerate(ad):
-                print(ext.wcs(0,0), ext.wcs(*ext.shape[::-1]))
                 wave_model = info[i][iext]['wave_model']
                 extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 wave_resample = wave_model | new_wave_model.inverse
@@ -2043,12 +2093,11 @@ class Spect(PrimitivesBASE):
 
                 if ndim == 1:
                     dispaxis = 0
-                    new_wcs_model = new_wave_model
                     resampling_model = wave_resample
                 else:
-                    dispaxis = 2 - ext.dispersion_axis()
-                    slit_offset = models.Shift(ad.phu.get('SLITOFF', 0))
-                    new_wcs_model = ext.wcs.forward_transform.replace_submodel('WAVE', new_wave_model)
+                    pixels = ext.wcs.backward_transform(*ref_coords)
+                    dispaxis = 2 - ext.dispersion_axis()  # python sense
+                    slit_offset = models.Shift(ref_pixels[dispaxis] - pixels[dispaxis])
                     if dispaxis == 0:
                         resampling_model = slit_offset & wave_resample
                     else:
@@ -2082,6 +2131,12 @@ class Spect(PrimitivesBASE):
                                                       origin=origin, output_shape=output_shape)[0]
                 for attr in attributes + ['wcs']:
                     setattr(ext, attr, getattr(new_ext, attr))
+                try:
+                    ext.APERTURE['c0'] += slit_offset
+                    log.fullinfo("Shifting aperture locations by {:.2f} "
+                                 "pixels".format(slit_offset))
+                except AttributeError:
+                    pass
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
