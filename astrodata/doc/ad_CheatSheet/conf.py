@@ -49,8 +49,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Astrodata Cheat Sheet'
-copyright = u'2020, Association of Universities for Research in Astronomy'
+project = 'Astrodata Cheat Sheet'
+copyright = '2020, Association of Universities for Research in Astronomy'
 
 # Note that AURA owns the Copyright, not you.
 
@@ -184,15 +184,15 @@ htmlhelp_basename = 'AstrodataCheatSheet'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
-'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
+    'preamble': '\\usepackage{appendix} \\setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -271,12 +271,14 @@ intersphinx_mapping = {
 }
 
 # Activate the todos
-todo_include_todos=True
+todo_include_todos = True
 
 # -- Finishing with a setup that will run always -----------------------------
+
+
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('todo-styles.css')
-    app.add_stylesheet('rtd_theme_overrides.css')
-    app.add_stylesheet('css/rtd_theme_overrides_references.css')
+    app.add_css_file('todo-styles.css')
+    app.add_css_file('rtd_theme_overrides.css')
+    app.add_css_file('css/rtd_theme_overrides_references.css')
