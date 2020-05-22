@@ -589,7 +589,8 @@ def read_fits(cls, source, extname_parser=None):
     return ad
 
 
-def write_fits(ad, filename, overwrite=False):
+def ad_to_hdulist(ad):
+    """Creates an HDUList from an AstroData object."""
     hdul = HDUList()
     hdul.append(PrimaryHDU(header=ad.phu, data=DELAYED))
 
@@ -647,6 +648,12 @@ def write_fits(ad, filename, overwrite=False):
         for name, table in sorted(ad._tables.items()):
             hdul.append(table_to_bintablehdu(table, extname=name))
 
+    return hdul
+
+
+def write_fits(ad, filename, overwrite=False):
+    """Writes the AstroData object to a FITS file."""
+    hdul = ad_to_hdulist(ad)
     hdul.writeto(filename, overwrite=overwrite)
 
 
