@@ -983,7 +983,7 @@ class Spect(PrimitivesBASE):
                                      in_weights=in_weights[peaks_to_fit],
                                      ref_weights=None if weight_type == 'none' else arc_weights)
                     #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
-                    #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
+                    #                 options={'xatol': 1.0e-7, 'fatol': 1.0e-8})
 
                     log.stdinfo('{} {}'.format(repr(m_final), fit_it.statistic))
                     if plot:
