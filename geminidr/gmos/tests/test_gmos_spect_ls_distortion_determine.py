@@ -22,7 +22,7 @@ from astropy.modeling import models
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels, transform
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
@@ -128,7 +128,7 @@ datasets = [
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_for_determine_distortion_using_models_coefficients(
-        ad, change_working_dir, reference_ad, request):
+        ad, change_working_dir, ref_ad_factory, request):
     """
     Runs the `determineDistortion` primitive on a preprocessed data and compare
     its model with the one in the reference file.
@@ -153,7 +153,7 @@ def test_regression_for_determine_distortion_using_models_coefficients(
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(distortion_determined_ad.filename)
+    ref_ad = ref_ad_factory(distortion_determined_ad.filename)
     for ext, ext_ref in zip(distortion_determined_ad, ref_ad):
         c = np.ma.masked_invalid(ext.FITCOORD["coefficients"])
         c_ref = np.ma.masked_invalid(ext_ref.FITCOORD["coefficients"])
@@ -167,7 +167,7 @@ def test_regression_for_determine_distortion_using_models_coefficients(
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_for_determine_distortion_using_fitcoord_table(
-        ad, change_working_dir, reference_ad):
+        ad, change_working_dir, ref_ad_factory):
     """
     Runs the `determineDistortion` primitive on a preprocessed data and compare
     its model with the one in the reference file. The distortion model needs to
@@ -191,7 +191,7 @@ def test_regression_for_determine_distortion_using_fitcoord_table(
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(distortion_determined_ad.filename) 
+    ref_ad = ref_ad_factory(distortion_determined_ad.filename)
 
     table = ad[0].FITCOORD
     model_dict = dict(zip(table['name'], table['coefficients']))

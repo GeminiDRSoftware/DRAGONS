@@ -16,7 +16,7 @@ import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
@@ -46,7 +46,7 @@ fixed_test_parameters_for_determine_distortion = {
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
-def test_regression_trace_apertures(ad, change_working_dir, reference_ad):
+def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
 
     with change_working_dir():
         logutils.config(file_name="log_regression_{}.txt".format(ad.data_label()))
@@ -55,7 +55,7 @@ def test_regression_trace_apertures(ad, change_working_dir, reference_ad):
         p.traceApertures()
         aperture_traced_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(aperture_traced_ad.filename)
+    ref_ad = ref_ad_factory(aperture_traced_ad.filename)
 
     for ext, ref_ext in zip(aperture_traced_ad, ref_ad):
         input_table = ext.APERTURE

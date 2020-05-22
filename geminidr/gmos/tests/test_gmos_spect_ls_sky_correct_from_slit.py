@@ -17,7 +17,7 @@ import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
@@ -41,7 +41,7 @@ test_datasets = [
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_extract_1d_spectra(ad, change_working_dir,
-                                       reference_ad):
+                                       ref_ad_factory):
 
     with change_working_dir():
 
@@ -53,7 +53,7 @@ def test_regression_extract_1d_spectra(ad, change_working_dir,
         p.skyCorrectFromSlit(order=5, grow=0)
         sky_subtracted_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(sky_subtracted_ad.filename)
+    ref_ad = ref_ad_factory(sky_subtracted_ad.filename)
 
     for ext, ref_ext in zip(sky_subtracted_ad, ref_ad):
         np.testing.assert_allclose(ext.data, ref_ext.data)

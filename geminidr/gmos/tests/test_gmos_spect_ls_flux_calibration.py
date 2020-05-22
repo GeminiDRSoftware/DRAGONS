@@ -14,7 +14,7 @@ import gemini_instruments
 from astropy.io import fits
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 
 
 test_datasets = [
@@ -120,7 +120,7 @@ def test_flux_calibration_with_fake_data():
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
-def test_regression_on_flux_calibration(ad, reference_ad, change_working_dir):
+def test_regression_on_flux_calibration(ad, ref_ad_factory, change_working_dir):
     """
     Regression test for the :func:`~geminidr.gmos.GMOSSpect.fluxCalibrate`
     primitive.
@@ -143,7 +143,7 @@ def test_regression_on_flux_calibration(ad, reference_ad, change_working_dir):
         p.fluxCalibrate(standard=ad)
         flux_calibrated_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(flux_calibrated_ad.filename)
+    ref_ad = ref_ad_factory(flux_calibrated_ad.filename)
 
     for flux_cal_ext, ref_ext in zip(flux_calibrated_ad, ref_ad):
         np.testing.assert_allclose(

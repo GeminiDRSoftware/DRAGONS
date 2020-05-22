@@ -13,7 +13,7 @@ from astropy import modeling
 from geminidr.gmos import primitives_gmos_longslit
 from gempy.library import astromodels
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 from scipy import ndimage
 
 DPI = 90
@@ -177,7 +177,7 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
-def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, reference_ad):
+def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, ref_ad_factory):
 
     with change_working_dir():
         logutils.config(file_name='log_test_regression{}.txt'.format(ad.data_label()))
@@ -187,7 +187,7 @@ def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, refer
 
     assert 'QECORR' in qe_corrected_ad.phu.keys()
 
-    ref_ad = reference_ad(qe_corrected_ad.filename)
+    ref_ad = ref_ad_factory(qe_corrected_ad.filename)
 
     for qe_corrected_ext, ref_ext in zip(qe_corrected_ad, ref_ad):
         np.testing.assert_allclose(

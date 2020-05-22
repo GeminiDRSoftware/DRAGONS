@@ -12,7 +12,7 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
 # noinspection PyUnresolvedReferences
-from recipe_system.testing import reduce_bias, reference_ad
+from recipe_system.testing import reduce_bias, ref_ad_factory
 
 datasets = [
     "S20180707S0043.fits",  # B600 at 0.520 um
@@ -68,7 +68,7 @@ def test_processed_flat_has_small_std(processed_flat):
 
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
-def test_regression_processed_flat(processed_flat, reference_ad):
+def test_regression_processed_flat(processed_flat, ref_ad_factory):
     """
     Tests if the processed flat contains values around one.
 
@@ -76,11 +76,11 @@ def test_regression_processed_flat(processed_flat, reference_ad):
     ----------
     processed_flat : pytest.fixture
         Fixture containing an instance of the processed flat.
-    reference_ad : pytest.fixture
+    ref_ad_factory : pytest.fixture
         Fixture containing a function that will receive the input file an return
         the path to the reference data.
     """
-    ref_flat = reference_ad(processed_flat.filename)
+    ref_flat = ref_ad_factory(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
         np.testing.assert_allclose(ext.mask, ext_ref.mask)
         np.testing.assert_almost_equal(ext.data, ext_ref.data, decimal=3)

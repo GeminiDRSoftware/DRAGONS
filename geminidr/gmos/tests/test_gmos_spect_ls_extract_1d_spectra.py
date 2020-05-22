@@ -20,7 +20,7 @@ import geminidr
 from astropy.table import Table
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
@@ -41,7 +41,7 @@ test_datasets = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
-def test_regression_on_extract_1d_spectra(ad, reference_ad, change_working_dir):
+def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir):
     """
     Regression test for the :func:`~geminidr.gmos.GMOSSpect.extract1DSpectra`
     primitive.
@@ -68,7 +68,7 @@ def test_regression_on_extract_1d_spectra(ad, reference_ad, change_working_dir):
         p.extract1DSpectra(method="standard", width=None, grow=10)
         extracted_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(extracted_ad.filename)
+    ref_ad = ref_ad_factory(extracted_ad.filename)
 
     for ext, ref_ext in zip(extracted_ad, ref_ad):
         assert ext.data.ndim == 1

@@ -42,7 +42,7 @@ import geminidr
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
@@ -188,7 +188,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
 def test_regression_determine_wavelength_solution(
-        ad, fwidth, order, min_snr, change_working_dir, reference_ad):
+        ad, fwidth, order, min_snr, change_working_dir, ref_ad_factory):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
@@ -204,7 +204,7 @@ def test_regression_determine_wavelength_solution(
 
         wcalibrated_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(wcalibrated_ad.filename)
+    ref_ad = ref_ad_factory(wcalibrated_ad.filename)
     table = wcalibrated_ad[0].WAVECAL
     table_ref = ref_ad[0].WAVECAL
 

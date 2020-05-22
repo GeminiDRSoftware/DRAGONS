@@ -17,7 +17,7 @@ import geminidr
 
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.utils import logutils
-from recipe_system.testing import reference_ad
+from recipe_system.testing import ref_ad_factory
 
 # Test parameters --------------------------------------------------------------
 datasets = [
@@ -119,7 +119,7 @@ fixed_test_parameters_for_determine_distortion = {
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_regression_in_distortion_correct(ad, change_working_dir, reference_ad):
+def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory):
     """
     Runs the `distortionCorrect` primitive on a preprocessed data and compare
     its model with the one in the reference file.
@@ -134,7 +134,7 @@ def test_regression_in_distortion_correct(ad, change_working_dir, reference_ad):
         p.distortionCorrect(arc=deepcopy(ad), order=3, subsample=1)
         dist_corrected_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(dist_corrected_ad.filename)
+    ref_ad = ref_ad_factory(dist_corrected_ad.filename)
     for ext, ext_ref in zip(dist_corrected_ad, ref_ad):
         data = np.ma.masked_invalid(ext.data)
         ref_data = np.ma.masked_invalid(ext_ref.data)
