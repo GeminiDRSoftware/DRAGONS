@@ -31,8 +31,9 @@ def reduceScience(p):
     p.traceApertures()
     p.extract1DSpectra()
     p.linearizeSpectra()
+    p.fluxCalibrate()
     p.writeOutputs()
-    p.storeScience()
+    p.storeProcessedScience()
 
 
 

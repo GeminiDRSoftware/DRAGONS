@@ -312,10 +312,10 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeScience(self, adinputs=None):
+    def storeProcessedScience(self, adinputs=None):
         if self.mode not in ['sq', 'ql', 'qa']:
             self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
-        elif self.upload and 'science' in self.upload:
+        elif self.mode != 'qa' and self.upload and 'science' in self.upload:
             # save filenames so we can restore them after
             filenames = [ad.filename for ad in adinputs]
 
