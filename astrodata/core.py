@@ -77,7 +77,6 @@ class AstroData:
         self._logger = logging.getLogger(__name__)
         self._orig_filename = None
         self._path = None
-        self._resetting = False
 
     # def _clone(self):
     #     # FIXME: this was used by FitsProviderProxy
@@ -105,8 +104,7 @@ class AstroData:
 
         obj = self.__class__()
 
-        for attr in ('_phu', '_path', '_orig_filename', '_tables',
-                     '_exposed', '_resetting'):
+        for attr in ('_phu', '_path', '_orig_filename', '_tables', '_exposed'):
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
         if self.is_single:
@@ -577,15 +575,9 @@ class AstroData:
             # the NDData objects. First we check if the attribute belongs to
             # this object's dictionary.  Otherwise, see if we can pass it down.
             #
-            # self._resetting shortcircuits the method when populating the
-            # object. In that situation, we don't want to interfere. Of course,
-            # we need to check first if self._resetting is there, because
-            # otherwise we enter a loop..  CJS 20200131: if the attribute is
-            # "exposed" then we should set it via the append method I think
-            # (it's a Table or something)
+            # CJS 20200131: if the attribute is "exposed" then we should set
+            # it via the append method I think (it's a Table or something)
             if (self.is_settable(attribute) and
-                    '_resetting' in self.__dict__ and
-                    not self._resetting and
                     (not _my_attribute(attribute) or
                      attribute in self._exposed)):
                 if self.is_sliced and not self.is_single:
