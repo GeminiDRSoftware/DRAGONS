@@ -80,16 +80,15 @@ class AstroData:
         self._processing_tags = False
         self._resetting = False
 
-    def _clone(self):
-        # FIXME: this was used by FitsProviderProxy
-        obj = self.__class__()
-        obj._phu = deepcopy(self._phu)
-        for nd in self.nddata:
-            obj.append(deepcopy(nd))
-        for t in self._tables.values():
-            obj.append(deepcopy(t))
-
-        return obj
+    # def _clone(self):
+    #     # FIXME: this was used by FitsProviderProxy
+    #     obj = self.__class__()
+    #     obj._phu = deepcopy(self._phu)
+    #     for nd in self.nddata:
+    #         obj.append(deepcopy(nd))
+    #     for t in self._tables.values():
+    #         obj.append(deepcopy(t))
+    #     return obj
 
     def __deepcopy__(self, memo):
         """
