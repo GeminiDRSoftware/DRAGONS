@@ -13,6 +13,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.nddata import NDData
 from astropy.table import Table
+from astropy.utils import format_doc
 
 from .fits import (DEFAULT_EXTENSION, FitsHeaderCollection, _process_table,
                    read_fits, write_fits)
@@ -25,6 +26,20 @@ NO_DEFAULT = object()
 
 class AstroDataError(Exception):
     pass
+
+
+_arit_doc = """
+    Performs {name} by evaluating ``self`` {op} ``operand``.
+
+    Parameters
+    ----------
+    oper : number or object
+        The operand to perform the operation  ``self`` {op} ``operand``.
+
+    Returns
+    --------
+    `AstroData` instance
+"""
 
 
 class AstroData:
@@ -782,135 +797,47 @@ class AstroData:
         return self._oper(partial(fn, handle_mask=np.bitwise_or,
                                   handle_meta='first_found'), operand)
 
+    @format_doc(_arit_doc, name='addition', op='+')
     def __add__(self, oper):
-        """
-        Implements the binary arithmetic operation ``+``.
-
-        Parameters
-        ----------
-        oper : number or object
-            The operand to be added to this instance.
-
-        Returns
-        --------
-        A new `AstroData` instance
-        """
         copy = deepcopy(self)
         copy += oper
         return copy
 
+    @format_doc(_arit_doc, name='subtraction', op='-')
     def __sub__(self, oper):
-        """
-        Implements the binary arithmetic operation ``-``.
-
-        Parameters
-        ----------
-        oper : number or object
-            The operand to be subtracted to this instance.
-
-        Returns
-        --------
-        A new `AstroData` instance
-        """
         copy = deepcopy(self)
         copy -= oper
         return copy
 
+    @format_doc(_arit_doc, name='multiplication', op='*')
     def __mul__(self, oper):
-        """
-        Implements the binary arithmetic operation ``*``.
-
-        Parameters
-        ----------
-        oper : number or object
-            The operand to be multiplied to this instance.
-
-        Returns
-        --------
-        A new `AstroData` instance
-        """
         copy = deepcopy(self)
         copy *= oper
         return copy
 
+    @format_doc(_arit_doc, name='division', op='/')
     def __truediv__(self, oper):
-        """
-        Implements the binary arithmetic operation ``/``.
-
-        Parameters
-        ----------
-        oper : number or object
-            The operand to be divided to this instance.
-
-        Returns
-        --------
-        A new `AstroData` instance
-        """
         copy = deepcopy(self)
         copy /= oper
         return copy
 
+    @format_doc(_arit_doc, name='inplace addition', op='+=')
     def __iadd__(self, oper):
-        """
-        Implements the augmented arithmetic assignment ``+=``.
-
-        Parameters
-        ----------
-        oper : number or object
-            The operand to be added to this instance.
-
-        Returns
-        --------
-        ``self``
-        """
         self._standard_nddata_op(NDDataObject.add, oper)
         return self
 
+    @format_doc(_arit_doc, name='inplace subtraction', op='-=')
     def __isub__(self, oper):
-        """
-        Implements the augmented arithmetic assignment ``-=``.
-
-        Parameters
-        ----------
-        oper : number or object
-            The operand to be subtracted to this instance.
-
-        Returns
-        --------
-        ``self``
-        """
         self._standard_nddata_op(NDDataObject.subtract, oper)
         return self
 
+    @format_doc(_arit_doc, name='inplace multiplication', op='*=')
     def __imul__(self, oper):
-        """
-        Implements the augmented arithmetic assignment ``*=``.
-
-        Parameters
-        ----------
-        oper : number or object
-            The operand to be multiplied to this instance.
-
-        Returns
-        --------
-        ``self``
-        """
         self._standard_nddata_op(NDDataObject.multiply, oper)
         return self
 
+    @format_doc(_arit_doc, name='inplace division', op='/=')
     def __itruediv__(self, oper):
-        """
-        Implements the augmented arithmetic assignment ``/=``.
-
-        Parameters
-        ----------
-        oper : number or other
-            The operand to be divided to this instance.
-
-        Returns
-        --------
-        ``self``
-        """
         self._standard_nddata_op(NDDataObject.divide, oper)
         return self
 
@@ -931,12 +858,9 @@ class AstroData:
         return NDDataObject.divide(operand, ndd)
 
     def __rtruediv__(self, oper):
-        copy = deepcopy(self)
-        # copy._dataprov.__rtruediv__(oper)
-        copy._oper(copy._rdiv, oper)
-        # FIXME: check this, from FitsProviderProxy
-        # self._provider._oper(self._provider._rdiv, operand, self._mapping)
-        return copy
+        obj = deepcopy(self)
+        obj._oper(obj._rdiv, oper)
+        return obj
 
     def _reset_ver(self, nd):
         try:
