@@ -2,6 +2,7 @@ import inspect
 import logging
 import os
 import re
+import textwrap
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
@@ -280,6 +281,10 @@ class AstroData:
         members = inspect.getmembers(self.__class__,
                                      lambda x: hasattr(x, 'descriptor_method'))
         return tuple(mname for (mname, method) in members)
+
+    @property
+    def indices(self):
+        return self._indices if self._indices else list(range(len(self)))
 
     @property
     def is_sliced(self):
@@ -662,62 +667,53 @@ class AstroData:
             exposed |= set(nd.meta['other'])
         return exposed
 
-    def _pixel_info(self, indices):
-        # FIXME: remove indices arg here, we don't need it
-        for idx, obj in ((n, self._nddata[k]) for n, k in enumerate(indices)):
+    def _pixel_info(self):
+        nddata = [self.nddata] if self.is_single else self.nddata
+        for idx, nd in enumerate(nddata):
             other_objects = []
-            uncer = obj.uncertainty
+            uncer = nd.uncertainty
             fixed = (('variance', None if uncer is None else uncer),
-                     ('mask', obj.mask))
-            for name, other in fixed + tuple(sorted(obj.meta['other'].items())):
-                if other is not None:
-                    if isinstance(other, Table):
-                        other_objects.append(dict(
-                            attr=name,
-                            type='Table',
-                            dim=str((len(other), len(other.columns))),
-                            data_type='n/a'
-                        ))
+                     ('mask', nd.mask))
+            for name, other in fixed + tuple(sorted(nd.meta['other'].items())):
+                if other is None:
+                    continue
+                if isinstance(other, Table):
+                    other_objects.append(dict(
+                        attr=name,
+                        type='Table',
+                        dim=str((len(other), len(other.columns))),
+                        data_type='n/a'
+                    ))
+                else:
+                    dim = ''
+                    if hasattr(other, 'dtype'):
+                        dt = other.dtype.name
+                        dim = str(other.shape)
+                    elif hasattr(other, 'data'):
+                        dt = other.data.dtype.name
+                        dim = str(other.data.shape)
+                    elif hasattr(other, 'array'):
+                        dt = other.array.dtype.name
+                        dim = str(other.array.shape)
                     else:
-                        dim = ''
-                        if hasattr(other, 'dtype'):
-                            dt = other.dtype.name
-                            dim = str(other.shape)
-                        elif hasattr(other, 'data'):
-                            dt = other.data.dtype.name
-                            dim = str(other.data.shape)
-                        elif hasattr(other, 'array'):
-                            dt = other.array.dtype.name
-                            dim = str(other.array.shape)
-                        else:
-                            dt = 'unknown'
-                        other_objects.append(dict(
-                            attr=name,
-                            type=type(other).__name__,
-                            dim=dim,
-                            data_type=dt
-                        ))
+                        dt = 'unknown'
+                    other_objects.append(dict(
+                        attr=name,
+                        type=type(other).__name__,
+                        dim=dim,
+                        data_type=dt
+                    ))
 
             yield dict(
                 idx='[{:2}]'.format(idx),
                 main=dict(
                     content='science',
-                    type=type(obj).__name__,
-                    dim='({})'.format(', '.join(str(s) for s in obj.data.shape)),
-                    data_type=obj.data.dtype.name
+                    type=type(nd).__name__,
+                    dim=str(nd.data.shape),
+                    data_type=nd.data.dtype.name
                 ),
                 other=other_objects
             )
-
-    def _other_info(self):
-        # NOTE: This covers tables, only. Study other cases before
-        # implementing a more general solution
-        if self._tables:
-            for name, table in sorted(self._tables.items()):
-                if type(table) is list:
-                    # This is not a free floating table
-                    continue
-                yield (name, 'Table', (len(table), len(table.columns)))
 
     def info(self):
         """Prints out information about the contents of this instance."""
@@ -726,29 +722,18 @@ class AstroData:
         # This is fixed. We don't support opening for update
         # print("Mode: readonly")
 
-        tags = sorted(self.tags, reverse=True)
-        tag_line = "Tags: "
-        while tags:
-            new_tag = tags.pop() + ' '
-            if len(tag_line + new_tag) > 80:
-                print(tag_line)
-                tag_line = "    " + new_tag
-            else:
-                tag_line = tag_line + new_tag
-        print(tag_line)
+        text = 'Tags: ' + ' '.join(sorted(self.tags))
+        textwrapper = textwrap.TextWrapper(width=80, subsequent_indent='    ')
+        for line in textwrapper.wrap(text):
+            print(line)
 
-        # Let's try to be generic. Could it be that some file contains
-        # only tables?
-        indices = (tuple(range(len(self))) if self._indices is None
-                   else self._indices)
-
-        if indices:
+        if len(self) > 0:
             main_fmt = "{:6} {:24} {:17} {:14} {}"
             other_fmt = "          .{:20} {:17} {:14} {}"
             print("\nPixels Extensions")
             print(main_fmt.format("Index", "Content", "Type", "Dimensions",
                                   "Format"))
-            for pi in self._pixel_info(indices):
+            for pi in self._pixel_info():
                 main_obj = pi['main']
                 print(main_fmt.format(
                     pi['idx'], main_obj['content'][:24], main_obj['type'][:17],
@@ -758,17 +743,20 @@ class AstroData:
                         other['attr'][:20], other['type'][:17], other['dim'],
                         other['data_type']))
 
-        additional_ext = list(self._other_info())
-        if additional_ext:
+        # NOTE: This covers tables, only. Study other cases before
+        # implementing a more general solution
+        if self._tables:
             print("\nOther Extensions")
             print("               Type        Dimensions")
-            for (attr, type_, dim) in additional_ext:
-                print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
+            for name, table in sorted(self._tables.items()):
+                if type(table) is list:
+                    # This is not a free floating table
+                    continue
+                print(".{:13} {:11} {}".format(
+                    name[:13], 'Table', (len(table), len(table.columns))))
 
     def _oper(self, operator, operand):
-        ind = (tuple(range(len(self))) if self._indices is None
-               else self._indices)
-
+        ind = self.indices
         if isinstance(operand, AstroData):
             if len(operand) != len(self):
                 raise ValueError("Operands are not the same size")
