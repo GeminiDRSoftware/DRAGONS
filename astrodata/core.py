@@ -78,16 +78,6 @@ class AstroData:
         self._orig_filename = None
         self._path = None
 
-    # def _clone(self):
-    #     # FIXME: this was used by FitsProviderProxy
-    #     obj = self.__class__()
-    #     obj._phu = deepcopy(self._phu)
-    #     for nd in self.nddata:
-    #         obj.append(deepcopy(nd))
-    #     for t in self._tables.values():
-    #         obj.append(deepcopy(t))
-    #     return obj
-
     def __deepcopy__(self, memo):
         """
         Returns a new instance of this class.
@@ -117,6 +107,12 @@ class AstroData:
         # Top-level tables
         for key in set(self.__dict__) - set(obj.__dict__):
             obj.__dict__[key] = obj.__dict__['_tables'][key]
+
+        # FIXME: this was used by FitsProviderProxy, not sure which way is best
+        # for nd in self.nddata:
+        #     obj.append(deepcopy(nd))
+        # for t in self._tables.values():
+        #     obj.append(deepcopy(t))
 
         return obj
 
