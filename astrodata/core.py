@@ -77,7 +77,6 @@ class AstroData:
         self._logger = logging.getLogger(__name__)
         self._orig_filename = None
         self._path = None
-        self._processing_tags = False
         self._resetting = False
 
     # def _clone(self):
@@ -162,53 +161,43 @@ class AstroData:
         set of str
 
         """
-        # This prevents infinite recursion
-        # FIXME: probably not more needed since we inspect the class ?
-        if self._processing_tags:
-            return set()
-        self._processing_tags = True
-        try:
-            results = []
-            # Calling inspect.getmembers on `self` would trigger all the
-            # properties (tags, phu, hdr, etc.), and that's undesirable. To
-            # prevent that, we'll inspect the *class*.
-            filt = lambda x: hasattr(x, 'tag_method')
-            for mname, method in inspect.getmembers(self.__class__, filt):
-                ts = method(self)
-                if ts.add or ts.remove or ts.blocks:
-                    results.append(ts)
+        results = []
+        # Calling inspect.getmembers on `self` would trigger all the
+        # properties (tags, phu, hdr, etc.), and that's undesirable. To
+        # prevent that, we'll inspect the *class*.
+        filt = lambda x: hasattr(x, 'tag_method')
+        for _, method in inspect.getmembers(self.__class__, filt):
+            ts = method(self)
+            if ts.add or ts.remove or ts.blocks:
+                results.append(ts)
 
-            # Sort by the length of substractions... those that substract
-            # from others go first
-            results = sorted(results,
-                             key=lambda x: len(x.remove) + len(x.blocks),
-                             reverse=True)
+        # Sort by the length of substractions... those that substract
+        # from others go first
+        results = sorted(results, key=lambda x: len(x.remove) + len(x.blocks),
+                         reverse=True)
 
-            # Sort by length of blocked_by... those that are never disabled
-            # go first
-            results = sorted(results, key=lambda x: len(x.blocked_by))
+        # Sort by length of blocked_by, those that are never disabled go first
+        results = sorted(results, key=lambda x: len(x.blocked_by))
 
-            # Sort by length of if_present... those that need other tags to
-            # be present go last
-            results = sorted(results, key=lambda x: len(x.if_present))
+        # Sort by length of if_present... those that need other tags to
+        # be present go last
+        results = sorted(results, key=lambda x: len(x.if_present))
 
-            tags = set()
-            removals = set()
-            blocked = set()
-            for plus, minus, blocked_by, blocks, is_present in results:
-                if is_present:
-                    # If this TagSet requires other tags to be present, make
-                    # sure that all of them are. Otherwise, skip...
-                    if len(tags & is_present) != len(is_present):
-                        continue
-                allowed = (len(tags & blocked_by) + len(plus & blocked)) == 0
-                if allowed:
-                    # This set is not being blocked by others...
-                    removals.update(minus)
-                    tags.update(plus - removals)
-                    blocked.update(blocks)
-        finally:
-            self._processing_tags = False
+        tags = set()
+        removals = set()
+        blocked = set()
+        for plus, minus, blocked_by, blocks, is_present in results:
+            if is_present:
+                # If this TagSet requires other tags to be present, make
+                # sure that all of them are. Otherwise, skip...
+                if len(tags & is_present) != len(is_present):
+                    continue
+            allowed = (len(tags & blocked_by) + len(plus & blocked)) == 0
+            if allowed:
+                # This set is not being blocked by others...
+                removals.update(minus)
+                tags.update(plus - removals)
+                blocked.update(blocks)
 
         return tags
 
