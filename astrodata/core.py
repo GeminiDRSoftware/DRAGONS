@@ -524,9 +524,8 @@ class AstroData:
             If `idx` is out of range.
 
         """
-        if self._indices:
+        if self.is_sliced:
             raise TypeError("Can't remove items from a sliced object")
-        # FIXME: what happens with indices/slices ?
         del self._nddata[idx]
 
     def __getattr__(self, attribute):
