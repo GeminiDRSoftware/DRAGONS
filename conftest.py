@@ -11,12 +11,10 @@ matplotlib.use("agg")
 
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
-    cache_file_from_archive,
     change_working_dir,
     path_to_inputs,
     path_to_outputs,
-    path_to_refs,
-    path_to_test_data)
+    path_to_refs)
 
 
 def pytest_addoption(parser):
@@ -26,18 +24,6 @@ def pytest_addoption(parser):
             action="store_true",
             default=False,
             help="enable tests that use the cache_file_from_archive fixture"
-        )
-        parser.addoption(
-            "--force-cache",
-            action="store_true",
-            default=False,
-            help="Forces data cache when using cache_file_from_archive fixture"
-        )
-        parser.addoption(
-            "--force-preprocess-data",
-            action="store_true",
-            default=False,
-            help="Force preprocessing data as part of the tests."
         )
         parser.addoption(
             "--do-plots",

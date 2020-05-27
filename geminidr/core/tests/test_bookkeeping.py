@@ -49,8 +49,7 @@ class TestBookkeeping:
     Suite of tests for the functions in the primitives_standardize module.
     """
 
-    # noinspection PyPep8Naming
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_addToList(self):
         filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                      for i in range(104, 109)]
@@ -74,23 +73,19 @@ class TestBookkeeping:
         assert len(p.stacks) == 1
         assert len(p.stacks[p.stacks.keys()[0]]) == 5
 
-    # noinspection PyPep8Naming
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_getList(self):
         pass
 
-    # noinspection PyPep8Naming
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_showInputs(self):
         pass
 
-    # noinspection PyPep8Naming
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_showList(self):
         pass
 
-    # noinspection PyPep8Naming
-    @pytest.mark.skip("Review me")
+    @pytest.mark.xfail(reason="Test needs revision", run=False)
     def test_writeOutputs(self):
         filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                      for i in range(104, 106)]

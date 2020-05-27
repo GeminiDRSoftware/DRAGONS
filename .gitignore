@@ -54,7 +54,7 @@ coverage.xml
 _build/
 docs/_build/
 **/_build/
-recipe_system/doc/rs_ProgManual/api
+**/doc/**/api
 
 # PyBuilder
 target/

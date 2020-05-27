@@ -85,12 +85,11 @@ def GRACES_SPECT():
     return download_from_archive("N20190116G0054i.fits")
 
 
-@pytest.mark.dragons_remote_data
-def test_ad_basics(GMOSN_SPECT):
-    ad = astrodata.open(GMOSN_SPECT)
+def test_extver():
+    ad = astrodata.create({})
+    for _ in range(10):
+        ad.append(np.zeros((4, 5)))
 
-    assert isinstance(ad, astrodata.AstroDataFits)
-    assert ad.filename == os.path.basename(GMOSN_SPECT)
     assert type(ad[0].data) == np.ndarray
 
     ext = ad[2]
@@ -117,7 +116,21 @@ def test_ad_basics(GMOSN_SPECT):
         ext.extver(15)
 
 
-def test_extver(tmpdir):
+def test_extver_del():
+    ad = astrodata.create({})
+    for _ in range(5):
+        ad.append(np.zeros((4, 5)))
+
+    assert ad.extver_map() == {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
+
+    del ad[2]
+    assert ad.extver_map() == {1: 0, 2: 1, 4: 2, 5: 3}
+
+    ad.append(np.zeros((4, 5)))
+    assert ad.extver_map() == {1: 0, 2: 1, 4: 2, 5: 3, 6: 4}
+
+
+def test_extver_remap(tmpdir):
     ad = astrodata.create(fits.PrimaryHDU())
     data = np.arange(5)
     ad.append(fits.ImageHDU(data=data, header=fits.Header({'EXTVER': 2})))

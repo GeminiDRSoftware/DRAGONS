@@ -1,6 +1,7 @@
 import pytest
 import os
 
+import astrodata.testing
 from gempy.adlibrary import dataselect
 
 test_files = [
@@ -11,8 +12,8 @@ test_files = [
 
 
 @pytest.fixture
-def f2_data(cache_file_from_archive):
-    return [cache_file_from_archive(f) for f in test_files]
+def f2_data():
+    return [astrodata.testing.download_from_archive(f) for f in test_files]
 
 
 def test_isclose_returns_proper_values_with_edge_cases():
@@ -252,6 +253,7 @@ def test_evalexpression():
     assert answer0 is answer1 is answer2 is answer3 is False
 
 
+@pytest.mark.dragons_remote_data
 def test_select_data(f2_data):
 
     answer = dataselect.select_data(

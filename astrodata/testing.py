@@ -115,78 +115,13 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
 
 
 @pytest.fixture(scope='module')
-def cache_file_from_archive(request, path_to_inputs, path_to_outputs):
-    """
-    Looks from cached file and returns its full path in the local machine. If
-    cached file does not exists, download file from the archive
-    and store it in a temporary folder.
-
-    ToDo: Add MD5 checksum here.
-
-    Parameters
-    ----------
-    path_to_inputs : pytest.fixture
-        Contains the full path to the input cache folder based on the module
-        path.
-    path_to_outputs : pytest.fixture
-        Contains the full path to the temporary cache folder based on the
-        module path.
-
-    Returns
-    -------
-    function
-        Factory function that returns a string with the full path to the cached
-        file.
-    """
-    should_run = request.config.getoption("--dragons-remote-data")
-    should_cache = request.config.getoption("--force-cache")
-
-    def _cache_file_from_archive(filename):
-
-        if not should_run:
-            pytest.skip(
-                "Test only runs when called using '--dragons-remote-data'.")
-
-        assert isinstance(path_to_inputs, str)
-        assert isinstance(path_to_outputs, str)
-        assert isinstance(filename, str)
-
-        input_path = os.path.join(path_to_inputs, filename)
-        cache_path = os.path.join(path_to_outputs, "inputs", filename)
-
-        if os.path.exists(input_path):
-            print("\n  Static input file exists in:\n    {}".format(input_path))
-            return input_path
-
-        elif should_cache:
-            if os.path.exists(cache_path):
-                print("\n  Input file is cached in:\n    {}\n".format(cache_path))
-                return cache_path
-            else:
-                print("\n  Caching file to:\n    {}\n".format(cache_path))
-                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-                tmp_path = download_file(URL + filename, cache=False)
-                shutil.move(tmp_path, cache_path)
-                os.chmod(cache_path, 0o664)
-                return cache_path
-
-        else:
-            raise FileNotFoundError(input_path +
-                                    "\n  Use --force-cache to download it.")
-
-    return _cache_file_from_archive
-
-
-@pytest.fixture(scope='module')
-def change_working_dir(request, path_to_outputs):
+def change_working_dir(path_to_outputs):
     """
     Factory that returns the output path as a context manager object, allowing
     easy access to the path to where the processed data should be stored.
 
     Parameters
     ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
     path_to_outputs : pytest.fixture
         Fixture containing the root path to the output files.
 
@@ -195,10 +130,7 @@ def change_working_dir(request, path_to_outputs):
     contextmanager
         Enable easy change to temporary folder when reducing data.
     """
-    module_path = request.module.__name__.split('.') + ["outputs"]
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path_to_outputs, *module_path)
-
+    path = os.path.join(path_to_outputs, "outputs")
     os.makedirs(path, exist_ok=True)
 
     @contextmanager
@@ -264,7 +196,6 @@ def get_associated_calibrations(filename, nbias=5):
     """
     Queries Gemini Observatory Archive for associated calibrations to reduce the
     data that will be used for testing.
-
     Parameters
     ----------
     filename : str
@@ -295,7 +226,7 @@ def get_associated_calibrations(filename, nbias=5):
 
 
 @pytest.fixture(scope='module')
-def path_to_inputs(request, path_to_test_data):
+def path_to_inputs(request, env_var='DRAGONS_TEST'):
     """
     PyTest fixture that returns the path to where the input files for a given
     test module live.
@@ -305,15 +236,27 @@ def path_to_inputs(request, path_to_test_data):
     request : fixture
         PyTest's built-in fixture with information about the test itself.
 
-    path_to_test_data : pytest.fixture
-        Custom astrodata fixture that returs the root path to where input and
-        reference files should live.
+    env_var : str
+        Environment variable that contains the root path to the input data.
 
     Returns
     -------
     str:
         Path to the input files.
     """
+    path_to_test_data = os.getenv(env_var)
+
+    if path_to_test_data is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
+
+    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
+
+    if not os.access(path_to_test_data, os.W_OK):
+        pytest.fail(
+            '\n  Could not access the path stored inside $DRAGONS_TEST. '
+            '\n  Make sure the following path exists and that you have '
+            'write permissions in it:\n    {}'.format(path_to_test_data))
+
     module_path = request.module.__name__.split('.') + ["inputs"]
     module_path = [item for item in module_path if item not in "tests"]
     path = os.path.join(path_to_test_data, *module_path)
@@ -331,7 +274,7 @@ def path_to_inputs(request, path_to_test_data):
 
 
 @pytest.fixture(scope='module')
-def path_to_refs(request, path_to_test_data):
+def path_to_refs(request, env_var='DRAGONS_TEST'):
     """
     PyTest fixture that returns the path to where the reference files for a
     given test module live.
@@ -341,15 +284,27 @@ def path_to_refs(request, path_to_test_data):
     request : fixture
         PyTest's built-in fixture with information about the test itself.
 
-    path_to_test_data : pytest.fixture
-        Custom astrodata fixture that returs the root path to where input and
-        reference files should live.
+    env_var : str
+        Environment variable that contains the root path to the input data.
 
     Returns
     -------
     str:
         Path to the reference files.
     """
+    path_to_test_data = os.getenv(env_var)
+
+    if path_to_test_data is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
+
+    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
+
+    if not os.access(path_to_test_data, os.W_OK):
+        pytest.fail(
+            '\n  Could not access the path stored inside $DRAGONS_TEST. '
+            '\n  Make sure the following path exists and that you have '
+            'write permissions in it:\n    {}'.format(path_to_test_data))
+
     module_path = request.module.__name__.split('.') + ["refs"]
     module_path = [item for item in module_path if item not in "tests"]
     path = os.path.join(path_to_test_data, *module_path)
@@ -361,36 +316,6 @@ def path_to_refs(request, path_to_test_data):
     if not os.access(path, os.W_OK):
         pytest.fail('\n Path to reference test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
-
-    return path
-
-
-@pytest.fixture(scope='session')
-def path_to_test_data(env_var='DRAGONS_TEST'):
-    """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST that
-    should contain data that will be used inside tests.
-
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, the test fails.
-
-    Returns
-    -------
-    str : path to the reference data
-    """
-    path = os.getenv(env_var)
-
-    if path is None:
-        pytest.skip('Environment variable not set: $DRAGONS_TEST')
-
-    path = os.path.expanduser(path).strip()
-
-    if not os.access(path, os.W_OK):
-        pytest.fail(
-            '\n  Could not access the path stored inside $DRAGONS_TEST. '
-            '\n  Make sure the following path exists and that you have '
-            'write permissions in it:\n    {}'.format(path))
 
     return path
 
@@ -420,7 +345,6 @@ def path_to_outputs(request, tmp_path_factory):
                 "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
                 "{}\n Using current working directory".format(path))
     else:
-        # path = str(tmp_path_factory.mktemp('dragons_tests', numbered=False))
         path = str(tmp_path_factory.getbasetemp())
 
     module_path = request.module.__name__.split('.')

@@ -140,6 +140,8 @@ class GMOSSpect(Spect, GMOS):
         ----------
         suffix: str
             suffix to be added to output files
+        arc : {None, AstroData, str}
+            Arc(s) with distortion map.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))

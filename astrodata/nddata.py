@@ -123,34 +123,35 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     Examples
     --------
+
     The mixins allow operation that are not possible with ``NDData`` or
     ``NDDataBase``, i.e. simple arithmetics::
 
-    >>> from astropy.nddata import StdDevUncertainty
-    >>> import numpy as np
-    >>> data = np.ones((3,3), dtype=np.float)
-    >>> ndd1 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
-    >>> ndd2 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
-    >>> ndd3 = ndd1.add(ndd2)
-    >>> ndd3.data
-    array([[2., 2., 2.],
-           [2., 2., 2.],
-           [2., 2., 2.]])
-    >>> ndd3.uncertainty.array
-    array([[1.41421356, 1.41421356, 1.41421356],
-           [1.41421356, 1.41421356, 1.41421356],
-           [1.41421356, 1.41421356, 1.41421356]])
+        >>> from astropy.nddata import StdDevUncertainty
+        >>> import numpy as np
+        >>> data = np.ones((3,3), dtype=np.float)
+        >>> ndd1 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
+        >>> ndd2 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
+        >>> ndd3 = ndd1.add(ndd2)
+        >>> ndd3.data
+        array([[2., 2., 2.],
+            [2., 2., 2.],
+            [2., 2., 2.]])
+        >>> ndd3.uncertainty.array
+        array([[1.41421356, 1.41421356, 1.41421356],
+            [1.41421356, 1.41421356, 1.41421356],
+            [1.41421356, 1.41421356, 1.41421356]])
 
     see ``NDArithmeticMixin`` for a complete list of all supported arithmetic
     operations.
 
     But also slicing (indexing) is possible::
 
-    >>> ndd4 = ndd3[1,:]
-    >>> ndd4.data
-    array([2., 2., 2.])
-    >>> ndd4.uncertainty.array
-    array([1.41421356, 1.41421356, 1.41421356])
+        >>> ndd4 = ndd3[1,:]
+        >>> ndd4.data
+        array([2., 2., 2.])
+        >>> ndd4.uncertainty.array
+        array([1.41421356, 1.41421356, 1.41421356])
 
     See ``NDSlicingMixin`` for a description how slicing works (which
     attributes) are sliced.

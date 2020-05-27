@@ -152,7 +152,7 @@ def reduce_flat(change_working_dir):
 
 
 @pytest.fixture(scope="module")
-def reference_ad(path_to_refs):
+def ref_ad_factory(path_to_refs):
     """
     Read the reference file.
 

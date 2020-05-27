@@ -54,7 +54,7 @@ def niri_images():
     return NIRIImage(adinputs)
 
 
-@pytest.mark.skip("Review me")
+@pytest.mark.xfail(reason="Test needs revision", run=False)
 def test_scale_by_exposure_time(niri_images):
     ad1, ad2 = niri_images.streams['main']
 
@@ -73,7 +73,7 @@ def test_scale_by_exposure_time(niri_images):
     assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
 
 
-@pytest.mark.skip("Review me")
+@pytest.mark.xfail(reason="Test needs revision", run=False)
 def test_add_object_mask_to_dq():
     ad_orig = astrofaker.create('F2', 'IMAGE')
 
@@ -86,7 +86,7 @@ def test_add_object_mask_to_dq():
         assert all(ext.mask[ext.OBJMASK == 1] == ext_orig.mask[ext.OBJMASK == 1] | 1)
 
 
-@pytest.mark.skip("Review me")
+@pytest.mark.xfail(reason="Test needs revision", run=False)
 def test_adu_to_electrons():
     ad = astrofaker.create("NIRI", "IMAGE")
     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
@@ -96,7 +96,7 @@ def test_adu_to_electrons():
                                        'N20070819S0104_ADUToElectrons.fits'))
 
 
-@pytest.mark.skip("Review me")
+@pytest.mark.xfail(reason="Test needs revision", run=False)
 def test_apply_dq_plane():
     ad = astrofaker.create("NIRI", "IMAGE")
 
@@ -109,7 +109,7 @@ def test_apply_dq_plane():
                                        'N20070819S0104_dqPlaneApplied.fits'))
 
 
-@pytest.mark.skip("Review me")
+@pytest.mark.xfail(reason="Test needs revision", run=False)
 def test_associateSky():
     filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                  for i in range(104, 109)]

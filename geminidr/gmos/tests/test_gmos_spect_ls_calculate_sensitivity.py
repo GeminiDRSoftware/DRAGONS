@@ -6,28 +6,28 @@ import numpy as np
 import os
 import pytest
 
+from scipy.interpolate import BSpline
+
 import astrodata
 import gemini_instruments
 
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable
-from scipy.interpolate import BSpline
-
-from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
-from gempy.adlibrary import dataselect
 from gempy.utils import logutils
+from recipe_system.testing import ref_ad_factory
 
 
 datasets = [
-    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+    "N20180109S0287_extracted.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
 ]
 
 
 # --- Tests -------------------------------------------------------------------
 @pytest.mark.gmosls
-def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(path_to_outputs):
+def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
+        path_to_outputs):
 
     def _create_fake_data():
         astrofaker = pytest.importorskip('astrofaker')
@@ -88,8 +88,8 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(path
     ad = _create_fake_data()
 
     p = primitives_gmos_spect.GMOSSpect([ad])
-    s_ad = p.calculateSensitivity(filename=table_name).pop()
 
+    s_ad = p.calculateSensitivity(bandpass=5, filename=table_name, order=6).pop()
     assert hasattr(s_ad[0], 'SENSFUNC')
 
     for s_ext in s_ad:
@@ -110,123 +110,160 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(path
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_regression_on_calculate_sensitivity(change_working_dir, preprocessed_ad, reference_ad):
+@pytest.mark.parametrize("ad", datasets, indirect=True)
+def test_regression_on_calculate_sensitivity(ad, change_working_dir, ref_ad_factory):
 
     with change_working_dir():
-        p = primitives_gmos_spect.GMOSSpect([preprocessed_ad])
-        p.calculateSensitivity()
+        logutils.config(file_name='log_regression_{:s}.txt'.format(ad.data_label()))
+        p = primitives_gmos_spect.GMOSSpect([ad])
+        p.calculateSensitivity(bandpass=5, order=6)
         calc_sens_ad = p.writeOutputs().pop()
 
     assert hasattr(calc_sens_ad[0], 'SENSFUNC')
 
-    ref_ad = reference_ad(calc_sens_ad.filename)
+    ref_ad = ref_ad_factory(ad.filename)
 
-    for calc_sens_ext, ref_ext in zip(calc_sens_ad, ref_ad):
+    for calc_sens_ext, ref_ext in zip(ad, ref_ad):
         np.testing.assert_allclose(
             calc_sens_ext.data, ref_ext.data, atol=1e-4)
 
 
 # --- Helper functions and fixtures -------------------------------------------
-@pytest.fixture(scope='function', params=datasets)
-def preprocessed_ad(request, cache_file_from_archive, path_to_inputs, reduce_arc,
-                    reduce_bias, reduce_data, reduce_flat):
+@pytest.fixture(scope='function')
+def ad(path_to_inputs, request):
     """
-    Reads the input data or cache/process it in a temporary folder.
+    Returns the pre-processed spectrum file.
 
     Parameters
     ----------
-    request : pytest.fixture
-        PyTest's built-in fixture with information about the test itself.
-    cache_file_from_archive : pytest.fixture
-        Path to where the data will be temporarily cached.
     path_to_inputs : pytest.fixture
-        Path to the permanent local input files.
-    reduce_arc : pytest.fixture
-        Recipe to reduce the arc file.
-    reduce_bias : pytest.fixture
-        Recipe to reduce the bias files.
-    reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before `calculateSensitivity`.
-    reduce_flat : pytest.fixture
-        Recipe to reduce the flat file.
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
 
     Returns
     -------
     AstroData
-        Preprocessed data to be used as input for `calculateSensitivity`.
+        Input spectrum processed up to right before the `calculateSensitivity`
+        primitive.
     """
-    basename = request.param
-    should_preprocess = request.config.getoption("--force-preprocess-data")
+    filename = request.param
+    path = os.path.join(path_to_inputs, filename)
 
-    input_fname = basename.replace('.fits', '_extracted.fits')
-    input_path = os.path.join(path_to_inputs, input_fname)
-
-    if os.path.exists(input_path):
-        input_data = astrodata.open(input_path)
-
-    elif should_preprocess:
-        filename = cache_file_from_archive(basename)
-        ad = astrodata.open(filename)
-        cals = testing.get_associated_calibrations(basename)
-        cals = [cache_file_from_archive(c) for c in cals.filename.values]
-
-        master_bias = reduce_bias(
-            ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
-
-        master_flat = reduce_flat(
-            ad.data_label(), dataselect.select_data(cals, tags=['FLAT']), master_bias)
-
-        master_arc = reduce_arc(
-            ad.data_label(), dataselect.select_data(cals, tags=['ARC']))
-
-        input_data = reduce_data(ad, master_arc, master_bias, master_flat)
-
+    if os.path.exists(path):
+        ad = astrodata.open(path)
     else:
-        raise IOError(
-            'Could not find input file:\n' +
-            '  {:s}\n'.format(input_path) +
-            '  Run pytest with "--force-preprocess-data" to get it')
+        raise FileNotFoundError(path)
 
-    return input_data
+    return ad
 
 
-@pytest.fixture(scope='module')
-def reduce_data(change_working_dir):
+# -- Recipe to create pre-processed data ---------------------------------------
+def create_inputs_recipe():
     """
-    Factory for function for data reduction prior to `calculateSensitivity`.
+    Creates input data for tests using pre-processed standard star and its
+    calibration files.
 
-    Parameters
-    ----------
-    change_working_dir : pytest.fixture
-        Context manager used to write reduced data to a temporary folder.
-
-    Returns
-    -------
-    function : A function that will read the standard star file, process them
-    using a custom recipe and return an AstroData object.
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
     """
-    def _reduce_data(ad, master_arc, master_bias, master_flat):
-        with change_working_dir():
-            # Use config to prevent outputs when running Reduce via API
-            logutils.config(file_name='log_{}.txt'.format(ad.data_label()))
+    import os
+    from astrodata.testing import download_from_archive
+    from gempy.utils import logutils
+    from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system.utils.reduce_utils import normalize_ucals
 
-            p = primitives_gmos_longslit.GMOSLongslit([ad])
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            p.biasCorrect(bias=master_bias)
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.flatCorrect(flat=master_flat)
-            p.QECorrect(arc=master_arc)
-            p.distortionCorrect(arc=master_arc)
-            p.findSourceApertures(max_apertures=1)
-            p.skyCorrectFromSlit()
-            p.traceApertures()
-            p.extract1DSpectra()
+    associated_calibrations = {
+        "N20180109S0287.fits": {
+            'bias': ["N20180103S0563.fits",
+                     "N20180103S0564.fits",
+                     "N20180103S0565.fits",
+                     "N20180103S0566.fits",
+                     "N20180103S0567.fits"],
+            'flat': ["N20180109S0288.fits"],
+            'arcs': ["N20180109S0315.fits"]
+        }
+    }
 
-            processed_ad = p.writeOutputs().pop()
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/test_gmos_spect_ls_calculate_sensitivity/"
+    path = os.path.join(root_path, module_path)
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    print('Current working directory:\n    {:s}'.format(os.getcwd()))
+    os.makedirs("inputs/", exist_ok=True)
 
-        return processed_ad
-    return _reduce_data
+    for filename, cals in associated_calibrations.items():
+
+        print('Downloading files...')
+        sci_path = download_from_archive(filename)
+        bias_path = [download_from_archive(f) for f in cals['bias']]
+        flat_path = [download_from_archive(f) for f in cals['flat']]
+        arc_path = [download_from_archive(f) for f in cals['arcs']]
+
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
+
+        print('Reducing BIAS for {:s}'.format(data_label))
+        logutils.config(file_name='log_bias_{}.txt'.format(data_label))
+        bias_reduce = Reduce()
+        bias_reduce.files.extend(bias_path)
+        bias_reduce.runr()
+        bias_master = bias_reduce.output_filenames.pop()
+        calibration_files = ['processed_bias:{}'.format(bias_master)]
+        del bias_reduce
+
+        print('Reducing FLAT for {:s}'.format(data_label))
+        logutils.config(file_name='log_flat_{}.txt'.format(data_label))
+        flat_reduce = Reduce()
+        flat_reduce.files.extend(flat_path)
+        flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
+        flat_reduce.runr()
+        flat_master = flat_reduce.output_filenames.pop()
+        calibration_files.append('processed_flat:{}'.format(flat_master))
+        del flat_reduce
+
+        print('Reducing ARC for {:s}'.format(data_label))
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+        arc_reduce = Reduce()
+        arc_reduce.files.extend(arc_path)
+        arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+        arc_reduce.runr()
+        arc_master = arc_reduce.output_filenames.pop()
+
+        print('Reducing pre-processed data:')
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
+        p.prepare()
+        p.addDQ(static_bpm=None, user_bpm=None, add_illum_mask=False)
+        p.addVAR(read_noise=True, poisson_noise=False)
+        p.overscanCorrect(function="spline", high_reject=3., low_reject=3.,
+                          nbiascontam=0, niterate=2, order=None)
+        p.biasCorrect(bias=bias_master, do_bias=True)
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True, read_noise=False)
+        p.flatCorrect(flat=flat_master)
+        p.applyQECorrection(arc=arc_master)
+        p.distortionCorrect(arc=arc_master, order=3, subsample=1)
+        p.findSourceApertures(max_apertures=1, threshold=0.01, min_sky_region=20)
+        p.skyCorrectFromSlit(order=5, grow=0)
+        p.traceApertures(trace_order=2, nsum=10, step=10, max_missed=5,
+                         max_shift=0.05)
+        p.extract1DSpectra(grow=10, method="standard", width=None)
+
+        os.chdir("inputs/")
+        processed_ad = p.writeOutputs().pop()
+        os.chdir("../")
+        print('Wrote pre-processed file to:\n'
+              '    {:s}'.format(processed_ad.filename))
+
+
+if __name__ == '__main__':
+    import sys
+    if "--create-inputs" in sys.argv[1:]:
+        create_inputs_recipe()
+    else:
+        pytest.main()

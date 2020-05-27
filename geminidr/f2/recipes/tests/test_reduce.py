@@ -5,12 +5,13 @@ import os
 
 import pytest
 
+from astrodata.testing import download_from_archive
 from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
-test_files = [
+datasets = [
 
     # Darks 3s
     "S20131127S0257.fits",
@@ -81,12 +82,12 @@ test_files = [
 ]
 
 
-@pytest.mark.skip('Verify this test')
+@pytest.mark.skip(reason='Test needs refactoring')
 @pytest.mark.integtest
-def test_reduce_image(cache_file_from_archive, change_working_dir):
+def test_reduce_image(change_working_dir):
     with change_working_dir():
         calib_files = []
-        all_files = [cache_file_from_archive(f) for f in test_files]
+        all_files = [download_from_archive(f) for f in datasets]
         all_files.sort()
         assert len(all_files) > 1
 

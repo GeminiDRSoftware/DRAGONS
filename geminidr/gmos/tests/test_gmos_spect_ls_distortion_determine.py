@@ -10,13 +10,19 @@ Notes
 import numpy as np
 import os
 import pytest
-from copy import deepcopy
-from warnings import warn
+
+from matplotlib import colors
+from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy import ndimage
 
 import astrodata
 import geminidr
+from astropy.modeling import models
 from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels
+from gempy.library import astromodels, transform
+from gempy.utils import logutils
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
@@ -33,131 +39,159 @@ fixed_parameters_for_determine_distortion = {
 
 # Each test input filename contains the original input filename with
 # "_mosaic" suffix
-original_inputs = [
+datasets = [
     # Process Arcs: GMOS-N ---
-    "N20100115S0346.fits",  # B600:0.500 EEV
-    # "N20130112S0390.fits",  # B600:0.500 E2V
-    # "N20170609S0173.fits",  # B600:0.500 HAM
-    # "N20170403S0452.fits",  # B600:0.590 HAM Full Frame 1x1
-    # "N20170415S0255.fits",  # B600:0.590 HAM Central Spectrum 1x1
-    # "N20171016S0010.fits",  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
-    # "N20171016S0127.fits",  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
-    # "N20100307S0236.fits",  # B1200:0.445 EEV
-    # "N20130628S0290.fits",  # B1200:0.420 E2V
-    # "N20170904S0078.fits",  # B1200:0.440 HAM
-    # "N20170627S0116.fits",  # B1200:0.520 HAM
-    # "N20100830S0594.fits",  # R150:0.500 EEV
-    # "N20100702S0321.fits",  # R150:0.700 EEV
-    # "N20130606S0291.fits",  # R150:0.550 E2V
-    # "N20130112S0574.fits",  # R150:0.700 E2V
-    # "N20130809S0337.fits",  # R150:0.700 E2V
-    # "N20140408S0218.fits",  # R150:0.700 E2V
-    # "N20180119S0232.fits",  # R150:0.520 HAM
-    # "N20180516S0214.fits",  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2
-    # "N20171007S0439.fits",  # R150:0.650 HAM
-    # "N20171007S0441.fits",  # R150:0.650 HAM
-    # "N20101212S0213.fits",  # R400:0.550 EEV
-    # "N20100202S0214.fits",  # R400:0.700 EEV
-    # "N20130106S0194.fits",  # R400:0.500 E2V
-    # "N20130422S0217.fits",  # R400:0.700 E2V
-    # "N20170108S0210.fits",  # R400:0.660 HAM
-    # "N20171113S0135.fits",  # R400:0.750 HAM
-    # "N20100427S1276.fits",  # R600:0.675 EEV
-    # "N20180120S0417.fits",  # R600:0.860 HAM
-    # "N20100212S0143.fits",  # R831:0.450 EEV
-    # "N20100720S0247.fits",  # R831:0.850 EEV
-    # "N20130808S0490.fits",  # R831:0.571 E2V
-    # "N20130830S0291.fits",  # R831:0.845 E2V
-    # "N20170910S0009.fits",  # R831:0.653 HAM
-    # "N20170509S0682.fits",  # R831:0.750 HAM
-    # "N20181114S0512.fits",  # R831:0.865 HAM
-    # "N20170416S0058.fits",  # R831:0.865 HAM
-    # "N20170416S0081.fits",  # R831:0.865 HAM
-    # "N20180120S0315.fits",  # R831:0.865 HAM
+    "N20100115S0346_mosaic.fits",  # B600:0.500 EEV
+    # "N20130112S0390_mosaic.fits",  # B600:0.500 E2V
+    # "N20170609S0173_mosaic.fits",  # B600:0.500 HAM
+    # "N20170403S0452_mosaic.fits",  # B600:0.590 HAM Full Frame 1x1
+    # "N20170415S0255_mosaic.fits",  # B600:0.590 HAM Central Spectrum 1x1
+    # "N20171016S0010_mosaic.fits",  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
+    # "N20171016S0127_mosaic.fits",  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
+    # "N20100307S0236_mosaic.fits",  # B1200:0.445 EEV
+    # "N20130628S0290_mosaic.fits",  # B1200:0.420 E2V
+    # "N20170904S0078_mosaic.fits",  # B1200:0.440 HAM
+    # "N20170627S0116_mosaic.fits",  # B1200:0.520 HAM
+    # "N20100830S0594_mosaic.fits",  # R150:0.500 EEV
+    # "N20100702S0321_mosaic.fits",  # R150:0.700 EEV
+    # "N20130606S0291_mosaic.fits",  # R150:0.550 E2V
+    # "N20130112S0574_mosaic.fits",  # R150:0.700 E2V
+    # "N20130809S0337_mosaic.fits",  # R150:0.700 E2V
+    # "N20140408S0218_mosaic.fits",  # R150:0.700 E2V
+    # "N20180119S0232_mosaic.fits",  # R150:0.520 HAM
+    # "N20180516S0214_mosaic.fits",  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2
+    # "N20171007S0439_mosaic.fits",  # R150:0.650 HAM
+    # "N20171007S0441_mosaic.fits",  # R150:0.650 HAM
+    # "N20101212S0213_mosaic.fits",  # R400:0.550 EEV
+    # "N20100202S0214_mosaic.fits",  # R400:0.700 EEV
+    # "N20130106S0194_mosaic.fits",  # R400:0.500 E2V
+    # "N20130422S0217_mosaic.fits",  # R400:0.700 E2V
+    # "N20170108S0210_mosaic.fits",  # R400:0.660 HAM
+    # "N20171113S0135_mosaic.fits",  # R400:0.750 HAM
+    # "N20100427S1276_mosaic.fits",  # R600:0.675 EEV
+    # "N20180120S0417_mosaic.fits",  # R600:0.860 HAM
+    # "N20100212S0143_mosaic.fits",  # R831:0.450 EEV
+    # "N20100720S0247_mosaic.fits",  # R831:0.850 EEV
+    # "N20130808S0490_mosaic.fits",  # R831:0.571 E2V
+    # "N20130830S0291_mosaic.fits",  # R831:0.845 E2V
+    # "N20170910S0009_mosaic.fits",  # R831:0.653 HAM
+    # "N20170509S0682_mosaic.fits",  # R831:0.750 HAM
+    # "N20181114S0512_mosaic.fits",  # R831:0.865 HAM
+    # "N20170416S0058_mosaic.fits",  # R831:0.865 HAM
+    # "N20170416S0081_mosaic.fits",  # R831:0.865 HAM
+    # "N20180120S0315_mosaic.fits",  # R831:0.865 HAM
     # # Process Arcs: GMOS-S ---
-    # # "S20130218S0126.fits",  # B600:0.500 EEV - todo: won't pass
-    # "S20130111S0278.fits",  # B600:0.520 EEV
-    # "S20130114S0120.fits",  # B600:0.500 EEV
-    # "S20130216S0243.fits",  # B600:0.480 EEV
-    # "S20130608S0182.fits",  # B600:0.500 EEV
-    # "S20131105S0105.fits",  # B600:0.500 EEV
-    # "S20140504S0008.fits",  # B600:0.500 EEV
-    # "S20170103S0152.fits",  # B600:0.600 HAM
-    # "S20170108S0085.fits",  # B600:0.500 HAM
-    # "S20130510S0103.fits",  # B1200:0.450 EEV
-    # "S20130629S0002.fits",  # B1200:0.525 EEV
-    # "S20131123S0044.fits",  # B1200:0.595 EEV
-    # "S20170116S0189.fits",  # B1200:0.440 HAM
-    # "S20170103S0149.fits",  # B1200:0.440 HAM
-    # "S20170730S0155.fits",  # B1200:0.440 HAM
-    # "S20171219S0117.fits",  # B1200:0.440 HAM
-    # "S20170908S0189.fits",  # B1200:0.550 HAM
-    # "S20131230S0153.fits",  # R150:0.550 EEV
-    # "S20130801S0140.fits",  # R150:0.700 EEV
-    # "S20170430S0060.fits",  # R150:0.717 HAM
-    # # "S20170430S0063.fits",  # R150:0.727 HAM - todo: won't pass
-    # "S20171102S0051.fits",  # R150:0.950 HAM
-    # "S20130114S0100.fits",  # R400:0.620 EEV
-    # "S20130217S0073.fits",  # R400:0.800 EEV
-    # "S20170108S0046.fits",  # R400:0.550 HAM
-    # "S20170129S0125.fits",  # R400:0.685 HAM
-    # "S20170703S0199.fits",  # R400:0.800 HAM
-    # "S20170718S0420.fits",  # R400:0.910 HAM
-    # # "S20100306S0460.fits",  # R600:0.675 EEV - todo: won't pass
-    # # "S20101218S0139.fits",  # R600:0.675 EEV - todo: won't pass
-    # "S20110306S0294.fits",  # R600:0.675 EEV
-    # "S20110720S0236.fits",  # R600:0.675 EEV
-    # "S20101221S0090.fits",  # R600:0.690 EEV
-    # "S20120322S0122.fits",  # R600:0.900 EEV
-    # "S20130803S0011.fits",  # R831:0.576 EEV
-    # "S20130414S0040.fits",  # R831:0.845 EEV
-    # "S20170214S0059.fits",  # R831:0.440 HAM
-    # "S20170703S0204.fits",  # R831:0.600 HAM
-    # "S20171018S0048.fits",  # R831:0.865 HAM
+    # # "S20130218S0126_mosaic.fits",  # B600:0.500 EEV - todo: won't pass
+    # "S20130111S0278_mosaic.fits",  # B600:0.520 EEV
+    # "S20130114S0120_mosaic.fits",  # B600:0.500 EEV
+    # "S20130216S0243_mosaic.fits",  # B600:0.480 EEV
+    # "S20130608S0182_mosaic.fits",  # B600:0.500 EEV
+    # "S20131105S0105_mosaic.fits",  # B600:0.500 EEV
+    # "S20140504S0008_mosaic.fits",  # B600:0.500 EEV
+    # "S20170103S0152_mosaic.fits",  # B600:0.600 HAM
+    # "S20170108S0085_mosaic.fits",  # B600:0.500 HAM
+    # "S20130510S0103_mosaic.fits",  # B1200:0.450 EEV
+    # "S20130629S0002_mosaic.fits",  # B1200:0.525 EEV
+    # "S20131123S0044_mosaic.fits",  # B1200:0.595 EEV
+    # "S20170116S0189_mosaic.fits",  # B1200:0.440 HAM
+    # "S20170103S0149_mosaic.fits",  # B1200:0.440 HAM
+    # "S20170730S0155_mosaic.fits",  # B1200:0.440 HAM
+    # "S20171219S0117_mosaic.fits",  # B1200:0.440 HAM
+    # "S20170908S0189_mosaic.fits",  # B1200:0.550 HAM
+    # "S20131230S0153_mosaic.fits",  # R150:0.550 EEV
+    # "S20130801S0140_mosaic.fits",  # R150:0.700 EEV
+    # "S20170430S0060_mosaic.fits",  # R150:0.717 HAM
+    # # "S20170430S0063_mosaic.fits",  # R150:0.727 HAM - todo: won't pass
+    # "S20171102S0051_mosaic.fits",  # R150:0.950 HAM
+    # "S20130114S0100_mosaic.fits",  # R400:0.620 EEV
+    # "S20130217S0073_mosaic.fits",  # R400:0.800 EEV
+    # "S20170108S0046_mosaic.fits",  # R400:0.550 HAM
+    # "S20170129S0125_mosaic.fits",  # R400:0.685 HAM
+    # "S20170703S0199_mosaic.fits",  # R400:0.800 HAM
+    # "S20170718S0420_mosaic.fits",  # R400:0.910 HAM
+    # # "S20100306S0460_mosaic.fits",  # R600:0.675 EEV - todo: won't pass
+    # # "S20101218S0139_mosaic.fits",  # R600:0.675 EEV - todo: won't pass
+    # "S20110306S0294_mosaic.fits",  # R600:0.675 EEV
+    # "S20110720S0236_mosaic.fits",  # R600:0.675 EEV
+    # "S20101221S0090_mosaic.fits",  # R600:0.690 EEV
+    # "S20120322S0122_mosaic.fits",  # R600:0.900 EEV
+    # "S20130803S0011_mosaic.fits",  # R831:0.576 EEV
+    # "S20130414S0040_mosaic.fits",  # R831:0.845 EEV
+    # "S20170214S0059_mosaic.fits",  # R831:0.440 HAM
+    # "S20170703S0204_mosaic.fits",  # R831:0.600 HAM
+    # "S20171018S0048_mosaic.fits",  # R831:0.865 HAM
 ]
 
 
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
-def test_determine_distortion_comparing_models_coefficients(
-        preprocessed_ad, reference_ad, change_working_dir):
+@pytest.mark.parametrize("ad", datasets, indirect=True)
+def test_regression_for_determine_distortion_using_models_coefficients(
+        ad, change_working_dir, ref_ad_factory, request):
     """
     Runs the `determineDistortion` primitive on a preprocessed data and compare
     its model with the one in the reference file.
+
+    Parameters
+    ----------
+    ad : pytest.fixture (AstroData)
+        Fixture that reads the filename and loads as an AstroData object.
+    change_working_dir : pytest.fixture
+        Fixture that changes the working directory
+        (see :mod:`astrodata.testing`).
+    reference_ad : pytest.fixture
+        Fixture that contains a function used to load the reference AstroData
+        object (see :mod:`recipe_system.testing`).
+    request : pytest.fixture
+        PyTest built-in containing command line options.
     """
     with change_working_dir():
-        p = primitives_gmos_spect.GMOSSpect([deepcopy(preprocessed_ad)])
+        logutils.config(file_name='log_model_{:s}.txt'.format(ad.data_label()))
+        p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
-        ad = p.writeOutputs().pop()
+        distortion_determined_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(ad.filename)
-
-    c = np.ma.masked_invalid(ad[0].FITCOORD["coefficients"])
-    c_ref = np.ma.masked_invalid(ref_ad[0].FITCOORD["coefficients"])
-
-    np.testing.assert_allclose(c, c_ref, atol=2)
+    ref_ad = ref_ad_factory(distortion_determined_ad.filename)
+    for ext, ext_ref in zip(distortion_determined_ad, ref_ad):
+        c = np.ma.masked_invalid(ext.FITCOORD["coefficients"])
+        c_ref = np.ma.masked_invalid(ext_ref.FITCOORD["coefficients"])
+        np.testing.assert_allclose(c, c_ref, atol=2)
+        
+    if request.config.getoption("--do-plots"):
+        do_plots(distortion_determined_ad, ref_ad)
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("preprocessed_ad", original_inputs, indirect=True)
-def test_determine_distortion_comparing_modeled_arrays(
-        change_working_dir, preprocessed_ad, reference_ad):
+@pytest.mark.parametrize("ad", datasets, indirect=True)
+def test_regression_for_determine_distortion_using_fitcoord_table(
+        ad, change_working_dir, ref_ad_factory):
     """
     Runs the `determineDistortion` primitive on a preprocessed data and compare
     its model with the one in the reference file. The distortion model needs to
     be reconstructed because different coefficients might return same results.
+
+    Parameters
+    ----------
+    ad : pytest.fixture (AstroData)
+        Fixture that reads the filename and loads as an AstroData object.
+    change_working_dir : pytest.fixture
+        Fixture that changes the working directory
+        (see :mod:`astrodata.testing`).
+    reference_ad : pytest.fixture
+        Fixture that contains a function used to load the reference AstroData
+        object (see :mod:`recipe_system.testing`).
     """
     with change_working_dir():
-        p = primitives_gmos_spect.GMOSSpect([deepcopy(preprocessed_ad)])
+        logutils.config(file_name='log_fitcoord_{:s}.txt'.format(ad.data_label()))
+        p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
-        ad = p.writeOutputs().pop()
+        distortion_determined_ad = p.writeOutputs().pop()
 
-    ref_ad = reference_ad(ad.filename)
+    ref_ad = ref_ad_factory(distortion_determined_ad.filename)
 
     table = ad[0].FITCOORD
     model_dict = dict(zip(table['name'], table['coefficients']))
@@ -173,106 +207,293 @@ def test_determine_distortion_comparing_modeled_arrays(
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
-def do_plots(ad, output_path, reference_path):
+@pytest.fixture(scope='function')
+def ad(path_to_inputs, request):
+    """
+    Returns the pre-processed spectrum file.
+
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
+
+    Returns
+    -------
+    AstroData
+        Input spectrum processed up to right before the `distortionDetermine`
+        primitive.
+    """
+    filename = request.param
+    path = os.path.join(path_to_inputs, filename)
+
+    if os.path.exists(path):
+        ad = astrodata.open(path)
+    else:
+        raise FileNotFoundError(path)
+
+    return ad
+
+
+def do_plots(ad, ad_ref):
     """
     Generate diagnostic plots.
 
     Parameters
     ----------
     ad : AstroData
-    output_path : str or Path
-    reference_path : str or Path
+
+    ad_ref : AstroData
     """
-    try:
-        from .plots_gmos_spect_longslit_arcs import PlotGmosSpectLongslitArcs
-    except ImportError:
-        warn("Could not generate plots")
-        return
+    n_hlines = 25
+    n_vlines = 25
 
-    ad_ref = astrodata.open(os.path.join(reference_path, ad.filename))
+    output_dir = "./plots/geminidr/gmos/test_gmos_spect_ls_distortion_determine"
+    os.makedirs(output_dir, exist_ok=True)
 
-    p = PlotGmosSpectLongslitArcs(ad, output_folder=output_path, ref_folder=reference_path)
-    p.show_distortion_map(ad)
-    p.show_distortion_model_difference(ad, ad_ref)
-    p.close_all()
+    name, _ = os.path.splitext(ad.filename)
+    grating = ad.disperser(pretty=True)
+    bin_x = ad.detector_x_bin()
+    bin_y = ad.detector_y_bin()
+    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
+
+    # -- Show distortion map ---
+    for ext_num, ext in enumerate(ad):
+        fname, _ = os.path.splitext(os.path.basename(ext.filename))
+        n_rows, n_cols = ext.shape
+
+        x = np.linspace(0, n_cols, n_vlines, dtype=int)
+        y = np.linspace(0, n_rows, n_hlines, dtype=int)
+
+        X, Y = np.meshgrid(x, y)
+
+        model = rebuild_distortion_model(ext)
+        U = X - model(X, Y)
+        V = np.zeros_like(U)
+
+        fig, ax = plt.subplots(
+            num="Distortion Map {:s} #{:d}".format(fname, ext_num))
+
+        vmin = U.min() if U.min() < 0 else -0.1 * U.ptp()
+        vmax = U.max() if U.max() > 0 else +0.1 * U.ptp()
+        vcen = 0
+
+        Q = ax.quiver(
+            X, Y, U, V, U, cmap="coolwarm",
+            norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax))
+
+        ax.set_xlabel("X [px]")
+        ax.set_ylabel("Y [px]")
+        ax.set_title(
+            "Distortion Map\n{:s} #{:d}- Bin {:d}x{:d}".format(
+                fname, ext_num, bin_x, bin_y))
+
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+
+        cbar = fig.colorbar(Q, extend="max", cax=cax, orientation="vertical")
+        cbar.set_label("Distortion [px]")
+
+        fig.tight_layout()
+        fig_name = os.path.join(
+            output_dir, "{:s}_{:d}_{:s}_{:.0f}_distMap.png".format(
+                fname, ext_num, grating, central_wavelength))
+
+        fig.savefig(fig_name)
+        del fig, ax
+
+    # -- Show distortion model difference ---
+    for num, (ext, ext_ref) in enumerate(zip(ad, ad_ref)):
+        name, _ = os.path.splitext(ext.filename)
+        shape = ext.shape
+        data = generate_fake_data(shape, ext.dispersion_axis() - 1)
+
+        model_out = remap_distortion_model(
+            rebuild_distortion_model(ext), ext.dispersion_axis() - 1)
+
+        model_ref = remap_distortion_model(
+            rebuild_distortion_model(ext_ref), ext_ref.dispersion_axis() - 1)
+
+        transform_out = transform.Transform(model_out)
+        transform_ref = transform.Transform(model_ref)
+
+        data_out = transform_out.apply(data, output_shape=ext.shape)
+        data_ref = transform_ref.apply(data, output_shape=ext.shape)
+
+        data_out = np.ma.masked_invalid(data_out)
+        data_ref = np.ma.masked_invalid(data_ref)
+
+        fig, ax = plt.subplots(
+            dpi=150, num="Distortion Comparison: {:s} #{:d}".format(name, num))
+
+        im = ax.imshow(data_ref - data_out)
+
+        ax.set_xlabel("X [px]")
+        ax.set_ylabel("Y [px]")
+        ax.set_title(
+            "Difference between output and reference: \n {:s} #{:d} ".format(
+                name, num))
+
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+
+        cbar = fig.colorbar(im, extend="max", cax=cax, orientation="vertical")
+        cbar.set_label("Distortion [px]")
+
+        fig_name = os.path.join(
+            output_dir, "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
+                name, num, grating, central_wavelength))
+
+        fig.savefig(fig_name)
 
 
-@pytest.fixture(scope='module')
-def preprocessed_ad(request, cache_file_from_archive, path_to_inputs, reduce_data):
+def generate_fake_data(shape, dispersion_axis, n_lines=100):
     """
-    Loads existing input FITS files as AstroData objects, runs the
-    `determineDistortion` primitive on it, and return the output object with a
-    `.FITCOORD` table.
+    Helper function that generates fake arc data.
 
     Parameters
     ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
-    cache_file_from_archive : pytest.fixture
-        Path to where the data will be temporarily cached.
-    path_to_inputs : pytest.fixture
-        Path to the permanent local input files.
-    reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before
-        `determineWavelengthSolution`.
+    shape : tuple of ints
+        Shape of the output data with (nrows, ncols)
+    dispersion_axis : {0, 1}
+        Dispersion axis along rows (0) or along columns (1)
+    n_lines : int
+        Number of random lines to be added (default: 100)
 
     Returns
     -------
-    AstroData
-        The preprocessed data
-
-    Raises
-    ------
-    IOError : if the input file does not exist.
+    :class:`~astropy.modeling.models.Model`
+        2D Model that can be applied to an array.
     """
-    basename = request.param
-    should_preprocess = request.config.getoption("--force-preprocess-data")
+    np.random.seed(0)
+    nrows, ncols = shape
 
-    input_fname = basename.replace('.fits', '_mosaic.fits')
-    input_path = os.path.join(path_to_inputs, input_fname)
+    data = np.zeros((nrows, ncols))
+    line_positions = np.random.random_integers(0, ncols, size=n_lines)
+    line_intensities = 100 * np.random.random_sample(n_lines)
 
-    if os.path.exists(input_path):
-        input_data = astrodata.open(input_path)
-
-    elif should_preprocess:
-        filename = cache_file_from_archive(basename)
-        input_data = reduce_data(astrodata.open(filename))
-
+    if dispersion_axis == 0:
+        data[:, line_positions] = line_intensities
+        data = ndimage.gaussian_filter(data, [5, 1])
     else:
-        raise IOError(
-            'Could not find input file:\n' +
-            '  {:s}\n'.format(input_path) +
-            '  Run pytest with "--force-preprocess-data" to get it')
+        data[line_positions, :] = line_intensities
+        data = ndimage.gaussian_filter(data, [1, 5])
 
-    return input_data
+    data = data + (np.random.random_sample(data.shape) - 0.5) * 10
+
+    return data
 
 
-@pytest.fixture(scope="module")
-def reduce_data(change_working_dir):
+def rebuild_distortion_model(ext):
     """
-    Recipe used to generate input data for `distortionDetermine` tests.
+    Helper function to recover the distortion model from the coefficients stored
+    in the `ext.FITCOORD` attribute.
 
     Parameters
     ----------
-    change_working_dir : pytest.fixture
-        Fixture containing a custom context manager used to enter and leave the
-        output folder easily.
+    ext : astrodata extension
+        Input astrodata extension which contains a `.FITCOORD` with the
+        coefficients that can be used to reconstruct the distortion model.
 
     Returns
     -------
-    function : A function that will read the input arc, pre-process, and return it.
+    :class:`~astropy.modeling.models.Model`
+        Model that receives 2D data and return a 1D array.
     """
-    def _reduce_data(ad):
-        with change_working_dir():
-            p = primitives_gmos_spect.GMOSSpect([ad])
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.mosaicDetectors()
-            p.makeIRAFCompatible()
-            ad = p.writeOutputs()[0]
-        return ad
-    return _reduce_data
+    model = astromodels.dict_to_chebyshev(
+        dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
+    )
+
+    return model
+
+
+def remap_distortion_model(model, dispersion_axis):
+    """
+    Remaps the distortion model so it can return a 2D array.
+
+    Parameters
+    ----------
+    model : :class:`~astropy.modeling.models.Model`
+        A model that receives 2D data and returns 1D data.
+
+    dispersion_axis : {0 or 1}
+        Define distortion model along the rows (0) or along the columns (1).
+
+    Returns
+    -------
+    :class:`~astropy.modeling.models.Model`
+        A model that receives and returns 2D data.
+
+    See also
+    --------
+    - https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
+
+    """
+    m = models.Identity(2)
+
+    if dispersion_axis == 0:
+        m.inverse = models.Mapping((0, 1, 1)) | (model & models.Identity(1))
+    else:
+        m.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & model)
+
+    return m
+
+
+# -- Recipe to create pre-processed data ---------------------------------------
+def create_inputs_recipe():
+    """
+    Creates input data for tests using pre-processed standard star and its
+    calibration files.
+
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
+    """
+    import os
+    from astrodata.testing import download_from_archive
+
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/test_gmos_spect_ls_distortion_determine/"
+    path = os.path.join(root_path, module_path)
+
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    os.makedirs("inputs/", exist_ok=True)
+    print('Current working directory:\n    {:s}'.format(os.getcwd()))
+
+    for filename in datasets:
+        print('Downloading files...')
+        basename = filename.split("_")[0] + ".fits"
+        sci_path = download_from_archive(basename)
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
+
+        print('Reducing pre-processed data:')
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p.prepare()
+        p.addDQ(static_bpm=None)
+        p.addVAR(read_noise=True)
+        p.overscanCorrect()
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.mosaicDetectors()
+        p.makeIRAFCompatible()
+
+        os.chdir("inputs/")
+        processed_ad = p.writeOutputs().pop()
+        os.chdir("../")
+        print("Wrote pre-processed file to:\n"
+              "    {:s}".format(processed_ad.filename))
+
+
+if __name__ == '__main__':
+    import sys
+
+    if "--create-inputs" in sys.argv[1:]:
+        create_inputs_recipe()
+    else:
+        pytest.main()

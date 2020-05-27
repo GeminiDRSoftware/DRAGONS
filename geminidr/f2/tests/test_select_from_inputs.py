@@ -1,31 +1,31 @@
 #!/usr/bin/env python
-
-import glob
-import os
 import pytest
 
-import astrodata, gemini_instruments
+import astrodata
+import gemini_instruments
 
+from astrodata.testing import download_from_archive
 from geminidr.f2.primitives_f2_image import F2Image
 
 test_files = [
     "S20131121S0094.fits",
-    # "S20131126S1111.fits",
-    # "S20131126S1112.fits",
-    # "S20131126S1113.fits",
-    # "S20160112S0080.fits",
-    # "S20170103S0032.fits",
+    "S20131126S1111.fits",
+    "S20131126S1112.fits",
+    "S20131126S1113.fits",
+    "S20160112S0080.fits",
+    "S20170103S0032.fits",
 ]
 
 
 @pytest.fixture(scope='module')
-def input_ad(request, cache_file_from_archive):
+def input_ad(request):
     filename = request.param
-    path = cache_file_from_archive(filename)
+    path = download_from_archive(filename)
     ad = astrodata.open(path)
     return ad
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_ad", test_files, indirect=True)
 def test_select_from_inputs(change_working_dir, input_ad):
 

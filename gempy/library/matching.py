@@ -632,16 +632,16 @@ class KDTreeFitter(Fitter):
         # Need to ensure this is larger than the convergence tolerance
         # so move the initial values away from zero if necessary
         try:
-            xtol = kwargs['options']['xtol']
+            xatol = kwargs['options']['xatol']
         except KeyError:
             pass
         else:
             for p in model_copy.param_names:
                 pval = getattr(model_copy, p).value
                 ### EDITED THIS LINE SO TAKE A LOOK IF 2D MATCHING GOES WRONG!!
-                if abs(pval) < 20 * xtol and not model_copy.fixed[p]:  # and 'offset' in p
-                    getattr(model_copy, p).value = 20 * xtol if pval == 0 \
-                        else (np.sign(pval) * 20 * xtol)
+                if abs(pval) < 20 * xatol and not model_copy.fixed[p]:  # and 'offset' in p
+                    getattr(model_copy, p).value = 20 * xatol if pval == 0 \
+                        else (np.sign(pval) * 20 * xatol)
 
         if in_weights is None:
             in_weights = np.ones((len(in_coords[0]),))
@@ -805,10 +805,10 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
 
     # More precise minimization using pairwise calculations
     fit_it = KDTreeFitter()  # TODO: set parameters?
-    # We don't care about how much the function value changes (ftol), only
-    # that the position is robust (xtol)
+    # We don't care about how much the function value changes (fatol), only
+    # that the position is robust (xatol)
     final_model = fit_it(m, xin, xout, method='Nelder-Mead',
-                         options={'xtol': tolerance})
+                         options={'xatol': tolerance})
     if verbose:
         log.stdinfo(_show_model(final_model, "Final model in {:.2f} seconds".
                                 format((datetime.now() - start).total_seconds())))

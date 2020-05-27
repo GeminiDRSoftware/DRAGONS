@@ -129,7 +129,7 @@ class storeProcessedFlatConfig(config.Config):
 class storeProcessedFringeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_fringe", optional=True)
 
-class storeScienceConfig(config.Config):
+class storeProcessedScienceConfig(config.Config):
     pass
 
 class storeProcessedStandardConfig(config.Config):

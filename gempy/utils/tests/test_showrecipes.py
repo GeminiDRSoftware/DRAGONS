@@ -2,10 +2,11 @@
 
 import pytest
 import re
+import astrodata.testing
 
 from gempy.utils.showrecipes import showprims
 from recipe_system.utils.errors import RecipeNotFound
-from astrodata.testing import download_from_archive
+
 
 GNIRS = "S20171208S0054.fits"
 GNIRS_SPECT = "N20190206S0279.fits"
@@ -117,18 +118,20 @@ TESTS = {
 
 
 @pytest.mark.parametrize("name", TESTS)
-def test_showprims(cache_file_from_archive, name):
+@pytest.mark.dragons_remote_data
+def test_showprims(name):
     filename, mode, recipe, expected = TESTS[name]
-    file_location = cache_file_from_archive(filename)
+    file_location = astrodata.testing.download_from_archive(filename)
     answer = showprims(file_location, mode=mode, recipe=recipe)
     for line in expected:
         assert re.search(line, answer)
 
 
 # # # # # #  GNIRS  # # # # # #
-def test_showprims_on_gnirs_spect(cache_file_from_archive):
+@pytest.mark.dragons_remote_data
+def test_showprims_on_gnirs_spect():
     try:
-        file_location = cache_file_from_archive(GNIRS_SPECT)
+        file_location = astrodata.testing.download_from_archive(GNIRS_SPECT)
         answer = showprims(file_location, 'qa')
         assert "RecipeNotFound Error" in answer
     except RecipeNotFound:
@@ -137,17 +140,17 @@ def test_showprims_on_gnirs_spect(cache_file_from_archive):
 
 # # # # # #  GMOS  # # # # # #
 @pytest.mark.dragons_remote_data
-def test_showprims_on_gmos_spect(cache_file_from_archive):
-    file_location = cache_file_from_archive(GMOS_SPECT)
+def test_showprims_on_gmos_spect():
+    file_location = astrodata.testing.download_from_archive(GMOS_SPECT)
     answer = showprims(file_location)
     assert "geminidr.gmos.recipes.ql.recipes_LS_SPECT::reduce" in answer
 
 
 # # # # # #  GSAOI  # # # # # #
 @pytest.mark.dragons_remote_data
-def test_showprims_on_gsaoi_dark_qa_mode(cache_file_from_archive):
+def test_showprims_on_gsaoi_dark_qa_mode():
     try:
-        file_location = cache_file_from_archive(GSAOI_DARK)
+        file_location = astrodata.testing.download_from_archive(GSAOI_DARK)
         answer = showprims(file_location, 'qa')
         assert "RecipeNotFound Error" in answer
     except RecipeNotFound:

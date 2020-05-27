@@ -14,16 +14,16 @@ from gempy.utils import logutils
 
 # Test parameters -------------------------------------------------------------
 test_datasets = [
-    "S20190808S0048.fits",  # R400 at 0.740 um
-    "S20190808S0049.fits",  # R400 at 0.760 um
-    "S20190808S0053.fits",  # R400 at 0.850 um
+    "S20190808S0048_skyCorrected.fits",  # R400 at 0.740 um
+    "S20190808S0049_skyCorrected.fits",  # R400 at 0.760 um
+    "S20190808S0053_skyCorrected.fits",  # R400 at 0.850 um
 ]
 
 test_datasets2 = [
-    "N20180106S0025.fits",  # B600 at 0.555 um
-    "N20180106S0026.fits",  # B600 at 0.555 um
-    "N20180106S0028.fits",  # B600 at 0.555 um
-    "N20180106S0029.fits",  # B600 at 0.555 um
+    "N20180106S0025_skyCorrected.fits",  # B600 at 0.555 um
+    "N20180106S0026_skyCorrected.fits",  # B600 at 0.555 um
+    "N20180106S0028_skyCorrected.fits",  # B600 at 0.555 um
+    "N20180106S0029_skyCorrected.fits",  # B600 at 0.555 um
 ]
 
 
@@ -169,84 +169,68 @@ def add_fake_offset(adinputs, offset=10):
 
 
 @pytest.fixture(scope='function')
-def adinputs(request, get_input_ad):
-    pre_process = request.config.getoption("--force-preprocess-data")
-    adinputs = [get_input_ad(f, pre_process) for f in test_datasets]
-    return adinputs
+def adinputs(path_to_inputs):
+    return [astrodata.open(os.path.join(path_to_inputs, f))
+            for f in test_datasets]
 
 
 @pytest.fixture(scope='function')
-def adinputs2(request, get_input_ad):
-    pre_process = request.config.getoption("--force-preprocess-data")
-    adinputs = [get_input_ad(f, pre_process) for f in test_datasets2]
-    return adinputs
+def adinputs2(path_to_inputs):
+    return [astrodata.open(os.path.join(path_to_inputs, f))
+            for f in test_datasets2]
 
 
-@pytest.fixture(scope='module')
-def get_input_ad(cache_file_from_archive, path_to_inputs, reduce_arc, reduce_data):
+# -- Recipe to create pre-processed data ---------------------------------------
+def create_inputs_recipe():
     """
-    Reads the input data or cache/process it in a temporary folder.
+    Creates input data for tests using pre-processed standard star and its
+    calibration files.
 
-    Parameters
-    ----------
-    cache_file_from_archive : pytest.fixture
-        Path to where the data will be temporarily cached.
-    path_to_inputs : pytest.fixture
-        Path to the permanent local input files.
-    reduce_arc : pytest.fixture
-        Recipe used to reduce ARC data.
-    reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before
-        `determineWavelengthSolution`.
-
-    Returns
-    -------
-    function : factory that reads existing input data or call the data
-        reduction recipe.
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
     """
-    def _get_input_ad(basename, should_preprocess):
-        input_fname = basename.replace('.fits', '_skyCorrected.fits')
-        input_path = os.path.join(path_to_inputs, input_fname)
+    import os
+    from astrodata.testing import download_from_archive
+    from recipe_system.reduction.coreReduce import Reduce
+    from gempy.utils import logutils
 
-        if os.path.exists(input_path):
-            print(" Load existing input file: {:s}".format(basename))
-            input_data = astrodata.open(input_path)
+    from astrodata.testing import get_associated_calibrations
 
-        elif should_preprocess:
-            print(" Caching input file: {:s}".format(basename))
-            filename = cache_file_from_archive(basename)
-            ad = astrodata.open(filename)
-            cals = testing.get_associated_calibrations(basename)
-            print(" Calibrations: ", cals)
+    associated_calibrations = {
+        "S20190808S0048.fits": 'S20190808S0167.fits',
+        "S20190808S0049.fits": 'S20190808S0168.fits',
+        "S20190808S0053.fits": 'S20190808S0169.fits',
+        "N20180106S0025.fits": 'N20180115S0264.fits',
+        "N20180106S0026.fits": 'N20180115S0264.fits',
+        "N20180106S0028.fits": 'N20180115S0264.fits',
+        "N20180106S0029.fits": 'N20180115S0264.fits',
+    }
 
-            cals = [cache_file_from_archive(c)
-                    for c in cals[cals.caltype.str.contains('arc')].filename.values]
-            print(" Downloaded calibrations: {:s}".format("\n ".join(cals)))
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/test_gmos_spect_ls_resample_2d/"
+    path = os.path.join(root_path, module_path)
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    os.makedirs("./inputs", exist_ok=True)
+    print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
-            master_arc = reduce_arc(ad.data_label(), cals)
-            input_data = reduce_data(ad, master_arc)
+    for fname, arc_fname in associated_calibrations.items():
 
+        sci_path = download_from_archive(fname)
+        arc_path = download_from_archive(arc_fname)
+
+        sci_ad = astrodata.open(sci_path)
+        data_label = sci_ad.data_label()
+
+        print('Reducing ARC for {:s}'.format(data_label))
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+
+        if os.path.exists(arc_fname.replace('.fits', '_distortionDetermined.fits')):
+            arc = astrodata.open(arc_fname.replace('.fits', '_distortionDetermined.fits'))
         else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
-
-        return input_data
-    return _get_input_ad
-
-
-@pytest.fixture(scope='module')
-def reduce_arc(change_working_dir):
-    """ Recipe used to generate _distortionDetermined files from raw arc."""
-    def _reduce_arc(dlabel, arc_fnames):
-        with change_working_dir():
-            # Use config to prevent duplicated outputs when running Reduce via API
-            logutils.config(file_name='log_arc_{}.txt'.format(dlabel))
-
-            p = primitives_gmos_spect.GMOSSpect(
-                [astrodata.open(f) for f in arc_fnames])
-
+            p = primitives_gmos_spect.GMOSSpect([astrodata.open(arc_path)])
             p.prepare()
             p.addDQ(static_bpm=None)
             p.addVAR(read_noise=True)
@@ -256,27 +240,32 @@ def reduce_arc(change_working_dir):
             p.mosaicDetectors()
             p.makeIRAFCompatible()
             p.determineWavelengthSolution()
-            ad = p.determineDistortion()[0]
-        return ad
-    return _reduce_arc
+            p.determineDistortion()
+            arc = p.writeOutputs().pop()
+
+        print('Reducing pre-processed data:')
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p.prepare()
+        p.addDQ(static_bpm=None)
+        p.addVAR(read_noise=True)
+        p.overscanCorrect()
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.mosaicDetectors()
+        p.distortionCorrect(arc=arc)
+        p.findSourceApertures(max_apertures=1)
+        p.skyCorrectFromSlit()
+
+        os.chdir("inputs/")
+        _ = p.writeOutputs().pop()
+        os.chdir("../")
 
 
-@pytest.fixture(scope='module')
-def reduce_data(change_working_dir):
-    """Recipe used to generate _skyCorrected files from raw data. """
-    def _reduce_data(ad, arc):
-        with change_working_dir():
-            p = primitives_gmos_spect.GMOSSpect([ad])
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.mosaicDetectors()
-            p.distortionCorrect(arc=arc)
-            p.findSourceApertures(max_apertures=1)
-            p.skyCorrectFromSlit()
-            ad = p.writeOutputs()[0]
-        return ad
-    return _reduce_data
+if __name__ == '__main__':
+    import sys
+
+    if "--create-inputs" in sys.argv[1:]:
+        create_inputs_recipe()
+    else:
+        pytest.main()
