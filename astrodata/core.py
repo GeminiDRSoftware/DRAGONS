@@ -106,18 +106,17 @@ class AstroData:
         len(self)
 
         obj = self.__class__()
-        to_copy = ['_phu', '_path', '_orig_filename',
-                   '_tables', '_exposed', '_resetting']
+
+        for attr in ('_phu', '_path', '_orig_filename', '_tables',
+                     '_exposed', '_resetting'):
+            obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
         if self.is_single:
             obj.__dict__['_nddata'] = [deepcopy(self.nddata)]
         elif self.is_sliced:
             obj.__dict__['_nddata'] = [deepcopy(nd) for nd in self.nddata]
         else:
-            to_copy.append('_nddata')
-
-        for attr in to_copy:
-            obj.__dict__[attr] = deepcopy(self.__dict__[attr])
+            obj.__dict__['_nddata'] = deepcopy(self.__dict__['_nddata'])
 
         # Top-level tables
         for key in set(self.__dict__) - set(obj.__dict__):
@@ -503,6 +502,10 @@ class AstroData:
         obj._path = self.path
         obj._orig_filename = self.orig_filename
         obj._exposed = self._exposed
+        # FIXME: tables are stored both in _tables and __dict__, not sure why,
+        # we could probably get rid of this (and exposed as well?)
+        for k in self._exposed:
+            obj.__dict__[k] = self.__dict__[k]
         return obj
 
     def __delitem__(self, idx):
@@ -547,7 +550,7 @@ class AstroData:
         # Exposed objects are part of the normal object interface. We may have
         # just lazy-loaded them, and that's why we get here...
         if attribute in self._exposed:
-            return getattr(self, attribute)
+            return self.__dict__[attribute]
 
         # Check if it's an aliased object
         for nd in self.nddata:
@@ -685,6 +688,7 @@ class AstroData:
         return exposed
 
     def _pixel_info(self, indices):
+        # FIXME: remove indices arg here, we don't need it
         for idx, obj in ((n, self._nddata[k]) for n, k in enumerate(indices)):
             other_objects = []
             uncer = obj.uncertainty
@@ -787,24 +791,29 @@ class AstroData:
                 print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
 
     def _oper(self, operator, operand):
+        ind = (tuple(range(len(self))) if self._indices is None
+               else self._indices)
+
         if isinstance(operand, AstroData):
             if len(operand) != len(self):
                 raise ValueError("Operands are not the same size")
             for n in range(len(self)):
                 try:
-                    data = operand.nddata if operand.is_single else operand.nddata[n]
-                    self._nddata[n] = operator(self._nddata[n], data)
+                    data = (operand.nddata if operand.is_single
+                            else operand.nddata[n])
+                    self._nddata[ind[n]] = operator(self._nddata[ind[n]], data)
                 except TypeError:
                     # This may happen if operand is a sliced, single
                     # AstroData object
-                    self._nddata[n] = operator(self._nddata[n], operand.nddata)
+                    self._nddata[ind[n]] = operator(self._nddata[ind[n]],
+                                                    operand.nddata)
             op_table = operand.table()
             ltab, rtab = set(self._tables), set(op_table)
             for tab in (rtab - ltab):
                 self._tables[tab] = op_table[tab]
         else:
             for n in range(len(self)):
-                self._nddata[n] = operator(self._nddata[n], operand)
+                self._nddata[ind[n]] = operator(self._nddata[ind[n]], operand)
 
     def _standard_nddata_op(self, fn, operand):
         return self._oper(partial(fn, handle_mask=np.bitwise_or,
