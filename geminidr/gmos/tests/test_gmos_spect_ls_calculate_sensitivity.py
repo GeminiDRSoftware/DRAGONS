@@ -246,7 +246,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
         p.flatCorrect(flat=flat_master)
-        p.applyQECorrection(arc=arc_master)
+        p.QECorrect(arc=arc_master)
         p.distortionCorrect(arc=arc_master, order=3, subsample=1)
         p.findSourceApertures(max_apertures=1, threshold=0.01, min_sky_region=20)
         p.skyCorrectFromSlit(order=5, grow=0)

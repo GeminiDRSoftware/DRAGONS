@@ -155,7 +155,7 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 
         logutils.config(file_name='log_test_continuity{}.txt'.format(ad.data_label()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.applyQECorrection(arc=arc_ad)
+        p.QECorrect(arc=arc_ad)
 
         # Need these extra steps to extract and analyse the data
         p.distortionCorrect(arc=arc_ad)
@@ -182,7 +182,7 @@ def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, ref_a
     with change_working_dir():
         logutils.config(file_name='log_test_regression{}.txt'.format(ad.data_label()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.applyQECorrection(arc=arc_ad)
+        p.QECorrect(arc=arc_ad)
         qe_corrected_ad = p.writeOutputs().pop()
 
     assert 'QECORR' in qe_corrected_ad.phu.keys()
