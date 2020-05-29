@@ -7,7 +7,7 @@ from astrodata.fits import header_for_table, card_filter, update_header
 
 
 def test_header_for_table():
-    tbl = Table([[[1], [2, 3], [3, 4, 5]]])
+    tbl = Table([[[1], [2, 3], [3, 4, 5]]], dtype=['object'])
     with pytest.raises(TypeError,
                        match=r"Variable length arrays .* are not supported"):
         header_for_table(tbl)
