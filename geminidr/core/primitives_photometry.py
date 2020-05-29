@@ -95,7 +95,8 @@ class Photometry(PrimitivesBASE):
                 else:
                     raise
 
-            log.fullinfo("Querying {} for reference catalog".format(source))
+            log.fullinfo(f"Querying {source} for reference catalog, "
+                         f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 refcat = get_fits_table(source, ra, dec, radius)

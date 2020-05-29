@@ -230,7 +230,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
 
     # Did we get any results?
     if(table is None or table.is_empty() or len(table.array) == 0):
-        log.stdinfo("No results returned")
+        log.stdinfo(f"No results returned from {server}")
         return
 
     # It turns out to be not viable to use UCDs to select the columns,
