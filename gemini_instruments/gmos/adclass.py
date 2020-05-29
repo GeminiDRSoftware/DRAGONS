@@ -72,7 +72,8 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_standard(self):
-        if self.object().lower().replace(' ', '') in lookup.standard_star_names:
+        obj = self.phu.get('OBJECT', '').lower().replace(' ', '')
+        if obj in lookup.standard_star_names:
             return TagSet(['STANDARD', 'CAL'])
 
     @astro_data_tag
