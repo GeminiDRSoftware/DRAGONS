@@ -153,6 +153,56 @@ def test_arithmetic_inplace(op, res, res2, ad1, ad2):
         assert isinstance(ad[0].hdr, fits.Header)
 
 
+@pytest.mark.parametrize('op, res', [
+    (operator.add, (3, 7)),
+    (operator.sub, (-1, 3)),
+    (operator.mul, (2, 10)),
+    (operator.truediv, (0.5, 2.5))
+])
+def test_arithmetic_multiple_ext(op, res, ad1):
+    ad1.append(np.ones(SHAPE, dtype=np.uint16) + 4)
+
+    result = op(ad1, 2)
+    assert len(result) == 2
+    assert_array_equal(result[0].data, res[0])
+    assert_array_equal(result[1].data, res[1])
+
+    for i, ext in enumerate(ad1):
+        result = op(ext, 2)
+        assert len(result) == 1
+        assert_array_equal(result[0].data, res[i])
+
+
+@pytest.mark.parametrize('op, res', [
+    (operator.iadd, (3, 7)),
+    (operator.isub, (-1, 3)),
+    (operator.imul, (2, 10)),
+    (operator.itruediv, (0.5, 2.5))
+])
+def test_arithmetic_inplace_multiple_ext(op, res, ad1):
+    ad1.append(np.ones(SHAPE, dtype=np.uint16) + 4)
+
+    ad = deepcopy(ad1)
+    result = op(ad, 2)
+    assert len(result) == 2
+    assert_array_equal(result[0].data, res[0])
+    assert_array_equal(result[1].data, res[1])
+
+    # Making a deepcopy will create a single nddata object but not sliced
+    # as it is now independant from its parent
+    for i, ext in enumerate(ad1):
+        ext = deepcopy(ext)
+        result = op(ext, 2)
+        assert len(result) == 1
+        assert_array_equal(result[0].data, res[i])
+
+    # Now work directly on the input object, will creates single ad objects
+    for i, ext in enumerate(ad1):
+        result = op(ext, 2)
+        assert len(result) == 1
+        assert_array_equal(result.data, res[i])
+
+
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize('op, arg, res', [('add', 100, 101),
                                           ('subtract', 100, -99),
