@@ -83,7 +83,7 @@ def test_regression_processed_flat(processed_flat, ref_ad_factory):
     ref_flat = ref_ad_factory(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
         np.testing.assert_allclose(ext.mask, ext_ref.mask)
-        np.testing.assert_almost_equal(ext.data, ext_ref.data, decimal=3)
+        np.testing.assert_allclose(ext.data, ext_ref.data, atol=0.05)
 
 
 # -- Fixtures ----------------------------------------------------------------
