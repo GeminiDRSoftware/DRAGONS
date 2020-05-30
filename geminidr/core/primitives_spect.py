@@ -1295,7 +1295,7 @@ class Spect(PrimitivesBASE):
 
                 try:
                     wave_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
-                except IndexError:
+                except (AttributeError, IndexError):
                     log.warning(f"Cannot find wavelength solution for {extname}")
                     wave_model = None
 
@@ -1377,7 +1377,7 @@ class Spect(PrimitivesBASE):
                                                       axes_names=('x',), name='pixels')
                         out_frame = cf.SpectralFrame(unit=u.nm, name='world')
                         ext.wcs = gWCS([(in_frame, wave_model),
-                                                (out_frame, None)])
+                                        (out_frame, None)])
                     ext.hdr[ad._keyword_for('aperture_number')] = apnum
                     center = aperture.model.c0.value
                     ext.hdr['XTRACTED'] = (center, "Spectrum extracted "
