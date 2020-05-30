@@ -103,8 +103,11 @@ def gwcs_to_fits(ndd, hdr=None):
     wcs = ndd.wcs
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
-    wcs_dict = {'WCSAXES': len(world_axes)}
-    wcs_dict['WCSDIM'] = wcs_dict['WCSAXES']
+    nworld_axes = len(world_axes)
+    wcs_dict = {'WCSAXES': nworld_axes,
+                'WCSDIM': nworld_axes}
+    wcs_dict.update({f'CD{i+1}_{j+1}': 0. for j in range(nworld_axes)
+                     for i in range(nworld_axes)})
 
     # Find and process the sky projection first
     if {'lon', 'lat'}.issubset(world_axes):
@@ -163,9 +166,12 @@ def gwcs_to_fits(ndd, hdr=None):
         wcs_dict['FITS-WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
 
     affine = calculate_affine_matrices(transform, ndd.shape)
+    # Require an inverse to write out
+    if np.linalg.det(affine.matrix) == 0:
+        affine.matrix[-1, -1] = 1.
     wcs_dict.update({f'CD{i+1}_{j+1}': affine.matrix[j, i]
                      for i, _ in enumerate(world_axes)
-                     for j, _ in enumerate(ndd.shape)})
+                     for j, _ in enumerate(world_axes)})
     # Don't overwrite CTYPEi keywords we've already created
     wcs_dict.update({f'CTYPE{i}': axis.upper()[:8]
                      for i, axis in enumerate(world_axes, start=1)
@@ -173,17 +179,17 @@ def gwcs_to_fits(ndd, hdr=None):
 
     crval = [wcs_dict[f'CRVAL{i+1}'] for i, _ in enumerate(world_axes)]
     crpix = np.array(wcs.backward_transform(*crval)) + 1
-    if len(world_axes) == 1:
+    if nworld_axes == 1:
         wcs_dict['CRPIX1'] = crpix
     else:
-        wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(crpix, start=1)})
+        # Comply with FITS standard, must define CRPIXj for "extra" axes
+        wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(np.concatenate([crpix, [1] * (nworld_axes-len(ndd.shape))]), start=1)})
     for i, unit in enumerate(wcs.output_frame.unit, start=1):
         try:
             wcs_dict[f'CUNIT{i}'] = unit.name
         except AttributeError:
             pass
 
-    print(wcs_dict)
     return wcs_dict
 
 # -----------------------------------------------------------------------------
