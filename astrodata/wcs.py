@@ -183,7 +183,7 @@ def gwcs_to_fits(ndd, hdr=None):
         wcs_dict['CRPIX1'] = crpix
     else:
         # Comply with FITS standard, must define CRPIXj for "extra" axes
-        wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(np.concatenate([crpix, [1] * (nworld_axes-len(ndd.shape))]), start=1)})
+        wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(np.concatenate([crpix, [0] * (nworld_axes-len(ndd.shape))]), start=1)})
     for i, unit in enumerate(wcs.output_frame.unit, start=1):
         try:
             wcs_dict[f'CUNIT{i}'] = unit.name
