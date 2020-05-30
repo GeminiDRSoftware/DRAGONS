@@ -108,6 +108,8 @@ def gwcs_to_fits(ndd, hdr=None):
                 'WCSDIM': nworld_axes}
     wcs_dict.update({f'CD{i+1}_{j+1}': 0. for j in range(nworld_axes)
                      for i in range(nworld_axes)})
+    pix_center = [0.5 * (length - 1) for length in ndd.shape[::-1]]
+    wcs_center = transform(*pix_center)
 
     # Find and process the sky projection first
     if {'lon', 'lat'}.issubset(world_axes):
@@ -156,7 +158,7 @@ def gwcs_to_fits(ndd, hdr=None):
         if f'CRVAL{i}' in wcs_dict:
             continue
         if axis_type == "SPECTRAL":
-            wcs_dict[f'CRVAL{i}'] = hdr['CENTWAVE']
+            wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1])
             wcs_dict[f'CTYPE{i}'] = 'WAVE'
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = 0
