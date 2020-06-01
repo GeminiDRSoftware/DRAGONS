@@ -162,7 +162,7 @@ def gwcs_to_fits(ndd, hdr=None):
         if f'CRVAL{i}' in wcs_dict:
             continue
         if axis_type == "SPECTRAL":
-            wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1])
+            wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
             wcs_dict[f'CTYPE{i}'] = 'WAVE'
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = 0
