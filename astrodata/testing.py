@@ -64,14 +64,14 @@ def change_working_dir(path_to_outputs):
     return _change_working_dir
 
 
-def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
+def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'):
     """Download file from the archive and store it in the local cache.
 
     Parameters
     ----------
     filename : str
         The filename, e.g. N20160524S0119.fits
-    path : str
+    sub_path : str
         By default the file is stored at the root of the cache directory, but
         using ``path`` allows to specify a sub-directory.
     env_var: str
@@ -83,22 +83,20 @@ def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
         Name of the cached file with the path added to it.
     """
     # Find cache path and make sure it exists
-    cache_path = os.getenv(env_var)
+    root_cache_path = os.getenv(env_var)
 
-    if cache_path is None:
+    if root_cache_path is None:
         raise ValueError('Environment variable not set: {:s}'.format(env_var))
-    elif not os.access(cache_path, os.W_OK):
-        raise OSError('Could not access the path stored inside ${:s}. Make '
-                      'sure the following path exists and that you have write '
-                      'permissions in it: {:s}'.format(env_var, cache_path))
 
-    cache_path = os.path.expanduser(cache_path)
+    root_cache_path = os.path.expanduser(root_cache_path)
 
-    if path is not None:
-        cache_path = os.path.join(cache_path, path)
+    if sub_path is not None:
+        cache_path = os.path.join(root_cache_path, sub_path)
 
-    if not os.path.exists(cache_path):
-        print('Creating new folder: {:s}'.format(cache_path))
+    if os.path.exists(cache_path):
+        print('Folder exists. Skipping creation.\n {:s}'.format(cache_path))
+    else:
+        print('Create new folder:\n {:s}'.format(cache_path))
         os.makedirs(cache_path, exist_ok=True)
 
     # Now check if the local file exists and download if not
