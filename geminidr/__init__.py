@@ -59,8 +59,6 @@ stkindfile = os.path.join('.', caches['reducecache'], "stkindex.pkl")
 
 def set_caches():
     cachedict = {name: cachedir for name, cachedir in caches.items()}
-    for cachedir in cachedict.values():
-        os.makedirs(cachedir, exist_ok=True)
     return cachedict
 
 
@@ -73,6 +71,9 @@ def load_cache(cachefile):
 
 
 def save_cache(obj, cachefile):
+    cachedir = os.path.dirname(cachefile)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
     with open(cachefile, 'wb') as fp:
         pickle.dump(obj, fp, protocol=2)
 

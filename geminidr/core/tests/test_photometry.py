@@ -41,6 +41,7 @@ def niri_image():
     return NIRIImage([ad])
 
 
+@pytest.mark.dragons_remote_data
 def test_addReferenceCatalog(niri_image):
     adinputs = niri_image.addReferenceCatalog()
     assert len(adinputs) == 1

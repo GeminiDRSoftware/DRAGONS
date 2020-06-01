@@ -56,7 +56,7 @@ def test_regression_extract_1d_spectra(ad, change_working_dir,
     ref_ad = ref_ad_factory(sky_subtracted_ad.filename)
 
     for ext, ref_ext in zip(sky_subtracted_ad, ref_ad):
-        np.testing.assert_allclose(ext.data, ref_ext.data)
+        np.testing.assert_allclose(ext.data, ref_ext.data, atol=0.01)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
