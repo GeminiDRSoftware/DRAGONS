@@ -29,7 +29,11 @@ def fitswcs_to_gwcs(hdr):
     frame_mapping = {'WAVE': cf.SpectralFrame}
     # coordinate names for CelestialFrame
     coordinate_outputs = {'alpha_C', 'delta_C'}
-    in_frame = cf.Frame2D(name="pixels")
+    naxes = hdr['NAXIS']
+    axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
+    in_frame = cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
+                                  axes_order=tuple(range(naxes)), name="pixels",
+                                  axes_names=axes_names, unit=[u.pix] * naxes)
 
     # transform = gw.make_fitswcs_transform(hdr)
     try:
