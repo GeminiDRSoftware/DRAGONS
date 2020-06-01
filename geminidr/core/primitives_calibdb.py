@@ -206,7 +206,7 @@ class CalibDB(PrimitivesBASE):
 
         # Create storage directory if it doesn't exist
         if not os.path.exists(os.path.join(storedcals, caltype)):
-            os.mkdir(os.path.join(storedcals, caltype))
+            os.makedirs(os.path.join(storedcals, caltype))
 
         for ad in adinputs:
             if not ad.tags.issuperset(required_tags):
