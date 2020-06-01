@@ -97,7 +97,8 @@ def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
     if path is not None:
         cache_path = os.path.join(cache_path, path)
 
-    os.makedirs(cache_path, exist_ok=True)
+    if not os.path.exists(cache_path):
+        os.makedirs(cache_path, exist_ok=True)
 
     # Now check if the local file exists and download if not
     local_path = os.path.join(cache_path, filename)
@@ -170,12 +171,6 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
 
     path_to_test_data = os.path.expanduser(path_to_test_data).strip()
 
-    if not os.access(path_to_test_data, os.W_OK):
-        pytest.fail(
-            '\n  Could not access the path stored inside $DRAGONS_TEST. '
-            '\n  Make sure the following path exists and that you have '
-            'write permissions in it:\n    {}'.format(path_to_test_data))
-
     module_path = request.module.__name__.split('.') + ["inputs"]
     module_path = [item for item in module_path if item not in "tests"]
     path = os.path.join(path_to_test_data, *module_path)
@@ -217,12 +212,6 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
         pytest.skip('Environment variable not set: $DRAGONS_TEST')
 
     path_to_test_data = os.path.expanduser(path_to_test_data).strip()
-
-    if not os.access(path_to_test_data, os.W_OK):
-        pytest.fail(
-            '\n  Could not access the path stored inside $DRAGONS_TEST. '
-            '\n  Make sure the following path exists and that you have '
-            'write permissions in it:\n    {}'.format(path_to_test_data))
 
     module_path = request.module.__name__.split('.') + ["refs"]
     module_path = [item for item in module_path if item not in "tests"]
