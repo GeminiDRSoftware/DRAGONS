@@ -98,6 +98,7 @@ def download_from_archive(filename, path='raw_files', env_var='DRAGONS_TEST'):
         cache_path = os.path.join(cache_path, path)
 
     if not os.path.exists(cache_path):
+        print('Creating new folder: {:s}'.format(cache_path))
         os.makedirs(cache_path, exist_ok=True)
 
     # Now check if the local file exists and download if not
