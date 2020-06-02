@@ -14,6 +14,95 @@ from astropy.utils.data import download_file
 URL = 'https://archive.gemini.edu/file/'
 
 
+def assert_most_close(actual, desired, max_miss, rtol=1e-7, atol=0,
+                      equal_nan=True, verbose=True):
+    """
+    Raises an AssertionError if the number of elements in two objects that are
+    not equal up to desired tolerance is greater than expected.
+
+    See Also
+    --------
+    :func:`~numpy.testing.assert_allclose`
+
+    Parameters
+    ----------
+    actual : array_like
+        Array obtained.
+    desired : array_like
+        Array desired.
+    max_miss : iny
+        Maximum number of mismatched elements.
+    rtol : float, optional
+        Relative tolerance.
+    atol : float, optional
+        Absolute tolerance.
+    equal_nan : bool, optional.
+        If True, NaNs will compare equal.
+    verbose : bool, optional
+        If True, the conflicting values are appended to the error message.
+    Raises
+    ------
+    AssertionError
+        If actual and desired are not equal up to specified precision.
+    """
+    from numpy.testing import assert_allclose
+
+    try:
+        assert_allclose(actual, desired, atol=atol, equal_nan=equal_nan,
+                        err_msg='', rtol=rtol, verbose=verbose)
+
+    except AssertionError as e:
+        n_miss = e.args[0].split('\n')[3].split(':')[-1].split('(')[0].split('/')[0]
+        n_miss = int(n_miss.strip())
+
+        if n_miss > max_miss:
+            error_message = (
+                "%g mismatching elements are more than the " % n_miss +
+                "expected %g." % max_miss +
+                '\n'.join(e.args[0].split('\n')[3:]))
+
+            raise AssertionError(error_message)
+
+
+def assert_most_equal(actual, desired, max_miss, verbose=True):
+    """
+    Raises an AssertionError if more than `n` elements in two objects are not
+    equal. For more information, check :func:`numpy.testing.assert_equal`.
+
+    Parameters
+    ----------
+    actual : array_like
+        The object to check.
+    desired : array_like
+        The expected object.
+    max_miss : int
+        Maximum number of mismatched elements.
+    verbose : bool, optional
+        If True, the conflicting values are appended to the error message.
+
+    Raises
+    ------
+    AssertionError
+        If actual and desired are not equal.
+    """
+    from numpy.testing import assert_equal
+
+    try:
+        assert_equal(actual, desired, err_msg='', verbose=verbose)
+    except AssertionError as e:
+
+        n_miss = e.args[0].split('\n')[3].split(':')[-1].split('(')[0].split('/')[0]
+        n_miss = int(n_miss.strip())
+
+        if n_miss > max_miss:
+            error_message = (
+                "%g mismatching elements are more than the " % n_miss +
+                "expected %g." % max_miss +
+                '\n'.join(e.args[0].split('\n')[3:]))
+
+            raise AssertionError(error_message)
+
+
 def assert_same_class(ad, ad_ref):
     """
     Compare if two :class:`~astrodata.AstroData` (or any subclass) have the
