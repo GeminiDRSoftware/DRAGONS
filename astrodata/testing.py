@@ -257,7 +257,7 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
               "\n    {:s}".format(path))
         os.makedirs(path)
 
-    if not os.access(path, os.W_OK):
+    if not os.access(path, os.R_OK):
         pytest.fail('\n  Path to input test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
 
@@ -298,7 +298,7 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
         pytest.fail('\n Path to reference test data does not exist: '
                     '\n   {:s}'.format(path))
 
-    if not os.access(path, os.W_OK):
+    if not os.access(path, os.R_OK):
         pytest.fail('\n Path to reference test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
 

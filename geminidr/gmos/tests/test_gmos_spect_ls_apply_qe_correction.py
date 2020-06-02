@@ -1,5 +1,17 @@
 #!/usr/bin/env python
+"""
+Tests for applyQECorrection primitive.
 
+Changelog
+---------
+2020-06-01
+    - Recreated input files using:
+        - astropy 4.1rc1
+        - gwcs 0.13.1.dev19+gc064a02 - This should be cloned and the
+            `transform-1.1.0` string should be replaced by `transform-1.2.0`
+            in the `gwcs/schemas/stsci.edu/gwcs/step-1.0.0.yaml` file.
+
+"""
 import abc
 import matplotlib.pyplot as plt
 import numpy as np
@@ -734,8 +746,11 @@ def create_inputs_recipe():
         arc_reduce = Reduce()
         arc_reduce.files.extend(arc_paths)
         arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+
+        os.chdir("inputs/")
         arc_reduce.runr()
         _ = arc_reduce.output_filenames.pop()
+        os.chdir("../")
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
