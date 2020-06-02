@@ -55,6 +55,7 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
 
         assert _ad.object() == 'DUMMY'
         assert _ad.exposure_time() == 1
+        _ad.create_gwcs()
 
         return _ad
 
