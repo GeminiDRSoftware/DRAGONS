@@ -55,7 +55,7 @@ def test_assert_most_close():
     y = np.arange(10)
     assert_most_close(x, y, 1)
 
-    y[0] = 1.01
+    y[0] = -1
     assert_most_close(x, y, 1)
 
     with pytest.raises(AssertionError):
