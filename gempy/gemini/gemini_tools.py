@@ -1385,7 +1385,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
 
 
 def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
-                          separate_ext=True):
+                          separate_ext=True, ignore_mask=False):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1394,15 +1394,17 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
 
     Parameters
     ----------
-    ad: AstroData
-    sampling: int
+    ad : AstroData
+    sampling : int
         1-in-n sampling factor
-    value_only: bool
+    value_only : bool
         if True, return only background values, not the standard deviations
-    gaussfit: bool
+    gaussfit : bool
         if True, fit a Gaussian to the pixel values, instead of sigma-clipping?
-    separate_ext: bool
+    separate_ext : bool
         return information for each extension, rather than the whole AD?
+    ignore_mask : bool
+        if True, ignore the mask and OBJMASK
 
     Returns
     -------
@@ -1420,19 +1422,22 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
 
     output_list = []
     for ext in input_list:
+        flags = None
         # Use DQ and OBJMASK to flag pixels
         if not single and not separate_ext:
             bg_data = np.array([ext.data for ext in ad]).ravel()
-            flags = np.array([ext.mask | getattr(ext, 'OBJMASK', 0)
-                              if ext.mask is not None
-                else getattr(ext, 'OBJMASK', np.empty_like(ext.data, dtype=bool))
-                              for ext in ad]).ravel()
+            if not ignore_mask:
+                flags = np.array([ext.mask | getattr(ext, 'OBJMASK', 0)
+                                  if ext.mask is not None
+                    else getattr(ext, 'OBJMASK', np.empty_like(ext.data, dtype=bool))
+                                  for ext in ad]).ravel()
         else:
-            flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
-                else getattr(ext, 'OBJMASK', None)
+            if not ignore_mask:
+                flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
+                    else getattr(ext, 'OBJMASK', None)
             bg_data = ext.data.ravel()
 
-        if flags is None or np.sum(flags==0) == 0:
+        if flags is None:
             bg_data = bg_data[::sampling]
         else:
             bg_data = bg_data[flags.ravel()==0][::sampling]
