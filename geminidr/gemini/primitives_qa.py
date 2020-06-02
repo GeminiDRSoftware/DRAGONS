@@ -71,8 +71,8 @@ class QA(PrimitivesBASE):
             bias_level = None
             # First check if the bias level has already been subtracted
             if remove_bias:
-                if not (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
-                any(v is not None for v in ad.hdr.get('OVERSCAN'))):
+                if not {'BIASIM', 'DARKIM',
+                   self.timestamp_keys['subtractOverscan']}.intersection(ad.phu):
                     try:
                         bias_level = get_bias_level(adinput=ad,
                                                         estimate=False)
