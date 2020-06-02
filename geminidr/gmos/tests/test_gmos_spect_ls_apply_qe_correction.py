@@ -672,10 +672,9 @@ class WSolution:
     """
 
     def __init__(self, ad):
-        self.model = modeling.models.Linear1D(
-            slope=ad[0].hdr['CDELT1'],
-            intercept=ad[0].hdr['CRVAL1'] - 1 * ad[0].hdr['CDELT1'])
-        self.units = ad[0].hdr['CUNIT1']
+        # Assumes 1D input
+        self.model = ad[0].wcs.forward_transform
+        self.units = ad[0].wcs.output_frame.unit[0]
         self.mask = None
 
     def __call__(self, x):
