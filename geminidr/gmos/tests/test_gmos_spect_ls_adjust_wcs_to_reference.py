@@ -34,4 +34,4 @@ def test_adjust_wcs(files, path_to_inputs):
                  for ad in adinputs]
     c0 = skycoords[0]
     for c in skycoords[1:]:
-        assert c0.separation(c).arcseconds < 0.05
+        assert c0.separation(c).arcsecond < 0.05
