@@ -493,6 +493,47 @@ class Image(Preprocess, Register, Resample):
         scaling = (npix * sum_cross - sum_sci * sum_fringe) / (npix * sum_fringesq - sum_fringe**2)
         return scaling
 
+    def flagCosmicRays(self, adinputs=None, **params):
+        """
+        This primitive flags cosmic rays using Astro-SCRAPPY.
+        """
+        from astroscrappy import detect_cosmics
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            for ext in ad:
+                mask = ext.mask > 0 if ext.mask is not None else None
+                crmask, _ = detect_cosmics(ext.data,
+                                           inmask=mask,
+                                           sigclip=4.5,
+                                           sigfrac=0.3,
+                                           objlim=5.0,
+                                           gain=1.0,
+                                           readnoise=6.5,
+                                           satlevel=65536.0,
+                                           pssl=0.0,
+                                           niter=4,
+                                           sepmed=True,
+                                           cleantype='meanmask',
+                                           fsmode='median',
+                                           psfmodel='gauss',
+                                           psffwhm=2.5,
+                                           psfsize=7,
+                                           psfk=None,
+                                           psfbeta=4.765,
+                                           verbose=False)
+
+                if ext.mask is None:
+                    ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
+                else:
+                    ext.mask[crmask] = DQ.cosmic_ray
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
     def flagCosmicRaysByStacking(self, adinputs=None, **params):
         """
         This primitive flags sky pixels that deviate from the median image of

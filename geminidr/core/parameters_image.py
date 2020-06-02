@@ -35,3 +35,7 @@ class flagCosmicRaysByStackingConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_CRMasked", optional=True)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 7., min=0)
     dilation = config.RangeField("CR dilation radius (pixels)", float, 1., min=0)
+
+
+class flagCosmicRaysConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_CRMasked", optional=True)
