@@ -40,6 +40,9 @@ from . import parameters_spect
 
 
 # ------------------------------------------------------------------------------
+from ..interactive import server
+
+
 @parameter_override
 class Spect(PrimitivesBASE):
     """
@@ -198,6 +201,7 @@ class Spect(PrimitivesBASE):
         order = params["order"]
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
+        interactive_spline = params["interactive_spline"]
 
         # We're going to look in the generic (gemini) module as well as the
         # instrument module, so define that
@@ -277,9 +281,13 @@ class Spect(PrimitivesBASE):
                 wave = array_from_list(wave)
                 zpt = array_from_list(zpt)
                 zpt_err = array_from_list(zpt_err)
-                spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
-                                                                        w=1./zpt_err.value,
-                                                                        order=order)
+                if interactive_spline:
+                    spline = server.interactive_spline(ext, wave, zpt, zpt_err, order)
+                else:
+                    # we now return you to your regularly scheduled non-interactive spline
+                    spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
+                                                                            w=1./zpt_err.value,
+                                                                            order=order)
                 knots, coeffs, degree = spline.tck
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
                                  names=('knots', 'coefficients'))
