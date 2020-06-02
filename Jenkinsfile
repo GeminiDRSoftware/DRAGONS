@@ -152,7 +152,8 @@ pipeline {
 
         stage('GMOS LS Tests') {
             agent {
-                label "centos7"
+//                 label "centos7"
+                label "master"
             }
             environment {
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
