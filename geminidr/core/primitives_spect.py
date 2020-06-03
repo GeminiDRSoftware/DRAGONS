@@ -814,7 +814,10 @@ class Spect(PrimitivesBASE):
             for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
                 # TODO: remove this; for debugging purposes only
                 if arc is not None:
-                    ad_out[i].WAVECAL = arc[i].WAVECAL
+                    try:
+                        ad_out[i].WAVECAL = arc[i].WAVECAL
+                    except AttributeError:
+                        pass
                 sky_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'SKY')
                 if ext.dispersion_axis() == 1:
                     t = wave_model & sky_model
