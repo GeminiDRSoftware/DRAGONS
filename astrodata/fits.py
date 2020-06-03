@@ -1064,10 +1064,12 @@ class FitsProvider(DataProvider):
                 except (ValueError, NotImplementedError) as e:
                     LOGGER.warning(e)
                 else:
-                    for kw in ('CDELT1', 'CDELT2', 'PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'):
-                        if kw in header:
-                            del header[kw]
-                    header.update(wcs_dict)
+                    # Allow wcs_dict to be empty if we want to ignore the gWCS
+                    if wcs_dict:
+                        for kw in ('CDELT1', 'CDELT2', 'PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'):
+                            if kw in header:
+                                del header[kw]
+                        header.update(wcs_dict)
                     # Use "in" here as the dict entry may be (value, comment)
                     if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
                         wcs = None  # There's no need to create a WCS extension

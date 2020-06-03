@@ -119,6 +119,10 @@ def gwcs_to_fits(ndd, hdr=None):
     if {'lon', 'lat'}.issubset(world_axes):
         if isinstance(wcs.output_frame, cf.CelestialFrame):
             cel_frame = wcs.output_frame
+            # TODO: Delete!
+            # Return an empty dict which should effectively ignore the gWCS
+            # for images, where DRAGONS still updates the FITS WCS
+            return {}
         elif isinstance(wcs.output_frame, cf.CompositeFrame):
             for frame in wcs.output_frame.frames:
                 if isinstance(frame, cf.CelestialFrame):
