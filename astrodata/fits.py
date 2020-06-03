@@ -31,6 +31,7 @@ from astropy.table import Table
 import numpy as np
 
 from gwcs.wcs import WCS as gWCS
+from gwcs import coordinate_frames as cf
 
 INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
@@ -1064,8 +1065,8 @@ class FitsProvider(DataProvider):
                 except (ValueError, NotImplementedError) as e:
                     LOGGER.warning(e)
                 else:
-                    # Allow wcs_dict to be empty if we want to ignore the gWCS
-                    if wcs_dict:
+                    # HACK! Don't update the FITS WCS for an image
+                    if not isinstance(wcs.output_frame, cf.CelestialFrame):
                         for kw in ('CDELT1', 'CDELT2', 'PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'):
                             if kw in header:
                                 del header[kw]

@@ -11,12 +11,13 @@ import urllib.request
 from copy import deepcopy
 from importlib import import_module
 
-from gempy.library import astromodels
+from astrodata import wcs as adwcs
+
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy import numdisplay as nd
-
 from gempy.library import transform
+
 from astropy.modeling import models
 from gwcs.coordinate_frames import Frame2D
 from gwcs.wcs import WCS as gWCS
@@ -312,6 +313,11 @@ class Visualize(PrimitivesBASE):
                                                          order=order, process_objcat=False)
                 else:
                     raise e
+
+            # HACK! Need to update FITS header because imaging primitives edit it
+            if 'IMAGE' in ad_out.tags:
+                wcs_dict = adwcs.gwcs_to_fits(ad_out[0], ad_out.phu)
+                ad_out[0].hdr.update(wcs_dict)
 
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
