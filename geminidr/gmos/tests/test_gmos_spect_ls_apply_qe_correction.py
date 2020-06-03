@@ -36,7 +36,8 @@ datasets = [
     ("N20180109S0287_flatCorrected.fits", "N20180109S0315_arc.fits"),  # GN-2017B-FT-20-13-001 B600 0.505um
     ("N20190302S0089_flatCorrected.fits", "N20190302S0274_arc.fits"),  # GN-2019A-Q-203-7-001 B600 0.550um
     ("N20190313S0114_flatCorrected.fits", "N20190313S0132_arc.fits"),  # GN-2019A-Q-325-13-001 B600 0.482um
-    # ("N20190427S0123_flatCorrected.fits", "N20190427S0266_arc.fits"),  # GN-2019A-FT-206-7-001 R400 0.525um - Todo: freeze
+    # Todo: the following dataset causes p.writeOutputs to hang forever
+    # ("N20190427S0123_flatCorrected.fits", "N20190427S0266_arc.fits"),  # GN-2019A-FT-206-7-001 R400 0.525um
     ("N20190427S0126_flatCorrected.fits", "N20190427S0267_arc.fits"),  # GN-2019A-FT-206-7-004 R400 0.625um
     # ("N20190910S0028_flatCorrected.fits", "N20190910S0279_arc.fits"),  # GN-2019B-Q-313-5-001 B600 0.550um
     ("S20180919S0139_flatCorrected.fits", "S20180919S0141_arc.fits"),  # GS-2018B-Q-209-13-003 B600 0.45um
