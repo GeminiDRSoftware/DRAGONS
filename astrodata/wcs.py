@@ -113,7 +113,7 @@ def gwcs_to_fits(ndd, hdr=None):
     wcs_dict.update({f'CD{i+1}_{j+1}': 0. for j in range(nworld_axes)
                      for i in range(nworld_axes)})
     pix_center = [0.5 * (length - 1) for length in ndd.shape[::-1]]
-    wcs_center = transform(pix_center)
+    wcs_center = transform(*pix_center)
 
     # Find and process the sky projection first
     if {'lon', 'lat'}.issubset(world_axes):
