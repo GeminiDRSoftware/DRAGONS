@@ -473,6 +473,13 @@ class Visualize(PrimitivesBASE):
                 ad_out = transform.resample_from_wcs(ad, "tile", attributes=attributes,
                                                      process_objcat=True)
 
+            # HACK! Need to update FITS header because imaging primitives edit it
+            if 'IMAGE' in ad_out.tags:
+                for ext in ad_out:
+                    if ext.wcs is not None:
+                        wcs_dict = adwcs.gwcs_to_fits(ext, ad_out.phu)
+                        ext.hdr.update(wcs_dict)
+
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.orig_filename = ad.filename
             ad_out.update_filename(suffix=suffix, strip=True)
