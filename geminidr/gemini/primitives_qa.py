@@ -128,6 +128,8 @@ class QA(PrimitivesBASE):
 
                 bg_mag = Measurement(None, None, 0)
                 # We need a nominal photometric zeropoint to do anything useful
+                if bg_count.value is None:
+                    continue
                 if npz is not None:
                     if bg_count.value > 0:
                         # convert background to counts/arcsec^2/second, but
