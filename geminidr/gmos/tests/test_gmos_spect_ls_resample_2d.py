@@ -33,7 +33,7 @@ test_datasets2 = [
 def test_correlation(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = primitives_gmos_spect.GMOSSpect(adinputs)
-    adout = p.adjustSlitOffsetToReference()
+    adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -58,7 +58,7 @@ def test_correlation(adinputs, caplog):
 def test_correlation_and_trim(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = primitives_gmos_spect.GMOSSpect(adinputs)
-    adout = p.adjustSlitOffsetToReference()
+    adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -83,7 +83,7 @@ def test_correlation_and_trim(adinputs, caplog):
 def test_correlation_and_w1_w2(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = primitives_gmos_spect.GMOSSpect(adinputs)
-    adout = p.adjustSlitOffsetToReference()
+    adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -100,7 +100,7 @@ def test_correlation_and_w1_w2(adinputs, caplog):
 def test_correlation_non_linearize(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = primitives_gmos_spect.GMOSSpect(adinputs)
-    adout = p.adjustSlitOffsetToReference()
+    adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -121,7 +121,7 @@ def test_correlation_non_linearize(adinputs, caplog):
 def test_header_offset(adinputs2, caplog):
     """Test that the offset is correctly read from the headers."""
     p = primitives_gmos_spect.GMOSSpect(adinputs2)
-    adout = p.adjustSlitOffsetToReference(method='offsets')
+    adout = p.adjustWCSToReference(method='offsets')
 
     for rec in caplog.records:
         assert not rec.message.startswith('WARNING - Offset from correlation')
@@ -140,7 +140,7 @@ def test_header_offset_fallback(adinputs2, caplog):
     offset works.
     """
     p = primitives_gmos_spect.GMOSSpect(adinputs2)
-    adout = p.adjustSlitOffsetToReference()
+    adout = p.adjustWCSToReference()
 
     assert caplog.records[3].message.startswith(
         'WARNING - Offset from correlation (0) is too big compared to the '

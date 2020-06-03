@@ -1981,7 +1981,7 @@ class Spect(PrimitivesBASE):
                     raise ValueError('inputs must have only 1 extension')
                 if adjust_key not in ad.phu:
                     log.warning(
-                        "{} has not offset, adjustSlitOffsetToReference "
+                        "{} has not offset, adjustWCSToReference "
                         "should be run first".format(ad.filename))
             # Store these values for later!
             refad = adinputs[0]
