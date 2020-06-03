@@ -378,7 +378,7 @@ class QA(PrimitivesBASE):
             # Only if we've managed to measure at least one zeropoint
             if any(zp.value for zp in all_zp):
                 avg_cloud = _stats(all_cloud, weights='variance')
-                qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=True)
+                qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=False)
 
                 comments = _cc_report(ad, all_zp, avg_cloud, qastatus)
 
@@ -803,7 +803,7 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
             bands = (100,)+bands if bands[0]>bands[1] else bands+(100,)
             # To Bayesian this, prepend (0,) to limits and not to probs
             # and renormalize (divide all by 1-probs[0]) and add prior
-            norm_limits = [(l - float(quant.value/quant.std)) for l in limits]
+            norm_limits = [(l - float(quant.value))/quant.std for l in limits]
             cum_probs = [0] + [0.5*(1+math.erf(s/math.sqrt(2))) for
                            s in norm_limits] + [1]
             probs = np.diff(cum_probs)
@@ -927,6 +927,8 @@ def _cc_report(ad, zpt, cloud, qastatus):
     if qastatus and not single_ext:
         if isinstance(qastatus.band, int):
             bands = [qastatus.band]
+        else:
+            bands = qastatus.band
         body.append(('CC bands consistent with this:', ', '.join(['CC{}'.
                format(x if x < 100 else 'Any') for x in bands])))
         if qastatus.req:
