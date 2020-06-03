@@ -315,7 +315,7 @@ class Visualize(PrimitivesBASE):
                     raise e
 
             # HACK! Need to update FITS header because imaging primitives edit it
-            if 'IMAGE' in ad_out.tags:
+            if 'IMAGE' in ad_out.tags and ad_out[0].wcs is not None:
                 wcs_dict = adwcs.gwcs_to_fits(ad_out[0], ad_out.phu)
                 ad_out[0].hdr.update(wcs_dict)
 
