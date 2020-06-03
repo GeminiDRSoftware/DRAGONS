@@ -378,7 +378,7 @@ class QA(PrimitivesBASE):
             # Only if we've managed to measure at least one zeropoint
             if any(zp.value for zp in all_zp):
                 avg_cloud = _stats(all_cloud, weights='variance')
-                qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=False)
+                qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=True)
 
                 comments = _cc_report(ad, all_zp, avg_cloud, qastatus)
 
@@ -925,8 +925,10 @@ def _cc_report(ad, zpt, cloud, qastatus):
                  '{:.2f} +/- {:.2f} mag'.format(cloud.value, cloud.std)))
 
     if qastatus and not single_ext:
+        if isinstance(qastatus.band, int):
+            bands = [qastatus.band]
         body.append(('CC bands consistent with this:', ', '.join(['CC{}'.
-               format(x if x < 100 else 'Any') for x in qastatus.band])))
+               format(x if x < 100 else 'Any') for x in bands])))
         if qastatus.req:
             body.append(('Requested CC:', 'CC{}'.format('Any' if
                                     qastatus.req==100 else qastatus.req)))
