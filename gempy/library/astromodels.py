@@ -245,7 +245,7 @@ class UnivariateSplineWithOutlierRemoval:
         a callable to return the value of the interpolated spline
     """
     def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
-                ext=0, check_finite=False, outlier_func=sigma_clip,
+                ext=0, check_finite=True, outlier_func=sigma_clip,
                 niter=3, grow=0, debug=False, **outlier_kwargs):
 
         # Decide what sort of spline object we're making
