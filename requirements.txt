@@ -12,4 +12,4 @@ pytest
 scipy
 specutils
 sqlalchemy
--e git+https://github.com/spacetelescope/gwcs.git
+git+https://github.com/spacetelescope/gwcs.git
