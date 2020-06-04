@@ -5,8 +5,12 @@ import astrodata, gemini_instruments
 
 from geminidr.gmos import primitives_gmos_longslit
 
-datasets = [['N20200308S{:04d}_aperturesTraced.fits'.format(i)
-             for i in range(47, 51)]]
+datasets = [
+    ['N20200308S0047_aperturesTraced.fits',
+     'N20200308S0048_aperturesTraced.fits',
+     'N20200308S0049_aperturesTraced.fits',
+     'N20200308S0050_aperturesTraced.fits'],
+]
 
 
 # -- Tests --------------------------------------------------------------------
