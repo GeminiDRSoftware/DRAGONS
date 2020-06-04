@@ -159,6 +159,7 @@ associated_calibrations = {
 
 
 # -- Tests --------------------------------------------------------------------
+# @pytest.mark.xfail(reason="NaN in input data causes test to hang forever", run=False)
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
@@ -178,6 +179,10 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
         p.extract1DSpectra()
         p.linearizeSpectra()
         processed_ad = p.writeOutputs().pop()
+
+    for ext in processed_ad:
+        assert not np.any(np.isnan(ext.data))
+        assert not np.any(np.isinf(ext.data))
 
     basename = processed_ad.filename.replace('_linearized', '')
     kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
