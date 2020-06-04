@@ -29,8 +29,8 @@ class calculateSensitivityConfig(config.Config):
                                  float, 5., min=0.1, max=10.)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
     interactive_spline = config.Field("Interactive spline selection?", bool, False)
-    niter = config.Field("Order of spline fit", int, 3, min=1)
-    grow = config.Field("Order of spline fit", int, 0, min=0)
+    niter = config.RangeField("Maximum number of clipping iterations to perform of spline fit", int, 3, min=1)
+    grow = config.RangeField("Radius to reject pixels adjacent to masked pixels of spline fit", int, 0, min=0)
 
 
 class determineDistortionConfig(config.Config):

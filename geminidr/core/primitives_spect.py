@@ -26,6 +26,7 @@ from scipy.interpolate import BSpline
 from specutils import SpectralRegion
 
 import astrodata
+import geminidr.interactive.spline
 from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
@@ -202,6 +203,8 @@ class Spect(PrimitivesBASE):
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
         interactive_spline = params["interactive_spline"]
+        niter = params["niter"]
+        grow = params["grow"]
 
         # We're going to look in the generic (gemini) module as well as the
         # instrument module, so define that
@@ -282,12 +285,17 @@ class Spect(PrimitivesBASE):
                 zpt = array_from_list(zpt)
                 zpt_err = array_from_list(zpt_err)
                 if interactive_spline:
-                    spline = server.interactive_spline(ext, wave, zpt, zpt_err, order)
+                    # param_order = self.params["calculateSensitivity"]["order"]
+                    spline = geminidr.interactive.spline.interactive_spline(ext, wave, zpt, zpt_err, order=order,
+                                                                            niter=niter, grow=grow,
+                                                                            fields=self.params["calculateSensitivity"].iterfields())
                 else:
                     # we now return you to your regularly scheduled non-interactive spline
                     spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
                                                                             w=1./zpt_err.value,
-                                                                            order=order)
+                                                                            order=order,
+                                                                            niter=niter,
+                                                                            grow=grow)
                 knots, coeffs, degree = spline.tck
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
                                  names=('knots', 'coefficients'))
