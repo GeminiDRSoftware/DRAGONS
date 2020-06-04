@@ -54,14 +54,23 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         server.bokeh_server.io_loop.stop()
 
     def order_slider_handler(self, attr, old, new):
+        """
+        Handle a change in the order slider
+        """
         self._params["order"] = new
         self.recalc_spline()
 
     def niter_slider_handler(self, attr, old, new):
+        """
+        Handle a change in the iterations slider
+        """
         self._params["niter"] = new
         self.recalc_spline()
 
     def grow_slider_handler(self, attr, old, new):
+        """
+        Handle a change in the grow slider
+        """
         self._params["grow"] = new
         self.recalc_spline()
 
