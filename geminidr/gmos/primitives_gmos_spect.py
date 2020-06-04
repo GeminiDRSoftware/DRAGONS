@@ -294,10 +294,9 @@ class GMOSSpect(Spect, GMOS):
                              format(ext.hdr['EXTVER'], qe_correction.mean()))
                 if not is_flat:
                     qe_correction = 1. / qe_correction
-                #qe_correction[qe_correction < 0] = 0
-                #qe_correction[qe_correction > 10] = 0
-                #ext.multiply(qe_correction)
-                ext.data = qe_correction
+                qe_correction[qe_correction < 0] = 0
+                qe_correction[qe_correction > 10] = 0
+                ext.multiply(qe_correction)
 
             for ext, orig_wcs in zip(ad, original_wcs):
                 ext.wcs = orig_wcs
