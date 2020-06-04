@@ -159,7 +159,7 @@ associated_calibrations = {
 
 
 # -- Tests --------------------------------------------------------------------
-# @pytest.mark.xfail(reason="NaN in input data causes test to hang forever", run=False)
+@pytest.mark.xfail(reason="Test needs to be fixed. Masking full data causes it to hang forever", run=False)
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
