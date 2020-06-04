@@ -501,36 +501,19 @@ class Image(Preprocess, Register, Resample):
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        suffix = params.pop('suffix')
 
         for ad in adinputs:
             for ext in ad:
                 mask = ext.mask > 0 if ext.mask is not None else None
-                crmask, _ = detect_cosmics(ext.data,
-                                           inmask=mask,
-                                           sigclip=4.5,
-                                           sigfrac=0.3,
-                                           objlim=5.0,
-                                           gain=1.0,
-                                           readnoise=6.5,
-                                           satlevel=65536.0,
-                                           pssl=0.0,
-                                           niter=4,
-                                           sepmed=True,
-                                           cleantype='meanmask',
-                                           fsmode='median',
-                                           psfmodel='gauss',
-                                           psffwhm=2.5,
-                                           psfsize=7,
-                                           psfk=None,
-                                           psfbeta=4.765,
-                                           verbose=False)
+                crmask, _ = detect_cosmics(ext.data, inmask=mask, **params)
 
                 if ext.mask is None:
                     ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
                 else:
                     ext.mask[crmask] = DQ.cosmic_ray
 
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
