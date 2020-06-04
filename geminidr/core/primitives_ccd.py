@@ -11,6 +11,7 @@ from astropy.modeling import models, fitting
 from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline
 
 from astrodata.provenance import add_provenance
+from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
@@ -264,6 +265,12 @@ class CCD(PrimitivesBASE):
 
             ad = gt.trim_to_data_section(ad,
                                     keyword_comments=self.keyword_comments)
+            # HACK! Need to update FITS header because imaging primitives edit it
+            if 'IMAGE' in ad.tags:
+                for ext in ad:
+                    if ext.wcs is not None:
+                        wcs_dict = adwcs.gwcs_to_fits(ext, ad.phu)
+                        ext.hdr.update(wcs_dict)
 
             # Set keyword, timestamp, and update filename
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])
