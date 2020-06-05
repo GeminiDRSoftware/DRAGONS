@@ -8,7 +8,7 @@ import pytest
 
 import astrodata
 import gemini_instruments
-from geminidr.gmos import primitives_gmos_spect
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from gempy.utils import logutils
 
 # Test parameters -------------------------------------------------------------
@@ -31,7 +31,7 @@ test_datasets2 = [
 @pytest.mark.preprocessed_data
 def test_correlation(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
-    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p = GMOSLongslit(adinputs)
     adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
@@ -56,7 +56,7 @@ def test_correlation(adinputs, caplog):
 @pytest.mark.preprocessed_data
 def test_correlation_and_trim(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
-    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p = GMOSLongslit(adinputs)
     adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
@@ -81,7 +81,7 @@ def test_correlation_and_trim(adinputs, caplog):
 @pytest.mark.preprocessed_data
 def test_correlation_and_w1_w2(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
-    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p = GMOSLongslit(adinputs)
     adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
@@ -98,7 +98,7 @@ def test_correlation_and_w1_w2(adinputs, caplog):
 @pytest.mark.preprocessed_data
 def test_correlation_non_linearize(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
-    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p = GMOSLongslit(adinputs)
     adout = p.adjustWCSToReference()
 
     assert adout[1].phu['SLITOFF'] == -10
@@ -119,7 +119,7 @@ def test_correlation_non_linearize(adinputs, caplog):
 @pytest.mark.preprocessed_data
 def test_header_offset(adinputs2, caplog):
     """Test that the offset is correctly read from the headers."""
-    p = primitives_gmos_spect.GMOSSpect(adinputs2)
+    p = GMOSLongslit(adinputs2)
     adout = p.adjustWCSToReference(method='offsets')
 
     for rec in caplog.records:
@@ -138,7 +138,7 @@ def test_header_offset_fallback(adinputs2, caplog):
     different from the header one. So we check that the fallback to the header
     offset works.
     """
-    p = primitives_gmos_spect.GMOSSpect(adinputs2)
+    p = GMOSLongslit(adinputs2)
     adout = p.adjustWCSToReference()
 
     assert caplog.records[3].message.startswith(
@@ -235,7 +235,7 @@ def create_inputs_recipe():
         if os.path.exists(arc_fname.replace('.fits', '_distortionDetermined.fits')):
             arc = astrodata.open(arc_fname.replace('.fits', '_distortionDetermined.fits'))
         else:
-            p = primitives_gmos_spect.GMOSSpect([astrodata.open(arc_path)])
+            p = GMOSLongslit([astrodata.open(arc_path)])
             p.prepare()
             p.addDQ(static_bpm=None)
             p.addVAR(read_noise=True)
@@ -250,7 +250,7 @@ def create_inputs_recipe():
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = GMOSLongslit([sci_ad])
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
