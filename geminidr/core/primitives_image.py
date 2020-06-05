@@ -496,6 +496,67 @@ class Image(Preprocess, Register, Resample):
     def flagCosmicRays(self, adinputs=None, **params):
         """
         This primitive flags cosmic rays using Astro-SCRAPPY.
+
+        Parameters
+        ----------
+        suffix: str
+            Suffix to be added to output files.
+        sigclip : float, optional
+            Laplacian-to-noise limit for cosmic ray detection. Lower values
+            will flag more pixels as cosmic rays. Default: 4.5.
+        sigfrac : float, optional
+            Fractional detection limit for neighboring pixels. For cosmic ray
+            neighbor pixels, a lapacian-to-noise detection limit of
+            sigfrac * sigclip will be used. Default: 0.3.
+        objlim : float, optional
+            Minimum contrast between Laplacian image and the fine structure
+            image.  Increase this value if cores of bright stars are flagged
+            as cosmic rays. Default: 5.0.
+        pssl : float, optional
+            Previously subtracted sky level in ADU. We always need to work in
+            electrons for cosmic ray detection, so we need to know the sky
+            level that has been subtracted so we can add it back in.
+            Default: 0.0.
+        niter : int, optional
+            Number of iterations of the LA Cosmic algorithm to perform.
+            Default: 4.
+        sepmed : boolean, optional
+            Use the separable median filter instead of the full median filter.
+            The separable median is not identical to the full median filter,
+            but they are approximately the same and the separable median filter
+            is significantly faster and still detects cosmic rays well.
+            Default: True
+        cleantype : {'median', 'medmask', 'meanmask', 'idw'}, optional
+            Set which clean algorithm is used:
+            'median': An umasked 5x5 median filter
+            'medmask': A masked 5x5 median filter
+            'meanmask': A masked 5x5 mean filter
+            'idw': A masked 5x5 inverse distance weighted interpolation
+            Default: "meanmask".
+        fsmode : {'median', 'convolve'}, optional
+            Method to build the fine structure image:
+            'median': Use the median filter in the standard LA Cosmic algorithm
+            'convolve': Convolve the image with the psf kernel to calculate the
+            fine structure image.
+            Default: 'median'.
+        psfmodel : {'gauss', 'gaussx', 'gaussy', 'moffat'}, optional
+            Model to use to generate the psf kernel if fsmode == 'convolve' and
+            psfk is None. The current choices are Gaussian and Moffat profiles.
+            'gauss' and 'moffat' produce circular PSF kernels. The 'gaussx' and
+            'gaussy' produce Gaussian kernels in the x and y directions
+            respectively. Default: "gauss".
+        psffwhm : float, optional
+            Full Width Half Maximum of the PSF to use to generate the kernel.
+            Default: 2.5.
+        psfsize : int, optional
+            Size of the kernel to calculate. Returned kernel will have size
+            psfsize x psfsize. psfsize should be odd. Default: 7.
+        psfbeta : float, optional
+            Moffat beta parameter. Only used if fsmode=='convolve' and
+            psfmodel=='moffat'. Default: 4.765.
+        verbose : boolean, optional
+            Print to the screen or not. Default: False.
+
         """
         from astroscrappy import detect_cosmics
 
