@@ -8,7 +8,6 @@ import pytest
 
 import astrodata
 import gemini_instruments
-from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 
@@ -178,6 +177,12 @@ def adinputs(path_to_inputs):
 def adinputs2(path_to_inputs):
     return [astrodata.open(os.path.join(path_to_inputs, f))
             for f in test_datasets2]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_log(change_working_dir):
+    with change_working_dir():
+        logutils.config(file_name='test_gmos_spect_ls_resample_2d.log')
 
 
 # -- Recipe to create pre-processed data ---------------------------------------
