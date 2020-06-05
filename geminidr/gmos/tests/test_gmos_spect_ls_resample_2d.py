@@ -163,7 +163,7 @@ def add_fake_offset(adinputs, offset=10):
     for i, ad in enumerate(adinputs[1:], start=1):
         ad[0].data = np.roll(ad[0].data, offset * i, axis=0)
         ad[0].mask = np.roll(ad[0].mask, offset * i, axis=0)
-        ad[0].mask = np.roll(ad[0].variance, offset * i, axis=0)
+        ad[0].variance = np.roll(ad[0].variance, offset * i, axis=0)
         ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
 
 
