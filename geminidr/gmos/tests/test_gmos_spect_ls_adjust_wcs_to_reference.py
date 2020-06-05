@@ -39,3 +39,6 @@ def test_adjust_wcs(files, path_to_inputs):
     c0 = skycoords[0]
     for c in skycoords[1:]:
         assert c0.separation(c).arcsecond < 0.05
+
+
+# Todo: Implement recipe to create input files
