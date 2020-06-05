@@ -29,12 +29,14 @@ def add_fake_image(ext):
     cr_brightnesses = np.random.uniform(low=1000.0, high=30000.0, size=100)
     ext.data[cr_y, cr_x] += cr_brightnesses
 
+    ext /= ext.gain()
+
     # Make a mask where the detected cosmic rays should be
     ext.CRMASK = np.zeros(ext.shape, dtype=np.uint8)
     ext.CRMASK[cr_y, cr_x] = 1
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def adinputs():
     astrofaker = pytest.importorskip('astrofaker')
     np.random.seed(200)
@@ -49,7 +51,5 @@ def adinputs():
 def test_flag_cosmics(adinputs):
     p = NIRIImage(adinputs)
     adout = p.flagCosmicRays()[0]
-    # adout.write('foo.fits', overwrite=True)
     assert_array_equal(adout[0].mask == DQ.cosmic_ray,
                        adout[0].CRMASK.astype(bool))
-    # np.where((ad[0].mask > 0) != ad[0].CRMASK)

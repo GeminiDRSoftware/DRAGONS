@@ -83,28 +83,28 @@ class flagCosmicRaysConfig(config.Config):
         optional=True,
         default=0.0,
     )
-    gain = config.Field(
-        doc="Gain of the image (electrons / ADU). We always need to work in "
-        "electrons for cosmic ray detection.",
-        dtype=float,
-        optional=True,
-        default=1.0,
-    )
-    readnoise = config.Field(
-        doc="Read noise of the image (electrons). Used to generate the noise "
-        "model of the image.",
-        dtype=float,
-        optional=True,
-        default=6.5,
-    )
-    satlevel = config.Field(
-        doc="Saturation of level of the image (electrons). This value is "
-        "used to detect saturated stars and pixels at or above this level "
-        "are added to the mask.",
-        dtype=float,
-        optional=True,
-        default=65536.0,
-    )
+    # gain = config.Field(
+    #     doc="Gain of the image (electrons / ADU). We always need to work in "
+    #     "electrons for cosmic ray detection.",
+    #     dtype=float,
+    #     optional=True,
+    #     default=1.0,
+    # )
+    # readnoise = config.Field(
+    #     doc="Read noise of the image (electrons). Used to generate the noise "
+    #     "model of the image.",
+    #     dtype=float,
+    #     optional=True,
+    #     default=6.5,
+    # )
+    # satlevel = config.Field(
+    #     doc="Saturation of level of the image (electrons). This value is "
+    #     "used to detect saturated stars and pixels at or above this level "
+    #     "are added to the mask.",
+    #     dtype=float,
+    #     optional=True,
+    #     default=65536.0,
+    # )
     niter = config.Field(
         doc="Number of iterations of the LA Cosmic algorithm to perform",
         dtype=int,
@@ -132,7 +132,6 @@ class flagCosmicRaysConfig(config.Config):
         optional=True,
         default="meanmask",
     )
-
     fsmode = config.ChoiceField(
         doc="Method to build the fine structure image.",
         allowed={

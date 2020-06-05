@@ -505,8 +505,16 @@ class Image(Preprocess, Register, Resample):
 
         for ad in adinputs:
             for ext in ad:
+                kwargs = {
+                    'gain': ext.gain(),
+                    'readnoise': ext.read_noise(),
+                }
+                if ext.saturation_level():
+                    kwargs['satlevel'] = ext.saturation_level()
+
                 mask = ext.mask > 0 if ext.mask is not None else None
-                crmask, _ = detect_cosmics(ext.data, inmask=mask, **params)
+                crmask, _ = detect_cosmics(ext.data, inmask=mask,
+                                           **params, **kwargs)
 
                 if ext.mask is None:
                     ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
