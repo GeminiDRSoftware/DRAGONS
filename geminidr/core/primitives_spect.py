@@ -2138,6 +2138,7 @@ class Spect(PrimitivesBASE):
                 for attr in attributes + ['wcs']:
                     setattr(ext, attr, getattr(new_ext, attr))
                 try:
+                    slit_offset = slit_offset.offset.value
                     ext.APERTURE['c0'] += slit_offset
                     log.fullinfo("Shifting aperture locations by {:.2f} "
                                  "pixels".format(slit_offset))
