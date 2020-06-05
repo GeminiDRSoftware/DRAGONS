@@ -113,6 +113,10 @@ class Spect(PrimitivesBASE):
                             refad.target_ra(), refad.target_dec())
             ref_coords = refad[0].wcs.backward_transform(*world_coords)
 
+        # The reference doesn't go through the loop so update it now
+        gt.mark_history(adinputs[0], primname=self.myself(), keyword=timestamp_key)
+        adinputs[0].update_filename(suffix=params["suffix"], strip=True)
+
         for ad in adinputs[1:]:
             for method in methods:
                 adjust = True  # optimistic expectation
