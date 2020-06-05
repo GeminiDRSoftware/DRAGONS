@@ -2137,13 +2137,14 @@ class Spect(PrimitivesBASE):
                                                       origin=origin, output_shape=output_shape)[0]
                 for attr in attributes + ['wcs']:
                     setattr(ext, attr, getattr(new_ext, attr))
-                try:
-                    slit_offset = slit_offset.offset.value
-                    ext.APERTURE['c0'] += slit_offset
-                    log.fullinfo("Shifting aperture locations by {:.2f} "
-                                 "pixels".format(slit_offset))
-                except (AttributeError, UnboundLocalError):
-                    pass
+                if ndim == 2:
+                    try:
+                        offset = slit_offset.offset.value
+                        ext.APERTURE['c0'] += offset
+                        log.fullinfo("Shifting aperture locations by {:.2f} "
+                                     "pixels".format(offset))
+                    except AttributeError:
+                        pass
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
