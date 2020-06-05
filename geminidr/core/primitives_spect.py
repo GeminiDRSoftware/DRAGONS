@@ -2142,7 +2142,7 @@ class Spect(PrimitivesBASE):
                     ext.APERTURE['c0'] += slit_offset
                     log.fullinfo("Shifting aperture locations by {:.2f} "
                                  "pixels".format(slit_offset))
-                except AttributeError:
+                except (AttributeError, UnboundLocalError):
                     pass
 
             # Timestamp and update the filename
