@@ -2038,6 +2038,14 @@ class Spect(PrimitivesBASE):
                         w2out = max(w2out, model_info['w2'])
             info.append(adinfo)
 
+        if trim_data:
+            if w1 is None:
+                w1out = info[0][0]['w1']
+            if w2 is None:
+                w2out = info[0][0]['w2']
+            if w1 is None or w2 is None:
+                log.fullinfo("Trimming data to size of reference spectra")
+
         # linearize spectra only if the grid parameters are specified
         linearize = force_linear or npix is not None or dw is not None
         if linearize:
@@ -2050,9 +2058,6 @@ class Spect(PrimitivesBASE):
             elif dwout is None:
                 dwout = (w2out - w1out) / (npixout - 1)
 
-        if trim_data:
-            log.fullinfo("Trimming data to size of reference spectra")
-
         if linearize:
             new_wave_model = models.Scale(dwout) | models.Shift(w1out)
         else:
@@ -2063,15 +2068,15 @@ class Spect(PrimitivesBASE):
             wave_model_ref = info[0][0]['wave_model']
             limits = wave_model_ref.inverse([w1out, w2out])
             if info[0][0]['w1'] == w1out:
-                pixel_shift = 0
-            else:
-                pixel_shift = int(np.ceil(limits.min()))
+                limits[0] = round(limits[0])
+            if info[0][0]['w2'] == w2out:
+                limits[1] = round(limits[1])
+            pixel_shift = int(np.ceil(limits.min()))
             new_wave_model = models.Shift(pixel_shift) | wave_model_ref
             if info[0][0]['w2'] == w2out:
                 npixout = info[0][0]['npix']
             else:
-                npixout = int(np.floor(new_wave_model.inverse([w1out, w2out]).max())
-                              + 1 - pixel_shift)
+               npixout = int(np.floor(new_wave_model.inverse([w1out, w2out]).max()) + 1)
             dwout = (w2out - w1out) / (npixout - 1)
 
         new_wave_model.name = 'WAVE'
@@ -2085,6 +2090,8 @@ class Spect(PrimitivesBASE):
                 wave_model = info[i][iext]['wave_model']
                 extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 wave_resample = wave_model | new_wave_model.inverse
+                # TODO: This shouldn't really be needed, but it is
+                wave_resample.inverse = new_wave_model | wave_model.inverse
 
                 # Avoid performing a Cheb and its imperfect inverse
                 if not linearize and new_wave_model[1:] == wave_model:
@@ -2103,7 +2110,7 @@ class Spect(PrimitivesBASE):
                         resampling_model = wave_resample & slit_offset
 
                 if i == 0 and not linearize:
-                    log.fullinfo("{}: No interpolation")
+                    log.fullinfo(f"{ad.filename}: No interpolation")
                 msg = "Resampling"
                 if linearize:
                     msg += " and linearizing"

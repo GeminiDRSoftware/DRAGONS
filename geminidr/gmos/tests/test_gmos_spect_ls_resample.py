@@ -66,20 +66,20 @@ def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
     ads = p.resampleToCommonFrame(dw=0.15, trim_data=True)
 
     assert len(ads) == len(test_datasets)
-    assert {ad[0].shape[0] for ad in ads} == {2429}
-    _check_params(caplog.records, 'w1=614.666 w2=978.802 dw=0.150 npix=2429')
+    assert len({ad[0].shape[0] for ad in ads}) == 1
+    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
 
     adout = p.stackFrames()
     assert len(adout) == 1
     assert len(adout[0]) == 1
-    assert adout[0][0].shape[0] == 2429
+    assert adout[0][0].shape[0] == 3139
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame(force_linear=False)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.151 npix=3841')
 
     caplog.clear()
@@ -92,13 +92,14 @@ def test_resample_only(input_ad_list, caplog):
 @pytest.mark.preprocessed_data
 def test_resample_only_and_trim(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
-    p.resampleToCommonFrame(trim_data=True)
-    _check_params(caplog.records, 'w1=614.666 w2=978.802 dw=0.151 npix=2407')
+    # Shouldn't change the first adinput
+    p.resampleToCommonFrame(trim_data=True, force_linear=False)
+    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3133')
 
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=614.574 w2=978.648 dw=0.150 npix=2429')
+    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
 
 
 # Local Fixtures and Helper Functions -----------------------------------------
