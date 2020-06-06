@@ -105,7 +105,7 @@ def test_correlation_non_linearize(adinputs, caplog):
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
 
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame(force_linear=False)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.151 npix=3841')
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
