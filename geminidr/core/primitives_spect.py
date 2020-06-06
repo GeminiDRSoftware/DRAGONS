@@ -2069,7 +2069,8 @@ class Spect(PrimitivesBASE):
             # spectrum grid. Due to imperfections in the Chebyshev inverse
             # we check whether the wavelength limits are the same as the
             # reference spectrum.
-            wave_model_ref = info[0][0]['wave_model']
+            wave_model_ref = info[0][0]['wave_model'].copy()
+            wave_model_ref.name = None
             limits = wave_model_ref.inverse([w1out, w2out])
             if info[0][0]['w1'] == w1out:
                 limits[0] = round(limits[0])
