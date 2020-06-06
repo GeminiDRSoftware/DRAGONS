@@ -142,14 +142,13 @@ def test_header_offset_fallback(adinputs2, caplog):
     p = GMOSLongslit(adinputs2)
     adout = p.adjustWCSToReference()
 
-    assert caplog.records[3].message.startswith(
-        'WARNING - Offset from correlation (0) is too big compared to the '
-        'header offset (-92.93680297397756). Using this one instead')
+    # WARNING when offset is too large
+    assert caplog.records[3].message.startswith('WARNING - Offset for')
 
     assert np.isclose(adout[0].phu['SLITOFF'], 0)
     assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
     assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[3].phu['SLITOFF'], 0)
+    assert np.isclose(adout[3].phu['SLITOFF'], 0, atol=0.2, rtol=0)
 
 
 # Local Fixtures and Helper Functions -----------------------------------------
