@@ -64,18 +64,18 @@ def test_correlation_and_trim(adinputs, caplog):
     assert adout[2].phu['SLITOFF'] == -20
 
     p.resampleToCommonFrame(dw=0.15, trim_data=True)
-    _check_params(caplog.records, 'w1=614.666 w2=978.802 dw=0.150 npix=2429')
+    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
 
     ad = p.stackFrames()[0]
-    assert ad[0].shape == (512, 2429)
+    assert ad[0].shape == (512, 3139)
 
     caplog.clear()
     ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    assert caplog.records[3].message == 'Found sources at rows: 260.8'
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.1)
 
     ad = p.extract1DSpectra()[0]
-    assert ad[0].shape == (2429,)
+    assert ad[0].shape == (3139,)
 
 
 @pytest.mark.gmosls
