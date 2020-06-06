@@ -2090,6 +2090,7 @@ class Spect(PrimitivesBASE):
         else:
             new_wcs_model = refad[0].wcs.forward_transform.replace_submodel('WAVE', new_wave_model)
 
+        adoutputs = []
         for i, ad in enumerate(adinputs):
             for iext, ext in enumerate(ad):
                 wave_model = info[i][iext]['wave_model']
@@ -2139,9 +2140,11 @@ class Spect(PrimitivesBASE):
                 output_shape[dispaxis] = npixout
                 new_ext = transform.resample_from_wcs(ext, 'resampled', subsample=subsample,
                                                       attributes=attributes, conserve=conserve,
-                                                      origin=origin, output_shape=output_shape)[0]
-                for attr in attributes + ['wcs']:
-                    setattr(ext, attr, getattr(new_ext, attr))
+                                                      origin=origin, output_shape=output_shape)
+                if iext == 0:
+                    ad_out = new_ext
+                else:
+                    ad_out.append(new_ext[0])
                 if ndim == 2:
                     try:
                         offset = slit_offset.offset.value
@@ -2152,10 +2155,11 @@ class Spect(PrimitivesBASE):
                         pass
 
             # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.update_filename(suffix=suffix, strip=True)
+            adoutputs.append(ad_out)
 
-        return adinputs
+        return adoutputs
 
     def skyCorrectFromSlit(self, adinputs=None, **params):
         """
