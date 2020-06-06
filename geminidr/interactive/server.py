@@ -3,7 +3,8 @@ from abc import ABC, abstractmethod
 # bokeh basics
 
 # bokeh widgets
-from bokeh.models import Slider
+from bokeh.layouts import row
+from bokeh.models import Slider, TextInput
 from bokeh.server.server import Server
 
 # numpy
@@ -124,7 +125,27 @@ class PrimitiveVisualizer(ABC):
         start = min(value, field.min) if field.min else min(value, 0)
         end = max(value, field.max) if field.max else max(10, value*2)
         slider = Slider(start=start, end=end, value=value, step=step, title=title)
-        slider.on_change("value", handler)
-        return slider
+        slider.width = 256
 
+        text_input = TextInput()
+        text_input.width = 64
+        text_input.value = str(value)
+        component = row(slider, text_input)
 
+        def update_slider(attr, old, new):
+            if old != new:
+                ival = int(new)
+                if ival > slider.end and not field.max:
+                    slider.end = ival
+                if 0 <= ival < slider.start and field.min is None:
+                    slider.start = ival
+                if slider.start <= ival <= slider.end:
+                    slider.value = ival
+
+        def update_text_input(attr, old, new):
+            if new != old:
+                text_input.value = str(new)
+
+        slider.on_change("value", update_text_input, handler)
+        text_input.on_change("value", update_slider)
+        return component

@@ -101,7 +101,6 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         button = Button(label="Submit")
         button.on_click(self.button_handler)
         callback = CustomJS(code="""
-            // alert("In custom js...");
             window.close();
         """)
         button.js_on_click(callback)
