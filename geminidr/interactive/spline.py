@@ -1,6 +1,6 @@
 import numpy as np
 from bokeh.layouts import row
-from bokeh.models import Button, Column, ColumnDataSource, CustomJS
+from bokeh.models import Button, Column, ColumnDataSource, CustomJS, Slider, ColorPicker
 from bokeh.plotting import figure
 
 from geminidr.interactive import server
@@ -33,6 +33,7 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         self.p = None
         self.spline = None
         self.scatter = None
+        self.scatter_touch = None
         self.line = None
         self.scatter_source = None
         self.line_source = None
@@ -105,7 +106,6 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         """)
         button.js_on_click(callback)
 
-        controls = Column(order_slider, niter_slider, grow_slider, button)
 
         # Create a blank figure with labels
         self.p = figure(plot_width=600, plot_height=500,
@@ -114,7 +114,53 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.p.scatter(wave, zpt, color="blue", radius=50)
+        self.scatter_touch = self.p.scatter(wave, zpt, color="blue", radius=50)
+
+        # Plotting this empty so we can refer to it in the JS Callbacks.
+        # The data points will be updated against this existing plot
+        self.scatter_source = ColumnDataSource({'x': [], 'y': []})
+        self.scatter = self.p.scatter(x='x', y='y', source=self.scatter_source, color="black", radius=50)
+
+        self.line_source = ColumnDataSource({'x': [], 'y': []})
+        self.line = self.p.line(x='x', y='y', source=self.line_source, color="red")
+
+        radius_slider = Slider(start=1, end=200, value=50, step=1, title="Dot Size")
+        radius_slider.width = 256
+        callback_radius = CustomJS(args=dict(scatter=self.scatter, scatter_touch=self.scatter_touch),
+                                   code="""
+                                   scatter.glyph.radius = cb_obj.value;
+                                   scatter_touch.glyph.radius = cb_obj.value;
+                                   """)
+        radius_slider.js_on_change('value', callback_radius)
+
+        dot_color_picker = ColorPicker(color="blue", title="Dot Color:", width=200)
+        callback_dot_color = CustomJS(args=dict(scatter_touch=self.scatter_touch),
+                                      code="""
+                                       scatter_touch.glyph.line_color = cb_obj.color;
+                                       scatter_touch.glyph.fill_color = cb_obj.color;
+                                      """)
+        dot_color_picker.js_on_change('color', callback_dot_color)
+
+        line_slider = Slider(start=1, end=32, value=1, step=1, title="Line Size")
+        line_slider.width = 256
+        callback_line = CustomJS(args=dict(line=self.line),
+                                 code="""
+                                 line.glyph.line_width = cb_obj.value;
+                                 """)
+        line_slider.js_on_change('value', callback_line)
+
+        line_color_picker = ColorPicker(color="red", title="Line Color:", width=200)
+        callback_line_color = CustomJS(args=dict(line=self.line),
+                                       code="""
+                                       line.glyph.line_color = cb_obj.color;
+                                       line.glyph.fill_color = cb_obj.color;
+                                       """)
+        line_color_picker.js_on_change('color', callback_line_color)
+
+        # controls = Column(order_slider, niter_slider, grow_slider, button, radius_slider,
+        #                   line_slider)
+        controls = Column(order_slider, niter_slider, grow_slider, button, radius_slider, dot_color_picker,
+                          line_slider, line_color_picker)
 
         self.recalc_spline()
 
