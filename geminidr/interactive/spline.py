@@ -106,7 +106,6 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         """)
         button.js_on_click(callback)
 
-
         # Create a blank figure with labels
         self.p = figure(plot_width=600, plot_height=500,
                         title='Interactive Spline',
@@ -157,8 +156,6 @@ class SplineVisualizer(server.PrimitiveVisualizer):
                                        """)
         line_color_picker.js_on_change('color', callback_line_color)
 
-        # controls = Column(order_slider, niter_slider, grow_slider, button, radius_slider,
-        #                   line_slider)
         controls = Column(order_slider, niter_slider, grow_slider, button, radius_slider, dot_color_picker,
                           line_slider, line_color_picker)
 
