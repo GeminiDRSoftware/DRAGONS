@@ -97,6 +97,7 @@ pipeline {
                         label "centos7"
                     }
                     environment {
+                        MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                     }
                     steps {
@@ -128,6 +129,7 @@ pipeline {
                 label "centos7"
             }
             environment {
+                MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
             }
             steps {
@@ -155,6 +157,7 @@ pipeline {
                 label "centos7"
             }
             environment {
+                MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
             }
             steps {

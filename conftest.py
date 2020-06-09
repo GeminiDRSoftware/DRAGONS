@@ -4,10 +4,6 @@ Configuration for tests that will propagate inside DRAGONS.
 """
 
 import pytest
-import matplotlib
-
-# Prevents issues related to the backend
-matplotlib.use("agg")
 
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
