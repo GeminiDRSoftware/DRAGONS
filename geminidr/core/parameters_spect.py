@@ -164,6 +164,32 @@ class flagCosmicRaysConfig(config.Config):
         default="_CRMasked",
         optional=True,
     )
+    x_order = config.Field(
+        doc="Order for fitting and subtracting object continuum and sky line "
+        "models, prior to running the main cosmic ray detection algorithm. "
+        "When None, defaults are used, according to the image size (as in "
+        "the IRAF task gemcrspec). When 0, no fit is done.",
+        dtype=int,
+        optional=True,
+        default=None,
+    )
+    y_order = config.Field(
+        doc="Order for fitting and subtracting object continuum and sky line "
+        "models, prior to running the main cosmic ray detection algorithm. "
+        "When None, defaults are used, according to the image size (as in "
+        "the IRAF task gemcrspec). When 0, no fit is done.",
+        dtype=int,
+        optional=True,
+        default=None,
+    )
+    bitmask = config.Field(
+        doc="Bits in the input data quality `flags` that are to be used to "
+        "exclude bad pixels from cosmic ray detection and cleaning. Default "
+        "65535 (all non-zero bits, up to 16 planes).",
+        dtype=int,
+        optional=True,
+        default=65535,
+    )
     sigclip = config.Field(
         doc="Laplacian-to-noise limit for cosmic ray detection. Lower "
         "values will flag more pixels as cosmic rays.",

@@ -1718,37 +1718,60 @@ class Spect(PrimitivesBASE):
 
     def flagCosmicRays(self, adinputs=None, **params):
         """
-        This primitive flags cosmic rays using Astro-SCRAPPY.
+        Detect and clean cosmic rays in a 2D wavelength-dispersed image,
+        using the well-known LA Cosmic algorithm of van Dokkum (2001)*, as
+        implemented in McCully's optimized version for Python, "astroscrappy"+.
+
+        * LA Cosmic: http://www.astro.yale.edu/dokkum/lacosmic
+        + astroscrappy: https://github.com/astropy/astroscrappy
 
         Parameters
         ----------
         suffix: str
             Suffix to be added to output files.
+
+        x_order, y_order : int or None, optional
+            Order for fitting and subtracting object continuum and sky line
+            models, prior to running the main cosmic ray detection algorithm.
+            When None, defaults are used, according to the image size (as in
+            the IRAF task gemcrspec). When 0, no fit is done.
+
+        bitmask : int, optional
+            Bits in the input data quality `flags` that are to be used to
+            exclude bad pixels from cosmic ray detection and cleaning. Default
+            65535 (all non-zero bits, up to 16 planes).
+
         sigclip : float, optional
             Laplacian-to-noise limit for cosmic ray detection. Lower values
             will flag more pixels as cosmic rays. Default: 4.5.
+
         sigfrac : float, optional
             Fractional detection limit for neighboring pixels. For cosmic ray
             neighbor pixels, a lapacian-to-noise detection limit of
             sigfrac * sigclip will be used. Default: 0.3.
+
         objlim : float, optional
             Minimum contrast between Laplacian image and the fine structure
             image.  Increase this value if cores of bright stars are flagged
             as cosmic rays. Default: 5.0.
+
         pssl : float, optional
             Previously subtracted sky level in ADU. We always need to work in
             electrons for cosmic ray detection, so we need to know the sky
             level that has been subtracted so we can add it back in.
             Default: 0.0.
+
         niter : int, optional
             Number of iterations of the LA Cosmic algorithm to perform.
             Default: 4.
+
         sepmed : boolean, optional
             Use the separable median filter instead of the full median filter.
             The separable median is not identical to the full median filter,
             but they are approximately the same and the separable median filter
             is significantly faster and still detects cosmic rays well.
             Default: True
+
         cleantype : {'median', 'medmask', 'meanmask', 'idw'}, optional
             Set which clean algorithm is used:
             'median': An umasked 5x5 median filter
@@ -1756,37 +1779,78 @@ class Spect(PrimitivesBASE):
             'meanmask': A masked 5x5 mean filter
             'idw': A masked 5x5 inverse distance weighted interpolation
             Default: "meanmask".
+
         fsmode : {'median', 'convolve'}, optional
             Method to build the fine structure image:
             'median': Use the median filter in the standard LA Cosmic algorithm
             'convolve': Convolve the image with the psf kernel to calculate the
             fine structure image.
             Default: 'median'.
+
         psfmodel : {'gauss', 'gaussx', 'gaussy', 'moffat'}, optional
             Model to use to generate the psf kernel if fsmode == 'convolve' and
             psfk is None. The current choices are Gaussian and Moffat profiles.
             'gauss' and 'moffat' produce circular PSF kernels. The 'gaussx' and
             'gaussy' produce Gaussian kernels in the x and y directions
             respectively. Default: "gauss".
+
         psffwhm : float, optional
             Full Width Half Maximum of the PSF to use to generate the kernel.
             Default: 2.5.
+
         psfsize : int, optional
             Size of the kernel to calculate. Returned kernel will have size
             psfsize x psfsize. psfsize should be odd. Default: 7.
+
         psfbeta : float, optional
             Moffat beta parameter. Only used if fsmode=='convolve' and
             psfmodel=='moffat'. Default: 4.765.
+
         verbose : boolean, optional
             Print to the screen or not. Default: False.
 
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
         suffix = params.pop('suffix')
+        bitmask = params.pop('bitmask')
+        x_order_in = params.pop('x_order')
+        y_order_in = params.pop('y_order')
 
         for ad in adinputs:
             for ext in ad:
+                # Use default orders from gemcrspec (from Bryan):
+                ny, nx = ext.shape
+                x_order = 9 if x_order_in is None else x_order_in
+                y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
+                           if y_order_in is None else y_order_in)
+
+                # TODO: use dispaxis below, rather than -1.
+
+                # Fit the object spectrum:
+                if x_order > 0:
+                    objfit = fit_1D(ext.data, function='legendre',
+                                    order=x_order, axis=1, lsigma=4.0,
+                                    hsigma=3.0, iterations=3)
+                else:
+                    objfit = np.zeros_like(ext.data)
+                input_copy = ext.data - objfit
+
+                # Fit sky lines:
+                if y_order > 0:
+                    skyfit = fit_1D(input_copy, function='legendre',
+                                    order=y_order, axis=0, lsigma=4.0,
+                                    hsigma=3.0, iterations=3)
+                    # keep combined fits for later restoration
+                    objfit += skyfit
+                    del skyfit, input_copy
+
+                if ext.mask is not None:
+                    mask = (ext.mask & bitmask) > 0
+                else:
+                    mask = None
+
                 kwargs = {
                     'gain': ext.gain(),
                     'readnoise': ext.read_noise(),
@@ -1794,8 +1858,7 @@ class Spect(PrimitivesBASE):
                 if ext.saturation_level():
                     kwargs['satlevel'] = ext.saturation_level()
 
-                mask = ext.mask > 0 if ext.mask is not None else None
-                crmask, _ = detect_cosmics(ext.data, inmask=mask,
+                crmask, _ = detect_cosmics(ext.data, inmask=mask, bkg=objfit,
                                            **params, **kwargs)
 
                 if ext.mask is None:
@@ -2549,8 +2612,6 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
-
 
     def traceApertures(self, adinputs=None, **params):
         """

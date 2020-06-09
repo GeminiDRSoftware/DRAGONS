@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.niri.primitives_niri_image import NIRIImage
+from geminidr.gmos.primitives_gmos_spect import GMOSSpect
 
 
 def add_fake_image(ext):
@@ -49,7 +49,7 @@ def adinputs():
 
 
 def test_flag_cosmics(adinputs):
-    p = NIRIImage(adinputs)
+    p = GMOSSpect(adinputs)
     adout = p.flagCosmicRays()[0]
     assert_array_equal(adout[0].mask == DQ.cosmic_ray,
                        adout[0].CRMASK.astype(bool))
