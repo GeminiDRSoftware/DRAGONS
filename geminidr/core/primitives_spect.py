@@ -1809,10 +1809,14 @@ class Spect(PrimitivesBASE):
         verbose : boolean, optional
             Print to the screen or not. Default: False.
 
+        plot : bool
+            Enable plots for debugging.
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        plot = params.pop('plot')
         suffix = params.pop('suffix')
         bitmask = params.pop('bitmask')
         x_order_in = params.pop('x_order')
@@ -1820,31 +1824,43 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             for ext in ad:
+
+                dispaxis = 2 - ext.dispersion_axis()
+
                 # Use default orders from gemcrspec (from Bryan):
                 ny, nx = ext.shape
                 x_order = 9 if x_order_in is None else x_order_in
                 y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
                            if y_order_in is None else y_order_in)
 
-                # TODO: use dispaxis below, rather than -1.
-
                 # Fit the object spectrum:
                 if x_order > 0:
                     objfit = fit_1D(ext.data, function='legendre',
-                                    order=x_order, axis=1, lsigma=4.0,
-                                    hsigma=3.0, iterations=3)
+                                    order=x_order, axis=dispaxis,
+                                    lsigma=4.0, hsigma=3.0, iterations=3)
                 else:
                     objfit = np.zeros_like(ext.data)
+
                 input_copy = ext.data - objfit
 
                 # Fit sky lines:
                 if y_order > 0:
                     skyfit = fit_1D(input_copy, function='legendre',
-                                    order=y_order, axis=0, lsigma=4.0,
-                                    hsigma=3.0, iterations=3)
+                                    order=y_order, axis=1 - dispaxis,
+                                    lsigma=4.0, hsigma=3.0, iterations=3)
                     # keep combined fits for later restoration
                     objfit += skyfit
                     del skyfit, input_copy
+
+                if plot:
+                    fig, axes = plt.subplots(3, 1, figsize=(15, 8),
+                                             sharex=True, sharey=True)
+                    imgs = (ext.data, objfit, ext.data - objfit)
+                    titles = ('data', 'bkg fit', 'residual')
+                    for ax, data, title in zip(axes, imgs, titles):
+                        ax.imshow(data, origin='lower')
+                        ax.set_title(title)
+                    plt.show()
 
                 if ext.mask is not None:
                     mask = (ext.mask & bitmask) > 0
@@ -1858,7 +1874,8 @@ class Spect(PrimitivesBASE):
                 if ext.saturation_level():
                     kwargs['satlevel'] = ext.saturation_level()
 
-                crmask, _ = detect_cosmics(ext.data, inmask=mask, bkg=objfit,
+                crmask, _ = detect_cosmics(ext.data, inmask=mask,
+                                           # bkg=objfit, FIXME !
                                            **params, **kwargs)
 
                 if ext.mask is None:
