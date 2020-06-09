@@ -160,8 +160,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                     order=order, w=weights, **spline_kwargs)
                     fitted_data[i] = spline(pixels)
                 # Copy header so we have the _section() descriptors
-                # Turn zeros into tiny numbers to avoid 0/0 errors and NaNs
-                ad_fitted.append(fitted_data + np.spacing(0), header=ext.hdr)
+                ad_fitted.append(fitted_data, header=ext.hdr)
 
             # Find the largest spline value for each row across all extensions
             # and mask pixels below the requested fraction of the peak
@@ -183,7 +182,12 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     arrsec = ext.array_section()
                     slice_ = (slice((arrsec.y1 - tiled_arrsec.y1) // ybin, (arrsec.y2 - tiled_arrsec.y1) // ybin),
                               slice((arrsec.x1 - tiled_arrsec.x1) // xbin, (arrsec.x2 - tiled_arrsec.x1) // xbin))
-                    ext /= ext_fitted.nddata[slice_]
+                    # Suppress warnings to do with fitted_data==0
+                    # (which create NaNs in variance)
+                    with np.errstate(invalid='ignore', divide='ignore'):
+                        ext.divide(ext_fitted.nddata[slice_])
+                    np.nan_to_num(ext.data, copy=False, posinf=0, neginf=0)
+                    np.nan_to_num(ext.variance, copy=False)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
