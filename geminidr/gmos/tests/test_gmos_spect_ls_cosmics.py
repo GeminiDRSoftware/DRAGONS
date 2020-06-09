@@ -1,20 +1,18 @@
 import os
 import pathlib
 
-# import numpy as np
 import pytest
 
 import astrodata
-import gemini_instruments
+import gemini_instruments  # noqa
 from astrodata.testing import download_from_archive
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.primitives_gmos_spect import GMOSSpect
 from gempy.utils import logutils
 
 # Test parameters -------------------------------------------------------------
 test_datasets = [
     "S20190808S0048_distortionCorrected.fits",  # R400 at 0.740 um
-    # "S20190808S0049_distortionCorrected.fits",  # R400 at 0.760 um
-    # "S20190808S0053_distortionCorrected.fits",  # R400 at 0.850 um
 ]
 
 
@@ -23,7 +21,11 @@ test_datasets = [
 @pytest.mark.preprocessed_data
 def test_cosmics(adinputs, caplog):
     p = GMOSSpect(adinputs)
-    adout = p.flagCosmicRays(plot=True)
+    adout = p.flagCosmicRays()[0]
+    mask = adout[0].mask
+    # check some pixels with cosmics
+    for pix in [(497, 520), (138, 219), (420, 634), (297, 1871)]:
+        assert (mask[pix] & DQ.cosmic_ray) == DQ.cosmic_ray
 
 
 @pytest.fixture(scope='function')
@@ -46,8 +48,6 @@ def create_inputs_recipe():
 
     associated_calibrations = {
         "S20190808S0048.fits": 'S20190808S0167.fits',
-        # "S20190808S0049.fits": 'S20190808S0168.fits',
-        # "S20190808S0053.fits": 'S20190808S0169.fits',
     }
 
     path = pathlib.Path('dragons_test_inputs')
