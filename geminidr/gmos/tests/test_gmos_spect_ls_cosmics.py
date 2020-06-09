@@ -1,6 +1,7 @@
 import os
 import pathlib
 
+import numpy as np
 import pytest
 
 import astrodata
@@ -20,12 +21,24 @@ test_datasets = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_cosmics(adinputs, caplog):
+    # add some additional fake cosmics
+    ext = adinputs[0][0]
+    size = 50
+    np.random.seed(42)
+    cr_x = np.random.randint(low=5, high=ext.shape[0] - 5, size=size)
+    cr_y = np.random.randint(low=5, high=ext.shape[1] - 5, size=size)
+    cr_brightnesses = np.random.uniform(low=1000, high=5000, size=size)
+    ext.data[cr_x, cr_y] += cr_brightnesses
+
     p = GMOSSpect(adinputs)
     adout = p.flagCosmicRays()[0]
     mask = adout[0].mask
-    # check some pixels with cosmics
+    # check some pixels with real cosmics
     for pix in [(497, 520), (138, 219), (420, 634), (297, 1871)]:
         assert (mask[pix] & DQ.cosmic_ray) == DQ.cosmic_ray
+    # And check our fake cosmics. Since they are placed at random positions
+    # we may miss a few ones.
+    assert np.sum((mask & DQ.cosmic_ray)[cr_x, cr_y] != DQ.cosmic_ray) < 3
 
 
 @pytest.fixture(scope='function')
