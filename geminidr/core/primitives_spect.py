@@ -1809,14 +1809,14 @@ class Spect(PrimitivesBASE):
         verbose : boolean, optional
             Print to the screen or not. Default: False.
 
-        plot : bool
+        debug : bool
             Enable plots for debugging.
 
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        plot = params.pop('plot')
+        debug = params.pop('debug')
         suffix = params.pop('suffix')
         bitmask = params.pop('bitmask')
         x_order_in = params.pop('x_order')
@@ -1852,7 +1852,7 @@ class Spect(PrimitivesBASE):
                     objfit += skyfit
                     del skyfit, input_copy
 
-                if plot:
+                if debug:
                     fig, axes = plt.subplots(3, 1, figsize=(15, 8),
                                              sharex=True, sharey=True)
                     imgs = (ext.data, objfit, ext.data - objfit)
