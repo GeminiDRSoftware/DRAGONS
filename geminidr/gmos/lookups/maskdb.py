@@ -25,6 +25,8 @@ illumMask_dict = {
     "GMOS-N_Ham_11_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits",
     "GMOS-N_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits",
     "GMOS-N_Ham_44_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits",
+    "GMOS-N_e2v_11_6amp_v1" : "gmos-n_illum_e2v_11_6amp_v1.fits",
+    "GMOS-N_e2v_22_6amp_v1" : "gmos-n_illum_e2v_22_6amp_v1.fits",
     "GMOS-S_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits",
     "GMOS-S_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits",
     "GMOS-S_Ham_11_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits",
@@ -34,8 +36,8 @@ illumMask_dict = {
 
 
 mdf_dict = {
-    # Dictionary key is the instrument and the value of the MASKNAME keyword
-    # Dictionary value is the lookup path of the MDF for that instrument with
+    # Dictionary key is the instrument and the value of MASKNAME keyword
+    # Dictionary value is lookup path of the MDF for that instrument with
     # that MASKNAME
     "GMOS-N_IFU-B": "gnifu_slitb_mdf.fits",
     "GMOS-N_IFU-R": "gnifu_slitr_mdf.fits",

@@ -244,12 +244,17 @@ class GMOS(Gemini, CCD):
         Returns
         -------
         str/None: Filename of the appropriate illumination mask
+
         """
+        mask = None
         log = self.log
         inst = ad.instrument()
         xbin = ad.detector_x_bin()
-        ybin = ad.detector_y_bin()        
+        ybin = ad.detector_y_bin()
+        det = ad.detector_name(pretty=True)[:3]
+        amps = '{}amp'.format(3 * ad.phu['NAMPS'])
         mode = ad.tags & {'IMAGE', 'SPECT'}
+
         if mode:
             mode = mode.pop()
         else:  # DARK/BIAS (only F2 K-band darks for flats should get here)
@@ -260,17 +265,18 @@ class GMOS(Gemini, CCD):
             masks = import_module('.maskdb', self.inst_lookups)
             illum_dict = getattr(masks, 'illumMask_dict')
         except:
-            log.fullinfo('No illumination mask dict for {}'.
-                         format(ad.filename))
+            log.fullinfo("No illumination mask dict for {}".format(ad.filename))
             return None
 
-        # We've successfully loaded the illumMask_dict
+        # illumMask_dict is loaded.
         bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
-        key = '{}_{}_{}{}'.format(inst, mode, xbin, ybin)
+        key= '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
 
-        try:
-            mask = illum_dict[key]
-        except KeyError:
+        for illumkey in illum_dict.keys():
+            if illumkey.startswith(key):
+                mask = illum_dict[illumkey]
+
+        if not mask:
             log.warning('No illumination mask found for {}'.format(ad.filename))
             return None
 
