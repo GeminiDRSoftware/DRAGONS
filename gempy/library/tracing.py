@@ -659,7 +659,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     # providing it has a standard call signature, taking parameters:
     # spline representation, location of peak, location of limit on this side,
     # location of limit on other side, thresholding value
-    functions = {'threshold': threshold_limit,
+    functions = {'peak': peak_limit,
                  'integral': integral_limit}
     try:
         limit_finding_function = functions[method]
@@ -715,7 +715,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     return all_limits
 
 
-def threshold_limit(spline, peak, limit, other_limit, threshold):
+def peak_limit(spline, peak, limit, other_limit, threshold):
     """
     Finds a threshold as a fraction of the way from the signal at the minimum to
     the signal at the peak.
@@ -723,21 +723,21 @@ def threshold_limit(spline, peak, limit, other_limit, threshold):
     Parameters
     ----------
     spline : callable
-        ???
-    peak : ???
-        ???
-    limit : ???
-        ???
-    other_limit : ???
-        ???
-    threshold : ???
-        ???
+        the function within which aperture-extraction limits are desired
+    peak : float
+        location of peak
+    limit : float
+        location of the minimum -- an aperture edge is required between
+        this location and the peak
+    other_limit : float (not used)
+        location of the minimum on the opposite side of the peak
+    threshold : float
+        fractional height gain (peak - minimum) where aperture edge should go
 
     Returns
     -------
-    ???
-        ???
-       """
+    float : the pixel location of the aperture edge
+    """
     # target is the signal level at the threshold
     target = spline(limit) + threshold * (spline(peak) - spline(limit))
     func = lambda x: spline(x) - target
@@ -745,9 +745,31 @@ def threshold_limit(spline, peak, limit, other_limit, threshold):
 
 
 def integral_limit(spline, peak, limit, other_limit, threshold):
-    """Finds a threshold as a fraction of the missing flux, defined as the
-       area under the signal between the peak and this limit, removing a
-       straight line between the two points"""
+    """
+    Finds a threshold as a fraction of the missing flux, defined as the
+    area under the signal between the peak and this limit, removing a
+    straight line between the two points
+
+
+    Parameters
+    ----------
+    spline : callable
+        the function within which aperture-extraction limits are desired
+    peak : float
+        location of peak
+    limit : float
+        location of the minimum -- an aperture edge is required between
+        this location and the peak
+    other_limit : float
+        location of the minimum on the opposite side of the peak
+    threshold : float
+        the integral from the peak to the limit should encompass a fraction
+        (1-threshold) of the integral from the peak to the minimum
+
+    Returns
+    -------
+    float : the pixel location of the aperture edge
+    """
     integral = spline.antiderivative()
     slope = (spline(other_limit) - spline(limit)) / (other_limit - limit)
     definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * (
