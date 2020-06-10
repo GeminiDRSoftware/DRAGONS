@@ -10,6 +10,7 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
+import warnings
 
 import numpy as np
 from astropy import units as u
@@ -1243,7 +1244,7 @@ class Spect(PrimitivesBASE):
         method : {'standard', 'weighted', 'optimal'}
             Extraction method.
         width : float or None
-            Width of extraction aperture in pixels. Default: None.
+            Width of extraction aperture in pixels.
         grow : float
             Avoidance region around each source aperture if a sky aperture
             is required. Default: 10.
@@ -1436,15 +1437,21 @@ class Spect(PrimitivesBASE):
             Science data as 2D spectral images.
         suffix : str
             Suffix to be added to output files.
-        max_apertures : int, default: None
+        max_apertures : int
             Maximum number of apertures expected to be found.
         threshold : float (0 - 1)
-            height above background (relative to peak) at which to define
-            the edges of the aperture. Default: 0.01.
-        min_sky_pix : int
+            parameter describing either the height above background (relative
+            to peak) or the integral under the spectrum (relative to the
+            integral to the next minimum) at which to define the edges of
+            the aperture.
+        sizing_method: str ("peak" or "integral")
+            which method to use
+        precentile: float (0 - 100)
+            percentile to use when collapsing along the dispersion direction
+            to obtain a slit profile
+        min_sky_pregion : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
-            Default: 20.
 
         Returns
         -------
@@ -1462,9 +1469,9 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         max_apertures = params["max_apertures"]
         threshold = params["threshold"]
+        sizing_method = params["sizing_method"]
         min_sky_pix = params["min_sky_region"]
-
-        limit_method = 'threshold'
+        percentile = params["percentile"]
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -1505,18 +1512,23 @@ class Spect(PrimitivesBASE):
                 # We probably don't want the median because of, e.g., a
                 # Lyman Break Galaxy that may have signal for less than half
                 # the dispersion direction.
-                profile, prof_mask, prof_var = NDStacker.combine(data.T, mask=sky_mask.T,
-                                                                 variance=None if variance is None else variance.T,
-                                                                 rejector="none", combiner="mean")
-                # profile, prof_mask, prof_var = NDStacker.combine((data / data1d).T, mask=sky_mask.T,
-                #                                                 variance=None if variance is None else (variance / (data1d*data1d)).T,
-                #                                                 rejector="sigclip", combiner="wtmean")
+                #profile, prof_mask, prof_var = NDStacker.combine(data.T, mask=sky_mask.T,
+                #                                                 variance=None if variance is None else variance.T,
+                #                                                 rejector="none", combiner="mean")
+
+                signal = data if variance is None else data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32))
+                mdata = np.where(np.logical_or(sky_mask, variance==0), np.nan, signal)
+                # Need to catch "All-NaN slice" warnings
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('ignore', message='All-NaN slice')
+                    profile = np.nanpercentile(mdata, percentile, axis=1)
+                prof_mask = np.bitwise_and.reduce(sky_mask, axis=1)
 
                 # TODO: find_peaks might not be best considering we have no
                 #   idea whether sources will be extended or not
-                widths = np.arange(5, 30)
+                widths = np.arange(3, 30)
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
-                                                    variance=prof_var, reject_bad=False,
+                                                    variance=None, reject_bad=False,
                                                     min_snr=3, min_frac=0.2)
 
                 if peaks_and_snrs.size == 0:
@@ -1533,8 +1545,10 @@ class Spect(PrimitivesBASE):
                 locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
                 log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
 
-                all_limits = tracing.get_limits(profile, prof_mask, peaks=locations,
-                                                threshold=threshold, method=limit_method)
+                if np.isnan(profile[prof_mask==0]).any():
+                    log.warning("There are unmasked NaNs in the spatial profile")
+                all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
+                                                threshold=threshold, method=sizing_method)
 
                 all_model_dicts = []
                 for loc, limits in zip(locations, all_limits):
