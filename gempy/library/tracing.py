@@ -440,7 +440,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     wavelet_transformed_data = signal.cwt(data, signal.ricker, widths)
 
     eps = np.finfo(np.float32).eps  # Minimum representative data
-    wavelet_transformed_data[wavelet_transformed_data < eps] = eps
+    wavelet_transformed_data[np.nan_to_num(wavelet_transformed_data) < eps] = eps
 
     ridge_lines = signal._peak_finding._identify_ridge_lines(
         wavelet_transformed_data, 0.03 * widths, 2)
