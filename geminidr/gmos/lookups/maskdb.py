@@ -4,22 +4,34 @@
 # and mask definition file (MDF) lookup tables for GMOS
 
 bpm_dict = {
-    "GMOS-N_EEV_11_3amp_v1": "gmos-n_bpm_EEV_11_3amp_v1.fits",
-    "GMOS-N_EEV_22_3amp_v1": "gmos-n_bpm_EEV_22_3amp_v1.fits",
-    "GMOS-N_e2v_11_6amp_v1": "gmos-n_bpm_e2v_11_6amp_v1.fits",
-    "GMOS-N_e2v_22_6amp_v1": "gmos-n_bpm_e2v_22_6amp_v1.fits",
-    "GMOS-N_Ham_11_12amp_v1": "gmos-n_bpm_HAM_11_12amp_v1.fits",
-    "GMOS-N_Ham_22_12amp_v1": "gmos-n_bpm_HAM_22_12amp_v1.fits",
-    "GMOS-N_Ham_44_12amp_v1": "gmos-n_bpm_HAM_44_12amp_v1.fits",
-    "GMOS-S_EEV_11_3amp_v1": "gmos-s_bpm_EEV_11_3amp_v1.fits",
-    "GMOS-S_EEV_22_3amp_v1": "gmos-s_bpm_EEV_22_3amp_v1.fits",
-    "GMOS-S_Ham_11_12amp_v1": "gmos-s_bpm_HAM_11_12amp_v1.fits",
-    "GMOS-S_Ham_22_12amp_v1": "gmos-s_bpm_HAM_22_12amp_v1.fits",
-    "GMOS-S_Ham_44_12amp_v1": "gmos-s_bpm_HAM_44_12amp_v1.fits",
-    "GMOS-S_Ham_11_12amp_v2": "gmos-s_bpm_HAM_11_12amp_v2.fits",
-    "GMOS-S_Ham_22_12amp_v2": "gmos-s_bpm_HAM_22_12amp_v2.fits",
-    "GMOS-S_Ham_44_12amp_v2": "gmos-s_bpm_HAM_44_12amp_v2.fits",
+    #"GMOS-N_EEV_11_3amp_v1": "gmos-n_bpm_EEV_11_full_3amp_v1.fits",
+    #"GMOS-N_EEV_22_3amp_v1": "gmos-n_bpm_EEV_22_full_3amp_v1.fits",
+    #"GMOS-N_e2v_11_6amp_v1": "gmos-n_bpm_e2v_11_full_6amp_v1.fits",
+    #"GMOS-N_e2v_22_6amp_v1": "gmos-n_bpm_e2v_22_full_6amp_v1.fits",
+    "GMOS-N_Ham_11_12amp_v1": "gmos-n_bpm_HAM_11_full_12amp_v1.fits",
+    "GMOS-N_Ham_22_12amp_v1": "gmos-n_bpm_HAM_22_full_12amp_v1.fits",
+    "GMOS-N_Ham_44_12amp_v1": "gmos-n_bpm_HAM_44_full_12amp_v1.fits",
+    "GMOS-S_EEV_11_3amp_v1":  "gmos-s_bpm_EEV_11_full_3amp_v1.fits",
+    "GMOS-S_EEV_22_3amp_v1":  "gmos-s_bpm_EEV_22_full_3amp_v1.fits",
+    "GMOS-S_Ham_11_12amp_v1": "gmos-s_bpm_HAM_11_full_12amp_v1.fits",
+    "GMOS-S_Ham_22_12amp_v1": "gmos-s_bpm_HAM_22_full_12amp_v1.fits",
+    "GMOS-S_Ham_44_12amp_v1": "gmos-s_bpm_HAM_44_full_12amp_v1.fits",
+    #"GMOS-S_Ham_11_12amp_v2": "gmos-s_bpm_HAM_11_12amp_v2.fits",
+    #"GMOS-S_Ham_22_12amp_v2": "gmos-s_bpm_HAM_22_12amp_v2.fits",
+    #"GMOS-S_Ham_44_12amp_v2": "gmos-s_bpm_HAM_44_12amp_v2.fits",
 }
+
+illumMask_dict = {
+    "GMOS-N_Ham_11_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits",
+    "GMOS-N_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits",
+    "GMOS-N_Ham_44_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits",
+    "GMOS-S_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits",
+    "GMOS-S_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits",
+    "GMOS-S_Ham_11_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits",
+    "GMOS-S_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits",
+    "GMOS-S_Ham_44_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits",
+    }
+
 
 mdf_dict = {
     # Dictionary key is the instrument and the value of the MASKNAME keyword
