@@ -95,3 +95,16 @@ def test_find_peaks_raises_typeerror_if_mask_is_wrong_type():
 
     with pytest.raises(TypeError):
         peaks_detected, _ = tracing.find_peaks(y, np.ones_like(y) * stddev, mask=mask)
+
+def test_get_limits():
+    CENT, SIG = 250, 20
+    x = np.arange(CENT * 2)
+    y = np.exp(-0.5 * ((x - CENT) / SIG) ** 2)
+
+    limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='peak')[0]
+    for l in limits:
+        assert abs(l - CENT) - (SIG * np.sqrt(2 * np.log(100))) < 0.05 * SIG
+
+    limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='integral')[0]
+    for l in limits:
+        assert abs(l - CENT) - (SIG * 2.576) < 0.05 * SIG
