@@ -432,17 +432,17 @@ class Visualize(PrimitivesBASE):
                                         (Frame2D(name="tile"), ext.wcs.pipeline[0][1])] +
                                        ext.wcs.pipeline[1:])
                         ext.wcs.insert_transform('tile', ext_shift.inverse, after=True)
+
+                    dx, dy = xshifts[iy, ix], yshifts[iy, ix]
                     if tile_all:
-                        shift_model = (models.Shift(xshifts[iy,ix] + xorigins[ccdy,ccdx]) &
-                                       models.Shift(yshifts[iy,ix] + yorigins[ccdy,ccdx]))
+                        dx += xorigins[ccdy, ccdx]
+                        dy += yorigins[ccdy, ccdx]
+                    if dx or dy:  # Don't bother if they're both zero
+                        shift_model = models.Shift(dx) & models.Shift(dy)
                         ext.wcs.insert_transform('tile', shift_model, after=False)
-                        if ext.wcs.output_frame != 'tile':
+                        if ext.wcs.output_frame.name != 'tile':
                             ext.wcs.insert_transform('tile', shift_model.inverse, after=True)
-                    else:
-                        nondata_shift = (models.Shift(xshifts[iy, ix]) &
-                                         models.Shift(yshifts[iy, ix]))
-                        ext.wcs.insert_transform('tile', nondata_shift, after=False)
-                        ext.wcs.insert_transform('tile', nondata_shift.inverse, after=True)
+
                     # Reset data_section since we're not trimming overscans
                     ext.hdr[kw] = '[1:{},1:{}]'.format(*reversed(ext.shape))
                     it.iternext()
