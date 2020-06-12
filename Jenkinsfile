@@ -24,6 +24,7 @@ pipeline {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
+        timeout(time: 1, unit: 'HOURS')
     }
 
     environment {
