@@ -1439,6 +1439,14 @@ class Spect(PrimitivesBASE):
             Suffix to be added to output files.
         max_apertures : int
             Maximum number of apertures expected to be found.
+        precentile: float (0 - 100) / None
+            percentile to use when collapsing along the dispersion direction
+            to obtain a slit profile / None => take mean
+        min_sky_pregion : int
+            minimum number of contiguous pixels between sky lines
+            for a region to be added to the spectrum before collapsing to 1D.
+        use_snr : bool
+            Convert data to SNR per pixel before collapsing and peak-finding?
         threshold : float (0 - 1)
             parameter describing either the height above background (relative
             to peak) or the integral under the spectrum (relative to the
@@ -1446,12 +1454,6 @@ class Spect(PrimitivesBASE):
             the aperture.
         sizing_method: str ("peak" or "integral")
             which method to use
-        precentile: float (0 - 100)
-            percentile to use when collapsing along the dispersion direction
-            to obtain a slit profile
-        min_sky_pregion : int
-            minimum number of contiguous pixels between sky lines
-            for a region to be added to the spectrum before collapsing to 1D.
 
         Returns
         -------
@@ -1468,10 +1470,11 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         max_apertures = params["max_apertures"]
+        min_sky_pix = params["min_sky_region"]
+        use_snr = params["use_snr"]
+        percentile = params["percentile"]
         threshold = params["threshold"]
         sizing_method = params["sizing_method"]
-        min_sky_pix = params["min_sky_region"]
-        percentile = params["percentile"]
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -1509,19 +1512,16 @@ class Spect(PrimitivesBASE):
                     sky_mask[(slice(None), reg)] = 0
                 sky_mask |= (mask > 0)
 
-                # We probably don't want the median because of, e.g., a
-                # Lyman Break Galaxy that may have signal for less than half
-                # the dispersion direction.
-                #profile, prof_mask, prof_var = NDStacker.combine(data.T, mask=sky_mask.T,
-                #                                                 variance=None if variance is None else variance.T,
-                #                                                 rejector="none", combiner="mean")
-
-                signal = data if variance is None else data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32))
-                mdata = np.where(np.logical_or(sky_mask, variance==0), np.nan, signal)
+                signal = (data if (variance is None or not use_snr) else
+                          data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32)))
+                masked_data = np.where(np.logical_or(sky_mask, variance==0), np.nan, signal)
                 # Need to catch "All-NaN slice" warnings
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', message='All-NaN slice')
-                    profile = np.nanpercentile(mdata, percentile, axis=1)
+                    if percentile:
+                        profile = np.nanpercentile(masked_data, percentile, axis=1)
+                    else:
+                        profile = np.nanmean(masked_data, axis=1)
                 prof_mask = np.bitwise_and.reduce(sky_mask, axis=1)
 
                 # TODO: find_peaks might not be best considering we have no

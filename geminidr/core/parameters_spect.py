@@ -92,15 +92,18 @@ class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
     max_apertures = config.RangeField("Maximum number of sources to find",
                                       int, None, min=1, optional=True)
+    percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
+                                   float, 95, min=1, max=100, optional=True)
+    min_sky_region = config.RangeField("Minimum number of contiguous pixels "
+                                       "between sky lines", int, 20, min=1)
+    use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
+                           bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.01, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
                                        default="peak")
-    percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
-                                   float, 95, min=1, max=100)
-    min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
 
 
 def flux_units_check(value):
