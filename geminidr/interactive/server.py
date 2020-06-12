@@ -65,6 +65,8 @@ def start_server():
     bokeh_server.io_loop.add_callback(bokeh_server.show, "/")
     bokeh_server.io_loop.start()
 
+    bokeh_server.stop()
+
 
 class PrimitiveVisualizer(ABC):
     def __init__(self, params, fields):

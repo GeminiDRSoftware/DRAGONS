@@ -176,3 +176,4 @@ class traceAperturesConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Draw aperture traces on image display?", bool, False)
+    interactive = config.Field("Use interactive interface for Chebyshev calculation", bool, False)
