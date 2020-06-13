@@ -79,6 +79,7 @@ class Chebyshev1DVisualizer(server.PrimitiveVisualizer):
         none
         """
         order = self._params["order"]
+        in_coords = self._params["in_coords"]
         self.spectral_coords = self._params["spectral_coords"]
 
         order_slider = self.make_slider_for("Order", order, 1, self._fields["trace_order"], self.order_slider_handler)
@@ -92,8 +93,26 @@ class Chebyshev1DVisualizer(server.PrimitiveVisualizer):
 
         # Create a blank figure with labels
         self.p = figure(plot_width=600, plot_height=500,
-                        title='Interactive Spline',
+                        title='Interactive Chebyshev',
                         x_axis_label='X', y_axis_label='Y')
+
+        scatter = self.p.scatter(in_coords[0], in_coords[1], color="blue", radius=5)
+
+        radius_slider = Slider(start=1, end=20, value=5, step=1, title="Dot Size")
+        radius_slider.width = 256
+        callback_radius = CustomJS(args=dict(scatter=scatter),
+                                   code="""
+                                   scatter.glyph.radius = cb_obj.value;
+                                   """)
+        radius_slider.js_on_change('value', callback_radius)
+
+        dot_color_picker = ColorPicker(color="blue", title="Dot Color:", width=200)
+        callback_dot_color = CustomJS(args=dict(scatter=scatter),
+                                      code="""
+                                       scatter.glyph.line_color = cb_obj.color;
+                                       scatter.glyph.fill_color = cb_obj.color;
+                                      """)
+        dot_color_picker.js_on_change('color', callback_dot_color)
 
         self.line_source = ColumnDataSource({'x': [], 'y': []})
         self.line = self.p.line(x='x', y='y', source=self.line_source, color="red")
@@ -114,7 +133,7 @@ class Chebyshev1DVisualizer(server.PrimitiveVisualizer):
                                        """)
         line_color_picker.js_on_change('color', callback_line_color)
 
-        controls = Column(order_slider, button,
+        controls = Column(order_slider, button, radius_slider, dot_color_picker,
                           line_slider, line_color_picker)
 
         self.recalc_chebyshev()
