@@ -1439,9 +1439,14 @@ class Spect(PrimitivesBASE):
             Suffix to be added to output files.
         max_apertures : int
             Maximum number of apertures expected to be found.
-        precentile: float (0 - 100) / None
+        percentile : float (0 - 100) / None
             percentile to use when collapsing along the dispersion direction
             to obtain a slit profile / None => take mean
+        section : str
+            comma-separated list of colon-separated pixel coordinate pairs
+            indicating the region(s) over which the spectral signal should be
+            used. The first and last values can be blank, indicating to
+            continue to the end of the data
         min_sky_pregion : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
@@ -1452,7 +1457,7 @@ class Spect(PrimitivesBASE):
             to peak) or the integral under the spectrum (relative to the
             integral to the next minimum) at which to define the edges of
             the aperture.
-        sizing_method: str ("peak" or "integral")
+        sizing_method : str ("peak" or "integral")
             which method to use
 
         Returns
@@ -1470,11 +1475,18 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         max_apertures = params["max_apertures"]
+        percentile = params["percentile"]
+        section = params["section"]
         min_sky_pix = params["min_sky_region"]
         use_snr = params["use_snr"]
-        percentile = params["percentile"]
         threshold = params["threshold"]
         sizing_method = params["sizing_method"]
+
+        sec_regions = []
+        if section:
+            for x1, x2 in (s.split(':') for s in section.split(',')):
+                sec_regions.append(slice(None if x1 == '' else int(x1),
+                                         None if x2 == '' else int(x2)))
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -1507,22 +1519,26 @@ class Spect(PrimitivesBASE):
                 sky_regions = [slice_ for slice_ in slices
                                if slice_.stop - slice_.start >= min_sky_pix]
 
-                sky_mask = np.ones_like(mask, dtype=np.uint16)
+                sky_mask = np.ones_like(mask1d, dtype=bool)
                 for reg in sky_regions:
-                    sky_mask[(slice(None), reg)] = 0
-                sky_mask |= (mask > 0)
+                    sky_mask[reg] = False
+                sec_mask = np.ones_like(mask1d, dtype=bool)
+                for reg in sec_regions:
+                    sec_mask[reg] = False
+                full_mask = (mask > 0) | sky_mask | sec_mask
 
                 signal = (data if (variance is None or not use_snr) else
                           data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32)))
-                masked_data = np.where(np.logical_or(sky_mask, variance==0), np.nan, signal)
-                # Need to catch "All-NaN slice" warnings
+                masked_data = np.where(np.logical_or(full_mask, variance==0), np.nan, signal)
+                # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', message='All-NaN slice')
+                    warnings.filterwarnings('ignore', message='Mean of empty slice')
                     if percentile:
                         profile = np.nanpercentile(masked_data, percentile, axis=1)
                     else:
                         profile = np.nanmean(masked_data, axis=1)
-                prof_mask = np.bitwise_and.reduce(sky_mask, axis=1)
+                prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
 
                 # TODO: find_peaks might not be best considering we have no
                 #   idea whether sources will be extended or not

@@ -88,12 +88,36 @@ class extract1DSpectraConfig(config.Config):
     debug = config.Field("Draw extraction apertures on image display?", bool, False)
 
 
+def check_section(value):
+    # Check for validity of a section string
+    subsections = value.split(',')
+    for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
+        try:
+            int(x1)
+        except ValueError:
+            if i > 0 or x1 != '':
+                return False
+            else:
+                x1 = 0
+        try:
+            int(x2)
+        except ValueError:
+            if i < len(subsections) - 1 or x2 != '':
+                return False
+        else:
+            if x2 <= x1:
+                raise ValueError("Section(s) do not have end pixel number "
+                                 "greater than start pixel number")
+    return True
+
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
     max_apertures = config.RangeField("Maximum number of sources to find",
                                       int, None, min=1, optional=True)
     percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
                                    float, 95, min=1, max=100, optional=True)
+    section = config.Field("Pixel section(s) for measuring the spatial profile",
+                           str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 20, min=1)
     use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",

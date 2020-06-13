@@ -428,11 +428,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     -------
     2D array: peak pixels and SNRs
     """
-    mask = mask if mask is not None else np.zeros_like(data, dtype=np.uint16)
-
-    if not np.issubdtype(mask.dtype, np.unsignedinteger):
-        raise TypeError("Expected input parameter 'mask' to be an array with unsigned integer. "
-                        "Found: {}".format(mask.dtype))
+    mask = mask.astype(DQ.datatype) if mask is not None else np.zeros_like(data, dtype=DQ.datatype)
 
     max_width = max(widths)
     window_size = 4 * max_width + 1
