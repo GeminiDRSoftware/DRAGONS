@@ -29,9 +29,9 @@ illumMask_dict = {
     "GMOS-N_e2v_22_6amp_v1" : "gmos-n_illum_e2v_22_6amp_v1.fits",
     "GMOS-N_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits",
     "GMOS-N_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits",
-    "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_44_12amp_v1.fits",
+    "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits",
     "GMOS-S_Ham_22_12amp_v1": "gmos-s_illum_HAM_22_12amp_v1.fits",
-    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits",
+    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v1.fits",
     }
 
 
