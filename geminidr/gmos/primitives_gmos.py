@@ -280,5 +280,6 @@ class GMOS(Gemini, CCD):
             log.warning('No illumination mask found for {}'.format(ad.filename))
             return None
 
+        log.stdinfo("Retrieved mask: {}".format(mask))
         # Prepend standard path if the filename doesn't start with '/'
         return mask if mask.startswith(os.path.sep) else os.path.join(bpm_dir, mask)
