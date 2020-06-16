@@ -1014,7 +1014,7 @@ class Spect(PrimitivesBASE):
                 tree = spatial.cKDTree(np.array([peaks]).T)
                 # Find lines within 10% of the array size
                 indices = tree.query(np.array([peaks]).T, k=10,
-                                     distance_upper_bound=abs(0.1 * len(data) * dw))[1]
+                                     distance_upper_bound=0.1 * len(data))[1]
                 snrs = np.array(list(peak_snrs) + [np.nan])[indices]
                 # Normalize weights by the maximum of these lines
                 weights['relative'] = peak_snrs / np.nanmedian(snrs, axis=1)
@@ -1025,11 +1025,20 @@ class Spect(PrimitivesBASE):
                 yplot = 0
                 plt.ioff()
 
+                ny, nx = ext.shape
+                try:
+                    w1, w2 = ext.wcs([0, nx-1], 0.5 * (ny-1))[0]
+                except (TypeError, AttributeError):
+                    c0 = cenwave
+                    c1 = 0.5 * dw * (len(data)-1)
+                else:
+                    c0 = 0.5 * (w1 + w2)
+                    c1 = (w1 - w2) / (len(data)-1)
                 # The very first model is called "m_final" because at each
                 # iteration the next initial model comes from the fitted
                 # (final) model of the previous iteration
-                m_final = models.Chebyshev1D(degree=1, c0=cenwave,
-                                             c1=0.5 * dw * len(data), domain=[0, len(data) - 1])
+                m_final = models.Chebyshev1D(degree=1, c0=c0, c1=c1,
+                                             domain=[0, len(data) - 1])
                 if debug:
                     plot_arc_fit(data, peaks, arc_lines, arc_weights, m_final, "Initial model")
                 log.stdinfo('Initial model: {}'.format(repr(m_final)))
