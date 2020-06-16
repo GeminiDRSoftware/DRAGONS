@@ -394,7 +394,9 @@ def estimate_peak_width(data, min=2, max=8):
 
             # Set data to zero so no peak is found here
             data_copy[index - 2 * fwidth:index + 2 * fwidth + 1] = 0.
-        all_widths.append(sigma_clip(widths).mean())
+        good_widths = sigma_clip(widths, masked=False)
+        if good_widths.size:
+            all_widths.append(good_widths.mean())
     return sigma_clip(all_widths).mean()
 
 
