@@ -566,7 +566,7 @@ class KDTreeFitter(Fitter):
             maximum number of matches to be considered
         """
         if proximity_function is None:
-            proximity_function = KDTreeFitter.gaussian
+            proximity_function = KDTreeFitter.lorentzian
 
         self.statistic = None
         self.niter = None
