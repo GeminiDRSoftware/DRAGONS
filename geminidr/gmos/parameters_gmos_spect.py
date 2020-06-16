@@ -16,4 +16,4 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     nbright = config.RangeField("Number of bright lines to eliminate", int, 3, min=0)
 
     def setDefaults(self):
-        self.order = 4
+        self.order = 3
