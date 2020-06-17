@@ -8,6 +8,8 @@ from io import BytesIO
 from itertools import product as cart_product
 from itertools import zip_longest
 
+import asdf
+import jsonschema
 import numpy as np
 
 import astropy
@@ -68,21 +70,6 @@ class FitsHeaderCollection:
 
     def __iter__(self):
         yield from self.__headers
-
-#    @property
-#    def keywords(self):
-#        if self._on_ext:
-#            return self._ret_ext([set(h.keys()) for h in self.__headers])
-#        else:
-#            return set(self.__headers[0].keys())
-#
-#    def show(self):
-#        if self._on_ext:
-#            for n, header in enumerate(self.__headers):
-#                print("==== Header #{} ====".format(n))
-#                print(repr(header))
-#        else:
-#            print(repr(self.__headers[0]))
 
     def __setitem__(self, key, value):
         if isinstance(value, tuple):
@@ -226,17 +213,19 @@ def header_for_table(table):
         descr = {'name': col.name}
         typekind = col.dtype.kind
         typename = col.dtype.name
-        if typekind in {'S', 'U'}: # Array of strings
+        if typekind in {'S', 'U'}:  # Array of strings
             strlen = col.dtype.itemsize // col.dtype.alignment
             descr['format'] = '{}A'.format(strlen)
             descr['disp'] = 'A{}'.format(strlen)
-        elif typekind == 'O': # Variable length array
-            raise TypeError("Variable length arrays like in column '{}' are not supported".format(col.name))
+        elif typekind == 'O':  # Variable length array
+            raise TypeError("Variable length arrays like in column '{}' are "
+                            "not supported".format(col.name))
         else:
             try:
                 typedesc = header_type_map[typename]
             except KeyError:
-                raise TypeError("I don't know how to treat type {!r} for column {}".format(col.dtype, col.name))
+                raise TypeError("I don't know how to treat type {!r} for "
+                                "column {}".format(col.dtype, col.name))
             repeat = ''
             data = col.data
             shape = data.shape
@@ -603,7 +592,7 @@ def ad_to_hdulist(ad):
             # We don't have access to the AD tags so see if it's an image
             # Catch ValueError as any sort of failure
             try:
-                wcs_dict = adwcs.gwcs_to_fits(ext, ad.phu())
+                wcs_dict = adwcs.gwcs_to_fits(ext, ad.phu)
             except (ValueError, NotImplementedError) as e:
                 LOGGER.warning(e)
             else:
@@ -705,7 +694,8 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
         uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
                      if with_uncertainty else None),
         mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
-        meta=sequence[0].meta, wcs=sequence[0].wcs
+        meta=sequence[0].meta,
+        wcs=sequence[0].wcs,
     )
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
@@ -779,17 +769,14 @@ def wcs_to_asdftablehdu(wcs, extver=None):
     happen), a binary table representation will be used as a fallback.
     """
 
-    import asdf
-    import jsonschema
-
     # Create a small ASDF file in memory containing the WCS object
     # representation because there's no public API for generating only the
     # relevant YAML subsection and an ASDF file handles the "tags" properly.
     try:
-        af = asdf.AsdfFile({"wcs" : wcs})
+        af = asdf.AsdfFile({"wcs": wcs})
     except jsonschema.exceptions.ValidationError:
         # (The original traceback also gets printed here)
-        raise TypeError("Cannot serialize model(s) for 'WCS' extension {}"\
+        raise TypeError("Cannot serialize model(s) for 'WCS' extension {}"
                         .format(extver or ''))
 
     # ASDF can only dump YAML to a binary file object, so do that and read
@@ -820,10 +807,9 @@ def wcs_to_asdftablehdu(wcs, extver=None):
 
     # Construct the FITS table extension:
     col = Column(name='gWCS', format=fmt, array=wcsbuf,
-                 ascii= hduclass is TableHDU)
-    hdu = hduclass.from_columns([col], name='WCS', ver=extver)
+                 ascii=hduclass is TableHDU)
+    return hduclass.from_columns([col], name='WCS', ver=extver)
 
-    return hdu
 
 def asdftablehdu_to_wcs(hdu):
     """
@@ -832,8 +818,6 @@ def asdftablehdu_to_wcs(hdu):
     Returns None (issuing a warning) if the extension cannot be parsed, so
     the rest of the file can still be read.
     """
-
-    import asdf
 
     ver = hdu.header.get('EXTVER', -1)
 
@@ -868,9 +852,9 @@ def asdftablehdu_to_wcs(hdu):
             # Try to extract a 'wcs' entry from the YAML:
             try:
                 af = asdf.open(fd)
-            except:
+            except Exception:
                 LOGGER.warning("Ignoring 'WCS' extension {}: failed to parse "
-                               "ASDF.\nError was as follows:\n{}"\
+                               "ASDF.\nError was as follows:\n{}"
                                .format(ver, traceback.format_exc()))
                 return
             else:
@@ -883,7 +867,7 @@ def asdftablehdu_to_wcs(hdu):
                         return
 
     else:
-        LOGGER.warning("Ignoring non-FITS-table 'WCS' extension {}"\
+        LOGGER.warning("Ignoring non-FITS-table 'WCS' extension {}"
                        .format(ver))
         return
 
