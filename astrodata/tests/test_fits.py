@@ -882,7 +882,7 @@ def test_round_trip_gwcs(tmpdir):
     ad1[0].nddata.wcs = WCS([(det_frame, distrans),
                              (dref_frame, wavtrans),
                              (rss_frame, None)
-                            ])
+                             ])
 
     # Save & re-load the AstroData instance with its new WCS attribute:
     testfile = str(tmpdir.join('round_trip_gwcs.fits'))
