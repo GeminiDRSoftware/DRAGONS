@@ -276,7 +276,8 @@ class AstroData:
     @deprecated("Access to headers through this property is deprecated and "
                 "will be removed in the future. Use '.hdr' instead.")
     def header(self):
-        return [self._phu] + [ndd.meta['header'] for ndd in self.nddata]
+        nddata = [self.nddata] if self.is_single else self.nddata
+        return [self._phu] + [ndd.meta['header'] for ndd in nddata]
 
     @property
     def tags(self):
@@ -554,7 +555,8 @@ class AstroData:
             return self.__dict__[attribute]
 
         # Check if it's an aliased object
-        for nd in self.nddata:
+        nddata = [self.nddata] if self.is_single else self.nddata
+        for nd in nddata:
             if nd.meta.get('name') == attribute:
                 return nd
 
