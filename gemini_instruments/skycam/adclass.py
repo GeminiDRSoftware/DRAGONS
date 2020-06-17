@@ -56,9 +56,5 @@ class AstroDataSkyCam(AstroDataGemini):
         return self.phu['DEC']
 
     @astro_data_descriptor
-    def ut_datetime(self):
-        return dateutil.parser.parse(self.phu['DATE-OBS'])
-
-    @astro_data_descriptor
     def ut_time(self):
         return self.ut_datetime().time()
