@@ -79,14 +79,16 @@ class AstroData:
         if not isinstance(nddata, (list, tuple)):
             nddata = list(nddata)
 
-        self._nddata = nddata
-        self._phu = phu or fits.Header()
+        # _all_nddatas contains all the extensions from the original file or
+        # object.  And _indices is used to map extensions for sliced objects.
+        self._all_nddatas = nddata
         self._indices = indices
 
         if tables is not None and not isinstance(tables, dict):
             raise ValueError('tables must be a dict')
         self._tables = tables or {}
 
+        self._phu = phu or fits.Header()
         self._exposed = set()
         self._fixed_settable = {'data', 'uncertainty', 'mask', 'variance',
                                 'wcs', 'path', 'filename'}
@@ -113,12 +115,7 @@ class AstroData:
         for attr in ('_phu', '_path', '_orig_filename', '_tables', '_exposed'):
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
-        if self.is_single:
-            obj.__dict__['_nddata'] = [deepcopy(self.nddata)]
-        elif self.is_sliced:
-            obj.__dict__['_nddata'] = [deepcopy(nd) for nd in self.nddata]
-        else:
-            obj.__dict__['_nddata'] = deepcopy(self.__dict__['_nddata'])
+        obj.__dict__['_all_nddatas'] = [deepcopy(nd) for nd in self._nddata]
 
         # Top-level tables
         for key in set(self.__dict__) - set(obj.__dict__):
@@ -266,18 +263,14 @@ class AstroData:
         """Return all headers, as a `astrodata.FitsHeaderCollection`."""
         if not self.nddata:
             return None
-        elif self.is_single:
-            return self.nddata.meta['header']
-        else:
-            headers = [nd.meta['header'] for nd in self.nddata]
-            return FitsHeaderCollection(headers)
+        headers = [nd.meta['header'] for nd in self._nddata]
+        return headers[0] if self.is_single else FitsHeaderCollection(headers)
 
     @property
     @deprecated("Access to headers through this property is deprecated and "
                 "will be removed in the future. Use '.hdr' instead.")
     def header(self):
-        nddata = [self.nddata] if self.is_single else self.nddata
-        return [self._phu] + [ndd.meta['header'] for ndd in nddata]
+        return [self._phu] + [ndd.meta['header'] for ndd in self._nddata]
 
     @property
     def tags(self):
@@ -325,13 +318,25 @@ class AstroData:
         return attr in self._fixed_settable or attr.isupper()
 
     @property
-    def nddata(self):
-        """Return the list of `astrodata.NDAstroData` objects."""
+    def _nddata(self):
+        """Return the list of `astrodata.NDAstroData` objects. Contrary to
+        ``self.nddata`` this always returns a list.
+        """
         if self._indices is not None:
-            ndd = [self._nddata[i] for i in self._indices]
+            return [self._all_nddatas[i] for i in self._indices]
         else:
-            ndd = self._nddata
-        return ndd[0] if self.is_single else ndd
+            return self._all_nddatas
+
+    @property
+    def nddata(self):
+        """Return the list of `astrodata.NDAstroData` objects.
+
+        If the `AstroData` object is sliced, this returns only the NDData
+        objects of the sliced extensions. And if this is a single extension
+        object, the NDData object is returned directly (i.e. not a list).
+
+        """
+        return self._nddata[0] if self.is_single else self._nddata
 
     def table(self):
         # FIXME: do we need this in addition to .tables ?
@@ -500,8 +505,8 @@ class AstroData:
         if self._indices:
             indices = [self._indices[i] for i in indices]
 
-        obj = self.__class__(self._nddata, tables=self._tables, phu=self.phu,
-                             indices=indices)
+        obj = self.__class__(self._all_nddatas, tables=self._tables,
+                             phu=self.phu, indices=indices)
         obj._path = self.path
         obj._orig_filename = self.orig_filename
         obj._exposed = self._exposed
@@ -530,7 +535,7 @@ class AstroData:
         """
         if self.is_sliced:
             raise TypeError("Can't remove items from a sliced object")
-        del self._nddata[idx]
+        del self._all_nddatas[idx]
 
     def __getattr__(self, attribute):
         """
@@ -555,8 +560,7 @@ class AstroData:
             return self.__dict__[attribute]
 
         # Check if it's an aliased object
-        nddata = [self.nddata] if self.is_single else self.nddata
-        for nd in nddata:
+        for nd in self._nddata:
             if nd.meta.get('name') == attribute:
                 return nd
 
@@ -662,7 +666,7 @@ class AstroData:
         if self._indices is not None:
             return len(self._indices)
         else:
-            return len(self._nddata)
+            return len(self._all_nddatas)
 
     @property
     def exposed(self):
@@ -685,8 +689,7 @@ class AstroData:
         return exposed
 
     def _pixel_info(self):
-        nddata = [self.nddata] if self.is_single else self.nddata
-        for idx, nd in enumerate(nddata):
+        for idx, nd in enumerate(self._nddata):
             other_objects = []
             uncer = nd.uncertainty
             fixed = (('variance', None if uncer is None else uncer),
@@ -774,6 +777,7 @@ class AstroData:
 
     def _oper(self, operator, operand):
         ind = self.indices
+        ndd = self._all_nddatas
         if isinstance(operand, AstroData):
             if len(operand) != len(self):
                 raise ValueError("Operands are not the same size")
@@ -781,19 +785,18 @@ class AstroData:
                 try:
                     data = (operand.nddata if operand.is_single
                             else operand.nddata[n])
-                    self._nddata[ind[n]] = operator(self._nddata[ind[n]], data)
+                    ndd[ind[n]] = operator(ndd[ind[n]], data)
                 except TypeError:
                     # This may happen if operand is a sliced, single
                     # AstroData object
-                    self._nddata[ind[n]] = operator(self._nddata[ind[n]],
-                                                    operand.nddata)
+                    ndd[ind[n]] = operator(ndd[ind[n]], operand.nddata)
             op_table = operand.table()
             ltab, rtab = set(self._tables), set(op_table)
             for tab in (rtab - ltab):
                 self._tables[tab] = op_table[tab]
         else:
             for n in range(len(self)):
-                self._nddata[ind[n]] = operator(self._nddata[ind[n]], operand)
+                ndd[ind[n]] = operator(ndd[ind[n]], operand)
 
     def _standard_nddata_op(self, fn, operand):
         return self._oper(partial(fn, handle_mask=np.bitwise_or,
@@ -866,7 +869,7 @@ class AstroData:
 
     def _reset_ver(self, nd):
         try:
-            ver = max(nd.meta['ver'] for nd in self._nddata) + 1
+            ver = max(nd.meta['ver'] for nd in self._all_nddatas) + 1
         except ValueError:
             # This seems to be the first extension!
             ver = 1
@@ -1025,7 +1028,7 @@ class AstroData:
         if hname == DEFAULT_EXTENSION:
             if reset_ver:
                 self._reset_ver(new_nddata)
-            self._nddata.append(new_nddata)
+            self._all_nddatas.append(new_nddata)
         else:
             raise ValueError("Arbitrary image extensions can only be added "
                              "in association to a '{}'"
@@ -1192,7 +1195,7 @@ class AstroData:
         """
         if self.is_single:
             raise ValueError("Trying to get a mapping out of a single slice")
-        return {nd.meta['ver']: n for (n, nd) in enumerate(self.nddata)}
+        return {nd.meta['ver']: n for (n, nd) in enumerate(self._nddata)}
 
     def extver(self, ver):
         """
@@ -1405,8 +1408,7 @@ class AstroData:
 
     def crop(self, x1, y1, x2, y2):
         # TODO: Consider cropping of objects in the meta section
-        nddata = [self.nddata] if self.is_single else self.nddata
-        for nd in nddata:
+        for nd in self._nddata:
             orig_shape = nd.data.shape
             self._crop_nd(nd, x1, y1, x2, y2)
             for o in nd.meta['other'].values():
