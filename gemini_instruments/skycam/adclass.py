@@ -23,7 +23,8 @@ class AstroDataSkyCam(AstroDataGemini):
 
     @staticmethod
     def _matches_data(source):
-        match = source[1].header.get('TELESCOP', '') == '"GS_ALLSKYCAMERA"'
+        # remove "s because they added them, but this will also work if the fix it
+        match = source[0].header.get('TELESCOP', '').strip('"') == 'GS_ALLSKYCAMERA'
         return match
 
     @astro_data_tag
@@ -36,34 +37,27 @@ class AstroDataSkyCam(AstroDataGemini):
 
     @astro_data_descriptor
     def instrument(self):
-        hdr = self.TABLE1.meta.get('header')
-        return hdr.get('TELESCOP').strip('"')
+        return self.phu['TELESCOP'].strip('"')
 
     @astro_data_descriptor
     def object(self):
-        hdr = self.TABLE1.meta.get('header')
         return 'ZENITH'
 
     @astro_data_descriptor
     def exposure_time(self):
-        hdr = self.TABLE1.meta.get('header')
-        return hdr.get('EXPTIME')
+        return self.phu['EXPTIME']
 
     @astro_data_descriptor
     def ra(self):
-        hdr = self.TABLE1.meta.get('header')
-        return hdr.get('RA')
+        return self.phu['RA']
 
     @astro_data_descriptor
     def dec(self):
-        hdr = self.TABLE1.meta.get('header')
-        return hdr.get('DEC')
-    
+        return self.phu['DEC']
+
     @astro_data_descriptor
     def ut_datetime(self):
-        hdr = self.TABLE1.meta.get('header')
-        return dateutil.parser.parse(hdr.get('DATE-OBS'))
-        
+        return dateutil.parser.parse(self.phu['DATE-OBS'])
 
     @astro_data_descriptor
     def ut_time(self):
