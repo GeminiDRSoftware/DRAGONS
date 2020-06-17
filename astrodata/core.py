@@ -152,8 +152,6 @@ class AstroData:
         """
         for cls in self.__class__.mro():
             with suppress(AttributeError, KeyError):
-                # FIXME: replace with _keyword_dict, unless there is a good
-                # reason why we need mangling ?
                 mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
                 return getattr(self, mangled_dict_name)[name]
         else:
