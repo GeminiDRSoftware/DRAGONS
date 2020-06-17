@@ -44,17 +44,9 @@ class AstroDataSkyCam(AstroDataGemini):
         return 'ZENITH'
 
     @astro_data_descriptor
-    def exposure_time(self):
-        return self.phu['EXPTIME']
-
-    @astro_data_descriptor
     def ra(self):
         return self.phu['RA']
 
     @astro_data_descriptor
     def dec(self):
         return self.phu['DEC']
-
-    @astro_data_descriptor
-    def ut_time(self):
-        return self.ut_datetime().time()
