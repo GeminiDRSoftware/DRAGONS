@@ -54,22 +54,24 @@ class KeywordCallableWrapper:
 
 class FitsHeaderCollection:
     """
-    FitsHeaderCollection(headers)
-
     This class provides group access to a list of PyFITS Header-like objects.
     It exposes a number of methods (`set`, `get`, etc.) that operate over all
-    the headers at the same time.
+    the headers at the same time. It can also be iterated.
 
-    It can also be iterated.
+    Parameters
+    ----------
+    headers : list of `astropy.io.fits.Header`
+        List of Header objects.
+
     """
     def __init__(self, headers):
-        self.__headers = list(headers)
+        self._headers = list(headers)
 
     def _insert(self, idx, header):
-        self.__headers.insert(idx, header)
+        self._headers.insert(idx, header)
 
     def __iter__(self):
-        yield from self.__headers
+        yield from self._headers
 
     def __setitem__(self, key, value):
         if isinstance(value, tuple):
@@ -78,21 +80,19 @@ class FitsHeaderCollection:
             self.set(key, value=value)
 
     def set(self, key, value=None, comment=None):
-        for header in self.__headers:
+        for header in self._headers:
             header.set(key, value=value, comment=comment)
 
     def __getitem__(self, key):
-        raised = False
         missing_at = []
         ret = []
-        for n, header in enumerate(self.__headers):
+        for n, header in enumerate(self._headers):
             try:
                 ret.append(header[key])
             except KeyError:
                 missing_at.append(n)
                 ret.append(None)
-                raised = True
-        if raised:
+        if missing_at:
             error = KeyError("The keyword couldn't be found at headers: {}"
                              .format(tuple(missing_at)))
             error.missing_at = missing_at
@@ -114,7 +114,7 @@ class FitsHeaderCollection:
 
     def remove(self, key):
         deleted = 0
-        for header in self.__headers:
+        for header in self._headers:
             try:
                 del header[key]
                 deleted = deleted + 1
@@ -124,7 +124,7 @@ class FitsHeaderCollection:
             raise KeyError("'{}' is not on any of the extensions".format(key))
 
     def get_comment(self, key):
-        return [header.comments[key] for header in self.__headers]
+        return [header.comments[key] for header in self._headers]
 
     def set_comment(self, key, comment):
         def _inner_set_comment(header):
@@ -133,14 +133,14 @@ class FitsHeaderCollection:
 
             header.set(key, comment=comment)
 
-        for n, header in enumerate(self.__headers):
+        for n, header in enumerate(self._headers):
             try:
                 _inner_set_comment(header)
             except KeyError as err:
                 raise KeyError(err.args[0] + " at header {}".format(n))
 
     def __contains__(self, key):
-        return any(tuple(key in h for h in self.__headers))
+        return any(tuple(key in h for h in self._headers))
 
 
 def new_imagehdu(data, header, name=None):
