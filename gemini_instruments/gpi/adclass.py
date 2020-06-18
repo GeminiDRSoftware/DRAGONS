@@ -1,27 +1,24 @@
-import re
-
-from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
-from astrodata.fits import read_fits
+from astrodata import astro_data_tag, astro_data_descriptor, TagSet
 from ..gemini import AstroDataGemini
-from .. import gmu
+
 
 class AstroDataGpi(AstroDataGemini):
 
-    __keyword_dict = dict(array_section = 'DATASEC',
-                          detector_section = 'DATASEC',
-                          exposure_time = 'ITIME',
-                          filter = 'IFSFILT',
-                          focal_plane_mask = 'OCCULTER',
-                          pupil_mask = 'APODIZER')
+    __keyword_dict = dict(array_section='DATASEC',
+                          detector_section='DATASEC',
+                          exposure_time='ITIME',
+                          filter='IFSFILT',
+                          focal_plane_mask='OCCULTER',
+                          pupil_mask='APODIZER')
 
     @classmethod
-    def load(cls, source):
+    def read(cls, source):
         def gpi_parser(hdu):
             if hdu.header.get('EXTNAME') == 'DQ' and hdu.header.get('EXTVER') == 3:
                 hdu.header['EXTNAME'] = ('SCI', 'BPM renamed by AstroData')
                 hdu.header['EXTVER'] = (int(2), 'BPM renamed by AstroData')
 
-        return read_fits(source, extname_parser=gpi_parser)
+        return super().read(source, extname_parser=gpi_parser)
 
     @staticmethod
     def _matches_data(source):

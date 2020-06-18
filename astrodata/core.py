@@ -1129,9 +1129,11 @@ class AstroData:
                                       add_to=add_to)
 
     @classmethod
-    def read(cls, source):
+    def read(cls, source, extname_parser=None):
         """Read from a file, file object, HDUList, etc."""
-        return read_fits(cls, source)
+        return read_fits(cls, source, extname_parser=extname_parser)
+
+    load = read  # for backward compatibility
 
     def write(self, filename=None, overwrite=False):
         """
