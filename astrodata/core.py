@@ -1133,8 +1133,6 @@ class AstroData:
         """Read from a file, file object, HDUList, etc."""
         return read_fits(cls, source)
 
-    load = read  # for backward compatibility
-
     def write(self, filename=None, overwrite=False):
         """
         Write the object to disk.
