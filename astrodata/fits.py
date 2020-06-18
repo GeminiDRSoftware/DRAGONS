@@ -314,16 +314,11 @@ def update_header(headera, headerb):
 
 
 def fits_ext_comp_key(ext):
-    """
-    Returns a pair (integer, string) that will be used to sort extensions
-    """
+    """Returns a pair (int, str) that will be used to sort extensions."""
     if isinstance(ext, PrimaryHDU):
         # This will guarantee that the primary HDU goes first
         ret = (-1, "")
     else:
-        header = ext.header
-        ver = header.get('EXTVER')
-
         # When two extensions share version number, we'll use their names
         # to sort them out. Choose a suitable key so that:
         #
@@ -332,21 +327,21 @@ def fits_ext_comp_key(ext):
         #
         # We'll resort to add 'z' in front of the usual name to force
         # SCI to be the "smallest"
-        name = header.get('EXTNAME')  # Make sure that the name is a string
-        if name is None:
+        name = ext.name
+        if name == '':
             name = "zzzz"
         elif name != DEFAULT_EXTENSION:
             name = "z" + name
 
+        ver = ext.header.get('EXTVER')
         if ver in (-1, None):
-            # In practice, this number should be larger than any
-            # EXTVER found in real life HDUs, pushing unnumbered
-            # HDUs to the end
-            ret = (2**32-1, name)
-        else:
-            # For the general case, just return version and name, to let them
-            # be sorted naturally
-            ret = (ver, name)
+            # In practice, this number should be larger than any EXTVER found
+            # in real life HDUs, pushing unnumbered HDUs to the end.
+            ver = 2**32-1
+
+        # For the general case, just return version and name, to let them
+        # be sorted naturally
+        ret = (ver, name)
 
     return ret
 
@@ -415,31 +410,31 @@ def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
 
     if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
         # MEF file
-        for n, unit in enumerate(hdulist):
+        for n, hdu in enumerate(hdulist):
             if extname_parser:
-                extname_parser(unit)
-            ev = unit.header.get('EXTVER')
-            eh = unit.header.get('EXTNAME')
-            if ev not in (-1, None) and eh is not None:
-                highest_ver = max(highest_ver, unit.header['EXTVER'])
-            elif not isinstance(unit, PrimaryHDU):
+                extname_parser(hdu)
+            ver = hdu.header.get('EXTVER')
+            if ver not in (-1, None) and hdu.name:
+                highest_ver = max(highest_ver, ver)
+            elif not isinstance(hdu, PrimaryHDU):
                 continue
 
-            new_list.append(unit)
-            recognized.add(unit)
+            new_list.append(hdu)
+            recognized.add(hdu)
 
-        for unit in hdulist:
-            if unit in recognized:
+        for hdu in hdulist:
+            if hdu in recognized:
                 continue
-            elif isinstance(unit, ImageHDU):
+            elif isinstance(hdu, ImageHDU):
                 highest_ver += 1
-                if 'EXTNAME' not in unit.header:
-                    unit.header['EXTNAME'] = (default_extension, 'Added by AstroData')
-                if unit.header.get('EXTVER') in (-1, None):
-                    unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
+                if 'EXTNAME' not in hdu.header:
+                    hdu.header['EXTNAME'] = (default_extension,
+                                             'Added by AstroData')
+                if hdu.header.get('EXTVER') in (-1, None):
+                    hdu.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
-            new_list.append(unit)
-            recognized.add(unit)
+            new_list.append(hdu)
+            recognized.add(hdu)
     else:
         # Uh-oh, a single image FITS file
         new_list.append(PrimaryHDU(header=hdulist[0].header))
