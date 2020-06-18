@@ -4,13 +4,15 @@ from copy import deepcopy
 
 from astropy.io import fits
 
-from .core import AstroDataError
-
-LOGGER = logging.getLogger('AstroData Factory')
+LOGGER = logging.getLogger(__name__)
 
 
 def fits_opener(source):
     return fits.open(source, memmap=True)
+
+
+class AstroDataError(Exception):
+    pass
 
 
 class AstroDataFactory:

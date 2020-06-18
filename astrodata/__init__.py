@@ -7,13 +7,13 @@ accordingly to the :class:`~astrodata.TagSet` received.
 
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
-           'open', 'create', '__version__', 'version']
+           'open', 'create', '__version__', 'version', 'add_header_to_table']
 
 
-from .core import AstroData, AstroDataError, AstroDataFits
+from .core import AstroData, AstroDataFits
 # TODO: Remove 'write' when there's nothing else using it
 from .fits import KeywordCallableWrapper, add_header_to_table
-from .factory import AstroDataFactory
+from .factory import AstroDataFactory, AstroDataError
 from .nddata import NDAstroData
 from .utils import *
 from ._version import version

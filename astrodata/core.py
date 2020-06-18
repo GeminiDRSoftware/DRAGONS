@@ -25,10 +25,6 @@ from .utils import (assign_only_single_slice, astro_data_descriptor,
 NO_DEFAULT = object()
 
 
-class AstroDataError(Exception):
-    pass
-
-
 _arit_doc = """
     Performs {name} by evaluating ``self`` {op} ``operand``.
 

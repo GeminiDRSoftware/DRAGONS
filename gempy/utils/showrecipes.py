@@ -9,7 +9,7 @@ import astrodata
 import gemini_instruments
 import geminidr
 
-from astrodata.core import AstroDataError
+from astrodata import AstroDataError
 from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.mappers.recipeMapper import RecipeMapper
