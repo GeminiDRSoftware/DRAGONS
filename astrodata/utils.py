@@ -8,9 +8,9 @@ import numpy as np
 
 INTEGER_TYPES = (int, np.integer)
 
-__all__ = ('deprecated', 'normalize_indices', 'TagSet',
-           'AstroDataFitsDeprecationWarning', 'returns_list',
-           'astro_data_tag', 'astro_data_descriptor')
+__all__ = ('assign_only_single_slice', 'astro_data_descriptor',
+           'AstroDataFitsDeprecationWarning', 'astro_data_tag', 'deprecated',
+           'normalize_indices', 'returns_list', 'TagSet')
 
 
 # FIXME: Should be AstroDataDeprecationWarning ?
@@ -166,6 +166,17 @@ def returns_list(fn):
                         .format(fn.__name__))
             else:
                 return [ret] * len(self)
+    return wrapper
+
+
+def assign_only_single_slice(fn):
+    """Raise `ValueError` if assigning to a non-single slice."""
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object that "
+                             "is not a single slice")
+        return fn(self, *args, **kwargs)
     return wrapper
 
 

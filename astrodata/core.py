@@ -19,8 +19,8 @@ from .fits import (DEFAULT_EXTENSION, FitsHeaderCollection, _process_table,
                    read_fits, write_fits)
 from .nddata import ADVarianceUncertainty
 from .nddata import NDAstroData as NDDataObject
-from .utils import (astro_data_descriptor, deprecated, normalize_indices,
-                    returns_list)
+from .utils import (assign_only_single_slice, astro_data_descriptor,
+                    deprecated, normalize_indices, returns_list)
 
 NO_DEFAULT = object()
 
@@ -269,7 +269,7 @@ class AstroData:
     @deprecated("Access to headers through this property is deprecated and "
                 "will be removed in the future. Use '.hdr' instead.")
     def header(self):
-        return [self._phu] + [ndd.meta['header'] for ndd in self._nddata]
+        return [self.phu] + [ndd.meta['header'] for ndd in self._nddata]
 
     @property
     def tags(self):
@@ -362,11 +362,8 @@ class AstroData:
         return [nd.data for nd in self._nddata]
 
     @data.setter
+    @assign_only_single_slice
     def data(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that "
-                             "is not a single slice")
-
         # Setting the ._data in the NDData is a bit kludgy, but we're all
         # grown adults and know what we're doing, isn't it?
         if hasattr(value, 'shape'):
@@ -393,10 +390,8 @@ class AstroData:
         return [nd.uncertainty for nd in self._nddata]
 
     @uncertainty.setter
+    @assign_only_single_slice
     def uncertainty(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that "
-                             "is not a single slice")
         self.nddata.uncertainty = value
 
     @property
@@ -411,10 +406,8 @@ class AstroData:
         return [nd.mask for nd in self._nddata]
 
     @mask.setter
+    @assign_only_single_slice
     def mask(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that "
-                             "is not a single slice")
         self.nddata.mask = value
 
     @property
@@ -436,10 +429,8 @@ class AstroData:
         return [nd.variance for nd in self._nddata]
 
     @variance.setter
+    @assign_only_single_slice
     def variance(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object that "
-                             "is not a single slice")
         if value is None:
             self.nddata.uncertainty = None
         else:
@@ -455,10 +446,8 @@ class AstroData:
                              "that is not a single slice")
 
     @wcs.setter
+    @assign_only_single_slice
     def wcs(self, value):
-        if not self.is_single:
-            raise ValueError("Trying to assign to an AstroData object "
-                             "that is not a single slice")
         self.nddata.wcs = value
 
     def __iter__(self):
