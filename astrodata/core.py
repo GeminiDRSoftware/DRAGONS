@@ -291,6 +291,7 @@ class AstroData:
 
     @property
     def indices(self):
+        """Returns the extensions indices for sliced objects."""
         return self._indices if self._indices else list(range(len(self)))
 
     @property
@@ -455,6 +456,7 @@ class AstroData:
 
     @property
     def wcs(self):
+        """Returns the list of WCS objects for each extension."""
         if self.is_single:
             return self.nddata.wcs
         else:
