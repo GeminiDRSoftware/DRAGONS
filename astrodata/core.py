@@ -19,7 +19,8 @@ from .fits import (DEFAULT_EXTENSION, FitsHeaderCollection, _process_table,
                    read_fits, write_fits)
 from .nddata import ADVarianceUncertainty
 from .nddata import NDAstroData as NDDataObject
-from .utils import astro_data_descriptor, deprecated, normalize_indices
+from .utils import (astro_data_descriptor, deprecated, normalize_indices,
+                    returns_list)
 
 NO_DEFAULT = object()
 
@@ -347,22 +348,18 @@ class AstroData:
         return set(self._tables.keys())
 
     @property
+    @returns_list
     def shape(self):
-        if self.is_single:
-            return self.nddata.shape
-        else:
-            return [nd.shape for nd in self.nddata]
+        return [nd.shape for nd in self._nddata]
 
     @property
+    @returns_list
     def data(self):
         """
         A list of the arrays (or single array, if this is a single slice)
         corresponding to the science data attached to each extension.
         """
-        if self.is_single:
-            return self.nddata.data
-        else:
-            return [nd.data for nd in self.nddata]
+        return [nd.data for nd in self._nddata]
 
     @data.setter
     def data(self, value):
@@ -379,6 +376,7 @@ class AstroData:
                                  "with no shape")
 
     @property
+    @returns_list
     def uncertainty(self):
         """
         A list of the uncertainty objects (or a single object, if this is
@@ -392,10 +390,7 @@ class AstroData:
         variance : The actual array supporting the uncertainty object
 
         """
-        if self.is_single:
-            return self.nddata.uncertainty
-        else:
-            return [nd.uncertainty for nd in self.nddata]
+        return [nd.uncertainty for nd in self._nddata]
 
     @uncertainty.setter
     def uncertainty(self, value):
@@ -405,6 +400,7 @@ class AstroData:
         self.nddata.uncertainty = value
 
     @property
+    @returns_list
     def mask(self):
         """
         A list of the mask arrays (or a single array, if this is a single
@@ -412,10 +408,7 @@ class AstroData:
 
         For objects that miss a mask, `None` will be provided instead.
         """
-        if self.is_single:
-            return self.nddata.mask
-        else:
-            return [nd.mask for nd in self.nddata]
+        return [nd.mask for nd in self._nddata]
 
     @mask.setter
     def mask(self, value):
@@ -425,6 +418,7 @@ class AstroData:
         self.nddata.mask = value
 
     @property
+    @returns_list
     def variance(self):
         """
         A list of the variance arrays (or a single array, if this is a single
@@ -439,10 +433,7 @@ class AstroData:
         propagate uncertainty when operating with the data.
 
         """
-        if self.is_single:
-            return self.nddata.variance
-        else:
-            return [nd.variance for nd in self.nddata]
+        return [nd.variance for nd in self._nddata]
 
     @variance.setter
     def variance(self, value):
