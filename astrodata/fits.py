@@ -485,26 +485,23 @@ def read_fits(cls, source, extname_parser=None):
     if 'ORIGNAME' not in hdulist[0].header and ad.orig_filename is not None:
         hdulist[0].header.set('ORIGNAME', ad.orig_filename,
                               'Original filename prior to processing')
+
     ad.phu = hdulist[0].header
-
     seen = {hdulist[0]}
-
     skip_names = {DEFAULT_EXTENSION, 'REFCAT', 'MDF'}
 
     def associated_extensions(ver):
-        for unit in hdulist:
-            header = unit.header
-            if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
-                yield unit
+        for hdu in hdulist:
+            if hdu.header.get('EXTVER') == ver and hdu.name not in skip_names:
+                yield hdu
 
-    sci_units = [x for x in hdulist[1:]
-                 if x.header.get('EXTNAME') == DEFAULT_EXTENSION]
+    sci_units = [hdu for hdu in hdulist[1:] if hdu.name == DEFAULT_EXTENSION]
 
-    for idx, unit in enumerate(sci_units):
-        seen.add(unit)
-        ver = unit.header.get('EXTVER', -1)
+    for idx, hdu in enumerate(sci_units):
+        seen.add(hdu)
+        ver = hdu.header.get('EXTVER', -1)
         parts = {
-            'data': unit,
+            'data': hdu,
             'uncertainty': None,
             'mask': None,
             'wcs': None,
@@ -513,7 +510,7 @@ def read_fits(cls, source, extname_parser=None):
 
         for extra_unit in associated_extensions(ver):
             seen.add(extra_unit)
-            name = extra_unit.header.get('EXTNAME')
+            name = extra_unit.name
             if name == 'DQ':
                 parts['mask'] = extra_unit
             elif name == 'VAR':
