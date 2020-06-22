@@ -428,7 +428,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     Returns
     -------
-    2D array: peak pixels and SNRs
+    2D array: peak pixels and SNRs (sorted by pixel value)
     """
     mask = mask if mask is not None else np.zeros_like(data, dtype=np.uint16)
 
