@@ -152,8 +152,8 @@ class QA(PrimitivesBASE):
                         log.warning("Background is less than or equal to 0 "
                                     "for {}:{}".format(ad.filename,extver))
                 else:
-                    log.stdinfo("No nominal photometric zeropoint avaliable "
-                                 "for {}:{}, filter {}".format(ad.filename,
+                    log.stdinfo("No nominal photometric zeropoint available "
+                                "for {}:{}, filter {}".format(ad.filename,
                                         extver, ad.filter_name(pretty=True)))
 
                 info_list.append(ext_info)

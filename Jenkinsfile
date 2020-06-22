@@ -24,6 +24,7 @@ pipeline {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
+        timeout(time: 1, unit: 'HOURS')
     }
 
     environment {
@@ -97,6 +98,7 @@ pipeline {
                         label "centos7"
                     }
                     environment {
+                        MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                     }
                     steps {
@@ -128,6 +130,7 @@ pipeline {
                 label "centos7"
             }
             environment {
+                MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
             }
             steps {
@@ -156,6 +159,7 @@ pipeline {
                 label "master"
             }
             environment {
+                MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
             }
             steps {
