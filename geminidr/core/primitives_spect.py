@@ -2231,17 +2231,11 @@ class Spect(PrimitivesBASE):
                 sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
                             if ext.mask is None else ext.mask.copy())
 
-                # Add the user's region constraints into the bad pix. mask:
-                # To do: We should somehow ensure that the user's constraints
-                # get retained even when flagged pixels are reinstated where
-                # there would otherwise be no good ones left.
-                user_mask = np.ones(slitlen, dtype=np.bool)
+                # Convert user region constraints to Boolean masks for slicing:
+                user_reg = np.zeros(slitlen, dtype=np.bool)
                 for _slice in slices:
-                    user_mask[_slice] = False
-                if dispaxis == 0:
-                    sky_mask[:, user_mask] |= DQ.no_data
-                else:
-                    sky_mask[user_mask] |= DQ.no_data
+                    user_reg[_slice] = True
+                user_masked = ~user_reg
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
@@ -2265,16 +2259,24 @@ class Spect(PrimitivesBASE):
                                                       where=var > 0)))
 
                 # Now fit the model for each row/column along dispersion axis
-                for i, (data_row, mask_row, weight_row) in enumerate(zip(data, mask,
-                                                                         sky_weights)):
-                    sky = np.ma.masked_array(data_row, mask=mask_row)
+                for i, (data_row, mask_row, weight_row) in \
+                    enumerate(zip(data, mask, sky_weights[:, user_reg])):
+
+                    sky = np.ma.masked_array(data_row, mask=mask_row)[user_reg]
+
                     if weight_row.sum() == 0:
                         weight_row = None
 
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, sky, order=order,
+                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels[user_reg], sky, order=order,
                                                                             w=weight_row, grow=2)
-                    # Spline fit has been returned so no need to recompute
-                    sky_model[i] = spline.data
+                    # Spline fit has been returned so only need to compute
+                    # regions ignored in the fitting
+                    sky_model[i][user_reg] = spline.data
+                    sky_model[i][user_masked] = spline(pixels[user_masked])
+
+                    # Here we have the have the original row/column data, the
+                    # spline.mask, the evaluated sky_model fit and the user
+                    # regions available for plotting, when implemented.
 
                 ext.data -= (sky_model if dispaxis == 0 else sky_model.T)
 
