@@ -503,7 +503,8 @@ class AstroDataGmos(AstroDataGemini):
                 )
             )
 
-            dispersion = - (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() * cenwave) / (206265. * greq)
+            dispersion = - (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() *
+                            self.detector_x_bin() / self.detector_y_bin() * cenwave) / (206265. * greq)
 
         else:
             dispersion = None

@@ -12,7 +12,7 @@ from astropy import units as u
 
 Section = namedtuple('Section', 'x1 x2 y1 y2')
 
-def array_from_list(list_of_quantities):
+def array_from_list(list_of_quantities, unit=None):
     """
     Convert a list of Quantity objects to a numpy array. The elements of the
     input list must all be converted to the same units.
@@ -26,7 +26,8 @@ def array_from_list(list_of_quantities):
     -------
     array: array representation of this list
     """
-    unit = list_of_quantities[0].unit
+    if unit is None:
+        unit = list_of_quantities[0].unit
     values = [x.to(unit).value for x in list_of_quantities]
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
@@ -148,6 +149,72 @@ def section_str_to_tuple(section, log=None):
         else:
             section = Section(x1-1, x2, y1-1, y2)
     return section
+
+def cartesian_regions_to_slices(regions):
+    """
+    Convert a sample region(s) string, consisting of a comma-separated list
+    of (colon-or-hyphen-separated) pixel ranges into Python slice objects.
+    These ranges may describe either multiple 1D regions or a single higher-
+    dimensional region (with one range per axis), a distinction which is not
+    important here. The ranges are specified in 1-indexed Cartesian pixel
+    co-ordinates, inclusive of the upper limit, and get converted to a tuple
+    of Python slice objects (in reverse order), suitable for indexing a
+    :mod:`numpy` array. If regions is None or empty, the resulting slice will
+    select the entire array. Single indices may be used (eg. '1,2'), or '*'
+    for the whole axis, lower and/or upper limits may be omitted to use the
+    remainder of the range (eg. '10:,:') and/or an optional step may be
+    specified using colon syntax (eg. '1:10:2' or '1-10:2').
+    """
+    if not regions:
+        return (slice(None, None, None),)
+
+    if not isinstance(regions, str):
+        raise TypeError('region must be a string or None, not \'{}\''
+                        .format(regions))
+
+    origin = 1
+
+    ranges = regions.strip('[]').split(',')
+
+    slices = []
+    for _range in ranges[::-1]:           # reverse Cartesian order for Python
+
+        err = False if _range else True   # no empty string
+
+        if _range == '*':                 # allow '*' for all pix, like IRAF
+            slices.append(slice(None, None))
+            continue
+
+        limits = _range.replace('-', ':', 1).split(':')
+        nlim = len(limits)
+
+        if err:
+            pass
+        elif nlim > 3:
+            err = True                    # can have at most start:stop:step
+        elif nlim == 1:
+            try:
+                lim = int(limits[0])-origin
+            except ValueError:
+                err = True                # no non-numeric values
+            else:
+                sliceobj = slice(lim, lim+1, None)
+        else:
+            try:
+                # Adjust only the lower limit for 1-based indexing since Python
+                # ranges are exclusive:
+                sliceobj = slice(*(int(lim)-adj if lim else None \
+                                   for lim, adj in zip(limits, (origin, 0, 0))))
+            except ValueError:
+                err = True                # no non-numeric values
+
+        if err:
+            raise ValueError('Failed to parse sample regions \'{}\''
+                             .format(regions))
+
+        slices.append(sliceobj)
+
+    return tuple(slices)
 
 def get_corners(shape):
     """

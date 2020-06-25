@@ -86,7 +86,7 @@ class Aperture:
         """Simple function to warn user if aperture model appears inconsistent
         with the array containing the data"""
         try:
-            if self.model.domain != [0, npix - 1]:
+            if self.model.domain != (0, npix - 1):
                 log.warning("Model's domain is inconsistent with image size. "
                             "Results may be incorrect.")
         except AttributeError:  # no "domain" attribute

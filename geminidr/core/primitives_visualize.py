@@ -11,13 +11,16 @@ import urllib.request
 from copy import deepcopy
 from importlib import import_module
 
-from gempy.library import astromodels
+from astrodata import wcs as adwcs
+
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy import numdisplay as nd
-
 from gempy.library import transform
+
 from astropy.modeling import models
+from gwcs.coordinate_frames import Frame2D
+from gwcs.wcs import WCS as gWCS
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.gmos.pixel_functions import get_bias_level
@@ -113,7 +116,7 @@ class Visualize(PrimitivesBASE):
 
             if remove_bias:
                 if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
-                    self.timestamp_keys["subtractOverscan"] in ad.phu):
+                    ad.phu.get(self.timestamp_keys["subtractOverscan"])):
                     log.fullinfo("Bias level has already been removed from "
                                  "data; no approximate correction will be "
                                  "performed")
@@ -296,18 +299,25 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
-            # If there's an overscan section, we must trim it before mosaicking
-            try:
-                overscan_kw = ad._keyword_for('overscan_section')
-            except AttributeError:  # doesn't exist for this AD, so carry on
-                pass
-            else:
-                if overscan_kw in ad.hdr:
-                    ad = gt.trim_to_data_section(ad, self.keyword_comments)
+            transform.add_mosaic_wcs(ad, geotable)
 
-            adg = transform.create_mosaic_transform(ad, geotable)
-            ad_out = adg.transform(attributes=attributes, order=order,
-                                   process_objcat=False)
+            # If there's an overscan section in the data, this will crash, but
+            # we can catch that, trim, and try again. Don't catch anything else
+            try:
+                ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
+                                                          order=order, process_objcat=False)
+            except ValueError as e:
+                if 'data sections' in repr(e):
+                    ad = gt.trim_to_data_section(ad, self.keyword_comments)
+                    ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
+                                                         order=order, process_objcat=False)
+                else:
+                    raise e
+
+            # HACK! Need to update FITS header because imaging primitives edit it
+            if 'IMAGE' in ad_out.tags and ad_out[0].wcs is not None:
+                wcs_dict = adwcs.gwcs_to_fits(ad_out[0], ad_out.phu)
+                ad_out[0].hdr.update(wcs_dict)
 
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
@@ -324,6 +334,11 @@ class Visualize(PrimitivesBASE):
         instrument's geometry_conf module) is only required if there are
         multiple arrays being tiled together, as the gaps need to be
         specified.
+
+        If the input AstroData objects still have non-data regions, these
+        will not be trimmed. However, the WCS of the final image will
+        only be correct for some of the image since extra space has been
+        introduced into the image.
 
         Parameters
         ----------
@@ -351,21 +366,13 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
-            # Get information to calculate the output geometry
-            # TODO: Think about arbitrary ROIs
             array_info = gt.array_information(ad)
             detshape = array_info.detector_shape
             if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
                 log.warning("{} has nothing to tile, as tile_all=False but "
-                            "each array has only one amplifier.".format(ad.filename))
+                            "each array has only one amplifier.")
                 adoutputs.append(ad)
                 continue
-
-            blocks = [transform.Block(ad[arrays], shape=shape) for arrays, shape in
-                      zip(array_info.extensions, array_info.array_shapes)]
-            # This is needed to handle non-full-frame ROIs
-            offsets = [ad[exts[0]].array_section()
-                       for exts in array_info.extensions]
 
             if tile_all and detshape != (1, 1):  # We need gaps!
                 geotable = import_module('.geometry_conf', self.inst_lookups)
@@ -375,49 +382,110 @@ class Visualize(PrimitivesBASE):
                 except TypeError:  # single number, applies to both
                     xgap = ygap = chip_gaps
 
-                # Some hackery here in case the input still has overscan regions
-                # that would cause each Block to extend outside its nominal
-                # footprint. The array_info is pre-sorted so the loop always
-                # does the bottom row first from left to right and hence we can
-                # keep track of how far in x and y each Block has extended the
-                # footprint and give it a nudge if that's beyond its nominal
-                # coverage.
-                xmax = ymax = 0
-                transforms = []
-                for i, (origin, offset) in enumerate(zip(array_info.origins, offsets)):
-                    if i % detshape[1] == 0:
-                        xmax = 0
-                        if i > 0:
-                            ymax += yshift + blocks[i-1].shape[0]
-                    xshift = (max(origin[1], xmax) + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
-                    yshift = (max(origin[0], ymax) + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
-                    transforms.append(transform.Transform(
-                        models.Shift(xshift) & models.Shift(yshift)
-                    ))
-                    xmax = xshift + blocks[i].shape[1]
-                adg = transform.AstroDataGroup(blocks, transforms)
-                adg.set_reference()
-                ad_out = adg.transform(attributes=attributes, process_objcat=True)
+            kw = ad._keyword_for('data_section')
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+
+            # Work out additional shifts required to cope with posisble overscan
+            # regions, including those in already-tiled CCDs
+            if tile_all:
+                yorigins, xorigins = np.rollaxis(np.array(array_info.origins), 1).reshape((2,) + array_info.detector_shape)
+                xorigins //= xbin
+                yorigins //= ybin
             else:
-                # ADG.transform() produces full AD objects so we start with
-                # the first one, and then append the single extensions created
-                # by later calls to it.
-                for i, block in enumerate(blocks):
-                    # Simply create a single tiled array
-                    adg = transform.AstroDataGroup([block])
-                    adg.set_reference()
-                    if i == 0:
-                        ad_out = adg.transform(attributes=attributes,
-                                               process_objcat=True)
-                    else:
-                        ad_out.append(adg.transform(attributes=attributes,
-                                                    process_objcat=True)[0])
+                yorigins, xorigins = np.zeros((2,) + array_info.detector_shape)
+            it_ccd = np.nditer(xorigins, flags=['multi_index'])
+            i = 0
+            while not it_ccd.finished:
+                ccdy, ccdx = it_ccd.multi_index
+                shp = array_info.array_shapes[i]
+                exts = array_info.extensions[i]
+                xshifts = np.zeros(shp, dtype=np.int32)
+                yshifts = np.zeros(shp, dtype=np.int32)
+                it = np.nditer(np.array(exts).reshape(shp), flags=['multi_index'])
+                while not it.finished:
+                    iy, ix = it.multi_index
+                    ext = ad[int(it[0])]
+                    datsec = ext.data_section()
+                    if datsec.x1 > 0:
+                        xshifts[iy, ix:] += datsec.x1
+                    if datsec.x2 < ext.shape[1]:
+                        xshifts[iy, ix+1:] += ext.shape[1] - datsec.x2
+                    if datsec.y1 > 0:
+                        yshifts[iy:, ix] += datsec.y1
+                    if datsec.y2 < ext.shape[0]:
+                        xshifts[iy+1:, ix] += ext.shape[0] - datsec.y2
+
+                    arrsec = ext.array_section()
+                    ext_shift = (models.Shift((arrsec.x1 // xbin - datsec.x1)) &
+                                 models.Shift((arrsec.y1 // ybin - datsec.y1)))
+
+                    # We need to have a "tile" Frame to resample to.
+                    # We also need to perform the inverse, after the "tile"
+                    # frame, of any change we make beforehand.
+                    if ext.wcs is None:
+                        ext.wcs = gWCS([(Frame2D(name="pixels"), ext_shift),
+                                        (Frame2D(name="tile"), None)])
+                    elif 'tile' not in ext.wcs.available_frames:
+                        #ext.wcs.insert_frame(ext.wcs.input_frame, ext_shift,
+                        #                     Frame2D(name="tile"))
+                        ext.wcs = gWCS([(ext.wcs.input_frame, ext_shift),
+                                        (Frame2D(name="tile"), ext.wcs.pipeline[0][1])] +
+                                       ext.wcs.pipeline[1:])
+                        ext.wcs.insert_transform('tile', ext_shift.inverse, after=True)
+
+                    dx, dy = xshifts[iy, ix], yshifts[iy, ix]
+                    if tile_all:
+                        dx += xorigins[ccdy, ccdx]
+                        dy += yorigins[ccdy, ccdx]
+                    if dx or dy:  # Don't bother if they're both zero
+                        shift_model = models.Shift(dx) & models.Shift(dy)
+                        ext.wcs.insert_transform('tile', shift_model, after=False)
+                        if ext.wcs.output_frame.name != 'tile':
+                            ext.wcs.insert_transform('tile', shift_model.inverse, after=True)
+
+                    # Reset data_section since we're not trimming overscans
+                    ext.hdr[kw] = '[1:{},1:{}]'.format(*reversed(ext.shape))
+                    it.iternext()
+
+                if tile_all:
+                    # We need to shift other arrays if this one is larger than
+                    # its expected size due to overscan regions. We've kept
+                    # track of shifts we've introduced, but it might also be
+                    # the case that we've been sent a previous tile_all=False output
+                    if ccdx < detshape[1] - 1:
+                        max_xshift = max(xshifts.max(), ext.shape[1] -
+                                         (xorigins[ccdy, ccdx+1] - xorigins[ccdy, ccdx]))
+                        xorigins[ccdy, ccdx+1:] += max_xshift + xgap // xbin
+                    if ccdy < detshape[0] - 1:
+                        max_yshift = max(yshifts.max(), ext.shape[0] -
+                                         (yorigins[ccdy+1, ccdx] - yorigins[ccdy, ccdx]))
+                        yorigins[ccdy+1:, ccdx] += max_yshift + ygap // ybin
+                elif i == 0:
+                    ad_out = transform.resample_from_wcs(ad[exts], "tile",
+                                            attributes=attributes, process_objcat=True)
+                else:
+                    ad_out.append(transform.resample_from_wcs(ad[exts], "tile",
+                                                 attributes=attributes, process_objcat=True)[0])
+                i += 1
+                it_ccd.iternext()
+
+            if tile_all:
+                ad_out = transform.resample_from_wcs(ad, "tile", attributes=attributes,
+                                                     process_objcat=True)
+
+            # HACK! Need to update FITS header because imaging primitives edit it
+            if 'IMAGE' in ad_out.tags:
+                for ext in ad_out:
+                    if ext.wcs is not None:
+                        wcs_dict = adwcs.gwcs_to_fits(ext, ad_out.phu)
+                        ext.hdr.update(wcs_dict)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.orig_filename = ad.filename
             ad_out.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad_out)
         return adoutputs
+
 
     def plotSpectraForQA(self, adinputs=None, **params):
         """
@@ -493,49 +561,22 @@ class Visualize(PrimitivesBASE):
                         "Expected 1D data. Found {:d}D data: {:s}".format(
                             data.ndim, ad.filename))
 
-                if hasattr(ext, 'WAVECAL'):
-
-                    wcal_model = astromodels.dict_to_chebyshev(
-                        dict(
-                            zip(
-                                ext.WAVECAL["name"],
-                                ext.WAVECAL["coefficients"]
-                            )
-                        )
-                    )
-
-                    wavelength = wcal_model(np.arange(data.size, dtype=float))
-                    w_dispersion = ext.hdr["CDELT1"]
-                    w_units = ext.hdr["CUNIT1"]
-
-                elif "CDELT1" in ext.hdr:
-
-                    wavelength = (
-                        ext.hdr["CRVAL1"] + ext.hdr["CDELT1"] * (
-                            np.arange(data.size, dtype=float)
-                            + 1 - ext.hdr["CRPIX1"]))
-
-                    w_dispersion = ext.hdr["CDELT1"]
-                    w_units = ext.hdr["CUNIT1"]
-
-                else:
-                    w_units = "px"
-                    w_dispersion = 1
+                wavelength = ext.wcs(np.arange(data.size)).astype(np.float32)
+                w_dispersion = np.abs(wavelength[-1] - wavelength[0]) / (data.size - 1)
+                w_units = ext.wcs.output_frame.unit[0]
 
                 # Clean up bad data
                 mask = np.logical_not(np.ma.masked_invalid(data).mask)
 
                 wavelength = wavelength[mask]
-                data = data[mask]
-                stddev = stddev[mask]
+                data = data[mask].astype(np.float32)
+                stddev = stddev[mask].astype(np.float32)
 
                 # Round and convert data/stddev to int to minimize data transfer load
                 wavelength = np.round(wavelength, decimals=3)
-                data = np.round(data)
-                stddev = np.round(stddev)
 
-                _intensity = [[w, int(d)] for w, d in zip(wavelength, data)]
-                _stddev = [[w, int(s)] for w, s in zip(wavelength, stddev)]
+                _intensity = [[w, d] for w, d in zip(wavelength, data)]
+                _stddev = [[w, s] for w, s in zip(wavelength, stddev)]
 
                 center = np.round(ext.hdr["XTRACTED"])
                 lower = np.round(ext.hdr["XTRACTLO"])

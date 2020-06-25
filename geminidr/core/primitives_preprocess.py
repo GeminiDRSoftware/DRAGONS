@@ -558,7 +558,7 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        qecorr_key = self.timestamp_keys['applyQECorrection']
+        qecorr_key = self.timestamp_keys['QECorrect']
 
         if not do_flat:
             log.warning("Flat correction has been turned off.")

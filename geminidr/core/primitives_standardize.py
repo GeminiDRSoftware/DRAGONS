@@ -4,7 +4,6 @@
 #                                                      primitives_standardize.py
 # ------------------------------------------------------------------------------
 import os
-from datetime import datetime
 
 import numpy as np
 from importlib import import_module
@@ -13,6 +12,7 @@ from scipy.ndimage import measurements
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.library.transform import add_longslit_wcs
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -314,21 +314,22 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
 
-        provenance_timestamp = datetime.now()
-
         filenames = [ad.filename for ad in adinputs]
         paths = [ad.path for ad in adinputs]
 
         timestamp_key = self.timestamp_keys["prepare"]
         sfx = params["suffix"]
         for primitive in ('validateData', 'standardizeStructure',
-                          'standardizeHeaders'):
-            passed_params = self._inherit_params(params, primitive)
-            adinputs = getattr(self, primitive)(adinputs, **passed_params)
+                          'standardizeHeaders', 'standardizeWCS'):
+            # No need to call standardizeWCS if all adinputs are single-extension
+            # images (tags should be the same for all adinputs)
+            if ('WCS' not in primitive or 'SPECT' in adinputs[0].tags or
+                    any(len(ad) > 1 for ad in adinputs)):
+                passed_params = self._inherit_params(params, primitive)
+                adinputs = getattr(self, primitive)(adinputs, **passed_params)
 
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
-            filename = ad.filename
             ad.update_filename(suffix=sfx, strip=True)
         for ad, filename, path in zip(adinputs, filenames, paths):
             if path:
@@ -363,6 +364,38 @@ class Standardize(PrimitivesBASE):
         return adinputs
 
     def standardizeStructure(self, adinputs=None, **params):
+        return adinputs
+
+    def standardizeWCS(self, adinputs=None, suffix=None, reference_extension=None):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+        For multi-extension ADs, it means prepending a tiling and/or mosaic
+        transform before the pixel->world transform, and giving all extensions
+        copies of the reference extension's pixel->world transform.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+        reference_extension: int/None
+            reference extension whose WCS is inherited by others
+        """
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            # TODO: work towards making this "if 'SPECT' in ad.tags"
+            # which is why it's here and not in primitives_gmos_spect
+            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
+            if {'GMOS', 'SPECT', 'LS'}.issubset(ad.tags):
+                add_longslit_wcs(ad)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def validateData(self, adinputs=None, suffix=None):
