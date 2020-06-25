@@ -42,11 +42,3 @@ class AstroDataSkyCam(AstroDataGemini):
     @astro_data_descriptor
     def object(self):
         return 'ZENITH'
-
-    @astro_data_descriptor
-    def ra(self):
-        return self.phu['RA']
-
-    @astro_data_descriptor
-    def dec(self):
-        return self.phu['DEC']
