@@ -5,18 +5,21 @@ from astrodata import AstroData
 from astropy import units as u
 
 
-class adjustSlitOffsetToReferenceConfig(config.Config):
+class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
-                          str, "_slitOffsetCorrected", optional=True)
+                          str, "_wcsCorrected", optional=True)
+    method = config.ChoiceField("Alignment method", str,
+                                allowed={"sources_wcs": "Match sources using WCS",
+                                         "sources_offsets": "Match sources using telescope offsets",
+                                         "offsets": "Use telescope offsets only"},
+                                default="sources_wcs")
+    fallback = config.ChoiceField("Fallback method", str,
+                                  allowed={"sources_offsets": "Match sources using telescope offsets",
+                                           "offsets": "Use telescope offsets only"},
+                                  default="offsets", optional=True)
     tolerance = config.RangeField("Maximum distance from the header offset, "
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
-    method = config.ChoiceField(
-        "Alignment method", str,
-        allowed={"offsets": "Use telescope offsets",
-                 "correlation": "Correlate the slit profile"},
-        default="correlation"
-    )
 
 
 class calculateSensitivityConfig(config.Config):
@@ -62,7 +65,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
-    plot = config.Field("Make diagnostic plots?", bool, False)
+    debug = config.Field("Make diagnostic plots?", bool, False)
 
 
 class distortionCorrectConfig(config.Config):
@@ -121,6 +124,7 @@ class linearizeSpectraConfig(config.Config):
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, False)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
 
     def validate(self):
         config.Config.validate(self)
@@ -149,6 +153,7 @@ class resampleToCommonFrameConfig(config.Config):
     conserve = config.Field("Conserve flux?", bool, False)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
+    force_linear = config.Field("Force linear wavelength solution?", bool, True)
 
     def validate(self):
         config.Config.validate(self)
@@ -160,6 +165,7 @@ class resampleToCommonFrameConfig(config.Config):
 
 class skyCorrectFromSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    regions = config.Field("Sample regions", str, None, optional=True)
     order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
     grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
 

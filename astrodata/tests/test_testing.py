@@ -49,6 +49,34 @@ def test_download_from_archive(monkeypatch, tmpdir):
     assert ncall == 1
 
 
+def test_assert_most_close():
+    from astrodata.testing import assert_most_close
+    x = np.arange(10)
+    y = np.arange(10)
+    assert_most_close(x, y, 1)
+
+    y[0] = -1
+    assert_most_close(x, y, 1)
+
+    with pytest.raises(AssertionError):
+        y[1] = -1
+        assert_most_close(x, y, 1)
+
+
+def test_assert_most_equal():
+    from astrodata.testing import assert_most_equal
+    x = np.arange(10)
+    y = np.arange(10)
+    assert_most_equal(x, y, 1)
+
+    y[0] = -1
+    assert_most_equal(x, y, 1)
+
+    with pytest.raises(AssertionError):
+        y[1] = -1
+        assert_most_equal(x, y, 1)
+
+
 def test_assert_same_class():
     ad = astrodata.create({})
     ad2 = astrodata.create({})

@@ -211,6 +211,37 @@ Delete a keyword::
     >>> del ad[0].hdr['NEWKEY']
 
 
+World Co-ordinate System attribute
+==================================
+
+The ``wcs`` of an extension's ``nddata`` attribute (eg. ``ad[0].nddata.wcs``;
+see :ref:`data`) may contain an instance of ``astropy.wcs.WCS`` (a standard
+FITS WCS object) or ``gwcs.WCS`` (a `"Generalized WCS" or gWCS
+<https://gwcs.readthedocs.io>`_ object). These both define a transformation
+between array indices and some other co-ordinate system such as "World"
+co-ordinates (see `APE 14
+<https://github.com/astropy/astropy-APEs/blob/master/APE14.rst>`_). GWCS allows
+multiple, almost arbitrary co-ordinate mappings from different calibration
+steps (eg. CCD mosaicking, distortion correction & wavelength calibration) to
+be combined in a single, reversible transformation chain --- but this
+information cannot all be represented as a FITS standard WCS. If a gWCS object
+is defined here, it gets stored as a table extension named 'WCS' when the
+``AstroData`` instance is saved to a file (with the same EXTVER as the
+corresponding 'SCI' array). This is independent of any WCS information already
+stored in the FITS headers. The representation in the table is produced using
+`ASDF <https://asdf.readthedocs.io>`_, with one line of text per row. Likewise,
+when the file is re-opened, the gWCS object gets recreated in ``wcs`` from the
+table.
+
+In future, it is intended that the ``wcs`` attribute will get populated from
+standard FITS headers where there is no overriding 'WCS' table extension and
+will get saved to standard FITS headers when its type is ``astropy.wcs.WCS``.
+Also, where a gWCS object is used, a discrete sampling of the World co-ordinate
+values will be stored as part of the FITS WCS, following `Greisen et al. (2006)
+<http://adsabs.harvard.edu/abs/2006A%26A...446..747G>`_, S6 (in addition to the
+definitive 'WCS' table), allowing standard FITS readers to report accurate
+World co-ordinates for each pixel.
+
 
 Adding Descriptors [Advanced Topic]
 ===================================

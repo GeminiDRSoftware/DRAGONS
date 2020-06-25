@@ -25,8 +25,8 @@ Operate on Pixel Data
 The pixel data are stored in the ``AstroData`` object as a list of
 ``NDAstroData`` objects.  The ``NDAstroData`` is a subclass of Astropy's
 ``NDData`` class which combines in one "package" the pixel values, the
-variance, and the data quality plane or mask.   The data can be retrieved
-as standard NumPy ``ndarray``.
+variance, and the data quality plane or mask (as well as associated meta-data).
+The data can be retrieved as a standard NumPy ``ndarray``.
 
 In the sections below, we will present several typical examples of data
 manipulation.  But first let's start with a quick example on how to access
