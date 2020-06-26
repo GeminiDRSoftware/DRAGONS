@@ -284,7 +284,13 @@ def parameter_override(fn):
 
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
+        if pname not in pobj.params:
+            err_msg = 'Could not find "{}Config" configuration in "{}" module.'
+            raise KeyError(err_msg.format(
+                pname, pobj.__module__.replace("primitives", "parameters")))
+
         config = copy(pobj.params[pname])
+
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
         set_logging(pname)
