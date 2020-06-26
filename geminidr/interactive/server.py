@@ -55,8 +55,9 @@ def start_server():
     # Setting num_procs here means we can't touch the IOLoop before now, we must
     # let Server handle that. If you need to explicitly handle IOLoops then you
     # will need to use the lower level BaseServer class.
-    bokeh_server = Server({'/': bkapp}, num_procs=1)
-    bokeh_server.start()
+    if not bokeh_server:
+        bokeh_server = Server({'/': bkapp}, num_procs=1)
+        bokeh_server.start()
 
     # Setting num_procs here means we can't touch the IOLoop before now, we must
     # let Server handle that. If you need to explicitly handle IOLoops then you
@@ -65,7 +66,7 @@ def start_server():
     bokeh_server.io_loop.add_callback(bokeh_server.show, "/")
     bokeh_server.io_loop.start()
 
-    bokeh_server.stop()
+    # bokeh_server.stop()
 
 
 class PrimitiveVisualizer(ABC):

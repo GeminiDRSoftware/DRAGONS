@@ -44,8 +44,7 @@ from . import parameters_spect
 
 
 # ------------------------------------------------------------------------------
-from ..interactive import server
-from ..interactive.chebyshev1d import interactive_chebyshev
+from ..interactive.chebyshev1d_new import interactive_chebyshev
 
 
 @parameter_override
@@ -2407,9 +2406,19 @@ class Spect(PrimitivesBASE):
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis
                     if interactive:
+                        # TODO there must be a better way, or we should agree on one
+                        # TODO also perhaps parameter extraction deserves some sort of utility
+                        # API in the interactive code.  Hopefully N>>1 examples will clear this up
+                        min_order = None
+                        max_order = None
+                        for field in self.params["traceApertures"].iterfields():
+                            if field.name == 'trace_order':
+                                if hasattr(field, 'min'):
+                                    min_order = field.min
+                                if hasattr(field, 'max'):
+                                    max_order = field.max
                         model_dict, m_final = interactive_chebyshev(ext, order, location, dispaxis, sigma_clip,
-                                                                    in_coords, spectral_coords,
-                                                                    fields=self.params["traceApertures"].iterfields())
+                                                                    in_coords, spectral_coords, min_order, max_order)
                     else:
                         m_init = models.Chebyshev1D(degree=order, c0=location,
                                                     domain=[0, ext.shape[dispaxis] - 1])
