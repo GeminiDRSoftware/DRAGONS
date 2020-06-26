@@ -10,12 +10,6 @@ from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter
 from gempy.library import astromodels
 
 
-class SplineListener(ABC):
-    @abstractmethod
-    def handle_spline(self, splinex, spline):
-        pass
-
-
 class SplineModel:
     def __init__(self, ext, wave, zpt, zpt_err, order, niter, grow):
         self.ext = ext
