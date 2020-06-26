@@ -1,14 +1,70 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 from bokeh.layouts import row
-from bokeh.models import Button, Column, ColumnDataSource, CustomJS, Slider, ColorPicker
+from bokeh.models import Button, Column, CustomJS
 from bokeh.plotting import figure
 
-from geminidr.interactive import server
+from geminidr.interactive import server, interactive
+from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter
 from gempy.library import astromodels
 
 
-class SplineVisualizer(server.PrimitiveVisualizer):
-    def __init__(self, params, fields):
+class SplineListener(ABC):
+    @abstractmethod
+    def handle_spline(self, splinex, spline):
+        pass
+
+
+class SplineModel:
+    def __init__(self, ext, wave, zpt, zpt_err, order, niter, grow):
+        self.ext = ext
+        self.wave = wave
+        self.zpt = zpt
+        self.zpt_err = zpt_err
+        self.order = order
+        self.niter = niter
+        self.grow = grow
+
+        self.mask_points = GICoordsSource()
+        self.fit_line = GICoordsSource()
+
+    def recalc_spline(self):
+        """
+        Recalculate the spline based on the currently set parameters.
+
+        Whenever one of the parameters that goes into the spline function is
+        changed, we come back in here to do the recalculation.  Additionally,
+        the resulting spline is used to update the line and the masked underlying
+        scatter plot.
+
+        Returns
+        -------
+        none
+        """
+        wave = self.wave
+        zpt = self.zpt
+        zpt_err = self.zpt_err
+        order = self.order
+        niter = self.niter
+        grow = self.grow
+        ext = self.ext
+
+        self.spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
+                                                                     w=1. / zpt_err.value,
+                                                                     order=order,
+                                                                     niter=niter,
+                                                                     grow=grow)
+
+        splinex = np.linspace(min(wave), max(wave), ext.shape[0])
+
+        self.mask_points.ginotify(wave[self.spline.mask], zpt[self.spline.mask])
+        self.fit_line.ginotify(splinex, self.spline(splinex))
+
+
+class SplineVisualizer(interactive.PrimitiveVisualizerNew):
+    def __init__(self, ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
+                 min_niter, max_niter, min_grow, max_grow):
         """
         Create a spline visualizer.
 
@@ -26,10 +82,11 @@ class SplineVisualizer(server.PrimitiveVisualizer):
             These don't reflect overrides from the user, but do provide us with helpful
             validation information such as min/max values.
         """
-        super().__init__(params, fields)
+        super().__init__()
         # Note that self._fields in the base class is setup with a dictionary mapping conveniently
         # from field name to the underlying config.Field entry, even though fields just comes in as
         # an iterable
+        self.model = SplineModel(ext, wave, zpt, zpt_err, order, niter, grow)
         self.p = None
         self.spline = None
         self.scatter = None
@@ -37,6 +94,13 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         self.line = None
         self.scatter_source = None
         self.line_source = None
+
+        self.min_order = min_order
+        self.max_order = max_order
+        self.min_niter = min_niter
+        self.max_niter = max_niter
+        self.min_grow = min_grow
+        self.max_grow = max_grow
 
     def button_handler(self, stuff):
         """
@@ -58,22 +122,22 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         """
         Handle a change in the order slider
         """
-        self._params["order"] = new
-        self.recalc_spline()
+        self.model.order = new
+        self.model.recalc_spline()
 
     def niter_slider_handler(self, attr, old, new):
         """
         Handle a change in the iterations slider
         """
-        self._params["niter"] = new
-        self.recalc_spline()
+        self.model.niter = new
+        self.model.recalc_spline()
 
     def grow_slider_handler(self, attr, old, new):
         """
         Handle a change in the grow slider
         """
-        self._params["grow"] = new
-        self.recalc_spline()
+        self.model.grow = new
+        self.model.recalc_spline()
 
     def visualize(self, doc):
         """
@@ -88,16 +152,16 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         -------
         none
         """
-        wave = self._params["wave"]
-        zpt = self._params["zpt"]
-        order = self._params["order"]
-        niter = self._params["niter"]
-        grow = self._params["grow"]
+        wave = self.model.wave
+        zpt = self.model.zpt
+        order = self.model.order
+        niter = self.model.niter
+        grow = self.model.grow
 
-        order_slider = self.make_slider_for("Order", order, 1, self._fields["order"], self.order_slider_handler)
-        niter_slider = self.make_slider_for("Num Iterations", niter, 1, self._fields["niter"],
+        order_slider = self.make_slider_for("Order", order, 1, self.min_order, self.max_order, self.order_slider_handler)
+        niter_slider = self.make_slider_for("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
                                             self.niter_slider_handler)
-        grow_slider = self.make_slider_for("Grow", grow, 1, self._fields["grow"], self.grow_slider_handler)
+        grow_slider = self.make_slider_for("Grow", grow, 1, self.min_grow, self.max_grow, self.grow_slider_handler)
 
         button = Button(label="Submit")
         button.on_click(self.button_handler)
@@ -113,104 +177,23 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.scatter_touch = self.p.scatter(wave, zpt, color="blue", radius=50)
+        self.scatter_touch = self.p.scatter(wave, zpt, color="blue", radius=5)
 
-        # Plotting this empty so we can refer to it in the JS Callbacks.
-        # The data points will be updated against this existing plot
-        self.scatter_source = ColumnDataSource({'x': [], 'y': []})
-        self.scatter = self.p.scatter(x='x', y='y', source=self.scatter_source, color="black", radius=50)
+        self.scatter = GIScatter(self.p, color="black")
+        self.model.mask_points.add_gilistener(self.scatter)
 
-        self.line_source = ColumnDataSource({'x': [], 'y': []})
-        self.line = self.p.line(x='x', y='y', source=self.line_source, color="red")
+        self.line = GILine(self.p)
+        self.model.fit_line.add_gilistener(self.line)
 
-        radius_slider = Slider(start=1, end=200, value=50, step=1, title="Dot Size")
-        radius_slider.width = 256
-        callback_radius = CustomJS(args=dict(scatter=self.scatter, scatter_touch=self.scatter_touch),
-                                   code="""
-                                   scatter.glyph.radius = cb_obj.value;
-                                   scatter_touch.glyph.radius = cb_obj.value;
-                                   """)
-        radius_slider.js_on_change('value', callback_radius)
+        controls = Column(order_slider, niter_slider, grow_slider, button)
 
-        dot_color_picker = ColorPicker(color="blue", title="Dot Color:", width=200)
-        callback_dot_color = CustomJS(args=dict(scatter_touch=self.scatter_touch),
-                                      code="""
-                                       scatter_touch.glyph.line_color = cb_obj.color;
-                                       scatter_touch.glyph.fill_color = cb_obj.color;
-                                      """)
-        dot_color_picker.js_on_change('color', callback_dot_color)
-
-        line_slider = Slider(start=1, end=32, value=1, step=1, title="Line Size")
-        line_slider.width = 256
-        callback_line = CustomJS(args=dict(line=self.line),
-                                 code="""
-                                 line.glyph.line_width = cb_obj.value;
-                                 """)
-        line_slider.js_on_change('value', callback_line)
-
-        line_color_picker = ColorPicker(color="red", title="Line Color:", width=200)
-        callback_line_color = CustomJS(args=dict(line=self.line),
-                                       code="""
-                                       line.glyph.line_color = cb_obj.color;
-                                       line.glyph.fill_color = cb_obj.color;
-                                       """)
-        line_color_picker.js_on_change('color', callback_line_color)
-
-        controls = Column(order_slider, niter_slider, grow_slider, button, radius_slider, dot_color_picker,
-                          line_slider, line_color_picker)
-
-        self.recalc_spline()
+        self.model.recalc_spline()
 
         layout = row(controls, self.p)
 
         doc.add_root(layout)
 
         doc.on_session_destroyed(self.button_handler)
-
-    def recalc_spline(self):
-        """
-        Recalculate the spline based on the currently set parameters.
-
-        Whenever one of the parameters that goes into the spline function is
-        changed, we come back in here to do the recalculation.  Additionally,
-        the resulting spline is used to update the line and the masked underlying
-        scatter plot.
-
-        Returns
-        -------
-        none
-        """
-        wave = self._params["wave"]
-        zpt = self._params["zpt"]
-        zpt_err = self._params["zpt_err"]
-        order = self._params["order"]
-        niter = self._params["niter"]
-        grow = self._params["grow"]
-        ext = self._params["ext"]
-
-        self.spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
-                                                                     w=1. / zpt_err.value,
-                                                                     order=order,
-                                                                     niter=niter,
-                                                                     grow=grow)
-
-        splinex = np.linspace(min(wave), max(wave), ext.shape[0])
-
-        if self.scatter:
-            # Scatter plot exists, we just need to update it
-            # mask causes it to only show the black dots where they belong for the current spline curve
-            # blue dots are always present but these dots will draw over top of them
-            self.scatter_source.data = {'x': wave[self.spline.mask], 'y': zpt[self.spline.mask]}
-        else:
-            self.scatter_source = ColumnDataSource({'x': wave[self.spline.mask], 'y': zpt[self.spline.mask]})
-            self.scatter = self.p.scatter(x='x', y='y', source=self.scatter_source, color="black", radius=50)
-
-        if self.line:
-            # Spline line exists, we just need to update it
-            self.line_source.data = {'x': splinex, 'y': self.spline(splinex)}
-        else:
-            self.line_source = ColumnDataSource({'x': splinex, 'y': self.spline(splinex)})
-            self.line = self.p.line(x='x', y='y', source=self.line_source, color="red")
 
     def result(self):
         """
@@ -220,10 +203,11 @@ class SplineVisualizer(server.PrimitiveVisualizer):
         -------
         :class:`astromodels.UnivariateSplineWithOutlierRemoval`
         """
-        return self.spline
+        return self.model.spline
 
 
-def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, *, fields):
+def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order, min_niter, max_niter,
+                       min_grow, max_grow):
     """
     Build a spline via user interaction.
 
@@ -262,7 +246,8 @@ def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, *, fields):
         grow=grow
     )
 
-    server.visualizer = SplineVisualizer(params, fields)
+    server.visualizer = SplineVisualizer(ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
+                                         min_niter, max_niter, min_grow, max_grow)
 
     server.start_server()
 

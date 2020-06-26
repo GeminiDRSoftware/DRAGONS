@@ -334,9 +334,33 @@ class Spect(PrimitivesBASE):
                 zpt_err = array_from_list(zpt_err)
                 if interactive_spline:
                     # param_order = self.params["calculateSensitivity"]["order"]
-                    spline = geminidr.interactive.spline.interactive_spline(ext, wave, zpt, zpt_err, order=order,
-                                                                            niter=niter, grow=grow,
-                                                                            fields=self.params["calculateSensitivity"].iterfields())
+                    min_order = None
+                    max_order = None
+                    min_niter = None
+                    max_niter = None
+                    min_grow = None
+                    max_grow = None
+                    for field in self.params["calculateSensitivity"].iterfields():
+                        if field.name == 'order':
+                            if hasattr(field, 'min'):
+                                min_order = field.min
+                            if hasattr(field, 'max'):
+                                max_order = field.max
+                        if field.name == 'niter':
+                            if hasattr(field, 'min'):
+                                min_niter = field.min
+                            if hasattr(field, 'max'):
+                                max_niter = field.max
+                        if field.name == 'grow':
+                            if hasattr(field, 'min'):
+                                min_grow = field.min
+                            if hasattr(field, 'max'):
+                                max_grow = field.max
+                    spline = geminidr.interactive.spline.interactive_spline(ext, wave, zpt, zpt_err, order,
+                                                                            niter, grow,
+                                                                            min_order, max_order,
+                                                                            min_niter, max_niter,
+                                                                            min_grow, max_grow)
                 else:
                     # we now return you to your regularly scheduled non-interactive spline
                     spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,

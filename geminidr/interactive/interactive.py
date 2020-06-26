@@ -85,7 +85,7 @@ class GIControlListener(ABC):
         pass
 
 
-class GICoordsSource(ABC):
+class GICoordsSource:
     def __init__(self):
         self.listeners = list()
 
@@ -118,7 +118,7 @@ class GIScatter(GICoordsListener):
         self.scatter = fig.scatter(x='x', y='y', source=self.scatter_source, color=color, radius=radius)
 
     def giupdate(self, x_coords, y_coords):
-        self.scatter_source = {'x': x_coords, 'y': y_coords}
+        self.scatter_source.data = {'x': x_coords, 'y': y_coords}
 
 
 class GILine(GICoordsListener):
