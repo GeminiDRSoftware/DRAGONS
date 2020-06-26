@@ -7,12 +7,13 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from copy import deepcopy
+from copy import copy, deepcopy
 from datetime import datetime
 from importlib import import_module
 
 import numpy as np
 from astropy import units as u
+from astropy import visualization as vis
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.modeling import models, fitting, Model
@@ -21,6 +22,7 @@ from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
 from numpy.ma.extras import _ezclump
 from scipy import spatial, optimize
 from scipy.interpolate import BSpline
@@ -1805,6 +1807,139 @@ class Spect(PrimitivesBASE):
 
         return adoutputs
 
+    def makeProcessedSlitIllum(self, adinputs=None, **params):
+        """
+        Creates the processed Slit Response Illumination Function by binning a
+        2D spectrum along the dispersion direction, fitting a smooth function
+        for each bin, fitting a smooth 2D model, and reconstructing the 2D
+        array using this last model.
+
+        Its implementation based on the IRAF's `noao.twodspec.longslit.illumination`
+        task following the algorithm described in [Valdes, 1968].
+
+        It expects an input calibration image to be an a dispersed image of the
+        slit without illumination problems (e.g, twilight flat). The spectra is
+        not required to be smooth in wavelength and may contain strong emission
+        and absorption lines. The image should contain a `.mask` attribute in
+        each extension, and it is expected to be overscan and bias corrected.
+
+        Parameters
+        ----------
+        adinputs : list
+            List of AstroData objects containing the dispersed image of the
+            slit of a source free of illumination problems. The data needs to
+            have been overscan and bias corrected and is expected to have a
+            Data Quality mask.
+        bins : {None, int}, optional
+            Total number of bins across the dispersion axis. If None,
+            the number of bins will match the number of extensions on each
+            input AstroData object. It it is an int, it will create N bins
+            with the same size.
+
+        Return
+        ------
+        List of AstroData : containing an AstroData with the Slit Illumination
+            Response Function for each of the input object.
+
+        References
+        ----------
+        .. [Valdes, 1968] Francisco Valdes "Reduction Of Long Slit Spectra With
+           IRAF", Proc. SPIE 0627, Instrumentation in Astronomy VI,
+           (13 October 1986); https://doi.org/10.1117/12.968155
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        # timestamp_key = self.timestamp_keys[self.myself()] - Todo
+
+        suffix = params["suffix"]
+        bins = params["bins"]
+
+        ad_outputs = []
+        for ad in adinputs:
+
+            # Mosaic data if has more than one extension temporarily
+            if len(ad) > 1:
+                log.info("Temporarily mosaicking multi-extension file")
+                geotable = import_module('.geometry_conf', self.inst_lookups)
+                _ad = deepcopy(ad)  # Prevent modifying input file inplace
+                transform.add_mosaic_wcs(_ad, geotable)
+                slit_response_ad = transform.resample_from_wcs(
+                    _ad, "mosaic", attributes=None, order=1, process_objcat=False)
+
+            else:
+                log.info("Using single-extension file")
+                slit_response_ad = ad
+
+            log.info("Transposing data if needed")
+            dispaxis = 2 - slit_response_ad[0].dispersion_axis()  # python sense
+
+            data, mask, variance = _transpose_if_needed(
+                slit_response_ad[0].data, slit_response_ad[0].mask,
+                slit_response_ad[0].variance, transpose=dispaxis == 1)
+
+            log.info("Using masked data")
+            data = np.ma.masked_array(data, mask=mask)
+            height = data.shape[0]
+            width = data.shape[1]
+
+            if bins is None:
+                nbins = len(ad)
+                bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
+            elif isinstance(bins, int):
+                nbins = bins
+                bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
+            else:
+                # ToDo - Handle input bins as array
+                raise TypeError("Expected None or Int for `bins`. "
+                                "Found: {}".format(type(bins)))
+
+            bin_top = bin_limits[1:]
+            bin_bot = bin_limits[:-1]
+            binned_data = np.zeros_like(data)
+
+            log.info("Smooth binned data and normalize them by smoothed central value")
+            for i, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
+
+                x = np.arange(width)
+                y = np.ma.mean(data[b0:b1], axis=0)
+                s = astromodels.UnivariateSplineWithOutlierRemoval(x, y, order=5)
+
+                slit_central_value = s(x)[width // 2]
+                binned_data[b0:b1] = s(x) / slit_central_value
+
+            log.info("Reconstruct 2D mosaicked image")
+            bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
+            cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
+
+            fit_p = fitting.SLSQPLSQFitter()
+            model_init = models.Chebyshev2D(
+                x_degree=6, x_domain=(0, width),
+                y_degree=nbins - 1, y_domain=(0, height))
+
+            slit_response_model = fit_p(model_init, cols_fit, rows_fit,
+                                        binned_data[rows_fit, cols_fit])
+
+            rows_val, cols_val = np.mgrid[:height, :width]
+            slit_response_data = slit_response_model(cols_val, rows_val)
+
+            del cols_fit, cols_val, rows_fit, rows_val
+
+            _data, _mask, _variance = _transpose_if_needed(
+                slit_response_data, mask, variance, transpose=dispaxis == 1)
+
+            slit_response_ad[0].data = _data
+            slit_response_ad[0].mask = _mask
+            slit_response_ad[0].variance = _variance
+
+            if len(ad) > 1:
+                log.info("Map coordinates between multi-extension and mosaicked data")
+                slit_response_ad = _split_mosaic_into_extensions(_ad, slit_response_ad)
+
+            ad_outputs.append(slit_response_ad)
+
+        return ad_outputs
+
+
     def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive normalizes a spectroscopic flatfield, by fitting
@@ -2638,6 +2773,62 @@ def _extract_model_info(ext):
     dw = (w2 - w1) / (npix - 1)
     return {'wave_model': wave_model, 'w1': w1, 'w2': w2,
             'npix': npix, 'dw': dw}
+
+
+def _split_mosaic_into_extensions(ref_ad, mos_ad, border=0):
+    """
+    Split the `mos_ad` mosaicked data into multiple extensions using
+    coordinate frames and transformations stored in the `ref_ad` object.
+
+    Parameters
+    ----------
+    ref_ad : AstroData
+        Reference multi-extension-file object containing a gWCS.
+    mos_ad : AstroData
+        Mosaicked data that will be split containing a single extension.
+    border : int
+        Border size in pixels if the image needs to be shifted a bit further.
+
+    Returns
+    -------
+    AstroData : Split multi-extension-file object.
+
+    See Also
+    --------
+    - :func:`gempy.library.transform.add_mosaic_wcs`
+    - :func:`gempy.library.transform.resample_from_wcs`
+    """
+    raise NotImplementedError("Work in progress")
+
+    origin_shift_x, origin_shift_y = \
+        [int(s) for s in mos_ad.phu["origtran"][1:-1].split(',')]
+
+    total_shift_x = origin_shift_x + border
+    total_shift_y = origin_shift_y + border
+    total_shift = models.Shift(total_shift_x) & models.Shift(total_shift_y)
+
+    ad_out = astrodata.create(ref_ad.phu)
+
+    for i, ref_ext in enumerate(ref_ad):
+        in_frame = ref_ext.wcs.input_frame
+        mos_frame = cf.Frame2D(name="mosaic")
+
+        mosaic_to_pixel = ref_ext.wcs.get_transform(mos_frame, in_frame)
+
+        pipeline = [(mos_frame, mosaic_to_pixel),
+                    (in_frame, None)]
+
+        mos_ad[0].wcs = gWCS(pipeline)
+
+        # Shift mosaic in order to set reference (0, 0) on Detector 2
+        mos_ad[0].wcs.insert_transform(mos_frame, total_shift, after=True)
+
+        temp_ad = transform.resample_from_wcs(
+            mos_ad, in_frame.name, origin=(0, 0), output_shape=ref_ext.shape)
+
+        ad_out.append(temp_ad[0])
+
+    return ad_out
 
 
 def QESpline(coeffs, xpix, data, weights, boundaries, order):

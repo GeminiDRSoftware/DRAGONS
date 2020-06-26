@@ -134,6 +134,12 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
+class makeProcessedSlitIllumConfig(config.Config):
+    bins = config.Field("Total number of bins across the dispersion axis.",
+                        int, None, optional=True)
+    suffix = config.Field("Filename suffix", str, "_slitillum", optional=True)
+
+
 class normalizeFlatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)

@@ -127,6 +127,20 @@ def test_get_spectrophotometry(path_to_outputs):
     assert hasattr(fake_table['WIDTH'], 'quantity')
 
 
+def test_make_processed_slit_illum_single_extension():
+    """
+    A test that runs the `p.makeProcessedSlitIllum` primitive on a single
+    extension `AstroData` object.
+    """
+    # Create fake data
+    ad = create_zero_filled_fake_astrodata(500, 1000)
+
+    p = primitives_spect.Spect([ad])
+    slit_illum_ad = p.makeProcessedSlitIllum() 
+    
+
+
+
 def test_QESpline_optimization():
     """
     Test the optimization of the QESpline. This defines 3 regions, each of a
