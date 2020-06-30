@@ -26,6 +26,8 @@ Notes
     `model_to_dict()` and `dict_to_model()` functions that convert the Model
     instance to a dict create/require this.
 """
+from copy import copy
+
 import numpy as np
 import os
 import pytest
@@ -35,6 +37,8 @@ import astrodata
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
+from matplotlib import pyplot as plt
+from matplotlib import gridspec
 from scipy import optimize
 
 from geminidr.core import primitives_spect
@@ -127,18 +131,122 @@ def test_get_spectrophotometry(path_to_outputs):
     assert hasattr(fake_table['WIDTH'], 'quantity')
 
 
-def test_make_processed_slit_illum_single_extension():
+def test_split_mosaic_into_extensions(request):
     """
-    A test that runs the `p.makeProcessedSlitIllum` primitive on a single
-    extension `AstroData` object.
+    Tests helper function that split a mosaicked data into several extensions
+    based on another multi-extension file that contains gWCS.
+
+    ToDo: Check pixels at the border
     """
-    # Create fake data
-    ad = create_zero_filled_fake_astrodata(500, 1000)
+    # For now...
+    from geminidr.gmos.lookups import geometry_conf as geotable
+    from gempy.library import transform
+    from gempy.gemini import gemini_tools as gt
 
-    p = primitives_spect.Spect([ad])
-    slit_illum_ad = p.makeProcessedSlitIllum() 
-    
+    ad = astrofaker.create('GMOS-S')
+    ad.init_default_extensions()
 
+    ad = transform.add_mosaic_wcs(ad, geotable)
+    ad = gt.trim_to_data_section(
+        ad, keyword_comments={'NAXIS1': "", 'NAXIS2': "", 'DATASEC': "",
+                              'TRIMSEC': "", 'CRPIX1': "", 'CRPIX2': ""})
+
+    for i, ext in enumerate(ad):
+        x1 = ext.detector_section().x1
+        x2 = ext.detector_section().x2
+        xb = ext.detector_x_bin()
+
+        data = np.arange(x1 // xb, x2 // xb)[np.newaxis, :]
+        data = np.repeat(data, ext.data.shape[0], axis=0)
+        data = data + 0.1 * (0.5 - np.random.random(data.shape))
+
+        ext.data = data
+
+    mosaic_ad = transform.resample_from_wcs(
+        ad, "mosaic", attributes=None, order=1, process_objcat=False)
+
+    ad2 = primitives_spect._split_mosaic_into_extensions(ad, mosaic_ad)
+
+    # Plot results
+    if request.config.getoption("--do-plots"):
+
+        palette = copy(plt.cm.viridis)
+        palette.set_bad('r', 1)
+
+        fig = plt.figure(num="Test: Split Mosaic Into Extensions", figsize=(8, 6.5), dpi=120)
+        fig.suptitle("Test Split Mosaic Into Extensions\n Difference between"
+                     " input and mosaicked/demosaicked data")
+
+        gs = fig.add_gridspec(nrows=4, ncols=len(ad) // 3, wspace=0.1, height_ratios=[1, 1, 1, 0.1])
+
+        for i, (ext, ext2) in enumerate(zip(ad, ad2)):
+
+            data1 = ext.data
+            data2 = ext2.data
+            diff = np.ma.masked_array(data1 - data2, mask=np.abs(data1 - data2) > 1)
+            height, width = data1.shape
+
+            row = i // 4
+            col = i % 4
+
+            ax = fig.add_subplot(gs[row, col])
+            ax.set_title("Ext {}".format(i + 1))
+            ax.set_xticks([])
+            ax.set_xticklabels([])
+            ax.set_yticks([])
+            ax.set_yticklabels([])
+            _ = [ax.spines[s].set_visible(False) for s in ax.spines]
+
+            if col == 0:
+                ax.set_ylabel("Det {}".format(row + 1))
+
+            sub_gs = gridspec.GridSpecFromSubplotSpec(2, 2, ax, wspace=0.05, hspace=0.05)
+
+            for j in range(4):
+                sx = fig.add_subplot(sub_gs[j])
+                im = sx.imshow(diff, origin='lower', cmap=palette, vmin=-0.1, vmax=0.1)
+
+                sx.set_xticks([])
+                sx.set_yticks([])
+                sx.set_xticklabels([])
+                sx.set_yticklabels([])
+                _ = [sx.spines[s].set_visible(False) for s in sx.spines]
+
+                if j == 0:
+                    sx.set_xlim(0, 25)
+                    sx.set_ylim(height - 25, height)
+
+                if j == 1:
+                    sx.set_xlim(width - 25, width)
+                    sx.set_ylim(height - 25, height)
+
+                if j == 2:
+                    sx.set_xlim(0, 25)
+                    sx.set_ylim(0, 25)
+
+                if j == 3:
+                    sx.set_xlim(width - 25, width)
+                    sx.set_ylim(0, 25)
+
+        cax = fig.add_subplot(gs[3, :])
+        cbar = plt.colorbar(im, cax=cax, orientation="horizontal")
+        cbar.set_label("Difference levels")
+
+        output_dir = "./plots/geminidr/core/"
+        os.makedirs(output_dir, exist_ok=True)
+
+        fig.savefig(
+            os.path.join(output_dir, "test_split_mosaic_into_extensions.png"))
+
+    # Actual test ----
+    for i, (ext, ext2) in enumerate(zip(ad, ad2)):
+
+        # Todo: most pixels at the bottom border of Det1 and at the top border
+        #  of Det3 do not match. Is there something we can do to improve this?
+        data1 = np.ma.masked_array(ext.data[1:-1, 1:-1], mask=ext.mask)
+        data2 = np.ma.masked_array(ext2.data[1:-1, 1:-1], mask=ext2.mask)
+
+        np.testing.assert_almost_equal(data1, data2, decimal=1)
 
 
 def test_QESpline_optimization():

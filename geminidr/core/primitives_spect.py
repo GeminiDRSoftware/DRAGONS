@@ -2775,10 +2775,14 @@ def _extract_model_info(ext):
             'npix': npix, 'dw': dw}
 
 
-def _split_mosaic_into_extensions(ref_ad, mos_ad, border=0):
+def _split_mosaic_into_extensions(ref_ad, mos_ad,
+                                  pad_kw={'pad_width': 10, 'mode': 'reflect'}):
     """
     Split the `mos_ad` mosaicked data into multiple extensions using
     coordinate frames and transformations stored in the `ref_ad` object.
+
+    Warning: Right now, the pixels at the border of each extensions might not
+    match the expected values. Specially for detectors 1 and 2.
 
     Parameters
     ----------
@@ -2786,8 +2790,9 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border=0):
         Reference multi-extension-file object containing a gWCS.
     mos_ad : AstroData
         Mosaicked data that will be split containing a single extension.
-    border : int
-        Border size in pixels if the image needs to be shifted a bit further.
+    pad_kw : dict
+        Parameters that are forwared to the :func:`numpy.pad` function.
+        Default: {'pad_width': 10, 'mode': 'reflect'}.
 
     Returns
     -------
@@ -2798,18 +2803,36 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border=0):
     - :func:`gempy.library.transform.add_mosaic_wcs`
     - :func:`gempy.library.transform.resample_from_wcs`
     """
-    raise NotImplementedError("Work in progress")
+    # Check input data
+    if len(mos_ad) > 1:
+        raise ValueError("Expected number of extensions of `mos_ad` to be 1. "
+                         "Found {:d}".format(len(mos_ad)))
 
+    if len(mos_ad[0].shape) is not 2:
+        raise ValueError("Expected ndim for `mos_ad` to be 2. "
+                         "Found {:d}".format(len(mos_ad[0].shape)))
+
+    # Add borders to MOS data
+    mos_ad[0].data = np.pad(mos_ad[0].data, **pad_kw)
+
+    # Update data section to include the border
+    mos_ad.hdr[mos_ad._keyword_for('data_section')] = \
+        '[1:{},1:{}]'.format(*mos_ad[0].shape[::-1])
+
+    # Get original relative shift
     origin_shift_x, origin_shift_y = \
         [int(s) for s in mos_ad.phu["origtran"][1:-1].split(',')]
 
-    total_shift_x = origin_shift_x + border
-    total_shift_y = origin_shift_y + border
-    total_shift = models.Shift(total_shift_x) & models.Shift(total_shift_y)
+    # Create shift transformation
+    shift_x = models.Shift(origin_shift_x - pad_kw['pad_width'])
+    shift_y = models.Shift(origin_shift_y - pad_kw['pad_width'])
 
+    # Create empty AD
     ad_out = astrodata.create(ref_ad.phu)
 
+    # Loop across all extensions
     for i, ref_ext in enumerate(ref_ad):
+        # Create new transformation pipeline
         in_frame = ref_ext.wcs.input_frame
         mos_frame = cf.Frame2D(name="mosaic")
 
@@ -2821,8 +2844,9 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border=0):
         mos_ad[0].wcs = gWCS(pipeline)
 
         # Shift mosaic in order to set reference (0, 0) on Detector 2
-        mos_ad[0].wcs.insert_transform(mos_frame, total_shift, after=True)
+        mos_ad[0].wcs.insert_transform(mos_frame, shift_x & shift_y, after=True)
 
+        # Apply transformation
         temp_ad = transform.resample_from_wcs(
             mos_ad, in_frame.name, origin=(0, 0), output_shape=ref_ext.shape)
 
