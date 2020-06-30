@@ -21,6 +21,19 @@ class ChebyshevModel(GICoordsSource):
         self.ext = ext
         self.m_final = None
         self.model_dict = None
+        self.coords_mask = [True] * len(in_coords[dispaxis])
+
+    def mask(self, coords):
+        for i in coords:
+            self.coords_mask[i] = False
+        self.recalc_chebyshev()
+        pass
+
+    def unmask(self, coords):
+        for i in coords:
+            self.coords_mask[i] = True
+        self.recalc_chebyshev()
+        pass
 
     def recalc_chebyshev(self):
         """
@@ -47,7 +60,9 @@ class ChebyshevModel(GICoordsSource):
         fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                    sigma_clip, sigma=3)
         try:
-            self.m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
+            x = in_coords[1-dispaxis][self.coords_mask]
+            y = in_coords[dispaxis][self.coords_mask]
+            self.m_final, _ = fit_it(m_init, x, y)
         except (IndexError, np.linalg.linalg.LinAlgError):
             # This hides a multitude of sins, including no points
             # returned by the trace, or insufficient points to
@@ -57,6 +72,18 @@ class ChebyshevModel(GICoordsSource):
         self.model_dict = astromodels.chebyshev_to_dict(self.m_final)
 
         self.ginotify(self.spectral_coords, self.m_final(self.spectral_coords))
+
+
+class MaskedScatter(GIScatter):
+    def __init__(self, fig, model, color="blue", radius=5):
+        super().__init__(fig, None, None, color, radius)
+        self.model = model
+
+    def replot(self):
+        mask = [not x for x in self.model.coords_mask]
+        x = self.model.in_coords[1 - self.model.dispaxis][mask]
+        y = self.model.in_coords[self.model.dispaxis][mask]
+        self.source.data = {'x': x, 'y': y}
 
 
 class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
@@ -88,6 +115,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         self.p = None
         self.spline = None
         self.scatter = None
+        self.masked_scatter = None
         self.scatter_touch = None
         self.line = None
         self.scatter_source = None
@@ -114,6 +142,21 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         none
         """
         server.bokeh_server.io_loop.stop()
+
+    def mask_button_handler(self, stuff):
+        indices = self.scatter.source.selected.indices
+        self.model.mask(indices)
+        self.scatter.clear_selection() # source.selected.indices.clear()
+        self.masked_scatter.replot()
+        pass
+
+    def unmask_button_handler(self, stuff):
+        indices = self.scatter.source.selected.indices
+        self.model.unmask(indices)
+        self.scatter.clear_selection() # source.selected.indices.clear()
+        self.masked_scatter.clear_selection()
+        self.masked_scatter.replot()
+        pass
 
     def order_slider_handler(self, attr, old, new):
         """
@@ -145,26 +188,34 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         """)
         button.js_on_click(callback)
 
+        mask_button = Button(label="Mask")
+        mask_button.on_click(self.mask_button_handler)
+
+        unmask_button = Button(label="Unmask")
+        unmask_button.on_click(self.unmask_button_handler)
+
         # Create a blank figure with labels
         p = figure(plot_width=600, plot_height=500,
                         title='Interactive Chebyshev',
                         x_axis_label='X', y_axis_label='Y',
-                        output_backend="webgl")
+                        #output_backend="webgl",
+                        tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
 
         # p2 is just to show that we can have multiple tabs with plots running off the same dataset
         # TODO make plots like the other IRAF options we were shown
         p2 = figure(plot_width=600, plot_height=500,
                         title='Interactive Chebyshev (tab 2)',
-                        x_axis_label='X', y_axis_label='Y',
-                        output_backend="webgl")
+                        x_axis_label='X', y_axis_label='Y') #,
+                        #output_backend="webgl")
 
         self.scatter = GIScatter(p, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
+        self.masked_scatter = MaskedScatter(p, self.model, color="red", radius=5)
         self.line = GILine(p)
 
         self.scatter2 = GIScatter(p2, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
         self.line2 = GILine(p2)
 
-        controls = Column(order_slider, button)
+        controls = Column(order_slider, button, mask_button, unmask_button)
 
         self.model.add_gilistener(self.line)
         self.model.add_gilistener(self.line2)

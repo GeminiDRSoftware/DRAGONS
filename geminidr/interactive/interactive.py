@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from bokeh.core.property.container import Seq
 from bokeh.layouts import row
 from bokeh.models import Slider, TextInput, ColumnDataSource
 
@@ -114,12 +115,15 @@ class GIScatter(GICoordsListener):
             x_coords = []
         if y_coords is None:
             y_coords = []
-        self.scatter_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.scatter = fig.scatter(x='x', y='y', source=self.scatter_source, color=color, radius=radius)
+        self.source = ColumnDataSource({'x': x_coords, 'y': y_coords})
+        self.scatter = fig.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
 
     def giupdate(self, x_coords, y_coords):
-        self.scatter_source.data = {'x': x_coords, 'y': y_coords}
+        self.source.data = {'x': x_coords, 'y': y_coords}
 
+    def clear_selection(self):
+        self.source.selected.update(indices=[])
+        # self.source.selected.indices = Seq()
 
 class GILine(GICoordsListener):
     def __init__(self, fig, x_coords=[], y_coords=[], color="red"):

@@ -44,7 +44,7 @@ from . import parameters_spect
 
 
 # ------------------------------------------------------------------------------
-from ..interactive.chebyshev1d_new import interactive_chebyshev
+from ..interactive.chebyshev1d import interactive_chebyshev
 
 
 @parameter_override
