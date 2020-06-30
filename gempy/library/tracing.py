@@ -400,8 +400,8 @@ def estimate_peak_width(data, min=2, max=8):
     return sigma_clip(all_widths).mean()
 
 
-def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
-               reject_bad=True):
+def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
+               min_frac=0.25, reject_bad=True):
     """
     Find peaks in a 1D array. This uses scipy.signal routines, but requires some
     duplication of that code since the _filter_ridge_lines() function doesn't
@@ -411,19 +411,21 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     Parameters
     ----------
-    data: 1D array
+    data : 1D array
         The pixel values of the 1D spectrum
-    widths: array-like
+    widths : array-like
         Sigma values of line-like features to look for
-    mask: 1D array (optional)
+    mask : 1D array (optional)
         Mask (peaks with bad pixels are rejected) - optional
-    variance: 1D array (optional)
+    variance : 1D array (optional)
         Variance (to estimate SNR of peaks) - optional
-    min_snr: float (optional, default=1)
+    min_snr : float
         Minimum SNR required of peak pixel
-    min_frac: float (optional, default=0.25)
+    min_sep : float
+        Minimum separation in pixels for lines in final list
+    min_frac : float
         minimum fraction of *widths* values at which a peak must be found
-    reject_bad: bool (optional, default=True)
+    reject_bad : bool
         clip lines using the reject_bad() function?
 
     Returns
@@ -462,16 +464,14 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
                         where=variance > 0)
     else:
         snr = wavelet_transformed_data[0]
-
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
-    min_separation = min(widths)
     new_peaks = []
     i = 0
     while i < len(peaks) - 1:
         j = i + 1
-        while j <= len(peaks) - 1 and (peaks[j] - peaks[j - 1] < min_separation):
+        while j < len(peaks) and (peaks[j] - peaks[j - 1] <= 1):
             j += 1
         new_peaks.append(np.mean(peaks[i:j]))
         i = j
@@ -487,9 +487,20 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     # (e.g., chip gaps in GMOS)
     peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)] & (DQ.no_data | DQ.unilluminated)) == 0]
 
-    # Clip the really noisy parts of the data before getting more accurate
-    # peak positions and clip SNR again with new positions
-    peaks = pinpoint_peaks(np.where(snr < 0.5, 0, data), mask, peaks)
+    # Clip the really noisy parts of the data and get more accurate positions
+    pinpoint_data = np.where(snr < 0.5, 0, data)
+    peaks = pinpoint_peaks(pinpoint_data, mask, peaks)
+
+    # Clean up peaks that are too close together
+    while True:
+        diffs = np.diff(peaks)
+        if all(diffs >= min_sep):
+            break
+        i = np.argmax(diffs < min_sep)
+        # Replace with mean of re-pinpointed points
+        peaks[i] = np.mean(pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2]))
+        del peaks[i+1]
+
     final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
 
