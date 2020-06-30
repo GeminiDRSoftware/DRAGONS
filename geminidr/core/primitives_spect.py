@@ -2781,8 +2781,12 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad,
     Split the `mos_ad` mosaicked data into multiple extensions using
     coordinate frames and transformations stored in the `ref_ad` object.
 
-    Warning: Right now, the pixels at the border of each extensions might not
-    match the expected values. Specially for detectors 1 and 2.
+    Right now, the pixels at the border of each extensions might not
+    match the expected values. The mosaicking and de-mosaicking is an
+    interpolation, because there's a small rotation. This will only interpolate,
+    not extrapolate beyond the boundaries of the input data, so you lose some
+    information at the edges when you perform both operations and consequently
+    the edges of the input frame get lost.
 
     Parameters
     ----------
