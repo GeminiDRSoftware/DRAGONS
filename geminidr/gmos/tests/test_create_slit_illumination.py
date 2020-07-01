@@ -42,7 +42,7 @@ from recipe_system.reduction.coreReduce import Reduce
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
-def test_create_slit_illumination():
+def test_create_slit_illumination_with_mosaicked_data():
     pass
 
 
@@ -107,7 +107,7 @@ def create_inputs_recipe():
             p.biasCorrect(bias=bias_master)
             p.ADUToElectrons()
             p.addVAR(poisson_noise=True)
-            p.stackFrames(suffix="_sflat")
+            p.stackFrames(suffix="_tflat")
 
             os.chdir("inputs/")
 
@@ -116,7 +116,7 @@ def create_inputs_recipe():
 
             # Write mosaicked data
             p = primitives_gmos_longslit.GMOSLongslit([deepcopy(tflat)])
-            p.mosaicDetectors(suffix="_msflat")
+            p.mosaicDetectors(suffix="_mtflat")
             p.writeOutputs()
 
             os.chdir("../")
