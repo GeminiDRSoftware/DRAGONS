@@ -397,202 +397,215 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         # timestamp_key = self.timestamp_keys[self.myself()] - Todo
 
-        # suffix = params["suffix"]
-        # bins = params["bins"]
-        # border = params["border"]
-        # debug_plot = params["debug_plot"]
-        #
-        # ad_outputs = []
-        # for ad in adinputs:
-        #
-        #     # Mosaic data if has more than one extension temporarily
-        #     if len(ad) > 1:
-        #         log.info("Temporarily mosaicking multi-extension file")
-        #         geotable = import_module('.geometry_conf', self.inst_lookups)
-        #         _ad = deepcopy(ad)  # Prevent modifying input file inplace
-        #         transform.add_mosaic_wcs(_ad, geotable)
-        #         slit_response_ad = transform.resample_from_wcs(
-        #             _ad, "mosaic", attributes=None, order=1, process_objcat=False)
-        #
-        #     else:
-        #         log.info("Using single-extension file")
-        #         slit_response_ad = ad
-        #
-        #     log.info("Transposing data if needed")
-        #     dispaxis = 2 - slit_response_ad[0].dispersion_axis()  # python sense
-        #
-        #     data, mask, variance = _transpose_if_needed(
-        #         slit_response_ad[0].data, slit_response_ad[0].mask,
-        #         slit_response_ad[0].variance, transpose=dispaxis == 1)
-        #
-        #     log.info("Using masked data")
-        #     data = np.ma.masked_array(data, mask=mask)
-        #     height = data.shape[0]
-        #     width = data.shape[1]
-        #
-        #     if bins is None:
-        #         nbins = len(ad)
-        #         bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
-        #     elif isinstance(bins, int):
-        #         nbins = bins
-        #         bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
-        #     else:
-        #         # ToDo - Handle input bins as array
-        #         raise TypeError("Expected None or Int for `bins`. "
-        #                         "Found: {}".format(type(bins)))
-        #
-        #     bin_top = bin_limits[1:]
-        #     bin_bot = bin_limits[:-1]
-        #     binned_data = np.zeros_like(data)
-        #
-        #     log.info("Smooth binned data and normalize them by smoothed central value")
-        #     for i, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
-        #
-        #         x = np.arange(width)
-        #         y = np.ma.mean(data[b0:b1], axis=0)
-        #         s = astromodels.UnivariateSplineWithOutlierRemoval(x, y, order=5)
-        #
-        #         slit_central_value = s(x)[width // 2]
-        #         binned_data[b0:b1] = s(x) / slit_central_value
-        #
-        #     log.info("Reconstruct 2D mosaicked image")
-        #     bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
-        #     cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
-        #
-        #     fit_p = fitting.SLSQPLSQFitter()
-        #     model_init = models.Chebyshev2D(
-        #         x_degree=6, x_domain=(0, width),
-        #         y_degree=nbins - 1, y_domain=(0, height))
-        #
-        #     slit_response_model = fit_p(model_init, cols_fit, rows_fit,
-        #                                 binned_data[rows_fit, cols_fit])
-        #
-        #     rows_val, cols_val = np.mgrid[:height, :width]
-        #     slit_response_data = slit_response_model(cols_val, rows_val)
-        #
-        #     del cols_fit, cols_val, rows_fit, rows_val
-        #
-        #     _data, _mask, _variance = _transpose_if_needed(
-        #         slit_response_data, mask, variance, transpose=dispaxis == 1)
-        #
-        #     slit_response_ad[0].data = _data
-        #     slit_response_ad[0].mask = _mask
-        #     slit_response_ad[0].variance = _variance
-        #
-        #     if len(ad) > 1:
-        #         log.info("Map coordinates between multi-extension and mosaicked data")
-        #         slit_response_ad = _split_mosaic_into_extensions(ad, slit_response_ad)
-        #
-        #     # Timestamp and update the filename
-        #     # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-        #     slit_response_ad.update_filename(suffix=suffix, strip=True)
-        #     ad_outputs.append(slit_response_ad)
-        #
-        #     if debug_plot:
-        #
-        #         palette = copy(plt.cm.cividis)
-        #         palette.set_bad('r', 0.75)
-        #
-        #         norm = vis.ImageNormalize(data[~data.mask],
-        #                                   stretch=vis.LinearStretch(),
-        #                                   interval=vis.PercentileInterval(97))
-        #
-        #         fig = plt.figure(
-        #             num="Slit Response from MEF - {}".format(ad.filename),
-        #             figsize=(9, 9), dpi=110)
-        #
-        #         gs = gridspec.GridSpec(nrows=2, ncols=2, figure=fig)
-        #
-        #         # Display raw mosaicked data and its bins
-        #         ax1 = fig.add_subplot(gs[0])
-        #         ax1.imshow(data, cmap=palette, origin='lower', vmin=norm.vmin,
-        #                    vmax=norm.vmax)
-        #
-        #         ax1.set_title("Mosaicked Data\n and Spectral Bins", fontsize=10)
-        #         ax1.set_xlim(-1, data.shape[1])
-        #         ax1.set_xticks([])
-        #         ax1.set_ylim(-1, data.shape[0])
-        #         ax1.set_yticks(bin_center)
-        #         ax1.tick_params(axis=u'both', which=u'both', length=0)
-        #
-        #         ax1.set_yticklabels(
-        #             ["Bin {}".format(i) for i in range(len(bin_center))],
-        #             fontsize=6)
-        #
-        #         _ = [ax1.spines[s].set_visible(False) for s in ax1.spines]
-        #         _ = [ax1.axhline(b, c='w', lw=0.5) for b in bin_limits]
-        #
-        #         # Display non-smoothed bins
-        #         ax2 = fig.add_subplot(gs[1])
-        #         ax2.imshow(binned_data, cmap=palette, origin='lower')
-        #
-        #         ax2.set_title("Binned, smoothed\n and normalized data ", fontsize=10)
-        #         ax2.set_xlim(0, data.shape[1])
-        #         ax2.set_xticks([])
-        #         ax2.set_ylim(0, data.shape[0])
-        #         ax2.set_yticks(bin_center)
-        #         ax2.tick_params(axis=u'both', which=u'both', length=0)
-        #
-        #         ax2.set_yticklabels(
-        #             ["Bin {}".format(i) for i in range(len(bin_center))],
-        #             fontsize=6)
-        #
-        #         _ = [ax2.spines[s].set_visible(False) for s in ax2.spines]
-        #         _ = [ax2.axhline(b, c='w', lw=0.5) for b in bin_limits]
-        #
-        #         # Display reconstructed slit response
-        #         vmin = slit_response_data.min()
-        #         vmax = slit_response_data.max()
-        #
-        #         ax3 = fig.add_subplot(gs[2])
-        #         ax3.imshow(slit_response_data, cmap=palette, origin='lower',
-        #                    vmin=vmin, vmax=vmax)
-        #
-        #         ax3.set_title("Reconstructed\n Slit response", fontsize=10)
-        #         ax3.set_xlim(0, data.shape[1])
-        #         ax3.set_xticks([])
-        #         ax3.set_ylim(0, data.shape[0])
-        #         ax3.set_yticks([])
-        #         ax3.tick_params(axis=u'both', which=u'both', length=0)
-        #         _ = [ax3.spines[s].set_visible(False) for s in ax3.spines]
-        #
-        #         # Display extensions
-        #         sub_axs = []
-        #         sub_gs = gridspec.GridSpecFromSubplotSpec(
-        #             nrows=len(ad), ncols=1, subplot_spec=gs[3], hspace=0.03)
-        #
-        #         # The [::-1] is needed to put the fist extension in the bottom
-        #         for i, ext in enumerate(slit_response_ad[::-1]):
-        #
-        #             data, mask, variance = _transpose_if_needed(
-        #                 ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
-        #
-        #             data = np.ma.masked_array(data, mask=mask)
-        #
-        #             ax = fig.add_subplot(sub_gs[i])
-        #
-        #             ax.imshow(data, origin="lower", vmin=vmin, vmax=vmax,
-        #                       cmap=palette)
-        #             ax.set_xlim(0, data.shape[1])
-        #             ax.set_xticks([])
-        #             ax.set_ylim(0, data.shape[0])
-        #             ax.set_yticks([data.shape[0] // 2])
-        #
-        #             ax.set_yticklabels(
-        #                 ["Ext {}".format(len(slit_response_ad) - i - 1)],
-        #                 fontsize=6)
-        #
-        #             _ = [ax.spines[s].set_visible(False) for s in ax.spines]
-        #
-        #             if i == 0:
-        #                 ax.set_title("Multi-extension\n Slit Response Function")
-        #
-        #             sub_axs.append(ax)
-        #
-        #         fig.tight_layout(rect=[0, 0, 0.95, 1], pad=0.5)
-        #         plt.savefig(slit_response_ad.filename.replace(".fits", ".png"))
-        #
-        # return ad_outputs
+        suffix = params["suffix"]
+        bins = params["bins"]
+        border = params["border"]
+        debug_plot = params["debug_plot"]
+
+        ad_outputs = []
+        for ad in adinputs:
+
+            if len(ad) > 1 and "mosaic" not in ad[0].wcs.available_frames:
+
+                log.info('Add "mosaic" gWCS frame to input data')
+                geotable = import_module('.geometry_conf', self.inst_lookups)
+
+                # deepcopy prevents modifying input ad inplace
+                ad = transform.add_mosaic_wcs(deepcopy(ad), geotable)
+
+                log.info("Temporarily mosaicking multi-extension file")
+                slit_response_ad = transform.resample_from_wcs(
+                    ad, "mosaic", attributes=None, order=1, process_objcat=False)
+
+            else:
+
+                log.info('Input data already has one extension and has a '
+                         '"mosaic" frame.')
+                slit_response_ad = deepcopy(ad) # prevents touching ad
+
+            log.info("Transposing data if needed")
+            dispaxis = 2 - slit_response_ad[0].dispersion_axis()  # python sense
+            should_transpose = dispaxis == 1
+
+            data, mask, variance = _transpose_if_needed(
+                slit_response_ad[0].data, slit_response_ad[0].mask,
+                slit_response_ad[0].variance, transpose=should_transpose)
+
+            log.info("Using masked data")
+            data = np.ma.masked_array(data, mask=mask)
+            height = data.shape[0]
+            width = data.shape[1]
+
+            log.info("Creating binned data")
+            if bins is None:
+                nbins = len(ad)
+                bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
+            elif isinstance(bins, int):
+                nbins = bins
+                bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
+            else:
+                # ToDo - Handle input bins as array
+                raise TypeError("Expected None or Int for `bins`. "
+                                "Found: {}".format(type(bins)))
+
+            bin_top = bin_limits[1:]
+            bin_bot = bin_limits[:-1]
+            binned_data = np.zeros_like(data)
+
+            log.info("Smooth binned data and normalize them by smoothed central value")
+            for i, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
+
+                x = np.arange(width)
+                y = np.ma.mean(data[b0:b1], axis=0)
+                s = astromodels.UnivariateSplineWithOutlierRemoval(x, y, order=5)
+
+                slit_central_value = s(x)[width // 2]
+                binned_data[b0:b1] = s(x) / slit_central_value
+
+            log.info("Reconstruct 2D mosaicked image")
+            bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
+            cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
+
+            fitter = fitting.SLSQPLSQFitter()
+            model_init = models.Chebyshev2D(
+                x_degree=6, x_domain=(0, width),
+                y_degree=6, y_domain=(0, height))
+
+            slit_response_model = fitter(model_init, cols_fit, rows_fit,
+                                         binned_data[rows_fit, cols_fit])
+
+            rows_val, cols_val = np.mgrid[-border:height+border, -border:width+border]
+            slit_response_data = slit_response_model(cols_val, rows_val)
+
+            del cols_fit, cols_val, rows_fit, rows_val
+
+            _data, _mask, _variance = _transpose_if_needed(
+                slit_response_data, mask, variance, transpose=dispaxis == 1)
+
+            slit_response_ad[0].data = _data
+            slit_response_ad[0].mask = _mask
+            slit_response_ad[0].variance = _variance
+
+            if "mosaic" in ad[0].wcs.available_frames:
+                log.info("Map coordinates between slit function and mosaicked data")  # ToDo: Improve message?
+                slit_response_ad = _split_mosaic_into_extensions(
+                    ad, slit_response_ad, border_size=border)
+
+            # Timestamp and update the filename
+            # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            slit_response_ad.update_filename(suffix=suffix, strip=True)
+            ad_outputs.append(slit_response_ad)
+
+            if debug_plot:
+
+                log.info("Creating diagnosis plots")
+                palette = copy(plt.cm.cividis)
+                palette.set_bad('r', 0.75)
+
+                norm = vis.ImageNormalize(data[~data.mask],
+                                          stretch=vis.LinearStretch(),
+                                          interval=vis.PercentileInterval(97))
+
+                fig = plt.figure(
+                    num="Slit Response from MEF - {}".format(ad.filename),
+                    figsize=(9, 9), dpi=110)
+
+                gs = gridspec.GridSpec(nrows=2, ncols=2, figure=fig)
+
+                # Display raw mosaicked data and its bins
+                ax1 = fig.add_subplot(gs[0])
+                ax1.imshow(data, cmap=palette, origin='lower', vmin=norm.vmin,
+                           vmax=norm.vmax)
+
+                ax1.set_title("Mosaicked Data\n and Spectral Bins", fontsize=10)
+                ax1.set_xlim(-1, data.shape[1])
+                ax1.set_xticks([])
+                ax1.set_ylim(-1, data.shape[0])
+                ax1.set_yticks(bin_center)
+                ax1.tick_params(axis=u'both', which=u'both', length=0)
+
+                ax1.set_yticklabels(
+                    ["Bin {}".format(i) for i in range(len(bin_center))],
+                    fontsize=6)
+
+                _ = [ax1.spines[s].set_visible(False) for s in ax1.spines]
+                _ = [ax1.axhline(b, c='w', lw=0.5) for b in bin_limits]
+
+                # Display non-smoothed bins
+                ax2 = fig.add_subplot(gs[1])
+                ax2.imshow(binned_data, cmap=palette, origin='lower')
+
+                ax2.set_title("Binned, smoothed\n and normalized data ", fontsize=10)
+                ax2.set_xlim(0, data.shape[1])
+                ax2.set_xticks([])
+                ax2.set_ylim(0, data.shape[0])
+                ax2.set_yticks(bin_center)
+                ax2.tick_params(axis=u'both', which=u'both', length=0)
+
+                ax2.set_yticklabels(
+                    ["Bin {}".format(i) for i in range(len(bin_center))],
+                    fontsize=6)
+
+                _ = [ax2.spines[s].set_visible(False) for s in ax2.spines]
+                _ = [ax2.axhline(b, c='w', lw=0.5) for b in bin_limits]
+
+                # Display reconstructed slit response
+                vmin = slit_response_data.min()
+                vmax = slit_response_data.max()
+
+                ax3 = fig.add_subplot(gs[2])
+                ax3.imshow(slit_response_data, cmap=palette, origin='lower',
+                           vmin=vmin, vmax=vmax)
+
+                ax3.set_title("Reconstructed\n Slit response", fontsize=10)
+                ax3.set_xlim(0, data.shape[1])
+                ax3.set_xticks([])
+                ax3.set_ylim(0, data.shape[0])
+                ax3.set_yticks([])
+                ax3.tick_params(axis=u'both', which=u'both', length=0)
+                _ = [ax3.spines[s].set_visible(False) for s in ax3.spines]
+
+                # Display extensions
+                sub_axs = []
+                sub_gs = gridspec.GridSpecFromSubplotSpec(
+                    nrows=len(ad), ncols=1, subplot_spec=gs[3], hspace=0.03)
+
+                # The [::-1] is needed to put the fist extension in the bottom
+                for i, ext in enumerate(slit_response_ad[::-1]):
+
+                    data, mask, variance = _transpose_if_needed(
+                        ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
+
+                    data = np.ma.masked_array(data, mask=mask)
+
+                    ax = fig.add_subplot(sub_gs[i])
+
+                    ax.imshow(data, origin="lower", vmin=vmin, vmax=vmax,
+                              cmap=palette)
+                    ax.set_xlim(0, data.shape[1])
+                    ax.set_xticks([])
+                    ax.set_ylim(0, data.shape[0])
+                    ax.set_yticks([data.shape[0] // 2])
+
+                    ax.set_yticklabels(
+                        ["Ext {}".format(len(slit_response_ad) - i - 1)],
+                        fontsize=6)
+
+                    _ = [ax.spines[s].set_visible(False) for s in ax.spines]
+
+                    if i == 0:
+                        ax.set_title("Multi-extension\n Slit Response Function")
+
+                    sub_axs.append(ax)
+
+                fig.tight_layout(rect=[0, 0, 0.95, 1], pad=0.5)
+
+                fname = slit_response_ad.filename.replace(".fits", ".png")
+
+                log.info("Saving plots to {}".format(fname))
+                plt.savefig(fname)
+
+        return ad_outputs
 
     def determineDistortion(self, adinputs=None, **params):
         """
