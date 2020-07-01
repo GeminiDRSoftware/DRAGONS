@@ -4,60 +4,48 @@ Tests for the `createSlitIllumination` primitive. The primitive itself is
 defined in :mod:`~geminidr.core.primitives_spect` but these tests use GMOS Spect
 data.
 """
-import itertools
-import logging
 import os
 import pytest
-import time
 import warnings
 
-from copy import copy, deepcopy
+from copy import deepcopy
 
 import astrodata
-import astrofaker
-import gemini_instruments
-import ipywidgets as widgets
-import matplotlib as mpl
-import numpy as np
 
-from astropy.io import fits
-from astropy import wcs
-from astropy import visualization as vis
-from astropy.modeling import fitting, models
 from astrodata.testing import download_from_archive
-from cycler import cycler
 from gempy.utils import logutils
-from gempy.library import astromodels, transform
-from geminidr.core.primitives_spect import _transpose_if_needed
 from geminidr.gmos import primitives_gmos_longslit
-from gwcs import coordinate_frames as cf
-from gwcs.wcs import WCS as gWCS
-from ipywidgets import interact, interactive, interact_manual, fixed
-from matplotlib import pyplot as plt
-from matplotlib import gridspec
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from recipe_system.utils.reduce_utils import normalize_ucals
 from recipe_system.reduction.coreReduce import Reduce
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
 @pytest.mark.parametrize("ad", ["S20190204S0006_mtflat.fits"], indirect=True)
-def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir):
+def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, request):
+    """
+    Test that can run `createSlitIllumination` in mosaicked data.
+    """
+    plot = request.config.getoption("--do-plots")
 
     with change_working_dir():
+        print("Running tests inside folder:\n  {}".format(os.getcwd()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=True)
+        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
 @pytest.mark.parametrize("ad", ["S20190204S0006_tflat.fits"], indirect=True)
-def test_create_slit_illumination_with_multi_extension_data(ad, change_working_dir):
+def test_create_slit_illumination_with_multi_extension_data(ad, change_working_dir, request):
+    """
+    Test that can run `createSlitIllumination` in multi-extension data.
+    """
+    plot = request.config.getoption("--do-plots")
 
     with change_working_dir():
+        print("Running tests inside folder:\n  {}".format(os.getcwd()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=True)
+        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)
 
 
 # --- Helper functions and fixtures -------------------------------------------
