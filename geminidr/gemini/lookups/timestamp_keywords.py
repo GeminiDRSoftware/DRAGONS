@@ -21,6 +21,7 @@ timestamp_keys = {
     "biasCorrect": "BIASCORR",
     "calculateSensitivity": "SENSFUNC",
     "correctBackgroundToReference": "CORRBG",
+    "createSlitIllumination": "CRTSLTIL",
     "cutFootprints": "CUTSFP",
     "darkCorrect": "DARKCORR",
     "detectSources": "DETECSRC",

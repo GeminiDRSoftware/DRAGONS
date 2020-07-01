@@ -395,7 +395,7 @@ class Spect(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        # timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params["suffix"]
         bins = params["bins"]
@@ -500,14 +500,16 @@ class Spect(PrimitivesBASE):
                 slit_response_ad = _split_mosaic_into_extensions(
                     ad, slit_response_ad, border_size=border)
 
-            # Timestamp and update the filename
-            # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            log.info("Update metadata and filename")
+            gt.mark_history(
+                slit_response_ad, primname=self.myself(), keyword=timestamp_key)
+
             slit_response_ad.update_filename(suffix=suffix, strip=True)
             ad_outputs.append(slit_response_ad)
 
             if debug_plot:
 
-                log.info("Creating diagnosis plots")
+                log.info("Creating plots")
                 palette = copy(plt.cm.cividis)
                 palette.set_bad('r', 0.75)
 
