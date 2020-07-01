@@ -476,15 +476,24 @@ class Spect(PrimitivesBASE):
 
             rows_val, cols_val = np.mgrid[-border:height+border, -border:width+border]
             slit_response_data = slit_response_model(cols_val, rows_val)
+            slit_response_mask = np.pad(mask, border, mode='edge')
+            slit_response_var = np.pad(variance, border, mode='edge')
 
             del cols_fit, cols_val, rows_fit, rows_val
 
             _data, _mask, _variance = _transpose_if_needed(
-                slit_response_data, mask, variance, transpose=dispaxis == 1)
+                slit_response_data, slit_response_mask, slit_response_var,
+                transpose=dispaxis == 1)
 
+            log.info("Update slit response data and data_section")
             slit_response_ad[0].data = _data
             slit_response_ad[0].mask = _mask
             slit_response_ad[0].variance = _variance
+
+            datasec_kw = slit_response_ad._keyword_for('data_section')
+
+            slit_response_ad[0].hdr[datasec_kw] = '[1:{},1:{}]'.format(
+                *slit_response_ad[0].shape[::-1])
 
             if "mosaic" in ad[0].wcs.available_frames:
                 log.info("Map coordinates between slit function and mosaicked data")  # ToDo: Improve message?

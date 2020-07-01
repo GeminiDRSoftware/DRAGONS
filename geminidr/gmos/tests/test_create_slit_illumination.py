@@ -43,20 +43,21 @@ from recipe_system.reduction.coreReduce import Reduce
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
 @pytest.mark.parametrize("ad", ["S20190204S0006_mtflat.fits"], indirect=True)
-def test_create_slit_illumination_with_mosaicked_data(ad):
+def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir):
 
-    p = primitives_gmos_longslit.GMOSLongslit([ad])
-    slit_illum_ad = p.createSlitIllumination()
+    with change_working_dir():
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
+        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=True)
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
 @pytest.mark.parametrize("ad", ["S20190204S0006_tflat.fits"], indirect=True)
-def test_create_slit_illumination_with_multi_extension_data(ad):
+def test_create_slit_illumination_with_multi_extension_data(ad, change_working_dir):
 
-    p = primitives_gmos_longslit.GMOSLongslit([ad])
-    slit_illum_ad = p.createSlitIllumination()
-
+    with change_working_dir():
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
+        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=True)
 
 
 # --- Helper functions and fixtures -------------------------------------------
