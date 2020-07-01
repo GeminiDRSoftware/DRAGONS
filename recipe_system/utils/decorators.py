@@ -285,7 +285,8 @@ def parameter_override(fn):
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
         if pname not in pobj.params:
-            err_msg = 'Could not find "{}Config" configuration in "{}" module.'
+            err_msg = ('Could not find "{}Config" configuration in "{}" module'
+                       ' or any parent module.')
             raise KeyError(err_msg.format(
                 pname, pobj.__module__.replace("primitives", "parameters")))
 
