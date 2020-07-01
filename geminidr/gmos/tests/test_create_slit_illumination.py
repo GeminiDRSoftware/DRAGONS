@@ -42,10 +42,55 @@ from recipe_system.reduction.coreReduce import Reduce
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
-def test_create_slit_illumination_with_mosaicked_data():
-    pass
+@pytest.mark.parametrize("ad", ["S20190204S0006_mtflat.fits"], indirect=True)
+def test_create_slit_illumination_with_mosaicked_data(ad):
+
+    p = primitives_gmos_longslit.GMOSLongslit([ad])
+    slit_illum_ad = p.createSlitIllumination()
 
 
+@pytest.mark.gmosls
+@pytest.mark.preprocessed
+@pytest.mark.parametrize("ad", ["S20190204S0006_tflat.fits"], indirect=True)
+def test_create_slit_illumination_with_multi_extension_data(ad):
+
+    p = primitives_gmos_longslit.GMOSLongslit([ad])
+    slit_illum_ad = p.createSlitIllumination()
+
+
+
+# --- Helper functions and fixtures -------------------------------------------
+@pytest.fixture
+def ad(request, path_to_inputs):
+    """
+    Returns the pre-processed spectrum file.
+
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
+
+    Returns
+    -------
+    AstroData
+        Input spectrum processed up to right before the `distortionDetermine`
+        primitive.
+    """
+    filename = request.param
+    path = os.path.join(path_to_inputs, filename)
+
+    if os.path.exists(path):
+        ad = astrodata.open(path)
+    else:
+        raise FileNotFoundError(path)
+
+    return ad
+
+
+# -- Recipe to create pre-processed data ---------------------------------------
 def create_inputs_recipe():
     """
     Creates input data for tests using pre-processed twilight flat data and its
@@ -107,17 +152,17 @@ def create_inputs_recipe():
             p.biasCorrect(bias=bias_master)
             p.ADUToElectrons()
             p.addVAR(poisson_noise=True)
-            p.stackFrames(suffix="_tflat")
+            p.stackFrames()
 
             os.chdir("inputs/")
 
             # Write non-mosaicked data
-            tflat = p.writeOutputs()[0]
+            tflat = p.writeOutputs(suffix="_tflat", strip=True)[0]
 
             # Write mosaicked data
             p = primitives_gmos_longslit.GMOSLongslit([deepcopy(tflat)])
-            p.mosaicDetectors(suffix="_mtflat")
-            p.writeOutputs()
+            p.mosaicDetectors()
+            p.writeOutputs(suffix="_mtflat", strip=True)
 
             os.chdir("../")
 
