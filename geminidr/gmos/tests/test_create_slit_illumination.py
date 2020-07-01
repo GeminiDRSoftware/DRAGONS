@@ -30,7 +30,15 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
     with change_working_dir():
         print("Running tests inside folder:\n  {}".format(os.getcwd()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)
+        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)[0]
+
+        if plot:
+            os.makedirs("plots", exist_ok=True)
+            os.rename(slit_illum_ad.filename.replace(".fits", ".png"),
+                      os.path.join("plots", ad.filename.replace(".fits", ".png")))
+
+        for ext, slit_ext in zip(ad, slit_illum_ad):
+            assert {ext.shape == slit_ext.shape}
 
 
 @pytest.mark.gmosls
@@ -45,7 +53,15 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
     with change_working_dir():
         print("Running tests inside folder:\n  {}".format(os.getcwd()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)
+        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)[0]
+
+        if plot:
+            os.makedirs("plots", exist_ok=True)
+            os.rename(slit_illum_ad.filename.replace(".fits", ".png"),
+                      os.path.join("plots", ad.filename.replace(".fits", ".png")))
+
+        for ext, slit_ext in zip(ad, slit_illum_ad):
+            assert {ext.shape == slit_ext.shape}
 
 
 # --- Helper functions and fixtures -------------------------------------------

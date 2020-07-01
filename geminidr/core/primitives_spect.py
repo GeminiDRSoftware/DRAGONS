@@ -395,7 +395,7 @@ class Spect(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        # timestamp_key = self.timestamp_keys[self.myself()] - Todo
+        # timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params["suffix"]
         bins = params["bins"]
@@ -438,7 +438,7 @@ class Spect(PrimitivesBASE):
 
             log.info("Creating binned data")
             if bins is None:
-                nbins = len(ad)
+                nbins = max(len(ad), 12)
                 bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
             elif isinstance(bins, int):
                 nbins = bins
