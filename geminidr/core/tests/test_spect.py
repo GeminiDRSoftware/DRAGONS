@@ -135,8 +135,6 @@ def test_split_mosaic_into_extensions(request):
     """
     Tests helper function that split a mosaicked data into several extensions
     based on another multi-extension file that contains gWCS.
-
-    ToDo: Check pixels at the border
     """
     # For now...
     from geminidr.gmos.lookups import geometry_conf as geotable
@@ -144,7 +142,7 @@ def test_split_mosaic_into_extensions(request):
     from gempy.gemini import gemini_tools as gt
 
     ad = astrofaker.create('GMOS-S')
-    ad.init_default_extensions()
+    ad.init_default_extensions(binning=2)
 
     ad = transform.add_mosaic_wcs(ad, geotable)
     ad = gt.trim_to_data_section(
@@ -165,9 +163,14 @@ def test_split_mosaic_into_extensions(request):
     mosaic_ad = transform.resample_from_wcs(
         ad, "mosaic", attributes=None, order=1, process_objcat=False)
 
-    ad2 = primitives_spect._split_mosaic_into_extensions(ad, mosaic_ad)
+    mosaic_ad[0].data = np.pad(mosaic_ad[0].data, 10, mode='edge')
 
-    # Plot results
+    mosaic_ad[0].hdr[mosaic_ad._keyword_for('data_section')] = \
+        '[1:{},1:{}]'.format(*mosaic_ad[0].shape[::-1])
+
+    ad2 = primitives_spect._split_mosaic_into_extensions(
+        ad, mosaic_ad, border_size=10)
+
     if request.config.getoption("--do-plots"):
 
         palette = copy(plt.cm.viridis)
@@ -240,9 +243,6 @@ def test_split_mosaic_into_extensions(request):
 
     # Actual test ----
     for i, (ext, ext2) in enumerate(zip(ad, ad2)):
-
-        # Todo: most pixels at the bottom border of Det1 and at the top border
-        #  of Det3 do not match. Is there something we can do to improve this?
         data1 = np.ma.masked_array(ext.data[1:-1, 1:-1], mask=ext.mask)
         data2 = np.ma.masked_array(ext2.data[1:-1, 1:-1], mask=ext2.mask)
 
