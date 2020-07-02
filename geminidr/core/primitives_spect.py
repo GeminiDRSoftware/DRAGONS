@@ -24,8 +24,11 @@ from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
 from scipy import spatial, optimize
 from scipy.interpolate import BSpline
+from scipy.signal import correlate
 from specutils import SpectralRegion
 from functools import reduce
+from itertools import product as cart_product
+from bisect import bisect
 
 import astrodata
 from astrodata import NDAstroData
@@ -40,6 +43,8 @@ from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_spect
 
+import matplotlib
+matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -838,69 +843,78 @@ class Spect(PrimitivesBASE):
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
-        Determines the wavelength solution for an ARC and stores it as an
-        attached `.WAVECAL` :class:`~astropy.table.Table`.
+        Determines the wavelength solution for an ARC and updates the wcs
+        with this solution. In addition, the solution and pixel/wavelength
+        matches are stored as an attached `WAVECAL` :class:`~astropy.table.Table`.
 
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
-        matched to an arc line list, using :class:`~gempy.library.matching.KDTreeFitter`.
-        This class has a strong dependency with the `fwith` parameter and works
-        better if a good initial value is provided.
+        matched to an arc line list, using piecewise-fitting of (usually)
+        linear functions to match peaks to arc lines, using the
+        :class:`~gempy.library.matching.KDTreeFitter`.
 
         The `.WAVECAL` table contains four columns:
             ["name", "coefficients", "peaks", "wavelengths"]
 
         The `name` and the `coefficients` columns contain information to
-        re-create an Chebyshev1D object. The `peaks` column contains the position
-        of the lines that were matched to the catalogue, and the `wavelengths`
-        column contains the wavelengths that were matched to that line.
+        re-create an Chebyshev1D object, plus additional information about
+        the way the spectrum was collapsed. The `peaks` column contains the
+        (1-indexed) position of the lines that were matched to the catalogue,
+        and the `wavelengths` column contains the matched wavelengths.
 
         Parameters
         ----------
-
         adinputs : list of :class:`~astrodata.AstroData`
              Mosaicked Arc data as 2D spectral images or 1D spectra.
 
-        suffix : str, optional
+        suffix : str/None
             Suffix to be added to output files
-            (default: "_wavelengthSolutionDetermined").
 
-        center : None or int, optional
+        order : int
+            Order of Chebyshev fitting function.
+
+        center : None or int
             Central row/column for 1D extraction (None => use middle).
 
         nsum : int, optional
-            Number of rows/columns to average (default: 10).
+            Number of rows/columns to average.
 
-        order : int, optional
-            Order of Chebyshev fitting function (default: 2).
-
-        min_snr : float, optional
-            Minimum S/N ratio in line peak to be used in fitting (default: 10).
-
-        fwidth : None or float, optional
-            Expected width of arc lines in pixels. It tells how far the
-            KDTreeFitter should look for when matching detected peaks with
-            reference arcs lines. If None (the default), `fwidth` is
-            determined using `tracing.estimate_peak_width`.
-
-        linelist : None or str, optional
-            Name of file containing arc lines. If None, then a default look-up
-            table will be used.
+        min_snr : float
+            Minimum S/N ratio in line peak to be used in fitting.
 
         weighting : {'natural', 'relative', 'none'}
             How to weight the detected peaks.
 
-        nbright : int
-            Number of brightest lines to cull before fitting (default: 0).
+        fwidth : float/None
+            Expected width of arc lines in pixels. It tells how far the
+            KDTreeFitter should look for when matching detected peaks with
+            reference arcs lines. If None, `fwidth` is determined using
+            `tracing.estimate_peak_width`.
 
-        plot : bool
+        min_sep : float
+            Minimum separation (in pixels) for peaks to be considered distinct
+
+        central_wavelength : float/None
+            central wavelength in nm (if None, use the WCS or descriptor)
+
+        dispersion : float/None
+            dispersion in nm/pixel (if None, use the WCS or descriptor)
+
+        linelist : str/None
+            Name of file containing arc lines. If None, then a default look-up
+            table will be used.
+
+        nbright : int (or may not exist in certain class methods)
+            Number of brightest lines to cull before fitting
+
+        debug : bool
             Enable plots for debugging.
 
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            Updated objects with the `.WAVECAL` attribute on each appropriated
-            extension.
+            Updated objects with a `.WAVECAL` attribute and improved wcs for
+            each slice
 
         See Also
         --------
@@ -912,17 +926,19 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        order = params["order"]
         center = params["center"]
         nsum = params["nsum"]
-        order = params["order"]
         min_snr = params["min_snr"]
-        fwidth = params["fwidth"]
-        arc_file = params["linelist"]
         weighting = params["weighting"]
+        fwidth = params["fwidth"]
+        min_lines = [int(x) for x in str(params["min_lines"]).split(',')]
+        min_sep = params["min_sep"]
+        cenwave = params["central_wavelength"]
+        dw0 = params["dispersion"]
+        arc_file = params["linelist"]
         nbright = params.get("nbright", 0)
-
         debug = params["debug"]
-        plt.ioff()
 
         # TODO: This decision would prevent MOS data being reduced so need
         # to think a bit more about what we're going to do. Maybe make
@@ -936,7 +952,6 @@ class Spect(PrimitivesBASE):
 
         # Get list of arc lines (probably from a text file dependent on the
         # input spectrum, so a private method of the primitivesClass)
-        linelists = {}
         if arc_file is not None:
             try:
                 arc_lines = np.loadtxt(arc_file, usecols=[0])
@@ -954,33 +969,53 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             log.info("Determining wavelength solution for {}".format(ad.filename))
+            print("Determining wavelength solution for {}".format(ad.filename))
             for ext in ad:
                 if len(ad) > 1:
                     log.info("Determining solution for EXTVER {}".format(ext.hdr['EXTVER']))
 
-                # Determine direction of extraction for 2D spectrum
+                # Create 1D spectrum for calibration
                 if ext.data.ndim > 1:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     direction = "row" if dispaxis == 1 else "column"
                     data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
                     log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
+                    middle = 0.5 * (extract_slice.start + extract_slice.stop - 1)
+                    ny, nx = ext.shape
+                    pix_coords = ((0, nx-1), middle) if dispaxis == 1 else (middle, (0, ny-1))
+
                 else:
                     data = ext.data
                     mask = ext.mask
                     variance = ext.variance
+                    pix_coords = ((0, ext.size-1),)
 
                 # Mask bad columns but not saturated/non-linear data points
                 if mask is not None:
                     mask = mask & (65535 ^ (DQ.saturated | DQ.non_linear))
                     data[mask > 0] = 0.
 
-                cenwave = params["central_wavelength"] or ext.central_wavelength(asNanometers=True)
-                dw = params["dispersion"] or ext.dispersion(asNanometers=True)
-                w1 = cenwave - 0.5 * len(data) * abs(dw)
-                w2 = cenwave + 0.5 * len(data) * abs(dw)
+                # Get the initial wavelength solution
+                try:
+                    if ext.data.ndim > 1:
+                        w1, w2 = ext.wcs(*pix_coords)[0]
+                    else:
+                        w1, w2 = ext.wcs(*pix_coords)
+                except (TypeError, AttributeError):
+                    c0 = ext.central_wavelength(asNanometers=True)
+                    c1 = 0.5 * ext.dispersion(asNanometers=True) * (len(data) - 1)
+                else:
+                    c0 = 0.5 * (w1 + w2)
+                    c1 = 0.5 * (w2 - w1)
+                if cenwave is not None:
+                    c0 = cenwave
+                if dw0 is not None:
+                    c1 = 0.5 * dw0 * (len(data) - 1)
+                else:
+                    dw0 = (w2 - w1) / (len(data) - 1)
                 log.stdinfo("Using central wavelength {:.1f} nm and dispersion "
-                            "{:.3f} nm/pixel".format(cenwave, dw))
+                            "{:.3f} nm/pixel".format(c0, dw0))
 
                 if fwidth is None:
                     fwidth = tracing.estimate_peak_width(data)
@@ -989,26 +1024,28 @@ class Spect(PrimitivesBASE):
                 # Don't read linelist if it's the one we already have
                 # (For user-supplied, we read it at the start, so don't do this at all)
                 if arc_file is None:
-                    arc_lines, arc_weights = self._get_arc_linelist(ext, w1=w1, w2=w2, dw=dw)
-
-                # arc_weights = None
-
-                if min(arc_lines) > cenwave + 0.5 * len(data) * abs(dw):
+                    arc_lines, arc_weights = self._get_arc_linelist(ext, w1=c0-abs(c1),
+                                                                    w2=c0+abs(c1), dw=dw0)
+                if min(arc_lines) > c0 + abs(c1):
                     log.warning("Line list appears to be in Angstroms; converting to nm")
                     arc_lines *= 0.1
 
                 # Find peaks; convert width FWHM to sigma
-                widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
+                widths = 0.42466 * fwidth * np.arange(0.7, 1.2, 0.05)  # TODO!
                 peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask,
-                                                      variance=variance, min_snr=min_snr)
-                log.stdinfo('{}: {} peaks and {} arc lines'.
-                            format(ad.filename, len(peaks), len(arc_lines)))
+                                                      variance=variance, min_snr=min_snr,
+                                                      min_sep=min_sep, reject_bad=False)
+                fit_this_peak = peak_snrs > min_snr
+                fit_this_peak[np.argsort(peak_snrs)[len(peaks) - nbright:]] = False
+                peaks = peaks[fit_this_peak]
+                peak_snrs = peak_snrs[fit_this_peak]
+                log.stdinfo(f"{ad.filename}: found {len(peaks)} peaks and "
+                            f"{len(arc_lines)} arc lines")
 
                 # Compute all the different types of weightings so we can
                 # change between them as needs require
                 weights = {'none': np.ones((len(peaks),)),
                            'natural': peak_snrs}
-
                 # The "relative" weights compares each line strength to
                 # those of the lines close to it
                 tree = spatial.cKDTree(np.array([peaks]).T)
@@ -1016,159 +1053,98 @@ class Spect(PrimitivesBASE):
                 indices = tree.query(np.array([peaks]).T, k=10,
                                      distance_upper_bound=0.1 * len(data))[1]
                 snrs = np.array(list(peak_snrs) + [np.nan])[indices]
-                # Normalize weights by the maximum of these lines
+                # Normalize weights by the median of these lines
                 weights['relative'] = peak_snrs / np.nanmedian(snrs, axis=1)
 
-                plot_data = data
-
-                # Some diagnostic plotting
-                yplot = 0
-                plt.ioff()
-
-                ny, nx = ext.shape
-                try:
-                    w1, w2 = ext.wcs([0, nx-1], 0.5 * (ny-1))[0]
-                except (TypeError, AttributeError):
-                    c0 = cenwave
-                    c1 = 0.5 * dw * (len(data)-1)
+                kdsigma = fwidth * abs(dw0)
+                if cenwave is None:
+                    centers = find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1,
+                                                                2.5*kdsigma, weights=weights['natural'])
+                    if len(centers) > 1:
+                        log.warning("Alternative central wavelength(s) found "+str(centers))
                 else:
-                    c0 = 0.5 * (w1 + w2)
-                    c1 = (w1 - w2) / (len(data)-1)
-                # The very first model is called "m_final" because at each
-                # iteration the next initial model comes from the fitted
-                # (final) model of the previous iteration
-                m_final = models.Chebyshev1D(degree=1, c0=c0, c1=c1,
-                                             domain=[0, len(data) - 1])
-                if debug:
-                    plot_arc_fit(data, peaks, arc_lines, arc_weights, m_final, "Initial model")
-                log.stdinfo('Initial model: {}'.format(repr(m_final)))
+                    centers = [cenwave]
 
-                kdsigma = fwidth * abs(dw)
-                peaks_to_fit = peak_snrs > min_snr
-                peaks_to_fit[np.argsort(peak_snrs)[len(peaks) - nbright:]] = False
+                data_max = data.max()
+                k = 1 if fwidth * abs(dw0) < 3 else 2
 
-                # Temporary code to help with testing
-                try:
-                    sequence = self.fit_sequence
-                except AttributeError:
+                all_fits = []
+                acceptable_fit = False
+                for min_lines_per_fit, fac, w0 in cart_product(min_lines, [0.5, 0.4, 0.6], centers):
+                    pix_shift = (fac - 0.5) * (len(data) - 1)
+                    pixel_start = fac * (len(data) - 1)
+                    wave_start = w0 + pix_shift * dw0
+                    matches = self._perform_piecewise_fit(data, peaks, arc_lines, pixel_start,
+                                                          wave_start, dw0, kdsigma,
+                                                          min_lines_per_fit=min_lines_per_fit,
+                                                          order=order, k=k, debug=debug)
 
-                    # FixMe: toggle commented lines bellow to make tests pass
+                    # We perform a regular least-squares fit to all the matches
+                    # we've made. This allows a high polynomial order to be
+                    # used without the risk of it going off the rails
+                    if set(matches) != {-1}:
+                        m_init = models.Chebyshev1D(degree=order, c0=c0, c1=c1,
+                                                    domain=[0, len(data) - 1])
+                        fit_it = fitting.LinearLSQFitter()
+                        matched = np.where(matches > -1)
+                        m_final = fit_it(m_init, peaks[matched], arc_lines[matches[matched]])
+                        print(repr(m_final))
 
-                    sequence = (((1, 'none', 'basinhopping', ['c1']),
-                                 (1, 'none', 'basinhopping', ['c0'])) +
-                                tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
+                        # We're close to the correct solution, perform a KDFit
+                        m_init = m_final.copy()
+                        fit_it = matching.KDTreeFitter(sigma=2*abs(dw0), maxsig=5, k=k, method='Nelder-Mead')
+                        m_final = fit_it(m_init, peaks, arc_lines, in_weights=weights[weighting],
+                                         ref_weights=arc_weights, matches=matches)
+                        log.stdinfo('{} {}'.format(repr(m_final), fit_it.statistic))
 
-                    # sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
-                    #             tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order + 1)))
+                        # And then recalculate the matches
+                        match_radius = 4 * fwidth * abs(m_final.c1) / (len(data) - 1)  # 2*fwidth pixels
+                        m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
+                                                                           model=m_final, match_radius=match_radius,
+                                                                           sigma_clip=3)
+                        log.stdinfo('{} {} {} {}'.format(ad.filename, repr(m.forward), len(m), m.rms_output))
 
-                # Now make repeated fits, increasing the polynomial order
-                for item in sequence:
-                    if len(item) == 3:
-                        ord, weight_type, method = item
-                        fixems = None
-                    else:
-                        ord, weight_type, method, fixems = item
-                    in_weights = weights[weight_type]
+                        if debug:
+                            fig, ax = plt.subplots()
+                            ax.plot(data, 'b-')
+                            ax.set_ylim(0, data_max * 1.05)
+                            if dw0 > 0:
+                                ax.set_xlim(-1, len(data))
+                            else:
+                                ax.set_xlim(len(data), -1)
+                            for p in peaks:
+                                ax.plot([p, p], [0, 2 * data_max], 'r:')
+                            for p, w in zip(m.input_coords, m.output_coords):
+                                j = int(p + 0.5)
+                                ax.plot([p, p], [data[j], data[j] + 0.02 * data_max], 'k-')
+                                ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
+                                        horizontalalignment='center', rotation=90, fontdict={'size': 8})
+                            plt.show()
 
-                    # TODO: Can probably remove when this is optimized
-                    if ord > order:
-                        continue
+                        all_fits.append(m)
+                        if m.rms_output < 0.2 * fwidth * abs(dw0):
+                            acceptable_fit = True
+                            break
 
-                    # Create new initial model based on latest model
-                    m_init = models.Chebyshev1D(degree=ord, domain=m_final.domain)
-                    for i in range(ord + 1):
-                        param = 'c{}'.format(i)
-                        setattr(m_init, param, getattr(m_final, param, 0))
-
-                    # Set some bounds; this may need to be abstracted for
-                    # different instruments? TODO
-                    dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
-
-                    # FixMe: "0.02 * cenwave" makes tests for determineWavelengthSolution
-                    #  fail. Use "0.05 * cenwave" to make them pass.
-                    c0_unc = 0.02 * cenwave
-
-                    m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
-                    c1_unc = 0.005 * abs(m_init.c1)
-                    m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
-                    for i in range(2, ord + 1):
-                        getattr(m_init, 'c{}'.format(i)).bounds = (-5, 5)
-
-                    if fixems is not None:
-                        for fx in fixems:
-                            getattr(m_init, fx).fixed = True
-
-                    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=3, method=method)
-                    if method == 'basinhopping':
-                        kwargs = {'minimizer_kwargs': {'tol': 0.01}}
-                    else:
-                        kwargs = {}
-                    m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines,
-                                     in_weights=in_weights[peaks_to_fit],
-                                     ref_weights=None if weight_type == 'none' else arc_weights,
-                                     **kwargs)
-                    #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
-                    #                 options={'xatol': 1.0e-7, 'fatol': 1.0e-8})
-
-                    log.stdinfo('{} {}'.format(repr(m_final), fit_it.statistic))
-                    if debug:
-                        plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final,
-                                     "KDFit model order {} KDsigma = {}".format(ord, kdsigma))
-
-                    match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
-                    for p in m_final.param_names:
-                        getattr(m_final, p).bounds = (None, None)
-
-                    #m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                    #                                                   model=m_final, match_radius=match_radius,
-                    #                                                   sigma_clip=3)
-                    # kdsigma = m.rms_output
-                    # print("New kdsigma {}".format(kdsigma))
-                    kdsigma = fwidth * abs(dw)
-                    yplot += 1
-
-                # Remove bounds from the model
-                for p in m_final.param_names:
-                    getattr(m_final, p).bounds = (None, None)
-
-                # FixMe: using "4 * fwidth" breaks tests in test_gmos_spect_ls_wavelength_calibration.
-                #   Use "2 * fwidth" to make them pass.
-                match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
-
-                # match_radius = kdsigma
-                m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                                                                   model=m_final, match_radius=match_radius,
-                                                                   sigma_clip=3)
-                log.stdinfo('{} {} {}'.format(repr(m.forward), len(m.input_coords), m.rms_output))
-                if debug:
-                    plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m.forward,
-                                 f"MatchBox model order {ord}")
-                    #for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
-                    #    ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
-                    #            ha='center', va='top')
-
-                # Choice of kdsigma can have a big effect. This oscillates
-                # around the initial choice, with increasing amplitude.
-                # kdsigma = 10.*abs(dw) * (((1.0+0.1*((kditer+1)//2)))**((-1)**kditer)
-                #                    if kditer<21 else 1)
+                if not acceptable_fit:
+                    log.warning(f"No acceptable wavelength solution found for {ad.filename}")
+                    scores = [m.rms_output / len(m) for m in all_fits]
+                    m = all_fits[np.argmin(scores)]
 
                 if debug:
-                    plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final, "Final fit")
-                    m.display_fit(show=True)
                     m.display_fit(show=False)
                     plt.savefig(ad.filename.replace('.fits', '.jpg'))
 
                 m_final = m.forward
                 rms = m.rms_output
-                nmatched = len(m.input_coords)
+                nmatched = len(m)
                 log.stdinfo(m_final)
-                log.stdinfo("Matched {} lines with rms = {:.3f} nm.".format(nmatched, rms))
+                log.stdinfo("Matched {}/{} lines with rms = {:.3f} nm.".format(nmatched, len(peaks), rms))
 
-                max_rms = rms / dw  # in pixels
+                max_rms = 0.2 * rms / abs(dw0)  # in pixels
                 max_dev = 3 * max_rms
                 m_inverse = astromodels.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                                                  max_deviation=max_dev)
-                log.stdinfo(m_inverse)
                 inv_rms = np.std(m_inverse(m_final(m.input_coords)) - m.input_coords)
                 log.stdinfo("Inverse model has rms = {:.3f} pixels.".format(inv_rms))
                 m_final.name = "WAVE"
@@ -1179,10 +1155,12 @@ class Spect(PrimitivesBASE):
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
                 model_dict = astromodels.chebyshev_to_dict(m_final)
-                model_dict['rms'] = rms
+                model_dict.update({'rms': rms, 'fwidth': fwidth})
                 # Add information about where the extraction took place
                 if ext.data.ndim > 1:
-                    model_dict[direction] = 0.5 * (extract_slice.start + extract_slice.stop)
+                    model_dict[direction] = 0.5 * (extract_slice.start +
+                                                   extract_slice.stop - 1)
+                    model_dict['nsum'] = nsum
 
                 # Ensure all columns have the same length
                 pad_rows = nmatched - len(model_dict)
@@ -2545,6 +2523,118 @@ class Spect(PrimitivesBASE):
                                   * u.Unit("erg cm-2 s-1") / u.Hz)
         return spec_table
 
+    def _perform_piecewise_fit(self, data, peaks, arc_lines, pixel_start, wave_start,
+                               dw_start, kdsigma, order=3, min_lines_per_fit=15, k=1,
+                               arc_weights=None, debug=False):
+        """
+        This function performs fits in multiple regions of the 1D arc spectrum.
+        Given a starting location, a suitable fitting region is "grown" outwards
+        until it has at least the specified number of both input and output
+        coordinates to fit. A fit (usually linear, but quadratic if more than
+        half the arra yis being used and the final fit is order >= 2) is made
+        to this region and coordinate matches are found. The matches at the
+        extreme ends are then used as the starts of subsequent fits, moving
+        outwards until the edges of the data are reached.
+
+        Parameters
+        ----------
+        data : array (1D)
+            arc spectrum
+        peaks : array-like
+            pixel locations of detected arc lines
+        arc_lines : array-like
+            wavelengths of arc lines to be identified
+        pixel_start : float
+            pixel location from which to make initial regional fit
+        wave_start : float
+            wavelength that this pixel is believed to correspond to
+        dw_start : float
+            estimated dispersion per pixel
+        kdsigma : float
+            scale length for KDFitter (wavelength units)
+        order : int
+            order of Chebyshev fit providing complete solution
+        min_lines_per_fit : int
+            minimum number of peaks and arc lines needed to perform a regional fit
+        k : int
+            maximum number of arc lines to match each peak
+        arc_weights : array-like/None
+            weights of output coordinates
+        debug : bool
+            output additional debugging material?
+
+        Returns
+        -------
+        array : index in arc_lines that each peak has been matched to (the
+                value -1 means no match)
+        """
+        log = self.log
+        matches = np.full((len(peaks),), -1, dtype=int)
+        fits_to_do = [(pixel_start, wave_start, dw_start)]
+
+        dc0 = 10
+        match_radius = 2 * abs(dw_start)
+        while fits_to_do:
+            p0, c0, dw = fits_to_do.pop()
+            if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
+                p1 = p0
+            else:
+                p1 = 0
+            npeaks = narc_lines = 0
+            while (min(npeaks, narc_lines) < min_lines_per_fit and
+                   not (p0 - p1 < 0 and p0 + p1 >= len(data))):
+                p1 += 1
+                i1 = bisect(peaks, p0 - p1)
+                i2 = bisect(peaks, p0 + p1)
+                npeaks = i2 - i1
+                i1 = bisect(arc_lines, c0 - p1 * abs(dw))
+                i2 = bisect(arc_lines, c0 + p1 * abs(dw))
+                narc_lines = i2 - i1
+            c1 = p1 * dw
+
+            if p1 > 0.25 * len(data) and order >= 2:
+                m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
+                                            domain=[p0 - p1, p0 + p1])
+                m_init.c2.bounds = (-20, 20)
+            else:
+                m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
+                                            domain=[p0 - p1, p0 + p1])
+            m_init.c0.bounds = (c0 - dc0, c0 + dc0)
+            m_init.c1.bounds = (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))
+            log.debug("-" * 60)
+            log.debug("P0={:.2f} P1={:.2f} C0={:.4f}({:.4f}) C1={:.5f} "
+                      "dw={:.5f}".format(p0, p1, c0, dc0, c1, dw))
+            log.debug(f"{npeaks} peaks and {narc_lines} arc lines")
+
+            # Need to set in_weights=None as there aren't many lines so
+            # the fit could be swayed by a single very bright line
+            m_this = _fit_region(m_init, peaks, arc_lines, kdsigma, data=data,
+                                 in_weights=None, ref_weights=arc_weights,
+                                 matches=matches, k=k, plot=debug)
+            dw = 2 * m_this.c1 / np.diff(m_this.domain)[0]
+
+            # Add new matches to the list
+            new_matches = matching.match_sources(m_this(peaks), arc_lines, radius=match_radius)
+            for i, (m, p) in enumerate(zip(new_matches, peaks)):
+                if matches[i] == -1 and m > -1:
+                    if p0 - p1 <= p <= p0 + p1:
+                        # automatically removes old (bad) match
+                        matches[i] = m
+                        log.debug("    in={:10.4f}  ref={:10.4f}".format(p, arc_lines[m]))
+            try:
+                p_lo = peaks[matches > -1].min()
+            except ValueError:
+                print("No matches at all")
+            else:
+                if p_lo < p0 <= pixel_start:
+                    arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
+                    fits_to_do.append((p_lo, arc_line, dw))
+                p_hi = peaks[matches > -1].max()
+                if p_hi > p0 >= pixel_start:
+                    arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
+                    fits_to_do.append((p_hi, arc_line, dw))
+            dc0 = 5 * abs(dw)
+        return matches
 
 # -----------------------------------------------------------------------------
 def _average_along_slit(ext, center=None, nsum=None):
@@ -2625,13 +2715,81 @@ def _transpose_if_needed(*args, transpose=False, section=slice(None)):
                 else arg.T[section] if transpose else arg[section] for arg in args)
 
 
-def _read_chebyshev_model(ext):
-    try:
-        wavecal = dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
-    except (AttributeError, KeyError):
-        raise ValueError('missing wave model')
-    else:
-        return astromodels.dict_to_chebyshev(wavecal)
+def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
+                ref_weights=None, matches=None, k=1, plot=False, data=None):
+    """
+    This function fits a region of a 1D spectrum (delimited by the domain of
+    the input Chebyshev model) using the KDTreeFitter. Only detected peaks
+    and arc lines within this domain (and a small border to prevent mismatches
+    when a feature is near the edge) are matched. An improved version of the
+    input model is returned.
+
+    Parameters
+    ----------
+    m_init : Model
+        initial model desccribing the wavelength solution
+    peaks : array-like
+        pixel locations of detected arc lines
+    arc_lines : array-like
+        wavelengths of plausible arc lines
+    kdsigma : float
+        scale length for KDFitter (wavelength units)
+    in_weights : array-like/None
+        weights of input coordinates
+    ref_weights : array-like/None
+        weights of output coordinates
+    matches : array, same length as peaks
+        existing matches (each element points to an index in arc_lines)
+    k : int
+        maximum number of arc lines to match each peak
+    plot : bool
+        plot this fit for debugging purposes?
+    data : array
+        full 1D arc spectrum (only used if plot=True)
+
+    Returns
+    -------
+    Model : improved model fit
+    """
+    p0 = np.mean(m_init.domain)
+    p1 = 0.5 * np.diff(m_init.domain)[0]
+    # We're only interested in fitting lines in this region
+    new_in_weights = (abs(peaks - p0) <= 1.05 * p1).astype(float)
+    if in_weights is not None:
+        new_in_weights *= in_weights
+    w0 = m_init.c0.value
+    w1 = abs(m_init.c1.value)
+    new_ref_weights = (abs(arc_lines - w0) <= 1.05 * w1).astype(float)
+    if ref_weights is not None:
+        new_ref_weights *= ref_weights
+    new_ref_weights = ref_weights
+
+    # Maybe consider two fits here, one with a large kdsigma, and then
+    # one with a small one (perhaps the second could use weights)?
+    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
+    m_init.linear = False  # supress warning
+    m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
+                    ref_weights=new_ref_weights, matches=matches)
+    if plot:
+        print(m_init.c0.value, m_init.c1.value, "->", m_this.c0.value, m_this.c1.value)
+        plt.ioff()
+        fig, ax = plt.subplots()
+        w = m_this(np.arange(len(data)))
+        dmax = np.max(data[max(0,int(p0-p1)):min(int(p0+p1),len(data)+1)])
+        wpeaks = m_this(peaks)
+        ax.plot(w, data / dmax, 'b-')
+        for wp in wpeaks:
+            ax.plot([wp, wp], [0, 2], 'r:')
+        for wl in arc_lines:
+            ax.plot([wl, wl], [0, 2], 'k-')
+        ax.set_ylim(0, 1.05)
+        ax.set_xlim(m_this(p0+p1) - 5, m_this(p0-p1) + 5)
+        ax.plot(m_this([p0-p1,p0-p1]), [0,2], 'g-')
+        ax.plot(m_this([p0+p1,p0+p1]), [0,2], 'g-')
+        plt.show()
+        plt.ion()
+    m_this.linear = True
+    return m_this
 
 
 def _extract_model_info(ext):
@@ -2699,10 +2857,41 @@ def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
         ax.plot([line, line], [0, 1], color='{}'.format(0.07 * (9 - wt)))
     for peak in model(peaks):
         ax.plot([peak, peak], [0, 1], 'r:')
-    ax.plot(model(np.arange(len(data))), data / np.max(data), 'b-')
+    ax.plot(model(np.arange(len(data))), 0.98 * data / np.max(data), 'b-')
     limits = model([0, len(data)])
     ax.set_xlim(min(limits), max(limits))
     ax.set_ylim(0, 1)
     ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Relative intensity")
     ax.set_title(title)
+
+
+def find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1, kdsigma,
+                                      weights=None):
+    m_init = models.Chebyshev1D(degree=1, c0=c0, c1=c1,
+                                domain=[0, len(data) - 1])
+    m_init.c0.bounds = (c0 - 100, c0 + 100)
+    m_init.c1.bounds = (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))
+    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=5, k=1, method='differential_evolution')
+    m_out = fit_it(m_init, peaks, arc_lines, in_weights=weights)
+    c0_corr = get_center_from_correlation(data, arc_lines, peaks, 2, c0, c1)
+    center_tol = 5
+    centers = [c0]
+    for c in (m_out.c0.value, c0_corr):
+        if abs(c - c0) > center_tol:
+            centers.append(c)
+    return centers
+
+
+def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
+    len_data = len(data)
+    m = models.Chebyshev1D(degree=1, c0=c0, c1=c1, domain=[0, len_data-1])
+    w = m(np.arange(len_data))
+    fake_arc = np.zeros_like(w)
+    fake_data = np.zeros_like(w)
+    for p in m(peaks):
+        fake_data += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
+    for p in arc_lines:
+        fake_arc += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
+    p = correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
+    return c0 - 2 * p * c1/(len_data - 1)

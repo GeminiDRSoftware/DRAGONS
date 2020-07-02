@@ -49,18 +49,26 @@ class determineDistortionConfig(config.Config):
     debug = config.Field("Display line traces on image display?", bool, False)
 
 
+def min_lines_check(value):
+    [int(x) for x in str(value).split(',')]
+    return True
+
+
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
+    order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=3.)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
+    min_sep = config.RangeField("Minimum feature separation (pixels)", float, 2., min=1.)
     weighting = config.ChoiceField("Weighting of identified peaks", str,
                                    allowed={"none": "no weighting",
                                             "natural": "natural weighting",
                                             "relative": "relative to local peaks"},
                                    default="natural")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
-    order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
+    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
+                             check=min_lines_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
