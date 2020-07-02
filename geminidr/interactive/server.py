@@ -1,4 +1,7 @@
+import pathlib
+
 from bokeh.server.server import Server
+from jinja2 import Template
 
 
 def bkapp(doc):
@@ -20,6 +23,9 @@ def bkapp(doc):
     """
     global visualizer
 
+    with open('%s/templates/index.html' % pathlib.Path(__file__).parent.absolute()) as f:
+        t = Template(f.read())
+        doc.template = t
     visualizer.visualize(doc)
 
 

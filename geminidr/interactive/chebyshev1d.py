@@ -5,7 +5,7 @@ from bokeh.models import Button, Column, ColumnDataSource, CustomJS, Slider, Col
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource
+from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener
 from gempy.library import astromodels
 
 
@@ -72,6 +72,19 @@ class ChebyshevModel(GICoordsSource):
         self.model_dict = astromodels.chebyshev_to_dict(self.m_final)
 
         self.ginotify(self.spectral_coords, self.m_final(self.spectral_coords))
+
+
+class DifferencingModel(GICoordsSource, GICoordsListener):
+    def __init__(self, cmodel):
+        super().__init__()
+        self.cmodel = cmodel
+        self.data_x_coords = cmodel.in_coords[0]
+        self.data_y_coords = cmodel.in_coords[1]
+        cmodel.add_gilistener(self)
+
+    def giupdate(self, x_coords, y_coords):
+        y = self.data_y_coords - self.cmodel.m_final(self.data_x_coords)
+        self.ginotify(x_coords, y)
 
 
 class MaskedScatter(GIScatter):
@@ -212,19 +225,21 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         self.masked_scatter = MaskedScatter(p, self.model, color="red", radius=5)
         self.line = GILine(p)
 
-        self.scatter2 = GIScatter(p2, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
+        differencing_model = DifferencingModel(self.model)
+
+        # self.scatter2 = GIScatter(p2, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
         self.line2 = GILine(p2)
 
         controls = Column(order_slider, button, mask_button, unmask_button)
 
         self.model.add_gilistener(self.line)
-        self.model.add_gilistener(self.line2)
+        differencing_model.add_gilistener(self.line2)
 
         self.model.recalc_chebyshev()
 
         tab1 = Panel(child=p, title="Chebyshev Fit")
-        tab2 = Panel(child=p2, title="Chebyshev Fit 2 (TODO something else)")
-        tabs = Tabs(tabs=[tab1, tab2])
+        tab2 = Panel(child=p2, title="Chebyshev Differential")
+        tabs = Tabs(tabs=[tab1, tab2], name="tabs")
         layout = row(controls, tabs)
 
         doc.add_root(layout)
