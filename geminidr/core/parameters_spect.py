@@ -173,6 +173,7 @@ class resampleToCommonFrameConfig(config.Config):
 
 class skyCorrectFromSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    regions = config.Field("Sample regions", str, None, optional=True)
     order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
     grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
 

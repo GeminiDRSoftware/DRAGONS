@@ -38,6 +38,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
 from gempy.library.astrotools import array_from_list
+from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
@@ -2168,6 +2169,11 @@ class Spect(PrimitivesBASE):
             2D science spectra loaded as :class:`~astrodata.AstroData` objects.
         suffix : str or None
             Suffix to be added to output files.
+        regions : str or None
+            Sample region(s) to fit along rows/columns parallel to the slit,
+            as a comma-separated list of pixel ranges. Any pixels outside these
+            ranges (and/or included in the source aperture table) will be
+            ignored when fitting each row or column.
         order : int or None
             Order of piecewise cubic spline fit to each row/column. If `None`,
             it uses as many pieces as required to get chi^2=1. Else, it is
@@ -2193,6 +2199,9 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         order = params["order"]
         grow = params["grow"]
+        regions = params["regions"]
+
+        slices = cartesian_regions_to_slices(regions)
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -2208,6 +2217,12 @@ class Spect(PrimitivesBASE):
                 # We want to mask pixels in apertures in addition to the mask
                 sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
                             if ext.mask is None else ext.mask.copy())
+
+                # Convert user region constraints to Boolean masks for slicing:
+                user_reg = np.zeros(slitlen, dtype=np.bool)
+                for _slice in slices:
+                    user_reg[_slice] = True
+                user_masked = ~user_reg
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
@@ -2231,16 +2246,24 @@ class Spect(PrimitivesBASE):
                                                       where=var > 0)))
 
                 # Now fit the model for each row/column along dispersion axis
-                for i, (data_row, mask_row, weight_row) in enumerate(zip(data, mask,
-                                                                         sky_weights)):
-                    sky = np.ma.masked_array(data_row, mask=mask_row)
+                for i, (data_row, mask_row, weight_row) in \
+                    enumerate(zip(data, mask, sky_weights[:, user_reg])):
+
+                    sky = np.ma.masked_array(data_row, mask=mask_row)[user_reg]
+
                     if weight_row.sum() == 0:
                         weight_row = None
 
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, sky, order=order,
+                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels[user_reg], sky, order=order,
                                                                             w=weight_row, grow=2)
-                    # Spline fit has been returned so no need to recompute
-                    sky_model[i] = spline.data
+                    # Spline fit has been returned so only need to compute
+                    # regions ignored in the fitting
+                    sky_model[i][user_reg] = spline.data
+                    sky_model[i][user_masked] = spline(pixels[user_masked])
+
+                    # Here we have the have the original row/column data, the
+                    # spline.mask, the evaluated sky_model fit and the user
+                    # regions available for plotting, when implemented.
 
                 ext.data -= (sky_model if dispaxis == 0 else sky_model.T)
 
