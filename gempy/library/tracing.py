@@ -25,7 +25,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
-from . import astromodels
+from . import astrotools as at
 from .astrotools import divide0
 
 from astrodata import NDAstroData
@@ -353,52 +353,34 @@ class Aperture:
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
-def estimate_peak_width(data, min=2, max=8):
+def estimate_peak_width(data):
     """
-    Estimates the FWHM of the spectral features (arc lines) by fitting
-    Gaussians to the brightest peaks.
+    Estimates the FWHM of the spectral features (arc lines) by inspecting
+    pixels around the birghtest peaks.
 
     Parameters
     ----------
-    data:  ndarray
-        1D data array (will be modified)
-    min: int
-        minimum plausible peak width
-    max: int
-        maximum plausible peak width (not inclusive)
+    data : ndarray
+        1D data array
 
     Returns
     -------
-    float: estimate of FWHM of features
+    float : estimate of FWHM of features in pixels
     """
-    all_widths = []
-    for fwidth in range(min, max + 1):  # plausible range of widths
-        data_copy = data.copy()  # We'll be editing the data
-        widths = []
-        for i in range(15):  # 15 brightest peaks, should ensure we get real ones
-            index = 2 * fwidth + np.argmax(data_copy[2 * fwidth:-2 * fwidth - 1])
-            data_to_fit = data_copy[index - 2 * fwidth:index + 2 * fwidth + 1]
-            m_init = models.Gaussian1D(stddev=0.42466 * fwidth) + models.Const1D(np.min(data_to_fit))
-            m_init.mean_0.bounds = [-1, 1]
-            m_init.amplitude_1.fixed = True
-            fit_it = fitting.FittingWithOutlierRemoval(fitting.LevMarLSQFitter(),
-                                                       sigma_clip, sigma=3)
-            with warnings.catch_warnings():
-                # Ignore model linearity warning from the fitter
-                warnings.simplefilter('ignore')
-                m_final, _ = fit_it(m_init, np.arange(-2 * fwidth, 2 * fwidth + 1),
-                                    data_to_fit)
-            # Quick'n'dirty logic to remove "peaks" at edges of CCDs
-            if m_final.amplitude_1 != 0 and m_final.stddev_0 < fwidth:
-                widths.append(m_final.stddev_0 / 0.42466)
-
-            # Set data to zero so no peak is found here
-            data_copy[index - 2 * fwidth:index + 2 * fwidth + 1] = 0.
-        good_widths = sigma_clip(widths, masked=False)
-        if good_widths.size:
-            all_widths.append(good_widths.mean())
-    return sigma_clip(all_widths).mean()
-
+    goodpix = np.ones_like(data, dtype=bool)
+    min_threshold = 2 * np.median(data)
+    widths = []
+    while len(widths) < 10:
+        index = np.argmax(data * goodpix)
+        threshold = 0.5 * (data[index] + min_threshold)  # assume background << peak
+        if threshold < min_threshold:
+            break
+        hi = index + np.argmax(data[index:] < threshold) + 1
+        lo = index - np.argmax(data[index::-1] < threshold)
+        if all(goodpix[lo:hi]):
+            widths.append(hi-lo-1)
+        goodpix[lo:hi] = False
+    return sigma_clip(widths).mean()
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
                min_frac=0.25, reject_bad=True):
@@ -440,6 +422,10 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
 
     max_width = max(widths)
     window_size = 4 * max_width + 1
+
+    # For really broad peaks we can do a median filter to remove spikes
+    if max_width > 10:
+        data = at.boxcar(data, size=2)
 
     wavelet_transformed_data = signal.cwt(data, signal.ricker, widths)
 
@@ -488,7 +474,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)] & (DQ.no_data | DQ.unilluminated)) == 0]
 
     # Clip the really noisy parts of the data and get more accurate positions
-    pinpoint_data = np.where(snr < 0.5, 0, data)
+    pinpoint_data = np.where(snr < 0.5, 0, wavelet_transformed_data[0])
     peaks = pinpoint_peaks(pinpoint_data, mask, peaks)
 
     # Clean up peaks that are too close together
