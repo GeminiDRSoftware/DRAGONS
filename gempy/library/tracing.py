@@ -850,7 +850,7 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
         data, mask, var = NDStacker.mean(ext_data[y1:y1 + nsum],
                                          mask=None if ext_mask is None else ext_mask[y1:y1 + nsum],
                                          variance=None)
-        fwidth = estimate_peak_width(data.copy(), 10)
+        fwidth = estimate_peak_width(data)
         widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
         initial, _ = find_peaks(data, widths, mask=mask,
                                 variance=var, min_snr=5)
