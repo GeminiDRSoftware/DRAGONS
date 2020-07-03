@@ -410,7 +410,7 @@ class Spect(PrimitivesBASE):
                 log.info('Add "mosaic" gWCS frame to input data')
                 geotable = import_module('.geometry_conf', self.inst_lookups)
 
-                # deepcopy prevents modifying input ad inplace
+                # deepcopy prevents modifying input `ad` inplace
                 ad = transform.add_mosaic_wcs(deepcopy(ad), geotable)
 
                 log.info("Temporarily mosaicking multi-extension file")
@@ -421,7 +421,9 @@ class Spect(PrimitivesBASE):
 
                 log.info('Input data already has one extension and has a '
                          '"mosaic" frame.')
-                slit_response_ad = deepcopy(ad) # prevents touching ad
+
+                # deepcopy prevents modifying input `ad` inplace
+                slit_response_ad = deepcopy(ad)
 
             log.info("Transposing data if needed")
             dispaxis = 2 - slit_response_ad[0].dispersion_axis()  # python sense
@@ -490,15 +492,28 @@ class Spect(PrimitivesBASE):
             slit_response_ad[0].mask = _mask
             slit_response_ad[0].variance = _variance
 
-            datasec_kw = slit_response_ad._keyword_for('data_section')
-
-            slit_response_ad[0].hdr[datasec_kw] = '[1:{},1:{}]'.format(
-                *slit_response_ad[0].shape[::-1])
-
             if "mosaic" in ad[0].wcs.available_frames:
+
                 log.info("Map coordinates between slit function and mosaicked data")  # ToDo: Improve message?
+                datasec_kw = slit_response_ad._keyword_for('data_section')
+
+                # Update datasection in order to resample WCS frames
+                slit_response_ad[0].hdr[datasec_kw] = \
+                    '[1:{},1:{}]'.format(*slit_response_ad[0].shape[::-1])
+
                 slit_response_ad = _split_mosaic_into_extensions(
                     ad, slit_response_ad, border_size=border)
+
+            elif len(ad) == 1:
+
+                log.info("Trim out borders")
+
+                slit_response_ad[0].data = \
+                    slit_response_ad[0].data[border:-border, border:-border]
+                slit_response_ad[0].mask = \
+                    slit_response_ad[0].mask[border:-border, border:-border]
+                slit_response_ad[0].variance = \
+                    slit_response_ad[0].variance[border:-border, border:-border]
 
             log.info("Update metadata and filename")
             gt.mark_history(

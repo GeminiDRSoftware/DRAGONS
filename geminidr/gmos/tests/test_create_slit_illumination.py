@@ -11,8 +11,10 @@ import warnings
 from copy import deepcopy
 
 import astrodata
+import numpy as np
 
 from astrodata.testing import download_from_archive
+from astropy.modeling import fitting, models
 from gempy.utils import logutils
 from geminidr.gmos import primitives_gmos_longslit
 from recipe_system.reduction.coreReduce import Reduce
@@ -23,22 +25,61 @@ from recipe_system.reduction.coreReduce import Reduce
 @pytest.mark.parametrize("ad", ["S20190204S0006_mtflat.fits"], indirect=True)
 def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, request):
     """
-    Test that can run `createSlitIllumination` in mosaicked data.
+    Test that can run `createSlitIllumination` in mosaicked data. This primitive
+    creates a 2D image that is used to normalize the input data.
+
+    After normalization, the intensity along a column should be more or less
+    constant.
+
+    There are several ways of doing this but, given the noise levels, we bin
+    the data, fit a polynomium, and check that the fitted polynomium has its 1st
+    and 2nd coefficients almost zero.
     """
     plot = request.config.getoption("--do-plots")
 
     with change_working_dir():
-        print("Running tests inside folder:\n  {}".format(os.getcwd()))
-        p = primitives_gmos_longslit.GMOSLongslit([ad])
-        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)[0]
 
-        if plot:
+        print("Running tests inside folder:\n  {}".format(os.getcwd()))
+
+        assert hasattr(ad[0], "wcs")
+
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
+        slit_illum_ad = p.createSlitIllumination(bins=50, border=10, debug_plot=plot)[0]
+
+        for ext, slit_ext in zip(ad, slit_illum_ad):
+            assert ext.shape == slit_ext.shape
+
+            # Create output data
+            data_o = (np.ma.masked_array(ext.data, mask=ext.mask) /
+                      np.ma.masked_array(ext.data, mask=ext.mask))
+
+            # Bin columns
+            fitter = fitting.LinearLSQFitter()
+            model = models.Polynomial1D(degree=2)
+            nbins = 50
+            rows = np.arange(data_o.shape[0])
+
+            for i in range(nbins):
+
+                col_start = i * data_o.shape[1] // nbins
+                col_end = (i + 1) * data_o.shape[1] // nbins
+
+                cols = np.ma.mean(data_o[:, col_start:col_end], axis=1)
+
+                fitted_model = fitter(model, rows, cols)
+
+                # Check column is linear
+                np.testing.assert_almost_equal(fitted_model.c2.value, 0, 3)
+
+                # Check is linear slope is zero (horizontal)
+                np.testing.assert_almost_equal(fitted_model.c1.value, 0, 3)
+
+        if True:
+
+            # Rename PNG plots produced by the primitive
             os.makedirs("plots", exist_ok=True)
             os.rename(slit_illum_ad.filename.replace(".fits", ".png"),
                       os.path.join("plots", ad.filename.replace(".fits", ".png")))
-
-        for ext, slit_ext in zip(ad, slit_illum_ad):
-            assert {ext.shape == slit_ext.shape}
 
 
 @pytest.mark.gmosls
@@ -51,17 +92,45 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
     plot = request.config.getoption("--do-plots")
 
     with change_working_dir():
+
         print("Running tests inside folder:\n  {}".format(os.getcwd()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
         slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)[0]
 
+        for ext, slit_ext in zip(ad, slit_illum_ad):
+            assert ext.shape == slit_ext.shape
+
+            # Create output data
+            data_o = (np.ma.masked_array(ext.data, mask=ext.mask) /
+                      np.ma.masked_array(ext.data, mask=ext.mask))
+
+            # Bin columns
+            fitter = fitting.LinearLSQFitter()
+            model = models.Polynomial1D(degree=2)
+            nbins = 10
+            rows = np.arange(data_o.shape[0])
+
+            for i in range(nbins):
+
+                col_start = i * data_o.shape[1] // nbins
+                col_end = (i + 1) * data_o.shape[1] // nbins
+
+                cols = np.ma.mean(data_o[:, col_start:col_end], axis=1)
+
+                fitted_model = fitter(model, rows, cols)
+
+                # Check column is linear
+                np.testing.assert_almost_equal(fitted_model.c2.value, 0, 3)
+
+                # Check is linear slope is zero (horizontal)
+                np.testing.assert_almost_equal(fitted_model.c1.value, 0, 3)
+
         if plot:
+
+            # Rename PNG plots produced by the primitive
             os.makedirs("plots", exist_ok=True)
             os.rename(slit_illum_ad.filename.replace(".fits", ".png"),
                       os.path.join("plots", ad.filename.replace(".fits", ".png")))
-
-        for ext, slit_ext in zip(ad, slit_illum_ad):
-            assert {ext.shape == slit_ext.shape}
 
 
 # --- Helper functions and fixtures -------------------------------------------
