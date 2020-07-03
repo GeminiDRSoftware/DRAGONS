@@ -1,8 +1,7 @@
 import numpy as np
 from astropy.modeling import models, fitting
-from bokeh.io import push_notebook
 from bokeh.layouts import row
-from bokeh.models import Button, Column, ColumnDataSource, CustomJS, Slider, ColorPicker, Panel, Tabs, BoxAnnotation
+from bokeh.models import Button, Column, Panel, Tabs
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
@@ -29,13 +28,11 @@ class ChebyshevModel(GICoordsSource):
         for i in coords:
             self.coords_mask[i] = False
         self.recalc_chebyshev()
-        pass
 
     def unmask(self, coords):
         for i in coords:
             self.coords_mask[i] = True
         self.recalc_chebyshev()
-        pass
 
     def recalc_chebyshev(self):
         """
@@ -85,7 +82,8 @@ class DifferencingModel(GICoordsSource, GICoordsListener):
         cmodel.add_gilistener(self)
 
     def giupdate(self, x_coords, y_coords):
-        y = self.data_y_coords - self.cmodel.m_final(self.data_x_coords)
+        x = self.data_x_coords[self.cmodel.coords_mask]
+        y = self.data_y_coords[self.cmodel.coords_mask] - self.cmodel.m_final(x)
         self.ginotify(x_coords, y)
 
 
@@ -101,7 +99,7 @@ class MaskedScatter(GIScatter):
         self.source.data = {'x': x, 'y': y}
 
 
-class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
+class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
     def __init__(self, model, min_order, max_order):
         """
         Create a chebyshev1D visualizer.
@@ -117,7 +115,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         super().__init__()
 
         if not isinstance(model, ChebyshevModel):
-            raise ValueError("Chebyshev1DVisualizerNew requires ChebyshevModel")
+            raise ValueError("Chebyshev1DVisualizer requires ChebyshevModel")
 
         self.model = model
 
@@ -142,32 +140,20 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         self.scatter2 = None
         self.line2 = None
 
+        # Stubbing in some bands/apertures to play with.  I just want to start
+        # prototyping stuff here since it's available and not wait until I have
+        # more primitives implemented that specifically call for this.
         self.controls = None
         self.band_model = None
         self.bands = None
         self.band_id = None
         self.band_controls = None
 
+        self.aperture_view = None
         self.aperture_model = None
         self.apertures = None
         self.aperture_id = None
         self.aperture_controls = None
-
-    def button_handler(self, stuff):
-        """
-        Handle the submit button by stopping the bokeh server, which
-        will resume python execution in the DRAGONS primitive.
-
-        Parameters
-        ----------
-        stuff
-            passed by bokeh, but we do not use it
-
-        Returns
-        -------
-        none
-        """
-        server.bokeh_server.io_loop.stop()
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
@@ -217,15 +203,11 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         -------
         none
         """
+
+        super().visualize(doc)
+
         order_slider = self.make_slider_for("Order", self.model.order, 1, self.min_order, self.max_order,
                                             self.order_slider_handler)
-
-        button = Button(label="Submit")
-        button.on_click(self.button_handler)
-        callback = CustomJS(code="""
-            window.close();
-        """)
-        button.js_on_click(callback)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -273,7 +255,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
 
         self.band_controls = Column()
         self.aperture_controls = Column()
-        self.controls = Column(order_slider, button, mask_button, unmask_button,
+        self.controls = Column(order_slider, self.submit_button, mask_button, unmask_button,
                                add_band_button, self.band_controls,
                                add_aperture_button, self.aperture_controls)
 
@@ -288,8 +270,6 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         layout = row(self.controls, tabs)
 
         doc.add_root(layout)
-
-        doc.on_session_destroyed(self.button_handler)
 
 
 def interactive_chebyshev(ext,  order, location, dispaxis, sigma_clip, in_coords, spectral_coords,

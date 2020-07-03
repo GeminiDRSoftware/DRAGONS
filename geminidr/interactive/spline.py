@@ -56,7 +56,7 @@ class SplineModel:
         self.fit_line.ginotify(splinex, self.spline(splinex))
 
 
-class SplineVisualizer(interactive.PrimitiveVisualizerNew):
+class SplineVisualizer(interactive.PrimitiveVisualizer):
     def __init__(self, ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
                  min_niter, max_niter, min_grow, max_grow):
         """
@@ -96,22 +96,6 @@ class SplineVisualizer(interactive.PrimitiveVisualizerNew):
         self.min_grow = min_grow
         self.max_grow = max_grow
 
-    def button_handler(self, stuff):
-        """
-        Handle the submit button by stopping the bokeh server, which
-        will resume python execution in the DRAGONS primitive.
-
-        Parameters
-        ----------
-        stuff
-            passed by bokeh, but we do not use it
-
-        Returns
-        -------
-        none
-        """
-        server.bokeh_server.io_loop.stop()
-
     def order_slider_handler(self, attr, old, new):
         """
         Handle a change in the order slider
@@ -146,6 +130,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizerNew):
         -------
         none
         """
+        super().visualize(doc)
+
         wave = self.model.wave
         zpt = self.model.zpt
         order = self.model.order
@@ -156,13 +142,6 @@ class SplineVisualizer(interactive.PrimitiveVisualizerNew):
         niter_slider = self.make_slider_for("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
                                             self.niter_slider_handler)
         grow_slider = self.make_slider_for("Grow", grow, 1, self.min_grow, self.max_grow, self.grow_slider_handler)
-
-        button = Button(label="Submit")
-        button.on_click(self.button_handler)
-        callback = CustomJS(code="""
-            window.close();
-        """)
-        button.js_on_click(callback)
 
         # Create a blank figure with labels
         self.p = figure(plot_width=600, plot_height=500,
@@ -179,7 +158,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizerNew):
         self.line = GILine(self.p)
         self.model.fit_line.add_gilistener(self.line)
 
-        controls = Column(order_slider, niter_slider, grow_slider, button)
+        controls = Column(order_slider, niter_slider, grow_slider, self.submit_button)
 
         self.model.recalc_spline()
 

@@ -1,26 +1,54 @@
 import sys
 from abc import ABC, abstractmethod
 
-from bokeh.core.property.container import Seq
 from bokeh.layouts import row
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Label
+from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS
+
+from geminidr.interactive import server
 
 
-class PrimitiveVisualizerNew(ABC):
+class PrimitiveVisualizer(ABC):
+    def __init__(self):
+        self.submit_button = Button(label="Submit")
+        self.submit_button.on_click(self.submit_button_handler)
+        callback = CustomJS(code="""
+            window.close();
+        """)
+        self.submit_button.js_on_click(callback)
 
-    @abstractmethod
-    def visualize(self):
+
+    def submit_button_handler(self, stuff):
+        """
+        Handle the submit button by stopping the bokeh server, which
+        will resume python execution in the DRAGONS primitive.
+
+        Parameters
+        ----------
+        stuff
+            passed by bokeh, but we do not use it
+
+        Returns
+        -------
+        none
+        """
+        server.bokeh_server.io_loop.stop()
+
+    def visualize(self, doc):
         """
         Perform the visualization.
 
         This is called via bkapp by the bokeh server and happens
         when the bokeh server is spun up to interact with the user.
 
+        Subclasses should implement this method with their particular
+        UI needs, but also should call super().visualize(doc) to
+        listen for session terminations.
+
         Returns
         -------
         none
         """
-        pass
+        doc.on_session_destroyed(self.submit_button_handler)
 
     def make_slider_for(self, title, value, step, min_value, max_value, handler):
         """
@@ -38,9 +66,9 @@ class PrimitiveVisualizerNew(ABC):
             Value to initially set
         step : int
             Step size
-        min : int
+        min_value : int
             Minimum slider value, or None defaults to min(value,0)
-        max : int
+        max_value : int
             Maximum slider value, or None defaults to value*2
         handler : method
             Function to handle callbacks when value of the slider changes
