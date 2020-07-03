@@ -1,11 +1,13 @@
 import numpy as np
 from astropy.modeling import models, fitting
+from bokeh.io import push_notebook
 from bokeh.layouts import row
-from bokeh.models import Button, Column, ColumnDataSource, CustomJS, Slider, ColorPicker, Panel, Tabs
+from bokeh.models import Button, Column, ColumnDataSource, CustomJS, Slider, ColorPicker, Panel, Tabs, BoxAnnotation
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener
+from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, BandModel, GIBands, \
+    BandControls, ApertureModel, ApertureView, ApertureControls
 from gempy.library import astromodels
 
 
@@ -140,6 +142,17 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         self.scatter2 = None
         self.line2 = None
 
+        self.controls = None
+        self.band_model = None
+        self.bands = None
+        self.band_id = None
+        self.band_controls = None
+
+        self.aperture_model = None
+        self.apertures = None
+        self.aperture_id = None
+        self.aperture_controls = None
+
     def button_handler(self, stuff):
         """
         Handle the submit button by stopping the bokeh server, which
@@ -178,6 +191,19 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         self.model.order = new
         self.model.recalc_chebyshev()
 
+    def add_band_handler(self, stuff):
+        band_controls = BandControls(self.band_controls, self.band_id, self.band_model,
+                                     min(self.model.in_coords[0]),
+                                     max(self.model.in_coords[0]))
+        self.band_id += 1
+
+    def add_aperture_handler(self, stuff):
+        aperture_controls = ApertureControls(self.aperture_controls, self.aperture_id,
+                                             self.aperture_model,
+                                             min(self.model.in_coords[0]),
+                                             max(self.model.in_coords[0]))
+        self.aperture_id += 1
+
     def visualize(self, doc):
         """
         Build the visualization in bokeh in the given browser document.
@@ -213,6 +239,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
                         x_axis_label='X', y_axis_label='Y',
                         #output_backend="webgl",
                         tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
+        self.p = p
 
         # p2 is just to show that we can have multiple tabs with plots running off the same dataset
         # TODO make plots like the other IRAF options we were shown
@@ -230,7 +257,25 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         # self.scatter2 = GIScatter(p2, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
         self.line2 = GILine(p2)
 
-        controls = Column(order_slider, button, mask_button, unmask_button)
+        # Just sandboxing a basic band UI for the x ranges from Kathleen's demo
+        self.band_model = BandModel()
+        self.bands = GIBands(p, self.band_model)
+        self.band_id = 1
+        add_band_button = Button(label="Add Band")
+        add_band_button.on_click(self.add_band_handler)
+
+        # Just sandboxing a sample Aperture UI
+        self.aperture_model = ApertureModel()
+        self.aperture_view = ApertureView(self.aperture_model, self.p, max(self.model.in_coords[1]) - 50)
+        self.aperture_id = 1
+        add_aperture_button = Button(label="Add Aperture")
+        add_aperture_button.on_click(self.add_aperture_handler)
+
+        self.band_controls = Column()
+        self.aperture_controls = Column()
+        self.controls = Column(order_slider, button, mask_button, unmask_button,
+                               add_band_button, self.band_controls,
+                               add_aperture_button, self.aperture_controls)
 
         self.model.add_gilistener(self.line)
         differencing_model.add_gilistener(self.line2)
@@ -240,7 +285,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizerNew):
         tab1 = Panel(child=p, title="Chebyshev Fit")
         tab2 = Panel(child=p2, title="Chebyshev Differential")
         tabs = Tabs(tabs=[tab1, tab2], name="tabs")
-        layout = row(controls, tabs)
+        layout = row(self.controls, tabs)
 
         doc.add_root(layout)
 
