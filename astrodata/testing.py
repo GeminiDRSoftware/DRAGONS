@@ -344,7 +344,7 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
     if not os.path.exists(path):
         print(" Creating new directory to store input data for DRAGONS tests:"
               "\n    {:s}".format(path))
-        os.makedirs(path)
+        os.makedirs(path, mode=775, exist_ok=True)
 
     if not os.access(path, os.R_OK):
         pytest.fail('\n  Path to input test data exists but is not accessible: '
