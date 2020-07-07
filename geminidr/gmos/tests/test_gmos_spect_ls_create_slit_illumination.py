@@ -307,11 +307,11 @@ def create_inputs_recipe():
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_create_slit_illumination/"
+    module_path = "geminidr/gmos/test_gmos_spect_ls_create_slit_illumination/inputs"
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
+
     os.chdir(path)
-    os.makedirs("inputs", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename, cals in associated_calibrations.items():
@@ -348,8 +348,6 @@ def create_inputs_recipe():
             p.addVAR(poisson_noise=True)
             p.stackFrames()
 
-            os.chdir("inputs/")
-
             # Write non-mosaicked data
             tflat = p.writeOutputs(suffix="_tflat", strip=True)[0]
 
@@ -357,8 +355,6 @@ def create_inputs_recipe():
             p = primitives_gmos_longslit.GMOSLongslit([deepcopy(tflat)])
             p.mosaicDetectors()
             p.writeOutputs(suffix="_mtflat", strip=True)
-
-            os.chdir("../")
 
 
 if __name__ == '__main__':
