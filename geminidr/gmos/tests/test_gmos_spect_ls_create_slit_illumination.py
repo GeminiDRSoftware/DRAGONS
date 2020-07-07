@@ -24,6 +24,8 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from recipe_system.reduction.coreReduce import Reduce
 
+PLOT_PATH = "plots/geminidr/gmos/test_gmos_spect_ls_create_slit_illumination/"
+
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
@@ -44,7 +46,8 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
 
     with change_working_dir():
 
-        print("Running tests inside folder:\n  {}".format(os.getcwd()))
+        cwd = os.getcwd()
+        print("Running tests inside folder:\n  {}".format(cwd))
 
         assert hasattr(ad[0], "wcs")
 
@@ -79,12 +82,13 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
                 # Check is linear slope is zero (horizontal)
                 np.testing.assert_almost_equal(fitted_model.c1.value, 0, 3)
 
-        if True:
-
-            # Rename PNG plots produced by the primitive
-            os.makedirs("plots", exist_ok=True)
-            os.rename(slit_illum_ad.filename.replace(".fits", ".png"),
-                      os.path.join("plots", ad.filename.replace(".fits", ".png")))
+    if plot:
+        os.makedirs(PLOT_PATH, exist_ok=True)
+        print("Renaming plots to ",
+              os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
+        os.rename(
+            os.path.join(cwd, slit_illum_ad.filename.replace(".fits", ".png")),
+            os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
 
 
 @pytest.mark.gmosls
@@ -98,7 +102,8 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
 
     with change_working_dir():
 
-        print("Running tests inside folder:\n  {}".format(os.getcwd()))
+        cwd = os.getcwd()
+        print("Running tests inside folder:\n  {}".format(cwd))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
         slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)[0]
 
@@ -131,11 +136,12 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
                 np.testing.assert_almost_equal(fitted_model.c1.value, 0, 3)
 
         if plot:
-
-            # Rename PNG plots produced by the primitive
-            os.makedirs("plots", exist_ok=True)
-            os.rename(slit_illum_ad.filename.replace(".fits", ".png"),
-                      os.path.join("plots", ad.filename.replace(".fits", ".png")))
+            os.makedirs(PLOT_PATH, exist_ok=True)
+            print("Renaming plots to ",
+                  os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
+            os.rename(
+                os.path.join(cwd, slit_illum_ad.filename.replace(".fits", ".png")),
+                os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
 
 
 def test_split_mosaic_into_extensions(request):
@@ -239,11 +245,10 @@ def test_split_mosaic_into_extensions(request):
         cbar = plt.colorbar(im, cax=cax, orientation="horizontal")
         cbar.set_label("Difference levels")
 
-        output_dir = "./plots/geminidr/core/"
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(PLOT_PATH, exist_ok=True)
 
         fig.savefig(
-            os.path.join(output_dir, "test_split_mosaic_into_extensions.png"))
+            os.path.join(PLOT_PATH, "test_split_mosaic_into_extensions.png"))
 
     # Actual test ----
     for i, (ext, ext2) in enumerate(zip(ad, ad2)):
