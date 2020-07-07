@@ -13,9 +13,23 @@ def flat_order_check(value):
     else:
         return len(orders) == 3 and min(orders) > 0
 
+
 class addDQConfig(parameters_standardize.addDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True
+
+
+class createSlitIlluminationConfig(config.Config):
+
+    bins = config.Field("Total number of bins across the dispersion axis.",
+                        int, None, optional=True)
+    border = config.Field("Size of the border added to the reconstructed slit illumination image",
+                          int, 0, optional=True)
+    debug_plot = config.Field("Create diagnosis plots?",
+                              bool, False, optional=True)
+    suffix = config.Field("Filename suffix",
+                          str, "_slitIllum", optional=True)
+
 
 class normalizeFlatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)

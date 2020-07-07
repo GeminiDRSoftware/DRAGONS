@@ -134,21 +134,6 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
-class createSlitIlluminationConfig(config.Config):
-
-    bins = config.Field("Total number of bins across the dispersion axis.",
-                        int, None, optional=True)
-
-    border = config.Field("Size of the border added to the reconstructed slit illumination image",
-                          int, 0, optional=True)
-
-    debug_plot = config.Field("Create diagnosis plots?",
-                              bool, False, optional=True)
-
-    suffix = config.Field("Filename suffix",
-                          str, "_slitIllum", optional=True)
-
-
 class normalizeFlatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
