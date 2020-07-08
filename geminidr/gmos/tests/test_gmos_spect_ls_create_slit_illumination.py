@@ -52,7 +52,8 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
         assert hasattr(ad[0], "wcs")
 
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        slit_illum_ad = p.createSlitIllumination(bins=50, border=10, debug_plot=plot)[0]
+        p.createSlitIllumination(bins=25, border=10, debug_plot=plot)
+        slit_illum_ad = p.writeOutputs()[0]
 
         for ext, slit_ext in zip(ad, slit_illum_ad):
             assert ext.shape == slit_ext.shape
@@ -105,7 +106,8 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
         cwd = os.getcwd()
         print("Running tests inside folder:\n  {}".format(cwd))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        slit_illum_ad = p.createSlitIllumination(border=10, debug_plot=plot)[0]
+        p.createSlitIllumination(bins=25, border=10, debug_plot=plot)
+        slit_illum_ad = p.writeOutputs()[0]
 
         for ext, slit_ext in zip(ad, slit_illum_ad):
             assert ext.shape == slit_ext.shape
@@ -135,13 +137,13 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
                 # Check is linear slope is zero (horizontal)
                 np.testing.assert_almost_equal(fitted_model.c1.value, 0, 3)
 
-        if plot:
-            os.makedirs(PLOT_PATH, exist_ok=True)
-            print("Renaming plots to ",
-                  os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
-            os.rename(
-                os.path.join(cwd, slit_illum_ad.filename.replace(".fits", ".png")),
-                os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
+    if plot:
+        os.makedirs(PLOT_PATH, exist_ok=True)
+        print("Renaming plots to ",
+              os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
+        os.rename(
+            os.path.join(cwd, slit_illum_ad.filename.replace(".fits", ".png")),
+            os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
 
 
 def test_split_mosaic_into_extensions(request):

@@ -26,6 +26,7 @@ from gwcs.wcs import WCS as gWCS
 
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from recipe_system.utils.decorators import parameter_override
 
 from .primitives_gmos_spect import GMOSSpect
@@ -170,7 +171,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 ad = transform.add_mosaic_wcs(deepcopy(ad), geotable)
 
                 log.info("Temporarily mosaicking multi-extension file")
-                slit_response_ad = transform.resample_from_wcs(
+                mosaicked_ad = transform.resample_from_wcs(
                     ad, "mosaic", attributes=None, order=1, process_objcat=False)
 
             else:
@@ -179,63 +180,82 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                          '"mosaic" frame.')
 
                 # deepcopy prevents modifying input `ad` inplace
-                slit_response_ad = deepcopy(ad)
+                mosaicked_ad = deepcopy(ad)
 
             log.info("Transposing data if needed")
-            dispaxis = 2 - slit_response_ad[0].dispersion_axis()  # python sense
+            dispaxis = 2 - mosaicked_ad[0].dispersion_axis()  # python sense
             should_transpose = dispaxis == 1
 
             data, mask, variance = _transpose_if_needed(
-                slit_response_ad[0].data, slit_response_ad[0].mask,
-                slit_response_ad[0].variance, transpose=should_transpose)
+                mosaicked_ad[0].data, mosaicked_ad[0].mask,
+                mosaicked_ad[0].variance, transpose=should_transpose)
 
-            log.info("Using masked data")
+            log.info("Masking data")
             data = np.ma.masked_array(data, mask=mask)
+            variance = np.ma.masked_array(variance, mask=mask)
+            std = np.sqrt(variance)  # Easier to work with
+
+            log.info("Creating bins for data and variance")
             height = data.shape[0]
             width = data.shape[1]
 
-            log.info("Creating binned data")
             if bins is None:
                 nbins = max(len(ad), 12)
-                bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
+                bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
             elif isinstance(bins, int):
                 nbins = bins
-                bin_limits = np.linspace(0, data.shape[0], nbins + 1, dtype=int)
+                bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
             else:
-                # ToDo - Handle input bins as array
+                # ToDo: Handle input bins as array
                 raise TypeError("Expected None or Int for `bins`. "
                                 "Found: {}".format(type(bins)))
 
             bin_top = bin_limits[1:]
             bin_bot = bin_limits[:-1]
             binned_data = np.zeros_like(data)
+            binned_std = np.zeros_like(std)
 
-            log.info("Smooth binned data and normalize them by smoothed central value")
-            for i, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
+            log.info("Smooth binned data and variance, and normalize them by "
+                     "smoothed central value")
+            for bin_idx, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
 
-                x = np.arange(width)
-                y = np.ma.mean(data[b0:b1], axis=0)
-                s = astromodels.UnivariateSplineWithOutlierRemoval(x, y, order=5)
+                smooth_order = 5
+                rows = np.arange(width)
 
-                slit_central_value = s(x)[width // 2]
-                binned_data[b0:b1] = s(x) / slit_central_value
+                avg_data = np.ma.mean(data[b0:b1], axis=0)
+                model_1d_data = astromodels.UnivariateSplineWithOutlierRemoval(
+                    rows, avg_data, order=smooth_order)
 
-            log.info("Reconstruct 2D mosaicked image")
+                avg_std = np.ma.mean(std[b0:b1], axis=0)
+                model_1d_std = astromodels.UnivariateSplineWithOutlierRemoval(
+                    rows, avg_std, order=smooth_order)
+
+                slit_central_value = model_1d_data(rows)[width // 2]
+                binned_data[b0:b1] = model_1d_data(rows) / slit_central_value
+                binned_std[b0:b1] = model_1d_std(rows) / slit_central_value
+
+            log.info("Reconstruct 2D mosaicked data")
             bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
             cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
 
             fitter = fitting.SLSQPLSQFitter()
-            model_init = models.Chebyshev2D(
+            model_2d_init = models.Chebyshev2D(
                 x_degree=6, x_domain=(0, width),
                 y_degree=6, y_domain=(0, height))
 
-            slit_response_model = fitter(model_init, cols_fit, rows_fit,
-                                         binned_data[rows_fit, cols_fit])
+            model_2d_data = fitter(model_2d_init, cols_fit, rows_fit,
+                                   binned_data[rows_fit, cols_fit])
 
-            rows_val, cols_val = np.mgrid[-border:height+border, -border:width+border]
-            slit_response_data = slit_response_model(cols_val, rows_val)
-            slit_response_mask = np.pad(mask, border, mode='edge')
-            slit_response_var = np.pad(variance, border, mode='edge')
+            model_2d_std = fitter(model_2d_init, cols_fit, rows_fit,
+                                  binned_std[rows_fit, cols_fit])
+
+            rows_val, cols_val = \
+                np.mgrid[-border:height+border, -border:width+border]
+
+            slit_response_data = model_2d_data(cols_val, rows_val)
+            slit_response_mask = np.pad(mask, border, mode='edge')  # ToDo: any update to the mask?
+            slit_response_std = model_2d_std(cols_val, rows_val)
+            slit_response_var = slit_response_std ** 2
 
             del cols_fit, cols_val, rows_fit, rows_val
 
@@ -244,6 +264,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 transpose=dispaxis == 1)
 
             log.info("Update slit response data and data_section")
+            slit_response_ad = deepcopy(mosaicked_ad)
             slit_response_ad[0].data = _data
             slit_response_ad[0].mask = _mask
             slit_response_ad[0].variance = _variance
@@ -278,6 +299,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             slit_response_ad.update_filename(suffix=suffix, strip=True)
             ad_outputs.append(slit_response_ad)
 
+            # Plotting ------
             if debug_plot:
 
                 log.info("Creating plots")
@@ -290,14 +312,14 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
                 fig = plt.figure(
                     num="Slit Response from MEF - {}".format(ad.filename),
-                    figsize=(9, 9), dpi=110)
+                    figsize=(12, 9), dpi=110)
 
-                gs = gridspec.GridSpec(nrows=2, ncols=2, figure=fig)
+                gs = gridspec.GridSpec(nrows=2, ncols=3, figure=fig)
 
-                # Display raw mosaicked data and its bins
-                ax1 = fig.add_subplot(gs[0])
-                ax1.imshow(data, cmap=palette, origin='lower', vmin=norm.vmin,
-                           vmax=norm.vmax)
+                # Display raw mosaicked data and its bins ---
+                ax1 = fig.add_subplot(gs[0, 0])
+                im1 = ax1.imshow(data, cmap=palette, origin='lower',
+                                 vmin=norm.vmin, vmax=norm.vmax)
 
                 ax1.set_title("Mosaicked Data\n and Spectral Bins", fontsize=10)
                 ax1.set_xlim(-1, data.shape[1])
@@ -313,9 +335,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 _ = [ax1.spines[s].set_visible(False) for s in ax1.spines]
                 _ = [ax1.axhline(b, c='w', lw=0.5) for b in bin_limits]
 
-                # Display non-smoothed bins
-                ax2 = fig.add_subplot(gs[1])
-                ax2.imshow(binned_data, cmap=palette, origin='lower')
+                divider = make_axes_locatable(ax1)
+                cax1 = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(im1, cax=cax1)
+
+                # Display non-smoothed bins ---
+                ax2 = fig.add_subplot(gs[0, 1])
+                im2 = ax2.imshow(binned_data, cmap=palette, origin='lower')
 
                 ax2.set_title("Binned, smoothed\n and normalized data ", fontsize=10)
                 ax2.set_xlim(0, data.shape[1])
@@ -331,13 +357,17 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 _ = [ax2.spines[s].set_visible(False) for s in ax2.spines]
                 _ = [ax2.axhline(b, c='w', lw=0.5) for b in bin_limits]
 
-                # Display reconstructed slit response
+                divider = make_axes_locatable(ax2)
+                cax2 = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(im2, cax=cax2)
+
+                # Display reconstructed slit response ---
                 vmin = slit_response_data.min()
                 vmax = slit_response_data.max()
 
-                ax3 = fig.add_subplot(gs[2])
-                ax3.imshow(slit_response_data, cmap=palette, origin='lower',
-                           vmin=vmin, vmax=vmax)
+                ax3 = fig.add_subplot(gs[1, 0])
+                im3 = ax3.imshow(slit_response_data, cmap=palette,
+                                 origin='lower', vmin=vmin, vmax=vmax)
 
                 ax3.set_title("Reconstructed\n Slit response", fontsize=10)
                 ax3.set_xlim(0, data.shape[1])
@@ -347,43 +377,110 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 ax3.tick_params(axis=u'both', which=u'both', length=0)
                 _ = [ax3.spines[s].set_visible(False) for s in ax3.spines]
 
-                # Display extensions
-                sub_axs = []
-                sub_gs = gridspec.GridSpecFromSubplotSpec(
-                    nrows=len(ad), ncols=1, subplot_spec=gs[3], hspace=0.03)
+                divider = make_axes_locatable(ax3)
+                cax3 = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(im3, cax=cax3)
+
+                # Display extensions ---
+                ax4 = fig.add_subplot(gs[1, 1])
+                ax4.set_xticks([])
+                ax4.set_yticks([])
+                _ = [ax4.spines[s].set_visible(False) for s in ax4.spines]
+
+                sub_gs4 = gridspec.GridSpecFromSubplotSpec(
+                    nrows=len(ad), ncols=1, subplot_spec=gs[1, 1], hspace=0.03)
 
                 # The [::-1] is needed to put the fist extension in the bottom
                 for i, ext in enumerate(slit_response_ad[::-1]):
 
-                    data, mask, variance = _transpose_if_needed(
+                    ext_data, ext_mask, ext_variance = _transpose_if_needed(
                         ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
 
-                    data = np.ma.masked_array(data, mask=mask)
+                    ext_data = np.ma.masked_array(ext_data, mask=ext_mask)
 
-                    ax = fig.add_subplot(sub_gs[i])
+                    sub_ax = fig.add_subplot(sub_gs4[i])
 
-                    ax.imshow(data, origin="lower", vmin=vmin, vmax=vmax,
-                              cmap=palette)
-                    ax.set_xlim(0, data.shape[1])
-                    ax.set_xticks([])
-                    ax.set_ylim(0, data.shape[0])
-                    ax.set_yticks([data.shape[0] // 2])
+                    im4 = sub_ax.imshow(ext_data, origin="lower", vmin=vmin,
+                                        vmax=vmax, cmap=palette)
 
-                    ax.set_yticklabels(
+                    sub_ax.set_xlim(0, ext_data.shape[1])
+                    sub_ax.set_xticks([])
+                    sub_ax.set_ylim(0, ext_data.shape[0])
+                    sub_ax.set_yticks([ext_data.shape[0] // 2])
+
+                    sub_ax.set_yticklabels(
                         ["Ext {}".format(len(slit_response_ad) - i - 1)],
                         fontsize=6)
 
-                    _ = [ax.spines[s].set_visible(False) for s in ax.spines]
+                    _ = [sub_ax.spines[s].set_visible(False) for s in sub_ax.spines]
 
                     if i == 0:
-                        ax.set_title("Multi-extension\n Slit Response Function")
+                        sub_ax.set_title("Multi-extension\n Slit Response Function")
 
-                    sub_axs.append(ax)
+                divider = make_axes_locatable(ax4)
+                cax4 = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(im4, cax=cax4)
 
+                # Display Signal-To-Noise Ratio ---
+                snr = data / np.sqrt(variance)
+
+                norm = vis.ImageNormalize(snr[~snr.mask],
+                                          stretch=vis.LinearStretch(),
+                                          interval=vis.PercentileInterval(97))
+
+                ax5 = fig.add_subplot(gs[0, 2])
+
+                im5 = ax5.imshow(snr, cmap=palette, origin='lower',
+                                 vmin=norm.vmin, vmax=norm.vmax)
+
+                ax5.set_title("Mosaicked Data SNR", fontsize=10)
+                ax5.set_xlim(-1, data.shape[1])
+                ax5.set_xticks([])
+                ax5.set_ylim(-1, data.shape[0])
+                ax5.set_yticks(bin_center)
+                ax5.tick_params(axis=u'both', which=u'both', length=0)
+
+                ax5.set_yticklabels(
+                    ["Bin {}".format(i) for i in range(len(bin_center))],
+                    fontsize=6)
+
+                _ = [ax5.spines[s].set_visible(False) for s in ax5.spines]
+                _ = [ax5.axhline(b, c='w', lw=0.5) for b in bin_limits]
+
+                divider = make_axes_locatable(ax5)
+                cax5 = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(im5, cax=cax5)
+
+                # Display Signal-To-Noise Ratio of Slit Illumination ---
+                slit_response_snr = np.ma.masked_array(
+                    slit_response_data / np.sqrt(slit_response_var),
+                    mask=slit_response_mask)
+
+                norm = vis.ImageNormalize(
+                    slit_response_snr[~slit_response_snr.mask],
+                    stretch=vis.LinearStretch(),
+                    interval=vis.PercentileInterval(97))
+
+                ax6 = fig.add_subplot(gs[1, 2])
+
+                im6 = ax6.imshow(slit_response_snr, origin="lower",
+                                 vmin=norm.vmin, vmax=norm.vmax, cmap=palette)
+
+                ax6.set_xlim(0, slit_response_snr.shape[1])
+                ax6.set_xticks([])
+                ax6.set_ylim(0, slit_response_snr.shape[0])
+                ax6.set_yticks([])
+                ax6.set_title("Reconstructed\n Slit Response SNR")
+
+                _ = [ax6.spines[s] .set_visible(False) for s in ax6.spines]
+
+                divider = make_axes_locatable(ax6)
+                cax6 = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(im6, cax=cax6)
+
+                # Save plots ---
                 fig.tight_layout(rect=[0, 0, 0.95, 1], pad=0.5)
-
                 fname = slit_response_ad.filename.replace(".fits", ".png")
-
                 log.info("Saving plots to {}".format(fname))
                 plt.savefig(fname)
 
