@@ -27,8 +27,14 @@ class createSlitIlluminationConfig(config.Config):
                           int, 0, optional=True)
     debug_plot = config.Field("Create diagnosis plots?",
                               bool, False, optional=True)
+    smooth_order = config.Field("Spline order to smooth binned data",
+                                int, 3, optional=True)
     suffix = config.Field("Filename suffix",
                           str, "_slitIllum", optional=True)
+    x_order = config.Field("Order of the x-component of the Chebyshev2D model used to reconstruct data",
+                           int, 4, optional=True)
+    y_order = config.Field("Order of the y-component of the Chebyshev2D model used to reconstruct data",
+                           int, 4, optional=True)
 
 
 class normalizeFlatConfig(config.Config):

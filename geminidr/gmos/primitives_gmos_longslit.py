@@ -138,6 +138,15 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         border : int, optional
             Border size that is added on every edge of the slit illumination
             image before cutting it down to the input AstroData frame.
+        smooth_order : int, optional
+            Order of the spline that is used in each bin fitting to smooth
+            the data (Default: 3)
+        x_order : int, optional
+            Order of the x-component in the Chebyshev2D model used to
+            reconstruct the 2D data from the binned data.
+        y_order : int, optional
+            Order of the y-component in the Chebyshev2D model used to
+            reconstruct the 2D data from the binned data.
 
         Return
         ------
@@ -158,6 +167,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         bins = params["bins"]
         border = params["border"]
         debug_plot = params["debug_plot"]
+        smooth_order = params["smooth_order"]
+        cheb2d_x_order = params["x_order"]
+        cheb2d_y_order = params["y_order"]
 
         ad_outputs = []
         for ad in adinputs:
@@ -219,7 +231,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                      "smoothed central value")
             for bin_idx, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
 
-                smooth_order = 5
                 rows = np.arange(width)
 
                 avg_data = np.ma.mean(data[b0:b1], axis=0)
@@ -240,8 +251,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
             fitter = fitting.SLSQPLSQFitter()
             model_2d_init = models.Chebyshev2D(
-                x_degree=6, x_domain=(0, width),
-                y_degree=6, y_domain=(0, height))
+                x_degree=cheb2d_x_order, x_domain=(0, width),
+                y_degree=cheb2d_y_order, y_domain=(0, height))
 
             model_2d_data = fitter(model_2d_init, cols_fit, rows_fit,
                                    binned_data[rows_fit, cols_fit])
@@ -455,11 +466,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 slit_response_snr = np.ma.masked_array(
                     slit_response_data / np.sqrt(slit_response_var),
                     mask=slit_response_mask)
-
-                norm = vis.ImageNormalize(
-                    slit_response_snr[~slit_response_snr.mask],
-                    stretch=vis.LinearStretch(),
-                    interval=vis.PercentileInterval(97))
 
                 ax6 = fig.add_subplot(gs[1, 2])
 
