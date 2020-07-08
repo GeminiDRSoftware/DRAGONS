@@ -26,10 +26,18 @@ from recipe_system.reduction.coreReduce import Reduce
 
 PLOT_PATH = "plots/geminidr/gmos/test_gmos_spect_ls_create_slit_illumination/"
 
+datasets = [
+    "N20190103S0462.fits",  # R400 : 0.725
+    "N20190327S0056.fits",  # R150 : 0.650
+    "S20190204S0006.fits",  # R400 : 0.850
+]
 
-@pytest.mark.gmosls
+mosaicked_datasets = [d.split('.')[0] + "_mosaickedTwilight.fits" for d in datasets]
+multiext_datasets = [d.split('.')[0] + "_twilight.fits" for d in datasets]
+
+
 @pytest.mark.preprocessed
-@pytest.mark.parametrize("ad", ["S20190204S0006_mtflat.fits"], indirect=True)
+@pytest.mark.parametrize("ad", mosaicked_datasets, indirect=True)
 def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, request):
     """
     Test that can run `createSlitIllumination` in mosaicked data. This primitive
@@ -94,7 +102,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed
-@pytest.mark.parametrize("ad", ["S20190204S0006_tflat.fits"], indirect=True)
+@pytest.mark.parametrize("ad", multiext_datasets, indirect=True)
 def test_create_slit_illumination_with_multi_extension_data(ad, change_working_dir, request):
     """
     Test that can run `createSlitIllumination` in multi-extension data.
@@ -310,6 +318,24 @@ def create_inputs_recipe():
                      "S20190203S0108.fits",
                      "S20190203S0107.fits",
                      "S20190203S0106.fits"],
+            "twilight": ["S20190204S0006.fits"],
+        },
+        "N20190103S0462.fits": {
+            "bias": ["N20190102S0531.fits",
+                     "N20190102S0530.fits",
+                     "N20190102S0529.fits",
+                     "N20190102S0528.fits",
+                     "N20190102S0527.fits"],
+            "twilight": ["N20190103S0462.fits",
+                         "N20190103S0463.fits"],
+        },
+        "N20190327S0056.fits": {
+            "bias": ["N20190327S0098.fits",
+                     "N20190327S0099.fits",
+                     "N20190327S0100.fits",
+                     "N20190327S0101.fits",
+                     "N20190327S0102.fits"],
+            "twilight": ["N20190327S0056.fits"],
         }
     }
 
@@ -324,11 +350,11 @@ def create_inputs_recipe():
     for filename, cals in associated_calibrations.items():
 
         print('Downloading files...')
-        tflat_path = download_from_archive(filename)
+        twilight_path = [download_from_archive(f) for f in cals['twilight']]
         bias_path = [download_from_archive(f) for f in cals['bias']]
 
-        tflat_ad = astrodata.open(tflat_path)
-        data_label = tflat_ad.data_label()
+        twilight_ad = astrodata.open(twilight_path[0])
+        data_label = twilight_ad.data_label()
 
         print('Reducing BIAS for {:s}'.format(data_label))
         logutils.config(file_name='log_bias_{}.txt'.format(data_label))
@@ -339,12 +365,13 @@ def create_inputs_recipe():
         del bias_reduce
 
         print('Reducing twilight flat:')
-        logutils.config(file_name='log_sflat.txt')
+        logutils.config(file_name='log_twilight_{}.txt'.format(data_label))
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            p = primitives_gmos_longslit.GMOSLongslit([tflat_ad])
+            p = primitives_gmos_longslit.GMOSLongslit(
+                [astrodata.open(f) for f in twilight_path])
 
             p.prepare()
             p.addDQ(static_bpm=None)
@@ -356,12 +383,12 @@ def create_inputs_recipe():
             p.stackFrames()
 
             # Write non-mosaicked data
-            tflat = p.writeOutputs(suffix="_tflat", strip=True)[0]
+            twilight = p.writeOutputs(suffix="_twilight", strip=True)[0]
 
             # Write mosaicked data
-            p = primitives_gmos_longslit.GMOSLongslit([deepcopy(tflat)])
+            p = primitives_gmos_longslit.GMOSLongslit([twilight])
             p.mosaicDetectors()
-            p.writeOutputs(suffix="_mtflat", strip=True)
+            p.writeOutputs(suffix="_mosaickedTwilight", strip=True)
 
 
 if __name__ == '__main__':
