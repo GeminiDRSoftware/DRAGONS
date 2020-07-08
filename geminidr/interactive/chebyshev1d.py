@@ -85,7 +85,7 @@ class DifferencingModel(GICoordsSource, GICoordsListener):
     def giupdate(self, x_coords, y_coords):
         x = self.data_x_coords[self.cmodel.coords_mask]
         y = self.data_y_coords[self.cmodel.coords_mask] - self.cmodel.m_final(x)
-        self.ginotify(x_coords, y)
+        self.ginotify(x, y)
 
 
 class MaskedScatter(GIScatter):
