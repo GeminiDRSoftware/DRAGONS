@@ -7,13 +7,12 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from copy import copy, deepcopy
+from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
 
 import numpy as np
 from astropy import units as u
-from astropy import visualization as vis
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.modeling import models, fitting, Model
@@ -22,7 +21,6 @@ from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
-from matplotlib import gridspec
 from numpy.ma.extras import _ezclump
 from scipy import spatial, optimize
 from scipy.interpolate import BSpline
