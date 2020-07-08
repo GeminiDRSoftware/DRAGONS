@@ -2,6 +2,8 @@
 # in the primitives_gmos_longslit.py file, in alphabetical order.
 from geminidr.core import parameters_standardize
 from gempy.library import config
+from astrodata import AstroData
+
 
 def flat_order_check(value):
     try:
@@ -45,3 +47,14 @@ class normalizeFlatConfig(config.Config):
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+
+
+class slitIlluminationCorrectConfig(config.Config):
+
+    do_illum = config.Field("Perform Slit Illumination Correction?",
+                            bool, True, optional=True)
+    slit_illum = config.Field("Slit Illumination Response",
+                              (str, AstroData), optional=True)
+    suffix = config.Field("Filename suffix",
+                          str, "_illumCorrected", optional=True)
+

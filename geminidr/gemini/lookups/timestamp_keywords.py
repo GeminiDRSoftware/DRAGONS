@@ -59,6 +59,7 @@ timestamp_keys = {
     "separateSky": "SEPSKY",
     "skyCorrectFromSlit": "SKYCORR",
     "skyCorrectNodAndShuffle": "SKYCORR",
+    "slitIlluminationCorrect": "SLTILCOR",
     "stackFrames": "STACKFRM",
     "stackSkyFrames": "STACKSKY",
     "standardizeInstrumentHeaders": "SDZHDRSI",

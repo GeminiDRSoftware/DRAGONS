@@ -589,6 +589,32 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
         return adinputs
 
+    def slitIlluminationCorrect(self, adinputs=None, slit_illum=None,
+                                do_illum=True, suffix="_illumCorrected"):
+        """
+        This primitive will divide each SCI extension of the inputs by those
+        of the corresponding slit illumination image. If the inputs contain
+        VAR or DQ frames, those will also be updated accordingly due to the
+        division on the data.
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Data to be corrected.
+        slit_illum : str or AstroData
+            Slit illumination path or AstroData object.
+        do_illum: bool, optional
+            Perform slit illumination correction? (Default: True)
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        qecorr_key = self.timestamp_keys['QECorrect']
+
+        if not do_illum:
+            log.warning("Slit Illumination correction has been turned off.")
+            return adinputs
+
 
 def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
     """
