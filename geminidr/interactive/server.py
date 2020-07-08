@@ -3,6 +3,14 @@ import pathlib
 from bokeh.server.server import Server
 from jinja2 import Template
 
+from geminidr.interactive import controls
+
+
+def handle_key(doc):
+    key = doc.session_context.request.arguments['key'][0].decode('utf-8')
+    if controls.controller:
+        controls.controller.handle_key(key)
+
 
 def bkapp(doc):
     """
@@ -51,7 +59,7 @@ def start_server():
     # let Server handle that. If you need to explicitly handle IOLoops then you
     # will need to use the lower level BaseServer class.
     if not bokeh_server:
-        bokeh_server = Server({'/': bkapp}, num_procs=1)
+        bokeh_server = Server({'/': bkapp, '/handle_key': handle_key}, num_procs=1)
         bokeh_server.start()
 
     # Setting num_procs here means we can't touch the IOLoop before now, we must

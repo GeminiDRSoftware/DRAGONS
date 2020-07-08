@@ -1,12 +1,13 @@
 import numpy as np
 from astropy.modeling import models, fitting
 from bokeh.layouts import row
-from bokeh.models import Button, Column, Panel, Tabs
+from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Paragraph, CustomJS
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
+from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, BandModel, GIBands, \
-    BandControls, ApertureModel, ApertureView, ApertureControls
+     ApertureModel, ApertureView
 from gempy.library import astromodels
 
 
@@ -140,20 +141,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.scatter2 = None
         self.line2 = None
 
-        # Stubbing in some bands/apertures to play with.  I just want to start
-        # prototyping stuff here since it's available and not wait until I have
-        # more primitives implemented that specifically call for this.
         self.controls = None
-        self.band_model = None
-        self.bands = None
-        self.band_id = None
-        self.band_controls = None
-
-        self.aperture_view = None
-        self.aperture_model = None
-        self.apertures = None
-        self.aperture_id = None
-        self.aperture_controls = None
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
@@ -176,19 +164,6 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         """
         self.model.order = new
         self.model.recalc_chebyshev()
-
-    def add_band_handler(self, stuff):
-        band_controls = BandControls(self.band_controls, self.band_id, self.band_model,
-                                     min(self.model.in_coords[0]),
-                                     max(self.model.in_coords[0]))
-        self.band_id += 1
-
-    def add_aperture_handler(self, stuff):
-        aperture_controls = ApertureControls(self.aperture_controls, self.aperture_id,
-                                             self.aperture_model,
-                                             min(self.model.in_coords[0]),
-                                             max(self.model.in_coords[0]))
-        self.aperture_id += 1
 
     def visualize(self, doc):
         """
@@ -215,20 +190,27 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         unmask_button = Button(label="Unmask")
         unmask_button.on_click(self.unmask_button_handler)
 
+        # Add custom tooling
+        source = ColumnDataSource(data=dict(x=[], y=[]))
+
         # Create a blank figure with labels
         p = figure(plot_width=600, plot_height=500,
-                        title='Interactive Chebyshev',
-                        x_axis_label='X', y_axis_label='Y',
-                        #output_backend="webgl",
-                        tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
+                   title='Interactive Chebyshev',
+                   x_axis_label='X', y_axis_label='Y',
+                   output_backend="webgl",
+                   tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
+
         self.p = p
+
+        # placeholder, just seeing the custom tool is working
+        p.line('x', 'y', source=source)
 
         # p2 is just to show that we can have multiple tabs with plots running off the same dataset
         # TODO make plots like the other IRAF options we were shown
         p2 = figure(plot_width=600, plot_height=500,
-                        title='Interactive Chebyshev (tab 2)',
-                        x_axis_label='X', y_axis_label='Y') #,
-                        #output_backend="webgl")
+                    title='Interactive Chebyshev (tab 2)',
+                    x_axis_label='X', y_axis_label='Y',
+                    output_backend="webgl")
 
         self.scatter = GIScatter(p, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
         self.masked_scatter = MaskedScatter(p, self.model, color="red", radius=5)
@@ -240,24 +222,19 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.line2 = GILine(p2)
 
         # Just sandboxing a basic band UI for the x ranges from Kathleen's demo
-        self.band_model = BandModel()
-        self.bands = GIBands(p, self.band_model)
-        self.band_id = 1
-        add_band_button = Button(label="Add Band")
-        add_band_button.on_click(self.add_band_handler)
+        band_model = BandModel()
+        bands = GIBands(p, band_model)
+        bands2 = GIBands(p2, band_model)
 
         # Just sandboxing a sample Aperture UI
-        self.aperture_model = ApertureModel()
-        self.aperture_view = ApertureView(self.aperture_model, self.p, max(self.model.in_coords[1]) - 50)
-        self.aperture_id = 1
-        add_aperture_button = Button(label="Add Aperture")
-        add_aperture_button.on_click(self.add_aperture_handler)
+        aperture_model = ApertureModel()
+        aperture_view = ApertureView(aperture_model, self.p, max(self.model.in_coords[1]) - 50)
+        aperture_view2 = ApertureView(aperture_model, p2, max(self.model.in_coords[1]) - 50)
 
-        self.band_controls = Column()
-        self.aperture_controls = Column()
-        self.controls = Column(order_slider, self.submit_button, mask_button, unmask_button,
-                               add_band_button, self.band_controls,
-                               add_aperture_button, self.aperture_controls)
+        helptext = Paragraph(text="""To create an Aperture, type 'a' while the mouse is over the center
+        and drag to desired width.  To create a Band, type 'b' at one side of the desired range and type
+        'b' again at the other end.""")
+        self.controls = Column(order_slider, self.submit_button, mask_button, unmask_button, helptext)
 
         self.model.add_gilistener(self.line)
         differencing_model.add_gilistener(self.line2)
@@ -268,6 +245,16 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         tab2 = Panel(child=p2, title="Chebyshev Differential")
         tabs = Tabs(tabs=[tab1, tab2], name="tabs")
         layout = row(self.controls, tabs)
+
+        controller = Controller(self.p, aperture_model, band_model)
+
+        # bug workaround so new annotations can show up
+        # This is NEEDED for aperture/bands to show up until this is resolved:
+        #  https://github.com/bokeh/bokeh/issues/8862
+        self.p.js_on_change('center', CustomJS(args=dict(plot=self.p),
+                                               code="plot.properties.renderers.change.emit()"))
+        p2.js_on_change('center', CustomJS(args=dict(plot=p2),
+                                           code="plot.properties.renderers.change.emit()"))
 
         doc.add_root(layout)
 

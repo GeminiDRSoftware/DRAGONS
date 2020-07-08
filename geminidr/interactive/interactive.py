@@ -1,4 +1,3 @@
-import sys
 from abc import ABC, abstractmethod
 
 from bokeh.layouts import row
@@ -15,7 +14,6 @@ class PrimitiveVisualizer(ABC):
             window.close();
         """)
         self.submit_button.js_on_click(callback)
-
 
     def submit_button_handler(self, stuff):
         """
@@ -167,28 +165,6 @@ class GILine(GICoordsListener):
         self.line_source.data = {'x': x_coords, 'y': y_coords}
 
 
-class BandControls(object):
-    def __init__(self, container, band_id, model, start, end):
-        self.band_id = band_id
-        self.model = model
-        self.min_slider = Slider(title="Band %s Start" % band_id, value=0, step=1, start=start, end=end)
-        self.max_slider = Slider(title="Band %s End" % band_id, value=0, step=1, start=start, end=end)
-        container.children.append(self.min_slider)
-        container.children.append(self.max_slider)
-        self.min_slider.on_change("value", self.handler)
-        self.max_slider.on_change("value", self.handler)
-
-    def handler(self, attr, old, new):
-        if old != new:
-            min_val = self.min_slider.value
-            max_val = self.max_slider.value
-            if min_val > max_val:
-                swapper = min_val
-                min_val = max_val
-                max_val = swapper
-            self.model.adjust_band(self.band_id, min_val, max_val)
-
-
 class BandListener(ABC):
     @abstractmethod
     def adjust_band(self, band_id, start, stop):
@@ -200,6 +176,7 @@ class BandListener(ABC):
 
 class BandModel(object):
     def __init__(self):
+        self.band_id = 1
         self.listeners = list()
 
     def add_listener(self, listener):
@@ -214,23 +191,10 @@ class BandModel(object):
 
 class GIBands(BandListener):
     def __init__(self, fig, model):
-        # example:
-        # # a finite region
-        # center = BoxAnnotation(top=0.6, bottom=-0.3, left=7, right=12, fill_alpha=0.1, fill_color='navy')
-        # p.add_layout(center)
-
         self.model = model
         model.add_listener(self)
         self.bands = dict()
         self.fig = fig
-
-        # Unfortunately, it seems the annotations MUST exist before plotting
-        # So this is a hack until I can work around that somehow
-        it_goes_to_eleven = -1 * sys.float_info.max
-        for band_id in range(20):
-            band = BoxAnnotation(left=it_goes_to_eleven, right=it_goes_to_eleven, fill_alpha=0.1, fill_color='navy')
-            self.fig.add_layout(band)
-            self.bands[band_id] = band
 
     def adjust_band(self, band_id, start, stop):
         if band_id in self.bands:
@@ -282,14 +246,6 @@ class ApertureView(object):
         self.figure = figure
         model.add_listener(self)
 
-        # Unfortunately, it seems the annotations MUST exist before plotting
-        # So this is a hack until I can work around that somehow
-        it_goes_to_eleven = -1 * sys.float_info.max
-        for ap_id in range(20):
-            ap = BoxAnnotation(left=it_goes_to_eleven, right=it_goes_to_eleven, fill_alpha=0.1, fill_color='green')
-            self.figure.add_layout(ap)
-            self.boxes[ap_id] = ap
-
     def handle_aperture(self, aperture_id, start, end):
         if aperture_id in self.boxes:
             box = self.boxes[aperture_id]
@@ -299,25 +255,3 @@ class ApertureView(object):
             box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
             self.boxes[aperture_id] = box
             self.figure.add_layout(box)
-
-
-class ApertureControls(object):
-    def __init__(self, container, aperture_id, model, start, end):
-        self.aperture_id = aperture_id
-        self.model = model
-        self.min_slider = Slider(title="Aperture %s Start" % aperture_id, value=0, step=1, start=start, end=end)
-        self.max_slider = Slider(title="Aperture %s End" % aperture_id, value=0, step=1, start=start, end=end)
-        container.children.append(self.min_slider)
-        container.children.append(self.max_slider)
-        self.min_slider.on_change("value", self.handler)
-        self.max_slider.on_change("value", self.handler)
-
-    def handler(self, attr, old, new):
-        if old != new:
-            min_val = self.min_slider.value
-            max_val = self.max_slider.value
-            if min_val > max_val:
-                swapper = min_val
-                min_val = max_val
-                max_val = swapper
-            self.model.adjust_aperture(self.aperture_id, min_val, max_val)
