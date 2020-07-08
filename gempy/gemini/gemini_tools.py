@@ -1212,7 +1212,7 @@ def log_message(function=None, name=None, message_type=None):
 def make_lists(*args, **kwargs):
     """
     The make_lists function attaches auxiliary things to an input key_list
-    of (normally) AD objects. Each key gets exactly one auxilary thing from
+    of (normally) AD objects. Each key gets exactly one auxiliary thing from
     each other list -- these lists can be as long as the key_list, or have
     only one item in (in which case they don't have to be lists at all).
 
