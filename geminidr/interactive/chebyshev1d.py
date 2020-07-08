@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.modeling import models, fitting
 from bokeh.layouts import row
-from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Paragraph, CustomJS
+from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Paragraph, CustomJS, Div
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
@@ -231,9 +231,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         aperture_view = ApertureView(aperture_model, self.p, max(self.model.in_coords[1]) - 50)
         aperture_view2 = ApertureView(aperture_model, p2, max(self.model.in_coords[1]) - 50)
 
-        helptext = Paragraph(text="""To create an Aperture, type 'a' while the mouse is over the center
-        and drag to desired width.  To create a Band, type 'b' at one side of the desired range and type
-        'b' again at the other end.""")
+        helptext = Div(text="")
         self.controls = Column(order_slider, self.submit_button, mask_button, unmask_button, helptext)
 
         self.model.add_gilistener(self.line)
@@ -246,7 +244,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         tabs = Tabs(tabs=[tab1, tab2], name="tabs")
         layout = row(self.controls, tabs)
 
-        controller = Controller(self.p, aperture_model, band_model)
+        controller = Controller(self.p, aperture_model, band_model, helptext)
 
         # bug workaround so new annotations can show up
         # This is NEEDED for aperture/bands to show up until this is resolved:

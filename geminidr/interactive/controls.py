@@ -32,12 +32,12 @@ class Controller(object):
     In the case of key presses, this is routed in via a custom URL endpoint in
     the bokeh server from a javascript key listener in index.html.
     """
-    def __init__(self, figure, aperture_model, band_model):
+    def __init__(self, figure, aperture_model, band_model, helptext):
         self.figure = figure
-        self.aperture_model = aperture_model
-        self.band_model = band_model
-        self.aperture_task = ApertureTask(aperture_model)
-        self.band_task = BandTask(band_model)
+        self.helptext = helptext
+        self.tasks = dict()
+        self.tasks['a'] = ApertureTask(aperture_model)
+        self.tasks['b'] = BandTask(band_model)
         self.task = None
         self.x = None
         self.y = None
@@ -46,6 +46,24 @@ class Controller(object):
         figure.on_event('mousemove', self.on_mouse_move)
         figure.on_event('mouseenter', self.on_mouse_enter)
         figure.on_event('mouseleave', self.on_mouse_leave)
+
+        self.sethelptext()
+
+    def sethelptext(self, text=None):
+        if text:
+            ht = text
+        else:
+            ht = """While the mouse is over the plot, choose from the following commands:<br/>\n"""
+            for key, task in sorted(self.tasks.items()):
+                ht = ht + "<b>[%s]</b> - %s<br/>\n" % (key, task.description())
+
+        # This has to be done via a callback.  During the key press, we are outside the context of
+        # the widget's bokeh document
+        if self.helptext.document:
+            # we now have an associated document, need to do this inside that context
+            self.helptext.document.add_next_tick_callback(lambda: self.helptext.update(text=ht))
+        else:
+            self.helptext.text = ht
 
     def on_mouse_enter(self, event):
         global controller
@@ -68,12 +86,11 @@ class Controller(object):
         if self.task:
             if self.task.handle_key(key):
                 self.task = None
+                self.sethelptext()
         else:
-            if key == 'a':
-                self.task = self.aperture_task
-                self.task.start(self.x, self.y)
-            if key == 'b':
-                self.task = self.band_task
+            if key in self.tasks:
+                self.task = self.tasks[key]
+                self.sethelptext(self.task.helptext())
                 self.task.start(self.x, self.y)
 
     def handle_mouse(self, x, y):
@@ -82,6 +99,7 @@ class Controller(object):
         if self.task:
             if self.task.handle_mouse(x, y):
                 self.task = None
+                self.sethelptext()
 
 
 class Task(ABC):
@@ -92,6 +110,9 @@ class Task(ABC):
     @abstractmethod
     def handle_mouse(self, x, y):
         pass
+
+    def helptext(self):
+        return ""
 
 
 class ApertureTask(Task):
@@ -124,6 +145,12 @@ class ApertureTask(Task):
         self.aperture_model.adjust_aperture(self.aperture_id, start, end)
         return False
 
+    def description(self):
+        return "create an <b>aperture</b> centered at cursor"
+
+    def helptext(self):
+        return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture"""
+
 
 class BandTask(Task):
     def __init__(self, band_model):
@@ -152,3 +179,9 @@ class BandTask(Task):
         end = self.band_edge
         self.band_model.adjust_band(self.band_id, start, end)
         return False
+
+    def description(self):
+        return "create a <b>band</b> with edge at cursor"
+
+    def helptext(self):
+        return """Drag to desired band width.<br/>\n<b>[b]</b> to set the band"""
