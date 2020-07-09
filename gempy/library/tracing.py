@@ -373,7 +373,7 @@ def estimate_peak_width(data):
     while len(widths) < 10:
         index = np.argmax(data * goodpix)
         threshold = 0.5 * (data[index] + min_threshold)  # assume background << peak
-        if threshold < min_threshold:
+        if threshold <= min_threshold:
             break
         hi = index + np.argmax(data[index:] < threshold) + 1
         lo = index - np.argmax(data[index::-1] < threshold)
