@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from bokeh.layouts import row
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS
+from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label
 
 from geminidr.interactive import server
 
@@ -227,31 +227,66 @@ class ApertureModel(object):
             l.handle_aperture(aperture_id, start, end)
 
 
+class SingleApertureView(object):
+    def __init__(self, figure, aperture_id, start, end, y):
+        # ymin = figure.y_range.computed_start
+        # ymax = figure.y_range.computed_end
+        ymin = figure.y_range.start
+        ymax = figure.y_range.end
+        ymid = (ymax-ymin)*.8+ymin
+        ytop = ymid + 0.05*(ymax-ymin)
+        ybottom = ymid - 0.05*(ymax-ymin)
+        self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
+        figure.add_layout(self.box)
+        self.label = Label(x=(start+end)/2-5, y=ymid, text="%s" % aperture_id)
+        figure.add_layout(self.label)
+        self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
+        self.left = figure.line(x='x', y='y', source=self.left_source, color="purple")
+        self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
+        self.right = figure.line(x='x', y='y', source=self.right_source, color="purple")
+        self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
+        self.line = figure.line(x='x', y='y', source=self.line_source, color="purple")
+
+        self.figure = figure
+
+        figure.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
+        figure.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
+        # feels like I need this to convince the aperture lines to update on zoom
+        figure.y_range.js_on_change('end', CustomJS(args=dict(plot=figure),
+                                                    code="plot.properties.renderers.change.emit()"))
+
+    def update_viewport(self):
+        ymin = self.figure.y_range.start
+        ymax = self.figure.y_range.end
+        ymid = (ymax-ymin)*.8+ymin
+        ytop = ymid + 0.05*(ymax-ymin)
+        ybottom = ymid - 0.05*(ymax-ymin)
+        self.left_source.data = {'x': self.left_source.data['x'], 'y': [ybottom, ytop]}
+        self.right_source.data = {'x': self.right_source.data['x'], 'y': [ybottom, ytop]}
+        self.line_source.data = {'x':  self.line_source.data['x'], 'y': [ymid, ymid]}
+        self.label.y = ymid
+
+    def update(self, start, end):
+        self.box.left = start
+        self.box.right = end
+        self.left_source.data = {'x': [start, start], 'y': self.left_source.data['y']}
+        self.right_source.data = {'x': [end, end], 'y': self.right_source.data['y']}
+        self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
+
+
 class ApertureView(object):
     def __init__(self, model, figure, y):
-        self.boxes = dict()
-
-        # left, right bars - line between - label aperture #
-        ## This really isn't great.  Maybe with some work in creating a pixel-based glass pane overlay
-        ## of some sort, if there even is a Bokeh equivalent.  For now, stubbing out to Box
-        # self.label = Label(x=(model.start+model.end)/2-5, y=y+10, text="%s" % model.aperture_id)
-        # figure.add_layout(self.label)
-        # self.left_source = ColumnDataSource({'x': [model.start, model.start], 'y': [y-20, y+20]})
-        # self.left = figure.line(x='x', y='y', source=self.left_source, color="purple")
-        # self.right_source = ColumnDataSource({'x': [model.end, model.end], 'y': [y-20, y+20]})
-        # self.right = figure.line(x='x', y='y', source=self.right_source, color="purple")
-        # self.line_source = ColumnDataSource({'x': [model.start, model.end], 'y': [y, y]})
-        # self.line = figure.line(x='x', y='y', source=self.line_source, color="purple")
+        self.aps = dict()
+        self.y = y
 
         self.figure = figure
         model.add_listener(self)
 
     def handle_aperture(self, aperture_id, start, end):
-        if aperture_id in self.boxes:
-            box = self.boxes[aperture_id]
-            box.left = start
-            box.right = end
+        if aperture_id in self.aps:
+            ap = self.aps[aperture_id]
+            ap.update(start, end)
         else:
-            box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
-            self.boxes[aperture_id] = box
-            self.figure.add_layout(box)
+            ap = SingleApertureView(self.figure, aperture_id, start, end, self.y)
+            self.aps[aperture_id] = ap
+

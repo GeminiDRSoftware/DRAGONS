@@ -120,7 +120,7 @@ class ApertureTask(Task):
         self.aperture_model = aperture_model
         self.aperture_center = None
         self.aperture_id = None
-        self.aperture_model.adjust_aperture(1, -1000, -1000)
+        # self.aperture_model.adjust_aperture(1, -1000, -1000)
 
     def start(self, x, y):
         self.aperture_center = x

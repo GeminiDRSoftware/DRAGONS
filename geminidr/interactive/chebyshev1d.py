@@ -228,7 +228,9 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Just sandboxing a sample Aperture UI
         aperture_model = ApertureModel()
+        y = max(self.model.in_coords[1]) - min(self.model.in_coords[1]) * .8 + min(self.model.in_coords[1])
         aperture_view = ApertureView(aperture_model, self.p, max(self.model.in_coords[1]) - 50)
+        y = max(self.model.in_coords[1]) - min(self.model.in_coords[1]) * .8 + min(self.model.in_coords[1])
         aperture_view2 = ApertureView(aperture_model, p2, max(self.model.in_coords[1]) - 50)
 
         helptext = Div(text="")
