@@ -193,8 +193,9 @@ def array_information(adinput=None):
                                          array_shapes, arrays_list))
     return array_info_list
 
+
 def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
-                       check_units=False):
+                       check_shape=True, check_units=False):
     """
     This function will check if the inputs match.  It will check the filter,
     binning and shape/size of the every SCI frames in the inputs.
@@ -203,19 +204,22 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
 
     Parameters
     ----------
-    adinput1: list/AD
-    adinput2: list/AD
+    adinput1 : list/AD
+    adinput2 : list/AD
         single AstroData instances or length-matched lists
 
-    check_filter: bool
+    check_filter : bool
         if True, also check the filter name of each pair
 
-    check_units: bool
+    check_shape : bool
+        If True, also check the data shape for each pair.
+
+    check_units : bool
         if True, also check that both inputs are in electrons or ADUs
     """
     log = logutils.get_logger(__name__)
 
-    # Turn inputs into lists for ease of manipulaiton later
+    # Turn inputs into lists for ease of manipulation later
     if not isinstance(adinput1, list):
         adinput1 = [adinput1]
     if not isinstance(adinput2, list):
@@ -236,7 +240,7 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
             log.fullinfo('Checking EXTVER {}'.format(ext1.hdr['EXTVER']))
 
             # Check shape/size
-            if ext1.data.shape != ext2.data.shape:
+            if check_shape and ext1.data.shape != ext2.data.shape :
                 log.error('Extensions have different shapes')
                 raise ValueError('Extensions have different shape')
 
