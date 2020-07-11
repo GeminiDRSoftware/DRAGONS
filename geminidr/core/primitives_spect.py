@@ -466,26 +466,35 @@ class Spect(PrimitivesBASE):
                             log.warning("Cannot find peak locations in {} "
                                         "- identifying lines in middle {}".
                                         format(extname, direction))
+                    if fwidth is None:
+                        try:
+                            index = list(wavecal['name']).index('fwidth')
+                        except ValueError:
+                            pass
+                        else:
+                            fwidth = wavecal['coefficients'][index]
 
                 # This is identical to the code in determineWavelengthSolution()
+                if fwidth is None:
+                    fwidth = tracing.estimate_peak_width(data)
+                    log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+
                 if initial_peaks is None:
                     data, mask, variance, extract_slice = _average_along_slit(ext, center=None, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
-                    if fwidth is None:
-                        fwidth = tracing.estimate_peak_width(data)
-                        log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
-
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
-                    initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask,
+                    initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                           variance=variance, min_snr=min_snr)
                     log.stdinfo("Found {} peaks".format(len(initial_peaks)))
 
                 # The coordinates are always returned as (x-coords, y-coords)
+                rwidth = 0.42466 * fwidth
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
-                                                            start=start, initial=initial_peaks, width=5, step=step,
+                                                            start=start, initial=initial_peaks,
+                                                            rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
                                                             nsum=nsum, max_missed=max_missed,
                                                             max_shift=max_shift * ybin / xbin,
                                                             viewer=self.viewer if debug else None)
@@ -971,7 +980,6 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             log.info("Determining wavelength solution for {}".format(ad.filename))
-            print("Determining wavelength solution for {}".format(ad.filename))
             for ext in ad:
                 if len(ad) > 1:
                     log.info("Determining solution for EXTVER {}".format(ext.hdr['EXTVER']))
@@ -1034,7 +1042,7 @@ class Spect(PrimitivesBASE):
 
                 # Find peaks; convert width FWHM to sigma
                 widths = 0.42466 * fwidth * np.arange(0.7, 1.2, 0.05)  # TODO!
-                peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask,
+                peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                       variance=variance, min_snr=min_snr,
                                                       min_sep=min_sep, reject_bad=False)
                 fit_this_peak = peak_snrs > min_snr
@@ -1090,7 +1098,6 @@ class Spect(PrimitivesBASE):
                         fit_it = fitting.LinearLSQFitter()
                         matched = np.where(matches > -1)
                         m_final = fit_it(m_init, peaks[matched], arc_lines[matches[matched]])
-                        print(repr(m_final))
 
                         # We're close to the correct solution, perform a KDFit
                         m_init = m_final.copy()
@@ -1531,7 +1538,7 @@ class Spect(PrimitivesBASE):
                 # TODO: find_peaks might not be best considering we have no
                 #   idea whether sources will be extended or not
                 widths = np.arange(3, 30)
-                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
+                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
                                                     variance=None, reject_bad=False,
                                                     min_snr=3, min_frac=0.2)
 
@@ -2297,7 +2304,6 @@ class Spect(PrimitivesBASE):
 
                 ext.data -= (sky_model if dispaxis == 0 else sky_model.T)
 
-            print(datetime.now() - start, ad.filename)
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
@@ -2382,8 +2388,10 @@ class Spect(PrimitivesBASE):
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                    start=start, initial=locations, width=5, step=step,
+                                                                    start=start, initial=locations,
+                                                                    rwidth=None, cwidth=5, step=step,
                                                                     nsum=nsum, max_missed=max_missed,
+                                                                    initial_tolerance=None,
                                                                     max_shift=max_shift,
                                                                     viewer=self.viewer if debug else None)
 
@@ -2677,7 +2685,7 @@ class Spect(PrimitivesBASE):
             try:
                 p_lo = peaks[matches > -1].min()
             except ValueError:
-                print("No matches at all")
+                log.debug("No matches at all")
             else:
                 if p_lo < p0 <= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
@@ -2738,7 +2746,7 @@ def _average_along_slit(ext, center=None, nsum=None):
 
     # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
     #  Use "variance=None" to make them pass again.
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
     return data, mask, variance, extract_slice
 
