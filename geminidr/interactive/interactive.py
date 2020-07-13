@@ -218,17 +218,63 @@ class ApertureModel(object):
         self.end = 300
         self.aperture_id = 1
         self.listeners = list()
+        self.spare_ids = list()
 
     def add_listener(self, listener):
         self.listeners.append(listener)
+
+    def add_aperture(self, start, end):
+        if self.spare_ids:
+            aperture_id = self.spare_ids.pop(0)
+        else:
+            aperture_id = self.aperture_id
+            self.aperture_id += 1
+        self.adjust_aperture(aperture_id, start, end)
+        return aperture_id
 
     def adjust_aperture(self, aperture_id, start, end):
         for l in self.listeners:
             l.handle_aperture(aperture_id, start, end)
 
+    def delete_aperture(self, aperture_id):
+        for l in self.listeners:
+            l.delete_aperture(aperture_id)
+        self.spare_ids.append(aperture_id)
+
 
 class SingleApertureView(object):
     def __init__(self, figure, aperture_id, start, end, y):
+        # # ymin = figure.y_range.computed_start
+        # # ymax = figure.y_range.computed_end
+        # ymin = figure.y_range.start
+        # ymax = figure.y_range.end
+        # ymid = (ymax-ymin)*.8+ymin
+        # ytop = ymid + 0.05*(ymax-ymin)
+        # ybottom = ymid - 0.05*(ymax-ymin)
+        # self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
+        # figure.add_layout(self.box)
+        # self.label = Label(x=(start+end)/2-5, y=ymid, text="%s" % aperture_id)
+        # figure.add_layout(self.label)
+        # self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
+        # self.left = figure.line(x='x', y='y', source=self.left_source, color="purple")
+        # self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
+        # self.right = figure.line(x='x', y='y', source=self.right_source, color="purple")
+        # self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
+        # self.line = figure.line(x='x', y='y', source=self.line_source, color="purple")
+        #
+        # self.figure = figure
+        #
+        # figure.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
+        # figure.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
+        # # feels like I need this to convince the aperture lines to update on zoom
+        # figure.y_range.js_on_change('end', CustomJS(args=dict(plot=figure),
+        #                                             code="plot.properties.renderers.change.emit()"))
+        if figure.document:
+            figure.document.add_next_tick_callback(lambda: self.build_ui(figure, aperture_id, start, end, y))
+        else:
+            self.build_ui(figure, aperture_id, start, end, y)
+
+    def build_ui(self, figure, aperture_id, start, end, y):
         # ymin = figure.y_range.computed_start
         # ymax = figure.y_range.computed_end
         ymin = figure.y_range.start
@@ -273,6 +319,11 @@ class SingleApertureView(object):
         self.right_source.data = {'x': [end, end], 'y': self.right_source.data['y']}
         self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
 
+    def delete(self):
+        self.figure.renderers.remove(self.line)
+        self.figure.renderers.remove(self.left)
+        self.figure.renderers.remove(self.right)
+
 
 class ApertureView(object):
     def __init__(self, model, figure, y):
@@ -290,3 +341,7 @@ class ApertureView(object):
             ap = SingleApertureView(self.figure, aperture_id, start, end, self.y)
             self.aps[aperture_id] = ap
 
+    def delete_aperture(self, aperture_id):
+        if aperture_id in self.aps:
+            ap = self.aps[aperture_id]
+            ap.delete()

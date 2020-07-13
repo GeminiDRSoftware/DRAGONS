@@ -124,9 +124,7 @@ class ApertureTask(Task):
 
     def start(self, x, y):
         self.aperture_center = x
-        self.aperture_id = self.aperture_model.aperture_id
-        self.aperture_model.aperture_id += 1
-        # self.aperture_model.adjust_aperture(self.aperture_id, x, x)
+        self.aperture_id = self.aperture_model.add_aperture(x, x)
 
     def stop(self):
         self.aperture_center = None
@@ -134,6 +132,10 @@ class ApertureTask(Task):
 
     def handle_key(self, key):
         if key == 'a':
+            self.stop()
+            return True
+        if key == 'd':
+            self.aperture_model.delete_aperture(self.aperture_id)
             self.stop()
             return True
         return False
@@ -149,7 +151,8 @@ class ApertureTask(Task):
         return "create an <b>aperture</b> centered at cursor"
 
     def helptext(self):
-        return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture"""
+        return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture<br/>
+                  <b>[d]</b> to delete the aperture"""
 
 
 class BandTask(Task):
