@@ -1066,10 +1066,17 @@ class FitsProvider(DataProvider):
                     LOGGER.warning(e)
                 else:
                     # HACK! Don't update the FITS WCS for an image
+                    # Must delete keywords if image WCS has been downscaled
+                    # from a higher number of dimensions
                     if not isinstance(wcs.output_frame, cf.CelestialFrame):
-                        for kw in ('CDELT1', 'CDELT2', 'PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'):
-                            if kw in header:
-                                del header[kw]
+                        for i in range(1, 5):
+                            for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}', f'CTYPE{i}'):
+                                if kw in header:
+                                    del header[kw]
+                            for j in range(1, 5):
+                                for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
+                                    if kw in header:
+                                        del header[kw]
                         header.update(wcs_dict)
                     # Use "in" here as the dict entry may be (value, comment)
                     if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
