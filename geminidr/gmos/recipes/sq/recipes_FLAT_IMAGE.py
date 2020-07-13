@@ -20,7 +20,7 @@ def makeProcessedFlat(p):
     """
     p.prepare()
     p.addDQ()
-    p.addIllumMaskToDQ()
+    #p.addIllumMaskToDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect()
