@@ -13,7 +13,7 @@ class findAcquisitionSlitsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_acqSlitsAdded", optional=True)
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
-    nbright = config.RangeField("Number of bright lines to eliminate", int, 3, min=0)
+    nbright = config.RangeField("Number of bright lines to eliminate", int, 0, min=0)
 
     def setDefaults(self):
-        self.order = 4
+        self.order = 3
