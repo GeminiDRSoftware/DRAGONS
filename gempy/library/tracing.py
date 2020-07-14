@@ -908,8 +908,9 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             y2 = int(ypos + 0.5 * nsum + 0.5)
             for i in range(lookback):
-                d, m, v = func(ext_data[y2 - (i+1)*nsum:y2],
-                               mask=None if ext_mask is None else ext_mask[y2 - (i+1)*nsum: y2],
+                slices = [slice(y2 - j*step - nsum, y2 - j*step) for j in range(i+1)]
+                d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
+                               mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
                 # Variance could plausibly be zero
                 var[i] = np.where(v <= 0, np.inf, v)
