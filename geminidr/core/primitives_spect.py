@@ -1509,7 +1509,7 @@ class Spect(PrimitivesBASE):
                 mean, sigma, _ = gt.measure_bg_from_image(ndd, sampling=1)
 
                 # Mask sky-line regions and find clumps of unmasked pixels
-                mask1d[var1d > mean + sigma] = 1
+                mask1d[var1d > mean + 3*sigma] = 1
                 slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
                 sky_regions = [slice_ for slice_ in slices
                                if slice_.stop - slice_.start >= min_sky_pix]
@@ -1517,14 +1517,17 @@ class Spect(PrimitivesBASE):
                 sky_mask = np.ones_like(mask1d, dtype=bool)
                 for reg in sky_regions:
                     sky_mask[reg] = False
-                sec_mask = np.ones_like(mask1d, dtype=bool)
-                for reg in sec_regions:
-                    sec_mask[reg] = False
+                if sec_regions:
+                    sec_mask = np.ones_like(mask1d, dtype=bool)
+                    for reg in sec_regions:
+                        sec_mask[reg] = False
+                else:
+                    sec_mask = False
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
                 signal = (data if (variance is None or not use_snr) else
                           data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32)))
-                masked_data = np.where(np.logical_or(full_mask, variance==0), np.nan, signal)
+                masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
                 # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', message='All-NaN slice')
@@ -1537,13 +1540,14 @@ class Spect(PrimitivesBASE):
 
                 # TODO: find_peaks might not be best considering we have no
                 #   idea whether sources will be extended or not
-                widths = np.arange(3, 30)
+                widths = np.arange(3, 20)
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
                                                     variance=None, reject_bad=False,
                                                     min_snr=3, min_frac=0.2)
 
                 if peaks_and_snrs.size == 0:
                     log.warning("Found no sources")
+                    # Delete existing APERTURE table
                     try:
                         del ext.APERTURE
                     except AttributeError:
