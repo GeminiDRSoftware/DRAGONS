@@ -437,15 +437,14 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
 
     peaks = sorted([x[1][0] for x in filtered])
 
-    # If no variance is supplied we take the "snr" to be the data.
-    # We do this on the filtered data because the continuum level gets
-    # subtracted by the Ricker filter
+    # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     if variance is not None:
         snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                         out=np.zeros_like(data, dtype=np.float32),
                         where=variance > 0)
     else:
-        snr = wavelet_transformed_data[0]
+        sigma = sigma_clip(data[~mask], masked=False).std() / np.sqrt(2)
+        snr = wavelet_transformed_data[0] / sigma
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
