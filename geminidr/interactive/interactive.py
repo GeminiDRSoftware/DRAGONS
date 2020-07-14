@@ -9,6 +9,15 @@ from geminidr.interactive import server
 
 class PrimitiveVisualizer(ABC):
     def __init__(self):
+        """
+        Initialize a visualizer.
+
+        This base class creates a submit button suitable for any subclass
+        to use and it also listens for the UI window to close, executing a
+        submit if that happens.  The submit button will cause the `bokeh`
+        event loop to exit and the code will resume executing in whatever
+        top level call you are visualizing from.
+        """
         self.submit_button = Button(label="Submit")
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
@@ -51,6 +60,10 @@ class PrimitiveVisualizer(ABC):
 
 
 class GISlider(object):
+    """
+    This is a slider widget that also allows for text input.
+    """
+
     def __init__(self, title, value, step, min_value, max_value, obj=None, attr=None, handler=None):
         """
         Make a slider widget to use in the bokeh interface.
@@ -121,10 +134,16 @@ class GISlider(object):
 
 
 class GICoordsSource:
+    """
+    A source for coordinate data.
+
+    Downstream code can subscribe for updates on this to be notified when the
+    coordinates change for some reason.
+    """
     def __init__(self):
         self.listeners = list()
 
-    def add_gilistener(self, coords_listener):
+    def add_coord_listener(self, coords_listener):
         """
         Add a listener - either an instance of :class:`GICoordsListener` or a function that will take x and y
         arguments as lists of values.
@@ -136,7 +155,21 @@ class GICoordsSource:
         else:
             self.listeners.append(coords_listener)
 
-    def ginotify(self, x_coords, y_coords):
+    def notify_coord_listeners(self, x_coords, y_coords):
+        """
+        Notify all registered users of the updated coordinagtes.
+
+        Coordinates are set as two separate arrays of `ndarray`
+        x and y coordinates.
+
+        Parameters
+        ----------
+        x_coords : ndarray
+            x coordinate array
+        y_coords : ndarray
+            y coordinate array
+
+        """
         for l in self.listeners:
             if callable(l):
                 l(x_coords, y_coords)
@@ -145,70 +178,222 @@ class GICoordsSource:
 
 
 class GICoordsListener(ABC):
+    """
+    Listener for coordinate updates.
+    """
     def __init__(self):
         pass
 
     @abstractmethod
     def update_coords(self, x_coords, y_coords):
+        """
+        This is the call where the listener receives updated coordinate values.
+
+        Parameters
+        ----------
+        x_coords : ndarray
+            X coordinates
+        y_coords : ndarray
+            Y coordinates
+
+        """
         pass
 
 
 class GIModelSource(object):
+    """"
+    An object for reporting updates to a model (such as a fit line).
+
+    This is an interface for adding subscribers to model updates.  For
+    example, you may have a best fit line model and you may want to
+    have UI classes subscribe to it so they know when the fit line has
+    changed.
+    """
     def __init__(self):
+        """
+        Create the model source.
+        """
         self.model_listeners = list()
 
     def add_model_listener(self, listener):
+        """
+        Add the listener.
+
+        Parameters
+        ----------
+        listener : function
+            The listener to notify when the model updates.  This should be
+            a function with no arguments.
+        """
         if not callable(listener):
             raise ValueError("GIModelSource expects a callable in add_listener")
         self.model_listeners.append(listener)
 
     def notify_model_listeners(self):
+        """
+        Call all listeners to let them know the model has changed.
+        """
         for listener_fn in self.model_listeners:
             listener_fn()
 
 
-class DifferencingModel(GICoordsSource):
+class GIDifferencingModel(GICoordsSource):
+    """
+    A coordinate model for tracking the difference in x/y
+    coordinates and what is calculated by a function(x).
+
+    This is useful for plotting differences between the
+    real coordinates and what a model function is predicting
+    for the given x values.  It will listen to changes to
+    both an underlying :class:`GICoordsSource` and a
+    :class:`GIModelSource` and when either update, it
+    recalculates the differences and sends out x, (y-fn(x))
+    coordinates to any listeners.
+    """
     def __init__(self, coords, cmodel, fn):
+        """
+        Create the differencing model.
+
+        Parameters
+        ----------
+        coords : :class:`GICoordsSource`
+            Coordinates to serve as basis for the difference
+        cmodel : :class:`GIModelSource`
+            The model source, to be notified when the model changes
+        fn : function
+            The function, related to the model, to call to get modelled y-values
+        """
         super().__init__()
+        # Separating the fn from the model source is a bit hacky.  I need to revisit this.
+        # For now, Chebyshev1D and Spline are different enough that I am holding out for
+        # more examples of models.
+        # TODO merge fn concept into model source
         self.fn = fn
         self.data_x_coords = None
         self.data_y_coords = None
-        coords.add_gilistener(self.update_coords)
+        coords.add_coord_listener(self.update_coords)
         cmodel.add_model_listener(self.update_model)
 
     def update_coords(self, x_coords, y_coords):
+        """
+        Handle an update to the coordinates.
+
+        We respond to updates in the source coordinates by
+        recalculating model outputs for the new x inputs
+        and publishing to our listeners an updated set of
+        x, (y-fn(x)) values.
+
+        Parameters
+        ----------
+        x_coords : ndarray
+            X coordinates
+        y_coord : ndarray
+            Y coordinatess
+
+        """
         self.data_x_coords = x_coords
         self.data_y_coords = y_coords
 
     def update_model(self):
+        """"
+        Called by the :class:`GIModelSource` to let us know the model
+        has been updated.
+
+        We respond to a model update by recalculating the x, (y-fn(x))
+        values and publishing them out to our subscribers.
+        """
         x = self.data_x_coords
         y = self.data_y_coords - self.fn(x)
-        self.ginotify(x, y)
+        self.notify_coord_listeners(x, y)
 
 
 class GIMaskedCoords(GICoordsSource):
+    """
+    This is a helper class for handling masking of coordinate
+    values.
+
+    This class tracks an initial, static, set of x/y coordinates
+    and a changeable list of masked coordinate indices.  Whenever
+    the mask is updated, we publish the subset of the coordinates
+    that pass the mask out to our listeners.
+
+    A typical use for this would be to make 2 overlapping scatter
+    plots.  One will be in a base color, such as black.  The other
+    will be in a different color, such as blue.  The blue plot can
+    be made using this coordinate source and the effect is a plot
+    of all points, with the masked points in blue.  This is currently
+    done in the Spline logic, for example.
+    """
     def __init__(self, x_coords, y_coords):
+        """
+        Create the masked coords source with the given set of coordinates.
+
+        Parameters
+        ----------
+        x_coords : ndarray
+            x coordinates
+        y_coords : ndarray
+            y coordinates
+        """
         super().__init__()
         self.x_coords = x_coords
         self.y_coords = y_coords
+        # intially, all points are masked = included
         self.mask = [True] * len(x_coords)
 
-    def add_gilistener(self, coords_listener):
-        super().add_gilistener(coords_listener)
+    def add_coord_listener(self, coords_listener):
+        """
+        Add a listener for updates.
+
+        Since we have the coordinates at construction time, this call
+        will also immediately notify the passed listener of the currently
+        passing masked coordinates.
+
+        Parameters
+        ----------
+        coords_listener : :class:`GICoordsListener` or function
+            The listener to add
+
+        """
+        super().add_coord_listener(coords_listener)
         if callable(coords_listener):
             coords_listener(self.x_coords[self.mask], self.y_coords[self.mask])
         else:
             coords_listener.update_coords(self.x_coords[self.mask], self.y_coords[self.mask])
 
     def addmask(self, coords):
+        """
+        Set the given cooridnate indices as masked (so, visible)
+
+        This also notifies all listeners of the updated set of passing
+        coordinates.
+
+        Parameters
+        ----------
+        coords : array of int
+            List of coordinates to enable in the mask
+
+        """
         for i in coords:
             self.mask[i] = False
-        self.ginotify(self.x_coords[self.mask], self.y_coords[self.mask])
+        self.notify_coord_listeners(self.x_coords[self.mask], self.y_coords[self.mask])
 
     def unmask(self, coords):
+        """
+        Set the given coordinate indices as unmasked (so, not visible)
+
+        This also notifies all listeners of the updated set of passing
+        coordinates.
+
+        Parameters
+        ----------
+        coords : array of int
+            list of coordinate indices to hide
+
+        """
         for i in coords:
             self.mask[i] = True
-        self.ginotify(self.x_coords[self.mask], self.y_coords[self.mask])
+        self.notify_coord_listeners(self.x_coords[self.mask], self.y_coords[self.mask])
 
 
 class GIFigure(object):
@@ -221,7 +406,14 @@ class GIFigure(object):
                  x_axis_label='X', y_axis_label='Y',
                  tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                  band_model=None, aperture_model=None):
-        # primarily, we set the backend to webgl for performance and we fix a bokeh bug to ensure rendering updates
+
+        # This wrapper around figure provides somewhat limited value, but for now I think it is
+        # worth it.  It primarily does three things:
+        #
+        #  * allows alternate defaults for things like the list of tools and backend
+        #  * integrates aperture and band information to reduce boilerplate in the visualizer code
+        #  * wraps any bugfix hackery we need to do so it always happens and we don't have to remember it everywhere
+
         self.figure = figure(plot_width=plot_width, plot_height=plot_height, title=title, x_axis_label=x_axis_label,
                              y_axis_label=y_axis_label, tools=tools, output_backend="webgl")
 
@@ -244,11 +436,16 @@ class GIScatter(GICoordsListener):
 
         Parameters
         ----------
-        gifig : :class:`GIFigure` figure to plot in
-        x_coords : array of float coordinates
-        y_coords : array of float coordinates
-        color : color value, default "blue"
-        radius : int radius in pixels for the dots
+        gifig : :class:`GIFigure`
+            figure to plot in
+        x_coords : ndarray
+            x coordinates
+        y_coords : ndarray
+            y coordinates
+        color : str
+            color value, default "blue"
+        radius : int
+            radius in pixels for the dots
         """
         if x_coords is None:
             x_coords = []
@@ -258,13 +455,33 @@ class GIScatter(GICoordsListener):
         self.scatter = gifig.figure.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
 
     def update_coords(self, x_coords, y_coords):
+        """
+        Respond to new coordinates.
+
+        We usuaslly subscribe to some sort of GICoordsSource and this
+        is where it will let us know of any data updates.
+
+        Parameters
+        ----------
+        x_coords : ndarray
+            x coordinates
+        y_coords : ndarray
+            y coordinates
+
+        """
         self.source.data = {'x': x_coords, 'y': y_coords}
 
     def clear_selection(self):
-        self.source.selected.update(indices=[])
+        """
+        Clear the selection in the scatter plot.
 
-    def replot(self):
-        self.scatter.replot()
+        This is useful once we have applied the selection in some way,
+        to reset the plot back to an unselected state.
+        """
+        self.source.selected.update(indices=[])
+    #
+    # def replot(self):
+    #     self.scatter.replot()
 
 
 class GILine(GICoordsListener):
@@ -287,6 +504,19 @@ class GILine(GICoordsListener):
         self.line = gifig.figure.line(x='x', y='y', source=self.line_source, color=color)
 
     def update_coords(self, x_coords, y_coords):
+        """
+        Update the coordinates for the line plot.
+
+        We usually subscribe to some sort of GICoordsSource and this
+        is where it will let us know of any updates to the data.
+
+        Parameters
+        ----------
+        x_coords : ndarray
+            x coordinates
+        y_coords : ndarray
+            y coordinates
+        """
         self.line_source.data = {'x': x_coords, 'y': y_coords}
 
 
@@ -309,27 +539,93 @@ class GIBandModel(object):
     Model for tracking a set of bands.
     """
     def __init__(self):
+        # Right now, the band model is effectively stateless, other
+        # than maintaining the set of registered listeners.  That is
+        # because the bands are not used for anything, so there is
+        # no need to remember where they all are.  This is likely to
+        # change in future and that information should likely be
+        # kept in here.
         self.band_id = 1
         self.listeners = list()
 
     def add_listener(self, listener):
+        """
+        Add a listener to this band model.
+
+        The listener can either be a :class:`GIBandListener` or
+        it can be a function,  The function should expect as
+        arguments, the `band_id`, and `start`, and `stop` x
+        range values.
+
+        Parameters
+        ----------
+        listener : :class:`GIBandListener` or function
+
+        """
         if not isinstance(listener, GIBandListener):
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
     def adjust_band(self, band_id, start, stop):
+        """
+        Adjusts the given band ID to the specified X range.
+
+        The band ID may refer to a brand new band ID as well.
+        This method will call into all registered listeners
+        with the updated information.
+
+        Parameters
+        ----------
+        band_id : int
+            ID fo the band to modify
+        start : float
+            Starting coordinate of the x range
+        stop : float
+            Ending coordinate of the x range
+
+        """
         for listener in self.listeners:
             listener.adjust_band(band_id, start, stop)
 
 
 class GIBandView(GIBandListener):
+    """
+    View for the set of bands to show then in a figure.
+    """
     def __init__(self, fig, model):
+        """
+        Create the view for the set of bands managed in the given model
+        to display them in a figure.
+
+        Parameters
+        ----------
+        fig : :class:`GIFigure`
+            the figure to display the bands in
+        model : :class:`GIBandModel`
+            the model for the band information (may be shared by multiple :class:`GIBandView`s)
+        """
         self.model = model
         model.add_listener(self)
         self.bands = dict()
         self.fig = fig
 
     def adjust_band(self, band_id, start, stop):
+        """
+        Adjust a band by it's ID.
+
+        This may also be a new band, if it is an ID we haven't
+        seen before.  This call will create or adjust the glyphs
+        in the figure to reflect the new data.
+
+        Parameters
+        ----------
+        band_id : int
+            id of band to create or adjust
+        start : float
+            start of the x range of the band
+        stop : float
+            end of the x range of the band
+        """
         if band_id in self.bands:
             band = self.bands[band_id]
             band.left = start
@@ -340,23 +636,67 @@ class GIBandView(GIBandListener):
             self.bands[band_id] = band
 
     def delete_band(self, band_id):
+        """
+        Delete a band by ID.
+
+        If the view does not recognize the id, this is a no-op.
+        Otherwise, all related glyphs are cleaned up from the figure.
+
+        Parameters
+        ----------
+        band_id : int
+            ID of band to remove
+
+        """
         if band_id in self.bands:
             band = self.bands[band_id]
             # TODO remove it
 
 
 class GIApertureModel(object):
+    """
+    Model for tracking the Apertures.
+
+    This tracks the apertures and a list of subscribers
+    to notify when there are any changes.
+    """
     def __init__(self):
-        self.start = 100
-        self.end = 300
+        """
+        Create the apertures model
+        """
         self.aperture_id = 1
         self.listeners = list()
+        # spare_ids holds any IDs that were returned to
+        # us via a delete, so we can re-use them for
+        # new apertures
         self.spare_ids = list()
 
     def add_listener(self, listener):
+        """
+        Add a listener for update to the apertures.
+
+        Parameters
+        ----------
+        listener : :class:`GIApertureListener` or function
+            The listener to notify if there are any updates
+        """
         self.listeners.append(listener)
 
     def add_aperture(self, start, end):
+        """
+        Add a new aperture, using the next available ID
+
+        Parameters
+        ----------
+        start : float
+            x coordinate the aperture starts at
+        end : float
+            x coordinate the aperture ends at
+
+        Returns
+        -------
+            int id of the aperture
+        """
         if self.spare_ids:
             aperture_id = self.spare_ids.pop(0)
         else:
@@ -366,17 +706,63 @@ class GIApertureModel(object):
         return aperture_id
 
     def adjust_aperture(self, aperture_id, start, end):
+        """
+        Adjust an existing aperture by ID to a new range.
+        This will alert all subscribed listeners.
+
+        Parameters
+        ----------
+        aperture_id : int
+            ID of the aperture to adjust
+        start : float
+            X coordinate of the new start of range
+        end : float
+            X coordiante of the new end of range
+
+        """
         for l in self.listeners:
             l.handle_aperture(aperture_id, start, end)
 
     def delete_aperture(self, aperture_id):
-        for l in self.listeners:
-            l.delete_aperture(aperture_id)
+        """
+        Delete an aperture by ID.
+
+        This will notify all subscribers of the removal
+        of this aperture and return it's ID to the available
+        pool.
+
+        Parameters
+        ----------
+        aperture_id : int
+            The ID of the aperture to delete
+
+        Returns
+        -------
+
+        """
+        for listener in self.listeners:
+            listener.delete_aperture(aperture_id)
         self.spare_ids.append(aperture_id)
 
 
 class GISingleApertureView(object):
     def __init__(self, gifig, aperture_id, start, end):
+        """
+        Create a visible glyph-set to show the existance
+        of an aperture on the given figure.  This display
+        will update as needed in response to panning/zooming.
+
+        Parameters
+        ----------
+        gifig : :class:`GIFigure`
+            Figure to attach to
+        aperture_id : int
+            ID of the aperture (for displaying)
+        start : float
+            Start of the x-range for the aperture
+        end : float
+            End of the x-range for the aperture
+        """
         self.box = None
         self.label = None
         self.left_source = None
@@ -385,13 +771,32 @@ class GISingleApertureView(object):
         self.right = None
         self.line_source = None
         self.line = None
-        self.figure = None
+        self.gifig = None
         if gifig.figure.document:
             gifig.figure.document.add_next_tick_callback(lambda: self.build_ui(gifig, aperture_id, start, end))
         else:
             self.build_ui(gifig, aperture_id, start, end)
 
     def build_ui(self, gifig, aperture_id, start, end):
+        """
+        Build the view in the figure.
+
+        This call creates the UI elements for this aperture in the
+        parent figure.  It also wires up event listeners to adjust
+        the displayed glyphs as needed when the view changes.
+
+        Parameters
+        ----------
+        gifig : :class:`GIFigure`
+            figure to attach glyphs to
+        aperture_id : int
+            ID of this aperture, displayed
+        start : float
+            Start of x-range of aperture
+        end : float
+            End of x-range of aperture
+
+        """
         figure = gifig.figure
         ymin = figure.y_range.start
         ymax = figure.y_range.end
@@ -415,9 +820,18 @@ class GISingleApertureView(object):
         figure.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
         # feels like I need this to convince the aperture lines to update on zoom
         figure.y_range.js_on_change('end', CustomJS(args=dict(plot=figure),
-                                                           code="plot.properties.renderers.change.emit()"))
+                                                    code="plot.properties.renderers.change.emit()"))
 
     def update_viewport(self):
+        """
+        Update the view in the figure.
+
+        This call is made whenever we detect a change in the display
+        area of the view.  By redrawing, we ensure the lines and
+        axis label are in view, at 80% of the way up the visible
+        Y axis.
+
+        """
         ymin = self.gifig.figure.y_range.start
         ymax = self.gifig.figure.y_range.end
         ymid = (ymax-ymin)*.8+ymin
@@ -429,6 +843,19 @@ class GISingleApertureView(object):
         self.label.y = ymid
 
     def update(self, start, end):
+        """
+        Alter the coordinate range for this aperture.
+
+        This will adjust the shaded area and the arrows/label for this aperture
+        as displayed on the figure.
+
+        Parameters
+        ----------
+        start : float
+            new starting x coordinate
+        end : float
+            new ending x coordinate
+        """
         self.box.left = start
         self.box.right = end
         self.left_source.data = {'x': [start, start], 'y': self.left_source.data['y']}
@@ -436,19 +863,54 @@ class GISingleApertureView(object):
         self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
 
     def delete(self):
+        """
+        Delete this aperture from it's view.
+        """
         self.gifig.figure.renderers.remove(self.line)
         self.gifig.figure.renderers.remove(self.left)
         self.gifig.figure.renderers.remove(self.right)
 
 
 class GIApertureView(object):
+    """
+    UI elements for displaying the current set of apertures.
+
+    This class manages a set of colored bands on a figure to
+    show where the defined apertures are, along with a numeric
+    ID for each.
+    """
     def __init__(self, model, gifig):
+        """
+
+        Parameters
+        ----------
+        model : :class:`GIApertureModel`
+            Model for tracking the apertures, may be shared across multiple views
+        gifig : :class:`GIFigure`
+            Plot for displaying the bands
+        """
         self.aps = dict()
 
         self.gifig = gifig
         model.add_listener(self)
 
     def handle_aperture(self, aperture_id, start, end):
+        """
+        Handle an updated or added aperture.
+
+        We either update an existing aperture if we recognize the `aperture_id`
+        or we create a new one.
+
+        Parameters
+        ----------
+        aperture_id : int
+            ID of the aperture to update or create in the view
+        start : float
+            Start of the aperture in x coordinates
+        end : float
+            End of the aperture in x coordinates
+
+        """
         if aperture_id in self.aps:
             ap = self.aps[aperture_id]
             ap.update(start, end)
@@ -457,6 +919,18 @@ class GIApertureView(object):
             self.aps[aperture_id] = ap
 
     def delete_aperture(self, aperture_id):
+        """
+        Remove an aperture by ID.  If the ID is not recognized, do nothing.
+
+        Parameters
+        ----------
+        aperture_id : int
+            ID of the aperture to remove
+
+        Returns
+        -------
+
+        """
         if aperture_id in self.aps:
             ap = self.aps[aperture_id]
             ap.delete()

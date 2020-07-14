@@ -7,7 +7,7 @@ from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, \
     GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedCoords, \
-    GIModelSource, DifferencingModel
+    GIModelSource, GIDifferencingModel
 from gempy.library import astromodels
 
 
@@ -31,7 +31,7 @@ class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
         self.y = []
 
         # do this last since it will trigger an update, which triggers a recalc
-        self.coords.add_gilistener(self)
+        self.coords.add_coord_listener(self)
 
     def update_coords(self, x_coords, y_coords):
         # The masked coordinates changed, so update our copy and recalculate the model
@@ -75,7 +75,7 @@ class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
         self.model_dict = astromodels.chebyshev_to_dict(self.m_final)
 
         # notify listeners of new x/y plot data based on our model function
-        self.ginotify(self.spectral_coords, self.m_final(self.spectral_coords))
+        self.notify_coord_listeners(self.spectral_coords, self.m_final(self.spectral_coords))
         # notify model listeners that our model function has changed
         self.notify_model_listeners()
 
@@ -187,9 +187,9 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         self.scatter = GIScatter(p, self.x, self.y, color="red", radius=5)
         self.masked_scatter = GIScatter(p, self.x, self.y, color="blue", radius=5)
-        self.model.coords.add_gilistener(self.masked_scatter)
+        self.model.coords.add_coord_listener(self.masked_scatter)
         self.line = GILine(p)
-        self.model.add_gilistener(self.line)
+        self.model.add_coord_listener(self.line)
 
         # p2 goes in tab 2 and shows the difference between the data y values and the model calculated values
         p2 = GIFigure(plot_width=600, plot_height=500,
@@ -197,8 +197,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
                       x_axis_label='X', y_axis_label='Y',
                       band_model=band_model, aperture_model=aperture_model)
         self.line2 = GILine(p2)
-        differencing_model = DifferencingModel(self.model.coords, self.model, self.model.model_calculate)
-        differencing_model.add_gilistener(self.line2)
+        differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
+        differencing_model.add_coord_listener(self.line2)
 
         # helptext is where the Controller will put help messages for the end user
         # This controls area is a vertical set of UI controls we are placing on the left
