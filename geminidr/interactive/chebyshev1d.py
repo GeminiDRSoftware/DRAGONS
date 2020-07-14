@@ -1,38 +1,36 @@
 import numpy as np
 from astropy.modeling import models, fitting
 from bokeh.layouts import row
-from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Paragraph, CustomJS, Div
-from bokeh.plotting import figure
+from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Div
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, BandModel, GIBands, \
-     ApertureModel, ApertureView
+from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, \
+    GIBandModel, GIBands, GIApertureModel, GIApertureView, GIFigure, GIDifferencingCoords, GISlider, GIMaskedCoords
 from gempy.library import astromodels
 
 
-class ChebyshevModel(GICoordsSource):
-    def __init__(self, order, location, dispaxis, sigma_clip, in_coords, spectral_coords, ext):
+class ChebyshevModel(GICoordsSource, GICoordsListener):
+    def __init__(self, order, location, dispaxis, sigma_clip, coords, spectral_coords, ext):
         super().__init__()
         self.order = order
         self.location = location
         self.dispaxis = dispaxis
         self.sigma_clip = sigma_clip
-        self.in_coords = in_coords
+        self.coords = coords
         self.spectral_coords = spectral_coords
         self.ext = ext
         self.m_final = None
         self.model_dict = None
-        self.coords_mask = [True] * len(in_coords[dispaxis])
+        self.x = []
+        self.y = []
 
-    def mask(self, coords):
-        for i in coords:
-            self.coords_mask[i] = False
-        self.recalc_chebyshev()
+        # do this last since it will trigger an update, which triggers a recalc
+        self.coords.add_gilistener(self)
 
-    def unmask(self, coords):
-        for i in coords:
-            self.coords_mask[i] = True
+    def giupdate(self, x_coords, y_coords):
+        self.x = x_coords
+        self.y = y_coords
         self.recalc_chebyshev()
 
     def recalc_chebyshev(self):
@@ -52,7 +50,7 @@ class ChebyshevModel(GICoordsSource):
         location = self.location
         dispaxis = self.dispaxis
         sigma_clip = self.sigma_clip
-        in_coords = self.in_coords
+        # in_coords = self.in_coords
         ext = self.ext
 
         m_init = models.Chebyshev1D(degree=order, c0=location,
@@ -60,8 +58,8 @@ class ChebyshevModel(GICoordsSource):
         fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                    sigma_clip, sigma=3)
         try:
-            x = in_coords[1-dispaxis][self.coords_mask]
-            y = in_coords[dispaxis][self.coords_mask]
+            x = self.x
+            y = self.y
             self.m_final, _ = fit_it(m_init, x, y)
         except (IndexError, np.linalg.linalg.LinAlgError):
             # This hides a multitude of sins, including no points
@@ -78,30 +76,22 @@ class DifferencingModel(GICoordsSource, GICoordsListener):
     def __init__(self, cmodel):
         super().__init__()
         self.cmodel = cmodel
-        self.data_x_coords = cmodel.in_coords[0]
-        self.data_y_coords = cmodel.in_coords[1]
+        self.data_x_coords = cmodel.coords.x_coords[cmodel.coords.mask]
+        self.data_y_coords = cmodel.coords.y_coords[cmodel.coords.mask]
         cmodel.add_gilistener(self)
+        # cmodel.coords.add_gilistener(self)
 
     def giupdate(self, x_coords, y_coords):
-        x = self.data_x_coords[self.cmodel.coords_mask]
-        y = self.data_y_coords[self.cmodel.coords_mask] - self.cmodel.m_final(x)
+        # hacking this in, should not use internal fields of the masked coords, need to
+        # refine how I do listeners (maybe just a fn instead of a class, or maybe with a source name)
+        # though also, this whole class should be refactored to not know about Chebyshev
+        x = self.cmodel.coords.x_coords[self.cmodel.coords.mask]
+        y = self.cmodel.coords.y_coords[self.cmodel.coords.mask] - self.cmodel.m_final(x)
         self.ginotify(x, y)
 
 
-class MaskedScatter(GIScatter):
-    def __init__(self, fig, model, color="blue", radius=5):
-        super().__init__(fig, None, None, color, radius)
-        self.model = model
-
-    def replot(self):
-        mask = [not x for x in self.model.coords_mask]
-        x = self.model.in_coords[1 - self.model.dispaxis][mask]
-        y = self.model.in_coords[self.model.dispaxis][mask]
-        self.source.data = {'x': x, 'y': y}
-
-
 class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
-    def __init__(self, model, min_order, max_order):
+    def __init__(self, x, y, model, min_order, max_order):
         """
         Create a chebyshev1D visualizer.
 
@@ -118,6 +108,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         if not isinstance(model, ChebyshevModel):
             raise ValueError("Chebyshev1DVisualizer requires ChebyshevModel")
 
+        self.x = x
+        self.y = y
         self.model = model
 
         self.min_order = min_order
@@ -145,25 +137,17 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.model.mask(indices)
         self.scatter.clear_selection() # source.selected.indices.clear()
-        self.masked_scatter.replot()
-        pass
+        self.masked_scatter.clear_selection()
+        self.model.coords.addmask(indices)
+        # self.masked_scatter.replot()
 
     def unmask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.model.unmask(indices)
         self.scatter.clear_selection() # source.selected.indices.clear()
         self.masked_scatter.clear_selection()
-        self.masked_scatter.replot()
-        pass
-
-    def order_slider_handler(self, attr, old, new):
-        """
-        Handle a change in the order slider
-        """
-        self.model.order = new
-        self.model.recalc_chebyshev()
+        self.model.coords.unmask(indices)
+        # self.masked_scatter.replot()
 
     def visualize(self, doc):
         """
@@ -181,8 +165,13 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         super().visualize(doc)
 
-        order_slider = self.make_slider_for("Order", self.model.order, 1, self.min_order, self.max_order,
-                                            self.order_slider_handler)
+        # Just sandboxing a basic band UI for the x ranges from Kathleen's demo
+        band_model = GIBandModel()
+        # Just sandboxing a sample Aperture UI
+        aperture_model = GIApertureModel()
+
+        order_slider = GISlider("Order", self.model.order, 1, self.min_order, self.max_order,
+                                self.model, "order", self.model.recalc_chebyshev)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -194,67 +183,56 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         source = ColumnDataSource(data=dict(x=[], y=[]))
 
         # Create a blank figure with labels
-        p = figure(plot_width=600, plot_height=500,
-                   title='Interactive Chebyshev',
-                   x_axis_label='X', y_axis_label='Y',
-                   output_backend="webgl",
-                   tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
+        p = GIFigure(plot_width=600, plot_height=500,
+                     title='Interactive Chebyshev',
+                     x_axis_label='X', y_axis_label='Y',
+                     tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                     band_model=band_model, aperture_model=aperture_model)
 
         self.p = p
 
         # placeholder, just seeing the custom tool is working
-        p.line('x', 'y', source=source)
+        p.figure.line('x', 'y', source=source)
 
         # p2 is just to show that we can have multiple tabs with plots running off the same dataset
         # TODO make plots like the other IRAF options we were shown
-        p2 = figure(plot_width=600, plot_height=500,
-                    title='Interactive Chebyshev (tab 2)',
-                    x_axis_label='X', y_axis_label='Y',
-                    output_backend="webgl")
+        p2 = GIFigure(plot_width=600, plot_height=500,
+                      title='Interactive Chebyshev (tab 2)',
+                      x_axis_label='X', y_axis_label='Y',
+                     band_model=band_model, aperture_model=aperture_model)
 
-        self.scatter = GIScatter(p, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
-        self.masked_scatter = MaskedScatter(p, self.model, color="red", radius=5)
+        self.scatter = GIScatter(p, self.x, self.y, color="red", radius=5)
+        self.masked_scatter = GIScatter(p, self.x, self.y, color="blue", radius=5)
+        self.model.coords.add_gilistener(self.masked_scatter)
         self.line = GILine(p)
 
         differencing_model = DifferencingModel(self.model)
 
-        # self.scatter2 = GIScatter(p2, self.model.in_coords[0], self.model.in_coords[1], color="blue", radius=5)
         self.line2 = GILine(p2)
 
-        # Just sandboxing a basic band UI for the x ranges from Kathleen's demo
-        band_model = BandModel()
-        bands = GIBands(p, band_model)
-        bands2 = GIBands(p2, band_model)
-
-        # Just sandboxing a sample Aperture UI
-        aperture_model = ApertureModel()
-        y = max(self.model.in_coords[1]) - min(self.model.in_coords[1]) * .8 + min(self.model.in_coords[1])
-        aperture_view = ApertureView(aperture_model, self.p, max(self.model.in_coords[1]) - 50)
-        y = max(self.model.in_coords[1]) - min(self.model.in_coords[1]) * .8 + min(self.model.in_coords[1])
-        aperture_view2 = ApertureView(aperture_model, p2, max(self.model.in_coords[1]) - 50)
-
+        # helptext is where the Controller will put help messages for the end user
+        # This controls area is a vertical set of UI controls we are placing on the left
+        # side of the UI
         helptext = Div(text="")
-        self.controls = Column(order_slider, self.submit_button, mask_button, unmask_button, helptext)
+        self.controls = Column(order_slider.component, self.submit_button, mask_button, unmask_button, helptext)
 
+        # The line will update against the model
+        # Our second line, in tab 2, will update vs the difference (which, in turn, listens to the model)
+        # both will fire an update when we recalculate the cheybshev
         self.model.add_gilistener(self.line)
         differencing_model.add_gilistener(self.line2)
 
+        # recalculate the chebyshev, causing the data updates to fire and update the UI as well
         self.model.recalc_chebyshev()
 
-        tab1 = Panel(child=p, title="Chebyshev Fit")
-        tab2 = Panel(child=p2, title="Chebyshev Differential")
+        # add the two plots as tabs and place them with controls to the left
+        tab1 = Panel(child=p.figure, title="Chebyshev Fit")
+        tab2 = Panel(child=p2.figure, title="Chebyshev Differential")
         tabs = Tabs(tabs=[tab1, tab2], name="tabs")
         layout = row(self.controls, tabs)
 
+        # setup controller for key commands
         controller = Controller(self.p, aperture_model, band_model, helptext)
-
-        # bug workaround so new annotations can show up
-        # This is NEEDED for aperture/bands to show up until this is resolved:
-        #  https://github.com/bokeh/bokeh/issues/8862
-        self.p.js_on_change('center', CustomJS(args=dict(plot=self.p),
-                                               code="plot.properties.renderers.change.emit()"))
-        p2.js_on_change('center', CustomJS(args=dict(plot=p2),
-                                           code="plot.properties.renderers.change.emit()"))
 
         doc.add_root(layout)
 
@@ -272,27 +250,26 @@ def interactive_chebyshev(ext,  order, location, dispaxis, sigma_clip, in_coords
     ----------
     ext
         FITS extension from astrodata
-    wave
-    zpt
-    zpt_err
     order
         order for the spline calculation
-    niter
-        number of iterations for the spline calculation
-    grow
-        grow for the spline calculation
-    min_order
+    location
+    dispaxis
+    sigma_clip
+    in_coords
+    spectral_coords
+    min_order : int
         minimum value for order slider
-    max_order
+    max_order : int
         maximum value for order slider, or None to infer
 
     Returns
     -------
         dict, :class:`models.Chebyshev1D`
     """
+    masked_coords = GIMaskedCoords(in_coords[1-dispaxis], in_coords[dispaxis])
     model = ChebyshevModel(order, location, dispaxis, sigma_clip,
-                           in_coords, spectral_coords, ext)
-    server.visualizer = Chebyshev1DVisualizer(model, min_order, max_order)
+                           masked_coords, spectral_coords, ext)
+    server.visualizer = Chebyshev1DVisualizer(in_coords[1-dispaxis], in_coords[dispaxis], model, min_order, max_order)
 
     server.start_server()
 

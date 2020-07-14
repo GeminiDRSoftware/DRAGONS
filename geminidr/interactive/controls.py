@@ -31,21 +31,42 @@ class Controller(object):
     of this by itself.  These new interactions are instead routed through here.
     In the case of key presses, this is routed in via a custom URL endpoint in
     the bokeh server from a javascript key listener in index.html.
+
+    This routing can mean that some operations have to happen within a call to
+    `add_next_tick_callback`.  That is because our key press is coming in via
+    a different path than the normal bokeh interactivity.
+
+    The controler maintains a set of `Task`s.  One `Task` is operating at a time.
+    An active task receives all the key presses and when it is done, it returns
+    control to the `Controller`.  The `Tasks` are also able to update the help
+    text to give contextual help.
     """
-    def __init__(self, figure, aperture_model, band_model, helptext):
-        self.figure = figure
+    def __init__(self, gifig, aperture_model, band_model, helptext):
+        """
+        Create a controller to manage the given aperture and band models on the given GIFigure
+
+        Parameters
+        ----------
+        gifig : :class:`GIFigure` plot to attach controls to
+        aperture_model : :ckass:`GIApertureModel` model for apertures for this plot/dataset, or None
+        band_model : :class:`GIBandModel` model for bands for this plot/dataset, or None
+        helptext : :class:`Div` to update text in to provide help to the user
+        """
+        self.gifig = gifig
         self.helptext = helptext
         self.tasks = dict()
-        self.tasks['a'] = ApertureTask(aperture_model)
-        self.tasks['b'] = BandTask(band_model)
+        if aperture_model:
+            self.tasks['a'] = ApertureTask(aperture_model)
+        if band_model:
+            self.tasks['b'] = BandTask(band_model)
         self.task = None
         self.x = None
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        figure.on_event('mousemove', self.on_mouse_move)
-        figure.on_event('mouseenter', self.on_mouse_enter)
-        figure.on_event('mouseleave', self.on_mouse_leave)
+        gifig.figure.on_event('mousemove', self.on_mouse_move)
+        gifig.figure.on_event('mouseenter', self.on_mouse_enter)
+        gifig.figure.on_event('mouseleave', self.on_mouse_leave)
 
         self.sethelptext()
 

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from bokeh.layouts import row
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label
+from bokeh.plotting import figure
 
 from geminidr.interactive import server
 
@@ -48,7 +49,9 @@ class PrimitiveVisualizer(ABC):
         """
         doc.on_session_destroyed(self.submit_button_handler)
 
-    def make_slider_for(self, title, value, step, min_value, max_value, handler):
+
+class GISlider(object):
+    def __init__(self, title, value, step, min_value, max_value, obj=None, attr=None, handler=None):
         """
         Make a slider widget to use in the bokeh interface.
 
@@ -68,13 +71,21 @@ class PrimitiveVisualizer(ABC):
             Minimum slider value, or None defaults to min(value,0)
         max_value : int
             Maximum slider value, or None defaults to value*2
+        obj : object
+            Instance to modify the attribute of when slider changes
+        attr : str
+            Name of attribute in obj to be set with the new value
         handler : method
-            Function to handle callbacks when value of the slider changes
+            Function to call after setting the attribute
 
         Returns
         -------
             :class:`bokeh.models.Slider` slider widget for bokeh interface
         """
+        self.obj = obj
+        self.attr = attr
+        self.handler = handler
+
         start = min(value, min_value) if min_value else min(value, 0)
         end = max(value, max_value) if max_value else max(10, value*2)
         slider = Slider(start=start, end=end, value=value, step=step, title=title)
@@ -99,9 +110,14 @@ class PrimitiveVisualizer(ABC):
             if new != old:
                 text_input.value = str(new)
 
-        slider.on_change("value", update_text_input, handler)
+        def handle_value(attr, old, new):
+            if self.obj and self.attr:
+                self.obj.__setattr__(self.attr, new)
+            self.handler()
+
+        slider.on_change("value", update_text_input, handle_value)
         text_input.on_change("value", update_slider)
-        return component
+        self.component = component
 
 
 class GIControlListener(ABC):
@@ -136,14 +152,90 @@ class GICoordsListener(ABC):
         pass
 
 
+class GIMaskedCoords(GICoordsSource):
+    def __init__(self, x_coords, y_coords):
+        super().__init__()
+        self.x_coords = x_coords
+        self.y_coords = y_coords
+        self.mask = [True] * len(x_coords)
+
+    def add_gilistener(self, coords_listener):
+        super().add_gilistener(coords_listener)
+        coords_listener.giupdate(self.x_coords[self.mask], self.y_coords[self.mask])
+
+    def addmask(self, coords):
+        for i in coords:
+            self.mask[i] = False
+        self.ginotify(self.x_coords[self.mask], self.y_coords[self.mask])
+
+    def unmask(self, coords):
+        for i in coords:
+            self.mask[i] = True
+        self.ginotify(self.x_coords[self.mask], self.y_coords[self.mask])
+
+
+class GIDifferencingCoords(GICoordsSource, GICoordsListener):
+    def __init__(self, coords_source, fn):
+        super().__init__()
+        self.fn = fn
+        self.mask = []
+        coords_source.add_gilistener(self)
+
+    def update_mask(self, mask):
+        self.mask = mask
+
+    def giupdate(self, x_coords, y_coords):
+        x = x_coords[self.mask]
+        y = y_coords[self.mask] - self.fn(x)
+
+        self.ginotify(x, y)
+
+
+class GIFigure(object):
+    """
+    This abstracts out any bugfixes or special handling we may need.  We may be able to deprecate it
+    if bokeh bugs are fixed or if the benefits don't outweigh the complexity.
+    """
+    def __init__(self, title='Plot',
+                 plot_width=600, plot_height=500,
+                 x_axis_label='X', y_axis_label='Y',
+                 tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                 band_model=None, aperture_model=None):
+        # primarily, we set the backend to webgl for performance and we fix a bokeh bug to ensure rendering updates
+        self.figure = figure(plot_width=plot_width, plot_height=plot_height, title=title, x_axis_label=x_axis_label,
+                             y_axis_label=y_axis_label, tools=tools, output_backend="webgl")
+
+        # If we have bands or apertures to show, show them
+        if band_model:
+            self.bands = GIBands(self, band_model)
+        if aperture_model:
+            self.aperture_view = GIApertureView(aperture_model, self)
+
+        # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
+        # apertures and bands will not update properly after the figure is visible.
+        self.figure.js_on_change('center', CustomJS(args=dict(plot=self.figure),
+                                                    code="plot.properties.renderers.change.emit()"))
+
+
 class GIScatter(GICoordsListener):
-    def __init__(self, fig, x_coords=None, y_coords=None, color="blue", radius=5):
+    def __init__(self, gifig, x_coords=None, y_coords=None, color="blue", radius=5):
+        """
+        Scatter plot
+
+        Parameters
+        ----------
+        gifig : :class:`GIFigure` figure to plot in
+        x_coords : array of float coordinates
+        y_coords : array of float coordinates
+        color : color value, default "blue"
+        radius : int radius in pixels for the dots
+        """
         if x_coords is None:
             x_coords = []
         if y_coords is None:
             y_coords = []
         self.source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.scatter = fig.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
+        self.scatter = gifig.figure.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
 
     def giupdate(self, x_coords, y_coords):
         self.source.data = {'x': x_coords, 'y': y_coords}
@@ -151,36 +243,57 @@ class GIScatter(GICoordsListener):
     def clear_selection(self):
         self.source.selected.update(indices=[])
 
+    def replot(self):
+        self.scatter.replot()
+
 
 class GILine(GICoordsListener):
-    def __init__(self, fig, x_coords=[], y_coords=[], color="red"):
+    def __init__(self, gifig, x_coords=[], y_coords=[], color="red"):
+        """
+        Line plot
+
+        Parameters
+        ----------
+        gifig : :class:`GIFigure` figure to plot in
+        x_coords : array of float coordinates
+        y_coords : array of float coordinates
+        color : color for line, default "red"
+        """
         if x_coords is None:
             x_coords = []
         if y_coords is None:
             y_coords = []
         self.line_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.line = fig.line(x='x', y='y', source=self.line_source, color=color)
+        self.line = gifig.figure.line(x='x', y='y', source=self.line_source, color=color)
 
     def giupdate(self, x_coords, y_coords):
         self.line_source.data = {'x': x_coords, 'y': y_coords}
 
 
-class BandListener(ABC):
+class GIBandListener(ABC):
+    """
+    interface for classes that want to listen for updates to a set of bands.
+    """
+
     @abstractmethod
     def adjust_band(self, band_id, start, stop):
         pass
 
+    @abstractmethod
     def delete_band(self, band_id):
         pass
 
 
-class BandModel(object):
+class GIBandModel(object):
+    """
+    Model for tracking a set of bands.
+    """
     def __init__(self):
         self.band_id = 1
         self.listeners = list()
 
     def add_listener(self, listener):
-        if not isinstance(listener, BandListener):
+        if not isinstance(listener, GIBandListener):
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
@@ -189,7 +302,7 @@ class BandModel(object):
             listener.adjust_band(band_id, start, stop)
 
 
-class GIBands(BandListener):
+class GIBands(GIBandListener):
     def __init__(self, fig, model):
         self.model = model
         model.add_listener(self)
@@ -203,7 +316,7 @@ class GIBands(BandListener):
             band.right = stop
         else:
             band = BoxAnnotation(left=start, right=stop, fill_alpha=0.1, fill_color='navy')
-            self.fig.add_layout(band)
+            self.fig.figure.add_layout(band)
             self.bands[band_id] = band
 
     def delete_band(self, band_id):
@@ -212,7 +325,7 @@ class GIBands(BandListener):
             # TODO remove it
 
 
-class ApertureModel(object):
+class GIApertureModel(object):
     def __init__(self):
         self.start = 100
         self.end = 300
@@ -242,41 +355,24 @@ class ApertureModel(object):
         self.spare_ids.append(aperture_id)
 
 
-class SingleApertureView(object):
-    def __init__(self, figure, aperture_id, start, end, y):
-        # # ymin = figure.y_range.computed_start
-        # # ymax = figure.y_range.computed_end
-        # ymin = figure.y_range.start
-        # ymax = figure.y_range.end
-        # ymid = (ymax-ymin)*.8+ymin
-        # ytop = ymid + 0.05*(ymax-ymin)
-        # ybottom = ymid - 0.05*(ymax-ymin)
-        # self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
-        # figure.add_layout(self.box)
-        # self.label = Label(x=(start+end)/2-5, y=ymid, text="%s" % aperture_id)
-        # figure.add_layout(self.label)
-        # self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
-        # self.left = figure.line(x='x', y='y', source=self.left_source, color="purple")
-        # self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
-        # self.right = figure.line(x='x', y='y', source=self.right_source, color="purple")
-        # self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
-        # self.line = figure.line(x='x', y='y', source=self.line_source, color="purple")
-        #
-        # self.figure = figure
-        #
-        # figure.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
-        # figure.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
-        # # feels like I need this to convince the aperture lines to update on zoom
-        # figure.y_range.js_on_change('end', CustomJS(args=dict(plot=figure),
-        #                                             code="plot.properties.renderers.change.emit()"))
-        if figure.document:
-            figure.document.add_next_tick_callback(lambda: self.build_ui(figure, aperture_id, start, end, y))
+class GISingleApertureView(object):
+    def __init__(self, gifig, aperture_id, start, end):
+        self.box = None
+        self.label = None
+        self.left_source = None
+        self.left = None
+        self.right_source = None
+        self.right = None
+        self.line_source = None
+        self.line = None
+        self.figure = None
+        if gifig.figure.document:
+            gifig.figure.document.add_next_tick_callback(lambda: self.build_ui(gifig, aperture_id, start, end))
         else:
-            self.build_ui(figure, aperture_id, start, end, y)
+            self.build_ui(gifig, aperture_id, start, end)
 
-    def build_ui(self, figure, aperture_id, start, end, y):
-        # ymin = figure.y_range.computed_start
-        # ymax = figure.y_range.computed_end
+    def build_ui(self, gifig, aperture_id, start, end):
+        figure = gifig.figure
         ymin = figure.y_range.start
         ymax = figure.y_range.end
         ymid = (ymax-ymin)*.8+ymin
@@ -293,17 +389,17 @@ class SingleApertureView(object):
         self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
         self.line = figure.line(x='x', y='y', source=self.line_source, color="purple")
 
-        self.figure = figure
+        self.gifig = gifig
 
         figure.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
         figure.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
         # feels like I need this to convince the aperture lines to update on zoom
         figure.y_range.js_on_change('end', CustomJS(args=dict(plot=figure),
-                                                    code="plot.properties.renderers.change.emit()"))
+                                                           code="plot.properties.renderers.change.emit()"))
 
     def update_viewport(self):
-        ymin = self.figure.y_range.start
-        ymax = self.figure.y_range.end
+        ymin = self.gifig.figure.y_range.start
+        ymax = self.gifig.figure.y_range.end
         ymid = (ymax-ymin)*.8+ymin
         ytop = ymid + 0.05*(ymax-ymin)
         ybottom = ymid - 0.05*(ymax-ymin)
@@ -320,17 +416,16 @@ class SingleApertureView(object):
         self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
 
     def delete(self):
-        self.figure.renderers.remove(self.line)
-        self.figure.renderers.remove(self.left)
-        self.figure.renderers.remove(self.right)
+        self.gifig.figure.renderers.remove(self.line)
+        self.gifig.figure.renderers.remove(self.left)
+        self.gifig.figure.renderers.remove(self.right)
 
 
-class ApertureView(object):
-    def __init__(self, model, figure, y):
+class GIApertureView(object):
+    def __init__(self, model, gifig):
         self.aps = dict()
-        self.y = y
 
-        self.figure = figure
+        self.gifig = gifig
         model.add_listener(self)
 
     def handle_aperture(self, aperture_id, start, end):
@@ -338,7 +433,7 @@ class ApertureView(object):
             ap = self.aps[aperture_id]
             ap.update(start, end)
         else:
-            ap = SingleApertureView(self.figure, aperture_id, start, end, self.y)
+            ap = GISingleApertureView(self.gifig, aperture_id, start, end)
             self.aps[aperture_id] = ap
 
     def delete_aperture(self, aperture_id):

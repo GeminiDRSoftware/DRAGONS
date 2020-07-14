@@ -2,11 +2,10 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 from bokeh.layouts import row
-from bokeh.models import Button, Column, CustomJS
-from bokeh.plotting import figure
+from bokeh.models import Column
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter
+from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider
 from gempy.library import astromodels
 
 
@@ -20,8 +19,14 @@ class SplineModel:
         self.niter = niter
         self.grow = grow
 
+        # These are the heart of the model.  The users of the model
+        # register to listen to these two coordinate sets to get updates.
+        # Whenever there is a call to recalc_spline, these coordinate
+        # sets will update and will notify all registered listeners.
         self.mask_points = GICoordsSource()
         self.fit_line = GICoordsSource()
+
+        self.spline = None
 
     def recalc_spline(self):
         """
@@ -69,12 +74,32 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
 
         Parameters
         ----------
-        params : dict
-            Parameter values from the primitive.  These are the user supplied values
-            or defaults and may have come from command line overrides
-        fields : iterable of :class:`config.Field`
-            These don't reflect overrides from the user, but do provide us with helpful
-            validation information such as min/max values.
+        ext :
+            Astrodata extension to visualize spline for
+        wave :
+            wave
+        zpt :
+            zpt
+        zpt_err :
+            zpt_err
+        order : int
+            order to initially use for the visualization (this may be adjusted interactively)
+        niter : int
+            iterations to perform in doing the spline (this may be adjusted interactively)
+        grow : int
+            how far out to extend rejection (this may be adjusted interactively)
+        min_order : int
+            minimum value for order in UI
+        max_order : int
+            maximum value for order in UI
+        min_niter : int
+            minimum value for niter in UI
+        max_niter : int
+            maximum value for niter in UI
+        min_grow : int
+            minimum value for grow in UI
+        max_grow : int
+            maximum value for grow in UI
         """
         super().__init__()
         # Note that self._fields in the base class is setup with a dictionary mapping conveniently
@@ -95,27 +120,6 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.max_niter = max_niter
         self.min_grow = min_grow
         self.max_grow = max_grow
-
-    def order_slider_handler(self, attr, old, new):
-        """
-        Handle a change in the order slider
-        """
-        self.model.order = new
-        self.model.recalc_spline()
-
-    def niter_slider_handler(self, attr, old, new):
-        """
-        Handle a change in the iterations slider
-        """
-        self.model.niter = new
-        self.model.recalc_spline()
-
-    def grow_slider_handler(self, attr, old, new):
-        """
-        Handle a change in the grow slider
-        """
-        self.model.grow = new
-        self.model.recalc_spline()
 
     def visualize(self, doc):
         """
@@ -138,19 +142,22 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         niter = self.model.niter
         grow = self.model.grow
 
-        order_slider = self.make_slider_for("Order", order, 1, self.min_order, self.max_order, self.order_slider_handler)
-        niter_slider = self.make_slider_for("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
-                                            self.niter_slider_handler)
-        grow_slider = self.make_slider_for("Grow", grow, 1, self.min_grow, self.max_grow, self.grow_slider_handler)
+        order_slider = GISlider("Order", order, 1, self.min_order, self.max_order,
+                                self.model, "order", self.model.recalc_spline)
+        niter_slider = GISlider("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
+                                self.model, "niter", self.model.recalc_spline)
+        grow_slider = GISlider("Grow", grow, 1, self.min_grow, self.max_grow,
+                               self.model, "grow", self.model.recalc_spline)
 
         # Create a blank figure with labels
-        self.p = figure(plot_width=600, plot_height=500,
-                        title='Interactive Spline',
-                        x_axis_label='X', y_axis_label='Y')
+        self.p = GIFigure(plot_width=600, plot_height=500,
+                          title='Interactive Spline',
+                          x_axis_label='X', y_axis_label='Y')
+
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.scatter_touch = self.p.scatter(wave, zpt, color="blue", radius=5)
+        self.scatter_touch = GIScatter(self.p, wave, zpt, color="blue", radius=5)
 
         self.scatter = GIScatter(self.p, color="black")
         self.model.mask_points.add_gilistener(self.scatter)
@@ -158,15 +165,14 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.line = GILine(self.p)
         self.model.fit_line.add_gilistener(self.line)
 
-        controls = Column(order_slider, niter_slider, grow_slider, self.submit_button)
+        controls = Column(order_slider.component, niter_slider.component, grow_slider.component,
+                          self.submit_button)
 
         self.model.recalc_spline()
 
-        layout = row(controls, self.p)
+        layout = row(controls, self.p.figure)
 
         doc.add_root(layout)
-
-        doc.on_session_destroyed(self.button_handler)
 
     def result(self):
         """
@@ -201,24 +207,23 @@ def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, min_order, m
         number of iterations for the spline calculation
     grow
         grow for the spline calculation
-    fields dict
-        dictionary of field-name to config values used to build
-        sensible UI widgets (such as min/max values for sliders)
+    min_order : int
+        minimum value for order in UI
+    max_order : int
+        maximum value for order in UI
+    min_niter : int
+        minimum value for niter in UI
+    max_niter : int
+        maximum value for niter in UI
+    min_grow : int
+        minimum value for grow in UI
+    max_grow : int
+        maximum value for grow in UI
 
     Returns
     -------
-
+    :class:`astromodels.UnivariateSplineWithOutlierRemoval`
     """
-    params = dict(
-        ext=ext,
-        wave=wave,
-        zpt=zpt,
-        zpt_err=zpt_err,
-        order=order,
-        niter=niter,
-        grow=grow
-    )
-
     server.visualizer = SplineVisualizer(ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
                                          min_niter, max_niter, min_grow, max_grow)
 
