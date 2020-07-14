@@ -30,7 +30,7 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
-        server.bokeh_server.io_loop.stop()
+        server.stop_server()
 
     def visualize(self, doc):
         """
@@ -120,27 +120,28 @@ class GISlider(object):
         self.component = component
 
 
-class GIControlListener(ABC):
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def giupdate(self, data):
-        pass
-
-
 class GICoordsSource:
     def __init__(self):
         self.listeners = list()
 
     def add_gilistener(self, coords_listener):
-        if not isinstance(coords_listener, GICoordsListener):
+        """
+        Add a listener - either an instance of :class:`GICoordsListener` or a function that will take x and y
+        arguments as lists of values.
+        """
+        if callable(coords_listener):
+            self.listeners.append(coords_listener)
+        elif not isinstance(coords_listener, GICoordsListener):
             raise ValueError("Must pass a GICoordsListener implementation")
-        self.listeners.append(coords_listener)
+        else:
+            self.listeners.append(coords_listener)
 
     def ginotify(self, x_coords, y_coords):
         for l in self.listeners:
-            l.giupdate(x_coords, y_coords)
+            if callable(l):
+                l(x_coords, y_coords)
+            else:
+                l.update_coords(x_coords, y_coords)
 
 
 class GICoordsListener(ABC):
@@ -148,8 +149,41 @@ class GICoordsListener(ABC):
         pass
 
     @abstractmethod
-    def giupdate(self, x_coords, y_coords):
+    def update_coords(self, x_coords, y_coords):
         pass
+
+
+class GIModelSource(object):
+    def __init__(self):
+        self.model_listeners = list()
+
+    def add_model_listener(self, listener):
+        if not callable(listener):
+            raise ValueError("GIModelSource expects a callable in add_listener")
+        self.model_listeners.append(listener)
+
+    def notify_model_listeners(self):
+        for listener_fn in self.model_listeners:
+            listener_fn()
+
+
+class DifferencingModel(GICoordsSource):
+    def __init__(self, coords, cmodel, fn):
+        super().__init__()
+        self.fn = fn
+        self.data_x_coords = None
+        self.data_y_coords = None
+        coords.add_gilistener(self.update_coords)
+        cmodel.add_model_listener(self.update_model)
+
+    def update_coords(self, x_coords, y_coords):
+        self.data_x_coords = x_coords
+        self.data_y_coords = y_coords
+
+    def update_model(self):
+        x = self.data_x_coords
+        y = self.data_y_coords - self.fn(x)
+        self.ginotify(x, y)
 
 
 class GIMaskedCoords(GICoordsSource):
@@ -161,7 +195,10 @@ class GIMaskedCoords(GICoordsSource):
 
     def add_gilistener(self, coords_listener):
         super().add_gilistener(coords_listener)
-        coords_listener.giupdate(self.x_coords[self.mask], self.y_coords[self.mask])
+        if callable(coords_listener):
+            coords_listener(self.x_coords[self.mask], self.y_coords[self.mask])
+        else:
+            coords_listener.update_coords(self.x_coords[self.mask], self.y_coords[self.mask])
 
     def addmask(self, coords):
         for i in coords:
@@ -172,23 +209,6 @@ class GIMaskedCoords(GICoordsSource):
         for i in coords:
             self.mask[i] = True
         self.ginotify(self.x_coords[self.mask], self.y_coords[self.mask])
-
-
-class GIDifferencingCoords(GICoordsSource, GICoordsListener):
-    def __init__(self, coords_source, fn):
-        super().__init__()
-        self.fn = fn
-        self.mask = []
-        coords_source.add_gilistener(self)
-
-    def update_mask(self, mask):
-        self.mask = mask
-
-    def giupdate(self, x_coords, y_coords):
-        x = x_coords[self.mask]
-        y = y_coords[self.mask] - self.fn(x)
-
-        self.ginotify(x, y)
 
 
 class GIFigure(object):
@@ -207,7 +227,7 @@ class GIFigure(object):
 
         # If we have bands or apertures to show, show them
         if band_model:
-            self.bands = GIBands(self, band_model)
+            self.bands = GIBandView(self, band_model)
         if aperture_model:
             self.aperture_view = GIApertureView(aperture_model, self)
 
@@ -237,7 +257,7 @@ class GIScatter(GICoordsListener):
         self.source = ColumnDataSource({'x': x_coords, 'y': y_coords})
         self.scatter = gifig.figure.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
 
-    def giupdate(self, x_coords, y_coords):
+    def update_coords(self, x_coords, y_coords):
         self.source.data = {'x': x_coords, 'y': y_coords}
 
     def clear_selection(self):
@@ -266,7 +286,7 @@ class GILine(GICoordsListener):
         self.line_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
         self.line = gifig.figure.line(x='x', y='y', source=self.line_source, color=color)
 
-    def giupdate(self, x_coords, y_coords):
+    def update_coords(self, x_coords, y_coords):
         self.line_source.data = {'x': x_coords, 'y': y_coords}
 
 
@@ -302,7 +322,7 @@ class GIBandModel(object):
             listener.adjust_band(band_id, start, stop)
 
 
-class GIBands(GIBandListener):
+class GIBandView(GIBandListener):
     def __init__(self, fig, model):
         self.model = model
         model.add_listener(self)

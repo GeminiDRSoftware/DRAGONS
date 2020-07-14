@@ -9,6 +9,9 @@ from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, 
 from gempy.library import astromodels
 
 
+__all__ = ["interactive_spline", ]
+
+
 class SplineModel:
     def __init__(self, ext, wave, zpt, zpt_err, order, niter, grow):
         self.ext = ext
@@ -152,6 +155,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         # Create a blank figure with labels
         self.p = GIFigure(plot_width=600, plot_height=500,
                           title='Interactive Spline',
+                          tools="pan,wheel_zoom,box_zoom,reset",
                           x_axis_label='X', y_axis_label='Y')
 
         # We can plot this here because it never changes
@@ -224,9 +228,10 @@ def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, min_order, m
     -------
     :class:`astromodels.UnivariateSplineWithOutlierRemoval`
     """
-    server.visualizer = SplineVisualizer(ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
-                                         min_niter, max_niter, min_grow, max_grow)
+    spline = SplineVisualizer(ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
+                              min_niter, max_niter, min_grow, max_grow)
+    server.set_visualizer(spline)
 
     server.start_server()
 
-    return server.visualizer.result()
+    return spline.result()

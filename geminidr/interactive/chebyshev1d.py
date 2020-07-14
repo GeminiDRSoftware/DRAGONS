@@ -6,13 +6,18 @@ from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Div
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, \
-    GIBandModel, GIBands, GIApertureModel, GIApertureView, GIFigure, GIDifferencingCoords, GISlider, GIMaskedCoords
+    GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedCoords, \
+    GIModelSource, DifferencingModel
 from gempy.library import astromodels
 
 
-class ChebyshevModel(GICoordsSource, GICoordsListener):
+__all__ = ["interactive_chebyshev",]
+
+
+class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
     def __init__(self, order, location, dispaxis, sigma_clip, coords, spectral_coords, ext):
         super().__init__()
+        GIModelSource.__init__(self)
         self.order = order
         self.location = location
         self.dispaxis = dispaxis
@@ -28,7 +33,8 @@ class ChebyshevModel(GICoordsSource, GICoordsListener):
         # do this last since it will trigger an update, which triggers a recalc
         self.coords.add_gilistener(self)
 
-    def giupdate(self, x_coords, y_coords):
+    def update_coords(self, x_coords, y_coords):
+        # The masked coordinates changed, so update our copy and recalculate the model
         self.x = x_coords
         self.y = y_coords
         self.recalc_chebyshev()
@@ -50,7 +56,6 @@ class ChebyshevModel(GICoordsSource, GICoordsListener):
         location = self.location
         dispaxis = self.dispaxis
         sigma_clip = self.sigma_clip
-        # in_coords = self.in_coords
         ext = self.ext
 
         m_init = models.Chebyshev1D(degree=order, c0=location,
@@ -69,25 +74,14 @@ class ChebyshevModel(GICoordsSource, GICoordsListener):
                                               domain=[0, ext.shape[dispaxis] - 1])
         self.model_dict = astromodels.chebyshev_to_dict(self.m_final)
 
+        # notify listeners of new x/y plot data based on our model function
         self.ginotify(self.spectral_coords, self.m_final(self.spectral_coords))
+        # notify model listeners that our model function has changed
+        self.notify_model_listeners()
 
-
-class DifferencingModel(GICoordsSource, GICoordsListener):
-    def __init__(self, cmodel):
-        super().__init__()
-        self.cmodel = cmodel
-        self.data_x_coords = cmodel.coords.x_coords[cmodel.coords.mask]
-        self.data_y_coords = cmodel.coords.y_coords[cmodel.coords.mask]
-        cmodel.add_gilistener(self)
-        # cmodel.coords.add_gilistener(self)
-
-    def giupdate(self, x_coords, y_coords):
-        # hacking this in, should not use internal fields of the masked coords, need to
-        # refine how I do listeners (maybe just a fn instead of a class, or maybe with a source name)
-        # though also, this whole class should be refactored to not know about Chebyshev
-        x = self.cmodel.coords.x_coords[self.cmodel.coords.mask]
-        y = self.cmodel.coords.y_coords[self.cmodel.coords.mask] - self.cmodel.m_final(x)
-        self.ginotify(x, y)
+    def model_calculate(self, x):
+        # we need this wrapper since self.m_final changes with each recalc
+        return self.m_final(x)
 
 
 class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
@@ -140,14 +134,12 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.scatter.clear_selection() # source.selected.indices.clear()
         self.masked_scatter.clear_selection()
         self.model.coords.addmask(indices)
-        # self.masked_scatter.replot()
 
     def unmask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
         self.scatter.clear_selection() # source.selected.indices.clear()
         self.masked_scatter.clear_selection()
         self.model.coords.unmask(indices)
-        # self.masked_scatter.replot()
 
     def visualize(self, doc):
         """
@@ -165,6 +157,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         super().visualize(doc)
 
+        # Bands and Apertures don't affect anything, but if we pass these to the GIFigure
+        # constructor, we'll see the interface in the UI/help text
         # Just sandboxing a basic band UI for the x ranges from Kathleen's demo
         band_model = GIBandModel()
         # Just sandboxing a sample Aperture UI
@@ -191,36 +185,26 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         self.p = p
 
-        # placeholder, just seeing the custom tool is working
-        p.figure.line('x', 'y', source=source)
-
-        # p2 is just to show that we can have multiple tabs with plots running off the same dataset
-        # TODO make plots like the other IRAF options we were shown
-        p2 = GIFigure(plot_width=600, plot_height=500,
-                      title='Interactive Chebyshev (tab 2)',
-                      x_axis_label='X', y_axis_label='Y',
-                     band_model=band_model, aperture_model=aperture_model)
-
         self.scatter = GIScatter(p, self.x, self.y, color="red", radius=5)
         self.masked_scatter = GIScatter(p, self.x, self.y, color="blue", radius=5)
         self.model.coords.add_gilistener(self.masked_scatter)
         self.line = GILine(p)
+        self.model.add_gilistener(self.line)
 
-        differencing_model = DifferencingModel(self.model)
-
+        # p2 goes in tab 2 and shows the difference between the data y values and the model calculated values
+        p2 = GIFigure(plot_width=600, plot_height=500,
+                      title='Model Differential',
+                      x_axis_label='X', y_axis_label='Y',
+                      band_model=band_model, aperture_model=aperture_model)
         self.line2 = GILine(p2)
+        differencing_model = DifferencingModel(self.model.coords, self.model, self.model.model_calculate)
+        differencing_model.add_gilistener(self.line2)
 
         # helptext is where the Controller will put help messages for the end user
         # This controls area is a vertical set of UI controls we are placing on the left
         # side of the UI
         helptext = Div(text="")
         self.controls = Column(order_slider.component, self.submit_button, mask_button, unmask_button, helptext)
-
-        # The line will update against the model
-        # Our second line, in tab 2, will update vs the difference (which, in turn, listens to the model)
-        # both will fire an update when we recalculate the cheybshev
-        self.model.add_gilistener(self.line)
-        differencing_model.add_gilistener(self.line2)
 
         # recalculate the chebyshev, causing the data updates to fire and update the UI as well
         self.model.recalc_chebyshev()
@@ -269,10 +253,11 @@ def interactive_chebyshev(ext,  order, location, dispaxis, sigma_clip, in_coords
     masked_coords = GIMaskedCoords(in_coords[1-dispaxis], in_coords[dispaxis])
     model = ChebyshevModel(order, location, dispaxis, sigma_clip,
                            masked_coords, spectral_coords, ext)
-    server.visualizer = Chebyshev1DVisualizer(in_coords[1-dispaxis], in_coords[dispaxis], model, min_order, max_order)
+    server.set_visualizer(Chebyshev1DVisualizer(in_coords[1-dispaxis], in_coords[dispaxis],
+                                                model, min_order, max_order))
 
     server.start_server()
 
-    server.visualizer = None
+    server.set_visualizer(None)
 
     return model.model_dict, model.m_final
