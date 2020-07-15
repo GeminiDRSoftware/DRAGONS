@@ -46,6 +46,7 @@ CALTYPES = [
     "processed_flat",
     "processed_fringe",
     "processed_standard",
+    "processed_slitresposne",
     # other ...
     "specphot",
     "spectwilight",
