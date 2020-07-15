@@ -1003,7 +1003,7 @@ class Spect(PrimitivesBASE):
 
                 # Mask bad columns but not saturated/non-linear data points
                 if mask is not None:
-                    mask = mask & (65535 ^ (DQ.saturated | DQ.non_linear))
+                    mask = mask & DQ.not_signal
                     data[mask > 0] = 0.
 
                 # Get the initial wavelength solution
@@ -1028,7 +1028,7 @@ class Spect(PrimitivesBASE):
                             "{:.3f} nm/pixel".format(c0, dw0))
 
                 if fwidth is None:
-                    fwidth = tracing.estimate_peak_width(data)
+                    fwidth = tracing.estimate_peak_width(data, mask=mask)
                     log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
 
                 # Don't read linelist if it's the one we already have
@@ -1113,7 +1113,8 @@ class Spect(PrimitivesBASE):
                                                                            sigma_clip=3)
                         log.stdinfo('{} {} {} {}'.format(ad.filename, repr(m.forward), len(m), m.rms_output))
 
-                        if debug:
+                        for loop in range(debug + 1):
+                            plt.ioff()
                             fig, ax = plt.subplots()
                             ax.plot(data, 'b-')
                             ax.set_ylim(0, data_max * 1.05)
@@ -1128,7 +1129,12 @@ class Spect(PrimitivesBASE):
                                 ax.plot([p, p], [data[j], data[j] + 0.02 * data_max], 'k-')
                                 ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
                                         horizontalalignment='center', rotation=90, fontdict={'size': 8})
-                            plt.show()
+                            if loop > 0:
+                                plt.show()
+                            else:
+                                fig.set_size_inches(17, 11)
+                                plt.savefig(ad.filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
+                            plt.ion()
 
                         all_fits.append(m)
                         if m.rms_output < 0.2 * fwidth * abs(dw0):
