@@ -353,32 +353,35 @@ class Aperture:
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
-def estimate_peak_width(data):
+def estimate_peak_width(data, mask=None):
     """
     Estimates the FWHM of the spectral features (arc lines) by inspecting
-    pixels around the birghtest peaks.
+    pixels around the brightest peaks.
 
     Parameters
     ----------
     data : ndarray
         1D data array
+    mask : ndarray/None
+        mask to apply to data
 
     Returns
     -------
     float : estimate of FWHM of features in pixels
     """
-    goodpix = np.ones_like(data, dtype=bool)
-    min_threshold = 2 * np.median(data)
+    if mask is None:
+        goodpix = np.ones_like(data, dtype=bool)
+    else:
+        goodpix = ~mask.astype(bool)
     widths = []
     while len(widths) < 10:
         index = np.argmax(data * goodpix)
-        threshold = 0.5 * (data[index] + min_threshold)  # assume background << peak
-        if threshold < min_threshold:
-            break
-        hi = index + np.argmax(data[index:] < threshold) + 1
-        lo = index - np.argmax(data[index::-1] < threshold)
+        width = signal.peak_widths(data, [index], 0.5)[0][0]
+        # Block 2 * FWHM
+        hi = int(index + width + 1.5)
+        lo = int(index - width)
         if all(goodpix[lo:hi]):
-            widths.append(hi-lo-1)
+            widths.append(width)
         goodpix[lo:hi] = False
     return sigma_clip(widths).mean()
 
