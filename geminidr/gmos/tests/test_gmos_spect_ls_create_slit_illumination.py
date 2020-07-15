@@ -69,7 +69,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
 
             # Create output data
             data_o = (np.ma.masked_array(ext.data, mask=ext.mask) /
-                      np.ma.masked_array(ext.data, mask=ext.mask))
+                      np.ma.masked_array(slit_ext.data, mask=slit_ext.mask))
 
             # Bin columns
             fitter = fitting.LinearLSQFitter()
@@ -123,7 +123,7 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
 
             # Create output data
             data_o = (np.ma.masked_array(ext.data, mask=ext.mask) /
-                      np.ma.masked_array(ext.data, mask=ext.mask))
+                      np.ma.masked_array(slit_ext.data, mask=slit_ext.mask))
 
             # Bin columns
             fitter = fitting.LinearLSQFitter()

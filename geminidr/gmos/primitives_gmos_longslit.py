@@ -10,6 +10,7 @@ from importlib import import_module
 import astrodata
 import numpy as np
 
+from astrodata.provenance import add_provenance
 from astropy import visualization as vis
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
@@ -28,6 +29,7 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.md5 import md5sum
 
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
@@ -589,8 +591,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
         return adinputs
 
-    def slitIlluminationCorrect(self, adinputs=None, slit_illum=None,
-                                do_illum=True, suffix="_illumCorrected"):
+    def slitIllumCorrect(self, adinputs=None, slit_illum=None,
+                               do_illum=True, suffix="_illumCorrected"):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding slit illumination image. If the inputs contain
@@ -614,6 +616,68 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         if not do_illum:
             log.warning("Slit Illumination correction has been turned off.")
             return adinputs
+
+        if slit_illum is None:
+            raise NotImplementedError
+        else:
+            slit_illum_list = slit_illum
+
+        # Provide a Slit Illum Ad object for every science frame
+        ad_outputs = []
+        for ad, slit_illum_ad in zip(*gt.make_lists(adinputs, slit_illum_list, force_ad=True)):
+
+            if ad.phu.get(timestamp_key):
+                log.warning(
+                    "No changes will be made to {}, since it has "
+                    "already been processed by flatCorrect".format(ad.filename))
+                continue
+
+            if slit_illum_ad is None:
+                if self.mode in ['sq']:
+                    raise OSError(
+                        "No processed slit illumination listed for {}".format(
+                            ad.filename))
+                else:
+                    log.warning(
+                        "No changes will be made to {}, since no slit "
+                        "illumination has been specified".format(ad.filename))
+                    continue
+
+            gt.check_inputs_match(ad, slit_illum_ad, check_shape=False)
+
+            if not all([e1.shape == e2.shape for (e1, e2) in zip(ad, slit_illum_ad)]):
+                slit_illum_ad = gt.clip_auxiliary_data(
+                    adinput=ad, aux=slit_illum_ad, aux_type="cal")
+
+            log.info("Dividing the input AstroData object {} by this "
+                     "flat:\n{}".format(ad.filename, slit_illum_ad.filename))
+
+            ad_out = deepcopy(ad)
+            ad_out.divide(slit_illum_ad)
+
+            # Update the header and filename, copying QECORR keyword from flat
+            ad_out.phu.set("SLTILLIM", slit_illum_ad.filename,
+                           self.keyword_comments["SLTILLIM"])
+
+            try:
+                qecorr_value = slit_illum_ad.phu[qecorr_key]
+            except KeyError:
+                pass
+            else:
+                log.fullinfo("Copying {} keyword from slit illumination".format(qecorr_key))
+                ad_out.phu.set(qecorr_key, qecorr_value,
+                               slit_illum_ad.phu.comments[qecorr_key])
+
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.update_filename(suffix=suffix, strip=True)
+
+            if slit_illum_ad.path:
+                add_provenance(ad_out, slit_illum_ad.filename,
+                               md5sum(slit_illum_ad.path) or "", self.myself())
+
+            ad_outputs.append(ad_out)
+
+        return ad_outputs
 
 
 def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
