@@ -524,6 +524,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     -------
     list: more accurate locations of the peaks that are unaffected by the mask
     """
+    halfwidth = max(halfwidth, 2)  # Need at least 5 pixels to constrain spline
     int_limits = np.array([-1, -0.5, 0.5, 1])
     npts = len(data)
     final_peaks = []
