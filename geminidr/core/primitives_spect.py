@@ -915,6 +915,9 @@ class Spect(PrimitivesBASE):
             Name of file containing arc lines. If None, then a default look-up
             table will be used.
 
+        alternative_centers : bool
+            Identify alternative central wavelengths and try to fit them?
+
         nbright : int (or may not exist in certain class methods)
             Number of brightest lines to cull before fitting
 
@@ -949,6 +952,7 @@ class Spect(PrimitivesBASE):
         dw0 = params["dispersion"]
         arc_file = params["linelist"]
         nbright = params.get("nbright", 0)
+        alt_centers = params["alternative_centers"]
         debug = params["debug"]
 
         # TODO: This decision would prevent MOS data being reduced so need
@@ -1068,10 +1072,14 @@ class Spect(PrimitivesBASE):
 
                 kdsigma = fwidth * abs(dw0)
                 if cenwave is None:
-                    centers = find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1,
-                                                                2.5*kdsigma, weights=weights['natural'])
-                    if len(centers) > 1:
-                        log.warning("Alternative central wavelength(s) found "+str(centers))
+                    if alt_centers:
+                        centers = find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1,
+                                                                    2.5*kdsigma, weights=weights['natural'])
+                        if len(centers) > 1:
+                            log.warning("Alternative central wavelength(s) found "+str(centers))
+                    else:
+                        centers = [c0]
+                        centers = [c0]
                 else:
                     centers = [cenwave]
 
@@ -1108,9 +1116,13 @@ class Spect(PrimitivesBASE):
 
                         # And then recalculate the matches
                         match_radius = 4 * fwidth * abs(m_final.c1) / (len(data) - 1)  # 2*fwidth pixels
-                        m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                                                                           model=m_final, match_radius=match_radius,
-                                                                           sigma_clip=3)
+                        try:
+                            m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
+                                                                               model=m_final, match_radius=match_radius,
+                                                                               sigma_clip=3)
+                        except ValueError:
+                            log.warning("Line-matching failed")
+                            continue
                         log.stdinfo('{} {} {} {}'.format(ad.filename, repr(m.forward), len(m), m.rms_output))
 
                         for loop in range(debug + 1):
@@ -1137,13 +1149,13 @@ class Spect(PrimitivesBASE):
                             plt.ion()
 
                         all_fits.append(m)
-                        if m.rms_output < 0.2 * fwidth * abs(dw0):
+                        if m.rms_output < 0.2 * fwidth * abs(dw0) and len(m) > order + 2:
                             acceptable_fit = True
                             break
 
                 if not acceptable_fit:
                     log.warning(f"No acceptable wavelength solution found for {ad.filename}")
-                    scores = [m.rms_output / len(m) for m in all_fits]
+                    scores = [m.rms_output / (len(m) - order - 1) for m in all_fits]
                     m = all_fits[np.argmin(scores)]
 
                 if debug:
@@ -2840,7 +2852,7 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
-                    ref_weights=new_ref_weights, matches=matches)
+                    ref_weights=new_ref_weights, matches=matches, popsize=30, mutation=1.0)
     if plot:
         print(m_init.c0.value, m_init.c1.value, "->", m_this.c0.value, m_this.c1.value)
         plt.ioff()
