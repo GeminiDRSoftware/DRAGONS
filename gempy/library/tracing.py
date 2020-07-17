@@ -374,15 +374,19 @@ def estimate_peak_width(data, mask=None):
     else:
         goodpix = ~mask.astype(bool)
     widths = []
-    while len(widths) < 10:
+    niters = 0
+    while len(widths) < 10 and niters < 100:
         index = np.argmax(data * goodpix)
-        width = signal.peak_widths(data, [index], 0.5)[0][0]
+        with warnings.catch_warnings():  # width=0 warnings
+            warnings.simplefilter("ignore")
+            width = signal.peak_widths(data, [index], 0.5)[0][0]
         # Block 2 * FWHM
         hi = int(index + width + 1.5)
         lo = int(index - width)
-        if all(goodpix[lo:hi]):
+        if all(goodpix[lo:hi]) and width > 0:
             widths.append(width)
         goodpix[lo:hi] = False
+        niters += 1
     return sigma_clip(widths).mean()
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
