@@ -457,7 +457,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     # remove adjacent points
     new_peaks = []
     i = 0
-    while i < len(peaks) - 1:
+    while i < len(peaks):
         j = i + 1
         while j < len(peaks) and (peaks[j] - peaks[j - 1] <= 1):
             j += 1
