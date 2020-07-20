@@ -1,8 +1,8 @@
 #
-#                                                                        DRAGONS
+#                                                                       DRAGONS
 #
-#                                                       gemini_catalog_client.py
-# ------------------------------------------------------------------------------
+#                                                      gemini_catalog_client.py
+# -----------------------------------------------------------------------------
 
 """
 This gemini_catalog_client module contains code to access various catalogs
@@ -17,18 +17,11 @@ priority ordered list of servers if the primary server appears to be down.
 question in a different format to the primary.
 
 """
-# ------------------------------------------------------------------------------
-#
-# Note: In astropy 3 (python 3 only support), the vo context functions moved
-# from astropy.vo to astroquery. Under astroquery, former ImportError exceptions
-# now throw a ModuleNotFoundError, an object not available in < astropy 3.0 and
-# the older astropy.vo package.
-
-# We handle potential import issues between astropy versions.
-
-from astropy.table import Table, Column
 
 from astrodata import add_header_to_table
+from astropy.table import Column, Table
+from astroquery.vo_conesearch.conesearch import conesearch
+from astroquery.vo_conesearch.exceptions import VOSError
 
 from ..utils import logutils
 
@@ -196,15 +189,6 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
 
     # turn on verbose for debug to stdout.
     # Need verb=3 to get the right cols from vizier
-
-    try:
-        from astroquery.vo_conesearch.conesearch import conesearch
-        from astroquery.vo_conesearch.exceptions import VOSError
-    except ImportError:
-        # conesearch was deprecated in astropy 2.0 and removed in 3.0, and
-        # moved to astroquery 0.3.5
-        from astropy.vo.client.conesearch import conesearch
-        from astropy.vo.client.vos_catalog import VOSError
 
     # The following phrase is implemented to handle differing function
     # signatures and return behaviours of vo conesearch function. Under
