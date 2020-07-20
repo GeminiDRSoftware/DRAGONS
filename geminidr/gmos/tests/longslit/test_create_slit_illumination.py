@@ -52,6 +52,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
     and 2nd coefficients almost zero.
     """
     plot = request.config.getoption("--do-plots")
+    np.random.seed(0)
 
     with change_working_dir():
 
@@ -87,10 +88,13 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
                 fitted_model = fitter(model, rows, cols)
 
                 # Check column is linear
-                np.testing.assert_almost_equal(fitted_model.c2.value, 0, 3)
+                np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.01)
 
-                # Check is linear slope is zero (horizontal)
-                np.testing.assert_almost_equal(fitted_model.c1.value, 0, 3)
+                # Check if slope is (almost) horizontal (< 1.0 deg)
+                assert np.abs(
+                    np.rad2deg(
+                        np.arctan(
+                            fitted_model.c1.value / (rows.size // 2)))) < 1.0
 
     if plot:
         os.makedirs(PLOT_PATH, exist_ok=True)
@@ -141,10 +145,13 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
                 fitted_model = fitter(model, rows, cols)
 
                 # Check column is linear
-                np.testing.assert_almost_equal(fitted_model.c2.value, 0, 3)
+                np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.01)
 
-                # Check is linear slope is zero (horizontal)
-                np.testing.assert_almost_equal(fitted_model.c1.value, 0, 3)
+                # Check if slope is (almost) horizontal (< 2.0 deg)
+                assert np.abs(
+                    np.rad2deg(
+                        np.arctan(
+                            fitted_model.c1.value / (rows.size // 2)))) < 1.5
 
     if plot:
         os.makedirs(PLOT_PATH, exist_ok=True)
@@ -311,7 +318,6 @@ def create_inputs_recipe():
     a new folder called "dragons_test_inputs". The sub-directory structure
     should reflect the one returned by the `path_to_inputs` fixture.
     """
-
     associated_calibrations = {
         "S20190204S0006.fits": {
             "bias": ["S20190203S0110.fits",
@@ -341,7 +347,7 @@ def create_inputs_recipe():
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_create_slit_illumination/inputs"
+    module_path = "geminidr/gmos/longslit/test_create_slit_illumination/inputs"
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
 
