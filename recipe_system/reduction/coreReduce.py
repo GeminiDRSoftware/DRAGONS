@@ -98,7 +98,7 @@ class Reduce:
          will upload QA metrics to fitsstore and processing calibration
          files.
 
-    recipename: <str>
+    recipename: <str> or callable
         The name of the recipe that will be run. If None, the 'default'
         recipe is used, as specified in the appropriate recipe library.
 
