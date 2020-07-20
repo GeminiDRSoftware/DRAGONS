@@ -15,7 +15,7 @@ from geminidr.gmos.primitives_gmos_spect import GMOSSpect
 
 
 test_data = [
-    ("N20180109S0287_varAdded.fits", 256)  # GN-2017B-FT-20-13-001 B600 0.505um
+    ("N20180109S0287_varAdded.fits", 256),  # GN-2017B-FT-20-13-001 B600 0.505um
     # "N20190302S0089_varAdded.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
     # "N20190313S0114_varAdded.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
     # "N20190427S0123_varAdded.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
