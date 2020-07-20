@@ -63,7 +63,8 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
 
         p = primitives_gmos_longslit.GMOSLongslit([ad])
         p.createSlitIllumination(bins=25, border=10, debug_plot=plot)
-        slit_illum_ad = p.writeOutputs()[0]
+        slit_illum_ad = p.writeOutputs(
+            suffix="_mosaickedSlitIllum",  strip=True)[0]
 
         for ext, slit_ext in zip(ad, slit_illum_ad):
             assert ext.shape == slit_ext.shape
