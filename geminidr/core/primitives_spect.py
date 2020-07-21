@@ -38,7 +38,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as ext
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
-from gempy.library.astrotools import array_from_list
+from gempy.library.astrotools import array_from_list, boxcar
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -2404,18 +2404,29 @@ class Spect(PrimitivesBASE):
                     self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-                # TODO: Do we need to keep track of where the initial
-                # centering took place?
-                start = 0.5 * ext.shape[dispaxis]
+                # For efficiency, we would like to trace all sources
+                # simultaneously (like we do with arc lines), but we need to
+                # start somewhere the source is bright enough, and there may
+                # not be a single location where that is true for all sources
+                for i, loc in enumerate(locations):
+                    c0 = int(loc + 0.5)
+                    spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:,c0]
+                    start = np.argmax(boxcar(spectrum, size=3))
 
-                # The coordinates are always returned as (x-coords, y-coords)
-                all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                    start=start, initial=locations,
-                                                                    rwidth=None, cwidth=5, step=step,
-                                                                    nsum=nsum, max_missed=max_missed,
-                                                                    initial_tolerance=None,
-                                                                    max_shift=max_shift,
-                                                                    viewer=self.viewer if debug else None)
+                    # The coordinates are always returned as (x-coords, y-coords)
+                    ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                                start=start, initial=[loc],
+                                                                rwidth=None, cwidth=5, step=step,
+                                                                nsum=nsum, max_missed=max_missed,
+                                                                initial_tolerance=None,
+                                                                max_shift=max_shift,
+                                                                viewer=self.viewer if debug else None)
+                    if i:
+                        all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+                        all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+                    else:
+                        all_ref_coords = ref_coords
+                        all_in_coords = in_coords
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
