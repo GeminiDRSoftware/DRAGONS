@@ -20,7 +20,7 @@ from recipe_system.reduction.coreReduce import Reduce
 
 astrofaker = pytest.importorskip("astrofaker")
 
-PLOT_PATH = "plots/geminidr/gmos/test_gmos_spect_ls_slit_illum_correct/"
+PLOT_PATH = "plots/geminidr/gmos/longslit/test_slit_illum_correct/"
 
 
 datasets = [
@@ -29,9 +29,13 @@ datasets = [
     "S20190204S0006.fits",  # R400 : 0.850
 ]
 
-multiext_datasets = [
+same_roi_datasets = [
     (d.split('.')[0] + "_twilight.fits", d.split('.')[0] + "_slitIllum.fits")
     for d in datasets]
+
+different_roi_datasets = [
+    ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),
+]
 
 
 @pytest.mark.gmosls
@@ -53,7 +57,7 @@ def test_slit_illum_correct_without_slit_illumination():
 
 @pytest.mark.gmosls
 @pytest.mark.preprocess
-@pytest.mark.parametrize("input_data", multiext_datasets, indirect=True)
+@pytest.mark.parametrize("input_data", same_roi_datasets, indirect=True)
 def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
     ad, slit_illum_ad = input_data
     p = GMOSLongslit([ad])
@@ -80,13 +84,64 @@ def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
             fitted_model = fitter(model, rows, cols)
 
             # Check column is linear
-            np.testing.assert_almost_equal(fitted_model.c2.value, 0, 3)
+            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.01)
 
-            # Check is linear slope is zero (horizontal)
-            assert np.abs(fitted_model.c1.value) <= 1
+            # Check if slope is (almost) horizontal (< 1.0 deg)
+            assert np.abs(
+                np.rad2deg(
+                    np.arctan(
+                        fitted_model.c1.value / (rows.size // 2)))) < 1.5
 
     if request.config.getoption("--do-plots"):
         plot_slit_illum_correct_results(ad, ad_out, fname="test_same_roi_")
+
+
+@pytest.mark.gmosls
+@pytest.mark.preprocess
+@pytest.mark.parametrize("input_data", different_roi_datasets, indirect=True)
+def test_slit_illum_correct_different_roi(change_working_dir, input_data, request):
+
+    ad, slit_illum_ad = input_data
+
+    assert ad.detector_roi_setting() != slit_illum_ad.detector_roi_setting()
+
+    print(ad.detector_roi_setting(), ad.filter_name(pretty=True))
+    print(slit_illum_ad.detector_roi_setting(), slit_illum_ad.filter_name(pretty=True))
+
+    p = GMOSLongslit([ad])
+    ad_out = p.slitIllumCorrect(slit_illum=slit_illum_ad)[0]
+
+    # for ext_out in ad_out:
+    #
+    #     # Create output data
+    #     data_o = np.ma.masked_array(ext_out.data, mask=ext_out.mask)
+    #
+    #     # Bin columns
+    #     fitter = fitting.LinearLSQFitter()
+    #     model = models.Polynomial1D(degree=2)
+    #     nbins = 10
+    #     rows = np.arange(data_o.shape[0])
+    #
+    #     for i in range(nbins):
+    #
+    #         col_start = i * data_o.shape[1] // nbins
+    #         col_end = (i + 1) * data_o.shape[1] // nbins
+    #
+    #         cols = np.ma.mean(data_o[:, col_start:col_end], axis=1)
+    #
+    #         fitted_model = fitter(model, rows, cols)
+    #
+    #         # Check column is linear
+    #         np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.01)
+    #
+    #         # Check if slope is (almost) horizontal (< 1.0 deg)
+    #         assert np.abs(
+    #             np.rad2deg(
+    #                 np.arctan(
+    #                     fitted_model.c1.value / (rows.size // 2)))) < 1.5
+    #
+    # if request.config.getoption("--do-plots"):
+    #     plot_slit_illum_correct_results(ad, ad_out, fname="test_same_roi_")
 
 
 def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
@@ -177,7 +232,7 @@ def input_data(request, path_to_inputs):
 
 
 # -- Recipe to create pre-processed data ---------------------------------------
-def create_inputs_recipe():
+def create_twilight_inputs():
     """
     Creates input data for tests using pre-processed twilight flat data and its
     calibration files.
@@ -213,22 +268,22 @@ def create_inputs_recipe():
                      "N20190327S0101.fits",
                      "N20190327S0102.fits"],
             "twilight": ["N20190327S0056.fits"],
-        }
+        },
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_slit_illumination_correct/inputs"
+    module_path = "geminidr/gmos/longslit/test_slit_illumination_correct/inputs"
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
-
+    cwd = os.getcwd()
     os.chdir(path)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename, cals in associated_calibrations.items():
 
-        print('Downloading files...')
-        twilight_path = [download_from_archive(f) for f in cals['twilight']]
+        print('Download raw files')
         bias_path = [download_from_archive(f) for f in cals['bias']]
+        twilight_path = [download_from_archive(f) for f in cals['twilight']]
 
         twilight_ad = astrodata.open(twilight_path[0])
         data_label = twilight_ad.data_label()
@@ -243,13 +298,10 @@ def create_inputs_recipe():
 
         print('Reducing twilight flat:')
         logutils.config(file_name='log_twilight_{}.txt'.format(data_label))
-
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-
             p = GMOSLongslit(
                 [astrodata.open(f) for f in twilight_path])
-
             p.prepare()
             p.addDQ(static_bpm=None)
             p.addVAR(read_noise=True)
@@ -267,10 +319,68 @@ def create_inputs_recipe():
             p.createSlitIllumination()
             p.writeOutputs()
 
+    os.chdir(cwd)
+    return
+
+
+def create_quartz_inputs():
+    """
+    Creates input data for tests using pre-processed twilight flat data and its
+    calibration files.
+
+    The raw files will be downloaded and saved inside the path stored in the
+    `$DRAGONS_TEST/raw_inputs` directory. Processed files will be stored inside
+    a new folder called "dragons_test_inputs". The sub-directory structure
+    should reflect the one returned by the `path_to_inputs` fixture.
+    """
+    associated_calibrations = {
+        "S20190204S0081.fits": {
+            "quartz": ["S20190204S0081.fits"],
+        },
+    }
+
+    root_path = os.path.join("./dragons_test_inputs/")
+    module_path = "geminidr/gmos/longslit/test_slit_illumination_correct/inputs"
+    path = os.path.join(root_path, module_path)
+    os.makedirs(path, exist_ok=True)
+
+    cwd = os.getcwd()
+    os.chdir(path)
+    print('Current working directory:\n    {:s}'.format(os.getcwd()))
+
+    for filename, cals in associated_calibrations.items():
+
+        print('Download raw files')
+        quartz_path = [download_from_archive(f) for f in cals['quartz']]
+
+        quartz_ad = astrodata.open(quartz_path[0])
+        data_label = quartz_ad.data_label()
+
+        print('Reducing quartz lamp:')
+        logutils.config(file_name='log_quartz_{}.txt'.format(data_label))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p = GMOSLongslit(
+                [astrodata.open(f) for f in quartz_path])
+            p.prepare()
+            p.addDQ(static_bpm=None)
+            p.addVAR(read_noise=True)
+            p.overscanCorrect()
+            # p.biasCorrect(bias=bias_master)
+            p.ADUToElectrons()
+            p.addVAR(poisson_noise=True)
+            p.stackFrames()
+
+            # Write non-mosaicked data
+            p.writeOutputs(suffix="_quartz", strip=True)
+
+    os.chdir(cwd)
+
 
 if __name__ == '__main__':
     import sys
     if "--create-inputs" in sys.argv[1:]:
-        create_inputs_recipe()
+        create_twilight_inputs()
+        create_quartz_inputs()
     else:
         pytest.main()
