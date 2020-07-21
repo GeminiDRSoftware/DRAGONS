@@ -1407,6 +1407,12 @@ class Spect(PrimitivesBASE):
                                            'Aperture lower limit')
                     ext.hdr['XTRACTHI'] = (aperture._last_extraction[1],
                                            'Aperture upper limit')
+
+                    # Delete unnecessary keywords
+                    for descriptor in ('detector_section', 'array_section'):
+                        kw = ad._keyword_for(descriptor)
+                        if kw in ext.hdr:
+                            del ext.hdr[kw]
                     # TODO: remove after testing
                     try:
                         ext.WAVECAL = ext.WAVECAL
