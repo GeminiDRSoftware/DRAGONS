@@ -5,13 +5,6 @@ from astropy import units as u
 from astropy.coordinates import Angle, SkyCoord
 from gempy.gemini.gemini_catalog_client import get_fits_table
 
-TESTS = [
-    # (catalog, ra, dec, radius, nbresults)
-    ('2mass', 180., 0., 0.02, 5),
-    ('sdss9', 160., 30., 0.02, 9),
-    ('gmos', 200., -60., 0.02, 8),
-]
-
 
 # These just check that all sources are within the search radius
 # and that the number is the same as when it was written
