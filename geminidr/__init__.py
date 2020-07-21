@@ -22,7 +22,7 @@ import warnings
 import weakref
 
 from copy import deepcopy
-from inspect import stack, isclass
+from inspect import isclass, currentframe
 
 from gempy.eti_core.eti import ETISubprocess
 from gempy.library import config
@@ -224,7 +224,7 @@ class PrimitivesBASE:
         self.stacks           = load_cache(stkindfile)
 
         # This lambda will return the name of the current caller.
-        self.myself           = lambda: stack()[1][3]
+        self.myself = lambda: currentframe().f_back.f_code.co_name
 
         warnings.simplefilter('ignore', category=VerifyWarning)
 
