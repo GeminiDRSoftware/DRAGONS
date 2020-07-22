@@ -34,7 +34,7 @@ same_roi_datasets = [
     for d in datasets]
 
 different_roi_datasets = [
-    ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),
+    ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),  # R400 : 0.850
 ]
 
 
@@ -105,49 +105,47 @@ def test_slit_illum_correct_different_roi(change_working_dir, input_data, reques
 
     assert ad.detector_roi_setting() != slit_illum_ad.detector_roi_setting()
 
-    print(ad.detector_roi_setting(), ad.filter_name(pretty=True))
-    print(slit_illum_ad.detector_roi_setting(), slit_illum_ad.filter_name(pretty=True))
-
     p = GMOSLongslit([ad])
     ad_out = p.slitIllumCorrect(slit_illum=slit_illum_ad)[0]
 
-    # for ext_out in ad_out:
-    #
-    #     # Create output data
-    #     data_o = np.ma.masked_array(ext_out.data, mask=ext_out.mask)
-    #
-    #     # Bin columns
-    #     fitter = fitting.LinearLSQFitter()
-    #     model = models.Polynomial1D(degree=2)
-    #     nbins = 10
-    #     rows = np.arange(data_o.shape[0])
-    #
-    #     for i in range(nbins):
-    #
-    #         col_start = i * data_o.shape[1] // nbins
-    #         col_end = (i + 1) * data_o.shape[1] // nbins
-    #
-    #         cols = np.ma.mean(data_o[:, col_start:col_end], axis=1)
-    #
-    #         fitted_model = fitter(model, rows, cols)
-    #
-    #         # Check column is linear
-    #         np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.01)
-    #
-    #         # Check if slope is (almost) horizontal (< 1.0 deg)
-    #         assert np.abs(
-    #             np.rad2deg(
-    #                 np.arctan(
-    #                     fitted_model.c1.value / (rows.size // 2)))) < 1.5
-    #
-    # if request.config.getoption("--do-plots"):
-    #     plot_slit_illum_correct_results(ad, ad_out, fname="test_same_roi_")
+    for ext_out in ad_out:
+
+        # Create output data
+        data_o = np.ma.masked_array(ext_out.data, mask=ext_out.mask)
+
+        # Bin columns
+        fitter = fitting.LinearLSQFitter()
+        model = models.Polynomial1D(degree=2)
+        nbins = 10
+        rows = np.arange(data_o.shape[0])
+
+        for i in range(nbins):
+
+            col_start = i * data_o.shape[1] // nbins
+            col_end = (i + 1) * data_o.shape[1] // nbins
+
+            cols = np.ma.mean(data_o[:, col_start:col_end], axis=1)
+
+            fitted_model = fitter(model, rows, cols)
+
+            # Check column is linear
+            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.017)
+
+            # Check if slope is (almost) horizontal (< 2.5 deg)
+            assert np.abs(
+                np.rad2deg(
+                    np.arctan(
+                        fitted_model.c1.value / (rows.size // 2)))) < 2.5
+
+    if request.config.getoption("--do-plots"):
+        plot_slit_illum_correct_results(ad, ad_out, fname="test_different_roi_")
 
 
 def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
 
     fig, (ax1, ax2, ax3) = plt.subplots(
-        num="slitIllumCorrect: {}".format(ad1.filename), nrows=3)
+        figsize=(6, 9), num="slitIllumCorrect: {}".format(ad1.filename),
+        nrows=3, sharex='all')
 
     ax1.set_prop_cycle(
         cycler(color=[plt.cm.cool(i) for i in np.linspace(0, 1, nbins)]))
@@ -182,15 +180,17 @@ def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
             rows2 = np.ma.mean(data2[row_start:row_end], axis=0)
 
             ax1.plot(cols, rows1, alpha=0.2)
+            ax1.set_ylabel('Non-corrected Ad\n Mean along columns [adu]')
+
             ax2.plot(cols, rows2, alpha=0.2)
+            ax2.set_ylabel('Corrected Ad\n Mean along columns [adu]')
 
-            ax3.plot(cols, np.ma.std(data1, axis=0), 'C0-')
-            ax3.plot(cols, np.ma.std(data2, axis=0), 'C1-')
+            ax3.plot(cols, np.ma.std(data1, axis=0), 'C0-', alpha=0.5)
+            ax3.plot(cols, np.ma.std(data2, axis=0), 'C1-', alpha=0.5)
+            ax3.set_ylabel('std\n along columns [adu]')
+            ax3.set_xlabel('Columns [px]')
 
-        print(np.median(np.ma.std(data1, axis=0)))
-        print(np.median(np.ma.std(data2, axis=0)))
-        print()
-
+    fig.tight_layout()
     plt.savefig(fname + ad1.filename.replace(".fits", ".png"))
 
 
