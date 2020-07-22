@@ -277,6 +277,37 @@ def test_split_mosaic_into_extensions(request):
         np.testing.assert_almost_equal(data1, data2, decimal=1)
 
 
+@pytest.mark.preprocessed
+@pytest.mark.parametrize("filename", [datasets[0]])
+def test_split_mosaic_into_extensions_metadata(filename):
+    """
+    Tests that the metadata is correctly propagated to the split object.
+    """
+    from geminidr.gmos.lookups import geometry_conf as geotable
+
+    ad = astrodata.open(download_from_archive(filename))
+
+    p = primitives_gmos_longslit.GMOSLongslit([ad])
+    p.prepare()
+    p.overscanCorrect()
+    mosaicked_ad = p.mosaicDetectors().pop()
+
+    ad2 = primitives_gmos_longslit._split_mosaic_into_extensions(
+        ad, mosaicked_ad, border_size=10)
+
+    for (ext, ext2) in zip(ad, ad2):
+
+        print(ext.data_section(), ext2.data_section())
+        print(ext.detector_section(), ext.detector_section())
+        print(ext.array_section(), ext2.array_section())
+        print()
+
+        assert (ext.shape == ext2.shape)
+        assert (ext.data_section() == ext2.data_section())
+        assert (ext.detector_section() == ext2.detector_section())
+        assert (ext.array_section() == ext2.array_section())
+
+
 # --- Helper functions and fixtures -------------------------------------------
 @pytest.fixture
 def ad(request, path_to_inputs):

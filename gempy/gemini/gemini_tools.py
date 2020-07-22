@@ -334,6 +334,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
 
     return result
 
+
 @handle_single_adinput
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         return_dtype=None):
@@ -382,12 +383,13 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
         # Get the detector section, data section and array section values
         # for the auxiliary AstroData object using the appropriate
         # descriptors
-        aux_detsec   = this_aux.detector_section()
-        aux_datasec  = this_aux.data_section()
+        aux_detsec = this_aux.detector_section()
+        aux_datasec = this_aux.data_section()
         aux_arraysec = this_aux.array_section()
 
-        for ext, detsec, datasec, arraysec in zip(ad, sci_detsec,
-                                            sci_datasec, sci_arraysec):
+        for ext, detsec, datasec, arraysec in zip(ad, sci_detsec, sci_datasec,
+                                                  sci_arraysec):
+
             # Array section is unbinned; to use as indices for
             # extracting data, need to divide by the binning
             arraysec = [arraysec[0] // sci_xbin, arraysec[1] // sci_xbin,

@@ -285,12 +285,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             if "mosaic" in ad[0].wcs.available_frames:
 
                 log.info("Map coordinates between slit function and mosaicked data")  # ToDo: Improve message?
-                datasec_kw = slit_response_ad._keyword_for('data_section')
-
-                # Update datasection in order to resample WCS frames
-                slit_response_ad[0].hdr[datasec_kw] = \
-                    '[1:{},1:{}]'.format(*slit_response_ad[0].shape[::-1])
-
                 slit_response_ad = _split_mosaic_into_extensions(
                     ad, slit_response_ad, border_size=border)
 
@@ -647,10 +641,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
             if not all([e1.shape == e2.shape for (e1, e2) in zip(ad, slit_illum_ad)]):
                 slit_illum_ad = gt.clip_auxiliary_data(
-                    adinput=ad, aux=slit_illum_ad, aux_type="cal")
+                    adinput=[ad], aux=[slit_illum_ad])[0]
 
-            log.info("Dividing the input AstroData object {} by this "
-                     "flat:\n{}".format(ad.filename, slit_illum_ad.filename))
+            log.info("Dividing the input AstroData object {} by this \n"
+                     "slit illumination file:  \n{}".format(ad.filename, slit_illum_ad.filename))
 
             ad_out = deepcopy(ad)
             ad_out.divide(slit_illum_ad)
@@ -730,6 +724,10 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
     # Create empty AD
     ad_out = astrodata.create(ref_ad.phu)
 
+    # Update data_section to be able to resample WCS frames
+    datasec_kw = mos_ad._keyword_for('data_section')
+    mos_ad[0].hdr[datasec_kw] = '[1:{},1:{}]'.format(*mos_ad[0].shape[::-1])
+
     # Loop across all extensions
     for i, ref_ext in enumerate(ref_ad):
 
@@ -750,6 +748,33 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
         # Apply transformation
         temp_ad = transform.resample_from_wcs(
             mos_ad, in_frame.name, origin=(0, 0), output_shape=ref_ext.shape)
+
+        # Update data_section
+        datasec_kw = ref_ad._keyword_for('data_section')
+        temp_ad[0].hdr[datasec_kw] = \
+            '[1:{:d},1:{:d}]'.format(*temp_ad[0].shape[::-1])
+
+        # If detector_section returned something, set an appropriate value
+        det_sec_kw = ref_ext._keyword_for('detector_section')
+        det_sec = ref_ext.detector_section()
+
+        if det_sec:
+            temp_ad[0].hdr[det_sec_kw] = \
+                '[{}:{},{}:{}]'.format(
+                    det_sec.x1 + 1, det_sec.x2, det_sec.y1 + 1, det_sec.y2)
+        else:
+            del temp_ad[0].hdr[det_sec_kw]
+
+        # If array_section returned something, set an appropriate value
+        arr_sec_kw = ref_ext._keyword_for('array_section')
+        arr_sec = ref_ext.array_section()
+
+        if arr_sec:
+            temp_ad[0].hdr[arr_sec_kw] = \
+                '[{}:{},{}:{}]'.format(
+                    arr_sec.x1 + 1, arr_sec.x2, arr_sec.y1 + 1, arr_sec.y2)
+        else:
+            del temp_ad[0].hdr[arr_sec_kw]
 
         ad_out.append(temp_ad[0])
 
