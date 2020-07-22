@@ -148,10 +148,10 @@ def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
         nrows=3, sharex='all')
 
     ax1.set_prop_cycle(
-        cycler(color=[plt.cm.cool(i) for i in np.linspace(0, 1, nbins)]))
+        cycler(color=[plt.get_cmap('cool')(i) for i in np.linspace(0, 1, nbins)]))
 
     ax2.set_prop_cycle(
-        cycler(color=[plt.cm.cool(i) for i in np.linspace(0, 1, nbins)]))
+        cycler(color=[plt.get_cmap('cool')(i) for i in np.linspace(0, 1, nbins)]))
 
     for ext1, ext2 in zip(ad1, ad2):
 
