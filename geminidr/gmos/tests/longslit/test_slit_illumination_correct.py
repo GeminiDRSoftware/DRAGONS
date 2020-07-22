@@ -35,6 +35,7 @@ same_roi_datasets = [
 
 different_roi_datasets = [
     ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),  # R400 : 0.850
+    ("N20200708S0337_slitIllum.fits"),  # R831 : 0.765 : 1x2
 ]
 
 
@@ -141,6 +142,93 @@ def test_slit_illum_correct_different_roi(change_working_dir, input_data, reques
         plot_slit_illum_correct_results(ad, ad_out, fname="test_different_roi_")
 
 
+@pytest.mark.gmosls
+@pytest.mark.preprocess
+@pytest.mark.parametrize("input_data", same_roi_datasets, indirect=True)
+def test_slit_illum_correct_ad_larger_than_slit_illum(
+        change_working_dir, input_data, request):
+    """
+    Tests that we can use the p.slitIllumCorrect primitive even when the
+    science data is larger than the slit illumination data.
+    """
+    ad, slit_illum_ad = input_data
+
+    for ill_ext in slit_illum_ad:
+
+        x_bin = ill_ext.detector_x_bin()
+        y_bin = ill_ext.detector_y_bin()
+        border = 100
+
+        ill_ext.data = ill_ext.data[border//y_bin:-border//y_bin]
+        ill_ext.mask = ill_ext.mask[border//y_bin:-border//y_bin]
+        ill_ext.variance = ill_ext.variance[border//y_bin:-border//y_bin]
+
+        # Update sections
+        datasec_kw = ill_ext._keyword_for('data_section')
+        ill_ext.hdr[datasec_kw] = \
+            '[1:{:d},1:{:d}]'.format(*ill_ext.shape[::-1])
+
+        det_sec_kw = ill_ext._keyword_for('detector_section')
+        det_sec = ill_ext.detector_section()
+
+        ill_ext.hdr[det_sec_kw] = \
+            '[{}:{},{}:{}]'.format(
+                det_sec.x1 + 1, det_sec.x2,
+                det_sec.y1 + border + 1, det_sec.y2 - border)
+
+        arr_sec_kw = ill_ext._keyword_for('array_section')
+        arr_sec = ill_ext.array_section()
+
+        ill_ext.hdr[arr_sec_kw] = \
+            '[{}:{},{}:{}]'.format(
+                arr_sec.x1 + 1, arr_sec.x2,
+                arr_sec.y1 + border + 1, arr_sec.y2 - border)
+
+    print(slit_illum_ad.data_section())
+    print(slit_illum_ad.detector_section())
+    print(slit_illum_ad.array_section())
+
+    p = GMOSLongslit([ad])
+    ad_out = p.slitIllumCorrect(slit_illum=slit_illum_ad)[0]
+
+
+# --- Helper functions and fixtures -------------------------------------------
+@pytest.fixture
+def input_data(request, path_to_inputs):
+    """
+    Returns the pre-processed input data and the associated slit illumination
+    data.
+
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
+
+    Returns
+    -------
+    AstroData
+        Input spectrum processed up to right before the `distortionDetermine`
+        primitive.
+    """
+    def _load_file(filename):
+        path = os.path.join(path_to_inputs, filename)
+
+        if os.path.exists(path):
+            _ad = astrodata.open(path)
+        else:
+            raise FileNotFoundError(path)
+
+        return _ad
+
+    ad = _load_file(request.param[0])
+    slit_illum_ad = _load_file(request.param[1])
+
+    return ad, slit_illum_ad
+
+
 def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
 
     fig, (ax1, ax2, ax3) = plt.subplots(
@@ -192,43 +280,6 @@ def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
 
     fig.tight_layout()
     plt.savefig(fname + ad1.filename.replace(".fits", ".png"))
-
-
-# --- Helper functions and fixtures -------------------------------------------
-@pytest.fixture
-def input_data(request, path_to_inputs):
-    """
-    Returns the pre-processed input data and the associated slit illumination
-    data.
-
-    Parameters
-    ----------
-    path_to_inputs : pytest.fixture
-        Fixture defined in :mod:`astrodata.testing` with the path to the
-        pre-processed input file.
-    request : pytest.fixture
-        PyTest built-in fixture containing information about parent test.
-
-    Returns
-    -------
-    AstroData
-        Input spectrum processed up to right before the `distortionDetermine`
-        primitive.
-    """
-    def _load_file(filename):
-        path = os.path.join(path_to_inputs, filename)
-
-        if os.path.exists(path):
-            _ad = astrodata.open(path)
-        else:
-            raise FileNotFoundError(path)
-
-        return _ad
-
-    ad = _load_file(request.param[0])
-    slit_illum_ad = _load_file(request.param[1])
-
-    return ad, slit_illum_ad
 
 
 # -- Recipe to create pre-processed data ---------------------------------------
