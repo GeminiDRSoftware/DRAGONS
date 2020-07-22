@@ -13,16 +13,14 @@ import gemini_instruments
 from astropy.modeling.models import Gaussian1D
 from geminidr.gmos.primitives_gmos_spect import GMOSSpect
 
-
 test_data = [
-    ("N20180109S0287_varAdded.fits", 256),  # GN-2017B-FT-20-13-001 B600 0.505um
-    # "N20190302S0089_varAdded.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
-    # "N20190313S0114_varAdded.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
-    # "N20190427S0123_varAdded.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
-    # "N20190427S0126_varAdded.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
-    # "N20190910S0028_varAdded.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
-    # "S20180919S0139_varAdded.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
-    # "S20191005S0051_varAdded.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+    ("N20180109S0287_distortionCorrected.fits", 256),  # GN-2017B-FT-20-13-001 B600 0.505um
+    ("N20190302S0089_distortionCorrected.fits", 255),  # GN-2019A-Q-203-7-001 B600 0.550um
+    ("N20190313S0114_distortionCorrected.fits", 256),  # GN-2019A-Q-325-13-001 B600 0.482um
+    ("N20190427S0126_distortionCorrected.fits", 258),  # GN-2019A-FT-206-7-004 R400 0.625um
+    ("N20190910S0028_distortionCorrected.fits", 252),  # GN-2019B-Q-313-5-001 B600 0.550um
+    ("S20180919S0139_distortionCorrected.fits", 257),  # GS-2018B-Q-209-13-003 B600 0.45um
+    ("S20191005S0051_distortionCorrected.fits", 261),  # GS-2019B-Q-132-35-001 R400 0.73um
 ]
 
 
@@ -75,12 +73,12 @@ def test_find_apertures_using_standard_star(ad_and_center):
     """
     ad, expected_center = ad_and_center
     p = GMOSSpect(ad)
-    _ad = p.findSourceApertures(max_apertures=1)[0]
+    _ad = p.findSourceApertures(max_apertures=1).pop()
 
     assert hasattr(ad[0], 'APERTURE')
     assert len(ad[0].APERTURE) == 1
     assert np.testing.assert_almost_equal(
-        ad[0].APERTURE['center'], expected_center, 1)
+        ad[0].APERTURE['center'], expected_center, 3)
 
 
 # -- Fixtures -----------------------------------------------------------------
@@ -124,22 +122,47 @@ def create_inputs_recipe():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
+
     from astrodata.testing import download_from_archive
     from gempy.utils import logutils
+    from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system.utils.reduce_utils import normalize_ucals
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/test_find_apertures/inputs/"
+    module_path = "geminidr/gmos/spect/test_find_apertures/"
     path = os.path.join(root_path, module_path)
+    cwd = os.getcwd()
+
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
+    os.makedirs("inputs", exist_ok=True)
 
-    for filename in test_data:
+    associated_arcs = {
+        "N20180109S0287.fits": "N20180109S0315.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+        "N20190302S0089.fits": "N20190302S0274.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+        "N20190313S0114.fits": "N20190313S0132.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
+        "N20190427S0126.fits": "N20190427S0267.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
+        "N20190910S0028.fits": "N20190910S0279.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+        "S20180919S0139.fits": "S20180919S0141.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+        "S20191005S0051.fits": "S20191005S0147.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+    }
 
-        filename = "{:s}.fits".format(filename.split("_")[0])
-        sci_path = download_from_archive(filename)
+    for sci_fname, arc_fname in associated_arcs.items():
+
+        sci_path = download_from_archive(sci_fname)
+        arc_path = download_from_archive(arc_fname)
 
         sci_ad = astrodata.open(sci_path)
         data_label = sci_ad.data_label()
+
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+        arc_reduce = Reduce()
+        arc_reduce.files.extend([arc_path])
+        # arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+
+        os.chdir("inputs/")
+        arc_reduce.runr()
+        arc_ad = arc_reduce.output_filenames.pop()
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = GMOSSpect([sci_ad])
@@ -149,7 +172,11 @@ def create_inputs_recipe():
         p.overscanCorrect()
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
+        p.distortionCorrect(arc=arc_ad)
         p.writeOutputs()
+        os.chdir("../")
+
+    os.chdir(cwd)
 
 
 if __name__ == '__main__':
