@@ -454,7 +454,7 @@ class Standardize(PrimitivesBASE):
         """Check the AD has a valid number of extensions"""
         return len(ad) == 1
 
-    def _addPoissonNoise(self, ad):
+    def _addPoissonNoise(self, ad, dtype=np.float32):
         """
         This primitive calculates the variance due to Poisson noise for each
         science extension in the input AstroData list. A variance plane is
@@ -483,7 +483,7 @@ class Standardize(PrimitivesBASE):
                 log.warning("Poisson noise already added for "
                             "{}:{}".format(ad.filename, extver))
                 continue
-            var_array = np.where(ext.data > 0, ext.data, 0)
+            var_array = np.where(ext.data > 0, ext.data, 0).astype(dtype)
             if not ext.is_coadds_summed():
                 var_array /= ext.coadds()
             if ext.is_in_adu():
@@ -499,7 +499,7 @@ class Standardize(PrimitivesBASE):
             else:
                 ext.hdr['VARNOISE'] += ', Poisson'
 
-    def _addReadNoise(self, ad):
+    def _addReadNoise(self, ad, dtype=np.float32):
         """
         This primitive calculates the variance due to read noise for each
         science extension in the input AstroData list. A variance plane is
@@ -529,7 +529,8 @@ class Standardize(PrimitivesBASE):
                              format(ad.filename, extver, read_noise))
             if ext.is_in_adu():
                 read_noise /= gain
-            var_array = np.full_like(ext.data, read_noise * read_noise)
+            var_array = np.full_like(ext.data, read_noise * read_noise,
+                                     dtype=dtype)
             if ext.variance is None:
                 ext.variance = var_array
             else:

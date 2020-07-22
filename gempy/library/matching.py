@@ -40,8 +40,8 @@ class MatchBox:
         except TypeError:
             self._ndim = 1
         self.validate_coords()
-        self._forward_model = forward_model
-        self._backward_model = backward_model
+        self._forward_model = None if forward_model is None else forward_model.copy()
+        self._backward_model = None if backward_model is None else backward_model.copy()
         self._fitter = fitter
 
     @classmethod
@@ -78,7 +78,10 @@ class MatchBox:
             incoords, outcoords = zip(*[(input_coords[i], output_coords[m])
                                         for i, m in enumerate(matched) if m > -1])
             m = cls(incoords, outcoords, forward_model=model)
-            m.fit_forward()
+            try:
+                m.fit_forward()
+            except ValueError:
+                return cls([], [], forward_model=None)
             if sigma_clip is None or num_matches == len(incoords):
                 break
             num_matches = len(incoords)
@@ -102,6 +105,9 @@ class MatchBox:
                     assert self._ndim == 1
         except AssertionError:
             raise ValueError("Incompatible elements in one or both coordinate lists")
+
+    def __len__(self):
+        return len(self._input_coords)
 
     @property
     def input_coords(self):
@@ -144,7 +150,12 @@ class MatchBox:
         if len(prepared_input) == 1:
             prepared_input = (prepared_input,)
             prepared_output = (prepared_output,)
-        return fit(model, prepared_input, prepared_output)
+        try:
+            return fit(model, prepared_input, prepared_output)
+        except fitting.UnsupportedConstraintError:
+            for p in model.param_names:
+                getattr(model, p).bounds = (None, None)
+            return fit(model, prepared_input, prepared_output)
 
     def fit_forward(self, model=None, coords=None, set_inverse=True):
         """
@@ -566,7 +577,7 @@ class KDTreeFitter(Fitter):
             maximum number of matches to be considered
         """
         if proximity_function is None:
-            proximity_function = KDTreeFitter.gaussian
+            proximity_function = KDTreeFitter.lorentzian
 
         self.statistic = None
         self.niter = None
@@ -586,7 +597,7 @@ class KDTreeFitter(Fitter):
         super().__init__(opt_method, statistic=self._kdstat)
 
     def __call__(self, model, in_coords, ref_coords, in_weights=None,
-                 ref_weights=None, **kwargs):
+                 ref_weights=None, matches=None, **kwargs):
         """
         Perform a minimization using the KDTreeFitter
 
@@ -651,9 +662,10 @@ class KDTreeFitter(Fitter):
         # easier by allowing this to match a zero-weighted reference
         ref_weights = np.append(ref_weights, (0,))
 
-        tree = spatial.cKDTree(list(zip(*ref_coords)))
+        ref_coords = np.array(list(zip(*ref_coords)))
+        tree = spatial.cKDTree(ref_coords)
         # avoid _convert_input since tree can't be coerced to a float
-        farg = (model_copy, in_coords, in_weights, ref_weights, tree)
+        farg = (model_copy, in_coords, ref_coords, in_weights, ref_weights, matches, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
         arg_names = inspect.getfullargspec(self._opt_method).args
@@ -691,7 +703,8 @@ class KDTreeFitter(Fitter):
     def lorentzian(distance, sigma):
         return 1. / (distance * distance + sigma * sigma)
 
-    def _kdstat(self, tree, updated_model, in_coords, in_weights, ref_weights):
+    def _kdstat(self, tree, updated_model, in_coords, ref_coords,
+                in_weights, ref_weights, matches=None):
         """
         Compute the statistic for transforming coordinates onto a set of
         reference coordinates. This uses mathematical calculations and is not
@@ -705,28 +718,43 @@ class KDTreeFitter(Fitter):
         updated_model: :class:`~astropy.modeling.FittableModel`
             transformation (input -> reference) being investigated
 
-        in_coords: list or :class:`~numpy.ndarray`
-            List or array with the input coordinates in 1D or 2D.
+        in_coords: list or :class:`~numpy.ndarray` dimension (n, m)
+            List or array with the input coordinates.
 
-        in_weights : list or :class:`~numpy.ndarray`
-            List or array with the input weights (or fluxes/intensities) in
-            1D or 2D. The size and dimension should match `in_coords`.
+        ref_coords: list or :class:`~numpy.ndarray` dimension (n', m)
+            List or array with the reference coordinates.
 
-        ref_weights : list or :class:`~numpy.ndarray`
-            List or array with the reference weights (or fluxes/intensities) in
-            1D or 2D. Only the dimension should match `in_coords`.
+        in_weights : list or :class:`~numpy.ndarray` dimension (n,)
+            List or array with the input weights.
+
+        ref_weights : list or :class:`~numpy.ndarray` dimension (n',)
+            List or array with the reference weights.
+
+        matches : None or list/array dimension (n,)
+            Index in ref_coords to match to each input coordinate
 
         Returns
         -------
         float : Statistic representing quality of fit to be minimized
         """
         out_coords = updated_model(*in_coords)
-
         if len(in_coords) == 1:
             out_coords = (out_coords,)
-
-        dist, idx = tree.query(list(zip(*out_coords)), k=self.k,
+        out_coords = np.array(list(zip(*out_coords)))
+        dist, idx = tree.query(out_coords, k=self.k,
                                distance_upper_bound=self.maxsep)
+
+        if matches is not None:
+            nr = len(ref_coords)
+            for i, m in enumerate(matches):
+                if m >= 0:
+                    d = np.linalg.norm(out_coords[i] - ref_coords[m])
+                    if self.k > 1:
+                        dist[i] = np.array([d] + [np.inf] * (self.k-1))
+                        idx[i] = np.array([m] + [nr] * (self.k-1))
+                    else:
+                        dist[i] = d
+                        idx[i] = m
 
         if self.k > 1:
             result = sum(in_wt * ref_weights[i] * self.proximity_function(d)

@@ -16,12 +16,10 @@ from importlib import import_module
 
 from functools import wraps
 
-import astropy
-from astropy import stats
+from astropy.stats import sigma_clip
 from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
-from astropy.utils import minversion
 
 from scipy.special import erf
 
@@ -34,14 +32,6 @@ import astrodata
 from collections import namedtuple
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
-
-if minversion(astropy, '3.1'):
-    sigma_clip = stats.sigma_clip
-else:
-    def sigma_clip(*args, **kwargs):
-        if 'maxiters' in kwargs:
-            kwargs['iters'] = kwargs.pop('maxiters')
-        return stats.sigma_clip(*args, **kwargs)
 
 
 @models.custom_model

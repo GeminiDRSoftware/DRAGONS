@@ -25,7 +25,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
-from . import astromodels
+from . import astrotools as at
 from .astrotools import divide0
 
 from astrodata import NDAstroData
@@ -353,53 +353,37 @@ class Aperture:
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
-def estimate_peak_width(data, min=2, max=8):
+def estimate_peak_width(data):
     """
-    Estimates the FWHM of the spectral features (arc lines) by fitting
-    Gaussians to the brightest peaks.
+    Estimates the FWHM of the spectral features (arc lines) by inspecting
+    pixels around the birghtest peaks.
 
     Parameters
     ----------
-    data:  ndarray
-        1D data array (will be modified)
-    min: int
-        minimum plausible peak width
-    max: int
-        maximum plausible peak width (not inclusive)
+    data : ndarray
+        1D data array
 
     Returns
     -------
-    float: estimate of FWHM of features
+    float : estimate of FWHM of features in pixels
     """
-    all_widths = []
-    for fwidth in range(min, max + 1):  # plausible range of widths
-        data_copy = data.copy()  # We'll be editing the data
-        widths = []
-        for i in range(15):  # 15 brightest peaks, should ensure we get real ones
-            index = 2 * fwidth + np.argmax(data_copy[2 * fwidth:-2 * fwidth - 1])
-            data_to_fit = data_copy[index - 2 * fwidth:index + 2 * fwidth + 1]
-            m_init = models.Gaussian1D(stddev=0.42466 * fwidth) + models.Const1D(np.min(data_to_fit))
-            m_init.mean_0.bounds = [-1, 1]
-            m_init.amplitude_1.fixed = True
-            fit_it = fitting.FittingWithOutlierRemoval(fitting.LevMarLSQFitter(),
-                                                       sigma_clip, sigma=3)
-            with warnings.catch_warnings():
-                # Ignore model linearity warning from the fitter
-                warnings.simplefilter('ignore')
-                m_final, _ = fit_it(m_init, np.arange(-2 * fwidth, 2 * fwidth + 1),
-                                    data_to_fit)
-            # Quick'n'dirty logic to remove "peaks" at edges of CCDs
-            if m_final.amplitude_1 != 0 and m_final.stddev_0 < fwidth:
-                widths.append(m_final.stddev_0 / 0.42466)
+    goodpix = np.ones_like(data, dtype=bool)
+    min_threshold = 2 * np.median(data)
+    widths = []
+    while len(widths) < 10:
+        index = np.argmax(data * goodpix)
+        threshold = 0.5 * (data[index] + min_threshold)  # assume background << peak
+        if threshold <= min_threshold:
+            break
+        hi = index + np.argmax(data[index:] < threshold) + 1
+        lo = index - np.argmax(data[index::-1] < threshold)
+        if all(goodpix[lo:hi]):
+            widths.append(hi-lo-1)
+        goodpix[lo:hi] = False
+    return sigma_clip(widths).mean()
 
-            # Set data to zero so no peak is found here
-            data_copy[index - 2 * fwidth:index + 2 * fwidth + 1] = 0.
-        all_widths.append(sigma_clip(widths).mean())
-    return sigma_clip(all_widths).mean()
-
-
-def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
-               reject_bad=True):
+def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
+               min_frac=0.25, reject_bad=True):
     """
     Find peaks in a 1D array. This uses scipy.signal routines, but requires some
     duplication of that code since the _filter_ridge_lines() function doesn't
@@ -409,38 +393,40 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     Parameters
     ----------
-    data: 1D array
+    data : 1D array
         The pixel values of the 1D spectrum
-    widths: array-like
+    widths : array-like
         Sigma values of line-like features to look for
-    mask: 1D array (optional)
+    mask : 1D array (optional)
         Mask (peaks with bad pixels are rejected) - optional
-    variance: 1D array (optional)
+    variance : 1D array (optional)
         Variance (to estimate SNR of peaks) - optional
-    min_snr: float (optional, default=1)
+    min_snr : float
         Minimum SNR required of peak pixel
-    min_frac: float (optional, default=0.25)
+    min_sep : float
+        Minimum separation in pixels for lines in final list
+    min_frac : float
         minimum fraction of *widths* values at which a peak must be found
-    reject_bad: bool (optional, default=True)
+    reject_bad : bool
         clip lines using the reject_bad() function?
 
     Returns
     -------
-    2D array: peak pixels and SNRs
+    2D array: peak pixels and SNRs (sorted by pixel value)
     """
-    mask = mask if mask is not None else np.zeros_like(data, dtype=np.uint16)
-
-    if not np.issubdtype(mask.dtype, np.unsignedinteger):
-        raise TypeError("Expected input parameter 'mask' to be an array with unsigned integer. "
-                        "Found: {}".format(mask.dtype))
+    mask = mask.astype(DQ.datatype) if mask is not None else np.zeros_like(data, dtype=DQ.datatype)
 
     max_width = max(widths)
     window_size = 4 * max_width + 1
 
+    # For really broad peaks we can do a median filter to remove spikes
+    if max_width > 10:
+        data = at.boxcar(data, size=2)
+
     wavelet_transformed_data = signal.cwt(data, signal.ricker, widths)
 
     eps = np.finfo(np.float32).eps  # Minimum representative data
-    wavelet_transformed_data[wavelet_transformed_data < eps] = eps
+    wavelet_transformed_data[np.nan_to_num(wavelet_transformed_data) < eps] = eps
 
     ridge_lines = signal._peak_finding._identify_ridge_lines(
         wavelet_transformed_data, 0.03 * widths, 2)
@@ -460,16 +446,14 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
                         where=variance > 0)
     else:
         snr = wavelet_transformed_data[0]
-
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
-    min_separation = min(widths)
     new_peaks = []
     i = 0
     while i < len(peaks) - 1:
         j = i + 1
-        while j <= len(peaks) - 1 and (peaks[j] - peaks[j - 1] < min_separation):
+        while j < len(peaks) and (peaks[j] - peaks[j - 1] <= 1):
             j += 1
         new_peaks.append(np.mean(peaks[i:j]))
         i = j
@@ -485,9 +469,20 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     # (e.g., chip gaps in GMOS)
     peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)] & (DQ.no_data | DQ.unilluminated)) == 0]
 
-    # Clip the really noisy parts of the data before getting more accurate
-    # peak positions and clip SNR again with new positions
-    peaks = pinpoint_peaks(np.where(snr < 0.5, 0, data), mask, peaks)
+    # Clip the really noisy parts of the data and get more accurate positions
+    pinpoint_data = np.where(snr < 0.5, 0, wavelet_transformed_data[0])
+    peaks = pinpoint_peaks(pinpoint_data, mask, peaks)
+
+    # Clean up peaks that are too close together
+    while True:
+        diffs = np.diff(peaks)
+        if all(diffs >= min_sep):
+            break
+        i = np.argmax(diffs < min_sep)
+        # Replace with mean of re-pinpointed points
+        peaks[i] = np.mean(pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2]))
+        del peaks[i+1]
+
     final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
 
@@ -659,7 +654,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     # providing it has a standard call signature, taking parameters:
     # spline representation, location of peak, location of limit on this side,
     # location of limit on other side, thresholding value
-    functions = {'threshold': threshold_limit,
+    functions = {'peak': peak_limit,
                  'integral': integral_limit}
     try:
         limit_finding_function = functions[method]
@@ -715,7 +710,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     return all_limits
 
 
-def threshold_limit(spline, peak, limit, other_limit, threshold):
+def peak_limit(spline, peak, limit, other_limit, threshold):
     """
     Finds a threshold as a fraction of the way from the signal at the minimum to
     the signal at the peak.
@@ -723,21 +718,21 @@ def threshold_limit(spline, peak, limit, other_limit, threshold):
     Parameters
     ----------
     spline : callable
-        ???
-    peak : ???
-        ???
-    limit : ???
-        ???
-    other_limit : ???
-        ???
-    threshold : ???
-        ???
+        the function within which aperture-extraction limits are desired
+    peak : float
+        location of peak
+    limit : float
+        location of the minimum -- an aperture edge is required between
+        this location and the peak
+    other_limit : float (not used)
+        location of the minimum on the opposite side of the peak
+    threshold : float
+        fractional height gain (peak - minimum) where aperture edge should go
 
     Returns
     -------
-    ???
-        ???
-       """
+    float : the pixel location of the aperture edge
+    """
     # target is the signal level at the threshold
     target = spline(limit) + threshold * (spline(peak) - spline(limit))
     func = lambda x: spline(x) - target
@@ -745,9 +740,31 @@ def threshold_limit(spline, peak, limit, other_limit, threshold):
 
 
 def integral_limit(spline, peak, limit, other_limit, threshold):
-    """Finds a threshold as a fraction of the missing flux, defined as the
-       area under the signal between the peak and this limit, removing a
-       straight line between the two points"""
+    """
+    Finds a threshold as a fraction of the missing flux, defined as the
+    area under the signal between the peak and this limit, removing a
+    straight line between the two points
+
+
+    Parameters
+    ----------
+    spline : callable
+        the function within which aperture-extraction limits are desired
+    peak : float
+        location of peak
+    limit : float
+        location of the minimum -- an aperture edge is required between
+        this location and the peak
+    other_limit : float
+        location of the minimum on the opposite side of the peak
+    threshold : float
+        the integral from the peak to the limit should encompass a fraction
+        (1-threshold) of the integral from the peak to the minimum
+
+    Returns
+    -------
+    float : the pixel location of the aperture edge
+    """
     integral = spline.antiderivative()
     slope = (spline(other_limit) - spline(limit)) / (other_limit - limit)
     definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * (
@@ -851,7 +868,7 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
         data, mask, var = NDStacker.mean(ext_data[y1:y1 + nsum],
                                          mask=None if ext_mask is None else ext_mask[y1:y1 + nsum],
                                          variance=None)
-        fwidth = estimate_peak_width(data.copy(), 10)
+        fwidth = estimate_peak_width(data)
         widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
         initial, _ = find_peaks(data, widths, mask=mask,
                                 variance=var, min_snr=5)

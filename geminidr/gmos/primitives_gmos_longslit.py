@@ -85,21 +85,24 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         ext.mask = iext if ext.mask is None else ext.mask | iext
             elif not all(detsec.y1 > 1600 and detsec.y2 < 2900
                          for detsec in ad.detector_section()):
-                # Default operation for GMOS LS
+                # Default operation for GMOS full-frame LS
                 # The 95% cut should ensure that we're sampling something
                 # bright (even for an arc)
-                # The 75% cut is intended to handle R150 data, where many of
+                # The max is intended to handle R150 data, where many of
                 # the extensions are unilluminated
-                row_medians = np.percentile(np.array([np.percentile(ext.data, 95, axis=1)
-                                                      for ext in ad]), 75, axis=0)
+                row_medians = np.max(np.array([np.percentile(ext.data, 95, axis=1)
+                                                      for ext in ad]), axis=0)
                 rows = np.arange(len(row_medians))
                 m_init = models.Polynomial1D(degree=3)
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                            outlier_func=sigma_clip)
                 m_final, _ = fit_it(m_init, rows, row_medians)
+                model_fit = m_final(rows)
                 # Find points which are significantly below the smooth illumination fit
-                row_mask = at.boxcar(m_final(rows) - row_medians > 0.1 * np.median(row_medians),
-                                     operation=np.logical_or, size=2)
+                # First ensure we don't worry about single rows
+                row_mask = at.boxcar(model_fit - row_medians > 0.1 * model_fit,
+                                     operation=np.logical_and, size=1)
+                row_mask = at.boxcar(row_mask, operation=np.logical_or, size=3)
                 for ext in ad:
                     ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
 
@@ -554,8 +557,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                     order=order, w=weights, **spline_kwargs)
                     fitted_data[i] = spline(pixels)
                 # Copy header so we have the _section() descriptors
-                # Turn zeros into tiny numbers to avoid 0/0 errors and NaNs
-                ad_fitted.append(fitted_data + np.spacing(0), header=ext.hdr)
+                ad_fitted.append(fitted_data, header=ext.hdr)
 
             # Find the largest spline value for each row across all extensions
             # and mask pixels below the requested fraction of the peak
@@ -577,7 +579,12 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     arrsec = ext.array_section()
                     slice_ = (slice((arrsec.y1 - tiled_arrsec.y1) // ybin, (arrsec.y2 - tiled_arrsec.y1) // ybin),
                               slice((arrsec.x1 - tiled_arrsec.x1) // xbin, (arrsec.x2 - tiled_arrsec.x1) // xbin))
-                    ext /= ext_fitted.nddata[slice_]
+                    # Suppress warnings to do with fitted_data==0
+                    # (which create NaNs in variance)
+                    with np.errstate(invalid='ignore', divide='ignore'):
+                        ext.divide(ext_fitted.nddata[slice_])
+                    np.nan_to_num(ext.data, copy=False, posinf=0, neginf=0)
+                    np.nan_to_num(ext.variance, copy=False)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
