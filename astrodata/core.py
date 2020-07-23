@@ -104,7 +104,8 @@ class AstroData:
             this works.
 
         """
-        # Force the data provider to load data, if needed
+        # Force the data provider to load data, if needed.
+        # FIXME: probably no more needed
         len(self)
 
         obj = self.__class__()
@@ -205,7 +206,7 @@ class AstroData:
 
     @staticmethod
     def _matches_data(source):
-        # This one is trivial. As long as we get a FITS file...
+        # This one is trivial. Will be more specific for subclasses.
         return True
 
     @property
@@ -255,7 +256,7 @@ class AstroData:
 
     @property
     def hdr(self):
-        """Return all headers, as a `astrodata.FitsHeaderCollection`."""
+        """Return all headers, as a `astrodata.fits.FitsHeaderCollection`."""
         if not self.nddata:
             return None
         headers = [nd.meta['header'] for nd in self._nddata]
@@ -375,12 +376,12 @@ class AstroData:
         A list of the uncertainty objects (or a single object, if this is
         a single slice) attached to the science data, for each extension.
 
-        The objects are instances of AstroPy's `NDUncertainty`, or `None`
-        where no information is available.
+        The objects are instances of AstroPy's `astropy.nddata.NDUncertainty`,
+        or `None` where no information is available.
 
         See also
         --------
-        variance : The actual array supporting the uncertainty object
+        variance : The actual array supporting the uncertainty object.
 
         """
         return [nd.uncertainty for nd in self._nddata]
@@ -418,8 +419,7 @@ class AstroData:
 
         See also
         ---------
-        uncertainty : The `NDUncertainty` object used under the hood to
-        propagate uncertainty when operating with the data.
+        uncertainty : The uncertainty objects used under the hood.
 
         """
         return [nd.variance for nd in self._nddata]
@@ -588,10 +588,7 @@ class AstroData:
         super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
-        """
-        Implements attribute removal.
-        If `self` represents a single slice, ... FIXME!
-        """
+        """Implements attribute removal."""
         if not attribute.isupper():
             super().__delattr__(attribute)
             return
@@ -1063,16 +1060,17 @@ class AstroData:
 
         Parameters
         ----------
-        ext : array, `NDData`, `Table`, other
+        ext : array, `astropy.nddata.NDData`, `astropy.table.Table`, other
             The contents for the new extension. The exact accepted types depend
             on the class implementing this interface. Implementations specific
             to certain data formats may accept specialized types (eg. a FITS
-            provider will accept an `ImageHDU` and extract the array out of it)
+            provider will accept an `astropy.io.fits.ImageHDU` and extract the
+            array out of it).
         name : str, optional
             A name that may be used to access the new object, as an attribute
             of the provider. The name is typically ignored for top-level
             (global) objects, and required for the others. If the name cannot
-            be derived from the metadata associated to `extension`, you will
+            be derived from the metadata associated to ``ext``, you will
             have to provider one.
             It can consist in a combination of numbers and letters, with the
             restriction that the letters have to be all capital, and the first
@@ -1086,8 +1084,8 @@ class AstroData:
         Raises
         -------
         TypeError
-            If adding the object in an invalid situation (eg. `name` is `None`
-            when adding to a single slice)
+            If adding the object in an invalid situation (eg. ``name`` is
+            `None` when adding to a single slice).
         ValueError
             Raised if the extension is of a proper type, but its value is
             illegal somehow.
@@ -1332,11 +1330,11 @@ class AstroData:
 
         Parameters
         ----------
-        prefix: str/None
-            new prefix (None => leave alone)
-        suffix: str/None
-            new suffix (None => leave alone)
-        strip: bool
+        prefix: str, optional
+            New prefix (None => leave alone)
+        suffix: str, optional
+            New suffix (None => leave alone)
+        strip: bool, optional
             Strip existing prefixes and suffixes if new ones are given?
 
         """
@@ -1383,6 +1381,14 @@ class AstroData:
             nd.mask = nd.mask[y1:y2+1, x1:x2+1]
 
     def crop(self, x1, y1, x2, y2):
+        """Crop the NDData objects given indices.
+
+        Parameters
+        ----------
+        x1, y1, x2, y2 : int
+            Minimum and maximum indices for the x and y axis.
+
+        """
         # TODO: Consider cropping of objects in the meta section
         for nd in self._nddata:
             orig_shape = nd.data.shape

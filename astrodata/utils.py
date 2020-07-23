@@ -75,15 +75,15 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
 
     Attributes
     ----------
-    add : set of str, or None
+    add : set of str, optional
         Tags to be added to the global set
-    remove : set of str, or None
+    remove : set of str, optional
         Tags to be removed from the global set
-    blocked_by : set of str, or None
+    blocked_by : set of str, optional
         Tags that will prevent this TagSet from being applied
-    blocks : set of str, or None
+    blocks : set of str, optional
         Other TagSets containing these won't be applied
-    if_present : set of str, or None
+    if_present : set of str, optional
         This TagSet will be applied only *all* of these tags are present
 
     Examples

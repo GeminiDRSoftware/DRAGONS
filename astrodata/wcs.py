@@ -1,24 +1,23 @@
-import numpy as np
+import functools
 import re
+from collections import namedtuple
 
-from gwcs import coordinate_frames as cf
-from gwcs import utils as gwutils
+import numpy as np
 from astropy import coordinates as coord
 from astropy import units as u
-from astropy.modeling import core, models, projections
 from astropy.io import fits
-
+from astropy.modeling import core, models, projections
+from gwcs import coordinate_frames as cf
+from gwcs import utils as gwutils
+from gwcs.utils import sky_pairs, specsystems
 from gwcs.wcs import WCS as gWCS
 
-import functools
-from collections import namedtuple
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
-
-from gwcs.utils import sky_pairs, specsystems
 
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
 #-----------------------------------------------------------------------------
+
 
 def fitswcs_to_gwcs(hdr):
     """
@@ -96,14 +95,16 @@ def gwcs_to_fits(ndd, hdr=None):
 
     Parameters
     ----------
-    ndd: NDData
+    ndd : `astropy.nddata.NDData`
         The NDData whose wcs attribute we want converted
-    hdr: fits.Header
+    hdr : `astropy.io.fits.Header`
         A Header object that may contain some useful keywords
 
     Returns
     -------
-    dict: values to insert into the FITS header to express this WCS
+    dict
+        values to insert into the FITS header to express this WCS
+
     """
     if hdr is None:
         hdr = {}
@@ -239,14 +240,16 @@ def calculate_affine_matrices(func, shape):
 
     Parameters
     ----------
-    func: callable
+    func : callable
         function that maps input->output coordinates
-    shape: sequence
+    shape : sequence
         shape to use for fiducial points
 
     Returns
     -------
-        AffineMatrices(array, array): affine matrix and offset
+    AffineMatrices(array, array)
+        affine matrix and offset
+
     """
     indim = len(shape)
     try:
@@ -277,7 +280,7 @@ def read_wcs_from_header(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header
+    header : `astropy.io.fits.Header`
         FITS Header with WCS information.
 
     Returns
@@ -343,12 +346,12 @@ def get_axes(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header (or dict) with basic WCS information.
 
     Returns
     -------
-    sky_inmap, spectral_inmap, unknown : lists
+    sky_inmap, spectral_inmap, unknown : list
         indices in the output representing sky and spectral coordinates.
 
     """
@@ -409,12 +412,12 @@ def _get_contributing_axes(wcs_info, world_axes):
     ----------
     wcs_info : dict
         dict of WCS information
-    world_axes : int/iterable of ints
+    world_axes : int or iterable of int
         axes in the world coordinate system
 
     Returns
     -------
-    axes: list
+    axes : list
         axes whose pixel coordinates affect the output axis/axes
     """
     cd = wcs_info['CD']
@@ -432,7 +435,7 @@ def make_fitswcs_transform(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header (or dict) with basic WCS information
 
     """
@@ -479,7 +482,7 @@ def fitswcs_image(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header or dict with basic FITS WCS keywords.
 
     """
@@ -544,7 +547,7 @@ def fitswcs_linear(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header or dict with basic FITS WCS keywords.
 
     """

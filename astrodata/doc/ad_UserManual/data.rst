@@ -1,6 +1,6 @@
 .. data.rst
 
-.. _data:
+.. _pixel-data:
 
 **********
 Pixel Data
@@ -698,7 +698,7 @@ A new feature presented in this example is the ability to work on the
 ``NDAstroData`` object directly.  This is particularly useful when cropping
 the science pixel array as one will want the variance and the mask arrays
 cropped exactly the same way.  Taking a section of the ``NDAstroData``
-object (ad[0].nddata[y1:y2, x1:x2]), instead of just the `.data` array,
+object (ad[0].nddata[y1:y2, x1:x2]), instead of just the ``.data`` array,
 does all that for us.
 
 To reassign the cropped ``NDAstroData`` to the extension one uses the
@@ -901,4 +901,3 @@ what ``imexam`` has to offer.
     >>> plot.contour_pars['ncolumns'][0] = width
     >>> plot.contour_pars['nlines'][0] = width
     >>> plot.contour(center[1], center[0], ad_image[0].data)
-
