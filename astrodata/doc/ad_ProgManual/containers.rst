@@ -13,16 +13,12 @@ in read-only, memory-mapping mode, and exploiting the windowing capability of
 PyFITS\ [#pyfits]_ (using ``section``) to reduce our memory requirements, which
 becomes important when reducing data (e.g., stacking).
 
-We document our container for completeness and for reference, but note that its
-use is intimately linked to ``FitsProvider``. If you're implementing an alternative
-data provider, you do not need to follow our design.
-
 We'll describe here how we depart from NDData, and how do we integrate the data
 containers with the rest of the package. Please refer to NDData for the full
 interface.
 
-Our main data container is ``astrodata.nddata.NDAstroData``. Fundamentally, it
-is a derivative of ``astropy.nddata.NDData``, plus a number of mixins to add
+Our main data container is `astrodata.nddata.NDAstroData`. Fundamentally, it
+is a derivative of `astropy.nddata.NDData`, plus a number of mixins to add
 functionality::
 
     class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):

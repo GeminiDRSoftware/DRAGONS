@@ -456,7 +456,7 @@ def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
 def read_fits(cls, source, extname_parser=None):
     """
     Takes either a string (with the path to a file) or an HDUList as input, and
-    tries to return a populated FitsProvider (or descendant) instance.
+    tries to return a populated AstroData (or descendant) instance.
 
     It will raise exceptions if the file is not found, or if there is no match
     for the HDUList, among the registered AstroData classes.
