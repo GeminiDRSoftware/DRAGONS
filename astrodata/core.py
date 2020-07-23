@@ -26,12 +26,12 @@ NO_DEFAULT = object()
 
 
 _arit_doc = """
-    Performs {name} by evaluating ``self`` {op} ``operand``.
+    Performs {name} by evaluating ``self {op} operand``.
 
     Parameters
     ----------
     oper : number or object
-        The operand to perform the operation  ``self`` {op} ``operand``.
+        The operand to perform the operation  ``self {op} operand``.
 
     Returns
     --------
