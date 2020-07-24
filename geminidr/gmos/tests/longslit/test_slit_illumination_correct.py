@@ -34,8 +34,12 @@ same_roi_datasets = [
     for d in datasets]
 
 different_roi_datasets = [
-    ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),  # R400 : 0.850
-    ("N20200708S0337_slitIllum.fits"),  # R831 : 0.765 : 1x2
+    # GN Ham R150 : 0.690
+    ("N20200715S0059_quartz.fits", "N20190602S0306_slitIllum.fits"),
+    # GS EEV B600 : 0.520
+    ("S20130601S0121_quartz.fits", "S20130602S0005_slitIllum.fits"),
+    # GS Ham R400 : 0.850
+    ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),
 ]
 
 
@@ -140,56 +144,6 @@ def test_slit_illum_correct_different_roi(change_working_dir, input_data, reques
 
     if request.config.getoption("--do-plots"):
         plot_slit_illum_correct_results(ad, ad_out, fname="test_different_roi_")
-
-
-@pytest.mark.gmosls
-@pytest.mark.preprocess
-@pytest.mark.parametrize("input_data", same_roi_datasets, indirect=True)
-def test_slit_illum_correct_ad_larger_than_slit_illum(
-        change_working_dir, input_data, request):
-    """
-    Tests that we can use the p.slitIllumCorrect primitive even when the
-    science data is larger than the slit illumination data.
-    """
-    ad, slit_illum_ad = input_data
-
-    for ill_ext in slit_illum_ad:
-
-        x_bin = ill_ext.detector_x_bin()
-        y_bin = ill_ext.detector_y_bin()
-        border = 100
-
-        ill_ext.data = ill_ext.data[border//y_bin:-border//y_bin]
-        ill_ext.mask = ill_ext.mask[border//y_bin:-border//y_bin]
-        ill_ext.variance = ill_ext.variance[border//y_bin:-border//y_bin]
-
-        # Update sections
-        datasec_kw = ill_ext._keyword_for('data_section')
-        ill_ext.hdr[datasec_kw] = \
-            '[1:{:d},1:{:d}]'.format(*ill_ext.shape[::-1])
-
-        det_sec_kw = ill_ext._keyword_for('detector_section')
-        det_sec = ill_ext.detector_section()
-
-        ill_ext.hdr[det_sec_kw] = \
-            '[{}:{},{}:{}]'.format(
-                det_sec.x1 + 1, det_sec.x2,
-                det_sec.y1 + border + 1, det_sec.y2 - border)
-
-        arr_sec_kw = ill_ext._keyword_for('array_section')
-        arr_sec = ill_ext.array_section()
-
-        ill_ext.hdr[arr_sec_kw] = \
-            '[{}:{},{}:{}]'.format(
-                arr_sec.x1 + 1, arr_sec.x2,
-                arr_sec.y1 + border + 1, arr_sec.y2 - border)
-
-    print(slit_illum_ad.data_section())
-    print(slit_illum_ad.detector_section())
-    print(slit_illum_ad.array_section())
-
-    p = GMOSLongslit([ad])
-    ad_out = p.slitIllumCorrect(slit_illum=slit_illum_ad)[0]
 
 
 # --- Helper functions and fixtures -------------------------------------------
@@ -320,6 +274,26 @@ def create_twilight_inputs():
                      "N20190327S0102.fits"],
             "twilight": ["N20190327S0056.fits"],
         },
+        "S20130602S0005.fits": {
+            "bias": [
+                "S20130601S0161.fits",
+                "S20130601S0160.fits",
+                "S20130601S0159.fits",
+                "S20130601S0158.fits",
+                "S20130601S0157.fits",
+            ],
+            "twilight": ["S20130602S0005.fits"],
+        },
+        "N20190602S0306.fits": {
+            "bias": [
+                "N20190601S0648.fits",
+                "N20190601S0647.fits",
+                "N20190601S0646.fits",
+                "N20190601S0645.fits",
+                "N20190601S0644.fits",
+            ],
+            "twilight": ["N20190602S0306.fits"],
+        }
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
@@ -385,6 +359,12 @@ def create_quartz_inputs():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     associated_calibrations = {
+        "N20200715S0059.fits": {
+            "quartz": ["N20200715S0059.fits"],
+        },
+        "S20130601S0121.fits": {
+            "quartz": ["S20130601S0121.fits"],
+        },
         "S20190204S0081.fits": {
             "quartz": ["S20190204S0081.fits"],
         },
