@@ -58,7 +58,7 @@ args_for_cals = {
     'processed_dark': ('dark', {'processed': True}),
     'processed_flat': ('flat', {'processed': True}),
     'processed_standard': ('standard', {'processed': True}),
-    'processed_slitresponse': ('slitresponse', {'processed': True}),
+    'processed_slitillum': ('slitillum', {'processed': True}),
 }
 
 DEFAULT_DB_NAME = 'cal_manager.db'

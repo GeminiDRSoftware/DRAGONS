@@ -29,7 +29,7 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'ql': [],
                      'qa': [],
                      'processed_standard': ['PROCESSED', 'STANDARD'],
-                     'processed_slitresponse': ['PROCESSED', 'SLITRESPONSE']}
+                     'processed_slitillum': ['PROCESSED', 'SLITILLUM']}
 
 
 # ------------------------------------------------------------------------------
@@ -151,8 +151,8 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
-    def getProcessedSlitResponse(self, adinputs=None, **params):
-        caltype = "processed_slitresponse"
+    def getProcessedSlitIllum(self, adinputs=None, **params):
+        caltype = "processed_slitillum"
         self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
@@ -364,9 +364,8 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adoutputs
 
-
-    def storeProcessedSlitResponse(self, adinputs=None, suffix=None):
-        caltype = 'processed_slitresponse'
+    def storeProcessedSlitIllum(self, adinputs=None, suffix=None):
+        caltype = 'processed_slitillum'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adoutputs = list()
         for ad in adinputs:
@@ -374,7 +373,7 @@ class CalibDB(PrimitivesBASE):
             # if all of the extensions on this ad have a sensfunc attribute:
             if passes:
                 procstdads = self._markAsCalibration([ad], suffix=suffix,
-                                           primname=self.myself(), keyword="PROCSRSP")
+                                                     primname=self.myself(), keyword="PROCILLM")
                 adoutputs.extend(procstdads)
             else:
                 adoutputs.append(ad)

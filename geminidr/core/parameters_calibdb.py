@@ -17,7 +17,7 @@ class addCalibrationConfig(config.Config):
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
                  "processed_standard": "processed standard",
-                 "processed_slitresponse": "processed slitresponse",
+                 "processed_slitillum": "processed slitillum",
                  }
         )
 
@@ -35,7 +35,7 @@ class getCalibrationConfig(config.Config):
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
                  "processed_standard": "processed standard",
-                 "processed_slitresponse": "processed slitresponse",
+                 "processed_slitillum": "processed slitillum",
                  },
         optional=False
     )
@@ -79,7 +79,7 @@ class getProcessedStandardConfig(config.Config):
     refresh = config.Field("Refresh existing calibration associations?", bool, True)
 
 
-class getProcessedSlitResponseConfig(config.Config):
+class getProcessedSlitIllumConfig(config.Config):
     refresh = config.Field("Refresh existing calibration associations?", bool, True)
 
 
@@ -101,7 +101,7 @@ class storeCalibrationConfig(config.Config):
                  "qa": "QA",
                  "ql": "quick look",
                  "processed_standard": "processed standard",
-                 "processed_slitresponse": "processed slitresponse",
+                 "processed_slitillum": "processed slitillum",
                  },
         optional=False
     )
@@ -143,5 +143,5 @@ class storeProcessedStandardConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_standard", optional=True)
 
 
-class storeProcessedSlitResponseConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_slitresponse", optional=True)
+class storeProcessedSlitIllumConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitillum", optional=True)
