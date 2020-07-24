@@ -26,6 +26,8 @@ Notes
     `model_to_dict()` and `dict_to_model()` functions that convert the Model
     instance to a dict create/require this.
 """
+from copy import copy
+
 import numpy as np
 import os
 import pytest
@@ -35,6 +37,8 @@ import astrodata
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
+from matplotlib import pyplot as plt
+from matplotlib import gridspec
 from scipy import optimize
 
 from geminidr.core import primitives_spect

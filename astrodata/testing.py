@@ -342,9 +342,8 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
     path = os.path.join(path_to_test_data, *module_path)
 
     if not os.path.exists(path):
-        print(" Creating new directory to store input data for DRAGONS tests:"
-              "\n    {:s}".format(path))
-        os.makedirs(path)
+        raise FileNotFoundError(
+            " Could not find path to input data:\n    {:s}".format(path))
 
     if not os.access(path, os.R_OK):
         pytest.fail('\n  Path to input test data exists but is not accessible: '

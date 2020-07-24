@@ -3,13 +3,11 @@
 #
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
-import astropy
 import numpy as np
 import warnings
 
 from astropy.stats import sigma_clip
 from astropy.table import Column
-from astropy.utils import minversion
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -445,10 +443,7 @@ def _estimate_seeing(objcat):
     good_fwhm = objcat['FWHM_WORLD'][good] * 3600  # degrees -> arcseconds
 
     if len(good_fwhm) > 3:
-        if minversion(astropy, '3.1'):
-            seeing_estimate = sigma_clip(good_fwhm, sigma=3, maxiters=1).mean()
-        else:
-            seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
+        seeing_estimate = sigma_clip(good_fwhm, sigma=3, maxiters=1).mean()
     elif len(good_fwhm) > 0:
         seeing_estimate = np.mean(good_fwhm)
     else:

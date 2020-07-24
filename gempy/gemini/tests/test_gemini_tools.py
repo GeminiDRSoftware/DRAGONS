@@ -8,6 +8,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
 from astropy.table import Table
 
+astrofaker = pytest.importorskip("astrofaker")
 
 test_data = [
     # (Filename, FWHM)
@@ -36,3 +37,31 @@ def test_fit_continuum_slit_image(fname, fwhm, change_working_dir):
         assert isinstance(tbl, Table)
         assert len(tbl) == 1
         assert abs(tbl['fwhm_arcsec'].data[0] - fwhm) < 0.05
+
+
+class TestCheckInputsMatch:
+
+    def test_inputs_match(self):
+
+        ad1 = astrofaker.create("GMOS-S", mode="IMAGE")
+        ad1.init_default_extensions()
+
+        ad2 = astrofaker.create("GMOS-S", mode="IMAGE")
+        ad2.init_default_extensions()
+
+        gt.check_inputs_match(ad1, ad2)
+
+    def test_inputs_match_different_shapes(self):
+
+        ad1 = astrofaker.create("GMOS-S", mode="IMAGE")
+        ad1.init_default_extensions()
+        for ext in ad1:
+            ext.data = ext.data[20:-20, 20:-20]
+
+        ad2 = astrofaker.create("GMOS-S", mode="IMAGE")
+        ad2.init_default_extensions()
+
+        with pytest.raises(ValueError):
+            gt.check_inputs_match(ad1, ad2)
+
+        gt.check_inputs_match(ad1, ad2, check_shape=False)

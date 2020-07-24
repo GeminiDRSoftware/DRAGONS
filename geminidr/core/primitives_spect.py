@@ -1107,6 +1107,7 @@ class Spect(PrimitivesBASE):
                         log.stdinfo('{} {} {} {}'.format(ad.filename, repr(m.forward), len(m), m.rms_output))
 
                         if debug:
+                            plt.ioff()
                             fig, ax = plt.subplots()
                             ax.plot(data, 'b-')
                             ax.set_ylim(0, data_max * 1.05)
@@ -1122,6 +1123,7 @@ class Spect(PrimitivesBASE):
                                 ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
                                         horizontalalignment='center', rotation=90, fontdict={'size': 8})
                             plt.show()
+                            plt.ion()
 
                         all_fits.append(m)
                         if m.rms_output < 0.2 * fwidth * abs(dw0):

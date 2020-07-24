@@ -16,12 +16,10 @@ from importlib import import_module
 
 from functools import wraps
 
-import astropy
-from astropy import stats
+from astropy.stats import sigma_clip
 from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
-from astropy.utils import minversion
 
 from scipy.special import erf
 
@@ -34,14 +32,6 @@ import astrodata
 from collections import namedtuple
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
-
-if minversion(astropy, '3.1'):
-    sigma_clip = stats.sigma_clip
-else:
-    def sigma_clip(*args, **kwargs):
-        if 'maxiters' in kwargs:
-            kwargs['iters'] = kwargs.pop('maxiters')
-        return stats.sigma_clip(*args, **kwargs)
 
 
 @models.custom_model
@@ -193,8 +183,9 @@ def array_information(adinput=None):
                                          array_shapes, arrays_list))
     return array_info_list
 
+
 def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
-                       check_units=False):
+                       check_shape=True, check_units=False):
     """
     This function will check if the inputs match.  It will check the filter,
     binning and shape/size of the every SCI frames in the inputs.
@@ -203,19 +194,22 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
 
     Parameters
     ----------
-    adinput1: list/AD
-    adinput2: list/AD
+    adinput1 : list/AD
+    adinput2 : list/AD
         single AstroData instances or length-matched lists
 
-    check_filter: bool
+    check_filter : bool
         if True, also check the filter name of each pair
 
-    check_units: bool
+    check_shape : bool
+        If True, also check the data shape for each pair.
+
+    check_units : bool
         if True, also check that both inputs are in electrons or ADUs
     """
     log = logutils.get_logger(__name__)
 
-    # Turn inputs into lists for ease of manipulaiton later
+    # Turn inputs into lists for ease of manipulation later
     if not isinstance(adinput1, list):
         adinput1 = [adinput1]
     if not isinstance(adinput2, list):
@@ -236,7 +230,7 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
             log.fullinfo('Checking EXTVER {}'.format(ext1.hdr['EXTVER']))
 
             # Check shape/size
-            if ext1.data.shape != ext2.data.shape:
+            if check_shape and ext1.data.shape != ext2.data.shape :
                 log.error('Extensions have different shapes')
                 raise ValueError('Extensions have different shape')
 
@@ -330,6 +324,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
 
     return result
 
+
 @handle_single_adinput
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         return_dtype=None):
@@ -378,12 +373,13 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
         # Get the detector section, data section and array section values
         # for the auxiliary AstroData object using the appropriate
         # descriptors
-        aux_detsec   = this_aux.detector_section()
-        aux_datasec  = this_aux.data_section()
+        aux_detsec = this_aux.detector_section()
+        aux_datasec = this_aux.data_section()
         aux_arraysec = this_aux.array_section()
 
-        for ext, detsec, datasec, arraysec in zip(ad, sci_detsec,
-                                            sci_datasec, sci_arraysec):
+        for ext, detsec, datasec, arraysec in zip(ad, sci_detsec, sci_datasec,
+                                                  sci_arraysec):
+
             # Array section is unbinned; to use as indices for
             # extracting data, need to divide by the binning
             arraysec = [arraysec[0] // sci_xbin, arraysec[1] // sci_xbin,
@@ -1212,7 +1208,7 @@ def log_message(function=None, name=None, message_type=None):
 def make_lists(*args, **kwargs):
     """
     The make_lists function attaches auxiliary things to an input key_list
-    of (normally) AD objects. Each key gets exactly one auxilary thing from
+    of (normally) AD objects. Each key gets exactly one auxiliary thing from
     each other list -- these lists can be as long as the key_list, or have
     only one item in (in which case they don't have to be lists at all).
 

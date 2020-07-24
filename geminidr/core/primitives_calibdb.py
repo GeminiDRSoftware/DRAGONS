@@ -348,6 +348,30 @@ class CalibDB(PrimitivesBASE):
 
         return adinputs
 
+    def storeProcessedSlitIllum(self, adinputs=None, suffix=None):
+        """
+        Stores the Processed Slit Illumination file.
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Data that contain the Slit Illumination Response Function.
+        suffix : str
+            Suffix to be added to each of the input files.
+
+        Returns
+        -------
+        list of AstroData : the input data is simply forwarded.
+        """
+        caltype = 'processed_slitillum'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        # ToDo: Implement me!
+        self.log.warning("primitive", self.myself(),
+                         "Not implemented yet. Doing nothing.")
+
+        return adinputs
+
     def storeProcessedStandard(self, adinputs=None, suffix=None):
         caltype = 'processed_standard'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
