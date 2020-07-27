@@ -175,7 +175,6 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
     np.testing.assert_array_less(rms, required_rms)
 
 
-@pytest.mark.skip("Need to recreate reference files")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
