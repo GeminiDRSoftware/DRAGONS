@@ -2,7 +2,7 @@
 
 import math
 import re
-from astropy import coordinates, units, _erfa
+from astropy import coordinates, units
 
 # The unitDict dictionary defines the factors for the function
 # convert_units
@@ -135,24 +135,33 @@ def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
     # If that doesn't work, then raise an error
     try:
         coords = coordinates.SkyCoord(ra=ra*units.degree, dec=dec*units.degree,
-                  frame=frame, equinox=equinox, obstime=ut_datetime)
+                                      frame=frame, equinox=equinox,
+                                      obstime=ut_datetime)
     except ValueError:
         frame = 'cirs'
         coords = coordinates.SkyCoord(ra=ra*units.degree, dec=dec*units.degree,
-                  frame=frame, equinox=equinox, obstime=ut_datetime)
+                                      frame=frame, equinox=equinox,
+                                      obstime=ut_datetime)
 
     if appt_frame:
         # Call ERFA.apci13 to get the Equation of Origin (EO).
         # We just discard the astrom context return
-        astrom, eo = _erfa.apci13(coords.obstime.jd1, coords.obstime.jd2)
-        astrom = None
+        try:
+            # With astropy 4.2 erfa becomes a dependency and lives in an
+            # independent Python package: https://github.com/liberfa/pyerfa
+            import erfa
+        except ImportError:
+            from astropy import _erfa as erfa
+
+        astrom, eo = erfa.apci13(coords.obstime.jd1, coords.obstime.jd2)
         # eo comes back as a single element array in radians
         eo = float(eo)
         eo = eo * units.radian
         # re-create the coords frame object with the corrected ra
         coords = coordinates.SkyCoord(ra=coords.ra+eo, dec=coords.dec,
-                          frame=coords.frame.name, equinox=coords.equinox,
-                          obstime=coords.obstime)
+                                      frame=coords.frame.name,
+                                      equinox=coords.equinox,
+                                      obstime=coords.obstime)
 
     # Now we can just convert to ICRS...
     icrs = coords.icrs
