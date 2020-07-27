@@ -74,10 +74,11 @@ def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
         data_o = np.ma.masked_array(ext_out.data, mask=ext_out.mask)
 
         # Bin columns
-        fitter = fitting.LinearLSQFitter()
-        model = models.Polynomial1D(degree=2)
+        n_rows = data_o.shape[0]
+        fitter = fitting.LevMarLSQFitter()
+        model = models.Chebyshev1D(c0=0.5 * n_rows, degree=2, domain=(0, n_rows))
         nbins = 10
-        rows = np.arange(data_o.shape[0])
+        rows = np.arange(n_rows)
 
         for i in range(nbins):
 
@@ -89,13 +90,11 @@ def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
             fitted_model = fitter(model, rows, cols)
 
             # Check column is linear
-            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.01)
+            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.023)
 
             # Check if slope is (almost) horizontal (< 1.0 deg)
-            assert np.abs(
-                np.rad2deg(
-                    np.arctan(
-                        fitted_model.c1.value / (rows.size // 2)))) < 1.5
+            slope = np.rad2deg(np.arctan(fitted_model.c1.value / fitted_model.c0.value))
+            assert np.abs(slope) <= 5.1
 
     if request.config.getoption("--do-plots"):
         plot_slit_illum_correct_results(ad, ad_out, fname="test_same_roi_")
@@ -119,10 +118,12 @@ def test_slit_illum_correct_different_roi(change_working_dir, input_data, reques
         data_o = np.ma.masked_array(ext_out.data, mask=ext_out.mask)
 
         # Bin columns
-        fitter = fitting.LinearLSQFitter()
-        model = models.Polynomial1D(degree=2)
+        n_rows = data_o.shape[0]
+        fitter = fitting.LevMarLSQFitter()
+        model = models.Chebyshev1D(c0=0.5 * n_rows, degree=2, domain=(0, n_rows))
+        model.c0.fixed = True
         nbins = 10
-        rows = np.arange(data_o.shape[0])
+        rows = np.arange(n_rows)
 
         for i in range(nbins):
 
@@ -134,13 +135,13 @@ def test_slit_illum_correct_different_roi(change_working_dir, input_data, reques
             fitted_model = fitter(model, rows, cols)
 
             # Check column is linear
-            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.017)
+            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.001)
 
             # Check if slope is (almost) horizontal (< 2.5 deg)
-            assert np.abs(
-                np.rad2deg(
-                    np.arctan(
-                        fitted_model.c1.value / (rows.size // 2)))) < 2.5
+            slope_angle = np.rad2deg(np.arctan(
+                fitted_model.c1.value / (rows.size // 2)))
+
+            assert np.abs(slope_angle) <= 1.0
 
     if request.config.getoption("--do-plots"):
         plot_slit_illum_correct_results(ad, ad_out, fname="test_different_roi_")
