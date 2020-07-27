@@ -72,7 +72,7 @@ def test_find_apertures_using_standard_star(ad_and_center):
     normally bright) observations.
     """
     ad, expected_center = ad_and_center
-    p = GMOSSpect(ad)
+    p = GMOSSpect([ad])
     _ad = p.findSourceApertures(max_apertures=1).pop()
 
     assert hasattr(ad[0], 'APERTURE')
