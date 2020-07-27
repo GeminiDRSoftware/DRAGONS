@@ -17,4 +17,5 @@ fi
 
 source .jenkins/scripts/download_and_install_anaconda.sh
 
-pip install tox tox-conda
+conda install --yes pip wheel
+pip install "tox<=3.17.1" tox-conda

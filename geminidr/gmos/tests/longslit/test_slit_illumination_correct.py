@@ -34,7 +34,12 @@ same_roi_datasets = [
     for d in datasets]
 
 different_roi_datasets = [
-    ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),  # R400 : 0.850
+    # GN Ham R150 : 0.690
+    ("N20200715S0059_quartz.fits", "N20190602S0306_slitIllum.fits"),
+    # GS EEV B600 : 0.520
+    ("S20130601S0121_quartz.fits", "S20130602S0005_slitIllum.fits"),
+    # GS Ham R400 : 0.850
+    ("S20190204S0081_quartz.fits", "S20190204S0006_slitIllum.fits"),
 ]
 
 
@@ -69,10 +74,11 @@ def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
         data_o = np.ma.masked_array(ext_out.data, mask=ext_out.mask)
 
         # Bin columns
-        fitter = fitting.LinearLSQFitter()
-        model = models.Polynomial1D(degree=2)
+        n_rows = data_o.shape[0]
+        fitter = fitting.LevMarLSQFitter()
+        model = models.Chebyshev1D(c0=0.5 * n_rows, degree=2, domain=(0, n_rows))
         nbins = 10
-        rows = np.arange(data_o.shape[0])
+        rows = np.arange(n_rows)
 
         for i in range(nbins):
 
@@ -84,13 +90,11 @@ def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
             fitted_model = fitter(model, rows, cols)
 
             # Check column is linear
-            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.01)
+            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.023)
 
             # Check if slope is (almost) horizontal (< 1.0 deg)
-            assert np.abs(
-                np.rad2deg(
-                    np.arctan(
-                        fitted_model.c1.value / (rows.size // 2)))) < 1.5
+            slope = np.rad2deg(np.arctan(fitted_model.c1.value / fitted_model.c0.value))
+            assert np.abs(slope) <= 5.1
 
     if request.config.getoption("--do-plots"):
         plot_slit_illum_correct_results(ad, ad_out, fname="test_same_roi_")
@@ -114,10 +118,12 @@ def test_slit_illum_correct_different_roi(change_working_dir, input_data, reques
         data_o = np.ma.masked_array(ext_out.data, mask=ext_out.mask)
 
         # Bin columns
-        fitter = fitting.LinearLSQFitter()
-        model = models.Polynomial1D(degree=2)
+        n_rows = data_o.shape[0]
+        fitter = fitting.LevMarLSQFitter()
+        model = models.Chebyshev1D(c0=0.5 * n_rows, degree=2, domain=(0, n_rows))
+        model.c0.fixed = True
         nbins = 10
-        rows = np.arange(data_o.shape[0])
+        rows = np.arange(n_rows)
 
         for i in range(nbins):
 
@@ -129,16 +135,53 @@ def test_slit_illum_correct_different_roi(change_working_dir, input_data, reques
             fitted_model = fitter(model, rows, cols)
 
             # Check column is linear
-            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.017)
+            np.testing.assert_allclose(fitted_model.c2.value, 0, atol=0.001)
 
             # Check if slope is (almost) horizontal (< 2.5 deg)
-            assert np.abs(
-                np.rad2deg(
-                    np.arctan(
-                        fitted_model.c1.value / (rows.size // 2)))) < 2.5
+            slope_angle = np.rad2deg(np.arctan(
+                fitted_model.c1.value / (rows.size // 2)))
+
+            assert np.abs(slope_angle) <= 1.0
 
     if request.config.getoption("--do-plots"):
         plot_slit_illum_correct_results(ad, ad_out, fname="test_different_roi_")
+
+
+# --- Helper functions and fixtures -------------------------------------------
+@pytest.fixture
+def input_data(request, path_to_inputs):
+    """
+    Returns the pre-processed input data and the associated slit illumination
+    data.
+
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
+
+    Returns
+    -------
+    AstroData
+        Input spectrum processed up to right before the `distortionDetermine`
+        primitive.
+    """
+    def _load_file(filename):
+        path = os.path.join(path_to_inputs, filename)
+
+        if os.path.exists(path):
+            _ad = astrodata.open(path)
+        else:
+            raise FileNotFoundError(path)
+
+        return _ad
+
+    ad = _load_file(request.param[0])
+    slit_illum_ad = _load_file(request.param[1])
+
+    return ad, slit_illum_ad
 
 
 def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
@@ -148,10 +191,10 @@ def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
         nrows=3, sharex='all')
 
     ax1.set_prop_cycle(
-        cycler(color=[plt.cm.cool(i) for i in np.linspace(0, 1, nbins)]))
+        cycler(color=[plt.get_cmap('cool')(i) for i in np.linspace(0, 1, nbins)]))
 
     ax2.set_prop_cycle(
-        cycler(color=[plt.cm.cool(i) for i in np.linspace(0, 1, nbins)]))
+        cycler(color=[plt.get_cmap('cool')(i) for i in np.linspace(0, 1, nbins)]))
 
     for ext1, ext2 in zip(ad1, ad2):
 
@@ -194,43 +237,6 @@ def plot_slit_illum_correct_results(ad1, ad2, fname="", nbins=50):
     plt.savefig(fname + ad1.filename.replace(".fits", ".png"))
 
 
-# --- Helper functions and fixtures -------------------------------------------
-@pytest.fixture
-def input_data(request, path_to_inputs):
-    """
-    Returns the pre-processed input data and the associated slit illumination
-    data.
-
-    Parameters
-    ----------
-    path_to_inputs : pytest.fixture
-        Fixture defined in :mod:`astrodata.testing` with the path to the
-        pre-processed input file.
-    request : pytest.fixture
-        PyTest built-in fixture containing information about parent test.
-
-    Returns
-    -------
-    AstroData
-        Input spectrum processed up to right before the `distortionDetermine`
-        primitive.
-    """
-    def _load_file(filename):
-        path = os.path.join(path_to_inputs, filename)
-
-        if os.path.exists(path):
-            _ad = astrodata.open(path)
-        else:
-            raise FileNotFoundError(path)
-
-        return _ad
-
-    ad = _load_file(request.param[0])
-    slit_illum_ad = _load_file(request.param[1])
-
-    return ad, slit_illum_ad
-
-
 # -- Recipe to create pre-processed data ---------------------------------------
 def create_twilight_inputs():
     """
@@ -269,6 +275,26 @@ def create_twilight_inputs():
                      "N20190327S0102.fits"],
             "twilight": ["N20190327S0056.fits"],
         },
+        "S20130602S0005.fits": {
+            "bias": [
+                "S20130601S0161.fits",
+                "S20130601S0160.fits",
+                "S20130601S0159.fits",
+                "S20130601S0158.fits",
+                "S20130601S0157.fits",
+            ],
+            "twilight": ["S20130602S0005.fits"],
+        },
+        "N20190602S0306.fits": {
+            "bias": [
+                "N20190601S0648.fits",
+                "N20190601S0647.fits",
+                "N20190601S0646.fits",
+                "N20190601S0645.fits",
+                "N20190601S0644.fits",
+            ],
+            "twilight": ["N20190602S0306.fits"],
+        }
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
@@ -334,6 +360,12 @@ def create_quartz_inputs():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     associated_calibrations = {
+        "N20200715S0059.fits": {
+            "quartz": ["N20200715S0059.fits"],
+        },
+        "S20130601S0121.fits": {
+            "quartz": ["S20130601S0121.fits"],
+        },
         "S20190204S0081.fits": {
             "quartz": ["S20190204S0081.fits"],
         },
