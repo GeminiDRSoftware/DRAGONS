@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 import hashlib
 
-from os import mkdir
+from os import makedirs
 from os.path import basename, exists
 from os.path import join, split
 
@@ -48,8 +48,7 @@ def _check_cache(cname, ctype):
 def _makecachedir(caltype):
     cache = set_caches()
     cachedir = join(cache["calibrations"], caltype)
-    if not exists(cachedir):
-        mkdir(cachedir)
+    makedirs(cachedir, exist_ok=True)
     return cachedir
 
 

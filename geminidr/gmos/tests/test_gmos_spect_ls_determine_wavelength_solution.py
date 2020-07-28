@@ -55,89 +55,88 @@ determine_wavelength_solution_parameters = {
 }
 
 input_pars = [
-
     # Process Arcs: GMOS-N ---
     # (Input File, fwidth, order, min_snr)
-    ("N20100115S0346_mosaic.fits", 6., 2, 5.),  # B600:0.500 EEV
-    # ("N20130112S0390_mosaic.fits", 3., 2, 5.),  # B600:0.500 E2V
-    # ("N20170609S0173_mosaic.fits", 5., 2, 5.),  # B600:0.500 HAM
-    # ("N20170403S0452_mosaic.fits", 5., 2, 3.),  # B600:0.590 HAM Full Frame 1x1
-    # ("N20170415S0255_mosaic.fits", 5., 3, 3.),  # B600:0.590 HAM Central Spectrum 1x1
-    # ("N20171016S0010_mosaic.fits", 5., 2, 5.),  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
-    # ("N20171016S0127_mosaic.fits", 5., 2, 5.),  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
-    # ("N20100307S0236_mosaic.fits", 4., 2, 3.),  # B1200:0.445 EEV
-    # ("N20130628S0290_mosaic.fits", 5., 2, 3.),  # B1200:0.420 E2V - Looks Good
-    # ("N20170904S0078_mosaic.fits", 3., 3, 3.),  # B1200:0.440 HAM
-    # ("N20170627S0116_mosaic.fits", 2.5, 3, 10.),  # B1200:0.520 HAM
-    # ("N20100830S0594_mosaic.fits", 2.5, 2, 3.),  # R150:0.500 EEV - todo: is that strong line in the blue real?
-    # ("N20100702S0321_mosaic.fits", 2.5, 2, 3.),  # R150:0.700 EEV
-    # ("N20130606S0291_mosaic.fits", 5., 2, 3.),  # R150:0.550 E2V
-    # ("N20130112S0574_mosaic.fits", 4.5, 3, 3.),  # R150:0.700 E2V
-    # ("N20130809S0337_mosaic.fits", 3, 2, 3.),  # R150:0.700 E2V
-    # ("N20140408S0218_mosaic.fits", 3, 4, 3.),  # R150:0.700 E2V
-    # ("N20180119S0232_mosaic.fits", 5, 2, 10.),  # R150:0.520 HAM - todo: won't pass
-    # ("N20180516S0214_mosaic.fits", 3.5, 3, 5.),  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2
-    # ("N20171007S0439_mosaic.fits", 3, 2, 10.),  # R150:0.650 HAM
-    # ("N20171007S0441_mosaic.fits", 6, 2, 5.),  # R150:0.650 HAM
-    # ("N20101212S0213_mosaic.fits", 5.5, 2, 3.),  # R400:0.550 EEV
-    # ("N20100202S0214_mosaic.fits", 6, 2, 3.),  # R400:0.700 EEV
-    # ("N20130106S0194_mosaic.fits", 6, 2, 3.),  # R400:0.500 E2V
-    # ("N20130422S0217_mosaic.fits", 4.5, 3, 3.),  # R400:0.700 E2V
-    # ("N20170108S0210_mosaic.fits", 6, 3, 3.),  # R400:0.660 HAM
-    # ("N20171113S0135_mosaic.fits", 5.5, 2, 3.),  # R400:0.750 HAM
-    # ("N20100427S1276_mosaic.fits", 5.5, 2, 3.),  # R600:0.675 EEV
-    # # ("N20180120S0417_mosaic.fits", 8, 3, 5.),  # R600:0.860 HAM - todo: won't pass
-    # ("N20100212S0143_mosaic.fits", 5.5, 3, 5.),  # R831:0.450 EEV
-    # ("N20100720S0247_mosaic.fits", 3.5, 3, 3.),  # R831:0.850 EEV
-    # ("N20130808S0490_mosaic.fits", 4., 3, 5.),  # R831:0.571 E2V
-    # ("N20130830S0291_mosaic.fits", 3.5, 3, 5.),  # R831:0.845 E2V
-    # # ("N20170910S0009_mosaic.fits", 4.5, 2, 3.),  # R831:0.653 HAM- todo: won't pass
-    # ("N20170509S0682_mosaic.fits", 4.5, 3, 3.),  # R831:0.750 HAM
-    # ("N20181114S0512_mosaic.fits", 4, 3, 15.),  # R831:0.865 HAM - todo: passes *only* with fwhm=4??
-    # # ("N20170416S0058_mosaic.fits", 6., 2, 5.),  # R831:0.865 HAM - todo: won't pass
-    # # ("N20170416S0081_mosaic.fits", 4, 2, 3.),  # R831:0.865 HAM - todo: won't pass
-    # # ("N20180120S0315_mosaic.fits", 3, 2, 15.),  # R831:0.865 HAM - todo: won't pass
+    ("N20100115S0346_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
+    ("N20130112S0390_mosaic.fits", None, 3, 10.),  # B600:0.500 E2V
+    ("N20170609S0173_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
+    ("N20170403S0452_mosaic.fits", None, 3, 10.),  # B600:0.590 HAM
+    ("N20170415S0255_mosaic.fits", None, 3, 10.),  # B600:0.590 HAM
+    ("N20171016S0010_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
+    ("N20171016S0127_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
+    ("N20100307S0236_mosaic.fits", None, 3, 10.),  # B1200:0.445 EEV
+    ("N20130628S0290_mosaic.fits", None, 3, 10.),  # B1200:0.420 E2V
+    ("N20170904S0078_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
+    ("N20170627S0116_mosaic.fits", None, 3, 10.),  # B1200:0.520 HAM
+    ("N20100830S0594_mosaic.fits", None, 3, 10.),  # R150:0.500 EEV
+    ("N20100702S0321_mosaic.fits", None, 3, 10.),  # R150:0.700 EEV
+    ("N20130606S0291_mosaic.fits", None, 3, 10.),  # R150:0.550 E2V
+    ("N20130112S0574_mosaic.fits", None, 3, 10.),  # R150:0.700 E2V
+    ("N20130809S0337_mosaic.fits", None, 3, 10.),  # R150:0.700 E2V
+    ("N20140408S0218_mosaic.fits", None, 3, 10.),  # R150:0.700 E2V
+    ("N20180119S0232_mosaic.fits", None, 3, 10.),  # R150:0.520 HAM
+    ("N20180516S0214_mosaic.fits", None, 3, 10.),  # R150:0.610 HAM
+    ("N20171007S0439_mosaic.fits", None, 3, 10.),  # R150:0.650 HAM
+    ("N20171007S0441_mosaic.fits", None, 3, 10.),  # R150:0.650 HAM
+    ("N20101212S0213_mosaic.fits", None, 3, 10.),  # R400:0.550 EEV
+    ("N20100202S0214_mosaic.fits", None, 3, 10.),  # R400:0.700 EEV
+    ("N20130106S0194_mosaic.fits", None, 3, 3.),  # R400:0.500 E2V
+    ("N20130422S0217_mosaic.fits", None, 3, 10.),  # R400:0.700 E2V
+    ("N20170108S0210_mosaic.fits", None, 3, 10.),  # R400:0.660 HAM
+    ("N20171113S0135_mosaic.fits", None, 3, 10.),  # R400:0.750 HAM
+    ("N20100427S1276_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
+    ("N20180120S0417_mosaic.fits", None, 3, 10.),  # R600:0.860 HAM
+    ("N20100212S0143_mosaic.fits", None, 3, 10.),  # R831:0.450 EEV
+    ("N20100720S0247_mosaic.fits", None, 3, 10.),  # R831:0.850 EEV
+    ("N20130808S0490_mosaic.fits", None, 3, 10.),  # R831:0.571 E2V
+    ("N20130830S0291_mosaic.fits", None, 3, 10.),  # R831:0.845 E2V
+    ("N20170910S0009_mosaic.fits", None, 3, 10.),  # R831:0.653 HAM
+    ("N20170509S0682_mosaic.fits", None, 3, 10.),  # R831:0.750 HAM
+    ("N20181114S0512_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
+    ("N20170416S0058_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
+    ("N20170416S0081_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
+    ("N20180120S0315_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
     #
     # # Process Arcs: GMOS-S ---
-    # ("S20130218S0126_mosaic.fits", 5., 2, 10),  # B600:0.500 EEV
-    # ("S20130111S0278_mosaic.fits", 6, 3, 5.),  # B600:0.520 EEV
-    # ("S20130114S0120_mosaic.fits", 3, 2, 5.),  # B600:0.500 EEV
-    # ("S20130216S0243_mosaic.fits", 3, 2, 3.),  # B600:0.480 EEV
-    # ("S20130608S0182_mosaic.fits", 6, 3, 3.),  # B600:0.500 EEV
-    # ("S20131105S0105_mosaic.fits", 3, 2, 5.),  # B600:0.500 EEV
-    # ("S20140504S0008_mosaic.fits", 6, 3, 10.),  # B600:0.500 EEV
-    # ("S20170103S0152_mosaic.fits", 7, 2, 10.),  # B600:0.600 HAM
-    # ("S20170108S0085_mosaic.fits", 5.5, 2, 10.),  # B600:0.500 HAM - todo: detector partially empty
-    # ("S20130510S0103_mosaic.fits", 2.5, 2, 5.),  # B1200:0.450 EEV - todo: region without matches
-    # ("S20130629S0002_mosaic.fits", 7, 6, 5.),  # B1200:0.525 EEV - todo: order = 6!!
-    # ("S20131123S0044_mosaic.fits", 4, 2, 3.),  # B1200:0.595 EEV
-    # ("S20170116S0189_mosaic.fits", 5, 2, 3.),  # B1200:0.440 HAM
-    # ("S20170103S0149_mosaic.fits", 7, 2, 3.),  # B1200:0.440 HAM
-    # ("S20170730S0155_mosaic.fits", 3.5, 2, 3.),  # B1200:0.440 HAM
-    # # ("S20171219S0117_mosaic.fits", 4, 2, 3.),  # B1200:0.440 HAM - todo: won't pass
-    # ("S20170908S0189_mosaic.fits", 3, 2, 3.),  # B1200:0.550 HAM
-    # ("S20131230S0153_mosaic.fits", 3, 2, 10.),  # R150:0.550 EEV
-    # ("S20130801S0140_mosaic.fits", 6, 2, 15.),  # R150:0.700 EEV
-    # ("S20170430S0060_mosaic.fits", 3, 2, 15.),  # R150:0.717 HAM
-    # # ("S20170430S0063_mosaic.fits", 6, 2, 15.),  # R150:0.727 HAM - todo: not stable
-    # ("S20171102S0051_mosaic.fits", 6, 2, 5.),   # R150:0.950 HAM
-    # ("S20130114S0100_mosaic.fits", 6, 4, 15.),  # R400:0.620 EEV
-    # ("S20130217S0073_mosaic.fits", 4, 2, 5.),  # R400:0.800 EEV
-    # ("S20170108S0046_mosaic.fits", 3, 2, 3.),  # R400:0.550 HAM
-    # ("S20170129S0125_mosaic.fits", 3, 2, 3.),  # R400:0.685 HAM
-    # ("S20170703S0199_mosaic.fits", 5, 3, 3.),  # R400:0.800 HAM
-    # ("S20170718S0420_mosaic.fits", 5, 2, 3.),  # R400:0.910 HAM
-    # ("S20100306S0460_mosaic.fits", 6, 2, 15.),  # R600:0.675 EEV
-    # ("S20101218S0139_mosaic.fits", 6, 2, 10.),  # R600:0.675 EEV
-    # ("S20110306S0294_mosaic.fits", 6, 2, 5.),  # R600:0.675 EEV
-    # ("S20110720S0236_mosaic.fits", 6, 2, 5.),  # R600:0.675 EEV
-    # ("S20101221S0090_mosaic.fits", 4, 2, 3.),  # R600:0.690 EEV
-    # ("S20120322S0122_mosaic.fits", 5, 2, 3.),  # R600:0.900 EEV
-    # ("S20130803S0011_mosaic.fits", 2, 2, 3.),  # R831:0.576 EEV
-    # ("S20130414S0040_mosaic.fits", 4, 2, 10.),  # R831:0.845 EEV
-    # ("S20170214S0059_mosaic.fits", 2, 2, 10.),  # R831:0.440 HAM - todo: the numbers says it is fine but I can't tell by the plots
-    # ("S20170703S0204_mosaic.fits", 3, 2, 3.),  # R831:0.600 HAM
-    # ("S20171018S0048_mosaic.fits", 5, 2, 3.)  # R831:0.865 HAM - todo: the numbers says it is fine but I can't tell by the plots
+    ("S20130218S0126_mosaic.fits", None, 3, 10),  # B600:0.500 EEV
+    ("S20130111S0278_mosaic.fits", None, 3, 10.),  # B600:0.520 EEV
+    ("S20130114S0120_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
+    ("S20130216S0243_mosaic.fits", None, 3, 10.),  # B600:0.480 EEV
+    ("S20130608S0182_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
+    ("S20131105S0105_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
+    ("S20140504S0008_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
+    ("S20170103S0152_mosaic.fits", None, 3, 10.),  # B600:0.600 HAM
+    ("S20170108S0085_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
+    ("S20130510S0103_mosaic.fits", None, 3, 10.),  # B1200:0.450 EEV
+    ("S20130629S0002_mosaic.fits", None, 3, 10.),  # B1200:0.525 EEV
+    ("S20131123S0044_mosaic.fits", None, 3, 10.),  # B1200:0.595 EEV
+    ("S20170116S0189_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
+    ("S20170103S0149_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
+    ("S20170730S0155_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
+    ("S20171219S0117_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
+    ("S20170908S0189_mosaic.fits", None, 3, 10.),  # B1200:0.550 HAM
+    ("S20131230S0153_mosaic.fits", None, 3, 10.),  # R150:0.550 EEV
+    ("S20130801S0140_mosaic.fits", None, 3, 10.),  # R150:0.700 EEV
+    ("S20170430S0060_mosaic.fits", None, 3, 10.),  # R150:0.717 HAM
+    ("S20170430S0063_mosaic.fits", None, 3, 10.),  # R150:0.727 HAM
+    ("S20171102S0051_mosaic.fits", None, 3, 10.),  # R150:0.950 HAM
+    ("S20130114S0100_mosaic.fits", None, 3, 10.),  # R400:0.620 EEV
+    ("S20130217S0073_mosaic.fits", None, 3, 10.),  # R400:0.800 EEV
+    ("S20170108S0046_mosaic.fits", None, 3, 10.),  # R400:0.550 HAM
+    ("S20170129S0125_mosaic.fits", None, 3, 10.),  # R400:0.685 HAM
+    ("S20170703S0199_mosaic.fits", None, 3, 10.),  # R400:0.800 HAM
+    ("S20170718S0420_mosaic.fits", None, 3, 10.),  # R400:0.910 HAM
+    ("S20100306S0460_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
+    ("S20101218S0139_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
+    ("S20110306S0294_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
+    ("S20110720S0236_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
+    ("S20101221S0090_mosaic.fits", None, 3, 10.),  # R600:0.690 EEV
+    ("S20120322S0122_mosaic.fits", None, 3, 10.),  # R600:0.900 EEV
+    ("S20130803S0011_mosaic.fits", None, 3, 10.),  # R831:0.576 EEV
+    ("S20130414S0040_mosaic.fits", None, 3, 10.),  # R831:0.845 EEV
+    ("S20170214S0059_mosaic.fits", None, 3, 10.),  # R831:0.440 HAM
+    ("S20170703S0204_mosaic.fits", None, 3, 10.),  # R831:0.600 HAM
+    ("S20171018S0048_mosaic.fits", None, 3, 10.)  # R831:0.865 HAM
 ]
 
 
@@ -148,13 +147,8 @@ input_pars = [
 def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
         ad, change_working_dir, fwidth, min_snr, order, request):
     """
-    Make sure that the WAVECAL model was fitted with an RMS smaller than half of
-    the slit size in pixels.
-
-    todo: this test must change with the slit size. While checking that, I found
-        out that the `ad[0].slit()` descriptor returns nothing. I could use the
-        existing `ad[0].focal_plane_mask()` descriptor for now but it is
-        counter-intuitive.
+    Make sure that the WAVECAL model was fitted with an RMS smaller than 0.2
+    times the FWHM of the arc lines (i.e., less than half of the standard deviation).
     """
     with change_working_dir():
         logutils.config(file_name='log_rms_{:s}.txt'.format(ad.data_label()))
@@ -171,15 +165,12 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
         do_plots(wcalibrated_ad)
 
     table = wcalibrated_ad[0].WAVECAL
-    coefficients = table["coefficients"]
-    rms = coefficients[table["name"] == "rms"]
+    tdict = dict(zip(table['name'], table['coefficients']))
+    rms = tdict['rms']
 
-    pixel_scale = wcalibrated_ad[0].pixel_scale()  # arcsec / px
-    slit_size_in_arcsec = float(wcalibrated_ad[0].focal_plane_mask().replace('arcsec', ''))
-    slit_size_in_px = slit_size_in_arcsec / pixel_scale  # px
+    fwidth = tdict['fwidth']
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
-
-    required_rms = dispersion * slit_size_in_px
+    required_rms = 0.2 * fwidth * dispersion
 
     np.testing.assert_array_less(rms, required_rms)
 
