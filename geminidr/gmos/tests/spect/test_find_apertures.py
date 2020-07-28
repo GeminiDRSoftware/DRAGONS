@@ -77,8 +77,7 @@ def test_find_apertures_using_standard_star(ad_and_center):
 
     assert hasattr(ad[0], 'APERTURE')
     assert len(ad[0].APERTURE) == 1
-    assert np.testing.assert_almost_equal(
-        ad[0].APERTURE['center'], expected_center, 3)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], expected_center, 3)
 
 
 # -- Fixtures -----------------------------------------------------------------
