@@ -33,6 +33,8 @@ associated_calibrations = {
 def test_make_processed_slit_illum(processed_slit_illum, ref_ad_factory):
     ref_ad = ref_ad_factory(processed_slit_illum.filename)
 
+    assert "_slitIllum" in processed_slit_illum.filename
+
     for ext, ext_ref in zip(processed_slit_illum, ref_ad):
         np.testing.assert_allclose(ext.data, ext_ref.data, atol=1)
 
@@ -76,6 +78,7 @@ def processed_slit_illum(change_working_dir, path_to_inputs, request):
         reduce = Reduce()
         reduce.files.extend([twi_path])
         reduce.mode = 'sq'
+        reduce.recipename = 'makeProcessedSlitIllum'
         reduce.ucals = normalize_ucals(reduce.files, calibration_files)
         reduce.runr()
 

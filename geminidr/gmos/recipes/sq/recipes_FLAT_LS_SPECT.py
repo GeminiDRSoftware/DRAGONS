@@ -21,5 +21,5 @@ def makeProcessedSlitIllum(p):
     p.stackFrames()
     p.createSlitIllumination()
     p.makeIRAFCompatible()
-    p.storeProcessedSlitIllum()
+    # p.storeProcessedSlitIllum()
 
