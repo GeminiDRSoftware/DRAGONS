@@ -57,6 +57,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             format(ad.filename))
                 continue
 
+            no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
+                         for detsec in ad.detector_section())
+
+            has_48rows = all(detsec.y2 == 4224
+                             for detsec in ad.detector_section()) and \
+                             'Hamamatsu' in ad.detector_name(pretty=True)
+
             if illum:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
                 final_illum = gt.clip_auxiliary_data(ad, aux=illum, aux_type='bpm',
@@ -68,13 +75,14 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         iext = np.where(illum_ext.data > 0, DQ.unilluminated,
                                         0).astype(DQ.datatype)
                         ext.mask = iext if ext.mask is None else ext.mask | iext
-            elif not all(detsec.y1 > 1600 and detsec.y2 < 2900
-                         for detsec in ad.detector_section()):
+            elif not no_bridges:   # i.e. there are bridges.
+
                 # Default operation for GMOS LS
                 # The 95% cut should ensure that we're sampling something
                 # bright (even for an arc)
                 # The 75% cut is intended to handle R150 data, where many of
                 # the extensions are unilluminated
+
                 row_medians = np.percentile(np.array([np.percentile(ext.data, 95, axis=1)
                                                       for ext in ad]), 75, axis=0)
                 rows = np.arange(len(row_medians))
@@ -87,6 +95,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                      operation=np.logical_or, size=2)
                 for ext in ad:
                     ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
+
+                if has_48rows:
+                    actual_rows = 48 // ad.detector_y_bin()
+                    for ext in ad:
+                        ext.mask[:actual_rows] |= DQ.unilluminated
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
