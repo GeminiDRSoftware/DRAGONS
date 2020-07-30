@@ -31,9 +31,10 @@ associated_calibrations = {
 @pytest.mark.preprocessed
 @pytest.mark.parametrize("processed_slit_illum", datasets, indirect=True)
 def test_make_processed_slit_illum(processed_slit_illum, ref_ad_factory):
-    ref_ad = ref_ad_factory(processed_slit_illum.filename)
 
     assert "_slitIllum" in processed_slit_illum.filename
+
+    ref_ad = ref_ad_factory(processed_slit_illum.filename)
 
     for ext, ext_ref in zip(processed_slit_illum, ref_ad):
         np.testing.assert_allclose(ext.data, ext_ref.data, atol=1)
@@ -63,6 +64,8 @@ def processed_slit_illum(change_working_dir, path_to_inputs, request):
     twi_path = download_from_archive(twi_filename)
     twi_ad = astrodata.open(twi_path)
 
+    print(twi_ad.tags)
+
     master_bias = os.path.join(
         path_to_inputs, associated_calibrations[twi_filename])
 
@@ -71,7 +74,7 @@ def processed_slit_illum(change_working_dir, path_to_inputs, request):
     calibration_files = ['processed_bias:{}'.format(master_bias)]
 
     with change_working_dir():
-        print("Reducing FLATs in folder:\n  {}".format(os.getcwd()))
+        print("Reducing SLITILLUM in folder:\n  {}".format(os.getcwd()))
         logutils.config(
             file_name='log_flat_{}.txt'.format(twi_ad.data_label()))
 

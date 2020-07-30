@@ -1,13 +1,9 @@
 """
-Recipes available to data with tags ['GMOS', 'SPECT', 'LS', 'FLAT'].
+Recipes available to data with tags ['GMOS', 'SPECT', 'LS', 'SLITILLUM'].
 These are GMOS longslit observations.
 Default is "reduce".
 """
-recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
-
-from ..ql.recipes_FLAT_LS_SPECT import makeProcessedFlat
-
-_default = makeProcessedFlat
+recipe_tags = {'GMOS', 'SPECT', 'LS', 'SLITILLUM'}
 
 
 def makeProcessedSlitIllum(p):
@@ -22,3 +18,4 @@ def makeProcessedSlitIllum(p):
     p.makeSlitIllum()
     p.makeIRAFCompatible()
     p.storeProcessedSlitIllum()
+
