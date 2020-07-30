@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Tests for the `createSlitIllumination` primitive. The primitive itself is
+Tests for the `makeSlitIllum` primitive. The primitive itself is
 defined in :mod:`~geminidr.core.primitives_spect` but these tests use GMOS Spect
 data.
 """
@@ -41,7 +41,7 @@ multiext_datasets = [d.split('.')[0] + "_twilight.fits" for d in datasets]
 @pytest.mark.parametrize("ad", mosaicked_datasets, indirect=True)
 def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, request):
     """
-    Test that can run `createSlitIllumination` in mosaicked data. This primitive
+    Test that can run `makeSlitIllum` in mosaicked data. This primitive
     creates a 2D image that is used to normalize the input data.
 
     After normalization, the intensity along a column should be more or less
@@ -62,7 +62,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
         assert hasattr(ad[0], "wcs")
 
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.createSlitIllumination(bins=25, border=10, debug_plot=plot)
+        p.makeSlitIllum(bins=25, border=10, debug_plot=plot)
         slit_illum_ad = p.writeOutputs(
             suffix="_mosaickedSlitIllum",  strip=True)[0]
 
@@ -111,7 +111,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
 @pytest.mark.parametrize("ad", multiext_datasets, indirect=True)
 def test_create_slit_illumination_with_multi_extension_data(ad, change_working_dir, request):
     """
-    Test that can run `createSlitIllumination` in multi-extension data.
+    Test that can run `makeSlitIllum` in multi-extension data.
     """
     plot = request.config.getoption("--do-plots")
 
@@ -120,7 +120,7 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
         cwd = os.getcwd()
         print("Running tests inside folder:\n  {}".format(cwd))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.createSlitIllumination(bins=25, border=10, debug_plot=plot)
+        p.makeSlitIllum(bins=25, border=10, debug_plot=plot)
         slit_illum_ad = p.writeOutputs()[0]
 
         for ext, slit_ext in zip(ad, slit_illum_ad):
@@ -371,7 +371,7 @@ def create_inputs_recipe():
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/longslit/test_create_slit_illumination/inputs"
+    module_path = "geminidr/gmos/longslit/test_make_slit_illum/inputs"
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
 

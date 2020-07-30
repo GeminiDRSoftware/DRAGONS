@@ -125,9 +125,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
         return adinputs
 
-    def createSlitIllumination(self, adinputs=None, **params):
+    def makeSlitIllum(self, adinputs=None, **params):
         """
-        Creates the processed Slit Illumination Function by binning a 2D
+        Makes the processed Slit Illumination Function by binning a 2D
         spectrum along the dispersion direction, fitting a smooth function
         for each bin, fitting a smooth 2D model, and reconstructing the 2D
         array using this last model.

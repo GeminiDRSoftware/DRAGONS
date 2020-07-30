@@ -21,7 +21,7 @@ class addDQConfig(parameters_standardize.addDQConfig):
         self.add_illum_mask = True
 
 
-class createSlitIlluminationConfig(config.Config):
+class makeSlitIllumConfig(config.Config):
 
     bins = config.Field("Total number of bins across the dispersion axis.",
                         int, None, optional=True)
