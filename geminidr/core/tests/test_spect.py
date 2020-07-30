@@ -281,7 +281,8 @@ def test_trace_apertures():
 
     desired = np.array([trace_model_parameters[k] for k in keys])
     actual = np.array([ad_out[0].APERTURE[0][k] for k in keys])
-    np.testing.assert_allclose(desired, actual, atol=0.05)
+
+    np.testing.assert_allclose(desired, actual, atol=0.18)
 
 
 # --- Fixtures and helper functions --------------------------------------------

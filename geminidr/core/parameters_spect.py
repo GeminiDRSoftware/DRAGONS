@@ -37,7 +37,7 @@ class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
     spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
-    id_only = config.Field("Use only lines identified for wavelength calibration?", bool, True)
+    id_only = config.Field("Use only lines identified for wavelength calibration?", bool, False)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
                                float, None, min=2., optional=True)
@@ -73,6 +73,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
+    alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     debug = config.Field("Make diagnostic plots?", bool, False)
 
 

@@ -72,13 +72,12 @@ def test_find_apertures_using_standard_star(ad_and_center):
     normally bright) observations.
     """
     ad, expected_center = ad_and_center
-    p = GMOSSpect(ad)
+    p = GMOSSpect([ad])
     _ad = p.findSourceApertures(max_apertures=1).pop()
 
     assert hasattr(ad[0], 'APERTURE')
     assert len(ad[0].APERTURE) == 1
-    assert np.testing.assert_almost_equal(
-        ad[0].APERTURE['center'], expected_center, 3)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], expected_center, 3)
 
 
 # -- Fixtures -----------------------------------------------------------------
