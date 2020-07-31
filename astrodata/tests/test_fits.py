@@ -818,7 +818,7 @@ def test_crop_ext(GSAOI_DARK):
 
 @pytest.mark.xfail(not astropy.utils.minversion(astropy, '4.0.1'),
                    reason='requires astropy >=4.0.1 for correct serialization')
-def test_round_trip_gwcs():
+def test_round_trip_gwcs(tmpdir):
     """
     Add a 2-step gWCS instance to NDAstroData, save to disk, reload & compare.
     """
@@ -878,8 +878,9 @@ def test_round_trip_gwcs():
                             ])
 
     # Save & re-load the AstroData instance with its new WCS attribute:
-    ad1.write('round_trip_gwcs.fits')
-    ad2 = astrodata.open('round_trip_gwcs.fits')
+    testfile = str(tmpdir.join('round_trip_gwcs.fits'))
+    ad1.write(testfile)
+    ad2 = astrodata.open(testfile)
 
     wcs1 = ad1[0].nddata.wcs
     wcs2 = ad2[0].nddata.wcs
