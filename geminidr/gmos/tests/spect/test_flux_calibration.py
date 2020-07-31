@@ -211,7 +211,7 @@ def create_inputs_recipe():
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_flux_calibration/"
+    module_path = "geminidr/gmos/spect/{}/".format(__file__.split('.')[0])
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
@@ -277,7 +277,7 @@ def create_inputs_recipe():
 
         os.chdir("inputs/")
         _ = p.writeOutputs().pop()
-        os.chdir("../")
+        os.chdir("../../")
 
 
 if __name__ == '__main__':

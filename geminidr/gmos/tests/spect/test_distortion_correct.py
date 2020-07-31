@@ -250,7 +250,7 @@ def create_inputs_recipe():
     from astrodata.testing import download_from_archive
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_distortion_correct/"
+    module_path = "geminidr/gmos/spect/{}".format(__file__.split('.')[0])
     path = os.path.join(root_path, module_path)
 
     os.makedirs(path, exist_ok=True)
@@ -282,7 +282,7 @@ def create_inputs_recipe():
 
         os.chdir("inputs")
         processed_ad = p.writeOutputs().pop()
-        os.chdir("../")
+        os.chdir("../../")
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(processed_ad.filename))
 

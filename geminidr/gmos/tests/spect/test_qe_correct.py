@@ -161,7 +161,7 @@ associated_calibrations = {
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
-def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
+def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
 
     with change_working_dir():
 
@@ -193,7 +193,7 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
-def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, ref_ad_factory):
+def test_regression_on_qe_correct(ad, arc_ad, change_working_dir, ref_ad_factory):
 
     with change_working_dir():
         logutils.config(file_name='log_test_regression{}.txt'.format(ad.data_label()))
@@ -703,13 +703,12 @@ def create_inputs_recipe():
     """
     import os
     from astrodata.testing import download_from_archive
-    from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
+    module_path = "geminidr/gmos/spect/{}/".format(__file__.strip(".py"))
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
