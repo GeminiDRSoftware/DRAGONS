@@ -47,7 +47,7 @@ def test_correlation(adinputs, caplog):
     ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
     #assert caplog.records[3].message == 'Found sources at rows: 260.8'
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.1)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.25)
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (3869,)
@@ -72,7 +72,7 @@ def test_correlation_and_trim(adinputs, caplog):
     caplog.clear()
     ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.1)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.25)
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (3139,)

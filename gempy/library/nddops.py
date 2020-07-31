@@ -131,11 +131,19 @@ def rejector(fn):
 
 
 def _masked_mean(data, mask=None):
+    if mask is None:
+        # Creating a masked array with mask=None is extremely slow, use
+        # False instead which is the same and much faster.
+        mask = False
     data = np.ma.masked_array(data, mask=mask)
     return data.mean(axis=0).data.astype(data.dtype)
 
 
 def _masked_sum(data, mask=None):
+    if mask is None:
+        # Creating a masked array with mask=None is extremely slow, use
+        # False instead which is the same and much faster.
+        mask = False
     data = np.ma.masked_array(data, mask=mask)
     return data.sum(axis=0).data.astype(data.dtype)
 

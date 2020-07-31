@@ -128,7 +128,7 @@ def create_inputs_recipe():
     from recipe_system.utils.reduce_utils import normalize_ucals
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/test_find_apertures/"
+    module_path = "geminidr/gmos/spect/test_find_source_apertures/"
     path = os.path.join(root_path, module_path)
     cwd = os.getcwd()
 
