@@ -16,6 +16,7 @@ import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
