@@ -1435,8 +1435,14 @@ class FitsLazyLoadable:
         Need to to some overriding of astropy.io.fits since it doesn't
         know about BITPIX=8
         """
-        dtype = self._obj._dtype_for_bitpix()
         bitpix = self._obj._orig_bitpix
+        if self._obj._orig_bscale == 1 and self._obj._orig_bzero == 0:
+            dtype = fits.BITPIX2DTYPE[bitpix]
+        else:
+            # this method from astropy will return the dtype if the data
+            # needs to be converted to unsigned int or scaled to float
+            dtype = self._obj._dtype_for_bitpix()
+
         if dtype is None:
             if bitpix < 0:
                 dtype = np.dtype('float{}'.format(abs(bitpix)))
@@ -2039,4 +2045,3 @@ def asdftablehdu_to_wcs(hdu):
         return
 
     return wcs
-
