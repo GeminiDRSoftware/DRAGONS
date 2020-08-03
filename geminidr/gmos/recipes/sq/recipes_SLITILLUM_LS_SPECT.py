@@ -19,3 +19,5 @@ def makeProcessedSlitIllum(p):
     p.makeIRAFCompatible()
     p.storeProcessedSlitIllum()
 
+
+_default = makeProcessedSlitIllum
