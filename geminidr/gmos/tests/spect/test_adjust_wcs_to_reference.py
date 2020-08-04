@@ -5,6 +5,8 @@ import astrodata, gemini_instruments
 
 from geminidr.gmos import primitives_gmos_longslit
 
+
+# These are all proprietary data and are only available in our test server
 datasets = [
     ['N20200308S0047_aperturesTraced.fits',
      'N20200308S0048_aperturesTraced.fits',
