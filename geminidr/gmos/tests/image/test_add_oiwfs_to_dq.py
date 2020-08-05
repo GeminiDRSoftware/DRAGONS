@@ -4,7 +4,7 @@ Tests for the p.addOIWFStoDQ primitive.
 """
 
 import pytest
-
+import re
 import astrodata
 import gemini_instruments
 
@@ -51,8 +51,9 @@ def test_warn_if_dq_does_not_exist(caplog, filename):
     assert any("No DQ plane for" in r.message for r in caplog.records)
 
 
-@pytest.mark.parametrize("filename", ["S20190105S0168.fits"])
-def test_add_oiwfs_runs_normally(caplog, filename):
+@pytest.mark.parametrize("filename, x0, y0, ext_num",
+                         [("S20190105S0168.fits", 130, 483, 9)])
+def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
     """
     Test that the primitive does not run if the input file does not have a DQ
     plan.
@@ -73,6 +74,20 @@ def test_add_oiwfs_runs_normally(caplog, filename):
     # plot(p.streams['main'][0])
 
     assert any("Guide star location found at" in r.message for r in caplog.records)
+
+    # Some kind of regression test
+    for r in caplog.records:
+        if r.message.startswith("Guide star location found at"):
+            coords = re.findall("\((.*?)\)", r.message).pop().split(',')
+
+            x = float(coords[0])
+            y = float(coords[1])
+            n = int(r.message.split(' ')[-1])
+
+            assert abs(x - x0) < 1
+            assert abs(y - y0) < 1
+            assert n == ext_num
+
 
 
 @pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
