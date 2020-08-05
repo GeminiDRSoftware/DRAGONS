@@ -92,6 +92,11 @@ def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     p.addVAR(read_noise=True)
     p.addOIWFSToDQ()
 
+    assert any("No good rows in" in r.message for r in caplog.records)
+
+    assert any("Cannot distinguish probe region from sky for"
+               in r.message for r in caplog.records)
+
     # plot(p.streams['main'][0])
 
 
