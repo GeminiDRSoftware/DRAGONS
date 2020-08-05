@@ -72,6 +72,8 @@ def test_add_oiwfs_runs_normally(caplog, filename):
 
     # plot(p.streams['main'][0])
 
+    assert any("Guide star location found at" in r.message for r in caplog.records)
+
 
 @pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
 def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
@@ -92,12 +94,12 @@ def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     p.addVAR(read_noise=True)
     p.addOIWFSToDQ()
 
+    # plot(p.streams['main'][0])
+
     assert any("No good rows in" in r.message for r in caplog.records)
 
     assert any("Cannot distinguish probe region from sky for"
                in r.message for r in caplog.records)
-
-    # plot(p.streams['main'][0])
 
 
 def plot(ad):
