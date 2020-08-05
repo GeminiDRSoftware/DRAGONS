@@ -51,8 +51,8 @@ def test_warn_if_dq_does_not_exist(caplog, filename):
     assert any("No DQ plane for" in r.message for r in caplog.records)
 
 
-@pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
-def test_add_oiwfs(caplog, filename):
+@pytest.mark.parametrize("filename", ["S20190105S0168.fits"])
+def test_add_oiwfs_runs_normally(caplog, filename):
     """
     Test that the primitive does not run if the input file does not have a DQ
     plan.
@@ -67,7 +67,68 @@ def test_add_oiwfs(caplog, filename):
 
     p = GMOSImage([ad])
     p.addDQ()
+    p.addVAR(read_noise=True)
     p.addOIWFSToDQ()
+
+    # plot(p.streams['main'][0])
+
+
+@pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
+def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
+    """
+    Test that the primitive does not run if the input file does not have a DQ
+    plan.
+
+    Parameters
+    ----------
+    caplog : fixture
+    filename : str
+    """
+    file_path = download_from_archive(filename)
+    ad = astrodata.open(file_path)
+
+    p = GMOSImage([ad])
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.addOIWFSToDQ()
+
+    # plot(p.streams['main'][0])
+
+
+def plot(ad):
+    """
+    Displays the tiled arrays with the DQ mask for analysing the data.
+
+    Parameters
+    ----------
+    ad : multi-extension data
+    """
+    from astropy.visualization import ImageNormalize, ZScaleInterval
+    from copy import deepcopy
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    p = GMOSImage([deepcopy(ad)])
+    _ad = p.tileArrays().pop()
+
+    fig, axs = plt.subplots(num=ad.filename, ncols=len(_ad), sharey=True)
+
+    norm = ImageNormalize(
+        np.concatenate([ext.data.ravel()[ext.mask.ravel() == 0] for ext in _ad]),
+        interval=ZScaleInterval())
+
+    vmin = norm.vmin
+    vmax = norm.vmax
+
+    for i, ext in enumerate(_ad):
+
+        data = np.ma.masked_array(ext.data, mask=ext.mask)
+        cmap = plt.get_cmap('viridis')
+        cmap.set_bad('red', alpha='0.5')
+        axs[i].imshow(data, origin='lower', cmap=cmap, vmin=vmin, vmax=vmax)
+        # axs[i].imshow(data.data, origin='lower', vmin=vmin, vmax=vmax)
+
+    plt.show()
 
 
 def create_inputs():
