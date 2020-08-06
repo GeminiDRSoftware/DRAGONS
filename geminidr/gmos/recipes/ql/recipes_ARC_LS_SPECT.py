@@ -8,7 +8,7 @@ recipe_tags = {'GMOS', 'SPECT', 'LS', 'ARC'}
 
 def makeProcessedArc(p):
     p.prepare()
-    p.addDQ(static_bpm=None)
+    p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.ADUToElectrons()

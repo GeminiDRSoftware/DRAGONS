@@ -15,7 +15,7 @@ def flat_order_check(value):
 
 class addDQConfig(parameters_standardize.addDQConfig):
     def setDefaults(self):
-        self.add_illum_mask = True
+        self.add_illum_mask = True   # adds bridges in longslit full frame
 
 class normalizeFlatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)

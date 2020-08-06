@@ -18,6 +18,7 @@ def reduce(p):
 
     p.prepare()
     p.addDQ()
+    #p.addIllumMaskToDQ()
     p.addVAR(read_noise=True)
     p.detectSources()
     p.addReferenceCatalog()
@@ -66,6 +67,7 @@ def reduce_nostack(p):
 
     p.prepare()
     p.addDQ()
+    #p.addIllumMaskToDQ()
     p.addVAR(read_noise=True)
     p.detectSources()
     p.measureIQ(display=True)
@@ -140,6 +142,7 @@ def makeProcessedFringe(p):
     """
     p.prepare()
     p.addDQ()
+    #p.addIllumMaskToDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect()
