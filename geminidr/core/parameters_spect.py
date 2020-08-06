@@ -5,18 +5,21 @@ from astrodata import AstroData
 from astropy import units as u
 
 
-class adjustSlitOffsetToReferenceConfig(config.Config):
+class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
-                          str, "_slitOffsetCorrected", optional=True)
+                          str, "_wcsCorrected", optional=True)
+    method = config.ChoiceField("Alignment method", str,
+                                allowed={"sources_wcs": "Match sources using WCS",
+                                         "sources_offsets": "Match sources using telescope offsets",
+                                         "offsets": "Use telescope offsets only"},
+                                default="sources_wcs")
+    fallback = config.ChoiceField("Fallback method", str,
+                                  allowed={"sources_offsets": "Match sources using telescope offsets",
+                                           "offsets": "Use telescope offsets only"},
+                                  default="offsets", optional=True)
     tolerance = config.RangeField("Maximum distance from the header offset, "
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
-    method = config.ChoiceField(
-        "Alignment method", str,
-        allowed={"offsets": "Use telescope offsets",
-                 "correlation": "Correlate the slit profile"},
-        default="correlation"
-    )
 
 
 class calculateSensitivityConfig(config.Config):
@@ -34,7 +37,7 @@ class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
     spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
-    id_only = config.Field("Use only lines identified for wavelength calibration?", bool, True)
+    id_only = config.Field("Use only lines identified for wavelength calibration?", bool, False)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
                                float, None, min=2., optional=True)
@@ -46,23 +49,32 @@ class determineDistortionConfig(config.Config):
     debug = config.Field("Display line traces on image display?", bool, False)
 
 
+def min_lines_check(value):
+    [int(x) for x in str(value).split(',')]
+    return True
+
+
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
+    order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=3.)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
+    min_sep = config.RangeField("Minimum feature separation (pixels)", float, 2., min=1.)
     weighting = config.ChoiceField("Weighting of identified peaks", str,
                                    allowed={"none": "no weighting",
                                             "natural": "natural weighting",
                                             "relative": "relative to local peaks"},
                                    default="natural")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
-    order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
+    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
+                             check=min_lines_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
-    plot = config.Field("Make diagnostic plots?", bool, False)
+    alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
+    debug = config.Field("Make diagnostic plots?", bool, False)
 
 
 class distortionCorrectConfig(config.Config):
@@ -85,12 +97,46 @@ class extract1DSpectraConfig(config.Config):
     debug = config.Field("Draw extraction apertures on image display?", bool, False)
 
 
+def check_section(value):
+    # Check for validity of a section string
+    subsections = value.split(',')
+    for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
+        try:
+            int(x1)
+        except ValueError:
+            if i > 0 or x1 != '':
+                return False
+            else:
+                x1 = 0
+        try:
+            int(x2)
+        except ValueError:
+            if i < len(subsections) - 1 or x2 != '':
+                return False
+        else:
+            if x2 <= x1:
+                raise ValueError("Section(s) do not have end pixel number "
+                                 "greater than start pixel number")
+    return True
+
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
-    max_apertures = config.RangeField("Maximum number of sources to find", int, None, min=1, optional=True)
-    threshold = config.RangeField("Threshold relative to peak for automatic width determination", float, 0.01, min=0,
-                                  max=1)
-    min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
+    max_apertures = config.RangeField("Maximum number of sources to find",
+                                      int, None, min=1, optional=True)
+    percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
+                                   float, 95, min=1, max=100, optional=True)
+    section = config.Field("Pixel section(s) for measuring the spatial profile",
+                           str, None, optional=True, check=check_section)
+    min_sky_region = config.RangeField("Minimum number of contiguous pixels "
+                                       "between sky lines", int, 20, min=1)
+    use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
+                           bool, True)
+    threshold = config.RangeField("Threshold for automatic width determination",
+                                  float, 0.01, min=0, max=1)
+    sizing_method = config.ChoiceField("Method for automatic width determination", str,
+                                       allowed={"peak": "height relative to peak",
+                                                "integral": "integrated flux"},
+                                       default="peak")
 
 
 def flux_units_check(value):
@@ -121,6 +167,7 @@ class linearizeSpectraConfig(config.Config):
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, False)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
 
     def validate(self):
         config.Config.validate(self)
@@ -149,6 +196,7 @@ class resampleToCommonFrameConfig(config.Config):
     conserve = config.Field("Conserve flux?", bool, False)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
+    force_linear = config.Field("Force linear wavelength solution?", bool, True)
 
     def validate(self):
         config.Config.validate(self)
@@ -160,6 +208,7 @@ class resampleToCommonFrameConfig(config.Config):
 
 class skyCorrectFromSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    regions = config.Field("Sample regions", str, None, optional=True)
     order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
     grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
 

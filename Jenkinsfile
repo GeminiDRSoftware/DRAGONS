@@ -24,6 +24,7 @@ pipeline {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
+        timeout(time: 3, unit: 'HOURS')
     }
 
     environment {
@@ -154,7 +155,8 @@ pipeline {
 
         stage('GMOS LS Tests') {
             agent {
-                label "centos7"
+//                 label "centos7"
+                label "master"
             }
             environment {
                 MPLBACKEND = "agg"

@@ -1015,3 +1015,6 @@ class AstroData:
                 raise TypeError("Attempt to set variance inappropriately")
         else:
             self.variance = variance
+
+        if hasattr(data, 'wcs'):
+            self.wcs = data.wcs

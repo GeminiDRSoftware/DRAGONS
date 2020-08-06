@@ -7,11 +7,15 @@ import os
 import pytest
 
 from scipy.interpolate import BSpline
+from gwcs import coordinate_frames as cf, WCS as gWCS
 
 import astrodata
 import gemini_instruments
 
 from astropy.io import fits
+from astropy import units as u
+from astropy.modeling import models
+from gempy.library import astromodels
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
@@ -69,13 +73,14 @@ def test_flux_calibration_with_fake_data():
         wavelength, flux = _get_spectrophotometric_data(object_name)
 
         wavecal = {
-            'ndim': 1.,
-            'degree': 1.,
-            'domain_start': 0.,
-            'domain_end': wavelength.size - 1,
+            'degree': 1,
+            'domain': [0., wavelength.size - 1],
             'c0': wavelength.mean(),
             'c1': wavelength.mean() / 2,
         }
+        wave_model = models.Chebyshev1D(**wavecal)
+        wave_model.inverse = astromodels.make_inverse_chebyshev1d(wave_model, rms=0.01,
+                                                                  max_deviation=0.03)
 
         hdu = fits.ImageHDU()
         hdu.header['CCDSUM'] = "1 1"
@@ -87,21 +92,17 @@ def test_flux_calibration_with_fake_data():
         _ad[0].data = _ad[0].data.ravel()
         _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
-        _ad[0].WAVECAL = Table(
-            [list(wavecal.keys()), list(wavecal.values())],
-            names=("name", "coefficients"),
-            dtype=(str, float))
+        in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
+                                      axes_order=(0,), unit=u.pix,
+                                      axes_names=('x',), name='pixels')
+        out_frame = cf.SpectralFrame(unit=u.nm, name='world')
+        _ad[0].wcs = gWCS([(in_frame, wave_model),
+                           (out_frame, None)])
 
         _ad[0].hdr.set('NAXIS', 1)
         _ad[0].phu.set('OBJECT', object_name)
         _ad[0].phu.set('EXPTIME', 1.)
         _ad[0].hdr.set('BUNIT', "electron")
-        _ad[0].hdr.set('CTYPE1', "Wavelength")
-        _ad[0].hdr.set('CUNIT1', "nm")
-        _ad[0].hdr.set('CRPIX1', 0)
-        _ad[0].hdr.set('CRVAL1', wavelength.min())
-        _ad[0].hdr.set('CDELT1', wavelength.ptp() / wavelength.size)
-        _ad[0].hdr.set('CD1_1', wavelength.ptp() / wavelength.size)
 
         assert _ad.object() == object_name
         assert _ad.exposure_time() == 1
@@ -210,7 +211,7 @@ def create_inputs_recipe():
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_flux_calibration/"
+    module_path = "geminidr/gmos/spect/{}/".format(__file__.split('.')[0])
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
@@ -266,7 +267,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.flatCorrect(flat=flat_master)
-        p.applyQECorrection(arc=arc_master)
+        p.QECorrect(arc=arc_master)
         p.distortionCorrect(arc=arc_master)
         p.findSourceApertures(max_apertures=1)
         p.skyCorrectFromSlit()
@@ -276,7 +277,7 @@ def create_inputs_recipe():
 
         os.chdir("inputs/")
         _ = p.writeOutputs().pop()
-        os.chdir("../")
+        os.chdir("../../")
 
 
 if __name__ == '__main__':

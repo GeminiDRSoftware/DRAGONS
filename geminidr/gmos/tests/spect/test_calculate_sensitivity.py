@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 """
 Tests for the `calculateSensitivity` primitive using GMOS-S and GMOS-N data.
+
+Changelog
+---------
+2020-06-02:
+    - Recreated input files using:
+        - astropy 4.1rc1
+        - gwcs 0.13.1.dev19+gc064a02 - This should be cloned and the
+            `transform-1.1.0` string should be replaced by `transform-1.2.0`
+            in the `gwcs/schemas/stsci.edu/gwcs/step-1.0.0.yaml` file.
+
 """
 import numpy as np
 import os
@@ -55,6 +65,7 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
 
         assert _ad.object() == 'DUMMY'
         assert _ad.exposure_time() == 1
+        _ad.create_gwcs()
 
         return _ad
 
@@ -189,7 +200,7 @@ def create_inputs_recipe():
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_calculate_sensitivity/"
+    module_path = "geminidr/gmos/spect/{}/".format(__file__.split(".")[0])
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
@@ -233,6 +244,7 @@ def create_inputs_recipe():
         arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
         arc_reduce.runr()
         arc_master = arc_reduce.output_filenames.pop()
+        del arc_reduce
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
@@ -246,7 +258,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
         p.flatCorrect(flat=flat_master)
-        p.applyQECorrection(arc=arc_master)
+        p.QECorrect(arc=arc_master)
         p.distortionCorrect(arc=arc_master, order=3, subsample=1)
         p.findSourceApertures(max_apertures=1, threshold=0.01, min_sky_region=20)
         p.skyCorrectFromSlit(order=5, grow=0)
@@ -256,9 +268,9 @@ def create_inputs_recipe():
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
-        os.chdir("../")
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(processed_ad.filename))
+        os.chdir("../")
 
 
 if __name__ == '__main__':

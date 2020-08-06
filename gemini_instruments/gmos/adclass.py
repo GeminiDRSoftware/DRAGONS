@@ -63,7 +63,8 @@ class AstroDataGmos(AstroDataGemini):
         if self.phu.get('OBJECT', '').upper() == 'TWILIGHT':
             # Twilight flats are of OBSTYPE == OBJECT, meaning that the generic
             # FLAT tag won't be triggered. Add it explicitly
-            return TagSet(['TWILIGHT', 'CAL', 'FLAT'])
+            return TagSet(['TWILIGHT', 'CAL',
+                           'SLITILLUM' if self._tag_is_spect() else 'FLAT'])
 
     @astro_data_tag
     def _tag_domeflat(self):
@@ -503,7 +504,8 @@ class AstroDataGmos(AstroDataGemini):
                 )
             )
 
-            dispersion = - (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() * cenwave) / (206265. * greq)
+            dispersion = - (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() *
+                            self.detector_x_bin() / self.detector_y_bin() * cenwave) / (206265. * greq)
 
         else:
             dispersion = None

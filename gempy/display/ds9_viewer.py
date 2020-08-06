@@ -3,7 +3,7 @@ import os
 import time
 import warnings
 from subprocess import Popen
-import xpa
+from imexam import imexamxpa as xpa
 
 from astropy.wcs import WCS
 

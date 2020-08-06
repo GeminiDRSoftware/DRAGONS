@@ -152,8 +152,8 @@ class QA(PrimitivesBASE):
                         log.warning("Background is less than or equal to 0 "
                                     "for {}:{}".format(ad.filename,extver))
                 else:
-                    log.stdinfo("No nominal photometric zeropoint avaliable "
-                                 "for {}:{}, filter {}".format(ad.filename,
+                    log.stdinfo("No nominal photometric zeropoint available "
+                                "for {}:{}, filter {}".format(ad.filename,
                                         extver, ad.filter_name(pretty=True)))
 
                 info_list.append(ext_info)
@@ -218,17 +218,21 @@ class QA(PrimitivesBASE):
         detection catalog.
 
         We correct for atmospheric extinction at the point where we
-        calculate the zeropoint, ie we define:
-        actual_mag = zeropoint + instrumental_mag + extinction_correction
+        calculate the zeropoint, ie we define::
+
+            actual_mag = zeropoint + instrumental_mag + extinction_correction
 
         where in this case, actual_mag is the refmag, instrumental_mag is
         the mag from the objcat, and we use the nominal extinction value as
         we don't have a measured one at this point. ie  we're actually
-        computing zeropoint as:
-        zeropoint = refmag - mag - nominal_extinction_correction
+        computing zeropoint as::
 
-        Then we can treat zeropoint as:
-        zeropoint = nominal_photometric_zeropoint - cloud_extinction
+            zeropoint = refmag - mag - nominal_extinction_correction
+
+        Then we can treat zeropoint as::
+
+            zeropoint = nominal_photometric_zeropoint - cloud_extinction
+
         to estimate the cloud extinction.
 
         Parameters

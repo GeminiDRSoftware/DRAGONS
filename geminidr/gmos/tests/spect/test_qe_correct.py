@@ -1,5 +1,17 @@
 #!/usr/bin/env python
+"""
+Tests for applyQECorrection primitive.
 
+Changelog
+---------
+2020-06-01
+    - Recreated input files using:
+        - astropy 4.1rc1
+        - gwcs 0.13.1.dev19+gc064a02 - This should be cloned and the
+            `transform-1.1.0` string should be replaced by `transform-1.2.0`
+            in the `gwcs/schemas/stsci.edu/gwcs/step-1.0.0.yaml` file.
+
+"""
 import abc
 import matplotlib.pyplot as plt
 import numpy as np
@@ -149,13 +161,13 @@ associated_calibrations = {
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
-def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
+def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
 
     with change_working_dir():
 
         logutils.config(file_name='log_test_continuity{}.txt'.format(ad.data_label()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.applyQECorrection(arc=arc_ad)
+        p.QECorrect(arc=arc_ad)
 
         # Need these extra steps to extract and analyse the data
         p.distortionCorrect(arc=arc_ad)
@@ -165,6 +177,10 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
         p.extract1DSpectra()
         p.linearizeSpectra()
         processed_ad = p.writeOutputs().pop()
+
+    for ext in processed_ad:
+        assert not np.any(np.isnan(ext.data))
+        assert not np.any(np.isinf(ext.data))
 
     basename = processed_ad.filename.replace('_linearized', '')
     kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
@@ -177,12 +193,12 @@ def test_applied_qe_is_locally_continuous(ad, arc_ad, change_working_dir):
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
-def test_regression_on_apply_qe_correction(ad, arc_ad, change_working_dir, ref_ad_factory):
+def test_regression_on_qe_correct(ad, arc_ad, change_working_dir, ref_ad_factory):
 
     with change_working_dir():
         logutils.config(file_name='log_test_regression{}.txt'.format(ad.data_label()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.applyQECorrection(arc=arc_ad)
+        p.QECorrect(arc=arc_ad)
         qe_corrected_ad = p.writeOutputs().pop()
 
     assert 'QECORR' in qe_corrected_ad.phu.keys()
@@ -660,10 +676,9 @@ class WSolution:
     """
 
     def __init__(self, ad):
-        self.model = modeling.models.Linear1D(
-            slope=ad[0].hdr['CDELT1'],
-            intercept=ad[0].hdr['CRVAL1'] - 1 * ad[0].hdr['CDELT1'])
-        self.units = ad[0].hdr['CUNIT1']
+        # Assumes 1D input
+        self.model = ad[0].wcs.forward_transform
+        self.units = ad[0].wcs.output_frame.unit[0]
         self.mask = None
 
     def __call__(self, x):
@@ -688,13 +703,12 @@ def create_inputs_recipe():
     """
     import os
     from astrodata.testing import download_from_archive
-    from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/"
+    module_path = "geminidr/gmos/spect/{}/".format(__file__.strip(".py"))
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
@@ -734,8 +748,11 @@ def create_inputs_recipe():
         arc_reduce = Reduce()
         arc_reduce.files.extend(arc_paths)
         arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+
+        os.chdir("inputs/")
         arc_reduce.runr()
         _ = arc_reduce.output_filenames.pop()
+        os.chdir("../")
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = primitives_gmos_longslit.GMOSLongslit([sci_ad])

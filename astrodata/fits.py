@@ -8,15 +8,18 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import partial, wraps
+from io import BytesIO
+
 from itertools import zip_longest, product as cart_product
 
 from .core import AstroData, DataProvider, astro_data_descriptor
 from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
+from . import wcs as adwcs
 
 import astropy
 from astropy.io import fits
 from astropy.io.fits import HDUList, DELAYED
-from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
+from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU, TableHDU
 from astropy.io.fits import Column, FITS_rec
 from astropy.io.fits.hdu.table import _TableBaseHDU
 from astropy import units as u
@@ -27,9 +30,12 @@ from astropy.nddata import NDData
 from astropy.table import Table
 import numpy as np
 
+from gwcs.wcs import WCS as gWCS
+from gwcs import coordinate_frames as cf
+
 INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
-LOGGER = logging.getLogger('AstroData FITS')
+LOGGER = logging.getLogger(__name__)
 
 
 class AstroDataFitsDeprecationWarning(DeprecationWarning):
@@ -554,6 +560,18 @@ class FitsProviderProxy(DataProvider):
         else:
             return self._mapped_nddata(0).shape
 
+    @property
+    def wcs(self):
+        if self.is_single:
+            return self._mapped_nddata(0).wcs
+        raise ValueError("Cannot return WCS for an AstroData object that is not a single slice")
+
+    @wcs.setter
+    def wcs(self, value):
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
+        self._mapped_nddata(0).wcs = value
+
     def hdr(self):
         headers = self._provider._get_raw_headers(indices=self._mapping)
 
@@ -627,6 +645,7 @@ class FitsProvider(DataProvider):
                 'uncertainty',
                 'mask',
                 'variance',
+                'wcs',
                 'path',
                 'filename'
                 }
@@ -1037,12 +1056,40 @@ class FitsProvider(DataProvider):
         for ext in self._nddata:
             meta = ext.meta
             header, ver = meta['header'], meta['ver']
+            wcs = ext.wcs
+            if isinstance(wcs, gWCS):
+                # We don't have access to the AD tags so see if it's an image
+                # Catch ValueError as any sort of failure
+                try:
+                    wcs_dict = adwcs.gwcs_to_fits(ext, self._phu)
+                except (ValueError, NotImplementedError) as e:
+                    LOGGER.warning(e)
+                else:
+                    # HACK! Don't update the FITS WCS for an image
+                    # Must delete keywords if image WCS has been downscaled
+                    # from a higher number of dimensions
+                    if not isinstance(wcs.output_frame, cf.CelestialFrame):
+                        for i in range(1, 5):
+                            for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}', f'CTYPE{i}'):
+                                if kw in header:
+                                    del header[kw]
+                            for j in range(1, 5):
+                                for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
+                                    if kw in header:
+                                        del header[kw]
+                        header.update(wcs_dict)
+                    # Use "in" here as the dict entry may be (value, comment)
+                    if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
+                        wcs = None  # There's no need to create a WCS extension
 
             hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
                 hlst.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
             if ext.mask is not None:
                 hlst.append(new_imagehdu(ext.mask, header, 'DQ'))
+
+            if isinstance(wcs, gWCS):
+                hlst.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
 
             for name, other in meta.get('other', {}).items():
                 if isinstance(other, Table):
@@ -1296,7 +1343,7 @@ class FitsProvider(DataProvider):
 
     def extver_map(self):
         """
-        Provide a mapping between the FITS EXTVER of antextension and the index
+        Provide a mapping between the FITS EXTVER of an extension and the index
         that will be used to access it within this object.
 
         Returns
@@ -1388,8 +1435,14 @@ class FitsLazyLoadable:
         Need to to some overriding of astropy.io.fits since it doesn't
         know about BITPIX=8
         """
-        dtype = self._obj._dtype_for_bitpix()
         bitpix = self._obj._orig_bitpix
+        if self._obj._orig_bscale == 1 and self._obj._orig_bzero == 0:
+            dtype = fits.BITPIX2DTYPE[bitpix]
+        else:
+            # this method from astropy will return the dtype if the data
+            # needs to be converted to unsigned int or scaled to float
+            dtype = self._obj._dtype_for_bitpix()
+
         if dtype is None:
             if bitpix < 0:
                 dtype = np.dtype('float{}'.format(abs(bitpix)))
@@ -1504,7 +1557,7 @@ class FitsLoader:
         for idx, unit in enumerate(sci_units):
             seen.add(unit)
             ver = unit.header.get('EXTVER', -1)
-            parts = {'data': unit, 'uncertainty': None, 'mask': None, 'other': []}
+            parts = {'data': unit, 'uncertainty': None, 'mask': None, 'wcs': None, 'other': []}
 
             for extra_unit in associated_extensions(ver):
                 seen.add(extra_unit)
@@ -1513,6 +1566,8 @@ class FitsLoader:
                     parts['mask'] = extra_unit
                 elif name == 'VAR':
                     parts['uncertainty'] = extra_unit
+                elif name == 'WCS':
+                    parts['wcs'] = extra_unit
                 else:
                     parts['other'].append(extra_unit)
 
@@ -1520,8 +1575,14 @@ class FitsLoader:
                 nd = NDDataObject(
                         data = FitsLazyLoadable(parts['data']),
                         uncertainty = None if parts['uncertainty'] is None else FitsLazyLoadable(parts['uncertainty']),
-                        mask = None if parts['mask'] is None else FitsLazyLoadable(parts['mask'])
+                        mask = None if parts['mask'] is None else FitsLazyLoadable(parts['mask']),
+                        wcs = None if parts['wcs'] is None else asdftablehdu_to_wcs(parts['wcs'])
                         )
+                if nd.wcs is None:
+                    try:
+                        nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+                    except TypeError as e:
+                        raise e
                 provider.append(nd, name=def_ext, reset_ver=False)
             else:
                 nd = provider.append(parts['data'], name=def_ext, reset_ver=False)
@@ -1529,6 +1590,14 @@ class FitsLoader:
                     item = parts[item_name]
                     if item is not None:
                         provider.append(item, name=item.header['EXTNAME'], add_to=nd)
+                if isinstance(nd, NDData):
+                    if parts['wcs'] is not None:
+                        nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+                    else:
+                        try:
+                            nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+                        except TypeError:
+                            pass
 
             for other in parts['other']:
                 provider.append(other, name=other.header['EXTNAME'], add_to=nd)
@@ -1593,7 +1662,7 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
         uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
                      if with_uncertainty else None),
         mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
-        meta=sequence[0].meta
+        meta=sequence[0].meta, wcs=sequence[0].wcs
     )
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
@@ -1848,3 +1917,131 @@ class AstroDataFits(AstroData):
                 raise ValueError("{} is not an integer EXTVER".format(ver))
         except KeyError as e:
             raise IndexError("EXTVER {} not found".format(e.args[0]))
+
+# ---------------------------------------------------------------------------
+# gWCS <-> FITS WCS helper functions go here
+# ---------------------------------------------------------------------------
+# Could parametrize some naming conventions in the following two functions if
+# done elsewhere for hard-coded names like 'SCI' in future, but they only have
+# to be self-consistent with one another anyway.
+
+def wcs_to_asdftablehdu(wcs, extver=None):
+    """
+    Serialize a gWCS object as a FITS TableHDU (ASCII) extension.
+
+    The ASCII table is actually a mini ASDF file. The constituent AstroPy
+    models must have associated ASDF "tags" that specify how to serialize them.
+
+    In the event that serialization as pure ASCII fails (this should not
+    happen), a binary table representation will be used as a fallback.
+    """
+
+    import asdf
+    import jsonschema
+
+    # Create a small ASDF file in memory containing the WCS object
+    # representation because there's no public API for generating only the
+    # relevant YAML subsection and an ASDF file handles the "tags" properly.
+    try:
+        af = asdf.AsdfFile({"wcs" : wcs})
+    except jsonschema.exceptions.ValidationError:
+        # (The original traceback also gets printed here)
+        raise TypeError("Cannot serialize model(s) for 'WCS' extension {}"\
+                        .format(extver or ''))
+
+    # ASDF can only dump YAML to a binary file object, so do that and read
+    # the contents back from it for storage in a FITS extension:
+    with BytesIO() as fd:
+        with af:
+            # Generate the YAML, dumping any binary arrays as text:
+            af.write_to(fd, all_array_storage='inline')
+        fd.seek(0)
+        wcsbuf = fd.read()
+
+    # Convert the bytes to readable lines of text for storage (falling back to
+    # saving as binary in the unexpected event that this is not possible):
+    try:
+        wcsbuf = wcsbuf.decode('ascii').splitlines()
+    except UnicodeDecodeError:
+        # This should not happen, but if the ASDF contains binary data in
+        # spite of the 'inline' option above, we have to dump the bytes to
+        # a non-human-readable binary table rather than an ASCII one:
+        LOGGER.warning("Could not convert WCS {} ASDF to ASCII; saving table "
+                       "as binary".format(extver or ''))
+        hduclass = BinTableHDU
+        fmt = 'B'
+        wcsbuf = np.frombuffer(wcsbuf, dtype=np.uint8)
+    else:
+        hduclass = TableHDU
+        fmt = 'A{0}'.format(max(len(line) for line in wcsbuf))
+
+    # Construct the FITS table extension:
+    col = Column(name='gWCS', format=fmt, array=wcsbuf,
+                 ascii= hduclass is TableHDU)
+    hdu = hduclass.from_columns([col], name='WCS', ver=extver)
+
+    return hdu
+
+def asdftablehdu_to_wcs(hdu):
+    """
+    Recreate a gWCS object from its serialization in a FITS table extension.
+
+    Returns None (issuing a warning) if the extension cannot be parsed, so
+    the rest of the file can still be read.
+    """
+
+    import asdf
+
+    ver = hdu.header.get('EXTVER', -1)
+
+    if isinstance(hdu, (TableHDU, BinTableHDU)):
+        try:
+            colarr = hdu.data['gWCS']
+        except KeyError:
+            LOGGER.warning("Ignoring 'WCS' extension {} with no 'gWCS' table "
+                           "column".format(ver))
+            return
+
+        # If this table column contains text strings as expected, join the rows
+        # as separate lines of a string buffer and encode the resulting YAML as
+        # bytes that ASDF can parse. If AstroData has produced another format,
+        # it will be a binary dump due to the unexpected presence of non-ASCII
+        # data, in which case we just extract unmodified bytes from the table.
+        if colarr.dtype.kind in ('U', 'S'):
+            sep = os.linesep
+            # Just in case io.fits ever produces 'S' on Py 3 (not the default):
+            # join lines as str & avoid a TypeError with unicode linesep; could
+            # also use astype('U') but it assumes an encoding implicitly.
+            if colarr.dtype.kind == 'S' and not isinstance(sep, bytes):
+                colarr = np.char.decode(np.char.rstrip(colarr),
+                                        encoding='ascii')
+            wcsbuf = sep.join(colarr).encode('ascii')
+        else:
+            wcsbuf = colarr.tobytes()
+
+        # Convert the stored text to a Bytes file object that ASDF can open:
+        with BytesIO(wcsbuf) as fd:
+
+            # Try to extract a 'wcs' entry from the YAML:
+            try:
+                af = asdf.open(fd)
+            except:
+                LOGGER.warning("Ignoring 'WCS' extension {}: failed to parse "
+                               "ASDF.\nError was as follows:\n{}"\
+                               .format(ver, traceback.format_exc()))
+                return
+            else:
+                with af:
+                    try:
+                        wcs = af.tree['wcs']
+                    except KeyError:
+                        LOGGER.warning("Ignoring 'WCS' extension {}: missing "
+                                       "'wcs' dict entry.".format(ver))
+                        return
+
+    else:
+        LOGGER.warning("Ignoring non-FITS-table 'WCS' extension {}"\
+                       .format(ver))
+        return
+
+    return wcs

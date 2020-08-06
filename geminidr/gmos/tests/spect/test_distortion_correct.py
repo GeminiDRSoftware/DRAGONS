@@ -15,7 +15,7 @@ from copy import deepcopy
 import astrodata
 import geminidr
 
-from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
+from geminidr.gmos import primitives_gmos_longslit
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
@@ -132,7 +132,7 @@ def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory
         p = primitives_gmos_longslit.GMOSLongslit([deepcopy(ad)])
         p.viewer = geminidr.dormantViewer(p, None)
         p.distortionCorrect(arc=deepcopy(ad), order=3, subsample=1)
-        dist_corrected_ad = p.writeOutputs().pop()
+        dist_corrected_ad = p.writeOutputs()[0]
 
     ref_ad = ref_ad_factory(dist_corrected_ad.filename)
     for ext, ext_ref in zip(dist_corrected_ad, ref_ad):
@@ -235,9 +235,6 @@ def ad(path_to_inputs, request):
     return ad
 
 
-
-
-
 # -- Recipe to create pre-processed data ---------------------------------------
 def create_inputs_recipe():
     """
@@ -253,7 +250,7 @@ def create_inputs_recipe():
     from astrodata.testing import download_from_archive
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_distortion_correct/"
+    module_path = "geminidr/gmos/spect/{}".format(__file__.split('.')[0])
     path = os.path.join(root_path, module_path)
 
     os.makedirs(path, exist_ok=True)
@@ -271,7 +268,7 @@ def create_inputs_recipe():
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
 
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
         p.prepare()
         p.addDQ(static_bpm=None, user_bpm=None, add_illum_mask=False)
         p.addVAR(read_noise=True, poisson_noise=False)
@@ -285,7 +282,7 @@ def create_inputs_recipe():
 
         os.chdir("inputs")
         processed_ad = p.writeOutputs().pop()
-        os.chdir("../")
+        os.chdir("../../")
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(processed_ad.filename))
 

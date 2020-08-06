@@ -117,7 +117,7 @@ def create_inputs_recipe():
     from gempy.utils import logutils
 
     input_data = [
-        ("N20180508S0021.fits", 244),  # B600 720 - todo: won't pass
+        ("N20180508S0021.fits", 255),  # B600 720
         ("N20180509S0010.fits", 259),  # R400 900
         ("N20180516S0081.fits", 255),  # R600 860
         ("N20190201S0163.fits", 255),  # B600 530
@@ -129,7 +129,7 @@ def create_inputs_recipe():
     ]
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/test_gmos_spect_ls_trace_apertures/"
+    module_path = "geminidr/gmos/spect/test_trace_apertures/"
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)

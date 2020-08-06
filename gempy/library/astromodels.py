@@ -23,6 +23,7 @@ from collections import OrderedDict
 
 import astropy
 from astropy.modeling import models, fitting, FittableModel, Parameter
+from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip
 from astropy.utils import minversion
 from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, BSpline
@@ -244,7 +245,7 @@ class UnivariateSplineWithOutlierRemoval:
         a callable to return the value of the interpolated spline
     """
     def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
-                ext=0, check_finite=False, outlier_func=sigma_clip,
+                ext=0, check_finite=True, outlier_func=sigma_clip,
                 niter=3, grow=0, debug=False, **outlier_kwargs):
 
         # Decide what sort of spline object we're making
@@ -467,28 +468,55 @@ def dict_to_chebyshev(model_dict):
     return model
 
 
-def make_inverse_chebyshev1d(model, sampling=1, rms=None):
+def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
     """
     This creates a Chebyshev1D model that attempts to be the inverse of
-    the model provided.
+    a specified model that maps from an input space (e.g., pixels) to an
+    output space (e.g., wavelength).
 
     Parameters
     ----------
     model: Chebyshev1D
         The model to be inverted
+    sampling: int
+        Frequency at which to sample the input coordinate space
     rms: float/None
-        required maximum rms in input space (i.e., pixels)
+        required maximum rms in input space
+    max_deviation: float/None
+        required maximum absolute deviation in input space
     """
     order = model.degree
-    max_order = order if rms is None else order + 2
+    max_order = order if (rms is None and max_deviation is None) else order + 2
     incoords = np.arange(*model.domain, sampling)
     outcoords = model(incoords)
     while order <= max_order:
         m_init = models.Chebyshev1D(degree=order, domain=model(model.domain))
         fit_it = fitting.LinearLSQFitter()
         m_inverse = fit_it(m_init, outcoords, incoords)
-        rms_inverse = np.std(m_inverse(outcoords) - incoords)
-        if rms is None or rms_inverse <= rms:
+        trans_coords = m_inverse(outcoords)
+        rms_inverse = np.std(trans_coords - incoords)
+        max_dev = np.max(abs(trans_coords - incoords))
+        if ((rms is None or rms_inverse <= rms) and
+                (max_deviation is None or max_dev <= max_deviation)):
             break
         order += 1
     return m_inverse
+
+def get_named_submodel(model, name):
+    if not isinstance(model, CompoundModel):
+        raise TypeError("This is not a CompoundModel")
+    if model._leaflist is None:
+        model._make_leaflist()
+    found = []
+    for nleaf, leaf in enumerate(model._leaflist):
+        if getattr(leaf, 'name', None) == name:
+            found.append(nleaf)
+    for m, start, stop in model._tdict.values():
+        if getattr(m, 'name', None) == name:
+            found.append(slice(start, stop+1))
+    if len(found) == 0:
+        raise IndexError("No component with name '{}' found".format(name))
+    if len(found) > 1:
+        raise IndexError("Multiple components found using '{}' as name\n"
+                         "at indices {}".format(name, found))
+    return model[found[0]]
