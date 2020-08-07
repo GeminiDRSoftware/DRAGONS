@@ -729,7 +729,7 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
         raise ValueError("Expected number of extensions of `mos_ad` to be 1. "
                          "Found {:d}".format(len(mos_ad)))
 
-    if len(mos_ad[0].shape) is not 2:
+    if len(mos_ad[0].shape) != 2:
         raise ValueError("Expected ndim for `mos_ad` to be 2. "
                          "Found {:d}".format(len(mos_ad[0].shape)))
 
