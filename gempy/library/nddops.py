@@ -131,11 +131,19 @@ def rejector(fn):
 
 
 def _masked_mean(data, mask=None):
+    if mask is None:
+        # Creating a masked array with mask=None is extremely slow, use
+        # False instead which is the same and much faster.
+        mask = False
     data = np.ma.masked_array(data, mask=mask)
     return data.mean(axis=0).data.astype(data.dtype)
 
 
 def _masked_sum(data, mask=None):
+    if mask is None:
+        # Creating a masked array with mask=None is extremely slow, use
+        # False instead which is the same and much faster.
+        mask = False
     data = np.ma.masked_array(data, mask=mask)
     return data.sum(axis=0).data.astype(data.dtype)
 
@@ -305,20 +313,20 @@ class NDStacker:
             self._pixel_debugger(data, rejmask, variance,
                                  stage='immediately after rejection')
 
-        # when mask is None rejector return a bool mask. convert dtype and set
-        # mask values to 36768
-        if rejmask.dtype.kind == 'b':
-            rejmask = rejmask.astype(DQ.datatype) * 36768
+        # when mask is None rejector return a bool mask.
+        # convert dtype and set mask values to 36768
+        rejmap = None
+        if rejmask is not None:
+            if rejmask.dtype.kind == 'b':
+                rejmask = rejmask.astype(DQ.datatype) * 36768
 
-        # Unset the 32768 bit *only* if it's set in all input pixels
-        rejmask &= ~(np.bitwise_and.reduce(rejmask, axis=0) & 32768)
+            # Unset the 32768 bit *only* if it's set in all input pixels
+            rejmask &= ~(np.bitwise_and.reduce(rejmask, axis=0) & 32768)
 
-        if save_rejection_map:
-            # int16 to avoid scaling issue when writing and re-reading
-            # with astrodata
-            rejmap = np.sum(rejmask > 32767, axis=0, dtype=np.int16)
-        else:
-            rejmap = None
+            if save_rejection_map:
+                # int16 to avoid scaling issue when writing and re-reading
+                # with astrodata
+                rejmap = np.sum(rejmask > 32767, axis=0, dtype=np.int16)
 
         if self._debug_pixel is not None:
             self._pixel_debugger(data, rejmask, variance,

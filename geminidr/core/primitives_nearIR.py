@@ -4,7 +4,6 @@
 #                                                           primitives_nearIR.py
 # ------------------------------------------------------------------------------
 import numpy as np
-from astropy.stats import sigma_clip
 import datetime
 
 from gempy.gemini import gemini_tools as gt

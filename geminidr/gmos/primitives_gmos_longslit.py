@@ -57,6 +57,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             format(ad.filename))
                 continue
 
+            no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
+                         for detsec in ad.detector_section())
+
+            has_48rows = all(detsec.y2 == 4224
+                             for detsec in ad.detector_section()) and \
+                             'Hamamatsu' in ad.detector_name(pretty=True)
+
             if illum:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
                 final_illum = gt.clip_auxiliary_data(ad, aux=illum, aux_type='bpm',
@@ -68,25 +75,34 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         iext = np.where(illum_ext.data > 0, DQ.unilluminated,
                                         0).astype(DQ.datatype)
                         ext.mask = iext if ext.mask is None else ext.mask | iext
-            elif not all(detsec.y1 > 1600 and detsec.y2 < 2900
-                         for detsec in ad.detector_section()):
-                # Default operation for GMOS LS
+            elif not no_bridges:   # i.e. there are bridges.
+                # Default operation for GMOS full-frame LS
                 # The 95% cut should ensure that we're sampling something
                 # bright (even for an arc)
-                # The 75% cut is intended to handle R150 data, where many of
+                # The max is intended to handle R150 data, where many of
                 # the extensions are unilluminated
-                row_medians = np.percentile(np.array([np.percentile(ext.data, 95, axis=1)
-                                                      for ext in ad]), 75, axis=0)
+
+                row_medians = np.max(np.array([np.percentile(ext.data, 95, axis=1)
+                                                      for ext in ad]), axis=0)
                 rows = np.arange(len(row_medians))
                 m_init = models.Polynomial1D(degree=3)
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                           outlier_func=sigma_clip)
+                                                           outlier_func=sigma_clip,
+                                                           sigma_upper=1, sigma_lower=3)
                 m_final, _ = fit_it(m_init, rows, row_medians)
+                model_fit = m_final(rows)
                 # Find points which are significantly below the smooth illumination fit
-                row_mask = at.boxcar(m_final(rows) - row_medians > 0.1 * np.median(row_medians),
-                                     operation=np.logical_or, size=2)
+                # First ensure we don't worry about single rows
+                row_mask = at.boxcar(model_fit - row_medians > 0.1 * model_fit,
+                                     operation=np.logical_and, size=1)
+                row_mask = at.boxcar(row_mask, operation=np.logical_or, size=3)
                 for ext in ad:
                     ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
+
+                if has_48rows:
+                    actual_rows = 48 // ad.detector_y_bin()
+                    for ext in ad:
+                        ext.mask[:actual_rows] |= DQ.unilluminated
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

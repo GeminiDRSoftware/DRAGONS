@@ -39,7 +39,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as ext
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
-from gempy.library.astrotools import array_from_list
+from gempy.library.astrotools import array_from_list, boxcar
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -506,26 +506,36 @@ class Spect(PrimitivesBASE):
                             log.warning("Cannot find peak locations in {} "
                                         "- identifying lines in middle {}".
                                         format(extname, direction))
+                    if fwidth is None:
+                        try:
+                            index = list(wavecal['name']).index('fwidth')
+                        except ValueError:
+                            pass
+                        else:
+                            fwidth = wavecal['coefficients'][index]
 
                 # This is identical to the code in determineWavelengthSolution()
+                if fwidth is None:
+                    data, _, _, _ = _average_along_slit(ext, center=None, nsum=nsum)
+                    fwidth = tracing.estimate_peak_width(data)
+                    log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+
                 if initial_peaks is None:
                     data, mask, variance, extract_slice = _average_along_slit(ext, center=None, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
-                    if fwidth is None:
-                        fwidth = tracing.estimate_peak_width(data)
-                        log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
-
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
-                    initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask,
+                    initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                           variance=variance, min_snr=min_snr)
                     log.stdinfo("Found {} peaks".format(len(initial_peaks)))
 
                 # The coordinates are always returned as (x-coords, y-coords)
+                rwidth = 0.42466 * fwidth
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
-                                                            start=start, initial=initial_peaks, width=5, step=step,
+                                                            start=start, initial=initial_peaks,
+                                                            rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
                                                             nsum=nsum, max_missed=max_missed,
                                                             max_shift=max_shift * ybin / xbin,
                                                             viewer=self.viewer if debug else None)
@@ -946,6 +956,9 @@ class Spect(PrimitivesBASE):
             Name of file containing arc lines. If None, then a default look-up
             table will be used.
 
+        alternative_centers : bool
+            Identify alternative central wavelengths and try to fit them?
+
         nbright : int (or may not exist in certain class methods)
             Number of brightest lines to cull before fitting
 
@@ -980,6 +993,7 @@ class Spect(PrimitivesBASE):
         dw0 = params["dispersion"]
         arc_file = params["linelist"]
         nbright = params.get("nbright", 0)
+        alt_centers = params["alternative_centers"]
         debug = params["debug"]
 
         # TODO: This decision would prevent MOS data being reduced so need
@@ -1011,7 +1025,6 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             log.info("Determining wavelength solution for {}".format(ad.filename))
-            print("Determining wavelength solution for {}".format(ad.filename))
             for ext in ad:
                 if len(ad) > 1:
                     log.info("Determining solution for EXTVER {}".format(ext.hdr['EXTVER']))
@@ -1035,7 +1048,7 @@ class Spect(PrimitivesBASE):
 
                 # Mask bad columns but not saturated/non-linear data points
                 if mask is not None:
-                    mask = mask & (65535 ^ (DQ.saturated | DQ.non_linear))
+                    mask = mask & DQ.not_signal
                     data[mask > 0] = 0.
 
                 # Get the initial wavelength solution
@@ -1060,7 +1073,7 @@ class Spect(PrimitivesBASE):
                             "{:.3f} nm/pixel".format(c0, dw0))
 
                 if fwidth is None:
-                    fwidth = tracing.estimate_peak_width(data)
+                    fwidth = tracing.estimate_peak_width(data, mask=mask)
                     log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
 
                 # Don't read linelist if it's the one we already have
@@ -1074,7 +1087,7 @@ class Spect(PrimitivesBASE):
 
                 # Find peaks; convert width FWHM to sigma
                 widths = 0.42466 * fwidth * np.arange(0.7, 1.2, 0.05)  # TODO!
-                peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask,
+                peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                       variance=variance, min_snr=min_snr,
                                                       min_sep=min_sep, reject_bad=False)
                 fit_this_peak = peak_snrs > min_snr
@@ -1100,10 +1113,14 @@ class Spect(PrimitivesBASE):
 
                 kdsigma = fwidth * abs(dw0)
                 if cenwave is None:
-                    centers = find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1,
-                                                                2.5*kdsigma, weights=weights['natural'])
-                    if len(centers) > 1:
-                        log.warning("Alternative central wavelength(s) found "+str(centers))
+                    if alt_centers:
+                        centers = find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1,
+                                                                    2.5*kdsigma, weights=weights['natural'])
+                        if len(centers) > 1:
+                            log.warning("Alternative central wavelength(s) found "+str(centers))
+                    else:
+                        centers = [c0]
+                        centers = [c0]
                 else:
                     centers = [cenwave]
 
@@ -1130,7 +1147,6 @@ class Spect(PrimitivesBASE):
                         fit_it = fitting.LinearLSQFitter()
                         matched = np.where(matches > -1)
                         m_final = fit_it(m_init, peaks[matched], arc_lines[matches[matched]])
-                        print(repr(m_final))
 
                         # We're close to the correct solution, perform a KDFit
                         m_init = m_final.copy()
@@ -1141,12 +1157,17 @@ class Spect(PrimitivesBASE):
 
                         # And then recalculate the matches
                         match_radius = 4 * fwidth * abs(m_final.c1) / (len(data) - 1)  # 2*fwidth pixels
-                        m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                                                                           model=m_final, match_radius=match_radius,
-                                                                           sigma_clip=3)
+                        try:
+                            m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
+                                                                               model=m_final, match_radius=match_radius,
+                                                                               sigma_clip=3)
+                        except ValueError:
+                            log.warning("Line-matching failed")
+                            continue
                         log.stdinfo('{} {} {} {}'.format(ad.filename, repr(m.forward), len(m), m.rms_output))
 
-                        if debug:
+                        for loop in range(debug + 1):
+                            plt.ioff()
                             fig, ax = plt.subplots()
                             ax.plot(data, 'b-')
                             ax.set_ylim(0, data_max * 1.05)
@@ -1161,16 +1182,21 @@ class Spect(PrimitivesBASE):
                                 ax.plot([p, p], [data[j], data[j] + 0.02 * data_max], 'k-')
                                 ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
                                         horizontalalignment='center', rotation=90, fontdict={'size': 8})
-                            plt.show()
+                            if loop > 0:
+                                plt.show()
+                            else:
+                                fig.set_size_inches(17, 11)
+                                plt.savefig(ad.filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
+                            plt.ion()
 
                         all_fits.append(m)
-                        if m.rms_output < 0.2 * fwidth * abs(dw0):
+                        if m.rms_output < 0.2 * fwidth * abs(dw0) and len(m) > order + 2:
                             acceptable_fit = True
                             break
 
                 if not acceptable_fit:
                     log.warning(f"No acceptable wavelength solution found for {ad.filename}")
-                    scores = [m.rms_output / len(m) for m in all_fits]
+                    scores = [m.rms_output / (len(m) - order - 1) for m in all_fits]
                     m = all_fits[np.argmin(scores)]
 
                 if debug:
@@ -1422,6 +1448,12 @@ class Spect(PrimitivesBASE):
                                            'Aperture lower limit')
                     ext.hdr['XTRACTHI'] = (aperture._last_extraction[1],
                                            'Aperture upper limit')
+
+                    # Delete unnecessary keywords
+                    for descriptor in ('detector_section', 'array_section'):
+                        kw = ad._keyword_for(descriptor)
+                        if kw in ext.hdr:
+                            del ext.hdr[kw]
                     # TODO: remove after testing
                     try:
                         ext.WAVECAL = ext.WAVECAL
@@ -1542,7 +1574,7 @@ class Spect(PrimitivesBASE):
                 mean, sigma, _ = gt.measure_bg_from_image(ndd, sampling=1)
 
                 # Mask sky-line regions and find clumps of unmasked pixels
-                mask1d[var1d > mean + sigma] = 1
+                mask1d[var1d > mean + 3*sigma] = 1
                 slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
                 sky_regions = [slice_ for slice_ in slices
                                if slice_.stop - slice_.start >= min_sky_pix]
@@ -1550,14 +1582,17 @@ class Spect(PrimitivesBASE):
                 sky_mask = np.ones_like(mask1d, dtype=bool)
                 for reg in sky_regions:
                     sky_mask[reg] = False
-                sec_mask = np.ones_like(mask1d, dtype=bool)
-                for reg in sec_regions:
-                    sec_mask[reg] = False
+                if sec_regions:
+                    sec_mask = np.ones_like(mask1d, dtype=bool)
+                    for reg in sec_regions:
+                        sec_mask[reg] = False
+                else:
+                    sec_mask = False
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
                 signal = (data if (variance is None or not use_snr) else
                           data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32)))
-                masked_data = np.where(np.logical_or(full_mask, variance==0), np.nan, signal)
+                masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
                 # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', message='All-NaN slice')
@@ -1570,13 +1605,14 @@ class Spect(PrimitivesBASE):
 
                 # TODO: find_peaks might not be best considering we have no
                 #   idea whether sources will be extended or not
-                widths = np.arange(3, 30)
-                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
+                widths = np.arange(3, 20)
+                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
                                                     variance=None, reject_bad=False,
                                                     min_snr=3, min_frac=0.2)
 
                 if peaks_and_snrs.size == 0:
                     log.warning("Found no sources")
+                    # Delete existing APERTURE table
                     try:
                         del ext.APERTURE
                     except AttributeError:
@@ -2337,7 +2373,6 @@ class Spect(PrimitivesBASE):
 
                 ext.data -= (sky_model if dispaxis == 0 else sky_model.T)
 
-            print(datetime.now() - start, ad.filename)
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
@@ -2417,16 +2452,29 @@ class Spect(PrimitivesBASE):
                     self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-                # TODO: Do we need to keep track of where the initial
-                # centering took place?
-                start = 0.5 * ext.shape[dispaxis]
+                # For efficiency, we would like to trace all sources
+                # simultaneously (like we do with arc lines), but we need to
+                # start somewhere the source is bright enough, and there may
+                # not be a single location where that is true for all sources
+                for i, loc in enumerate(locations):
+                    c0 = int(loc + 0.5)
+                    spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:,c0]
+                    start = np.argmax(boxcar(spectrum, size=3))
 
-                # The coordinates are always returned as (x-coords, y-coords)
-                all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                    start=start, initial=locations, width=5, step=step,
-                                                                    nsum=nsum, max_missed=max_missed,
-                                                                    max_shift=max_shift,
-                                                                    viewer=self.viewer if debug else None)
+                    # The coordinates are always returned as (x-coords, y-coords)
+                    ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                                start=start, initial=[loc],
+                                                                rwidth=None, cwidth=5, step=step,
+                                                                nsum=nsum, max_missed=max_missed,
+                                                                initial_tolerance=None,
+                                                                max_shift=max_shift,
+                                                                viewer=self.viewer if debug else None)
+                    if i:
+                        all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+                        all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+                    else:
+                        all_ref_coords = ref_coords
+                        all_in_coords = in_coords
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -2733,7 +2781,7 @@ class Spect(PrimitivesBASE):
             try:
                 p_lo = peaks[matches > -1].min()
             except ValueError:
-                print("No matches at all")
+                log.debug("No matches at all")
             else:
                 if p_lo < p0 <= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
@@ -2794,7 +2842,7 @@ def _average_along_slit(ext, center=None, nsum=None):
 
     # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
     #  Use "variance=None" to make them pass again.
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
     return data, mask, variance, extract_slice
 
@@ -2878,7 +2926,7 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
-                    ref_weights=new_ref_weights, matches=matches)
+                    ref_weights=new_ref_weights, matches=matches, popsize=30, mutation=1.0)
     if plot:
         print(m_init.c0.value, m_init.c1.value, "->", m_this.c0.value, m_this.c1.value)
         plt.ioff()

@@ -1,6 +1,7 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gmos_image.py file, in alphabetical order.
 from gempy.library import config
+from geminidr.core import parameters_standardize
 from geminidr.core import parameters_image
 
 class addOIWFSToDQConfig(config.Config):
@@ -8,6 +9,10 @@ class addOIWFSToDQConfig(config.Config):
     contrast = config.RangeField("Fractional decrease in sky level", float, 0.2, min=0.001, max=1.)
     convergence = config.RangeField("Convergence required in sky level to stop dilation",
                                     float, 2.0, min=0.001)
+
+class addDQConfig(parameters_standardize.addDQConfig):
+    def setDefaults(self):
+        self.add_illum_mask = True
 
 class makeFringeFrameConfig(parameters_image.makeFringeFrameConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, None, optional=True)
