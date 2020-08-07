@@ -5,6 +5,20 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 
-from ..ql.recipes_FLAT_LS_SPECT import makeProcessedFlat
+def makeProcessedFlat(p):
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.addToList(purpose='forStack')
+    p.getList(purpose='forStack')
+    p.stackFrames()
+    p.normalizeFlat()
+    p.thresholdFlatfield()
+    p.makeIRAFCompatible()
+    p.storeProcessedFlat()
 
 _default = makeProcessedFlat

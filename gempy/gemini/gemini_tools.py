@@ -1096,7 +1096,10 @@ def fit_continuum(ad):
                 data, mask, var = NDStacker.mean(ndd)
                 if mask is not None:
                     mask = (mask == 0)
-                maxflux = np.max(abs(data[mask]))
+                try:
+                    maxflux = np.max(abs(data[mask]))
+                except ValueError:
+                    continue
 
                 # Crude SNR test; is target bright enough in this wavelength range?
                 #if np.percentile(col,90)*xbox < np.mean(databox[dqbox==0]) \

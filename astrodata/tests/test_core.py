@@ -261,7 +261,7 @@ def test_write_and_read(tmpdir, capsys):
     assert captured.out.splitlines()[3:] == [
         'Pixels Extensions',
         'Index  Content                  Type              Dimensions     Format',
-        '[ 0]   science                  NDAstroData       (2, 2)         float64',
+        '[ 0]   science                  NDAstroData       (2, 2)         int64',
         '          .variance             ADVarianceUncerta (2, 2)         float64',
         '          .mask                 ndarray           (2, 2)         uint16',
         '          .BOB                  Table             (5, 2)         n/a',

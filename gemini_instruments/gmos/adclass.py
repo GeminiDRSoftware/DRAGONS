@@ -63,7 +63,8 @@ class AstroDataGmos(AstroDataGemini):
         if self.phu.get('OBJECT', '').upper() == 'TWILIGHT':
             # Twilight flats are of OBSTYPE == OBJECT, meaning that the generic
             # FLAT tag won't be triggered. Add it explicitly
-            return TagSet(['TWILIGHT', 'CAL', 'FLAT'])
+            return TagSet(['TWILIGHT', 'CAL',
+                           'SLITILLUM' if self._tag_is_spect() else 'FLAT'])
 
     @astro_data_tag
     def _tag_domeflat(self):
@@ -688,6 +689,7 @@ class AstroDataGmos(AstroDataGemini):
                                          'read_mode', 'amp_read_area']
         if 'SPECT' in tags:
             unique_id_descriptor_list_all.append('disperser')
+            unique_id_descriptor_list_all.append('central_wavelength')
 
         # List to format descriptor calls using 'pretty=True' parameter
         call_pretty_version_list = ['filter_name', 'disperser']
@@ -700,6 +702,8 @@ class AstroDataGmos(AstroDataGemini):
         elif 'DARK' in tags:
             id_descriptor_list = ['exposure_time']
         elif 'IMAGE' in tags and ('FLAT' in tags or 'TWILIGHT' in tags):
+            id_descriptor_list = ['filter_name']
+        elif 'SPECT' in tags and ('FLAT' in tags or 'SLITILLUM' in tags):
             id_descriptor_list = ['filter_name']
         else:
             id_descriptor_list = ['observation_id', 'filter_name']

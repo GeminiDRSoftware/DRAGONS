@@ -4,6 +4,7 @@
 #                                                             primitives_gmos.py
 # ------------------------------------------------------------------------------
 import os
+from importlib import import_module
 
 import astrodata
 import gemini_instruments
@@ -224,3 +225,54 @@ class GMOS(Gemini, CCD):
 
         # Prepend standard path if the filename doesn't start with '/'
         return bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir, bpm)
+
+
+    def _get_illum_mask_filename(self, ad):
+        """
+        Gets the illumMask filename for an input science frame, using
+        illumMask_dict in geminidr.<instrument>.lookups.maskdb.py and looks
+        for a key <INSTRUMENT>_<MODE>_<XBIN><YBIN>. This file will be sent
+        to clip_auxiliary_data for a subframe ROI.
+
+        Returns
+        -------
+        str/None: Filename of the appropriate illumination mask
+
+        """
+        mask = None
+        log = self.log
+        inst = ad.instrument()
+        xbin = ad.detector_x_bin()
+        ybin = ad.detector_y_bin()
+        det = ad.detector_name(pretty=True)[:3]
+        amps = '{}amp'.format(3 * ad.phu['NAMPS'])
+        mode = ad.tags & {'IMAGE', 'SPECT'}
+
+        if mode:
+            mode = mode.pop()
+        else:  # DARK/BIAS (only F2 K-band darks for flats should get here)
+            log.fullinfo("{} not IMAGE or SPECT: no illumination mask".format(ad.filename))
+            return None
+
+        try:
+            masks = import_module('.maskdb', self.inst_lookups)
+            illum_dict = getattr(masks, 'illumMask_dict')
+        except:
+            log.fullinfo("No illumination mask dict for {}".format(ad.filename))
+            return None
+
+        # illumMask_dict is loaded.
+        bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
+        key= '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
+
+        for illumkey in illum_dict.keys():
+            if illumkey.startswith(key):
+                mask = illum_dict[illumkey]
+
+        if not mask:
+            log.warning('No illumination mask found for {}'.format(ad.filename))
+            return None
+
+        log.stdinfo("Retrieved mask: {}".format(mask))
+        # Prepend standard path if the filename doesn't start with '/'
+        return mask if mask.startswith(os.path.sep) else os.path.join(bpm_dir, mask)
