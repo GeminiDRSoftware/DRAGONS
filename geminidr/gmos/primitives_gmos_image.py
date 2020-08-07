@@ -142,9 +142,16 @@ class GMOSImage(GMOS, Image, Photometry):
                 # Try to find the minimum closest to our estimate of the
                 # probe location, by downhill method on a spline fit (to
                 # smooth out the noise)
-                data, mask, var = NDStacker.mean(ad[index].data[:,x1:x2].T,
-                                                 mask=ad[index].mask[:,x1:x2].T)
+                data, mask, var = NDStacker.mean(
+                    ad[index].data[:, x1:x2].T, mask=ad[index].mask[:, x1:x2].T)
+
                 good_rows = np.logical_and(mask == DQ.good, var > 0)
+
+                if np.sum(good_rows) == 0:
+                    log.warning("No good rows in {} extension {}".format(
+                        ad.filename, index))
+                    continue
+
                 rows = np.arange(datasec.y2 - datasec.y1)
                 spline = UnivariateSpline(rows[good_rows], data[good_rows],
                                           w=1./np.sqrt(var[good_rows]))

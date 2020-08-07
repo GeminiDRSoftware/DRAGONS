@@ -91,7 +91,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                         0).astype(DQ.datatype)
                         ext.mask = iext if ext.mask is None else ext.mask | iext
             elif not no_bridges:   # i.e. there are bridges.
-
                 # Default operation for GMOS full-frame LS
                 # The 95% cut should ensure that we're sampling something
                 # bright (even for an arc)
@@ -103,7 +102,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 rows = np.arange(len(row_medians))
                 m_init = models.Polynomial1D(degree=3)
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                           outlier_func=sigma_clip)
+                                                           outlier_func=sigma_clip,
+                                                           sigma_upper=1, sigma_lower=3)
                 m_final, _ = fit_it(m_init, rows, row_medians)
                 model_fit = m_final(rows)
                 # Find points which are significantly below the smooth illumination fit

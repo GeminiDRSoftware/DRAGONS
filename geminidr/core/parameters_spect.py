@@ -81,7 +81,7 @@ class distortionCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
                            optional=True, single=True)
-    order = config.RangeField("Interpolation order", int, 3, min=0, max=5)
+    order = config.RangeField("Interpolation order", int, 3, min=0, max=5, inclusiveMax=True)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
 
@@ -167,7 +167,7 @@ class linearizeSpectraConfig(config.Config):
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, False)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
 
     def validate(self):
         config.Config.validate(self)
@@ -194,7 +194,7 @@ class resampleToCommonFrameConfig(config.Config):
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, False)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     force_linear = config.Field("Force linear wavelength solution?", bool, True)
 
