@@ -14,7 +14,6 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 
 from gempy.utils import logutils
 
-
 datasets = {
 
     "GN_HAM_2x2_z-band": {
@@ -26,25 +25,34 @@ datasets = {
         "ucals": [],
     },
 
-    # "GN_EEV_2x2_g-band": {
-    #     # Only three files to avoid memory errors or to speed up the test
-    #     "bias": [f"N20020214S{n:03d}.fits" for n in range(22, 27)][:3],
-    #     "flat": [f"N20020211S{n:03d}.fits" for n in range(156, 160)][:3],
-    #     "sci": [f"N20020214S{n:03d}.fits" for n in range(59, 64)][:3],
-    # },
+    "GN_EEV_2x2_g-band": {
+        # Only three files to avoid memory errors or to speed up the test
+        "bias": [f"N20020214S{n:03d}.fits" for n in range(22, 27)][:3],
+        "flat": [f"N20020211S{n:03d}.fits" for n in range(156, 160)][:3],
+        "sci": [f"N20020214S{n:03d}.fits" for n in range(59, 64)][:3],
+        "ucals": [],
+    },
 
-    # "GS_HAM_1x1_i-band": {
-    #     "bias": [f"S20171204S{n:04d}.fits" for n in range(22, 27)] +
-    #             [f"S20171206S{n:04d}.fits" for n in range(128, 133)],
-    #     "flat": [f"S20171206S{n:04d}.fits" for n in range(120, 128)],
-    #     "sci": [f"S20171205S{n:04d}.fits" for n in range(62, 77)],
-    # },
+    "GS_HAM_1x1_i-band": {
+        "bias": [f"S20171204S{n:04d}.fits" for n in range(22, 27)] +
+                [f"S20171206S{n:04d}.fits" for n in range(128, 133)],
+        "flat": [f"S20171206S{n:04d}.fits" for n in range(120, 128)],
+        "sci": [f"S20171205S{n:04d}.fits" for n in range(62, 77)],
+        "ucals": [('stackFrames:memory', 1),
+                  # ('addDQ:user_bpm', 'fixed_bpm_1x1_FullFrame.fits'),
+                  ('adjustWCSToReference:rotate', True),
+                  ('adjustWCSToReference:scale', True),
+                  ('resampleToCommonFrame:interpolator', 'spline3')]
+    },
 
-    # "GS_HAM_2x2_i-band_std": {
-    #     "bias": [f"S20171204S{n:04d}.fits" for n in range(37, 42)],
-    #     "flat": [f"S20171120S{n:04d}.fits" for n in range(131, 140)],
-    #     "std": ["S20171205S0077.fits"],
-    # },
+    "GS_HAM_2x2_i-band_std": {
+        "bias": [f"S20171204S{n:04d}.fits" for n in range(37, 42)],
+        "flat": [f"S20171120S{n:04d}.fits" for n in range(131, 140)],
+        "std": ["S20171205S0077.fits"],
+        "ucals": [('stackFrames:memory', 1),
+                  # ('addDQ:user_bpm', 'fixed_bpm_2x2_FullFrame.fits'),
+                  ('resampleToCommonFrame:interpolator', 'spline3')]
+    },
 
 }
 
@@ -86,7 +94,9 @@ def test_reduce_image(change_working_dir, test_case):
             cals = reduce(
                 sci_paths, f"fringe_{test_case}", cals,
                 recipe_name='makeProcessedFringe', save_to="processed_fringe")
-            _ = reduce(sci_paths, f"sci_{test_case}", cals)
+            _ = reduce(
+                sci_paths, f"sci_{test_case}", cals,
+                user_pars=datasets[test_case]["ucals"])
 
 
 def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
@@ -119,6 +129,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     r = Reduce()
     r.files = file_list
     r.ucals = normalize_ucals(r.files, calib_files)
+    r.uparms = user_pars
 
     if recipe_name:
         r.recipename = recipe_name
@@ -132,69 +143,6 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     assert len(objgraph.by_type('NDAstroData')) == 0
 
     return calib_files
-
-
-# noinspection PyPep8Naming
-@pytest.mark.skip(reason="Investigate MemoryError")
-@pytest.mark.integtest
-def test_reduce_image_GN_EEV_2x2_g(path_to_inputs):
-    logutils.config(file_name='gmos_test_reduce_image_GN_EEV_2x2_g.log')
-
-    calib_files = []
-
-    raw_subdir = 'GMOS/GN-2002A-Q-89'
-
-    all_files = sorted(glob.glob(
-        os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-    assert len(all_files) > 1
-
-    list_of_bias = dataselect.select_data(
-        all_files,
-        ['BIAS'],
-        []
-    )
-
-    list_of_flats = dataselect.select_data(
-        all_files,
-        ['IMAGE', 'FLAT'],
-        [],
-        dataselect.expr_parser('filter_name=="g"')
-    )
-
-    # These old data don't have an OBSCLASS keyword:
-    list_of_science_files = dataselect.select_data(
-        all_files, [],
-        ['CAL'],
-        dataselect.expr_parser(
-            'object=="PerseusField4" and filter_name=="g"'
-        )
-    )
-
-    reduce_bias = Reduce()
-    assert len(reduce_bias.files) == 0
-
-    reduce_bias.files.extend(list_of_bias)
-    assert len(reduce_bias.files) == len(list_of_bias)
-
-    reduce_bias.runr()
-
-    calib_files.append(
-        'processed_bias:{}'.format(reduce_bias.output_filenames[0])
-    )
-
-    reduce_flats = Reduce()
-    reduce_flats.files.extend(list_of_flats)
-    reduce_flats.ucals = normalize_ucals(reduce_flats.files, calib_files)
-    reduce_flats.runr()
-
-    calib_files.append(
-        'processed_flat:{}'.format(reduce_flats.output_filenames[0])
-    )
-
-    reduce_target = Reduce()
-    reduce_target.files.extend(list_of_science_files)
-    reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
-    reduce_target.runr()
 
 
 # noinspection PyPep8Naming
