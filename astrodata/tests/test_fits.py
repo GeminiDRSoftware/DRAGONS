@@ -814,9 +814,11 @@ def test_crop_ext(GSAOI_DARK):
     # assert ext.FOO.shape == (11, 6)
     # assert_array_equal(ext.FOO, 0)
     assert ext.BAR == 1
+
+
 @pytest.mark.xfail(not astropy.utils.minversion(astropy, '4.0.1'),
                    reason='requires astropy >=4.0.1 for correct serialization')
-def test_round_trip_gwcs():
+def test_round_trip_gwcs(tmpdir):
     """
     Add a 2-step gWCS instance to NDAstroData, save to disk, reload & compare.
     """
@@ -876,8 +878,9 @@ def test_round_trip_gwcs():
                             ])
 
     # Save & re-load the AstroData instance with its new WCS attribute:
-    ad1.write('round_trip_gwcs.fits')
-    ad2 = astrodata.open('round_trip_gwcs.fits')
+    testfile = str(tmpdir.join('round_trip_gwcs.fits'))
+    ad1.write(testfile)
+    ad2 = astrodata.open(testfile)
 
     wcs1 = ad1[0].nddata.wcs
     wcs2 = ad2[0].nddata.wcs
@@ -912,6 +915,18 @@ def test_round_trip_gwcs():
     y, w = np.mgrid[0:9:2, 500.025:500.12:0.0225]
     np.testing.assert_allclose(wcs1.invert(w, y), wcs2.invert(w, y),
                                rtol=1e-7, atol=0.)
+
+
+@pytest.mark.parametrize('dtype', ['int8', 'uint8', 'int16', 'uint16',
+                                   'int32', 'uint32', 'int64', 'uint64'])
+def test_uint_data(dtype, tmp_path):
+    testfile = tmp_path / 'test.fits'
+    data = np.arange(10, dtype=np.int16)
+    fits.writeto(testfile, data)
+
+    ad = astrodata.open(str(testfile))
+    assert ad[0].data.dtype == data.dtype
+    assert_array_equal(ad[0].data, data)
 
 
 if __name__ == '__main__':

@@ -16,6 +16,7 @@ import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
@@ -116,7 +117,7 @@ def create_inputs_recipe():
     from gempy.utils import logutils
 
     input_data = [
-        ("N20180508S0021.fits", 244),  # B600 720 - todo: won't pass
+        ("N20180508S0021.fits", 255),  # B600 720
         ("N20180509S0010.fits", 259),  # R400 900
         ("N20180516S0081.fits", 255),  # R600 860
         ("N20190201S0163.fits", 255),  # B600 530

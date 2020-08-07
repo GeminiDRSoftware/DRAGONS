@@ -31,6 +31,7 @@ import glob
 import os
 from warnings import warn
 import tarfile
+import logging
 
 import numpy as np
 import pytest
@@ -159,13 +160,15 @@ input_pars = [
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
 def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
-        ad, change_working_dir, fwidth, min_snr, order, request):
+        ad, caplog, change_working_dir, fwidth, min_snr, order, request):
     """
     Make sure that the WAVECAL model was fitted with an RMS smaller than 0.2
     times the FWHM of the arc lines (i.e., less than half of the standard deviation).
     """
+    caplog.set_level(logging.INFO, logger="geminidr")
+
     with change_working_dir():
-        logutils.config(file_name='log_rms_{:s}.txt'.format(ad.data_label()))
+        # logutils.config(file_name='log_rms_{:s}.txt'.format(ad.data_label()))
         p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
@@ -174,6 +177,10 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
             **determine_wavelength_solution_parameters)
 
         wcalibrated_ad = p.writeOutputs().pop()
+
+        for record in caplog.records:
+            if record.levelname == "WARNING":
+                assert "No acceptable wavelength solution found" not in record.message
 
     if request.config.getoption("--do-plots"):
         do_plots(wcalibrated_ad)
@@ -193,11 +200,13 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
 def test_regression_determine_wavelength_solution(
-        ad, fwidth, order, min_snr, change_working_dir, ref_ad_factory):
+        ad, fwidth, order, min_snr, caplog, change_working_dir, ref_ad_factory):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
     """
+    caplog.set_level(logging.INFO, logger="geminidr")
+
     with change_working_dir():
         logutils.config(file_name='log_regress_{:s}.txt'.format(ad.data_label()))
         p = primitives_gmos_spect.GMOSSpect([ad])
@@ -208,6 +217,10 @@ def test_regression_determine_wavelength_solution(
             **determine_wavelength_solution_parameters)
 
         wcalibrated_ad = p.writeOutputs().pop()
+
+        for record in caplog.records:
+            if record.levelname == "WARNING":
+                assert "No acceptable wavelength solution found" not in record.message
 
     ref_ad = ref_ad_factory(wcalibrated_ad.filename)
     table = wcalibrated_ad[0].WAVECAL
