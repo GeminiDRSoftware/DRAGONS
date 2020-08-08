@@ -1157,7 +1157,7 @@ class Spect(PrimitivesBASE):
 
                 if not acceptable_fit:
                     log.warning(f"No acceptable wavelength solution found for {ad.filename}")
-                    scores = [m.rms_output / (len(m) - order - 1) for m in all_fits]
+                    scores = [m.rms_output / max(len(m) - order - 1, np.finfo(float).eps) for m in all_fits]
                     m = all_fits[np.argmin(scores)]
 
                 if debug:
