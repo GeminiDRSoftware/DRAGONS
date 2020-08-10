@@ -57,6 +57,7 @@ datasets = {
 }
 
 
+@pytest.mark.integration_tests
 @pytest.mark.parametrize("test_case", datasets.keys())
 def test_reduce_image(change_working_dir, test_case):
     """
