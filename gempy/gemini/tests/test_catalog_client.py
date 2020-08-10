@@ -34,11 +34,10 @@ def test_get_fits_table(catalog, ra, dec, radius, nres):
     assert all(center.separation(coord) < Angle(radius * u.deg))
 
 
-# FIXME: vizier returns more sources than mkocatalog2 for sdss9
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize('catalog, ra, dec, radius, nres', [
     ('2mass', 180., 0., 0.02, 5),
-    ('sdss9', 160., 30., 0.02, 28),
+    ('sdss9', 160., 30., 0.02, 21),
 ])
 def test_get_fits_table_vizier(catalog, ra, dec, radius, nres):
     """Tests the same requests but on Vizier this time, specifying explicitly
