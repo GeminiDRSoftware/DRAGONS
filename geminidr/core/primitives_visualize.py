@@ -575,11 +575,11 @@ class Visualize(PrimitivesBASE):
                 wavelength = np.round(wavelength, decimals=3)
 
                 _intensity = [
-                    ["{}".format(w), "{:.02f}".format(d)]
+                    [float(w), float(d)]
                     for w, d in zip(wavelength, data)]
 
                 _stddev = [
-                    ["{}".format(w), "{:.02f}".format(s)]
+                    [float(w), float(s)]
                     for w, s in zip(wavelength, stddev)]
 
                 center = np.round(ext.hdr["XTRACTED"])
