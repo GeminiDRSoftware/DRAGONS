@@ -1999,7 +1999,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             ad_out.hdr[keywords['array']] = '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
                                 for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
         else:
-            del ad.hdr[keywords['array']]
+            del ad_out.hdr[keywords['array']]
 
     # Try to assign an array name for this based on commonality
     if not is_single:
