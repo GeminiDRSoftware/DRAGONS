@@ -35,6 +35,7 @@ def test_not_prepared(adinputs):
         p.stackFrames()
 
 
+@pytest.mark.skip("bquint - Investigate this test")
 def test_error_only_one_file(adinputs, caplog):
     # With only one file
     p = NIRIImage(adinputs[1:])

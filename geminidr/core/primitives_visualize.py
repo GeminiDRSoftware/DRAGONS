@@ -486,7 +486,6 @@ class Visualize(PrimitivesBASE):
             adoutputs.append(ad_out)
         return adoutputs
 
-
     def plotSpectraForQA(self, adinputs=None, **params):
         """
         Converts AstroData containing extracted spectra into a JSON object. Then,
@@ -563,20 +562,25 @@ class Visualize(PrimitivesBASE):
 
                 wavelength = ext.wcs(np.arange(data.size)).astype(np.float32)
                 w_dispersion = np.abs(wavelength[-1] - wavelength[0]) / (data.size - 1)
-                w_units = ext.wcs.output_frame.unit[0]
+                w_units = str(ext.wcs.output_frame.unit[0])
 
                 # Clean up bad data
                 mask = np.logical_not(np.ma.masked_invalid(data).mask)
 
                 wavelength = wavelength[mask]
-                data = data[mask].astype(np.float32)
-                stddev = stddev[mask].astype(np.float32)
+                data = data[mask].astype(float)
+                stddev = stddev[mask].astype(float)
 
                 # Round and convert data/stddev to int to minimize data transfer load
                 wavelength = np.round(wavelength, decimals=3)
 
-                _intensity = [[w, d] for w, d in zip(wavelength, data)]
-                _stddev = [[w, s] for w, s in zip(wavelength, stddev)]
+                _intensity = [
+                    [float(w), float(d)]
+                    for w, d in zip(wavelength, data)]
+
+                _stddev = [
+                    [float(w), float(s)]
+                    for w, s in zip(wavelength, stddev)]
 
                 center = np.round(ext.hdr["XTRACTED"])
                 lower = np.round(ext.hdr["XTRACTLO"])

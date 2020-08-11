@@ -8,7 +8,7 @@ recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 
 def makeProcessedFlat(p):
     p.prepare()
-    p.addDQ(static_bpm=None)
+    p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect()
