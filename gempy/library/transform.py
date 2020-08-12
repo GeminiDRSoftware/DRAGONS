@@ -176,8 +176,8 @@ class Block:
     @property
     def wcs(self):
         """WCS object"""
-        if self.corners[0] != (0, 0):
-            raise ValueError("First element does not start at (0, 0)")
+        if not all (c == 0 for c in self.corners[0]):
+            raise ValueError("First element does not start at origin")
         return self._elements[0].wcs
 
     def _return_array(self, elements):
