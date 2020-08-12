@@ -2067,10 +2067,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # complete model and so isn't within the "WAVE" submodel. Converting to
     # a FITS header and back results in a reconstructed model where "WAVE" is
     # a distinct submodel.
-    wcs_fits_header = Header(adwcs.gwcs_to_fits(ad_out[0].nddata,
-                                                hdr=ad_out.phu))
-    if 'APPROXIMATE' not in wcs_fits_header.get('FITS-WCS', ''):
-        ad_out[0].wcs = adwcs.fitswcs_to_gwcs(wcs_fits_header)
+    if ad_out[0].wcs is not None:
+        wcs_fits_header = Header(adwcs.gwcs_to_fits(ad_out[0].nddata,
+                                                    hdr=ad_out.phu))
+        if 'APPROXIMATE' not in wcs_fits_header.get('FITS-WCS', ''):
+            ad_out[0].wcs = adwcs.fitswcs_to_gwcs(wcs_fits_header)
 
     return ad_out
 
