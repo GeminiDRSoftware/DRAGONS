@@ -172,10 +172,12 @@ def gwcs_to_fits(ndd, hdr=None):
         wcs_dict['FITS-WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
 
     affine = calculate_affine_matrices(transform, ndd.shape)
+    # Convert to x-first order
+    affine_matrix = affine.matrix[::-1, ::-1]
     # Require an inverse to write out
-    if np.linalg.det(affine.matrix) == 0:
-        affine.matrix[-1, -1] = 1.
-    wcs_dict.update({f'CD{i+1}_{j+1}': affine.matrix[j, i]
+    if np.linalg.det(affine_matrix) == 0:
+        affine_matrix[-1, -1] = 1.
+    wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[j, i]
                      for i, _ in enumerate(world_axes)
                      for j, _ in enumerate(world_axes)})
     # Don't overwrite CTYPEi keywords we've already created
