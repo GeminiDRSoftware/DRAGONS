@@ -31,6 +31,7 @@ from astropy.modeling import models, Model
 from astropy.modeling.core import _model_oper, fix_inputs
 from astropy import table, units as u
 from astropy.wcs import WCS
+from astropy.io.fits import Header
 
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -43,6 +44,7 @@ import multiprocessing as multi
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 import astrodata
+from astrodata import wcs as adwcs
 
 from .astromodels import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
@@ -527,7 +529,7 @@ class Transform:
             else:
                 self._models[i:i] = sequence
         # Update affinity based on new model (leave existing stuff alone)
-        self._affine &= astrodata.wcs.model_is_affine(model)
+        self._affine &= adwcs.model_is_affine(model)
 
     @staticmethod
     def split_compound_model(tree, ndim):
@@ -614,7 +616,7 @@ class Transform:
         """
         Test for affinity.
         """
-        return np.logical_and.reduce([astrodata.wcs.model_is_affine(m)
+        return np.logical_and.reduce([adwcs.model_is_affine(m)
                                       for m in self._models])
 
     @property
@@ -647,7 +649,7 @@ class Transform:
             except TypeError:  # self.ndim is None
                 raise TypeError("Cannot compute affine matrices without a "
                                 "dimensionality")
-        return astrodata.wcs.calculate_affine_matrices(self, shape)
+        return adwcs.calculate_affine_matrices(self, shape)
 
     def add_bounds(self, param, range):
         """Add bounds to a parameter"""
@@ -2059,6 +2061,16 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             objcat = table.vstack(tables, metadata_conflicts='silent')
             objcat['NUMBER'] = np.arange(len(objcat)) + 1
             setattr(ad_out[0], table_name, cat_table)
+
+    # We may need to remake the gWCS object. The issue here is with 2D spectra,
+    # where the resetting of the dispersion direction is done before the
+    # complete model and so isn't within the "WAVE" submodel. Converting to
+    # a FITS header and back results in a reconstructed model where "WAVE" is
+    # a distinct submodel.
+    wcs_fits_header = Header(adwcs.gwcs_to_fits(ad_out[0].nddata,
+                                                hdr=ad_out.phu))
+    if 'APPROXIMATE' not in wcs_fits_header.get('FITS-WCS', ''):
+        ad_out[0].wcs = adwcs.fitswcs_to_gwcs(wcs_fits_header)
 
     return ad_out
 

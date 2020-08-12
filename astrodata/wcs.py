@@ -104,11 +104,15 @@ def gwcs_to_fits(ndd, hdr=None):
     -------
     dict: values to insert into the FITS header to express this WCS
     """
+    if hdr is None:
+        hdr = {}
+
     wcs = ndd.wcs
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
     nworld_axes = len(world_axes)
-    wcs_dict = {'WCSAXES': nworld_axes,
+    wcs_dict = {'NAXIS': len(ndd.shape),
+                'WCSAXES': nworld_axes,
                 'WCSDIM': nworld_axes}
     wcs_dict.update({f'CD{i+1}_{j+1}': 0. for j in range(nworld_axes)
                      for i in range(nworld_axes)})
