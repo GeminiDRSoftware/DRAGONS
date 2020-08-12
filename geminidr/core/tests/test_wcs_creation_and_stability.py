@@ -72,7 +72,7 @@ def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_a
     if do_prepare:
         p.prepare()
         c = SkyCoord(*raw_ad[ref_index].wcs(x, y), unit="deg")
-        assert c0.separation(c) < 1e-12 * u.arcsec
+        assert c0.separation(c) < 1e-10 * u.arcsec
 
     # Test that slicing the NDData keeps the WCS valid
     if do_overscan_correct:
@@ -81,7 +81,7 @@ def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_a
         x -= xshift
         y -= yshift
         c = SkyCoord(*raw_ad[ref_index].wcs(x, y), unit="deg")
-        assert c0.separation(c) < 1e-12 * u.arcsec
+        assert c0.separation(c) < 1e-10 * u.arcsec
 
     # Test that tiling doesn't affect the reference extension's WCS
     new_ref_index = 0 if (tile_all or raw_ad.detector_roi_setting() == 'Central Stamp') else 1
@@ -95,7 +95,7 @@ def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_a
     if tile_all and raw_ad.detector_roi_setting() != 'Central Stamp':
         x += chip_gaps // raw_ad.detector_x_bin()
     c = SkyCoord(*ad[new_ref_index].wcs(x, y), unit="deg")
-    assert c0.separation(c) < 1e-12 * u.arcsec
+    assert c0.separation(c) < 1e-10 * u.arcsec
 
     # Now write the file to disk and read it back in and check WCS stability
     ad.write(TEMPFILE, overwrite=True)
