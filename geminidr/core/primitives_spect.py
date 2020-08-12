@@ -2075,7 +2075,7 @@ class Spect(PrimitivesBASE):
                 try:
                     model_info = _extract_model_info(ext)
                 except ValueError:
-                    raise ValueError("{} has no WAVECAL. Cannot linearize."
+                    raise ValueError("Cannot determine wavelength solution for {}."
                                      .format(extname))
                 adinfo.append(model_info)
 
