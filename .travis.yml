@@ -3,6 +3,13 @@ language: python
 python:
   - '3.6'
 
+git:
+  quiet: true
+
+env:
+  global:
+    - JENKINS_CONDA_HOME="./conda"
+
 branches:
   only:
   - master
