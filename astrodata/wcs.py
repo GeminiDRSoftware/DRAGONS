@@ -259,7 +259,7 @@ def calculate_affine_matrices(func, shape):
     matrix = np.array([[0.5 * (transformed[j + 1, i] - transformed[ndim + j + 1, i]) / halfsize[j]
                         for j in range(ndim)] for i in range(ndim)])
     offset = transformed[0] - np.dot(matrix, halfsize)
-    return AffineMatrices(matrix.[::-1, ::-1], offset[::-1])
+    return AffineMatrices(matrix[::-1, ::-1], offset[::-1])
 
 
 # -------------------------------------------------------------------------
