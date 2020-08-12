@@ -144,4 +144,4 @@ class storeProcessedStandardConfig(config.Config):
 
 
 class storeProcessedSlitIllumConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_slitillum", optional=True)
+    suffix = config.Field("Filename suffix", str, "_slitIllum", optional=True)
