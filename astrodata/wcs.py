@@ -38,7 +38,7 @@ def fitswcs_to_gwcs(hdr):
     # transform = gw.make_fitswcs_transform(hdr)
     try:
         transform = make_fitswcs_transform(hdr)
-    except Exception:
+    except Exception as e:
         return None
     outputs = transform.outputs
 
@@ -181,9 +181,9 @@ def gwcs_to_fits(ndd, hdr=None):
     # Require an inverse to write out
     if np.linalg.det(affine_matrix) == 0:
         affine_matrix[-1, -1] = 1.
-    wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[j, i]
-                     for i, _ in enumerate(world_axes)
-                     for j, _ in enumerate(world_axes)})
+    wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[i, j]
+                     for j, _ in enumerate(world_axes)
+                     for i, _ in enumerate(world_axes)})
     # Don't overwrite CTYPEi keywords we've already created
     wcs_dict.update({f'CTYPE{i}': axis.upper()[:8]
                      for i, axis in enumerate(world_axes, start=1)
