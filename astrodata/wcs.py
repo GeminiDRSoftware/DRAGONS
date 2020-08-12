@@ -224,11 +224,12 @@ def model_is_affine(model):
 
 def calculate_affine_matrices(func, shape):
     """
-    Compute the matrix and offset necessary to turn a Transform into an
-    affine transformation. This is done by computing the linear matrix
-    along all axes extending from the centre of the region, and then
-    calculating the offset such that the transformation is accurate at
-    the centre of the region.
+    Compute the matrix and offset necessary of an affine transform that
+    represents the supplied function. This is done by computing the
+    linear matrix along all axes extending from the centre of the region,
+    and then calculating the offset such that the transformation is
+    accurate at the centre of the region. The matrix and offset are returned
+    in the standard python order (i.e., y-first for 2D).
 
     Parameters
     ----------
@@ -258,7 +259,7 @@ def calculate_affine_matrices(func, shape):
     matrix = np.array([[0.5 * (transformed[j + 1, i] - transformed[ndim + j + 1, i]) / halfsize[j]
                         for j in range(ndim)] for i in range(ndim)])
     offset = transformed[0] - np.dot(matrix, halfsize)
-    return AffineMatrices(matrix.T, offset[::-1])
+    return AffineMatrices(matrix.[::-1, ::-1], offset[::-1])
 
 
 # -------------------------------------------------------------------------
