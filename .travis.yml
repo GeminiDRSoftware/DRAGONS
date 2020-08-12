@@ -1,52 +1,27 @@
-dist: xenial
 language: python
 python:
-  - '3.6'
-
-git:
-  quiet: true
-
+  # We don't actually use the Travis Python, but this keeps it organized.
+  - "3.6"
 env:
   global:
-    - JENKINS_CONDA_HOME="./conda"
-
-branches:
-  only:
-  - master
-  - feat/travis
-
+    - JENKINS_CONDA_HOME="$HOME/miniconda"
 install:
-- sudo apt-get update
-- source .jenkins/scripts/setup_agent.sh
+  # We do this conditionally because it saves us some downloading if the
+  # version is the same.
+  - source ".jenkins/scripts/setup_agent.sh"
+#  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+#  - bash miniconda.sh -b -p $HOME/miniconda
+#  - source "$HOME/miniconda/etc/profile.d/conda.sh"
+#  - hash -r
+#  - conda config --set always_yes yes --set changeps1 no
+#  - conda update -q conda
+#  # Useful for debugging any issues with conda
+#  - conda info -a
+#
+#  # Replace dep1 dep2 ... with your dependencies
+#  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION dep1 dep2 ...
+#  - conda activate test-environment
+#  - python setup.py install
 
-#- wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-#- bash miniconda.sh -b -p $HOME/miniconda
-#- export PATH="$HOME/miniconda/bin:$PATH"
-#- hash -r
-#- conda config --set always_yes yes --set changeps1 no
-#
-## Adding AstroConda Channel since it contains most of the dependencies for
-## Dragons and Dragons-SOAR
-#- conda config --add channels http://ssb.stsci.edu/astroconda
-#- conda update -q conda
-#
-## Useful for debugging any issues with conda
-##- conda info -a
-#
-## Create astroconda virtual environment
-#- export PYTHON_VERSION="$( echo $TRAVIS_PYTHON_VERSION | cut -d'-' -f1 )"
-#- conda create -q -n astroconda stsci python=$PYTHON_VERSION
-#- source activate astroconda
-#
-## Install packages
-#- conda install --yes --quiet --channel conda-forge python-coveralls
-#- conda install --yes --quiet --channel astropy astroplan astroquery ccdproc
-#- conda install --yes --quiet future cython
-#
-#script:
-#- pytest astrodata recipe_system gemini_instruments
-##- coverage run --branch --source= setup.py test
-#- python setup.py build
-#
-#after_success:
-##- coveralls
+script:
+  # Your test script goes here
