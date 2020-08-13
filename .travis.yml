@@ -28,9 +28,4 @@ install:
   - conda info -a
 
 script:
-  - echo "Hello world"
-#  - tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml
-#  # Replace dep1 dep2 ... with your dependencies
-#  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION dep1 dep2 ...
-#  - conda activate test-environment
-#  - python setup.py install
+  - tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml
