@@ -193,6 +193,22 @@ def new_imagehdu(data, header, name=None):
 
 
 def table_to_bintablehdu(table, extname=None):
+    """
+    Convert an astropy Table object to a BinTableHDU before writing to disk.
+    Suitable FITS header keywords describing the column datatypes are added,
+    and an existing header (either a Header object or a dict) is also added.
+
+    Parameters
+    ----------
+    table: astropy.table.Table instance
+        the table to be converted to a BinTableHDU
+    extname: str
+        name to go in the EXTNAME field of the FITS header
+
+    Returns
+    -------
+    BinTableHDU
+    """
     add_header_to_table(table)
     array = table.as_array()
     header = table.meta['header'].copy()
@@ -268,8 +284,17 @@ def header_for_table(table):
         columns.append(fits.Column(array=col.data, **descr))
 
     fits_header = fits.BinTableHDU.from_columns(columns).header
-    if 'header' in table.meta:
-        fits_header = update_header(table.meta['header'], fits_header)
+    try:
+        existing_header = table.meta['header']
+    except KeyError:
+        pass
+    else:
+        if isinstance(existing_header, fits.Header):
+            fits_header = update_header(existing_header, fits_header)
+        else:
+            existing_fits_header = fits.Header()
+            existing_fits_header.update(existing_header)
+            fits_header = update_header(existing_fits_header, fits_header)
     return fits_header
 
 

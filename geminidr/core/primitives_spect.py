@@ -338,6 +338,7 @@ class Spect(PrimitivesBASE):
                 knots, coeffs, degree = spline.tck
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
                                  names=('knots', 'coefficients'))
+                sensfunc.meta['header'] = {'ORDER': (3, 'Order of spline fit')}
                 ext.SENSFUNC = sensfunc
                 calculated = True
 
@@ -1752,7 +1753,8 @@ class Spect(PrimitivesBASE):
                 pixel_sizes = abs(np.diff(all_waves[::2]))
 
                 # Reconstruct the spline and evaluate it at every wavelength
-                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, 3)
+                order = sensfunc.meta['header'].get('ORDER', 3)
+                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
                 sens_factor = spline(waves.to(sensfunc['knots'].unit)) * sensfunc['coefficients'].unit
                 try:  # conversion from magnitude/logarithmic units
                     sens_factor = sens_factor.physical
