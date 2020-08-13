@@ -322,10 +322,11 @@ class Spect(PrimitivesBASE):
                         # Regardless of whether FLUX column is f_nu or f_lambda
                         flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
                                            equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                        wave.append(w0)
-                        # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                        zpt.append(u.Magnitude(data / flux))
-                        zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                        if data > 0:
+                            wave.append(w0)
+                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                            zpt.append(u.Magnitude(data / flux))
+                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
                 # TODO: Abstract to interactive fitting
                 wave = array_from_list(wave, unit=u.nm)
@@ -337,6 +338,7 @@ class Spect(PrimitivesBASE):
                 knots, coeffs, degree = spline.tck
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
                                  names=('knots', 'coefficients'))
+                sensfunc.meta['header'] = {'ORDER': (3, 'Order of spline fit')}
                 ext.SENSFUNC = sensfunc
                 calculated = True
 
@@ -1392,31 +1394,31 @@ class Spect(PrimitivesBASE):
                     # Create a new gWCS and add header keywords with the
                     # extraction location. All extracted spectra will have the
                     # same gWCS but that could change.
-                    ext = ad_spec[-1]
+                    ext_spec = ad_spec[-1]
                     if wave_model is not None:
                         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                                       axes_order=(0,), unit=u.pix,
                                                       axes_names=('x',), name='pixels')
                         out_frame = cf.SpectralFrame(unit=u.nm, name='world')
-                        ext.wcs = gWCS([(in_frame, wave_model),
-                                        (out_frame, None)])
-                    ext.hdr[ad._keyword_for('aperture_number')] = apnum
+                        ext_spec.wcs = gWCS([(in_frame, wave_model),
+                                             (out_frame, None)])
+                    ext_spec.hdr[ad._keyword_for('aperture_number')] = apnum
                     center = aperture.model.c0.value
-                    ext.hdr['XTRACTED'] = (center, "Spectrum extracted "
-                                                    "from {} {}".format(direction, int(center + 0.5)))
-                    ext.hdr['XTRACTLO'] = (aperture._last_extraction[0],
-                                           'Aperture lower limit')
-                    ext.hdr['XTRACTHI'] = (aperture._last_extraction[1],
-                                           'Aperture upper limit')
+                    ext_spec.hdr['XTRACTED'] = (center, "Spectrum extracted "
+                                                        "from {} {}".format(direction, int(center + 0.5)))
+                    ext_spec.hdr['XTRACTLO'] = (aperture._last_extraction[0],
+                                                'Aperture lower limit')
+                    ext_spec.hdr['XTRACTHI'] = (aperture._last_extraction[1],
+                                                'Aperture upper limit')
 
                     # Delete unnecessary keywords
                     for descriptor in ('detector_section', 'array_section'):
                         kw = ad._keyword_for(descriptor)
-                        if kw in ext.hdr:
-                            del ext.hdr[kw]
+                        if kw in ext_spec.hdr:
+                            del ext_spec.hdr[kw]
                     # TODO: remove after testing
                     try:
-                        ext.WAVECAL = ext.WAVECAL
+                        ext_spec.WAVECAL = ext_spec.WAVECAL
                     except AttributeError:
                         pass
 
@@ -1751,7 +1753,8 @@ class Spect(PrimitivesBASE):
                 pixel_sizes = abs(np.diff(all_waves[::2]))
 
                 # Reconstruct the spline and evaluate it at every wavelength
-                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, 3)
+                order = sensfunc.meta['header'].get('ORDER', 3)
+                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
                 sens_factor = spline(waves.to(sensfunc['knots'].unit)) * sensfunc['coefficients'].unit
                 try:  # conversion from magnitude/logarithmic units
                     sens_factor = sens_factor.physical
@@ -2075,7 +2078,7 @@ class Spect(PrimitivesBASE):
                 try:
                     model_info = _extract_model_info(ext)
                 except ValueError:
-                    raise ValueError("{} has no WAVECAL. Cannot linearize."
+                    raise ValueError("Cannot determine wavelength solution for {}."
                                      .format(extname))
                 adinfo.append(model_info)
 
