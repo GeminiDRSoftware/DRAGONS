@@ -22,6 +22,7 @@ class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
         self.location = location
         self.dispaxis = dispaxis
         self.sigma_clip = sigma_clip
+        self.sigma=3
         self.coords = coords
         self.spectral_coords = spectral_coords
         self.ext = ext
@@ -29,6 +30,7 @@ class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
         self.model_dict = None
         self.x = []
         self.y = []
+        self.fit_mask = None
 
         # do this last since it will trigger an update, which triggers a recalc
         self.coords.add_coord_listener(self)
@@ -61,11 +63,12 @@ class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
         m_init = models.Chebyshev1D(degree=order, c0=location,
                                     domain=[0, ext.shape[dispaxis] - 1])
         fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                   sigma_clip, sigma=3)
+                                                   sigma_clip, sigma=self.sigma)
         try:
             x = self.x
             y = self.y
-            self.m_final, _ = fit_it(m_init, x, y)
+            self.m_final, self.fit_mask = fit_it(m_init, x, y)
+            pass
         except (IndexError, np.linalg.linalg.LinAlgError):
             # This hides a multitude of sins, including no points
             # returned by the trace, or insufficient points to
@@ -115,6 +118,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.p = None
         self.spline = None
         self.scatter = None
+        self.sigma_scatter = None
         self.masked_scatter = None
         self.scatter_touch = None
         self.line = None
@@ -166,6 +170,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         order_slider = GISlider("Order", self.model.order, 1, self.min_order, self.max_order,
                                 self.model, "order", self.model.recalc_chebyshev)
+        sigma_slider = GISlider("Sigma", self.model.sigma, 3, 1, 10,
+                                self.model, "sigma", self.model.recalc_chebyshev)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -187,6 +193,20 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         self.scatter = GIScatter(p, self.x, self.y, color="red", radius=5)
         self.masked_scatter = GIScatter(p, self.x, self.y, color="blue", radius=5)
+        self.sigma_scatter = GIScatter(p, [], [], color="orange", radius=5)
+
+        def sigma_listener():
+            x = self.model.x
+            y = self.model.y
+            mask = self.model.fit_mask
+            if mask is not None:
+                x = x[mask]
+                y = y[mask]
+                self.sigma_scatter.update_coords(x, y)
+            else:
+                self.sigma_scatter.update_coords([], [])
+
+        self.model.add_model_listener(sigma_listener)
         self.model.coords.add_coord_listener(self.masked_scatter)
         self.line = GILine(p)
         self.model.add_coord_listener(self.line)
@@ -204,7 +224,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         # This controls area is a vertical set of UI controls we are placing on the left
         # side of the UI
         helptext = Div(text="")
-        self.controls = Column(order_slider.component, self.submit_button, mask_button, unmask_button, helptext)
+        self.controls = Column(order_slider.component, sigma_slider.component,
+                               self.submit_button, mask_button, unmask_button, helptext)
 
         # recalculate the chebyshev, causing the data updates to fire and update the UI as well
         self.model.recalc_chebyshev()
