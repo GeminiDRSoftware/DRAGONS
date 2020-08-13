@@ -6,6 +6,7 @@ python:
   - "3.7"
 env:
   global:
+    - DRAGONS_TEST="$HOME/dragons_tests/"
     - JENKINS_CONDA_HOME="$HOME/miniconda"
 install:
   # We do this conditionally because it saves us some downloading if the
