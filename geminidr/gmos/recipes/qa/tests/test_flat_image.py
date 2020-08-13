@@ -21,7 +21,7 @@ test_data = [
 ]
 
 
-@pytest.mark.integration_tests
+@pytest.mark.integtest
 @pytest.mark.parametrize("master_bias, flat_fnames", test_data)
 def test_make_processed_flat(
         change_working_dir, flat_fnames, master_bias, path_to_inputs):
