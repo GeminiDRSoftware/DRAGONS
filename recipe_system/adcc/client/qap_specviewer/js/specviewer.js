@@ -493,6 +493,16 @@ class SpecViewer {
 
   } // end newTabContent
 
+  // Enable Reset Zoom button for Frame Plots
+  resetZoom(p, i, type) {
+      let sViewer = this;
+      let apertureCenter = sViewer.aperturesCenter[i];
+      $(`#aperture${apertureCenter} .info.${type} button`).click( function() {
+          console.log(`Reset zoom of ${type} plot #${i}.`);
+          p.resetZoom();
+      });
+  } //
+
   /**
    * Starts to query for new data
    */
@@ -660,21 +670,12 @@ class SpecViewer {
     // Reference self to use in inner function
     let sViewer = this;
 
-    // Enable Reset Zoom button for Frame Plots
-    function resetZoom(p, i, type) {
-      let apertureCenter = sViewer.aperturesCenter[i];
-      $(`#aperture${apertureCenter} .info.${type} button`).click( function() {
-        console.log(`Reset zoom of ${type} plot #${i}.`);
-        p.resetZoom();
-      });
-    }
-
     this.singlePlots.map(function(p, i) {
-      resetZoom(p, i, 'single');
+        sViewer.resetZoom(p, i, 'single');
     });
 
     this.stackPlots.map(function(p, i) {
-      resetZoom(p, i, 'stack');
+        sViewer.resetZoom(p, i, 'stack');
     });
 
     // Enable on tab change event
