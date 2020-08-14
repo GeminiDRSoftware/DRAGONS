@@ -1555,7 +1555,8 @@ class Spect(PrimitivesBASE):
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
                 signal = (data if (variance is None or not use_snr) else
-                          data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32)))
+                          np.divide(data, np.sqrt(variance),
+                                    out=np.zeros_like(data), where=variance>0))
                 masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
                 # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
