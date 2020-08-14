@@ -111,7 +111,11 @@ class GISlider(object):
 
         def update_slider(attr, old, new):
             if old != new:
-                ival = int(new)
+                ival = None
+                try:
+                    ival = int(new)
+                except ValueError:
+                    ival = float(new)
                 if ival > slider.end and not max_value:
                     slider.end = ival
                 if 0 <= ival < slider.start and min_value is None:
@@ -274,6 +278,14 @@ class GIDifferencingModel(GICoordsSource):
         coords.add_coord_listener(self.update_coords)
         cmodel.add_model_listener(self.update_model)
 
+    def add_coord_listener(self, l):
+        super().add_coord_listener(l)
+        if self.data_x_coords is not None:
+            if callable(l):
+                l(self.data_x_coords, self.data_y_coords - self.fn(self.data_x_coords))
+            else:
+                l.update_coords(self.data_x_coords, self.data_y_coords - self.fn(self.data_x_coords))
+
     def update_coords(self, x_coords, y_coords):
         """
         Handle an update to the coordinates.
@@ -307,7 +319,7 @@ class GIDifferencingModel(GICoordsSource):
         self.notify_coord_listeners(x, y)
 
 
-class GIMaskedCoords(GICoordsSource):
+class GIMaskedSigmadCoords(GICoordsSource):
     """
     This is a helper class for handling masking of coordinate
     values.
@@ -340,6 +352,10 @@ class GIMaskedCoords(GICoordsSource):
         self.y_coords = y_coords
         # intially, all points are masked = included
         self.mask = [True] * len(x_coords)
+        # initially, all points are not sigma = excluded
+        self.sigma = [False] * len(x_coords)
+        self.mask_listeners = list()
+        self.sigma_listeners = list()
 
     def add_coord_listener(self, coords_listener):
         """
@@ -357,9 +373,22 @@ class GIMaskedCoords(GICoordsSource):
         """
         super().add_coord_listener(coords_listener)
         if callable(coords_listener):
-            coords_listener(self.x_coords[self.mask], self.y_coords[self.mask])
+            coords_listener(self.x_coords, self.y_coords)
         else:
-            coords_listener.update_coords(self.x_coords[self.mask], self.y_coords[self.mask])
+            coords_listener.update_coords(self.x_coords, self.y_coords)
+
+    def add_mask_listener(self, mask_listener: callable):
+        if callable(mask_listener):
+            self.mask_listeners.append(mask_listener)
+            mask_listener(self.x_coords[self.mask], self.y_coords[self.mask])
+        else:
+            raise ValueError("add_mask_listener takes a callable function")
+
+    def add_sigma_listener(self, sigma_listener: callable):
+        if callable(sigma_listener):
+            self.sigma_listeners.append(sigma_listener)
+        else:
+            raise ValueError("add_sigma_listener takes a callable function")
 
     def addmask(self, coords):
         """
@@ -376,7 +405,12 @@ class GIMaskedCoords(GICoordsSource):
         """
         for i in coords:
             self.mask[i] = False
-        self.notify_coord_listeners(self.x_coords[self.mask], self.y_coords[self.mask])
+        self.sigma = [False] * len(self.x_coords[self.mask])
+        self.notify_coord_listeners(self.x_coords, self.y_coords)
+        for mask_listener in self.mask_listeners:
+            mask_listener(self.x_coords[self.mask], self.y_coords[self.mask])
+        for sigma_listener in self.sigma_listeners:
+            sigma_listener([], [])
 
     def unmask(self, coords):
         """
@@ -393,7 +427,31 @@ class GIMaskedCoords(GICoordsSource):
         """
         for i in coords:
             self.mask[i] = True
-        self.notify_coord_listeners(self.x_coords[self.mask], self.y_coords[self.mask])
+        self.sigma = [False] * len(self.x_coords[self.mask])
+        self.notify_coord_listeners(self.x_coords, self.y_coords)
+        for mask_listener in self.mask_listeners:
+            mask_listener(self.x_coords[self.mask], self.y_coords[self.mask])
+        for sigma_listener in self.sigma_listeners:
+            sigma_listener([], [])
+
+    def set_sigma(self, coords):
+        """
+        Set the given cooridnate indices as excluded by sigma (so, highlight accordingly)
+
+        This also notifies all listeners of the updated set of passing
+        coordinates.
+
+        Parameters
+        ----------
+        coords : array of int
+            List of coordinates to flag as sigma excluded
+
+        """
+        self.sigma = [False] * len(self.x_coords[self.mask])
+        for i in coords:
+            self.sigma[i] = True
+        for sigma_listener in self.sigma_listeners:
+            sigma_listener(self.x_coords[self.mask][self.sigma], self.y_coords[self.mask][self.sigma])
 
 
 class GIFigure(object):
@@ -482,6 +540,76 @@ class GIScatter(GICoordsListener):
     #
     # def replot(self):
     #     self.scatter.replot()
+
+
+class GIMaskedSigmadScatter(GICoordsListener):
+    def __init__(self, gifig, coords, color="red",
+                 masked_color="blue", sigma_color="orange", radius=5):
+        """
+        Masked/Sigmad Scatter plot
+
+        Parameters
+        ----------
+        gifig : :class:`GIFigure`
+            figure to plot in
+        coords : :class:`GIMaskedSigmaCoords`
+            coordinate holder that also tracks masking and sigma
+        color : str
+            color value for unselected points (initially none of them), default "red"
+        masked_color : str
+            color for masked (included) points, default "blue"
+        sigma_color : str
+            color for sigma-excluded points, default "orange"
+        radius : int
+            radius in pixels for the dots
+        """
+        if not isinstance(coords, GIMaskedSigmadCoords):
+            raise ValueError("coords passed must be a GIMaskedSigmadCoords instance")
+        x_coords = coords.x_coords
+        y_coords = coords.y_coords
+        self.source = ColumnDataSource({'x': x_coords, 'y': y_coords})
+        self.masked_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
+        self.sigmad_source = ColumnDataSource({'x': [], 'y': []})
+        self.scatter = gifig.figure.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
+        self.masked_scatter = gifig.figure.scatter(x='x', y='y', source=self.masked_source, color=masked_color, radius=radius)
+        self.sigma_scatter = gifig.figure.scatter(x='x', y='y', source=self.sigmad_source, color=sigma_color, radius=radius)
+        coords.add_coord_listener(self.update_coords)
+        coords.add_mask_listener(self.update_masked_coords)
+        coords.add_sigma_listener(self.update_sigmad_coords)
+
+    def update_coords(self, x_coords, y_coords):
+        """
+        Respond to new coordinates.
+
+        We usually subscribe to some sort of GICoordsSource and this
+        is where it will let us know of any data updates.
+
+        Parameters
+        ----------
+        x_coords : ndarray
+            x coordinates
+        y_coords : ndarray
+            y coordinates
+
+        """
+        self.source.data = {'x': x_coords, 'y': y_coords}
+
+    def update_masked_coords(self, x_coords, y_coords):
+        self.masked_source.data = {'x': x_coords, 'y': y_coords}
+
+    def update_sigmad_coords(self, x_coords, y_coords):
+        self.sigmad_source.data = {'x': x_coords, 'y': y_coords}
+
+    def clear_selection(self):
+        """
+        Clear the selection in the scatter plot.
+
+        This is useful once we have applied the selection in some way,
+        to reset the plot back to an unselected state.
+        """
+        self.source.selected.update(indices=[])
+        self.masked_source.selected.update(indices=[])
+        self.sigmad_source.selected.update(indices=[])
 
 
 class GILine(GICoordsListener):

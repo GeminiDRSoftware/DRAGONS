@@ -6,15 +6,15 @@ from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Div
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, \
-    GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedCoords, \
-    GIModelSource, GIDifferencingModel
+    GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedSigmadCoords, \
+    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter
 from gempy.library import astromodels
 
 
 __all__ = ["interactive_chebyshev",]
 
 
-class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
+class ChebyshevModel(GICoordsSource, GIModelSource):
     def __init__(self, order, location, dispaxis, sigma_clip, coords, spectral_coords, ext):
         super().__init__()
         GIModelSource.__init__(self)
@@ -30,10 +30,9 @@ class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
         self.model_dict = None
         self.x = []
         self.y = []
-        self.fit_mask = None
 
         # do this last since it will trigger an update, which triggers a recalc
-        self.coords.add_coord_listener(self)
+        self.coords.add_mask_listener(self.update_coords)
 
     def update_coords(self, x_coords, y_coords):
         # The masked coordinates changed, so update our copy and recalculate the model
@@ -67,7 +66,8 @@ class ChebyshevModel(GICoordsSource, GICoordsListener, GIModelSource):
         try:
             x = self.x
             y = self.y
-            self.m_final, self.fit_mask = fit_it(m_init, x, y)
+            self.m_final, fit_mask = fit_it(m_init, x, y)
+            self.coords.set_sigma(fit_mask)
             pass
         except (IndexError, np.linalg.linalg.LinAlgError):
             # This hides a multitude of sins, including no points
@@ -136,13 +136,11 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
         self.scatter.clear_selection() # source.selected.indices.clear()
-        self.masked_scatter.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
         self.scatter.clear_selection() # source.selected.indices.clear()
-        self.masked_scatter.clear_selection()
         self.model.coords.unmask(indices)
 
     def visualize(self, doc):
@@ -170,7 +168,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         order_slider = GISlider("Order", self.model.order, 1, self.min_order, self.max_order,
                                 self.model, "order", self.model.recalc_chebyshev)
-        sigma_slider = GISlider("Sigma", self.model.sigma, 3, 1, 10,
+        sigma_slider = GISlider("Sigma", self.model.sigma, 0.1, 2, 10,
                                 self.model, "sigma", self.model.recalc_chebyshev)
 
         mask_button = Button(label="Mask")
@@ -180,7 +178,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         unmask_button.on_click(self.unmask_button_handler)
 
         # Add custom tooling
-        source = ColumnDataSource(data=dict(x=[], y=[]))
+        # source = ColumnDataSource(data=dict(x=[], y=[]))
 
         # Create a blank figure with labels
         p = GIFigure(plot_width=600, plot_height=500,
@@ -191,23 +189,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         self.p = p
 
-        self.scatter = GIScatter(p, self.x, self.y, color="red", radius=5)
-        self.masked_scatter = GIScatter(p, self.x, self.y, color="blue", radius=5)
-        self.sigma_scatter = GIScatter(p, [], [], color="orange", radius=5)
+        self.scatter = GIMaskedSigmadScatter(p, self.model.coords)
 
-        def sigma_listener():
-            x = self.model.x
-            y = self.model.y
-            mask = self.model.fit_mask
-            if mask is not None:
-                x = x[mask]
-                y = y[mask]
-                self.sigma_scatter.update_coords(x, y)
-            else:
-                self.sigma_scatter.update_coords([], [])
-
-        self.model.add_model_listener(sigma_listener)
-        self.model.coords.add_coord_listener(self.masked_scatter)
         self.line = GILine(p)
         self.model.add_coord_listener(self.line)
 
@@ -271,7 +254,7 @@ def interactive_chebyshev(ext,  order, location, dispaxis, sigma_clip, in_coords
     -------
         dict, :class:`models.Chebyshev1D`
     """
-    masked_coords = GIMaskedCoords(in_coords[1-dispaxis], in_coords[dispaxis])
+    masked_coords = GIMaskedSigmadCoords(in_coords[1-dispaxis], in_coords[dispaxis])
     model = ChebyshevModel(order, location, dispaxis, sigma_clip,
                            masked_coords, spectral_coords, ext)
     server.set_visualizer(Chebyshev1DVisualizer(in_coords[1-dispaxis], in_coords[dispaxis],
