@@ -16,6 +16,7 @@ import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
+from astropy.io.fits import Header
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -337,8 +338,9 @@ class Spect(PrimitivesBASE):
                                                                         order=order)
                 knots, coeffs, degree = spline.tck
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                 names=('knots', 'coefficients'))
-                sensfunc.meta['header'] = {'ORDER': (3, 'Order of spline fit')}
+                                 names=('knots', 'coefficients'),
+                                 meta={'header': Header()})
+                sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
                 ext.SENSFUNC = sensfunc
                 calculated = True
 
