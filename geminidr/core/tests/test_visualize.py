@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+import copy
 import os
 import itertools
+import time
 
 import numpy as np
 import pytest
@@ -59,6 +61,37 @@ def test_plot_spectra_for_qa_single_frame(input_ad):
     p = primitives_visualize.Visualize([])
     p.plotSpectraForQA(adinputs=[input_ad])
     assert True
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("input_ad", test_data, indirect=True)
+@pytest.mark.usefixtures("check_adcc")
+def test_plot_spectra_for_qa_multiple_frames(input_ad):
+
+    p_vis = primitives_visualize.Visualize([])
+    p_vis.plotSpectraForQA(adinputs=[input_ad])
+    time.sleep(5)
+
+    adlist = [input_ad]
+    for i in range(1, 3):
+
+        new_ad = copy.deepcopy(input_ad)
+        sequence_number = int(input_ad.data_label().split("-")[-1]) + i
+        new_data_label = "-".join(input_ad.data_label().split("-")[:-1])
+        new_data_label += f"-{sequence_number:03d}"
+
+        new_ad.phu['DATALAB'] = new_data_label
+        new_ad[0].data += i * 0.1 * new_ad[0].data.max() * np.random.rand(new_ad[0].data.size)
+
+        p_vis.plotSpectraForQA(adinputs=[new_ad])
+        adlist.append(new_ad)
+        time.sleep(5)
+
+        p_img = GMOSImage([])
+        stack_ad = p_img.stackFrames(adinputs=adlist)[0]
+        p_vis.plotSpectraForQA(adinputs=[stack_ad])
+        time.sleep(5)
+
 
 
 @pytest.fixture(scope='module')
