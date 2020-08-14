@@ -14,21 +14,26 @@ function_map = {
 }
 
 
-def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
-           hsigma=3.0, iterations=0, plot=False):
+def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
+           lsigma=3.0, hsigma=3.0, iterations=0, plot=False):
     """
     A routine for evaluating the result of fitting 1D polynomials to each
     vector along some axis of an N-dimensional image array, with iterative
     pixel rejection and re-fitting, similar to IRAF's fit1d.
 
     Only a subset of fit1d functionality is currently supported (not
-    including interactivity).
+    including interactivity, other than for debugging purposes).
 
     Parameters
     ----------
 
-    image : `ndarray`
-        N-dimensional input array containing the values to be fitted.
+    image : array-like
+        N-dimensional input array containing the values to be fitted. If
+        it is a `numpy.ma.MaskedArray`, any masked points are ignored when
+        fitting.
+
+    weights : `ndarray`, optional
+        N-dimensional input array containing fitting weights for each point.
 
     function : {'legendre'}, optional
         Fitting function/model type to be used (current default 'legendre').
@@ -61,6 +66,10 @@ def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
 
     """
 
+    # Convert array-like input to a MaskedArray internally, to ensure it's an
+    # `ndarray` instance and that any mask gets passed through to the fitter:
+    image = np.ma.masked_array(image)
+
     # Determine how many pixels we're fitting each vector over:
     try:
         npix = image.shape[axis]
@@ -79,6 +88,8 @@ def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
     image = np.rollaxis(image, axis, 0)
     tmpshape = image.shape
     image = image.reshape(npix, -1)
+    if weights is not None:
+        weights = np.rollaxis(weights, axis, 0).reshape(npix, -1)
 
     # Define pixel grid to fit on:
     points = np.arange(npix, dtype=np.int16)
@@ -103,7 +114,7 @@ def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
     )
 
     # Fit the pixel data with rejection of outlying points:
-    fitted_model, mask = fitter(model_set, points, image)
+    fitted_model, mask = fitter(model_set, points, image, weights=weights)
 
     # Determine the evaluated model values we want to return:
     fitvals = fitted_model(points_2D).astype(intype)
@@ -112,9 +123,10 @@ def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
     if plot:
         import matplotlib.pyplot as plt
         row = image.shape[1] // 4
-        plt.plot(points, mask.T[row], 'm.')
-        plt.plot(points, image.T[row], 'k.')
-        plt.plot(points, fitvals.T[row], 'r')
+        imrow, maskrow = image.data.T[row], mask.T[row]
+        plt.plot(points, imrow, 'b.')
+        plt.plot(points[maskrow], imrow[maskrow], 'r.')
+        plt.plot(points, fitvals.T[row], 'k')
         plt.show()
 
     # Restore the ordering & shape of the input array:
