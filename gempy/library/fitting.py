@@ -97,8 +97,8 @@ def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
         # additional args are passed to the outlier_func, i.e. sigma_clip
         sigma_lower=lsigma,
         sigma_upper=hsigma,
-        cenfunc=np.ma.mean,
-        stdfunc=np.ma.std,
+        cenfunc='mean',
+        stdfunc='std',
         maxiters=1
     )
 
