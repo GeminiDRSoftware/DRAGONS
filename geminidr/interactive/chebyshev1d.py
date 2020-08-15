@@ -1,11 +1,11 @@
 import numpy as np
 from astropy.modeling import models, fitting
 from bokeh.layouts import row
-from bokeh.models import Button, Column, Panel, Tabs, ColumnDataSource, Div
+from bokeh.models import Button, Column, Panel, Tabs, Div
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIScatter, GILine, GICoordsSource, GICoordsListener, \
+from geminidr.interactive.interactive import GILine, GICoordsSource, \
     GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedSigmadCoords, \
     GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter
 from gempy.library import astromodels
@@ -192,7 +192,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.scatter = GIMaskedSigmadScatter(p, self.model.coords)
 
         self.line = GILine(p)
-        self.model.add_coord_listener(self.line)
+        self.model.add_coord_listener(self.line.update_coords)
 
         # p2 goes in tab 2 and shows the difference between the data y values and the model calculated values
         p2 = GIFigure(plot_width=600, plot_height=500,

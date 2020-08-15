@@ -154,10 +154,8 @@ class GICoordsSource:
         """
         if callable(coords_listener):
             self.listeners.append(coords_listener)
-        elif not isinstance(coords_listener, GICoordsListener):
-            raise ValueError("Must pass a GICoordsListener implementation")
         else:
-            self.listeners.append(coords_listener)
+            raise ValueError("Must pass a fn(x,y)")
 
     def notify_coord_listeners(self, x_coords, y_coords):
         """
@@ -175,33 +173,7 @@ class GICoordsSource:
 
         """
         for l in self.listeners:
-            if callable(l):
-                l(x_coords, y_coords)
-            else:
-                l.update_coords(x_coords, y_coords)
-
-
-class GICoordsListener(ABC):
-    """
-    Listener for coordinate updates.
-    """
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def update_coords(self, x_coords, y_coords):
-        """
-        This is the call where the listener receives updated coordinate values.
-
-        Parameters
-        ----------
-        x_coords : ndarray
-            X coordinates
-        y_coords : ndarray
-            Y coordinates
-
-        """
-        pass
+            l(x_coords, y_coords)
 
 
 class GIModelSource(object):
@@ -281,10 +253,7 @@ class GIDifferencingModel(GICoordsSource):
     def add_coord_listener(self, l):
         super().add_coord_listener(l)
         if self.data_x_coords is not None:
-            if callable(l):
-                l(self.data_x_coords, self.data_y_coords - self.fn(self.data_x_coords))
-            else:
-                l.update_coords(self.data_x_coords, self.data_y_coords - self.fn(self.data_x_coords))
+            l(self.data_x_coords, self.data_y_coords - self.fn(self.data_x_coords))
 
     def update_coords(self, x_coords, y_coords):
         """
@@ -487,7 +456,7 @@ class GIFigure(object):
                                                     code="plot.properties.renderers.change.emit()"))
 
 
-class GIScatter(GICoordsListener):
+class GIScatter:
     def __init__(self, gifig, x_coords=None, y_coords=None, color="blue", radius=5):
         """
         Scatter plot
@@ -537,12 +506,9 @@ class GIScatter(GICoordsListener):
         to reset the plot back to an unselected state.
         """
         self.source.selected.update(indices=[])
-    #
-    # def replot(self):
-    #     self.scatter.replot()
 
 
-class GIMaskedSigmadScatter(GICoordsListener):
+class GIMaskedSigmadScatter:
     def __init__(self, gifig, coords, color="red",
                  masked_color="blue", sigma_color="orange", radius=5):
         """
@@ -612,7 +578,7 @@ class GIMaskedSigmadScatter(GICoordsListener):
         self.sigmad_source.selected.update(indices=[])
 
 
-class GILine(GICoordsListener):
+class GILine:
     def __init__(self, gifig, x_coords=[], y_coords=[], color="red"):
         """
         Line plot

@@ -164,10 +164,10 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.scatter_touch = GIScatter(self.p, wave, zpt, color="blue", radius=5)
 
         self.scatter = GIScatter(self.p, color="black")
-        self.model.mask_points.add_coord_listener(self.scatter)
+        self.model.mask_points.add_coord_listener(self.scatter.update_coords)
 
         self.line = GILine(self.p)
-        self.model.fit_line.add_coord_listener(self.line)
+        self.model.fit_line.add_coord_listener(self.line.update_coords)
 
         controls = Column(order_slider.component, niter_slider.component, grow_slider.component,
                           self.submit_button)
