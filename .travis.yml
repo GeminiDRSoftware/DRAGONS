@@ -29,3 +29,7 @@ install:
 
 script:
   - tox -e py37-unit -v
+
+after_success:
+  - pip install codecov
+  - codecov
