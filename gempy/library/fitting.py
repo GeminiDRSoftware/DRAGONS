@@ -108,7 +108,6 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
 
     # Define pixel grid to fit on:
     points = np.arange(npix, dtype=np.int16)
-    points_2D = np.tile(points, (image.shape[1], 1)).T  # pending astropy #7317
 
     # Convert user regions to a Boolean mask for slicing:
     user_reg = np.zeros(npix, dtype=np.bool)
@@ -146,9 +145,9 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
                                                   weights[user_reg])
 
     # Determine the evaluated model values we want to return:
-    fitvals = fitted_model(points_2D).astype(intype)
+    fitvals = fitted_model(points, model_set_axis=False).astype(intype)
 
-    # # TEST: Plot the fit:
+    # TEST: Plot the fit:
     if plot:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
