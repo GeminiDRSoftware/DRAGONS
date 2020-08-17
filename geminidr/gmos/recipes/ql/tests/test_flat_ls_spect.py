@@ -144,7 +144,7 @@ def create_master_bias_for_tests():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/recipes/ql/test_make_processed_flat/"
+    module_path = f"geminidr/gmos/recipes/ql/{__file__.split('.')[0]}/"
     path = os.path.join(root_path, module_path, "inputs/")
 
     os.makedirs(path, exist_ok=True)
