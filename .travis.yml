@@ -28,4 +28,4 @@ install:
   - conda info -a
 
 script:
-  - tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml
+  - tox -e py37-unit -v
