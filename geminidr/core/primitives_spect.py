@@ -1555,7 +1555,8 @@ class Spect(PrimitivesBASE):
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
                 signal = (data if (variance is None or not use_snr) else
-                          data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32)))
+                          np.divide(data, np.sqrt(variance),
+                                    out=np.zeros_like(data), where=variance>0))
                 masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
                 # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
@@ -1570,8 +1571,9 @@ class Spect(PrimitivesBASE):
                 # TODO: find_peaks might not be best considering we have no
                 #   idea whether sources will be extended or not
                 widths = np.arange(3, 20)
+                # Send variance=1 since "profile" is already the S/N
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                    variance=None, reject_bad=False,
+                                                    variance=1.0, reject_bad=False,
                                                     min_snr=3, min_frac=0.2)
 
                 if peaks_and_snrs.size == 0:
