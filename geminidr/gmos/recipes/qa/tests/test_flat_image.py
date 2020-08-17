@@ -2,8 +2,10 @@
 """
 Tests the GMOS Image Bias reduction for QA mode.
 """
+import glob
 import os
 import pytest
+import shutil
 
 import astrodata
 import gemini_instruments
@@ -50,6 +52,10 @@ def test_make_processed_flat(
         r.mode = 'qa'
         r.ucals = normalize_ucals(r.files, calibration_files)
         r.runr()
+
+        # Delete files that won't be used
+        shutil.rmtree('calibrations/')
+        [os.remove(f) for f in glob.glob('*_forStack.fits')]
 
         ad = astrodata.open(r.output_filenames[0])
 
