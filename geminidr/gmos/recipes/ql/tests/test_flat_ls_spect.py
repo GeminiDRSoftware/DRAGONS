@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import pytest
+import shutil
 
 import astrodata
 # noinspection PyUnresolvedReferences
@@ -126,6 +127,8 @@ def processed_flat(change_working_dir, path_to_inputs, request):
         reduce.mode = 'ql'
         reduce.ucals = normalize_ucals(reduce.files, calibration_files)
         reduce.runr()
+        
+        shutil.rmtree('calibrations/')
 
         _processed_flat_filename = reduce.output_filenames.pop()
         _processed_flat = astrodata.open(_processed_flat_filename)
@@ -198,6 +201,8 @@ def create_master_bias_for_tests():
         bias_reduce = Reduce()
         bias_reduce.files.extend(bias_paths)
         bias_reduce.runr()
+        
+        shutil.rmtree("calibrations/")
 
 
 if __name__ == '__main__':
