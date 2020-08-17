@@ -38,7 +38,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     weights : `ndarray`, optional
         N-dimensional input array containing fitting weights for each point.
 
-    function : {'legendre'}, optional
+    function : {'legendre', 'chebyshev', 'polynomial'}, optional
         Fitting function/model type to be used (current default 'legendre').
 
     order : `int`, optional
