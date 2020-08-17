@@ -1681,6 +1681,7 @@ class Spect(PrimitivesBASE):
                 else:
                     log.warning("No changes will be made to {}, since no "
                                 "standard was specified".format(ad.filename))
+                    continue
 
             len_std, len_ad = len(std), len(ad)
             if len_std not in (1, len_ad):
