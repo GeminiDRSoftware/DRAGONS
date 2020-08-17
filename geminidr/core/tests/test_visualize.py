@@ -67,6 +67,16 @@ def test_plot_spectra_for_qa_single_frame(input_ad):
 @pytest.mark.parametrize("input_ad", test_data, indirect=True)
 @pytest.mark.usefixtures("check_adcc")
 def test_plot_spectra_for_qa_multiple_frames(input_ad):
+    """
+    Tests that plotSpectraForQA can send single and stacked frames to ADCC. One
+    could do this using actual data but it was simply easier to modify a single
+    file and send it.
+
+    Parameters
+    ----------
+    input_ad : fixture
+        The input data that will be displayed.
+    """
 
     p_vis = primitives_visualize.Visualize([])
     p_vis.plotSpectraForQA(adinputs=[input_ad])
