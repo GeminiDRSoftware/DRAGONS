@@ -8,6 +8,7 @@ gempy/library/cyclip.c
 
 # Distribution / packaging
 .Python
+src/
 env/
 build/
 develop-eggs/
