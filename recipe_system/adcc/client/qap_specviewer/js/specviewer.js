@@ -68,7 +68,7 @@ const noData = '<span class="no-data"> No Data </span>';
 function addCountDown(sViewer) {
 
   $(`.footer`).width( $(`#${sViewer.id}`).width() );
-  $(`.footer`).append(`<div class="d-table-cell tar countdown"> </div>`);
+  $(`.footer`).append(`<span class="d-table-cell tar countdown"> </span>`);
 
   $(`.countdown`).append(`<span class="dot"></span>`);
   $(`.countdown`).append(`<span class="title">Querying server in </span>`);
