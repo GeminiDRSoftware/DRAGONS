@@ -15,7 +15,7 @@ function_map = {
 
 
 def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
-           hsigma=3.0, iterations=0):
+           hsigma=3.0, iterations=0, plot=False):
     """
     A routine for evaluating the result of fitting 1D polynomials to each
     vector along some axis of an N-dimensional image array, with iterative
@@ -48,6 +48,9 @@ def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
     iterations : `int`, optional
         Number of rejection and re-fitting iterations (default 0, ie. a single
         fit with no iteration).
+
+    plot : bool
+        Plot the images if True, default is False.
 
     Returns
     -------
@@ -89,26 +92,30 @@ def fit_1D(image, function='legendre', order=1, axis=-1, lsigma=3.0,
     # Configure iterative linear fitter with rejection:
     fitter = fitting.FittingWithOutlierRemoval(
         fitting.LinearLSQFitter(),
-        sigma_clip, sigma_lower=lsigma, sigma_upper=hsigma, niter=iterations,
-        cenfunc=np.ma.mean, stdfunc=np.ma.std, iters=1
+        sigma_clip,
+        niter=iterations,
+        # additional args are passed to the outlier_func, i.e. sigma_clip
+        sigma_lower=lsigma,
+        sigma_upper=hsigma,
+        cenfunc=np.ma.mean,
+        stdfunc=np.ma.std,
+        maxiters=1
     )
 
     # Fit the pixel data with rejection of outlying points:
-    masked_image, model_set = fitter(model_set, points, image)
-    del masked_image  # comment out when doing test plot
+    fitted_model, mask = fitter(model_set, points, image)
 
     # Determine the evaluated model values we want to return:
-    fitvals = model_set(points_2D).astype(intype)
+    fitvals = fitted_model(points_2D).astype(intype)
 
     # # TEST: Plot the fit:
-    # import pylab
-    # nrow = 2995
-    # mask = masked_image.mask.T[nrow]
-    # pylab.plot(points, masked_image.data.T[nrow], 'm.')
-    # pylab.plot(points, image.T[nrow], 'k.')
-    # pylab.plot(points, fitvals.T[nrow])
-    # pylab.plot(points[mask], image.T[nrow][mask], 'rx')
-    # pylab.show()
+    if plot:
+        import matplotlib.pyplot as plt
+        row = image.shape[1] // 4
+        plt.plot(points, mask.T[row], 'm.')
+        plt.plot(points, image.T[row], 'k.')
+        plt.plot(points, fitvals.T[row], 'r')
+        plt.show()
 
     # Restore the ordering & shape of the input array:
     fitvals = fitvals.reshape(tmpshape)
