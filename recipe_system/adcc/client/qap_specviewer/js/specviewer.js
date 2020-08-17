@@ -71,8 +71,8 @@ function addCountDown(sViewer) {
   $(`.footer`).append(`<div class="d-table-cell tar countdown"> </div>`);
 
   $(`.countdown`).append(`<span class="dot"></span>`);
-  $(`.countdown`).append(`<spam class="title">Querying server in </spam>`);
-  $(`.countdown`).append(`<spam class="number" title=""> </spam>`);
+  $(`.countdown`).append(`<span class="title">Querying server in </span>`);
+  $(`.countdown`).append(`<span class="number" title=""> </span>`);
 
   function updateCountdown() {
 
@@ -92,6 +92,14 @@ function addCountDown(sViewer) {
   } // end updateCountdown
   setInterval(updateCountdown, 1000);
 }  // end addCountDown
+
+/**
+ * Adds a string with the timestamp of the most recent data received.
+ * @param {object} sViewer - An initialized version of SpecViewer.
+ */
+function addLastRefresh(sViewer) {
+
+}
 
 /**
  * Makes sure that every incoming aperture is unique.
@@ -331,6 +339,7 @@ class SpecViewer {
     this.delay = delay;
     this.countdown = delay / 1000;
     addCountDown(this);
+    addLastRefresh(this);
 
     // Placeholder for adcc command pump
     this.gjs = null;
@@ -346,7 +355,7 @@ class SpecViewer {
   loadData(jsonData) {
       'use restrict';
 
-      let now = Date(Date.now());
+      this.now = Date(Date.now());
 
       // Restart countdown
       this.countdown = this.delay / 1000;
@@ -357,7 +366,7 @@ class SpecViewer {
       // Remove loading
       $('.loading').remove();
 
-      console.log(`\nReceived new JSON data list (${jsonData.length} elements) on\n ${now.toString()}`);
+      console.log(`\nReceived new JSON data list (${jsonData.length} elements) on\n ${this.now.toString()}`);
 
       // Process incoming data
       for (let i = 0; i < jsonData.length; i++) {
@@ -401,10 +410,10 @@ class SpecViewer {
 
           // Update relevant values and plots
           if (isStack) {
-            $('.footer .status').html(`Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+            $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
             this.stackSize = jsonElement.stack_size;
           } else {
-            $('.footer .status').html(`Received new data with ${jsonElement.apertures.length} aperture(s)`);
+            $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
             this.dataLabel = jsonElement.data_label;
           }
 
@@ -432,10 +441,10 @@ class SpecViewer {
           if (isStack) {
             if (stackSize <= this.stackSize) {
               console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`No new data from last request.`);
+              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
             } else {
               console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+              $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
               this.stackSize = stackSize;
               this.updatePlotArea(jsonElement, type);
               this.updateNavigationTab();
@@ -443,10 +452,10 @@ class SpecViewer {
           } else {
             if (this.dataLabel === jsonElement.data_label) {
               console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`No new data from last request.`);
+              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
             } else {
               console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`Received new data with ${jsonElement.apertures.length} aperture(s)`);
+              $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
               this.dataLabel = jsonElement.data_label;
               this.updatePlotArea(jsonElement, type);
               this.updateNavigationTab();
