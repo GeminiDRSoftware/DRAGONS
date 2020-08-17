@@ -94,14 +94,6 @@ function addCountDown(sViewer) {
 }  // end addCountDown
 
 /**
- * Adds a string with the timestamp of the most recent data received.
- * @param {object} sViewer - An initialized version of SpecViewer.
- */
-function addLastRefresh(sViewer) {
-
-}
-
-/**
  * Makes sure that every incoming aperture is unique.
  *
  * @param {array} apertures - List of incoming apertures.
@@ -339,7 +331,6 @@ class SpecViewer {
     this.delay = delay;
     this.countdown = delay / 1000;
     addCountDown(this);
-    addLastRefresh(this);
 
     // Placeholder for adcc command pump
     this.gjs = null;
