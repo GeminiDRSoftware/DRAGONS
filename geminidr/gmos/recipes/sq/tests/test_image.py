@@ -57,6 +57,8 @@ datasets = {
 }
 
 
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.integtest
 @pytest.mark.parametrize("test_case", datasets.keys())
 def test_reduce_image(change_working_dir, test_case):
