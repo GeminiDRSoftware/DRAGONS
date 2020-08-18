@@ -17,15 +17,16 @@ function_map = {
 
 
 def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
-           lsigma=3.0, hsigma=3.0, iterations=0, regions=None, plot=False):
+           lsigma=3.0, hsigma=3.0, iterations=0, grow=False, regions=None,
+           plot=False):
     """
     A routine for evaluating the result of fitting 1D polynomials to each
     vector along some axis of an N-dimensional image array, with iterative
     pixel rejection and re-fitting, similar to IRAF's fit1d.
 
-    Only a subset of fit1d functionality is currently supported (not
-    including interactivity, other than for debugging purposes). This still
-    needs to be made to work for a single 1D input array.
+    Interactivity is currently not supported, other than plotting for
+    debugging purposes. This still needs to be made to work for a single 1D
+    input array.
 
     Parameters
     ----------
@@ -56,6 +57,10 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     iterations : `int`, optional
         Number of rejection and re-fitting iterations (default 0, ie. a single
         fit with no iteration).
+
+    grow : float or `False`, optional
+        Distance within which to extend rejection to the neighbours of
+        statistically-rejected pixels (eg. 1 for the nearest neighbours).
 
     regions : `str`, optional
         One or more comma-separated pixel ranges to be used in fitting each
@@ -127,9 +132,10 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         # additional args are passed to the outlier_func, i.e. sigma_clip
         sigma_lower=lsigma,
         sigma_upper=hsigma,
+        maxiters=1,
         cenfunc='mean',
         stdfunc='std',
-        maxiters=1
+        grow=grow  # requires AstroPy 4.2 (#10613)
     )
 
     # Create an empty, full-sized mask within which the fitter will populate
