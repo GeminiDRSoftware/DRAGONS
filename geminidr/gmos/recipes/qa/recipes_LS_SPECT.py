@@ -35,9 +35,9 @@ def reduceScience(p):
 
     # side stream to generate 1D spectra from individual frame, pre-stack
     p.traceApertures(outstream='prestack')
-    p.extrac1DSpectra(instream='prestack', outstream='prestack')
-    p.fluxCalibrate(instream='prestack', outstream='prestack')
-    p.plotSpectraForQA(instream='prestack')
+    p.extrac1DSpectra(stream='prestack')
+    p.fluxCalibrate(stream='prestack')
+    p.plotSpectraForQA(stream='prestack')
 
     # continuing with main stream of 2D pre-stack.
     p.addToList(purpose='forStack')
