@@ -22,6 +22,8 @@ test_files = [
 ]
 
 
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.integtest
 @pytest.mark.gsaoi
 @pytest.mark.dragons_remote_data

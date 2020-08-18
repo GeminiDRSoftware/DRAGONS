@@ -8,17 +8,17 @@ gempy/library/cyclip.c
 
 # Distribution / packaging
 .Python
-src/
-env/
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
+env/
 lib/
 lib64/
 parts/
 sdist/
+src/
 var/
 *.egg-info/
 .installed.cfg
@@ -80,3 +80,8 @@ target/
 
 # Data Reduction Products
 **/.reducecache
+
+# DRAGONS and DRAGONS Tests products
+**/.adcc
+**/dragons_test_inputs
+**/spec_data.json

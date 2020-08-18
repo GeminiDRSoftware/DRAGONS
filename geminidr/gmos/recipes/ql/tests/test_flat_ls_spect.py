@@ -35,6 +35,8 @@ associated_calibrations = {
 
 
 # -- Tests --------------------------------------------------------------------
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_median_around_one(processed_flat):
@@ -51,6 +53,8 @@ def test_processed_flat_has_median_around_one(processed_flat):
         np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
 
 
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_small_std(processed_flat):
@@ -67,6 +71,8 @@ def test_processed_flat_has_small_std(processed_flat):
         np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_regression_processed_flat(processed_flat, ref_ad_factory):

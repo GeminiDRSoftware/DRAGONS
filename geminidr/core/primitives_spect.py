@@ -1681,12 +1681,18 @@ class Spect(PrimitivesBASE):
                 else:
                     log.warning("No changes will be made to {}, since no "
                                 "standard was specified".format(ad.filename))
+                    continue
 
             len_std, len_ad = len(std), len(ad)
             if len_std not in (1, len_ad):
                 log.warning("{} has {} extensions so cannot be used to "
-                            "calibrate {} with {} extensions.".
+                            "calibrate {} with {} extensions".
                             format(std.filename, len_std, ad.filename, len_ad))
+                continue
+
+            if not all(hasattr(ext, "SENSFUNC") for ext in std):
+                log.warning("SENSFUNC table missing from one or more extensions"
+                            f" of {std.filename} so cannot flux calibrate")
                 continue
 
             # Since 2D flux calibration just uses the wavelength info for the
@@ -1706,12 +1712,7 @@ class Spect(PrimitivesBASE):
 
             for index, ext in enumerate(ad):
                 ext_std = std[max(index, len_std-1)]
-                try:
-                    sensfunc = ext_std.SENSFUNC
-                except AttributeError:
-                    log.warning("{}:{} has no SENSFUNC table. Cannot flux calibrate".
-                                format(std.filename, ext_std.hdr['EXTVER']))
-                    continue
+                sensfunc = ext_std.SENSFUNC
 
                 extver = '{}:{}'.format(ad.filename, ext.hdr['EXTVER'])
 
