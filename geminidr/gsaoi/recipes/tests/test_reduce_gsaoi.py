@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import pytest
 
 from astrodata.testing import download_from_archive
@@ -22,8 +23,6 @@ test_files = [
 ]
 
 
-# ToDo - @bquint - Perform clean up after running tests
-@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.integtest
 @pytest.mark.gsaoi
 @pytest.mark.dragons_remote_data
@@ -61,12 +60,15 @@ def test_reduce_image(change_working_dir):
             reduce_darks.files.extend(darks)
             assert len(reduce_darks.files) == len(darks)
 
-            logutils.config(file_name='gsaoi_test_reduce_dark.log', mode='quiet')
+            logutils.config(file_name='gsaoi_test_reduce_dark.log')
             reduce_darks.runr()
 
+            # Cleaning up
+            [os.remove(f) for f in reduce_darks.output_filenames]
             del reduce_darks
 
-        logutils.config(file_name='gsaoi_test_reduce_bpm.log', mode='quiet')
+        logutils.config(file_name='gsaoi_test_reduce_bpm.log')
+        logutils.get_logger().info('\n\n\n')
         reduce_bpm = Reduce()
         reduce_bpm.files.extend(list_of_h_flats)
         reduce_bpm.files.extend(list_of_darks)
@@ -77,19 +79,21 @@ def test_reduce_image(change_working_dir):
 
         del reduce_bpm
 
-        logutils.config(file_name='gsaoi_test_reduce_flats.log', mode='quiet')
+        logutils.config(file_name='gsaoi_test_reduce_flats.log')
+        logutils.get_logger().info('\n\n\n')
         reduce_flats = Reduce()
         reduce_flats.files.extend(list_of_kshort_flats)
         reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
         reduce_flats.runr()
 
-        calib_files.append(
-            'processed_flat:{}'.format(reduce_flats.output_filenames[0])
-        )
+        calib_files.append("processed_flat:{}".format(os.path.join(
+            'calibrations/processed_flat', reduce_flats.output_filenames[0])))
 
+        [os.remove(f) for f in reduce_flats.output_filenames]
         del reduce_flats
 
-        logutils.config(file_name='gsaoi_test_reduce_science.log', mode='quiet')
+        logutils.config(file_name='gsaoi_test_reduce_science.log')
+        logutils.get_logger().info('\n\n\n')
         reduce_target = Reduce()
         reduce_target.files.extend(list_of_science_files)
         reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
