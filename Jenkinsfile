@@ -17,7 +17,8 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/6 * * * *')  // Polls Source Code Manager every six hours
+        // pollSCM('MIN HOUR DoM MONTH DoW')
+        pollSCM('* H/3 * * *')  // Polls Source Code Manager every three hours
     }
 
     options {
