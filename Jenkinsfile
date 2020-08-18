@@ -107,7 +107,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
+                        sh 'tox -e py37-unit -v -- --basetemp=/rtfproc/tmp --junit-xml reports/unittests_results.xml'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -140,7 +140,7 @@ pipeline {
                 echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Integration tests"
-                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
+                sh 'tox -e py36-integ -v -- --basetemp=/rtfproc/tmp --junit-xml reports/integration_results.xml'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F integration'
             }
@@ -168,7 +168,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
+                sh 'tox -e py36-gmosls -v -- --basetemp=/rtfproc/tmp --junit-xml reports/unittests_results.xml'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F gmosls'
             }  // end steps
