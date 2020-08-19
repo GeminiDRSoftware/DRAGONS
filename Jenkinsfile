@@ -18,14 +18,14 @@ pipeline {
 
     triggers {
         // pollSCM('MIN HOUR DoM MONTH DoW')
-        pollSCM('H H/3 * * *')  // Polls Source Code Manager every three hours
+        pollSCM('H H/4 * * *')  // Polls Source Code Manager every three hours
     }
 
     options {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
-        timeout(time: 3, unit: 'HOURS')
+        timeout(time: 4, unit: 'HOURS')
     }
 
     environment {
