@@ -582,6 +582,8 @@ class Visualize(PrimitivesBASE):
                     [float(w), float(s)]
                     for w, s in zip(wavelength, stddev)]
 
+                _units = ext.hdr["BUNIT"]
+
                 center = np.round(ext.hdr["XTRACTED"])
                 lower = np.round(ext.hdr["XTRACTLO"])
                 upper = np.round(ext.hdr["XTRACTHI"])
@@ -593,6 +595,7 @@ class Visualize(PrimitivesBASE):
                     "dispersion": w_dispersion,
                     "wavelength_units": w_units,
                     "intensity": _intensity,
+                    "intensity_units": _units,
                     "stddev": _stddev,
                 }
 

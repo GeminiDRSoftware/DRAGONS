@@ -93,14 +93,16 @@ def test_plot_spectra_for_qa_multiple_frames(input_ad):
         new_ad.phu['DATALAB'] = new_data_label
         new_ad[0].data += i * 0.1 * new_ad[0].data.max() * np.random.rand(new_ad[0].data.size)
 
+        print('Reducing data')
         p_vis.plotSpectraForQA(adinputs=[new_ad])
         adlist.append(new_ad)
-        time.sleep(5)
+        time.sleep(10)
 
+        print('Reducing stack')
         p_img = GMOSImage([])
         stack_ad = p_img.stackFrames(adinputs=adlist)[0]
         p_vis.plotSpectraForQA(adinputs=[stack_ad])
-        time.sleep(5)
+        time.sleep(10)
 
 
 

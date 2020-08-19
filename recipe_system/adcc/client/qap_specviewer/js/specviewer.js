@@ -374,91 +374,84 @@ class SpecViewer {
         jsonElement.apertures = assureUniqueApertures(jsonElement.apertures);
         console.log(this.timestamp, jsonElement.timestamp)
 
-        // This checks if the json file is more recent even if the group id
-        //   and the data label are the same. Useful for when one reduce again
-        //   some file.
-        if (Math.round(jsonElement.timestamp) !== this.timestamp) {
-          this.timestamp = Math.round(jsonElement.timestamp);
+        if (jsonElement.group_id !== this.groupId) {
 
-          if (jsonElement.group_id !== this.groupId) {
+          console.log(`- NEW group Id: ${jsonElement.group_id} - ${type} data`);
+          this.groupId = jsonElement.group_id;
 
-            console.log(`- NEW group Id: ${jsonElement.group_id} - ${type} data`);
-            this.groupId = jsonElement.group_id;
+          // Clear navigation tabs and relevant lists
+          this.singlePlots = [];
+          this.stackPlots = [];
+          this.stackSize = 0;
 
-            // Clear navigation tabs and relevant lists
-            this.singlePlots = [];
-            this.stackPlots = [];
-            this.stackSize = 0;
+          // Clear tab contents
+          $('.tabcontent').remove();
 
-            // Clear tab contents
-            $('.tabcontent').remove();
+          // Clear navigation tab
+          $(`#${this.id} ul`).empty();
+          $(`#${this.id}`).tabs('refresh');
 
-            // Clear navigation tab
-            $(`#${this.id} ul`).empty();
-            $(`#${this.id}`).tabs('refresh');
+          // Add tab content for every aperture
+          this.aperturesCenter = jsonElement.apertures.map(
+            function(a) { return Math.round(a.center); });
 
-            // Add tab content for every aperture
-            this.aperturesCenter = jsonElement.apertures.map(
-              function(a) { return Math.round(a.center); });
+          this.aperturesCenter.sort();
 
-            this.aperturesCenter.sort();
+          for (let i = 0; i < this.aperturesCenter.length; i++) {
+            this.newTabContent(jsonElement.apertures[i]);
+          }
 
-            for (let i = 0; i < this.aperturesCenter.length; i++) {
-              this.newTabContent(jsonElement.apertures[i]);
+          // Update relevant values and plots
+          if (isStack) {
+            $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+            this.stackSize = jsonElement.stack_size;
+          } else {
+            $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
+            this.dataLabel = jsonElement.data_label;
+          }
+
+          this.updatePlotArea(jsonElement, type);
+          this.updateNavigationTab();
+
+        } else {
+
+          console.log(`- SAME group Id: ${this.groupId} - ${type} data`);
+
+          // Check if new incoming data have apertures not in aperture center
+          for (let i = 0; i < jsonElement.apertures.length; i++) {
+
+            let ap = jsonElement.apertures[i];
+            let ps = jsonElement.pixel_scale;
+
+            if (!isInApertureList(ap.center, ps, this.aperturesCenter)) {
+              console.log( `Found new aperture: ${ap.center}` );
+              this.newTabContent( ap );
+              this.aperturesCenter.push( Math.round(ap.center) );
             }
 
-            // Update relevant values and plots
-            if (isStack) {
-              $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
-              this.stackSize = jsonElement.stack_size;
+          }
+
+          if (isStack) {
+            if (stackSize == this.stackSize && this.timestamp >= jsonElement.timestamp) {
+              console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
+              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
             } else {
+              console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
+              $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+              this.stackSize = stackSize;
+              this.updatePlotArea(jsonElement, type);
+              this.updateNavigationTab();
+            }
+          } else {
+            if (this.dataLabel === jsonElement.data_label && this.timestamp >= jsonElement.timestamp) {
+              console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
+              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
+            } else {
+              console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
               $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
               this.dataLabel = jsonElement.data_label;
-            }
-
-            this.updatePlotArea(jsonElement, type);
-            this.updateNavigationTab();
-
-          } else {
-
-            console.log(`- SAME group Id: ${this.groupId} - ${type} data`);
-
-            // Check if new incoming data have apertures not in aperture center
-            for (let i = 0; i < jsonElement.apertures.length; i++) {
-
-              let ap = jsonElement.apertures[i];
-              let ps = jsonElement.pixel_scale;
-
-              if (!isInApertureList(ap.center, ps, this.aperturesCenter)) {
-                console.log( `Found new aperture: ${ap.center}` );
-                this.newTabContent( ap );
-                this.aperturesCenter.push( Math.round(ap.center) );
-              }
-
-            }
-
-            if (isStack) {
-              if (stackSize <= this.stackSize) {
-                console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
-                $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
-              } else {
-                console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
-                $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
-                this.stackSize = stackSize;
-                this.updatePlotArea(jsonElement, type);
-                this.updateNavigationTab();
-              }
-            } else {
-              if (this.dataLabel === jsonElement.data_label) {
-                console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
-                $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
-              } else {
-                console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
-                $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
-                this.dataLabel = jsonElement.data_label;
-                this.updatePlotArea(jsonElement, type);
-                this.updateNavigationTab();
-              }
+              this.updatePlotArea(jsonElement, type);
+              this.updateNavigationTab();
             }
           }
         }
@@ -599,7 +592,8 @@ class SpecViewer {
 
       let intensity = data.apertures[apertureIndex].intensity;
       let stddev = data.apertures[apertureIndex].stddev;
-      let units = data.apertures[apertureIndex].wavelength_units;
+      let intensityUnits = data.apertures[apertureIndex].intensity_units;
+      let wavelengthUnits = data.apertures[apertureIndex].wavelength_units;
 
       let stackTitle = `Aperture ${i + 1} - Stack Frame - Stack size: ${this.stackSize}`;
       let lastTitle = `Aperture ${i+1} - Last Frame - ${this.dataLabel}`;
@@ -650,11 +644,11 @@ class SpecViewer {
               title: plotTitle,
               axes: {
                 xaxis: {
-                  label: getWavelengthUnits(units),
+                  label: getWavelengthUnits(wavelengthUnits),
                   labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
                 },
                 yaxis: {
-                  label: "Intensity [e\u207B]", // escaped superscript minus
+                  label: `Intensity [${intensityUnits}]`,
                   labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
                 },
               },
