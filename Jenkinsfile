@@ -18,7 +18,7 @@ pipeline {
 
     triggers {
         // pollSCM('MIN HOUR DoM MONTH DoW')
-        pollSCM('* H/3 * * *')  // Polls Source Code Manager every three hours
+        pollSCM('H H/3 * * *')  // Polls Source Code Manager every three hours
     }
 
     options {
