@@ -123,42 +123,8 @@ pipeline {
             }
         }
 
-        stage('Integration tests') {
-            // when {
-            //     branch 'master'
-            // }
-            agent {
-                label "centos7"
-            }
-            environment {
-                MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                echo "${env.PATH}"
-                sh '.jenkins/scripts/setup_agent.sh'
-                echo "Integration tests"
-                sh 'tox -e py36-integ -v -- --basetemp=/rtfproc/tmp --junit-xml reports/integration_results.xml'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F integration'
-            }
-            post {
-                always {
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/*_results.xml'
-                    )
-                }
-            }
-        }
-
         stage('GMOS LS Tests') {
-            agent {
-//                 label "centos7"
-                label "master"
-            }
+            agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
@@ -183,6 +149,32 @@ pipeline {
                 }  // end always
             }  // end post
         }  // end stage
+
+        stage('Integration tests') {
+            agent { label "centos7" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                echo "${env.PATH}"
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Integration tests"
+                sh 'tox -e py36-integ -v -- --basetemp=/rtfproc/tmp --junit-xml reports/integration_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F integration'
+            } // end steps
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }
+            } // end post
+        } // end stage
 
     }
     post {
