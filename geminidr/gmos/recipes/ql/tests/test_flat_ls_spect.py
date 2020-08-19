@@ -36,9 +36,10 @@ associated_calibrations = {
 
 # -- Tests --------------------------------------------------------------------
 # ToDo - @bquint - Perform clean up after running tests
-@pytest.mark.skip("Using too much space - enable clean up")
+@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+@pytest.mark.preprocessed_data
 def test_processed_flat_has_median_around_one(processed_flat):
     """
     Tests if the processed flat contains values around one.
@@ -54,9 +55,10 @@ def test_processed_flat_has_median_around_one(processed_flat):
 
 
 # ToDo - @bquint - Perform clean up after running tests
-@pytest.mark.skip("Using too much space - enable clean up")
+@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+@pytest.mark.preprocessed_data
 def test_processed_flat_has_small_std(processed_flat):
     """
     Tests if the processed flat has a small standard deviation.
@@ -72,9 +74,10 @@ def test_processed_flat_has_small_std(processed_flat):
 
 
 # ToDo - @bquint - Perform clean up after running tests
-@pytest.mark.skip("Using too much space - enable clean up")
+@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+@pytest.mark.preprocessed_data
 def test_regression_processed_flat(processed_flat, ref_ad_factory):
     """
     Tests if the processed flat contains values around one.
