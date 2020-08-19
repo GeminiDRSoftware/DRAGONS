@@ -23,7 +23,7 @@ test_files = [
 ]
 
 
-@pytest.mark.integtest
+@pytest.mark.integration_test
 @pytest.mark.gsaoi
 @pytest.mark.dragons_remote_data
 def test_reduce_image(change_working_dir):
