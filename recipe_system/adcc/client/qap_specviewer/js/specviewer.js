@@ -313,6 +313,7 @@ class SpecViewer {
     this.dataLabel = null;  // Last Frame Data Label
     this.groupId = null;
     this.stackSize = 0;
+    this.timestamp = 0;
 
     // Create empty page
     this.parentElement.html(`
@@ -371,85 +372,93 @@ class SpecViewer {
         let jsonElement = jsonData[i];
 
         jsonElement.apertures = assureUniqueApertures(jsonElement.apertures);
+        console.log(this.timestamp, jsonElement.timestamp)
 
-        if (jsonElement.group_id !== this.groupId) {
+        // This checks if the json file is more recent even if the group id
+        //   and the data label are the same. Useful for when one reduce again
+        //   some file.
+        if (Math.round(jsonElement.timestamp) !== this.timestamp) {
+          this.timestamp = Math.round(jsonElement.timestamp);
 
-          console.log(`- NEW group Id: ${jsonElement.group_id} - ${type} data`);
-          this.groupId = jsonElement.group_id;
+          if (jsonElement.group_id !== this.groupId) {
 
-          // Clear navigation tabs and relevant lists
-          this.singlePlots = [];
-          this.stackPlots = [];
-          this.stackSize = 0;
+            console.log(`- NEW group Id: ${jsonElement.group_id} - ${type} data`);
+            this.groupId = jsonElement.group_id;
 
-          // Clear tab contents
-          $('.tabcontent').remove();
+            // Clear navigation tabs and relevant lists
+            this.singlePlots = [];
+            this.stackPlots = [];
+            this.stackSize = 0;
 
-          // Clear navigation tab
-          $(`#${this.id} ul`).empty();
-          $(`#${this.id}`).tabs('refresh');
+            // Clear tab contents
+            $('.tabcontent').remove();
 
-          // Add tab content for every aperture
-          this.aperturesCenter = jsonElement.apertures.map(
-            function(a) { return Math.round(a.center); });
+            // Clear navigation tab
+            $(`#${this.id} ul`).empty();
+            $(`#${this.id}`).tabs('refresh');
 
-          this.aperturesCenter.sort();
+            // Add tab content for every aperture
+            this.aperturesCenter = jsonElement.apertures.map(
+              function(a) { return Math.round(a.center); });
 
-          for (let i = 0; i < this.aperturesCenter.length; i++) {
-            this.newTabContent(jsonElement.apertures[i]);
-          }
+            this.aperturesCenter.sort();
 
-          // Update relevant values and plots
-          if (isStack) {
-            $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
-            this.stackSize = jsonElement.stack_size;
-          } else {
-            $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
-            this.dataLabel = jsonElement.data_label;
-          }
-
-          this.updatePlotArea(jsonElement, type);
-          this.updateNavigationTab();
-
-        } else {
-
-          console.log(`- SAME group Id: ${this.groupId} - ${type} data`);
-
-          // Check if new incoming data have apertures not in aperture center
-          for (let i = 0; i < jsonElement.apertures.length; i++) {
-
-            let ap = jsonElement.apertures[i];
-            let ps = jsonElement.pixel_scale;
-
-            if (!isInApertureList(ap.center, ps, this.aperturesCenter)) {
-              console.log( `Found new aperture: ${ap.center}` );
-              this.newTabContent( ap );
-              this.aperturesCenter.push( Math.round(ap.center) );
+            for (let i = 0; i < this.aperturesCenter.length; i++) {
+              this.newTabContent(jsonElement.apertures[i]);
             }
 
-          }
-
-          if (isStack) {
-            if (stackSize <= this.stackSize) {
-              console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
-            } else {
-              console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
+            // Update relevant values and plots
+            if (isStack) {
               $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
-              this.stackSize = stackSize;
-              this.updatePlotArea(jsonElement, type);
-              this.updateNavigationTab();
-            }
-          } else {
-            if (this.dataLabel === jsonElement.data_label) {
-              console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
+              this.stackSize = jsonElement.stack_size;
             } else {
-              console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
               $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
               this.dataLabel = jsonElement.data_label;
-              this.updatePlotArea(jsonElement, type);
-              this.updateNavigationTab();
+            }
+
+            this.updatePlotArea(jsonElement, type);
+            this.updateNavigationTab();
+
+          } else {
+
+            console.log(`- SAME group Id: ${this.groupId} - ${type} data`);
+
+            // Check if new incoming data have apertures not in aperture center
+            for (let i = 0; i < jsonElement.apertures.length; i++) {
+
+              let ap = jsonElement.apertures[i];
+              let ps = jsonElement.pixel_scale;
+
+              if (!isInApertureList(ap.center, ps, this.aperturesCenter)) {
+                console.log( `Found new aperture: ${ap.center}` );
+                this.newTabContent( ap );
+                this.aperturesCenter.push( Math.round(ap.center) );
+              }
+
+            }
+
+            if (isStack) {
+              if (stackSize <= this.stackSize) {
+                console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
+                $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
+              } else {
+                console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
+                $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+                this.stackSize = stackSize;
+                this.updatePlotArea(jsonElement, type);
+                this.updateNavigationTab();
+              }
+            } else {
+              if (this.dataLabel === jsonElement.data_label) {
+                console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
+                $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
+              } else {
+                console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
+                $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
+                this.dataLabel = jsonElement.data_label;
+                this.updatePlotArea(jsonElement, type);
+                this.updateNavigationTab();
+              }
             }
           }
         }
