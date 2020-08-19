@@ -27,6 +27,12 @@ def pytest_addoption(parser):
             default=False,
             help="Plot results of each test after running them."
         )
+        parser.addoption(
+            "--keep-data",
+            action="store_true",
+            default=False,
+            help="Keep intermediate data (e.g. pre-stack data)."
+        )
     # This file is imported several times and might bring conflict
     except ValueError:
         pass

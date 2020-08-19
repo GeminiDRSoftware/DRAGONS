@@ -38,20 +38,23 @@ datasets = {
                 [f"S20171206S{n:04d}.fits" for n in range(128, 133)],
         "flat": [f"S20171206S{n:04d}.fits" for n in range(120, 128)],
         "sci": [f"S20171205S{n:04d}.fits" for n in range(62, 77)],
-        "ucals": [('stackFrames:memory', 1),
-                  # ('addDQ:user_bpm', 'fixed_bpm_1x1_FullFrame.fits'),
-                  ('adjustWCSToReference:rotate', True),
-                  ('adjustWCSToReference:scale', True),
-                  ('resampleToCommonFrame:interpolator', 'spline3')]
+        "ucals": [
+            # ('stackFrames:memory', 1),
+            # ('addDQ:user_bpm', 'fixed_bpm_1x1_FullFrame.fits'),
+            ('adjustWCSToReference:rotate', True),
+            ('adjustWCSToReference:scale', True),
+            ('resampleToCommonFrame:interpolator', 'spline3')]
     },
 
     "GS_HAM_2x2_i-band_std": {
         "bias": [f"S20171204S{n:04d}.fits" for n in range(37, 42)],
         "flat": [f"S20171120S{n:04d}.fits" for n in range(131, 140)],
         "std": ["S20171205S0077.fits"],
-        "ucals": [('stackFrames:memory', 1),
-                  # ('addDQ:user_bpm', 'fixed_bpm_2x2_FullFrame.fits'),
-                  ('resampleToCommonFrame:interpolator', 'spline3')]
+        "ucals": [
+            # ('stackFrames:memory', 1),
+            # ('addDQ:user_bpm', 'fixed_bpm_2x2_FullFrame.fits'),
+            ('resampleToCommonFrame:interpolator', 'spline3')
+        ]
     },
 
 }
@@ -60,14 +63,18 @@ datasets = {
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("test_case", datasets.keys())
-def test_reduce_image(change_working_dir, test_case):
+def test_reduce_image(change_working_dir, keep_data, test_case):
     """
     Tests that we can run all the data reduction steps on a complete dataset.
 
     Parameters
     ----------
     change_working_dir : fixture
+        Change the current work directory using a context manager.
+    keep_data : fixture
+        Keep pre-stack data? (Uses a lot of disk space)
     test_case : str
+        Test parameter containing the key to the `datasets` dictionary.
     """
     with change_working_dir(test_case):
 
@@ -99,8 +106,13 @@ def test_reduce_image(change_working_dir, test_case):
             _ = reduce(
                 sci_paths, f"sci_{test_case}", cals,
                 user_pars=datasets[test_case]["ucals"])
+            if not keep_data:
+                print(' Deleting pre-stack files.')
+                [os.remove(f) for f in glob.glob("*_CRMasked.fits")]
+                [os.remove(f) for f in glob.glob("*_align.fits")]
 
 
+# -- Helper functions ---------------------------------------------------------
 def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
            user_pars=None):
     """
@@ -127,6 +139,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     """
     objgraph = pytest.importorskip("objgraph")
 
+    logutils.get_logger().info("\n\n\n")
     logutils.config(file_name=f"test_image_{label}.log")
     r = Reduce()
     r.files = file_list
@@ -139,12 +152,30 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     r.runr()
 
     if save_to:
-        calib_files.append(f'{save_to}:{r.output_filenames[0]}')
+        calib_files.append("{}:{}".format(
+            save_to, os.path.join("calibrations", save_to, r.output_filenames[0])))
+        [os.remove(f) for f in r.output_filenames]
 
     # check that we are not leaking objects
     assert len(objgraph.by_type('NDAstroData')) == 0
 
     return calib_files
+
+
+# -- Custom configuration -----------------------------------------------------
+@pytest.fixture(scope='module')
+def keep_data(request):
+    """
+    By default, the tests will delete pre-stack files to save disk space. If one
+    needs to keep them for debugging, one can pass --keep-data argument to the
+    command line call to force the tests to keep this data.
+
+    Parameters
+    ----------
+    request : fixture
+        Represents the test that calls this function.
+    """
+    return request.config.getoption("--keep-data")
 
 
 if __name__ == '__main__':
