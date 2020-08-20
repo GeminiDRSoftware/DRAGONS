@@ -21,7 +21,8 @@ button.settings:hover {
   background-color: #d9d9d9;
 }
 
-button.settings:active {
+button.settings:active,
+button.settings:focus {
   border: 0px;
   background-color: #c1c1c1;
 }
@@ -257,4 +258,8 @@ img.settings {
 
 #specViewer {
   transition: all .5s linear;
+}
+
+#specViewer ul.ui-tabs-nav .ui-tabs-anchor {
+    cursor:default;
 }
