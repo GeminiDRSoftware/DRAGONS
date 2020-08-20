@@ -77,6 +77,14 @@ def test_plot_spectra_for_qa_multiple_frames(input_ad):
     input_ad : fixture
         The input data that will be displayed.
     """
+    # Add new extension to test multi-apertures display
+    if len(input_ad) == 1:
+        ext = input_ad[0]
+        ext.hdr["XTRACTED"] += 50
+        ext.hdr["XTRACTLO"] -= 5 * (np.random.rand() - 0.5)
+        ext.hdr["XTRACTHI"] += 5 * (np.random.rand() - 0.5)
+        ext.data /= 2
+        input_ad.append(ext)
 
     p_vis = primitives_visualize.Visualize([])
     p_vis.plotSpectraForQA(adinputs=[input_ad])
@@ -91,7 +99,9 @@ def test_plot_spectra_for_qa_multiple_frames(input_ad):
         new_data_label += f"-{sequence_number:03d}"
 
         new_ad.phu['DATALAB'] = new_data_label
-        new_ad[0].data += i * 0.1 * new_ad[0].data.max() * np.random.rand(new_ad[0].data.size)
+
+        for ext in new_ad:
+            ext.data += i * 0.1 * ext.data.max() * np.random.rand(ext.data.size)
 
         print('Reducing data')
         p_vis.plotSpectraForQA(adinputs=[new_ad])
@@ -103,7 +113,6 @@ def test_plot_spectra_for_qa_multiple_frames(input_ad):
         stack_ad = p_img.stackFrames(adinputs=adlist)[0]
         p_vis.plotSpectraForQA(adinputs=[stack_ad])
         time.sleep(10)
-
 
 
 @pytest.fixture(scope='module')
