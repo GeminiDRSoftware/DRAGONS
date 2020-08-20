@@ -77,15 +77,6 @@ def test_plot_spectra_for_qa_multiple_frames(input_ad):
     input_ad : fixture
         The input data that will be displayed.
     """
-    # Add new extension to test multi-apertures display
-    if len(input_ad) == 1:
-        ext = input_ad[0]
-        ext.hdr["XTRACTED"] += 50
-        ext.hdr["XTRACTLO"] -= 5 * (np.random.rand() - 0.5)
-        ext.hdr["XTRACTHI"] += 5 * (np.random.rand() - 0.5)
-        ext.data /= 2
-        input_ad.append(ext)
-
     p_vis = primitives_visualize.Visualize([])
     p_vis.plotSpectraForQA(adinputs=[input_ad])
     time.sleep(5)

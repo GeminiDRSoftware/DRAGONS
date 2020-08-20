@@ -10,7 +10,7 @@ const noData = '<span class="no-data"> No Data </span>';
 /**
  * Options to be used by the plots
  */
- const plotOptions = {
+const plotOptions = {
 
   axesDefaults: {
     alignTicks: true,
@@ -92,6 +92,80 @@ function addCountDown(sViewer) {
   } // end updateCountdown
   setInterval(updateCountdown, 1000);
 }  // end addCountDown
+
+/**
+ * Add the settings button and the hidden form to the webpage.
+ * @param {object} sViewer - An initialized version of SpecViewer.
+ */
+function addSettings(sViewer) {
+  'use strict';
+
+  // Add the settings button
+  $( `span.settings` ).html(`
+    <button id="settingsBtn" class="ui-button ui-widget ui-corner-all settings" title="Settings">
+      <img src="/qapspec/images/settings.png"></img>
+    </button>
+  `);
+
+  // Add the settings form
+  $( `div.settings` ).html(`
+    <div class="settings-content">
+
+      <h3> Settings </h3>
+
+      <hr>
+
+      <form>
+          <label for="queryFreq">Query frequency:</label>
+          <input type="number" id="queryFreq" name="queryFreq" min="1" max="60" value=${sViewer.countdown}>
+          <label for="queryFreq">seconds</label>
+      </form>
+
+      <div class='w-100 d-table'>
+        <div class='d-table-cell tar'>
+          <button type="button" id="okBtn">Ok</button>
+          <button type="button" id="cancelBtn">Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  `);
+
+  let settingsModal = $( `div.settings` );
+  let queryFreq = $( "#queryFreq" );
+
+  function showSettings () {
+    console.log("Clicked on settings button.");
+    settingsModal.css("display", "block");
+  };
+
+  function saveSettings () {
+    sViewer.delay = queryFreq.val() * 1000;
+    sViewer.countdown = queryFreq.val();
+    sViewer.gjs.delay = sViewer.delay;
+    settingsModal.css("display", "none");
+    console.log(` Setting countdown to ${sViewer.delay / 1000} seconds`);
+  };
+
+  function cancel() {
+    settingsModal.css("display", "none");
+    queryFreq.val(sViewer.delay / 1000);
+  };
+
+  // Add functionality to buttons
+  $( '#settingsBtn' ).on( "click", showSettings );
+  $( '#okBtn' ).on( "click", saveSettings );
+  $( '#cancelBtn' ).on( "click", cancel );
+  $( '.close' ).on( "click", cancel );
+
+  // Close settings if clicked outside
+  window.onclick = function(event) {
+    if (event.target.id == "settings") {
+      cancel();
+    }
+  }
+
+}
 
 /**
  * Makes sure that every incoming aperture is unique.
@@ -294,11 +368,11 @@ function isInApertureList(aperture, pixelScale, listOfApertures) {
  *
  * @param {object} parentElement - element that will hold SpecViewer.
  * @param {string} id - name of the ID of the SpecViewer div container.
- * @param {int} delay - refresh delay in seconds
+ * @param {int} queryFreq - refresh delay in seconds
  */
 class SpecViewer {
 
-  constructor(parentElement, id, delay) {
+  constructor(parentElement, id, queryFreq) {
     'use strict';
 
     // Creating empty object
@@ -329,9 +403,11 @@ class SpecViewer {
     $(`#${id}`).tabs();
 
     // Add countdown
-    this.delay = delay;
-    this.countdown = delay / 1000;
+    this.delay = queryFreq * 1000;
+    this.countdown = queryFreq;
+
     addCountDown(this);
+    addSettings(this);
 
     // Placeholder for adcc command pump
     this.gjs = null;
@@ -403,10 +479,10 @@ class SpecViewer {
 
           // Update relevant values and plots
           if (isStack) {
-            $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+            $('.footer .status').html(`${this.now.toString()}<br />Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
             this.stackSize = jsonElement.stack_size;
           } else {
-            $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
+            $('.footer .status').html(`${this.now.toString()}<br />Received new data with ${jsonElement.apertures.length} aperture(s)`);
             this.dataLabel = jsonElement.data_label;
           }
 
@@ -434,10 +510,10 @@ class SpecViewer {
           if (isStack) {
             if (stackSize == this.stackSize && this.timestamp >= jsonElement.timestamp) {
               console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
+              $('.footer .status').html(`${this.now.toString()}<br />No new data from last request.`);
             } else {
               console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`${this.now.toString()} - Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+              $('.footer .status').html(`${this.now.toString()}<br />Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
               this.stackSize = stackSize;
               this.updatePlotArea(jsonElement, type);
               this.updateNavigationTab();
@@ -445,10 +521,10 @@ class SpecViewer {
           } else {
             if (this.dataLabel === jsonElement.data_label && this.timestamp >= jsonElement.timestamp) {
               console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`${this.now.toString()} - No new data from last request.`);
+              $('.footer .status').html(`${this.now.toString()}<br />No new data from last request.`);
             } else {
               console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
-              $('.footer .status').html(`${this.now.toString()} - Received new data with ${jsonElement.apertures.length} aperture(s)`);
+              $('.footer .status').html(`${this.now.toString()}<br />Received new data with ${jsonElement.apertures.length} aperture(s)`);
               this.dataLabel = jsonElement.data_label;
               this.updatePlotArea(jsonElement, type);
               this.updateNavigationTab();

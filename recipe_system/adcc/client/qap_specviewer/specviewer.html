@@ -39,11 +39,24 @@
         // For these examples, don't show the to image button.
         $.jqplot._noToImageButton = true;
 
-        var delay = 3000;  // miliseconds
+        var queryFreq = 3;  // seconds
         var element = $('#main');
         var id = 'specViewer';
-        var sViewer = new SpecViewer(element, id, delay);
+        var sViewer = new SpecViewer(element, id, queryFreq);
         sViewer.start();
+
+        // // Add hidden dialog
+        // $( "div.settings" ).dialog({
+        //     autoOpen: false,
+        //     show: { effect: "fade", duration: 200 },
+        //     hide: { effect: "fade", duration: 200 }
+        // });
+        //
+        // $('#settings-button').on( "click", function () {
+        //     console.log("Clicked settings button.");
+        //     $( "div.settings" ).dialog( "open" );
+        // });
+
       }
     );
     // Enable tooltips
@@ -57,16 +70,25 @@
 
   <div class="wrapper">
 
-    <div class="header d-table">
+    <div class="header d-table w-100">
       <span class="title d-table-cell">
         <h2> QAP SpecViewer </h2>
+      </span>
+      <span class="settings d-table-cell tar">
+        <!-- Placeholder for the settings button -->
       </span>
     </div>
 
     <div id="content">
-      <div id="main">
-         <!-- Placeholder for SpecViewer -->
+
+      <div id="settings" class="settings">
+        <!-- Placeholder for the Settings form -->
       </div>
+
+      <div id="main">
+        <!-- Placeholder for SpecViewer -->
+      </div>
+
     </div>
 
     <div class="footer d-table">
