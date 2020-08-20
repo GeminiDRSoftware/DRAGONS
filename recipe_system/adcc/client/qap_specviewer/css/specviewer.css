@@ -238,6 +238,14 @@ img.settings {
   width: inherit;
 }
 
+.ui-tooltip {
+    padding: 5px 20px;
+    border: none;
+    border-radius: 20px;
+    font: bold 14px "Helvetica Neue", Sans-Serif;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+  }
+
 .w-100 {
   width: 100%;
 }
