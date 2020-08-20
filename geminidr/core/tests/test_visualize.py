@@ -15,8 +15,9 @@ from geminidr.gmos.primitives_gmos_image import GMOSImage
 from recipe_system.testing import reduce_arc
 
 test_data = [
-    # (Input File, Associated Arc)
-    ("N20180112S0209.fits", "N20180112S0353.fits"),
+    # (Input Files, Associated Arc)
+    (["N20180112S0209.fits"], "N20180112S0353.fits"),
+    ([f"S20190103S{i:04d}.fits" for i in range(138, 141)], "S20190103S0136.fits"),
 ]
 
 HEMI = 'NS'
@@ -55,11 +56,12 @@ def test_mosaic_detectors_gmos_binning(hemi, ccd):
 
 
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("input_ad", test_data, indirect=True)
+@pytest.mark.parametrize("input_ads", test_data, indirect=True)
 @pytest.mark.usefixtures("check_adcc")
-def test_plot_spectra_for_qa_single_frame(input_ad):
+def test_plot_spectra_for_qa_single_frame(input_ads):
     p = primitives_visualize.Visualize([])
-    p.plotSpectraForQA(adinputs=[input_ad])
+    p.plotSpectraForQA(adinputs=[input_ads[0]])
+    time.sleep(10)
     assert True
 
 
@@ -116,18 +118,20 @@ def check_adcc():
 
 
 @pytest.fixture(scope='module')
-def input_ad(path_to_inputs, request):
+def input_ads(path_to_inputs, request):
 
-    basename, _ = request.param
-    input_fname = basename.replace('.fits', '_sensitivityCalculated.fits')
-    input_path = os.path.join(path_to_inputs, input_fname)
+    basenames, _ = request.param
+    input_fnames = [b.replace('.fits', '_linearized.fits') for b in basenames]
+    input_paths = [os.path.join(path_to_inputs, f) for f in input_fnames]
 
-    if os.path.exists(input_path):
-        input_data = astrodata.open(input_path)
-    else:
-        raise FileNotFoundError(input_path)
+    input_data_list = []
+    for p in input_paths:
+        if os.path.exists(p):
+            input_data_list.append(astrodata.open(p))
+        else:
+            raise FileNotFoundError(p)
 
-    return input_data
+    return input_data_list
 
 
 def create_inputs():
@@ -148,14 +152,14 @@ def create_inputs():
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     
-    os.makedirs("inputs/")
+    os.makedirs("inputs/", exist_ok=True)
 
-    for raw_basename, arc_basename in test_data:
+    for raw_basenames, arc_basename in test_data:
 
         arc_path = download_from_archive(arc_basename)
-        raw_path = download_from_archive(raw_basename)
-        raw_ad = astrodata.open(raw_path)
-        data_label = raw_ad.data_label()
+        raw_paths = [download_from_archive(f) for f in raw_basenames]
+        raw_ads = [astrodata.open(p) for p in raw_paths]
+        data_label = raw_ads[0].data_label()
 
         print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
@@ -166,7 +170,7 @@ def create_inputs():
         arc_master = arc_reduce.output_filenames.pop()
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = GMOSLongslit([raw_ad])
+        p = GMOSLongslit(raw_ads)
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
@@ -177,12 +181,11 @@ def create_inputs():
         p.flatCorrect(do_flat=False)
         p.QECorrect(arc=arc_master)
         p.distortionCorrect(arc=arc_master)
-        p.findSourceApertures(max_apertures=1)
+        p.findSourceApertures(max_apertures=3)
         p.skyCorrectFromSlit()
         p.traceApertures()
         p.extract1DSpectra()
         p.linearizeSpectra()
-        # p.calculateSensitivity()
 
         os.chdir("inputs/")
         print("\n\n    Writing processed files for tests into:\n"
