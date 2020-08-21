@@ -124,11 +124,11 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         user_reg[_slice] = True
 
     # To support fitting any axis of an N-dimensional array, we must flatten
-    # all the other dimensions into a single "model set axis" first; I think
-    # it's marginally more efficient in general to stack astropy models along
-    # the second axis, because that's what the linear fitter does internally,
-    # but for general callable functions we stack along the first axis in
-    # order to loop over the fits easily:
+    # all the other dimensions into a single "model set axis" first; it's
+    # about 10-15% more efficient to stack astropy models along the second
+    # axis (for a 3k x 2k image), because that's what the linear fitter does
+    # internally, but for general callable functions we stack along the first
+    # axis in order to loop over the fits easily:
     if astropy_model:
         ax_before = 0
         stack_shape = (npix, -1)
