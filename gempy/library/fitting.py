@@ -153,7 +153,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     # supported fitting function (principally splines):
     if astropy_model:
 
-        model_set = func(degree=order - 1, n_models=image.shape[1],
+        model_set = func(degree=(order - 1), n_models=image.shape[1],
                          model_set_axis=1, **funcargs)
 
         # Configure iterative linear fitter with rejection:
