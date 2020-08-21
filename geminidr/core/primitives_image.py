@@ -3,24 +3,24 @@
 #
 #                                                            primitives_image.py
 # ------------------------------------------------------------------------------
-from copy import deepcopy
+from datetime import datetime
 
 import numpy as np
+from copy import deepcopy
 from scipy.ndimage import binary_dilation
 
 from astrodata.provenance import add_provenance
-from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
-from recipe_system.utils.decorators import parameter_override
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.utils.md5 import md5sum
 
-from . import parameters_image
 from .primitives_preprocess import Preprocess
 from .primitives_register import Register
 from .primitives_resample import Resample
+from . import parameters_image
 
-
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Image(Preprocess, Register, Resample):
