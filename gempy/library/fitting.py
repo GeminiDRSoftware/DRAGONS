@@ -108,10 +108,6 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     # Define pixel grid to fit on:
     points = np.arange(npix, dtype=np.int16)
 
-    # Record input dtype so we can cast the evaluated fits back to it, since
-    # modelling always seems to return float64:
-    intype = image.dtype
-
     # Define the model to be fitted:
     func, funcargs = function_map[function]
     try:
@@ -149,6 +145,10 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     # only the user-specified region(s):
     mask = np.zeros_like(image, dtype=np.bool)
 
+    # Initialize an array with same dtype as input to accumulate fit values
+    # into when looping & because modelling always seems to return float64:
+    fitvals = np.empty_like(image.data)
+
     # Branch pending on whether we're using an AstroPy model or some other
     # supported fitting function (principally splines):
     if astropy_model:
@@ -180,12 +180,9 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         )
 
         # Determine the evaluated model values we want to return:
-        fitvals = fitted_model(points, model_set_axis=False).astype(intype)
+        fitvals[:] = fitted_model(points, model_set_axis=False)
 
     else:
-
-        # Initialize an array to accumulate fit values into, one row at a time:
-        fitvals = np.empty_like(image.data)
 
         # If there are no weights, produce a None for every row:
         weights = iter(lambda:None, True) if weights is None else weights
