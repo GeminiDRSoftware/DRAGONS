@@ -2,17 +2,23 @@
 # by James E.H. Turner.
 
 import numpy as np
-from astropy.modeling import models, fitting
+from astropy.modeling import Model, models, fitting
 from astropy.stats import sigma_clip
 
+from . import astromodels
 from .astrotools import cartesian_regions_to_slices
 
 __all__ = ['fit_1D']
 
 function_map = {
-    'chebyshev': models.Chebyshev1D,
-    'legendre': models.Legendre1D,
-    'polynomial': models.Polynomial1D,
+    'chebyshev': (models.Chebyshev1D, {}),
+    'legendre': (models.Legendre1D, {}),
+    'polynomial': (models.Polynomial1D, {}),
+    'spline1' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 1}),
+    'spline2' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 2}),
+    'spline3' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 3}),
+    'spline4' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 4}),
+    'spline5' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 5}),
 }
 
 
@@ -38,13 +44,18 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
 
     weights : `ndarray`, optional
         N-dimensional input array containing fitting weights for each point.
+        The weights will be ignored for a given 1D fit if all zero, to allow
+        processing regions without data (in progress: splines only).
 
-    function : {'legendre', 'chebyshev', 'polynomial'}, optional
+    function : {'legendre', 'chebyshev', 'polynomial', 'splineN'}, optional
         Fitting function/model type to be used (current default 'legendre').
+        The spline options may be 'spline1' (linear) to 'spline5' (quintic).
 
     order : `int`, optional
         Order (number of terms or degree+1) of the fitting function
-        (default 1).
+        (default 1). For spline fits, this is the maximum number of spline
+        pieces, which (if applicable) will be reduced in proportion to the
+        number of masked pixels for each fit.
 
     axis : `int`, optional
         Array axis along which to perform fitting (Python convention;
@@ -55,8 +66,8 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         respectively (default 3.0).
 
     iterations : `int`, optional
-        Number of rejection and re-fitting iterations (default 0, ie. a single
-        fit with no iteration).
+        Maximum number of rejection and re-fitting iterations (default 0, ie.
+        a single fit with no iteration).
 
     grow : float or `False`, optional
         Distance within which to extend rejection to the neighbours of
@@ -94,74 +105,127 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         raise ValueError('axis={0} out of range for input shape {1}'
                          .format(axis, image.shape))
 
-    # Parse the sample regions:
-    slices = cartesian_regions_to_slices(regions)
+    # Define pixel grid to fit on:
+    points = np.arange(npix, dtype=np.int16)
 
     # Record input dtype so we can cast the evaluated fits back to it, since
     # modelling always seems to return float64:
     intype = image.dtype
 
-    # To support fitting any axis of an N-dimensional array, we must flatten
-    # all the other dimensions into a single "model set axis" first; I think
-    # it's marginally more efficient in general to stack the models along the
-    # second axis, because that's what the linear fitter does internally.
-    image = np.rollaxis(image, axis, 0)
-    tmpshape = image.shape
-    image = image.reshape(npix, -1)
-    if weights is not None:
-        weights = np.rollaxis(weights, axis, 0).reshape(npix, -1)
+    # Define the model to be fitted:
+    func, funcargs = function_map[function]
+    try:
+        astropy_model = issubclass(func, Model)
+    except TypeError:
+        astropy_model = False
 
-    # Define pixel grid to fit on:
-    points = np.arange(npix, dtype=np.int16)
+    # Parse the sample regions:
+    slices = cartesian_regions_to_slices(regions)
 
     # Convert user regions to a Boolean mask for slicing:
     user_reg = np.zeros(npix, dtype=np.bool)
     for _slice in slices:
         user_reg[_slice] = True
 
-    # Define the model to be fitted:
-    func = function_map[function]
-    model_set = func(degree=order - 1, n_models=image.shape[1],
-                     model_set_axis=1)
-
-    # Configure iterative linear fitter with rejection:
-    fitter = fitting.FittingWithOutlierRemoval(
-        fitting.LinearLSQFitter(),
-        sigma_clip,
-        niter=iterations,
-        # additional args are passed to the outlier_func, i.e. sigma_clip
-        sigma_lower=lsigma,
-        sigma_upper=hsigma,
-        maxiters=1,
-        cenfunc='mean',
-        stdfunc='std',
-        grow=grow  # requires AstroPy 4.2 (#10613)
-    )
+    # To support fitting any axis of an N-dimensional array, we must flatten
+    # all the other dimensions into a single "model set axis" first; I think
+    # it's marginally more efficient in general to stack astropy models along
+    # the second axis, because that's what the linear fitter does internally,
+    # but for general callable functions we stack along the first axis in
+    # order to loop over the fits easily:
+    if astropy_model:
+        ax_before = 0
+        stack_shape = (npix, -1)
+    else:
+        ax_before = image.ndim
+        stack_shape = (-1, npix)
+    image = np.rollaxis(image, axis, ax_before)
+    tmpshape = image.shape
+    image = image.reshape(stack_shape)
+    if weights is not None:
+        weights = np.rollaxis(weights, axis, ax_before).reshape(stack_shape)
 
     # Create an empty, full-sized mask within which the fitter will populate
     # only the user-specified region(s):
     mask = np.zeros_like(image, dtype=np.bool)
 
-    # TO DO: the fitter seems to be failing with input weights?
+    # Branch pending on whether we're using an AstroPy model or some other
+    # supported fitting function (principally splines):
+    if astropy_model:
 
-    # Fit the pixel data with rejection of outlying points:
-    fitted_model, mask[user_reg] = fitter(model_set,
-                                          points[user_reg], image[user_reg],
-                                          weights=None if weights is None else
-                                                  weights[user_reg])
+        model_set = func(degree=order - 1, n_models=image.shape[1],
+                         model_set_axis=1, **funcargs)
 
-    # Determine the evaluated model values we want to return:
-    fitvals = fitted_model(points, model_set_axis=False).astype(intype)
+        # Configure iterative linear fitter with rejection:
+        fitter = fitting.FittingWithOutlierRemoval(
+            fitting.LinearLSQFitter(),
+            sigma_clip,
+            niter=iterations,
+            # additional args are passed to the outlier_func, i.e. sigma_clip
+            sigma_lower=lsigma,
+            sigma_upper=hsigma,
+            maxiters=1,
+            cenfunc='mean',
+            stdfunc='std',
+            grow=grow  # requires AstroPy 4.2 (#10613)
+        )
+
+        # TO DO: the fitter seems to be failing with input weights?
+
+        # Fit the pixel data with rejection of outlying points:
+        fitted_model, mask[user_reg] = fitter(
+            model_set,
+            points[user_reg], image[user_reg],
+            weights=None if weights is None else weights[user_reg]
+        )
+
+        # Determine the evaluated model values we want to return:
+        fitvals = fitted_model(points, model_set_axis=False).astype(intype)
+
+    else:
+
+        # Initialize an array to accumulate fit values into, one row at a time:
+        fitvals = np.empty_like(image.data)
+
+        # If there are no weights, produce a None for every row:
+        weights = iter(lambda:None, True) if weights is None else weights
+
+        user_masked = ~user_reg
+
+        for n, (imrow, wrow) in enumerate(zip(image, weights)):
+
+            # Deal with weights being None or all undefined in regions without
+            # data (should we allow for NaNs as well?):
+            wrow = wrow[user_reg] if wrow is not None and np.any(wrow) else None
+
+            # Could generalize this a bit further using another dict to map
+            # parameter names in function_map, eg. weights -> w?
+            fitted_model = func(points[user_reg], imrow[user_reg], order=order,
+                                w=wrow, niter=iterations, grow=int(grow),
+                                lsigma=lsigma, hsigma=hsigma, **funcargs)
+
+            # Determine model values to be returned. This is somewhat specific
+            # to the spline fitter and using fitted_model.data only improves
+            # performance by ~1% compared with just re-evaluating everything,
+            # but it's the only way to get the mask:
+            fitvals[n][user_reg] = fitted_model.data
+            mask[n][user_reg] = fitted_model.mask
+            fitvals[n][user_masked] = fitted_model(points[user_masked])
+            # fitvals[n] = fitted_model(points)
 
     # TEST: Plot the fit:
     if plot:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        row = image.shape[1] // 4
-        points1, imrow, maskrow = points+1, image.data.T[row], mask.T[row]
+        points1 = points+1
+        if astropy_model:
+            idx = (slice(None), image.shape[1] // 4)
+        else:
+            idx = (image.shape[0] // 4, slice(None))
+        imrow, maskrow, fitrow = image.data[idx], mask[idx], fitvals[idx]
         ax.plot(points1, imrow, 'b.')
         ax.plot(points1[maskrow], imrow[maskrow], 'r.')
-        ax.plot(points1, fitvals.T[row], 'k')
+        ax.plot(points1, fitrow, 'k')
 
         # Find starting index of each selected or omitted range in user_reg
         # (considering regions outside the array False and starting from the
@@ -182,14 +246,13 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
                         arrowprops=dict(arrowstyle='|-|,widthA=0.5,widthB=0.5',
                                         shrinkA=0., shrinkB=0., color='green'))
 
-        # A cruder way of doing the region annotation:
-        # # ax.plot(points1[user_reg], np.zeros_like(imrow[user_reg]), 'g_',
-        # #         markersize=2)
-
         plt.show()
 
     # Restore the ordering & shape of the input array:
     fitvals = fitvals.reshape(tmpshape)
-    fitvals = np.rollaxis(fitvals, 0, axis + 1)
+    if astropy_model:
+        fitvals = np.rollaxis(fitvals, 0, axis + 1)
+    else:
+        fitvals = np.rollaxis(fitvals, -1, axis)
 
     return fitvals
