@@ -131,7 +131,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     # axis in order to loop over the fits easily:
     if astropy_model:
         ax_before = 0
-        stack_shape = (npix, -1)
+        stack_shape = (npix,) if image.size == npix else (npix, -1)
     else:
         ax_before = image.ndim
         stack_shape = (-1, npix)
@@ -153,8 +153,13 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     # supported fitting function (principally splines):
     if astropy_model:
 
-        model_set = func(degree=(order - 1), n_models=image.shape[1],
-                         model_set_axis=1, **funcargs)
+        # A single model is treated specially because FittingWithOutlierRemoval
+        # fails for "1-model sets" and it should be more efficient anyway:
+        n_models = 1 if image.ndim == 1 else image.shape[1]
+
+        model_set = func(degree=(order - 1), n_models=n_models,
+                         model_set_axis=(None if n_models == 1 else 1),
+                         **funcargs)
 
         # Configure iterative linear fitter with rejection:
         fitter = fitting.FittingWithOutlierRemoval(
@@ -216,7 +221,8 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         fig, ax = plt.subplots()
         points1 = points+1
         if astropy_model:
-            idx = (slice(None), image.shape[1] // 4)
+            idx = slice(None) if n_models == 1 else \
+                  (slice(None), image.shape[1] // 4)
         else:
             idx = (image.shape[0] // 4, slice(None))
         imrow, maskrow, fitrow = image.data[idx], mask[idx], fitvals[idx]
