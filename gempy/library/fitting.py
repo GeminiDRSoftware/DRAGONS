@@ -204,7 +204,8 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
             # parameter names in function_map, eg. weights -> w?
             fitted_model = func(points[user_reg], imrow[user_reg], order=order,
                                 w=wrow, niter=iterations, grow=int(grow),
-                                lsigma=lsigma, hsigma=hsigma, **funcargs)
+                                lsigma=lsigma, hsigma=hsigma, max_iters=1,
+                                **funcargs)
 
             # Determine model values to be returned. This is somewhat specific
             # to the spline fitter and using fitted_model.data only improves
