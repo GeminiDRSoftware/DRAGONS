@@ -174,13 +174,13 @@ function addSettings(sViewer) {
  */
 function assureUniqueApertures(apertures) {
 
-  let uniqueCenters = [];
+  let uniqueIds = [];
   let uniqueApertures = [];
 
   apertures.map(
     function(ap) {
-      if (!uniqueCenters.includes(ap.center)) {
-        uniqueCenters.push(ap.center);
+      if (!uniqueIds.includes(ap.id)) {
+        uniqueIds.push(ap.id);
         uniqueApertures.push(ap);
       } // end if
     } // end <anonymous>
@@ -341,13 +341,13 @@ function getWavelengthUnits(units) {
 }
 
 /**
- * Gets the nearest aperture center value inside `listOfApertures` and verify
+ * Gets the nearest aperture id value inside `listOfApertures` and verify
  *  if the absolute difference between this nearest value and the expected
  *  `aperture` value is smaller than the tolerance value.
  *
- * @param  {number}  aperture - Input aperture center value.
+ * @param  {number}  aperture - Input aperture id value.
  * @param  {number}  pixelScale - Binned pixel scale in arcseconds per pixel.
- * @param  {array}  listOfApertures - List of apertures centers.
+ * @param  {array}  listOfApertures - List of apertures ids.
  * @return {boolean} - Returns True is absolute difference between aperture and
  *   its nearest value is smaller than the tolerance.
  */
@@ -383,7 +383,7 @@ class SpecViewer {
     this.singlePlots = [];
     this.stackPlots = [];
 
-    this.aperturesCenter = [];
+    this.aperturesId = [];
     this.dataLabel = null;  // Last Frame Data Label
     this.groupId = null;
     this.stackSize = 0;
@@ -442,13 +442,13 @@ class SpecViewer {
         let dataLabel = jsonData[i].data_label;
         let isStack = jsonData[i].is_stack;
         let newData = false;
+        let offset = jsonData[i].offset;
         let stackSize = jsonData[i].stack_size;
         let type = (isStack) ? "stack":"single";
 
         let jsonElement = jsonData[i];
 
         jsonElement.apertures = assureUniqueApertures(jsonElement.apertures);
-        console.log(this.timestamp, jsonElement.timestamp)
 
         if (jsonElement.group_id !== this.groupId) {
 
@@ -468,12 +468,12 @@ class SpecViewer {
           $(`#${this.id}`).tabs('refresh');
 
           // Add tab content for every aperture
-          this.aperturesCenter = jsonElement.apertures.map(
-            function(a) { return Math.round(a.center); });
+          this.aperturesId = jsonElement.apertures.map(
+            function(a) { return a.id; });
 
-          this.aperturesCenter.sort();
+          this.aperturesId.sort();
 
-          for (let i = 0; i < this.aperturesCenter.length; i++) {
+          for (let i = 0; i < this.aperturesId.length; i++) {
             this.newTabContent(jsonElement.apertures[i]);
           }
 
@@ -493,16 +493,16 @@ class SpecViewer {
 
           console.log(`- SAME group Id: ${this.groupId} - ${type} data`);
 
-          // Check if new incoming data have apertures not in aperture center
+          // Check if new incoming data have apertures not in aperture id
           for (let i = 0; i < jsonElement.apertures.length; i++) {
 
             let ap = jsonElement.apertures[i];
             let ps = jsonElement.pixel_scale;
 
-            if (!isInApertureList(ap.center, ps, this.aperturesCenter)) {
-              console.log( `Found new aperture: ${ap.center}` );
+            if ( !isInApertureList(ap.id, ps, this.aperturesId) ) {
+              console.log( `Found new aperture: ${ap.id}` );
               this.newTabContent( ap );
-              this.aperturesCenter.push( Math.round(ap.center) );
+              this.aperturesId.push( ap.id );
             }
 
           }
@@ -537,37 +537,29 @@ class SpecViewer {
     } // end load
 
     /**
-     * Add/refresh tab content for incomming data.
-     * @type {object} aperture - data Incomming JSON data
+     * Add tab content for incoming data.
+     * @type {object} ap - Incoming aperture data
      */
-    newTabContent(aperture) {
+    newTabContent(ap) {
 
       $(`#${this.id}`).append(
-        `<div id="aperture${aperture.center}" class="tabcontent">
+        `<div id="aperture${ap.id}" class="tabcontent">
           <div class="apertureInfo"> </div>
           <div class="info single"> </div>
-          <div class="ui-widget-content resizable single" id="singlePlot${aperture.center}-resizable" >
+          <div class="ui-widget-content resizable single" id="singlePlot${ap.id}-resizable" >
             ${notAvailableYet}
           </div>
           <div class="info stack"> </div>
-          <div class="ui-widget-content resizable stack" id="stackPlot${aperture.center}-resizable" >
+          <div class="ui-widget-content resizable stack" id="stackPlot${ap.id}-resizable" >
             ${notAvailableYet}
           </div>
         </div>`
       );
 
       // Add content to the container
-      $(`#aperture${aperture.center} .apertureInfo`).html(
-        getApertureInfo(aperture)
-      );
-
-      $(`#aperture${aperture.center} .info.single`).html(
-        getFrameInfo("", "")
-      );
-
-      $(`#aperture${aperture.center} .info.stack`).html(
-        getStackInfo("", "")
-      );
+      $(`#aperture${ap.id} .apertureInfo`).html( getApertureInfo(ap) );
+      $(`#aperture${ap.id} .info.single`).html( getFrameInfo("", "") );
+      $(`#aperture${ap.id} .info.stack`).html( getStackInfo("", "") );
 
   } // end newTabContent
 
@@ -580,17 +572,17 @@ class SpecViewer {
   resetZoom(p, i, type) {
 
       let sViewer = this;
-      let apertureCenter = sViewer.aperturesCenter[i];
+      let apId = sViewer.aperturesId[i];
 
       function sleep (miliseconds) {
         return new Promise(resolve => setTimeout(resolve, miliseconds));
       }
 
       // Unbind click to prevent setting it several times
-      $(`#aperture${apertureCenter} .info.${type} button`).unbind( "click" );
+      $(`#aperture${apId} .info.${type} button`).unbind( "click" );
 
       // Bind click event
-      $(`#aperture${apertureCenter} .info.${type} button`).click(
+      $(`#aperture${apId} .info.${type} button`).click(
         async function() {
           console.log(`Reset zoom of ${type} plot #${i}.`);
           p.resetZoom();
@@ -614,11 +606,11 @@ class SpecViewer {
     $.ajax({
       type: "GET",
       url: "/rqsite.json",
-      success: function(data) {
+      success: function success (data) {
         sv.site = data.local_site;
         sv.timestamp = data.unxtime;
       }, // end success
-      error: function() {
+      error: function error () {
         sv.site = undefined;
         sv.tzname = "LT";
         sv.timestamp = new Date();
@@ -636,7 +628,7 @@ class SpecViewer {
 
   /**
    * Updates navigation tabs based on tab contents and the number of aperture
-   * centers registered inside SpecViewer
+   * ids registered inside SpecViewer
    */
   updateNavigationTab() {
 
@@ -647,12 +639,12 @@ class SpecViewer {
     navTabContainer.empty();
 
     // Sort appertures to make our life easier
-    this.aperturesCenter.sort();
+    this.aperturesId.sort();
 
     // Create buttons and add them to the navigation tab
-    for (let i = 0; i < this.aperturesCenter.length; i++) {
+    for (let i = 0; i < this.aperturesId.length; i++) {
       navTabContainer.append(`
-        <li><a href="#aperture${this.aperturesCenter[i]}"> Aperture ${i + 1}
+        <li><a href="#aperture${this.aperturesId[i]}"> Aperture ${i + 1}
         </a></li>`);
     }
 
@@ -675,31 +667,35 @@ class SpecViewer {
    */
   updatePlotArea(data, type) {
 
-    for (let i = 0; i < this.aperturesCenter.length; i++) {
+    for (let i = 0; i < this.aperturesId.length; i++) {
 
-      let apertureCenter = this.aperturesCenter[i];
-      let plotId = `${type}Plot_${apertureCenter}`;
+      let apertureId = this.aperturesId[i];
+      let plotId = `${type}Plot_${apertureId}`;
       let activeTabIndex = $(`#${this.id}`).tabs('option', 'active');
 
-      let inputAperturesCenter = data.apertures.map(function (a) {return a.center;});
-      let apertureIndex = getNearestIndex(apertureCenter, inputAperturesCenter);
+      let inputAperturesId = data.apertures.map(function (a) {return a.id;});
+      let apIdx = getNearestIndex(apertureId, inputAperturesId);
 
-      let intensity = data.apertures[apertureIndex].intensity;
-      let stddev = data.apertures[apertureIndex].stddev;
-      let intensityUnits = data.apertures[apertureIndex].intensity_units;
-      let wavelengthUnits = data.apertures[apertureIndex].wavelength_units;
+      let intensity = data.apertures[apIdx].intensity;
+      let stddev = data.apertures[apIdx].stddev;
+      let intensityUnits = data.apertures[apIdx].intensity_units;
+      let wavelengthUnits = data.apertures[apIdx].wavelength_units;
 
       let stackTitle = `Aperture ${i + 1} - Stack Frame - Stack size: ${this.stackSize}`;
       let lastTitle = `Aperture ${i+1} - Last Frame - ${this.dataLabel}`;
       let plotTitle = (data.is_stack) ? stackTitle:lastTitle;
 
-      $(`#aperture${apertureCenter} .info.${type}`).html(
+      $(`#aperture${apertureId} .apertureInfo`).html(
+        getApertureInfo(data.apertures[apIdx])
+      );
+
+      $(`#aperture${apertureId} .info.${type}`).html(
         getFrameInfo(data.filename, data.program_id)
       );
 
       // Create plot area if it does not exist
       if (!$(`#${plotId}`).length) {
-        $(`#aperture${apertureCenter} .resizable.${type}`).html(
+        $(`#aperture${apertureId} .resizable.${type}`).html(
           `<div class="plot ${type}" id="${plotId}"> </div>`);
 
       }
@@ -707,8 +703,8 @@ class SpecViewer {
       // Plot instance exists
       if (this[`${type}Plots`][i]) {
 
-        // Existing plotted apperture center exists inside data apertures
-        if (isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
+        // Existing plotted apperture id exists inside data apertures
+        if (isInApertureList(apertureId, data.pixel_scale, inputAperturesId)) {
 
           console.log('Refresh plots');
 
@@ -728,8 +724,8 @@ class SpecViewer {
 
       } else {
 
-        // Existing plotted apperture center exists inside data apertures
-        if (isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
+        // Existing plotted apperture id exists inside data apertures
+        if (isInApertureList(apertureId, data.pixel_scale, inputAperturesId)) {
 
           console.log('Create new plots');
 
@@ -777,10 +773,10 @@ class SpecViewer {
 
     // Enable on tab change event
     function resizePlotArea(index, type) {
-      let apCenter = sViewer.aperturesCenter[index];
+      let apId = sViewer.aperturesId[index];
       let plotInstance = sViewer[`${type}Plots`][index];
-      let plotTarget = $(`#${type}Plot_${apCenter}`);
-      let resizableArea = $(`#aperture${apCenter} .resizable.${type}`);
+      let plotTarget = $(`#${type}Plot_${apId}`);
+      let resizableArea = $(`#aperture${apId} .resizable.${type}`);
 
       plotTarget.width(resizableArea.width() * 0.99);
 
