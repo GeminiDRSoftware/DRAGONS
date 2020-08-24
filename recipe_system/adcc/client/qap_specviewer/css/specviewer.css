@@ -260,6 +260,10 @@ img.settings {
   transition: all .5s linear;
 }
 
-#specViewer ul.ui-tabs-nav .ui-tabs-anchor {
+#specViewer ul.ui-tabs-nav li.ui-tabs-tab.ui-tabs-active a.ui-tabs-anchor {
     cursor:default;
+}
+
+#specViewer ul.ui-tabs-nav li.ui-tabs-tab {
+    cursor:pointer;
 }
