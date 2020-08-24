@@ -27,11 +27,6 @@ button.settings:focus {
   background-color: #c1c1c1;
 }
 
-div.info div.d-table p.d-table-cell {
-    padding-bottom: 1px;
-    padding-top: 10px;
-}
-
 div.settings {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
@@ -181,12 +176,17 @@ img.settings {
 }
 
 .info.single {
-  margin-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .info.stack {
-  margin-bottom: 5px;
-  margin-top: 5px;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.info p.d-table-cell {
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 .jqplot-grid-canvas {
