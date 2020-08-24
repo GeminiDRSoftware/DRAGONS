@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import copy
 import os
 import itertools
 import time
@@ -12,12 +11,16 @@ import astrodata
 from astrodata.testing import download_from_archive
 from geminidr.core import primitives_visualize
 from geminidr.gmos.primitives_gmos_image import GMOSImage
-from recipe_system.testing import reduce_arc
 
-test_data = [
-    # (Input Files, Associated Arc)
-    (["N20180112S0209.fits"], "N20180112S0353.fits"),
-    ([f"S20190103S{i:04d}.fits" for i in range(138, 141)], "S20190103S0136.fits"),
+
+single_aperture_data = [
+    # (Input Files, Associated Bias, Associated Flats, Associated Arc)
+    (["N20180112S0209.fits"], [], [], ["N20180112S0353.fits"]),
+    ([f"S20190103S{i:04d}.fits" for i in range(138, 141)], [], [],
+     ["S20190103S0136.fits"]),
+    (["N20180521S0101.fits"],
+     [f"N20180521S{i:04d}.fits" for i in range(217, 222)],
+     ["N20180521S0100.fits", "N20180521S0102.fits"], ["N20180521S0185.fits"]),
 ]
 
 HEMI = 'NS'
@@ -56,58 +59,29 @@ def test_mosaic_detectors_gmos_binning(hemi, ccd):
 
 
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("input_ads", test_data, indirect=True)
+@pytest.mark.parametrize("input_ads", single_aperture_data, indirect=True)
 @pytest.mark.usefixtures("check_adcc")
-def test_plot_spectra_for_qa_single_frame(input_ads):
-    p = primitives_visualize.Visualize([])
-    p.plotSpectraForQA(adinputs=[input_ads[0]])
-    time.sleep(10)
-    assert True
+def test_plot_spectra_for_qa(input_ads):
+    for i, ad in enumerate(input_ads):
 
+        # Plot single frame
+        p = primitives_visualize.Visualize([])
+        p.plotSpectraForQA(adinputs=[ad])
 
-@pytest.mark.preprocessed_data
-@pytest.mark.parametrize("input_ad", test_data, indirect=True)
-@pytest.mark.usefixtures("check_adcc")
-def test_plot_spectra_for_qa_multiple_frames(input_ad):
-    """
-    Tests that plotSpectraForQA can send single and stacked frames to ADCC. One
-    could do this using actual data but it was simply easier to modify a single
-    file and send it.
-
-    Parameters
-    ----------
-    input_ad : fixture
-        The input data that will be displayed.
-    """
-    p_vis = primitives_visualize.Visualize([])
-    p_vis.plotSpectraForQA(adinputs=[input_ad])
-    time.sleep(5)
-
-    adlist = [input_ad]
-    for i in range(1, 3):
-
-        new_ad = copy.deepcopy(input_ad)
-        sequence_number = int(input_ad.data_label().split("-")[-1]) + i
-        new_data_label = "-".join(input_ad.data_label().split("-")[:-1])
-        new_data_label += f"-{sequence_number:03d}"
-
-        new_ad.phu['DATALAB'] = new_data_label
-
-        for ext in new_ad:
-            ext.data += i * 0.1 * ext.data.max() * np.random.rand(ext.data.size)
-
-        print('Reducing data')
-        p_vis.plotSpectraForQA(adinputs=[new_ad])
-        adlist.append(new_ad)
+        # Gives some time to page refresh
         time.sleep(10)
 
-        print('Reducing stack')
-        p_img = GMOSImage([])
-        stack_ad = p_img.stackFrames(adinputs=adlist)[0]
-        p_vis.plotSpectraForQA(adinputs=[stack_ad])
+        # Plot Stack
+        if i >= 1:
+            print('Reducing stack')
+            stack_ad = GMOSImage([]).stackFrames(adinputs=input_ads[:i + 1])[0]
+            p.plotSpectraForQA(adinputs=[stack_ad])
+
+        # Gives some time to page refresh
         time.sleep(10)
 
 
+# -- Fixtures -----------------------------------------------------------------
 @pytest.fixture(scope='module')
 def check_adcc():
     try:
@@ -119,8 +93,7 @@ def check_adcc():
 
 @pytest.fixture(scope='module')
 def input_ads(path_to_inputs, request):
-
-    basenames, _ = request.param
+    basenames = request.param[0]
     input_fnames = [b.replace('.fits', '_linearized.fits') for b in basenames]
     input_paths = [os.path.join(path_to_inputs, f) for f in input_fnames]
 
@@ -134,6 +107,7 @@ def input_ads(path_to_inputs, request):
     return input_data_list
 
 
+# -- Input creation functions -------------------------------------------------
 def create_inputs():
     """
     Create inputs for `test_plot_spectra_for_qa_single_frame`.
@@ -143,31 +117,66 @@ def create_inputs():
     a new folder called "dragons_test_inputs". The sub-directory structure
     should reflect the one returned by the `path_to_inputs` fixture.
     """
+    import glob
     import os
     from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system.utils.reduce_utils import normalize_ucals
 
+    cwd = os.getcwd()
     path = f"./dragons_test_inputs/geminidr/core/{__file__.split('.')[0]}/"
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
-    
+
     os.makedirs("inputs/", exist_ok=True)
 
-    for raw_basenames, arc_basename in test_data:
+    for raw_list, bias_list, quartz_list, arc_list in single_aperture_data:
 
-        arc_path = download_from_archive(arc_basename)
-        raw_paths = [download_from_archive(f) for f in raw_basenames]
+        if all([os.path.exists(f"inputs/{s.split('.')[0]}_extracted.fits")
+                for s in raw_list]):
+            print("Skipping already created input.")
+            continue
+
+        raw_paths = [download_from_archive(f) for f in raw_list]
+        bias_paths = [download_from_archive(f) for f in bias_list]
+        quartz_paths = [download_from_archive(f) for f in quartz_list]
+        arc_paths = [download_from_archive(f) for f in arc_list]
+
+        cals = []
         raw_ads = [astrodata.open(p) for p in raw_paths]
         data_label = raw_ads[0].data_label()
-
         print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
+        if len(bias_paths):
+            logutils.config(file_name='log_bias_{}.txt'.format(data_label))
+            r = Reduce()
+            r.files.extend(bias_paths)
+            r.runr()
+            master_bias = r.output_filenames.pop()
+            cals.append(f"processed_bias:{master_bias}")
+            del r
+        else:
+            master_bias = None
+
+        if len(quartz_paths):
+            logutils.config(file_name='log_quartz_{}.txt'.format(data_label))
+            r = Reduce()
+            r.files.extend(quartz_paths)
+            r.ucals = normalize_ucals(r.files, cals)
+            r.runr()
+            master_quartz = r.output_filenames.pop()
+            cals.append(f"processed_flat:{master_quartz}")
+            del r
+        else:
+            master_quartz = None
+
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
-        arc_reduce = Reduce()
-        arc_reduce.files.extend([arc_path])
-        arc_reduce.runr()
-        arc_master = arc_reduce.output_filenames.pop()
+        r = Reduce()
+        r.files.extend(arc_paths)
+        r.ucals = normalize_ucals(r.files, cals)
+        r.runr()
+        master_arc = r.output_filenames.pop()
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = GMOSLongslit(raw_ads)
@@ -175,23 +184,30 @@ def create_inputs():
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
         p.overscanCorrect()
-        p.biasCorrect(do_bias=False)
+        p.biasCorrect(do_bias=master_bias is not None, bias=master_bias)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        p.flatCorrect(do_flat=False)
-        p.QECorrect(arc=arc_master)
-        p.distortionCorrect(arc=arc_master)
+        p.flatCorrect(do_flat=master_quartz is not None, flat=master_quartz)
+        p.QECorrect(arc=master_arc)
+        p.distortionCorrect(arc=master_arc)
         p.findSourceApertures(max_apertures=3)
         p.skyCorrectFromSlit()
         p.traceApertures()
         p.extract1DSpectra()
         p.linearizeSpectra()
 
+        [os.remove(s) for s in glob.glob("*_arc.fits")]
+        [os.remove(s) for s in glob.glob("*_bias.fits")]
+        [os.remove(s) for s in glob.glob("*_flat.fits")]
+        [os.remove(s) for s in glob.glob("*_mosaic.fits")]
+
         os.chdir("inputs/")
         print("\n\n    Writing processed files for tests into:\n"
               "    {:s}\n\n".format(os.getcwd()))
         _ = p.writeOutputs()
         os.chdir("../")
+
+    os.chdir(cwd)
 
 
 if __name__ == "__main__":
