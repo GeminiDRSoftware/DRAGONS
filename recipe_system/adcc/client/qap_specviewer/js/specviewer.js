@@ -201,7 +201,7 @@ function getApertureInfo(aperture) {
   return `
     <div class="apertureInfo">
       <span>
-        <b>Aperture definition:</b>
+          <span class="app-info-field" title="Most recent file information"> <b>Aperture definition:</b> </span>
           <span class="app-info-field" title="Aperture center"> ${aperture.center} px </span> (
           <span class="app-info-field" title="Lower aperture limit"> ${aperture.lower} px </span>,
           <span class="app-info-field" title="Upper aperture limit"> ${aperture.upper} px </span>)
