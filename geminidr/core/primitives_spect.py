@@ -1432,31 +1432,31 @@ class Spect(PrimitivesBASE):
                     # Create a new gWCS and add header keywords with the
                     # extraction location. All extracted spectra will have the
                     # same gWCS but that could change.
-                    ext = ad_spec[-1]
+                    ext_spec = ad_spec[-1]
                     if wave_model is not None:
                         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                                       axes_order=(0,), unit=u.pix,
                                                       axes_names=('x',), name='pixels')
                         out_frame = cf.SpectralFrame(unit=u.nm, name='world')
-                        ext.wcs = gWCS([(in_frame, wave_model),
-                                        (out_frame, None)])
-                    ext.hdr[ad._keyword_for('aperture_number')] = apnum
+                        ext_spec.wcs = gWCS([(in_frame, wave_model),
+                                             (out_frame, None)])
+                    ext_spec.hdr[ad._keyword_for('aperture_number')] = apnum
                     center = aperture.model.c0.value
-                    ext.hdr['XTRACTED'] = (center, "Spectrum extracted "
-                                                    "from {} {}".format(direction, int(center + 0.5)))
-                    ext.hdr['XTRACTLO'] = (aperture._last_extraction[0],
-                                           'Aperture lower limit')
-                    ext.hdr['XTRACTHI'] = (aperture._last_extraction[1],
-                                           'Aperture upper limit')
+                    ext_spec.hdr['XTRACTED'] = (center, "Spectrum extracted "
+                                                        "from {} {}".format(direction, int(center + 0.5)))
+                    ext_spec.hdr['XTRACTLO'] = (aperture._last_extraction[0],
+                                                'Aperture lower limit')
+                    ext_spec.hdr['XTRACTHI'] = (aperture._last_extraction[1],
+                                                'Aperture upper limit')
 
                     # Delete unnecessary keywords
                     for descriptor in ('detector_section', 'array_section'):
                         kw = ad._keyword_for(descriptor)
-                        if kw in ext.hdr:
-                            del ext.hdr[kw]
+                        if kw in ext_spec.hdr:
+                            del ext_spec.hdr[kw]
                     # TODO: remove after testing
                     try:
-                        ext.WAVECAL = ext.WAVECAL
+                        ext_spec.WAVECAL = ext_spec.WAVECAL
                     except AttributeError:
                         pass
 
@@ -2115,7 +2115,7 @@ class Spect(PrimitivesBASE):
                 try:
                     model_info = _extract_model_info(ext)
                 except ValueError:
-                    raise ValueError("{} has no WAVECAL. Cannot linearize."
+                    raise ValueError("Cannot determine wavelength solution for {}."
                                      .format(extname))
                 adinfo.append(model_info)
 

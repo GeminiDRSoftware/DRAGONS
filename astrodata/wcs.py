@@ -38,7 +38,7 @@ def fitswcs_to_gwcs(hdr):
     # transform = gw.make_fitswcs_transform(hdr)
     try:
         transform = make_fitswcs_transform(hdr)
-    except Exception:
+    except Exception as e:
         return None
     outputs = transform.outputs
 
@@ -104,11 +104,15 @@ def gwcs_to_fits(ndd, hdr=None):
     -------
     dict: values to insert into the FITS header to express this WCS
     """
+    if hdr is None:
+        hdr = {}
+
     wcs = ndd.wcs
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
     nworld_axes = len(world_axes)
-    wcs_dict = {'WCSAXES': nworld_axes,
+    wcs_dict = {'NAXIS': len(ndd.shape),
+                'WCSAXES': nworld_axes,
                 'WCSDIM': nworld_axes}
     wcs_dict.update({f'CD{i+1}_{j+1}': 0. for j in range(nworld_axes)
                      for i in range(nworld_axes)})
@@ -172,12 +176,14 @@ def gwcs_to_fits(ndd, hdr=None):
         wcs_dict['FITS-WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
 
     affine = calculate_affine_matrices(transform, ndd.shape)
+    # Convert to x-first order
+    affine_matrix = affine.matrix[::-1, ::-1]
     # Require an inverse to write out
-    if np.linalg.det(affine.matrix) == 0:
-        affine.matrix[-1, -1] = 1.
-    wcs_dict.update({f'CD{i+1}_{j+1}': affine.matrix[j, i]
-                     for i, _ in enumerate(world_axes)
-                     for j, _ in enumerate(world_axes)})
+    if np.linalg.det(affine_matrix) == 0:
+        affine_matrix[-1, -1] = 1.
+    wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[i, j]
+                     for j, _ in enumerate(world_axes)
+                     for i, _ in enumerate(world_axes)})
     # Don't overwrite CTYPEi keywords we've already created
     wcs_dict.update({f'CTYPE{i}': axis.upper()[:8]
                      for i, axis in enumerate(world_axes, start=1)
@@ -224,11 +230,12 @@ def model_is_affine(model):
 
 def calculate_affine_matrices(func, shape):
     """
-    Compute the matrix and offset necessary to turn a Transform into an
-    affine transformation. This is done by computing the linear matrix
-    along all axes extending from the centre of the region, and then
-    calculating the offset such that the transformation is accurate at
-    the centre of the region.
+    Compute the matrix and offset necessary of an affine transform that
+    represents the supplied function. This is done by computing the
+    linear matrix along all axes extending from the centre of the region,
+    and then calculating the offset such that the transformation is
+    accurate at the centre of the region. The matrix and offset are returned
+    in the standard python order (i.e., y-first for 2D).
 
     Parameters
     ----------
@@ -258,7 +265,7 @@ def calculate_affine_matrices(func, shape):
     matrix = np.array([[0.5 * (transformed[j + 1, i] - transformed[ndim + j + 1, i]) / halfsize[j]
                         for j in range(ndim)] for i in range(ndim)])
     offset = transformed[0] - np.dot(matrix, halfsize)
-    return AffineMatrices(matrix.T, offset[::-1])
+    return AffineMatrices(matrix[::-1, ::-1], offset[::-1])
 
 
 # -------------------------------------------------------------------------

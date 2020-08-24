@@ -13,7 +13,7 @@ from geminidr.gmos.primitives_gmos_image import GMOSImage
 from recipe_system.testing import reduce_arc
 
 test_data = [
-    # Input File, Associated Arc
+    # (Input File, Associated Arc)
     ("N20180112S0209.fits", "N20180112S0353.fits"),
 ]
 
@@ -99,9 +99,11 @@ def create_inputs():
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/core/test_visualize/"
-    os.makedirs(os.path.join(root_path, module_path), exist_ok=True)
+    path = f"./dragons_test_inputs/geminidr/core/{__file__.split('.')[0]}/"
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    
+    os.makedirs("inputs/")
 
     for raw_basename, arc_basename in test_data:
 
@@ -110,9 +112,6 @@ def create_inputs():
         raw_ad = astrodata.open(raw_path)
         data_label = raw_ad.data_label()
 
-        reduce_path = os.path.join(root_path, module_path, data_label)
-        os.makedirs(reduce_path, exist_ok=True)
-        os.chdir(reduce_path)
         print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
@@ -127,24 +126,24 @@ def create_inputs():
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
         p.overscanCorrect()
-        # p.biasCorrect()
+        p.biasCorrect(do_bias=False)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        # p.flatCorrect()
-        # p.applyQECorrection()
+        p.flatCorrect(do_flat=False)
+        p.QECorrect(arc=arc_master)
         p.distortionCorrect(arc=arc_master)
         p.findSourceApertures(max_apertures=1)
         p.skyCorrectFromSlit()
         p.traceApertures()
         p.extract1DSpectra()
         p.linearizeSpectra()
-        p.calculateSensitivity()
+        # p.calculateSensitivity()
 
-        os.makedirs("../inputs", exist_ok=True)
-        os.chdir("../inputs")
+        os.chdir("inputs/")
         print("\n\n    Writing processed files for tests into:\n"
               "    {:s}\n\n".format(os.getcwd()))
         _ = p.writeOutputs()
+        os.chdir("../")
 
 
 if __name__ == "__main__":
