@@ -571,14 +571,32 @@ class SpecViewer {
 
   } // end newTabContent
 
-  // Enable Reset Zoom button for Frame Plots
+  /**
+   * Enable Reset Zoom button for Frame Plots
+   * @param {object} p - JQPlot instance
+   * @param {number} i - Aperture index
+   * @param {string} type - Aperture type (single/stack)
+   */
   resetZoom(p, i, type) {
+
       let sViewer = this;
       let apertureCenter = sViewer.aperturesCenter[i];
-      $(`#aperture${apertureCenter} .info.${type} button`).click( function() {
+
+      function sleep (miliseconds) {
+        return new Promise(resolve => setTimeout(resolve, miliseconds));
+      }
+
+      // Unbind click to prevent setting it several times
+      $(`#aperture${apertureCenter} .info.${type} button`).unbind( "click" );
+
+      // Bind click event
+      $(`#aperture${apertureCenter} .info.${type} button`).click(
+        async function() {
           console.log(`Reset zoom of ${type} plot #${i}.`);
           p.resetZoom();
-      });
+          sleep(250);
+        }
+      );
   } //
 
   /**
