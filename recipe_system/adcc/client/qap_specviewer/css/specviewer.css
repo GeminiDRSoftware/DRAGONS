@@ -157,6 +157,23 @@ img.settings {
   display: table-cell;
 }
 
+@keyframes flash-animation {
+    from { background: #007FFF }
+    to   { background: #ddd; }
+}
+
+@-webkit-keyframes flash-animation {
+    from { background: #007FFF}
+    to   { background: #ddd; }
+}
+
+.flash {
+  -webkit-animation-name: flash-animation;
+  -webkit-animation-duration: 1s;
+  animation-name: flash-animation;
+  animation-duration: 1s;
+}
+
 .footer {
   color: #999;
   font-size: 10pt;
@@ -173,6 +190,7 @@ img.settings {
   border-radius: 5px;
   padding: 5px 15px;
   width: inherit;
+
 }
 
 .info.single {
@@ -259,6 +277,12 @@ img.settings {
 .zoom-reset {
   width: 100%;
   height: 100%;
+}
+
+#flashOnRefresh {
+    width: 15px;
+    height: 15px;
+    margin: 0px;
 }
 
 #specViewer {

@@ -116,9 +116,14 @@ function addSettings(sViewer) {
       <hr>
 
       <form>
+
           <label for="queryFreq">Query frequency:</label>
           <input type="number" id="queryFreq" name="queryFreq" min="1" max="60" value=${sViewer.countdown}>
           <label for="queryFreq">seconds</label>
+          <br><br>
+          <input type="checkbox" name="flashOnRefresh" id="flashOnRefresh" name="flashOnRefresh" value="flash" checked>
+          <label for="flashOnRefresh"> Flash file info on refresh </label>
+
       </form>
 
       <div class='w-100 d-table'>
@@ -153,10 +158,10 @@ function addSettings(sViewer) {
   };
 
   // Add functionality to buttons
-  $( '#settingsBtn' ).on( "click", showSettings );
-  $( '#okBtn' ).on( "click", saveSettings );
-  $( '#cancelBtn' ).on( "click", cancel );
-  $( '.close' ).on( "click", cancel );
+  $( '#settingsBtn' ).unbind("click").on( "click", showSettings );
+  $( '#okBtn' ).unbind("click").on( "click", saveSettings );
+  $( '#cancelBtn' ).unbind("click").on( "click", cancel );
+  $( '.close' ).unbind("click").on( "click", cancel );
 
   // Close settings if clicked outside
   window.onclick = function(event) {
@@ -415,6 +420,21 @@ class SpecViewer {
   } // end constructor
 
   /**
+   * Flash aperture info on refresh
+   * @param{string} type - Aperture type (single/stack)
+   */
+  flashInfo(type) {
+    this.aperturesId.map(
+        async function (id) {
+          if ( $( `input#flashOnRefresh` ).is(':checked') ) {
+           $( `#aperture${id} .info.${type}` ).removeClass('flash');
+           $( `#aperture${id} .info.${type}` ).addClass('flash');
+         }
+       }
+    );
+  }
+
+  /**
    * Query server for JSON file and start to populate page.
    * This function is the registered callback on the command pump.
    *
@@ -488,6 +508,7 @@ class SpecViewer {
 
           this.updatePlotArea(jsonElement, type);
           this.updateNavigationTab();
+          this.flashInfo(type);
 
         } else {
 
@@ -514,9 +535,11 @@ class SpecViewer {
             } else {
               console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
               $('.footer .status').html(`${this.now.toString()}<br />Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
+              this.timestamp = jsonElement.timestamp;
               this.stackSize = stackSize;
               this.updatePlotArea(jsonElement, type);
               this.updateNavigationTab();
+              this.flashInfo(type);
             }
           } else {
             if (this.dataLabel === jsonElement.data_label && this.timestamp >= jsonElement.timestamp) {
@@ -525,9 +548,11 @@ class SpecViewer {
             } else {
               console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
               $('.footer .status').html(`${this.now.toString()}<br />Received new data with ${jsonElement.apertures.length} aperture(s)`);
+              this.timestamp = jsonElement.timestamp;
               this.dataLabel = jsonElement.data_label;
               this.updatePlotArea(jsonElement, type);
               this.updateNavigationTab();
+              this.flashInfo(type);
             }
           }
         }
