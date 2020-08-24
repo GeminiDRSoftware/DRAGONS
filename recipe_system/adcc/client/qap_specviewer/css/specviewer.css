@@ -27,6 +27,11 @@ button.settings:focus {
   background-color: #c1c1c1;
 }
 
+div.info div.d-table p.d-table-cell {
+    padding-bottom: 1px;
+    padding-top: 10px;
+}
+
 div.settings {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
