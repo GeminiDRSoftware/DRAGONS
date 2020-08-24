@@ -193,6 +193,20 @@ def new_imagehdu(data, header, name=None):
 
 
 def table_to_bintablehdu(table, extname=None):
+    """
+    Convert an astropy Table object to a BinTableHDU before writing to disk.
+
+    Parameters
+    ----------
+    table: astropy.table.Table instance
+        the table to be converted to a BinTableHDU
+    extname: str
+        name to go in the EXTNAME field of the FITS header
+
+    Returns
+    -------
+    BinTableHDU
+    """
     add_header_to_table(table)
     array = table.as_array()
     header = table.meta['header'].copy()

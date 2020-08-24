@@ -17,14 +17,15 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/6 * * * *')  // Polls Source Code Manager every six hours
+        // pollSCM('MIN HOUR DoM MONTH DoW')
+        pollSCM('H H/4 * * *')  // Polls Source Code Manager every three hours
     }
 
     options {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
-        timeout(time: 3, unit: 'HOURS')
+        timeout(time: 4, unit: 'HOURS')
     }
 
     environment {

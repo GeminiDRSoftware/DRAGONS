@@ -717,18 +717,21 @@ plotOptions = {
   },
 
   series: [{
-      color: '#1f77b4',
+      color: 'rgba(46, 134, 193, 1.0)',
       label: 'Intensity',
+      shadow: false,
     },
     {
-      color: 'rgba(255, 127, 14, 0.2)',
-      label: 'Standard Deviation'
+      color: 'rgba(211, 96, 0, 0.2)',
+      label: 'Standard Deviation',
+      shadow: false,
     },
   ],
 
   grid: {
     background: 'white',
     drawBorder: false,
+    gridLineColor: '#F2F3F4',
     shadow: false,
   },
 

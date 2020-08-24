@@ -73,7 +73,7 @@ CAT_COLS = {
 # This defines the column name mapping for each catalog server to our
 # column names. This copes with both variable server conventions, and
 # also allows us to point to different columns in the upstream catalog
-# - eg different model fits magnitides - if we wish
+# - eg different model fits magnitudes - if we wish
 # ***** These need to be in the same order as the list in our_cols *****
 SERVER_COLMAP = {
     'sdss9_mko': ['objid', 'raj2000', 'dej2000', 'umag', 'umag_err',
@@ -217,32 +217,49 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
         log.stdinfo(f"No results returned from {server}")
         return
 
+    array = table.array
+
+    if server == 'sdss9_vizier':
+        # Vizier uses the photoObj table from SDSS9, whereas the internal
+        # server uses the calibObj, AKA "datasweep", which contains a subset
+        # of photoObj, "designed for those who want to work with essentially
+        # every well measured object, but only need the most commonly used
+        # parameters".
+        #
+        # To get results similar to calibObj, we filter below on mode=1 to get
+        # only the primary sources (the 'main' photometric observation of an
+        # object). calibObj also uses a cut on magnitudes (see
+        # http://www.sdss3.org/dr9/imaging/catalogs.php) but this is difficult
+        # to reproduce here since the cuts apply to extinction-corrected
+        # magnitudes, and we don't have the extinction values in the Vizier
+        # table.
+        array = array[array['mode'] == 1]
+
     # It turns out to be not viable to use UCDs to select the columns,
     # even for the id, ra, and dec. Even with vizier. <sigh>
     # The first column is our running integer column
-    ret_table = Table([list(range(1, len(table.array[server_cols[0]])+1))],
+    ret_table = Table([list(range(1, len(array)+1))],
                       names=('Id',), dtype=('i4',))
 
-    ret_table.add_column(Column(table.array[server_cols[0]], name='Cat_Id',
+    ret_table.add_column(Column(array[server_cols[0]], name='Cat_Id',
                                 dtype='a'))
-    ret_table.add_column(Column(table.array[server_cols[1]], name='RAJ2000',
+    ret_table.add_column(Column(array[server_cols[1]], name='RAJ2000',
                                 dtype='f8', unit='deg'))
-    ret_table.add_column(Column(table.array[server_cols[2]], name='DEJ2000',
+    ret_table.add_column(Column(array[server_cols[2]], name='DEJ2000',
                                 dtype='f8', unit='deg'))
 
     # Now the photometry columns
     for col in range(3, len(cols)):
-        ret_table.add_column(Column(table.array[server_cols[col]], name=cols[col],
+        ret_table.add_column(Column(array[server_cols[col]], name=cols[col],
                                     dtype='f4', unit='mag', format='8.4f'))
 
     header = add_header_to_table(ret_table)
     header['CATALOG'] = (catalog.upper(), 'Origin of source catalog')
+
     # Add comments to the header to describe it
-    header.add_comment('Source catalog derived from the {} catalog'
-                       .format(catalog))
-    header.add_comment('Source catalog fetched from server at {}'.format(url))
-    header.add_comment('Delivered Table name from server:  {}'
-                       .format(table.name))
+    header.add_comment(f'Source catalog derived from the {catalog} catalog')
+    header.add_comment(f'Source catalog fetched from server at {url}')
+    header.add_comment(f'Delivered Table name from server:  {table.name}')
     for col in range(len(cols)):
         header.add_comment('UCD for field {} is {}'.format(
             cols[col], table.get_field_by_id(server_cols[col]).ucd))
