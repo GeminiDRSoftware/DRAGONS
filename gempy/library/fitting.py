@@ -5,7 +5,7 @@ import numpy as np
 from astropy.modeling import Model, models, fitting
 from astropy.stats import sigma_clip
 
-from . import astromodels
+from .astromodels import UnivariateSplineWithOutlierRemoval
 from .astrotools import cartesian_regions_to_slices
 
 __all__ = ['fit_1D']
@@ -14,11 +14,11 @@ function_map = {
     'chebyshev': (models.Chebyshev1D, {}),
     'legendre': (models.Legendre1D, {}),
     'polynomial': (models.Polynomial1D, {}),
-    'spline1' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 1}),
-    'spline2' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 2}),
-    'spline3' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 3}),
-    'spline4' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 4}),
-    'spline5' : (astromodels.UnivariateSplineWithOutlierRemoval, {'k': 5}),
+    'spline1' : (UnivariateSplineWithOutlierRemoval, {'k': 1}),
+    'spline2' : (UnivariateSplineWithOutlierRemoval, {'k': 2}),
+    'spline3' : (UnivariateSplineWithOutlierRemoval, {'k': 3}),
+    'spline4' : (UnivariateSplineWithOutlierRemoval, {'k': 4}),
+    'spline5' : (UnivariateSplineWithOutlierRemoval, {'k': 5}),
 }
 
 
@@ -51,11 +51,13 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         Fitting function/model type to be used (current default 'legendre').
         The spline options may be 'spline1' (linear) to 'spline5' (quintic).
 
-    order : `int`, optional
-        Order (number of terms or degree+1) of the fitting function
-        (default 1). For spline fits, this is the maximum number of spline
-        pieces, which (if applicable) will be reduced in proportion to the
-        number of masked pixels for each fit.
+    order : `int` or `None`, optional
+        Order (number of terms or degree+1) of the fitting function (default
+        1). For spline fits, this is the maximum number of spline pieces,
+        which (if applicable) will be reduced in proportion to the number of
+        masked pixels for each fit. A value of `None` uses as many pieces as
+        required to get chi^2=1 for spline fits, while for other functions it
+        maps to the default of 1.
 
     axis : `int`, optional
         Array axis along which to perform fitting (Python convention;
@@ -114,6 +116,11 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         astropy_model = issubclass(func, Model)
     except TypeError:
         astropy_model = False
+
+    # The spline fitting uses an adaptive criterion when order=None, but the
+    # AstroPy polynomials require an integer degree so map None to default:
+    if order is None and func is not UnivariateSplineWithOutlierRemoval:
+        order = 1
 
     # Parse the sample regions:
     slices = cartesian_regions_to_slices(regions)
