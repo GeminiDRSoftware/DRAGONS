@@ -11,6 +11,8 @@ def pipeline2iraf(ad, verbose=False):
         
     if "GMOS" in ad.tags:
         compat_with_iraf_GMOS(ad, verbose)
+    elif "F2" in ad.tags:
+        compat_with_iraf_F2(ad, verbose)
     else:
         if verbose:
             print("Data type not supported, {}".format(ad.filename))
@@ -55,6 +57,15 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Copy WCS to PHU")
         _copy_wcs_to_phu(ad)
+
+    return
+
+def compat_with_iraf_F2(ad, verbose):
+
+    # WCS to PHU.  Needed for stsdasobjt
+    if verbose:
+        print("Copy WCS to PHU.")
+    _copy_wcs_to_phu(ad)
 
     return
 
@@ -112,6 +123,7 @@ def _copy_wcs_to_phu(ad):
     ad.phu.set('CD1_2', ad[0].hdr['CD1_2'], 'For IRAF compatibility')
     ad.phu.set('CD2_1', ad[0].hdr['CD2_1'], 'For IRAF compatibility')
     ad.phu.set('CD2_2', ad[0].hdr['CD2_2'], 'For IRAF compatibility')
-    ad.phu.set('EQUINOX', ad[0].hdr['EQUINOX'], 'For IRAF compatibility')
+    if 'EQUINOX' in ad[0].hdr:
+        ad.phu.set('EQUINOX', ad[0].hdr['EQUINOX'], 'For IRAF compatibility')
 
     return
