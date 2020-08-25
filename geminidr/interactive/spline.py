@@ -1,9 +1,10 @@
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Column, Div
+from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider, _dequantity
+from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider, _dequantity, \
+    GIMaskedSigmadCoords
 from gempy.library import astromodels
 
 
@@ -11,10 +12,9 @@ __all__ = ["interactive_spline", ]
 
 
 class SplineModel:
-    def __init__(self, ext, x, y, weights, order, niter, grow):
+    def __init__(self, ext, coords, weights, order, niter, grow):
         self.ext = ext
-        self.x = x
-        self.y = y
+        self.coords = coords
         self.weights = weights
         self.order = order
         self.niter = niter
@@ -29,6 +29,11 @@ class SplineModel:
 
         self.spline = None
 
+        self.coords.add_mask_listener(self.update_coords)
+
+    def update_coords(self, x, y):
+        self.recalc_spline()
+
     def recalc_spline(self):
         """
         Recalculate the spline based on the currently set parameters.
@@ -42,7 +47,7 @@ class SplineModel:
         -------
         none
         """
-        x, y = _dequantity(self.x, self.y)
+        x, y = self.coords.x_coords[self.coords.mask], self.coords.y_coords[self.coords.mask]
 
         # zpt_err = self.zpt_err
         weights = self.weights
@@ -52,7 +57,7 @@ class SplineModel:
         ext = self.ext
 
         self.spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y,
-                                                                     w=weights,  # w=1. / zpt_err.value,
+                                                                     w=weights[self.coords.mask],  # w=1. / zpt_err.value,
                                                                      order=order,
                                                                      niter=niter,
                                                                      grow=grow)
@@ -64,7 +69,7 @@ class SplineModel:
 
 
 class SplineVisualizer(interactive.PrimitiveVisualizer):
-    def __init__(self, ext, x, y, weights, order, niter, grow, min_order, max_order,
+    def __init__(self, ext, coords, weights, order, niter, grow, min_order, max_order,
                  min_niter, max_niter, min_grow, max_grow,
                  x_axis_label, y_axis_label):
         """
@@ -79,10 +84,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         ----------
         ext :
             Astrodata extension to visualize spline for
-        x :
-            x coordinates
-        y :
-            y coordinates
+        coords : `~MaskedSigmadCoords`
+            coordinates
         weights :
             weights
         order : int
@@ -108,7 +111,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         # Note that self._fields in the base class is setup with a dictionary mapping conveniently
         # from field name to the underlying config.Field entry, even though fields just comes in as
         # an iterable
-        self.model = SplineModel(ext, x, y, weights, order, niter, grow)
+        self.model = SplineModel(ext, coords, weights, order, niter, grow)
         self.p = None
         self.spline = None
         self.scatter = None
@@ -126,6 +129,18 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.min_grow = min_grow
         self.max_grow = max_grow
 
+    def mask_button_handler(self):
+        indices = self.scatter_touch.source.selected.indices
+        self.scatter_touch.clear_selection() # source.selected.indices.clear()
+        self.scatter.clear_selection() # source.selected.indices.clear()
+        self.model.coords.addmask(indices)
+
+    def unmask_button_handler(self):
+        indices = self.scatter_touch.source.selected.indices
+        self.scatter_touch.clear_selection() # source.selected.indices.clear()
+        self.scatter.clear_selection() # source.selected.indices.clear()
+        self.model.coords.unmask(indices)
+
     def visualize(self, doc):
         """
         Build the visualization in bokeh in the given browser document.
@@ -141,8 +156,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        x = self.model.x
-        y = self.model.y
+        x = self.model.coords.x_coords
+        y = self.model.coords.y_coords
         order = self.model.order
         niter = self.model.niter
         grow = self.model.grow
@@ -153,11 +168,16 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
                                 self.model, "niter", self.model.recalc_spline)
         grow_slider = GISlider("Grow", grow, 1, self.min_grow, self.max_grow,
                                self.model, "grow", self.model.recalc_spline)
+        mask_button = Button(label="Mask")
+        mask_button.on_click(self.mask_button_handler)
+
+        unmask_button = Button(label="Unmask")
+        unmask_button.on_click(self.unmask_button_handler)
 
         # Create a blank figure with labels
         self.p = GIFigure(plot_width=600, plot_height=500,
                           title='Interactive Spline',
-                          tools="pan,wheel_zoom,box_zoom,reset",
+                          tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                           x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label)
 
         # We can plot this here because it never changes
@@ -166,13 +186,13 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.scatter_touch = GIScatter(self.p, x, y, color="blue", radius=5)
 
         self.scatter = GIScatter(self.p, color="black")
-        self.model.mask_points.add_coord_listener(self.scatter.update_coords)
+        self.model.coords.add_mask_listener(self.scatter.update_coords)
 
         self.line = GILine(self.p)
         self.model.fit_line.add_coord_listener(self.line.update_coords)
 
         controls = Column(order_slider.component, niter_slider.component, grow_slider.component,
-                          self.submit_button)
+                          mask_button, unmask_button, self.submit_button)
 
         self.details = Div(text="")
         self.model.fit_line.add_coord_listener(self.update_details)
@@ -249,7 +269,9 @@ def interactive_spline(ext, wave, zpt, weights, order, niter, grow, min_order, m
     -------
     :class:`astromodels.UnivariateSplineWithOutlierRemoval`
     """
-    spline = SplineVisualizer(ext, wave, zpt, weights, order, niter, grow, min_order, max_order,
+    ndx, ndy = _dequantity(wave, zpt)
+    masked_coords = GIMaskedSigmadCoords(ndx, ndy)
+    spline = SplineVisualizer(ext, masked_coords, weights, order, niter, grow, min_order, max_order,
                               min_niter, max_niter, min_grow, max_grow, x_axis_label=x_axis_label,
                               y_axis_label=y_axis_label)
     server.set_visualizer(spline)

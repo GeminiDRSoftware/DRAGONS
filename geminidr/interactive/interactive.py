@@ -1,10 +1,33 @@
 from abc import ABC, abstractmethod
 
+from astropy.units import Quantity
 from bokeh.layouts import row
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label
 from bokeh.plotting import figure
 
 from geminidr.interactive import server
+
+
+def _dequantity(x, y):
+    """
+    Utility to convert richer Quantity based values into raw ndarrays.
+
+    Parameters
+    ----------
+    x : `~ndarray` or `~Quantity`
+        X values
+    y : `~ndarray` or `~Quantity`
+        Y values
+
+    Returns
+    -------
+    x, y as `~ndarray`s
+    """
+    if isinstance(x, Quantity):
+        x = x.value
+    if isinstance(y, Quantity):
+        y = y.value
+    return x, y
 
 
 class PrimitiveVisualizer(ABC):
@@ -496,7 +519,8 @@ class GIScatter:
             y coordinates
 
         """
-        self.source.data = {'x': x_coords, 'y': y_coords}
+        x, y = _dequantity(x_coords, y_coords)
+        self.source.data = {'x': x, 'y': y}
 
     def clear_selection(self):
         """
@@ -611,7 +635,8 @@ class GILine:
         y_coords : ndarray
             y coordinates
         """
-        self.line_source.data = {'x': x_coords, 'y': y_coords}
+        x, y = _dequantity(x_coords, y_coords)
+        self.line_source.data = {'x': x, 'y': y}
 
 
 class GIBandListener(ABC):
