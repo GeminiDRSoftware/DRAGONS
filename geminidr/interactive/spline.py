@@ -114,8 +114,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.model = SplineModel(ext, coords, weights, order, niter, grow)
         self.p = None
         self.spline = None
-        self.scatter = None
-        self.scatter_touch = None
+        self.scatter_masked = None
+        self.scatter_all = None
         self.line = None
         self.scatter_source = None
         self.line_source = None
@@ -129,16 +129,18 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.min_grow = min_grow
         self.max_grow = max_grow
 
+        self.details = None
+
     def mask_button_handler(self):
-        indices = self.scatter_touch.source.selected.indices
-        self.scatter_touch.clear_selection() # source.selected.indices.clear()
-        self.scatter.clear_selection() # source.selected.indices.clear()
+        indices = self.scatter_all.source.selected.indices
+        self.scatter_all.clear_selection()
+        self.scatter_masked.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self):
-        indices = self.scatter_touch.source.selected.indices
-        self.scatter_touch.clear_selection() # source.selected.indices.clear()
-        self.scatter.clear_selection() # source.selected.indices.clear()
+        indices = self.scatter_all.source.selected.indices
+        self.scatter_all.clear_selection()
+        self.scatter_masked.clear_selection()
         self.model.coords.unmask(indices)
 
     def visualize(self, doc):
@@ -168,6 +170,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
                                 self.model, "niter", self.model.recalc_spline)
         grow_slider = GISlider("Grow", grow, 1, self.min_grow, self.max_grow,
                                self.model, "grow", self.model.recalc_spline)
+
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
 
@@ -183,10 +186,10 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.scatter_touch = GIScatter(self.p, x, y, color="blue", radius=5)
+        self.scatter_all = GIScatter(self.p, x, y, color="blue", radius=5)
 
-        self.scatter = GIScatter(self.p, color="black")
-        self.model.coords.add_mask_listener(self.scatter.update_coords)
+        self.scatter_masked = GIScatter(self.p, color="black")
+        self.model.coords.add_mask_listener(self.scatter_masked.update_coords)
 
         self.line = GILine(self.p)
         self.model.fit_line.add_coord_listener(self.line.update_coords)
@@ -206,18 +209,18 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
     def update_details(self, x, y):
         order = self.model.order
         self.details.text = \
-        """
-        <b>Type of Function:</b> ?<br/>
-        <b>Order:</b> %s<br/>
-        <b>Rejection Method:</b> ?<br/>
-        <b>Rejection Low:</b> ? <br/>
-        <b>Rejection High:</b> ?<br/>
-        <b>Number of Iterations:</b> %s<br/>
-        <b>Grow:</b> %s<br/>
-        <b>RMS: ?<br/>
-        <b>RMS Units:</b> (presumably annotate RMS with this)<br/> 
-        """ \
-         % (order, self.model.niter, self.model.grow)
+            """
+            <b>Type of Function:</b> ?<br/>
+            <b>Order:</b> %s<br/>
+            <b>Rejection Method:</b> ?<br/>
+            <b>Rejection Low:</b> ? <br/>
+            <b>Rejection High:</b> ?<br/>
+            <b>Number of Iterations:</b> %s<br/>
+            <b>Grow:</b> %s<br/>
+            <b>RMS: ?<br/>
+            <b>RMS Units:</b> (presumably annotate RMS with this)<br/> 
+            """ \
+             % (order, self.model.niter, self.model.grow)
 
     def result(self):
         """
@@ -264,6 +267,10 @@ def interactive_spline(ext, wave, zpt, weights, order, niter, grow, min_order, m
         minimum value for grow in UI
     max_grow : int
         maximum value for grow in UI
+    x_axis_label : str (optional)
+        Label for X-Axis
+    y_axis_label : str (optional)
+        Label for Y-Axis
 
     Returns
     -------

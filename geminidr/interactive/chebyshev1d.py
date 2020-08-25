@@ -135,12 +135,12 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection() # source.selected.indices.clear()
+        self.scatter.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection() # source.selected.indices.clear()
+        self.scatter.clear_selection()
         self.model.coords.unmask(indices)
 
     def visualize(self, doc):
@@ -176,9 +176,6 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         unmask_button = Button(label="Unmask")
         unmask_button.on_click(self.unmask_button_handler)
-
-        # Add custom tooling
-        # source = ColumnDataSource(data=dict(x=[], y=[]))
 
         # Create a blank figure with labels
         p = GIFigure(plot_width=600, plot_height=500,
