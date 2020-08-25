@@ -59,6 +59,7 @@ keyword_comments = {
     "RELINT": "Relative intensity factor",
     "SATLEVEL": "Saturation level [ADU]",
     "SKYLEVEL": "Estimated sky level",
+    "SLTILLIM": "Slit illumination image used",
     "SUBSKYBG": "Sky background subtracted",
     "TRIMMED": "Overscan section trimmed",
     "TRIMSEC": "Data section prior to trimming",
