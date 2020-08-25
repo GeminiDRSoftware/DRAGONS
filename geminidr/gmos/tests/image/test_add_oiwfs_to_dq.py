@@ -80,7 +80,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
     # Some kind of regression test
     for r in caplog.records:
         if r.message.startswith("Guide star location found at"):
-            coords = re.findall("\((.*?)\)", r.message).pop().split(',')
+            coords = re.findall(r"\((.*?)\)", r.message).pop().split(',')
 
             x = float(coords[0])
             y = float(coords[1])
