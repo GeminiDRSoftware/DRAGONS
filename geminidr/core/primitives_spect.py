@@ -2300,9 +2300,12 @@ class Spect(PrimitivesBASE):
             for ext in ad:
                 axis = ext.dispersion_axis() - 1  # python sense
 
-                # We want to mask pixels in apertures in addition to the mask
+                # We want to mask pixels in apertures in addition to the mask.
+                # Should we also leave DQ.cosmic_ray (because sky lines can get
+                # flagged as CRs) and/or DQ.overlap unmasked here?
                 sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
-                            if ext.mask is None else ext.mask.copy())
+                            if ext.mask is None else
+                            ext.mask.copy() & DQ.not_signal)
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
@@ -2334,7 +2337,7 @@ class Spect(PrimitivesBASE):
                 sky_model = fit_1D(sky, weights=sky_weights, function=function,
                                    order=order, axis=axis, lsigma=lsigma,
                                    hsigma=hsigma, iterations=max_iters,
-                                   grow=grow, regions=regions)
+                                   grow=grow, regions=regions, plot=True)
 
                 ext.data -= sky_model
 
