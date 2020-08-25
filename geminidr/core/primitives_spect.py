@@ -2265,7 +2265,8 @@ class Spect(PrimitivesBASE):
         max_iters : int, optional
             Maximum number of fitting iterations (default 3).
         grow : float or False, optional
-            Masking growth radius (in pixels) for each aperture. Default: 0.
+            Masking growth radius (in pixels) for each source aperture and
+            each statistically-rejected pixel. Default: 2.
 
         Returns
         -------
@@ -2332,8 +2333,8 @@ class Spect(PrimitivesBASE):
 
                 sky_model = fit_1D(sky, weights=sky_weights, function=function,
                                    order=order, axis=axis, lsigma=lsigma,
-                                   hsigma=hsigma, iterations=max_iters, grow=2,
-                                   regions=regions)
+                                   hsigma=hsigma, iterations=max_iters,
+                                   grow=grow, regions=regions)
 
                 ext.data -= sky_model
 
