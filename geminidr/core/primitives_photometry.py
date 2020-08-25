@@ -149,7 +149,7 @@ class Photometry(PrimitivesBASE):
             minimum photometry radius (arcseconds)
         back_size : int
             background mesh size (pixels)
-        back_filter_size: int
+        back_filtersize: int
             background filtering scale
         """
         log = self.log
