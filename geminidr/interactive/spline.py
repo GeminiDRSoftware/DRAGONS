@@ -1,11 +1,9 @@
-from abc import ABC, abstractmethod
-
 import numpy as np
-from bokeh.layouts import row
-from bokeh.models import Column
+from bokeh.layouts import row, column
+from bokeh.models import Column, Div
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider
+from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider, _dequantity
 from gempy.library import astromodels
 
 
@@ -13,11 +11,11 @@ __all__ = ["interactive_spline", ]
 
 
 class SplineModel:
-    def __init__(self, ext, wave, zpt, zpt_err, order, niter, grow):
+    def __init__(self, ext, x, y, weights, order, niter, grow):
         self.ext = ext
-        self.wave = wave
-        self.zpt = zpt
-        self.zpt_err = zpt_err
+        self.x = x
+        self.y = y
+        self.weights = weights
         self.order = order
         self.niter = niter
         self.grow = grow
@@ -44,29 +42,31 @@ class SplineModel:
         -------
         none
         """
-        wave = self.wave
-        zpt = self.zpt
-        zpt_err = self.zpt_err
+        x, y = _dequantity(self.x, self.y)
+
+        # zpt_err = self.zpt_err
+        weights = self.weights
         order = self.order
         niter = self.niter
         grow = self.grow
         ext = self.ext
 
-        self.spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
-                                                                     w=1. / zpt_err.value,
+        self.spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y,
+                                                                     w=weights,  # w=1. / zpt_err.value,
                                                                      order=order,
                                                                      niter=niter,
                                                                      grow=grow)
 
-        splinex = np.linspace(min(wave), max(wave), ext.shape[0])
+        splinex = np.linspace(min(x), max(x), ext.shape[0])
 
-        self.mask_points.notify_coord_listeners(wave[self.spline.mask], zpt[self.spline.mask])
+        self.mask_points.notify_coord_listeners(x[self.spline.mask], y[self.spline.mask])
         self.fit_line.notify_coord_listeners(splinex, self.spline(splinex))
 
 
 class SplineVisualizer(interactive.PrimitiveVisualizer):
-    def __init__(self, ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
-                 min_niter, max_niter, min_grow, max_grow):
+    def __init__(self, ext, x, y, weights, order, niter, grow, min_order, max_order,
+                 min_niter, max_niter, min_grow, max_grow,
+                 x_axis_label, y_axis_label):
         """
         Create a spline visualizer.
 
@@ -79,12 +79,12 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         ----------
         ext :
             Astrodata extension to visualize spline for
-        wave :
-            wave
-        zpt :
-            zpt
-        zpt_err :
-            zpt_err
+        x :
+            x coordinates
+        y :
+            y coordinates
+        weights :
+            weights
         order : int
             order to initially use for the visualization (this may be adjusted interactively)
         niter : int
@@ -108,7 +108,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         # Note that self._fields in the base class is setup with a dictionary mapping conveniently
         # from field name to the underlying config.Field entry, even though fields just comes in as
         # an iterable
-        self.model = SplineModel(ext, wave, zpt, zpt_err, order, niter, grow)
+        self.model = SplineModel(ext, x, y, weights, order, niter, grow)
         self.p = None
         self.spline = None
         self.scatter = None
@@ -116,6 +116,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.line = None
         self.scatter_source = None
         self.line_source = None
+        self.x_axis_label = x_axis_label
+        self.y_axis_label = y_axis_label
 
         self.min_order = min_order
         self.max_order = max_order
@@ -139,8 +141,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        wave = self.model.wave
-        zpt = self.model.zpt
+        x = self.model.x
+        y = self.model.y
         order = self.model.order
         niter = self.model.niter
         grow = self.model.grow
@@ -156,12 +158,12 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.p = GIFigure(plot_width=600, plot_height=500,
                           title='Interactive Spline',
                           tools="pan,wheel_zoom,box_zoom,reset",
-                          x_axis_label='X', y_axis_label='Y')
+                          x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label)
 
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.scatter_touch = GIScatter(self.p, wave, zpt, color="blue", radius=5)
+        self.scatter_touch = GIScatter(self.p, x, y, color="blue", radius=5)
 
         self.scatter = GIScatter(self.p, color="black")
         self.model.mask_points.add_coord_listener(self.scatter.update_coords)
@@ -172,11 +174,30 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         controls = Column(order_slider.component, niter_slider.component, grow_slider.component,
                           self.submit_button)
 
+        self.details = Div(text="")
+        self.model.fit_line.add_coord_listener(self.update_details)
         self.model.recalc_spline()
 
-        layout = row(controls, self.p.figure)
+        col = column(self.p.figure, self.details)
+        layout = row(controls, col)
 
         doc.add_root(layout)
+
+    def update_details(self, x, y):
+        order = self.model.order
+        self.details.text = \
+        """
+        <b>Type of Function:</b> ?<br/>
+        <b>Order:</b> %s<br/>
+        <b>Rejection Method:</b> ?<br/>
+        <b>Rejection Low:</b> ? <br/>
+        <b>Rejection High:</b> ?<br/>
+        <b>Number of Iterations:</b> %s<br/>
+        <b>Grow:</b> %s<br/>
+        <b>RMS: ?<br/>
+        <b>RMS Units:</b> (presumably annotate RMS with this)<br/> 
+        """ \
+         % (order, self.model.niter, self.model.grow)
 
     def result(self):
         """
@@ -189,8 +210,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         return self.model.spline
 
 
-def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order, min_niter, max_niter,
-                       min_grow, max_grow):
+def interactive_spline(ext, wave, zpt, weights, order, niter, grow, min_order, max_order, min_niter, max_niter,
+                       min_grow, max_grow, x_axis_label="X", y_axis_label="Y"):
     """
     Build a spline via user interaction.
 
@@ -204,7 +225,7 @@ def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, min_order, m
         FITS extension from astrodata
     wave
     zpt
-    zpt_err
+    weights
     order
         order for the spline calculation
     niter
@@ -228,8 +249,9 @@ def interactive_spline(ext, wave, zpt, zpt_err, order, niter, grow, min_order, m
     -------
     :class:`astromodels.UnivariateSplineWithOutlierRemoval`
     """
-    spline = SplineVisualizer(ext, wave, zpt, zpt_err, order, niter, grow, min_order, max_order,
-                              min_niter, max_niter, min_grow, max_grow)
+    spline = SplineVisualizer(ext, wave, zpt, weights, order, niter, grow, min_order, max_order,
+                              min_niter, max_niter, min_grow, max_grow, x_axis_label=x_axis_label,
+                              y_axis_label=y_axis_label)
     server.set_visualizer(spline)
 
     server.start_server()

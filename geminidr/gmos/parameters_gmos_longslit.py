@@ -26,3 +26,4 @@ class normalizeFlatConfig(config.Config):
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+    interactive_reduce = config.Field("Interactive spline selection?", bool, False)

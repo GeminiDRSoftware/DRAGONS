@@ -6,6 +6,7 @@
 import numpy as np
 import warnings
 import astrodata
+import geminidr
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
@@ -142,6 +143,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         suffix = spline_kwargs.pop("suffix")
         spectral_order = spline_kwargs.pop("spectral_order")
         threshold = spline_kwargs.pop("threshold")
+        interactive_reduce = spline_kwargs.pop("interactive_reduce")
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
@@ -172,8 +174,18 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 for i, row in enumerate(ext.nddata):
                     masked_data = np.ma.masked_array(row.data, mask=row.mask)
                     weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                    order=order, w=weights, **spline_kwargs)
+                    if interactive_reduce:
+                        spline = geminidr.interactive.spline.interactive_spline(ext, pixels, masked_data, weights,
+                                                                                order,
+                                                                                niter=1, grow=1,
+                                                                                min_order=0, max_order=None,
+                                                                                min_niter=1, max_niter=None,
+                                                                                min_grow=1, max_grow=None,
+                                                                                x_axis_label="Pixels",
+                                                                                y_axis_label="Intensity (Smoots)")
+                    else:
+                        spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
+                                                                                order=order, w=weights, **spline_kwargs)
                     fitted_data[i] = spline(pixels)
                 # Copy header so we have the _section() descriptors
                 ad_fitted.append(fitted_data, header=ext.hdr)
