@@ -121,7 +121,7 @@ function addSettings(sViewer) {
           <input type="number" id="queryFreq" name="queryFreq" min="1" max="60" value=${sViewer.countdown}>
           <label for="queryFreq">seconds</label>
           <br><br>
-          <input type="checkbox" name="flashOnRefresh" id="flashOnRefresh" name="flashOnRefresh" value="flash" checked>
+          <input type="checkbox" name="flashOnRefresh" id="flashOnRefresh" name="flashOnRefresh" value="flash">
           <label for="flashOnRefresh"> Flash file info on refresh </label>
 
       </form>
@@ -420,18 +420,26 @@ class SpecViewer {
   } // end constructor
 
   /**
-   * Flash aperture info on refresh
-   * @param{string} type - Aperture type (single/stack)
+   * Flashes the file information if new data arrives.
+   *
+   * @param {string} type
    */
   flashInfo(type) {
-    this.aperturesId.map(
-        async function (id) {
-          if ( $( `input#flashOnRefresh` ).is(':checked') ) {
-           $( `#aperture${id} .info.${type}` ).removeClass('flash');
-           $( `#aperture${id} .info.${type}` ).addClass('flash');
-         }
-       }
-    );
+
+    if ( $( `#flashOnRefresh` ).is(':checked') ) {
+
+      let defaultBackgroundColor = $( `div.info.${type}` ).css("background-color");
+
+      $( `div.info.${type}` ).animate({
+        backgroundColor: "#ACD5FF",
+      }, 500 );
+
+      $( `div.info.${type}` ).animate({
+        backgroundColor: defaultBackgroundColor,
+      }, 1500 );
+
+    }
+
   }
 
   /**
@@ -506,6 +514,7 @@ class SpecViewer {
             this.dataLabel = jsonElement.data_label;
           }
 
+          this.timestamp = jsonElement.timestamp;
           this.updatePlotArea(jsonElement, type);
           this.updateNavigationTab();
           this.flashInfo(type);
