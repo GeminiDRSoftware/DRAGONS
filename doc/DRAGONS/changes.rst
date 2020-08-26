@@ -6,6 +6,23 @@
 Change Logs
 ***********
 
+2.1.2
+=====
+
+Bug Fixes
+---------
+
+**gempy.gemini**
+
+* Ensure NIRI skyflats satisfy calibration association requirements
+
+New Features
+------------
+
+**geminidr.core**
+
+* Add ``remove_first`` parameter to removeFirstFrame primitive
+
 2.1.1
 =====
 
