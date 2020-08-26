@@ -871,6 +871,11 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         elif "flat" in caltype:
             ad.phu.set("OBSTYPE", "FLAT", keyword_comments["OBSTYPE"])
             ad.phu.set("OBJECT", "Flat Frame", keyword_comments["OBJECT"])
+            # NIRI cal assoc requires ad.gcal_lamp() to return suitable value
+            if ad.instrument() == 'NIRI':
+                ad.phu.set("GCALLAMP", "QH", "For calibration association")
+                ad.phu.set("GCALSHUT", "OPEN", "For calibration association")
+
         elif "bpm" in caltype:
             ad.phu.set("BPMASK", True, "Bad pixel mask")
         else:
