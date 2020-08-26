@@ -198,13 +198,23 @@ class NearIR(PrimitivesBASE):
             else:
                 return []
 
-    def removeFirstFrame(self, adinputs=None):
+    def removeFirstFrame(self, adinputs=None, **params):
         """
         This removes the first frame (according to timestamp) from the input
         list. It is intended for use with NIRI.
+
+        Parameters
+        ----------
+        remove_first: bool
+            remove the first frame? If False, this primitive no-ops (but logs
+            a warning)
         """
-        adinputs = self.sortInputs(adinputs, descriptor="ut_datetime")
-        adinputs = self.rejectInputs(adinputs, at_start=1)
+        if params["remove_first"]:
+            adinputs = self.sortInputs(adinputs, descriptor="ut_datetime")
+            adinputs = self.rejectInputs(adinputs, at_start=1)
+        else:
+            self.log.warning("The first frame is not being removed: "
+                             "data quality may suffer")
         return adinputs
 
     def separateFlatsDarks(self, adinputs=None, **params):
