@@ -141,6 +141,7 @@ class findSourceAperturesConfig(config.Config):
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
                                        default="peak")
+    interactive = config.Field("Use interactive interface", bool, False)
 
 
 def flux_units_check(value):

@@ -48,6 +48,7 @@ from . import parameters_spect
 
 import matplotlib
 
+from ..interactive.aperture import interactive_find_source_apertures
 from ..interactive.extractspectra import interactive_extract_spectra
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
@@ -1528,6 +1529,8 @@ class Spect(PrimitivesBASE):
             the aperture.
         sizing_method : str ("peak" or "integral")
             which method to use
+        interactive : bool
+            Show interactive controls for fine tuning source aperture detection
 
         Returns
         -------
@@ -1550,6 +1553,7 @@ class Spect(PrimitivesBASE):
         use_snr = params["use_snr"]
         threshold = params["threshold"]
         sizing_method = params["sizing_method"]
+        interactive = params["interactive"]
 
         sec_regions = []
         if section:
@@ -1639,6 +1643,9 @@ class Spect(PrimitivesBASE):
                 all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
                                                 threshold=threshold, method=sizing_method)
 
+                if interactive:
+                    locations, all_limits = interactive_find_source_apertures(ext, locations, all_limits)
+
                 all_model_dicts = []
                 for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
@@ -1653,6 +1660,7 @@ class Spect(PrimitivesBASE):
                 for name in model_dict.keys():  # Still defined from above loop
                     aptable[name] = [model_dict.get(name, 0)
                                      for model_dict in all_model_dicts]
+
                 ext.APERTURE = aptable
 
             # Timestamp and update the filename
@@ -2415,6 +2423,8 @@ class Spect(PrimitivesBASE):
             Default: 0.05
         debug: bool
             draw aperture traces on image display window?
+        interactive: bool
+            Show interactive interface to fine tune aperture tracing
 
         Returns
         -------

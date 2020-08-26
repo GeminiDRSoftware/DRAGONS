@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from astropy.units import Quantity
 from bokeh.layouts import row
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label
+from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column
 from bokeh.plotting import figure
 
 from geminidr.interactive import server
@@ -1009,6 +1009,7 @@ class GISingleApertureView(object):
         self.left_source.data = {'x': [start, start], 'y': self.left_source.data['y']}
         self.right_source.data = {'x': [end, end], 'y': self.right_source.data['y']}
         self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
+        self.label.x = (start+end)/2-5
 
     def delete(self):
         """
@@ -1017,6 +1018,26 @@ class GISingleApertureView(object):
         self.gifig.figure.renderers.remove(self.line)
         self.gifig.figure.renderers.remove(self.left)
         self.gifig.figure.renderers.remove(self.right)
+
+
+class GIApertureSliders(object):
+    def __init__(self, model, aperture_id, start, end):
+        self.model = model
+        self.aperture_id = aperture_id
+        self.start=start
+        self.end=end
+        self.lower_slider = GISlider("Aperture %s Start" % aperture_id, start, 1, 0, 5000,
+                                     obj=self, attr="start", handler=self.do_update)
+        self.upper_slider = GISlider("Aperture %s End" % aperture_id, end, 1, 0, 5000,
+                                     obj=self, attr="end", handler=self.do_update)
+
+        self.component = Column(self.lower_slider.component, self.upper_slider.component)
+
+    def do_update(self):
+        if self.start > self.end:
+            self.model.adjust_aperture(self.aperture_id, self.end, self.start)
+        else:
+            self.model.adjust_aperture(self.aperture_id, self.start, self.end)
 
 
 class GIApertureView(object):
@@ -1038,8 +1059,11 @@ class GIApertureView(object):
             Plot for displaying the bands
         """
         self.aps = dict()
+        self.ap_sliders = dict()
 
         self.gifig = gifig
+        self.controls = Column()
+        self.model = model
         model.add_listener(self)
 
     def handle_aperture(self, aperture_id, start, end):
@@ -1065,6 +1089,9 @@ class GIApertureView(object):
         else:
             ap = GISingleApertureView(self.gifig, aperture_id, start, end)
             self.aps[aperture_id] = ap
+            slider = GIApertureSliders(self.model, aperture_id, start, end)
+            self.ap_sliders[aperture_id] = slider
+            self.controls.children.append(slider.component)
 
     def delete_aperture(self, aperture_id):
         """
@@ -1082,3 +1109,4 @@ class GIApertureView(object):
         if aperture_id in self.aps:
             ap = self.aps[aperture_id]
             ap.delete()
+            self.controls.children.remove(self.ap_sliders[aperture_id].component)
