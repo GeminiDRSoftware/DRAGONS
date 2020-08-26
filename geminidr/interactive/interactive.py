@@ -87,7 +87,8 @@ class GISlider(object):
     This is a slider widget that also allows for text input.
     """
 
-    def __init__(self, title, value, step, min_value, max_value, obj=None, attr=None, handler=None):
+    def __init__(self, title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
+                 throttled=False):
         """
         Make a slider widget to use in the bokeh interface.
 
@@ -113,6 +114,8 @@ class GISlider(object):
             Name of attribute in obj to be set with the new value
         handler : method
             Function to call after setting the attribute
+        throttled : bool
+            Set to `True` to limit handler calls to when the slider is released (default False)
 
         Returns
         -------
@@ -151,12 +154,23 @@ class GISlider(object):
                 text_input.value = str(new)
 
         def handle_value(attr, old, new):
+            if isinstance(new, str):
+                new = float(new)
             if self.obj and self.attr:
                 self.obj.__setattr__(self.attr, new)
             self.handler()
 
-        slider.on_change("value", update_text_input, handle_value)
-        text_input.on_change("value", update_slider)
+        if throttled:
+            # Since here the text_input calls handle_value, we don't
+            # have to call it from the slider as it will happen as
+            # a side-effect of update_text_input
+            slider.on_change("value_throttled", update_text_input)
+            text_input.on_change("value", update_slider, handle_value)
+        else:
+            slider.on_change("value", update_text_input, handle_value)
+            # since slider is listening to value, this next line will cause the slider
+            # to call the handle_value method and we don't need to do so explicitly
+            text_input.on_change("value", update_slider)
         self.component = component
 
 
@@ -455,7 +469,7 @@ class GIFigure(object):
                  plot_width=600, plot_height=500,
                  x_axis_label='X', y_axis_label='Y',
                  tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                 band_model=None, aperture_model=None):
+                 band_model=None, aperture_model=None, x_range=None, y_range=None):
 
         # This wrapper around figure provides somewhat limited value, but for now I think it is
         # worth it.  It primarily does three things:
@@ -465,7 +479,8 @@ class GIFigure(object):
         #  * wraps any bugfix hackery we need to do so it always happens and we don't have to remember it everywhere
 
         self.figure = figure(plot_width=plot_width, plot_height=plot_height, title=title, x_axis_label=x_axis_label,
-                             y_axis_label=y_axis_label, tools=tools, output_backend="webgl")
+                             y_axis_label=y_axis_label, tools=tools, output_backend="webgl", x_range=x_range,
+                             y_range=y_range)
 
         # If we have bands or apertures to show, show them
         if band_model:
@@ -637,6 +652,20 @@ class GILine:
         """
         x, y = _dequantity(x_coords, y_coords)
         self.line_source.data = {'x': x, 'y': y}
+
+
+class GIPatch:
+    def __init__(self, gifig, x_coords=[], y_coords=[], color="blue"):
+        if x_coords is None:
+            x_coords = []
+        if y_coords is None:
+            y_coords = []
+        self.patch_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
+        self.patch = gifig.figure.patch(x='x', y='y', source=self.patch_source, color=color)
+
+    def update_coords(self, x_coords, y_coords):
+        x, y = _dequantity(x_coords, y_coords)
+        self.patch_source.data = {'x': x, 'y': y}
 
 
 class GIBandListener(ABC):

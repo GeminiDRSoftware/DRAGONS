@@ -47,6 +47,9 @@ from recipe_system.utils.decorators import parameter_override
 from . import parameters_spect
 
 import matplotlib
+
+from ..interactive.extractspectra import interactive_extract_spectra
+
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
 # ------------------------------------------------------------------------------
@@ -1302,6 +1305,8 @@ class Spect(PrimitivesBASE):
         grow : float
             Avoidance region around each source aperture if a sky aperture
             is required. Default: 10.
+        interactive: bool
+            Perform extraction interactively
         debug: bool
             draw apertures on image display window?
 
@@ -1318,6 +1323,7 @@ class Spect(PrimitivesBASE):
         width = params["width"]
         grow = params["grow"]
         debug = params["debug"]
+        interactive = params["interactive"]
 
         colors = ("green", "blue", "red", "yellow", "cyan", "magenta")
         offset_step = 2
@@ -1386,8 +1392,11 @@ class Spect(PrimitivesBASE):
                     log.stdinfo(f"    Extracting spectrum from aperture {apnum}")
                     self.viewer.width = 2
                     self.viewer.color = colors[(apnum-1) % len(colors)]
-                    ndd_spec = aperture.extract(ext, width=width,
-                                                method=method, viewer=self.viewer if debug else None)
+                    if interactive:
+                        ndd_spec = interactive_extract_spectra(apnum, aperture, ext, method=method, dispaxis=dispaxis)
+                    else:
+                        ndd_spec = aperture.extract(ext, width=width,
+                                                    method=method, viewer=self.viewer if debug else None)
 
                     # This whole (rather large) section is an attempt to ensure
                     # that sky apertures don't overlap with source apertures

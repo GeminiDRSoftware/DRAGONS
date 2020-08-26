@@ -97,7 +97,8 @@ class extract1DSpectraConfig(config.Config):
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
-    debug = config.Field("Draw extraction apertures on image display?", bool, False)
+    interactive = config.Field("Perform extraction interactively", bool, False)
+    debug = config.Field("Draw extraction apertures on image display? (not used with interactive)", bool, False)
 
 
 def check_section(value):
