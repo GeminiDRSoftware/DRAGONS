@@ -2,7 +2,7 @@
 """
 Tests for the p.addOIWFStoDQ primitive.
 """
-
+import logging
 import pytest
 import re
 import astrodata
@@ -13,6 +13,7 @@ from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.utils import logutils
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("filename", ["N20190102S0162.fits"])
 def test_oiwfs_not_used_in_observation(caplog, filename):
     """
@@ -23,7 +24,7 @@ def test_oiwfs_not_used_in_observation(caplog, filename):
     caplog : fixture
     filename : str
     """
-    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
+    caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
@@ -31,9 +32,11 @@ def test_oiwfs_not_used_in_observation(caplog, filename):
     p.addOIWFSToDQ()
 
     print(caplog.records)
+    assert len(caplog.records) > 0
     assert any("OIWFS not used for image" in r.message for r in caplog.records)
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
 def test_warn_if_dq_does_not_exist(caplog, filename):
     """
@@ -45,17 +48,18 @@ def test_warn_if_dq_does_not_exist(caplog, filename):
     caplog : fixture
     filename : str
     """
-    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
+    caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
     p = GMOSImage([ad])
     p.addOIWFSToDQ()
 
-    print(caplog)
+    assert len(caplog.records) > 0
     assert any("No DQ plane for" in r.message for r in caplog.records)
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("filename, x0, y0, ext_num",
                          [("S20190105S0168.fits", 130, 483, 9)])
 def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
@@ -68,7 +72,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
     caplog : fixture
     filename : str
     """
-    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
+    caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
@@ -78,7 +82,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
     p.addOIWFSToDQ()
 
     # plot(p.streams['main'][0])
-    print(caplog.records)
+    assert len(caplog.records) > 0
     assert any("Guide star location found at" in r.message for r in caplog.records)
 
     # Some kind of regression test
@@ -95,6 +99,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
             assert n == ext_num
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
 def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     """
@@ -106,7 +111,7 @@ def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     caplog : fixture
     filename : str
     """
-    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
+    caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
@@ -123,6 +128,7 @@ def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
                in r.message for r in caplog.records)
 
 
+# -- Helper functions --------------------------------------------------------
 def plot(ad):
     """
     Displays the tiled arrays with the DQ mask for analysing the data.
@@ -159,13 +165,5 @@ def plot(ad):
     plt.show()
 
 
-def create_inputs():
-    pass
-
-
 if __name__ == '__main__':
-    from sys import argv
-    if '--create-inputs' in argv:
-        create_inputs()
-    else:
-        pytest.main()
+    pytest.main()
