@@ -64,7 +64,7 @@ def create_inputs_recipe():
     }
 
     path = pathlib.Path('dragons_test_inputs')
-    path = path / "geminidr" / "gmos" / "test_gmos_spect_ls_cosmics" / "inputs"
+    path = path / "geminidr" / "gmos" / "spect" / "test_cosmics" / "inputs"
     path.mkdir(exist_ok=True, parents=True)
     os.chdir(path)
     print('Current working directory:\n    {!s}'.format(path.cwd()))
