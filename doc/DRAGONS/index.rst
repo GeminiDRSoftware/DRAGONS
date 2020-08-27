@@ -29,7 +29,7 @@ Tutorials - Reducing data with DRAGONS
 DRAGONS Manuals
 ---------------
 
-* `AstroData Cheat Sheet <http://astrodata-cheat-sheet.readthedocs.io/en/vrelease-2.1.x/>`_      :small:`(Document ID: PIPE-USER-105_AstrodataCheatSheet)`
+* `AstroData Cheat Sheet <http://astrodata-cheat-sheet.readthedocs.io/en/release-2.1.x/>`_      :small:`(Document ID: PIPE-USER-105_AstrodataCheatSheet)`
 * `Astrodata User Manual <http://astrodata-user-manual.readthedocs.io/en/release-2.1.x/>`_      :small:`(Document ID: PIPE-USER-106_AstrodataUserManual)`
 * `Astrodata Programmer Manual <http://astrodata-programmer-manual.readthedocs.io/en/release-2.1.x/>`_    :small:`(Document ID: PIPE-USER-104_AstrodataProgManual)`
 * `Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-2.1.x/>`_   :small:`(Document ID: PIPE-USER-108_RSProgManual)`
