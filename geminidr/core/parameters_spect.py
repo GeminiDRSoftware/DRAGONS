@@ -213,36 +213,6 @@ class flagCosmicRaysConfig(config.Config):
         optional=True,
         default=5.0,
     )
-    pssl = config.Field(
-        doc="Previously subtracted sky level in ADU. We always need to work "
-        "in electrons for cosmic ray detection, so we need to know the sky "
-        "level that has been subtracted so we can add it back in.",
-        dtype=float,
-        optional=True,
-        default=0.0,
-    )
-    # gain = config.Field(
-    #     doc="Gain of the image (electrons / ADU). We always need to work in "
-    #     "electrons for cosmic ray detection.",
-    #     dtype=float,
-    #     optional=True,
-    #     default=1.0,
-    # )
-    # readnoise = config.Field(
-    #     doc="Read noise of the image (electrons). Used to generate the noise "
-    #     "model of the image.",
-    #     dtype=float,
-    #     optional=True,
-    #     default=6.5,
-    # )
-    # satlevel = config.Field(
-    #     doc="Saturation of level of the image (electrons). This value is "
-    #     "used to detect saturated stars and pixels at or above this level "
-    #     "are added to the mask.",
-    #     dtype=float,
-    #     optional=True,
-    #     default=65536.0,
-    # )
     niter = config.Field(
         doc="Number of iterations of the LA Cosmic algorithm to perform",
         dtype=int,
@@ -309,16 +279,6 @@ class flagCosmicRaysConfig(config.Config):
         optional=True,
         default=7,
     )
-    # ndarray is not supported as dtype, and anyway it seems unprobable
-    # that we want to pass a kernel array?
-    # psfk = config.Field(
-    #     doc="PSF kernel array to use for the fine structure image if "
-    #     "fsmode == 'convolve'. If None and fsmode == 'convolve', we "
-    #     "calculate the psf kernel using 'psfmodel'.",
-    #     dtype=np.ndarray,
-    #     optional=True,
-    #     default=7,
-    # )
     psfbeta = config.Field(
         doc="Moffat beta parameter. Only used if psfmodel=='moffat'.",
         dtype=float,

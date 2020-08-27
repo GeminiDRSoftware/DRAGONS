@@ -15,7 +15,6 @@ from itertools import product as cart_product
 
 import matplotlib
 import numpy as np
-from astroscrappy import detect_cosmics
 from astropy import units as u
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.registry import IORegistryError
@@ -1727,7 +1726,7 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             Suffix to be added to output files.
 
         x_order, y_order : int or None, optional
@@ -1813,6 +1812,8 @@ class Spect(PrimitivesBASE):
             Enable plots for debugging.
 
         """
+        from astroscrappy import detect_cosmics
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
