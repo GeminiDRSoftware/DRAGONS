@@ -9,6 +9,7 @@ import os
 import re
 import warnings
 from bisect import bisect
+from copy import copy
 from functools import reduce
 from importlib import import_module
 from itertools import product as cart_product
@@ -1870,8 +1871,8 @@ class Spect(PrimitivesBASE):
                 if ext.saturation_level():
                     kwargs['satlevel'] = ext.saturation_level()
 
-                crmask, _ = detect_cosmics(ext.data, inmask=mask,
-                                           bkg=objfit, **params, **kwargs)
+                crmask, _ = detect_cosmics(ext.data, inmask=mask, bkg=objfit,
+                                           **params, **kwargs)
 
                 if ext.mask is None:
                     ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
@@ -1879,7 +1880,7 @@ class Spect(PrimitivesBASE):
                     ext.mask[crmask] = DQ.cosmic_ray
 
                 if debug:
-                    plot_cosmics(ext.data, objfit, crmask)
+                    plot_cosmics(ext, objfit, crmask)
 
             ad.update_filename(suffix=suffix, strip=True)
 
@@ -3355,14 +3356,25 @@ def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
     return c0 - 2 * p * c1/(len_data - 1)
 
 
-def plot_cosmics(data, objfit, crmask):
+def plot_cosmics(ext, objfit, crmask):
     from astropy.visualization import (ZScaleInterval, imshow_norm)
     fig, axes = plt.subplots(4, 1, figsize=(15, 4*3), sharex=True, sharey=True)
-    imgs = (data, objfit, data - objfit, crmask)
+    imgs = (ext.data, objfit, ext.data - objfit, crmask)
     titles = ('data', 'bkg fit', 'residual', 'crmask')
+    mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
+
     for ax, data, title in zip(axes, imgs, titles):
-        interval = ZScaleInterval() if title != 'crmask' else None
-        imshow_norm(data, ax=ax, origin='lower', interval=interval,
-                    cmap='Greys_r' if title != 'crmask' else 'Greys')
+        if title != 'crmask':
+            cmap = 'Greys_r'
+            interval = ZScaleInterval()
+            data = np.ma.array(data, mask=mask)
+        else:
+            cmap = 'Greys'
+            interval = None
+
+        cmap = copy(plt.get_cmap(cmap))
+        cmap.set_bad('r')
+        imshow_norm(data, ax=ax, origin='lower', interval=interval, cmap=cmap)
         ax.set_title(title)
+
     plt.show()
