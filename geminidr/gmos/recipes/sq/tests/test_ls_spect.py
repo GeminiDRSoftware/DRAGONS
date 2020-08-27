@@ -28,7 +28,7 @@ datasets = {
     #     "flat": ["S20170103S0153.fits"],
     #     "sci": [f"S20170103S{i:04d}.fits" for i in (147, 148, 150, 151)],
     #     "std": [],
-    #     "user_pars": [],
+    #     "user_pars": [()],
     # }
 }
 
