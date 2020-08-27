@@ -1096,7 +1096,7 @@ class FitsProvider(DataProvider):
                     if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
                         wcs = None  # There's no need to create a WCS extension
 
-            hlst.append(new_imagehdu(ext.data, header))
+            hlst.append(new_imagehdu(ext.data, header, 'SCI'))
             if ext.uncertainty is not None:
                 hlst.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
             if ext.mask is not None:
