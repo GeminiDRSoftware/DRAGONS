@@ -28,6 +28,7 @@ def test_oiwfs_not_used_in_observation(caplog, filename):
     p = GMOSImage([ad])
     p.addOIWFSToDQ()
 
+    print(caplog.records)
     assert any("OIWFS not used for image" in r.message for r in caplog.records)
 
 
@@ -72,7 +73,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
     p.addOIWFSToDQ()
 
     # plot(p.streams['main'][0])
-
+    print(caplog.records)
     assert any("Guide star location found at" in r.message for r in caplog.records)
 
     # Some kind of regression test
@@ -89,7 +90,6 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
             assert n == ext_num
 
 
-@pytest.mark.skip("bquint - Investigate why this fails in Jenkins")
 @pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
 def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     """
@@ -110,7 +110,7 @@ def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     p.addOIWFSToDQ()
 
     # plot(p.streams['main'][0])
-
+    print(caplog.records)
     assert any("No good rows in" in r.message for r in caplog.records)
 
     assert any("Cannot distinguish probe region from sky for"
