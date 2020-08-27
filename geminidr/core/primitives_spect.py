@@ -1809,7 +1809,8 @@ class Spect(PrimitivesBASE):
             Print to the screen or not. Default: False.
 
         debug : bool
-            Enable plots for debugging.
+            Enable plots for debugging and store object and sky fits in the
+            ad objects.
 
         """
         from astroscrappy import detect_cosmics
@@ -1839,6 +1840,8 @@ class Spect(PrimitivesBASE):
                     objfit = fit_1D(ext.data, function='legendre',
                                     order=x_order, axis=dispaxis,
                                     lsigma=4.0, hsigma=3.0, iterations=3)
+                    if debug:
+                        ext.append(objfit.copy(), name='OBJFIT')
                 else:
                     objfit = np.zeros_like(ext.data)
 
@@ -1851,6 +1854,8 @@ class Spect(PrimitivesBASE):
                                     lsigma=4.0, hsigma=3.0, iterations=3)
                     # keep combined fits for later restoration
                     objfit += skyfit
+                    if debug:
+                        ext.append(skyfit, name='SKYFIT')
                     del skyfit, input_copy
 
                 if ext.mask is not None:
