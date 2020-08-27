@@ -1866,8 +1866,7 @@ class Spect(PrimitivesBASE):
                     kwargs['satlevel'] = ext.saturation_level()
 
                 crmask, _ = detect_cosmics(ext.data, inmask=mask,
-                                           # bkg=objfit, FIXME !
-                                           **params, **kwargs)
+                                           bkg=objfit, **params, **kwargs)
 
                 if ext.mask is None:
                     ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
