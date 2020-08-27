@@ -3,6 +3,7 @@ import pathlib
 
 import numpy as np
 import pytest
+from scipy.ndimage import binary_dilation
 
 import astrodata
 import gemini_instruments  # noqa
@@ -27,18 +28,28 @@ def test_cosmics(adinputs, caplog):
     np.random.seed(42)
     cr_x = np.random.randint(low=5, high=ext.shape[0] - 5, size=size)
     cr_y = np.random.randint(low=5, high=ext.shape[1] - 5, size=size)
-    cr_brightnesses = np.random.uniform(low=1000, high=5000, size=size)
+    # Don't add cosmics in masked regions
+    mask = binary_dilation(ext.mask > 0, iterations=3)
+    sel = ~mask[cr_x, cr_y]
+    cr_x = cr_x[sel]
+    cr_y = cr_y[sel]
+    cr_brightnesses = np.random.uniform(low=1000, high=5000, size=len(cr_x))
     ext.data[cr_x, cr_y] += cr_brightnesses
+    # Store mask of CR to help debugging
+    crmask = np.zeros(ext.shape, dtype=np.uint8)
+    crmask[cr_x, cr_y] = 1
+    ext.append(crmask, name='CRMASK')
 
     p = GMOSSpect(adinputs)
-    adout = p.flagCosmicRays()[0]
+    adout = p.flagCosmicRays(debug=True)[0]
+    p.writeOutputs()
     mask = adout[0].mask
     # check some pixels with real cosmics
-    for pix in [(497, 520), (138, 219), (420, 634), (297, 1871)]:
+    for pix in [(496, 520), (138, 219), (420, 634), (297, 1871)]:
         assert (mask[pix] & DQ.cosmic_ray) == DQ.cosmic_ray
-    # And check our fake cosmics. Since they are placed at random positions
-    # we may miss a few ones.
-    assert np.sum((mask & DQ.cosmic_ray)[cr_x, cr_y] != DQ.cosmic_ray) < 3
+
+    # And check our fake cosmics.
+    assert np.sum((mask & DQ.cosmic_ray)[cr_x, cr_y] != DQ.cosmic_ray) == 0
 
 
 @pytest.fixture(scope='function')
