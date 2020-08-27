@@ -1616,27 +1616,35 @@ class Spect(PrimitivesBASE):
                         profile = np.nanmean(masked_data, axis=1)
                 prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
 
-                # TODO: find_peaks might not be best considering we have no
-                #   idea whether sources will be extended or not
-                widths = np.arange(3, 20)
-                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                    variance=None, reject_bad=False,
-                                                    min_snr=3, min_frac=0.2)
-
-                if peaks_and_snrs.size == 0:
-                    log.warning("Found no sources")
-                    # Delete existing APERTURE table
-                    try:
-                        del ext.APERTURE
-                    except AttributeError:
-                        pass
-                    continue
-
                 if interactive:
-                    locations, all_limits = interactive_find_source_apertures(ext, profile, prof_mask, tracing,
+                    locations, all_limits = interactive_find_source_apertures(ext, profile, prof_mask,
                                                                               threshold, sizing_method,
-                                                                              peaks_and_snrs, max_apertures)
+                                                                              max_apertures)
+                    if locations is None or len(locations) == 0:
+                        log.warning("Found no sources")
+                        # Delete existing APERTURE table
+                        try:
+                            del ext.APERTURE
+                        except AttributeError:
+                            pass
+                        continue
                 else:
+                    # TODO: find_peaks might not be best considering we have no
+                    #   idea whether sources will be extended or not
+                    widths = np.arange(3, 20)
+                    peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
+                                                        variance=None, reject_bad=False,
+                                                        min_snr=3, min_frac=0.2)
+
+                    if peaks_and_snrs.size == 0:
+                        log.warning("Found no sources")
+                        # Delete existing APERTURE table
+                        try:
+                            del ext.APERTURE
+                        except AttributeError:
+                            pass
+                        continue
+
                     # Reverse-sort by SNR and return only the locations
                     locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
                                                 reverse=True)[:max_apertures]).T[0]

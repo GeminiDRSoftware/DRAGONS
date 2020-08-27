@@ -1,26 +1,24 @@
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Column, Div, Button
+from bokeh.models import Column, Div
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider, _dequantity, \
-    GIMaskedSigmadCoords, GIApertureModel, GIApertureView
-from gempy.library import astromodels
+from geminidr.interactive.interactive import GILine, GIFigure, GISlider, GIApertureModel, GIApertureView
+from gempy.library import astromodels, tracing
+from geminidr.gemini.lookups import DQ_definitions as DQ
 
 
 __all__ = ["interactive_find_source_apertures", ]
 
 
 class FindSourceAperturesModel:
-    def __init__(self, ext, profile, prof_mask, tracing, threshold, sizing_method, peaks_and_snrs, max_apertures):
+    def __init__(self, ext, profile, prof_mask, threshold, sizing_method, max_apertures):
 
         self.ext = ext
         self.profile = profile
         self.prof_mask = prof_mask
-        self.tracing = tracing
         self.threshold = threshold
         self.sizing_method = sizing_method
-        self.peaks_and_snrs = peaks_and_snrs
         self.max_apertures = max_apertures
 
         self.locations = None
@@ -48,11 +46,23 @@ class FindSourceAperturesModel:
         max_apertures = self.max_apertures
         if not isinstance(max_apertures, int):
             max_apertures = int(max_apertures)
-        # Reverse-sort by SNR and return only the locations
-        self.locations = np.array(sorted(self.peaks_and_snrs.T, key=lambda x: x[1],
-                                    reverse=True)[:max_apertures]).T[0]
-        self.all_limits = self.tracing.get_limits(np.nan_to_num(self.profile), self.prof_mask, peaks=self.locations,
-                                        threshold=self.threshold, method=self.sizing_method)
+
+        # TODO: find_peaks might not be best considering we have no
+        #   idea whether sources will be extended or not
+        widths = np.arange(3, 20)
+        peaks_and_snrs = tracing.find_peaks(self.profile, widths, mask=self.prof_mask & DQ.not_signal,
+                                            variance=None, reject_bad=False,
+                                            min_snr=3, min_frac=0.2)
+
+        if peaks_and_snrs.size == 0:
+            self.locations = []
+            self.all_limits = []
+        else:
+            # Reverse-sort by SNR and return only the locations
+            self.locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                        reverse=True)[:max_apertures]).T[0]
+            self.all_limits = tracing.get_limits(np.nan_to_num(self.profile), self.prof_mask, peaks=self.locations,
+                                            threshold=self.threshold, method=self.sizing_method)
         for l in self.listeners:
             l(self.locations, self.all_limits)
 
@@ -121,6 +131,9 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         max_apertures_slider = GISlider("Max Apertures", self.model.max_apertures, 1, 1, 20,
                                         self.model, "max_apertures", self.model.recalc_apertures,
                                         throttled=True)
+        threshold_slider = GISlider("Threshold", self.model.threshold, 1, 0, 1,
+                                    self.model, "threshold", self.model.recalc_apertures,
+                                    throttled=True)
 
         # Create a blank figure with labels
         self.p = GIFigure(plot_width=600, plot_height=500,
@@ -140,7 +153,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         # self.model.recalc_apertures()
 
         line = GILine(self.p, range(self.model.profile.shape[0]), self.model.profile, color="black")
-        controls = Column(max_apertures_slider.component, aperture_view.controls, self.submit_button)
+        controls = Column(max_apertures_slider.component, threshold_slider.component,
+                          aperture_view.controls, self.submit_button)
 
         self.details = Div(text="")
         self.model.recalc_apertures()
@@ -183,7 +197,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         return self.model.locations, self.model.all_limits
 
 
-def interactive_find_source_apertures(ext, profile, prof_mask, tracing, threshold, sizing_method, peaks_and_snrs, max_apertures):
+def interactive_find_source_apertures(ext, profile, prof_mask, threshold, sizing_method, max_apertures):
     """
     Build a spline via user interaction.
 
@@ -227,8 +241,8 @@ def interactive_find_source_apertures(ext, profile, prof_mask, tracing, threshol
     """
     if max_apertures is None:
         max_apertures = 50
-    model = FindSourceAperturesModel(ext, profile, prof_mask, tracing, threshold, sizing_method,
-                                     peaks_and_snrs, max_apertures)
+    model = FindSourceAperturesModel(ext, profile, prof_mask, threshold, sizing_method,
+                                     max_apertures)
     fsav = FindSourceAperturesVisualizer(model)
     server.set_visualizer(fsav)
 

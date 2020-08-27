@@ -102,7 +102,7 @@ class GISlider(object):
             Title for the slider
         value : int
             Value to initially set
-        step : int
+        step : float
             Step size
         min_value : int
             Minimum slider value, or None defaults to min(value,0)
@@ -134,6 +134,9 @@ class GISlider(object):
         text_input.width = 64
         text_input.value = str(value)
         component = row(slider, text_input)
+
+        self.slider = slider
+        self.text_input = text_input
 
         def update_slider(attr, old, new):
             if old != new:
@@ -172,6 +175,14 @@ class GISlider(object):
             # to call the handle_value method and we don't need to do so explicitly
             text_input.on_change("value", update_slider)
         self.component = component
+
+    def enable(self):
+        self.slider.disabled = False
+        self.text_input.disabled = False
+
+    def disable(self):
+        self.slider.disabled = True
+        self.text_input.disabled = True
 
 
 class GICoordsSource:
@@ -1046,14 +1057,29 @@ class GIApertureSliders(object):
     def __init__(self, model, aperture_id, start, end):
         self.model = model
         self.aperture_id = aperture_id
-        self.start=start
-        self.end=end
-        self.lower_slider = GISlider("Aperture %s Start" % aperture_id, start, 1, 0, 5000,
+        self.start = start
+        self.end = end
+
+        self.lower_slider = GISlider("Aperture %s Start" % aperture_id, start, 0.01, 0, 5000,
                                      obj=self, attr="start", handler=self.do_update)
-        self.upper_slider = GISlider("Aperture %s End" % aperture_id, end, 1, 0, 5000,
+        self.upper_slider = GISlider("Aperture %s End" % aperture_id, end, 0.01, 0, 5000,
                                      obj=self, attr="end", handler=self.do_update)
 
         self.component = Column(self.lower_slider.component, self.upper_slider.component)
+
+    def update_viewport(self, start, end):
+        if self.lower_slider.slider.value < start or self.lower_slider.slider.value > end:
+            self.lower_slider.disable()
+        else:
+            self.lower_slider.enable()
+            self.lower_slider.slider.start = start
+            self.lower_slider.slider.end = end
+        if self.upper_slider.slider.value < start or self.upper_slider.slider.value > end:
+            self.upper_slider.disable()
+        else:
+            self.upper_slider.enable()
+            self.upper_slider.slider.start = start
+            self.upper_slider.slider.end = end
 
     def do_update(self):
         if self.start > self.end:
@@ -1087,6 +1113,21 @@ class GIApertureView(object):
         self.controls = Column()
         self.model = model
         model.add_listener(self)
+
+        self.view_start = gifig.figure.x_range.start
+        self.view_end = gifig.figure.x_range.end
+
+        # listen here because ap sliders can come and go, and we don't have to
+        # convince the figure to release those references since it just ties to
+        # this top-level container
+        gifig.figure.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
+        gifig.figure.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
+
+    def update_viewport(self, start, end):
+        self.view_start = start
+        self.view_end = end
+        for ap_slider in self.ap_sliders.values():
+            ap_slider.update_viewport(start, end)
 
     def handle_aperture(self, aperture_id, start, end):
         """
