@@ -72,12 +72,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             format(ad.filename))
                 continue
 
+            ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
-                         for detsec in ad.detector_section())
-
-            has_48rows = all(detsec.y2 == 4224
-                             for detsec in ad.detector_section()) and \
-                             'Hamamatsu' in ad.detector_name(pretty=True)
+                             for detsec in ad_detsec)
+            has_48rows = (all(detsec.y2 == 4224 for detsec in ad_detsec) and
+                          'Hamamatsu' in ad.detector_name(pretty=True))
 
             if illum:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))

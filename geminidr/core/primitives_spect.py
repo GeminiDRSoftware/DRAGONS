@@ -1064,7 +1064,7 @@ class Spect(PrimitivesBASE):
                 # Compute all the different types of weightings so we can
                 # change between them as needs require
                 weights = {'none': np.ones((len(peaks),)),
-                           'natural': peak_snrs}
+                           'natural': np.sqrt(peak_snrs)}
                 # The "relative" weights compares each line strength to
                 # those of the lines close to it
                 tree = spatial.cKDTree(np.array([peaks]).T)
@@ -1110,7 +1110,9 @@ class Spect(PrimitivesBASE):
                                                     domain=[0, len(data) - 1])
                         fit_it = fitting.LinearLSQFitter()
                         matched = np.where(matches > -1)
-                        m_final = fit_it(m_init, peaks[matched], arc_lines[matches[matched]])
+                        matched_peaks = peaks[matched]
+                        matched_arc_lines = arc_lines[matches[matched]]
+                        m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
 
                         # We're close to the correct solution, perform a KDFit
                         m_init = m_final.copy()
@@ -1160,7 +1162,7 @@ class Spect(PrimitivesBASE):
 
                 if not acceptable_fit:
                     log.warning(f"No acceptable wavelength solution found for {ad.filename}")
-                    scores = [m.rms_output / (len(m) - order - 1) for m in all_fits]
+                    scores = [m.rms_output / max(len(m) - order - 1, np.finfo(float).eps) for m in all_fits]
                     m = all_fits[np.argmin(scores)]
 
                 if debug:
