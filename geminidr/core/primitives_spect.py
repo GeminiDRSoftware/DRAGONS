@@ -1836,9 +1836,15 @@ class Spect(PrimitivesBASE):
                 y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
                            if y_order_in is None else y_order_in)
 
+                # FIXME: 2D weights doesn't work with fit_1D
+                # weights = None
+                # if ext.mask is not None:
+                #     weights = (ext.mask == 0).astype(int)
+
                 # Fit the object spectrum:
                 if x_order > 0:
                     objfit = fit_1D(ext.data, function='legendre',
+                                    # weights=weights,
                                     order=x_order, axis=dispaxis,
                                     lsigma=4.0, hsigma=3.0, iterations=3)
                     if debug:
@@ -1851,6 +1857,7 @@ class Spect(PrimitivesBASE):
                 # Fit sky lines:
                 if y_order > 0:
                     skyfit = fit_1D(input_copy, function='legendre',
+                                    # weights=weights,
                                     order=y_order, axis=1 - dispaxis,
                                     lsigma=4.0, hsigma=3.0, iterations=3)
                     # keep combined fits for later restoration
