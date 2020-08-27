@@ -99,7 +99,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
             assert n == ext_num
 
 
-@pytest.skip("Test fails on Jenkins - Investigate why")
+@pytest.mark.skip("Test fails on Jenkins - Investigate why")
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("filename", ["N20190101S0051.fits"])
 def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
