@@ -35,7 +35,6 @@ associated_calibrations = {
 
 
 # -- Tests --------------------------------------------------------------------
-# ToDo - @bquint - Perform clean up after running tests
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
@@ -54,7 +53,6 @@ def test_processed_flat_has_median_around_one(processed_flat):
         np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
 
 
-# ToDo - @bquint - Perform clean up after running tests
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
@@ -73,7 +71,6 @@ def test_processed_flat_has_small_std(processed_flat):
         np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
-# ToDo - @bquint - Perform clean up after running tests
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
@@ -136,7 +133,8 @@ def processed_flat(change_working_dir, path_to_inputs, request):
         reduce.mode = 'ql'
         reduce.ucals = normalize_ucals(reduce.files, calibration_files)
         reduce.runr()
-        
+
+        # Clean up duplicated files
         shutil.rmtree('calibrations/')
 
         _processed_flat_filename = reduce.output_filenames.pop()
