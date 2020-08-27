@@ -1632,19 +1632,21 @@ class Spect(PrimitivesBASE):
                         pass
                     continue
 
-                # Reverse-sort by SNR and return only the locations
-                locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                            reverse=True)[:max_apertures]).T[0]
-                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
-
-                if np.isnan(profile[prof_mask==0]).any():
-                    log.warning("There are unmasked NaNs in the spatial profile")
-                all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
-                                                threshold=threshold, method=sizing_method)
-
                 if interactive:
-                    locations, all_limits = interactive_find_source_apertures(ext, locations, all_limits)
+                    locations, all_limits = interactive_find_source_apertures(ext, profile, prof_mask, tracing,
+                                                                              threshold, sizing_method,
+                                                                              peaks_and_snrs, max_apertures)
+                else:
+                    # Reverse-sort by SNR and return only the locations
+                    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                                reverse=True)[:max_apertures]).T[0]
+                    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+                    log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
+
+                    if np.isnan(profile[prof_mask==0]).any():
+                        log.warning("There are unmasked NaNs in the spatial profile")
+                    all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
+                                                    threshold=threshold, method=sizing_method)
 
                 all_model_dicts = []
                 for loc, limits in zip(locations, all_limits):

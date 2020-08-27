@@ -892,6 +892,13 @@ class GIApertureModel(object):
             listener.delete_aperture(aperture_id)
         self.spare_ids.append(aperture_id)
 
+    def clear_apertures(self):
+        for id in range(1, self.aperture_id):
+            if id not in self.spare_ids:
+                self.delete_aperture(id)
+        self.spare_ids.clear()
+        self.aperture_id=1
+
 
 class GISingleApertureView(object):
     def __init__(self, gifig, aperture_id, start, end):
@@ -946,11 +953,18 @@ class GISingleApertureView(object):
 
         """
         figure = gifig.figure
-        ymin = figure.y_range.start
-        ymax = figure.y_range.end
-        ymid = (ymax-ymin)*.8+ymin
-        ytop = ymid + 0.05*(ymax-ymin)
-        ybottom = ymid - 0.05*(ymax-ymin)
+        if figure.y_range.start is not None and figure.y_range.end is not None:
+            ymin = figure.y_range.start
+            ymax = figure.y_range.end
+            ymid = (ymax-ymin)*.8+ymin
+            ytop = ymid + 0.05*(ymax-ymin)
+            ybottom = ymid - 0.05*(ymax-ymin)
+        else:
+            ymin=0
+            ymax=0
+            ymid=0
+            ytop=0
+            ybottom=0
         self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
         figure.add_layout(self.box)
         self.label = Label(x=(start+end)/2-5, y=ymid, text="%s" % aperture_id)
@@ -980,15 +994,16 @@ class GISingleApertureView(object):
         Y axis.
 
         """
-        ymin = self.gifig.figure.y_range.start
-        ymax = self.gifig.figure.y_range.end
-        ymid = (ymax-ymin)*.8+ymin
-        ytop = ymid + 0.05*(ymax-ymin)
-        ybottom = ymid - 0.05*(ymax-ymin)
-        self.left_source.data = {'x': self.left_source.data['x'], 'y': [ybottom, ytop]}
-        self.right_source.data = {'x': self.right_source.data['x'], 'y': [ybottom, ytop]}
-        self.line_source.data = {'x':  self.line_source.data['x'], 'y': [ymid, ymid]}
-        self.label.y = ymid
+        if self.gifig.figure.y_range.start is not None and self.gifig.figure.y_range.end is not None:
+            ymin = self.gifig.figure.y_range.start
+            ymax = self.gifig.figure.y_range.end
+            ymid = (ymax-ymin)*.8+ymin
+            ytop = ymid + 0.05*(ymax-ymin)
+            ybottom = ymid - 0.05*(ymax-ymin)
+            self.left_source.data = {'x': self.left_source.data['x'], 'y': [ybottom, ytop]}
+            self.right_source.data = {'x': self.right_source.data['x'], 'y': [ybottom, ytop]}
+            self.line_source.data = {'x':  self.line_source.data['x'], 'y': [ymid, ymid]}
+            self.label.y = ymid
 
     def update(self, start, end):
         """
@@ -1018,6 +1033,13 @@ class GISingleApertureView(object):
         self.gifig.figure.renderers.remove(self.line)
         self.gifig.figure.renderers.remove(self.left)
         self.gifig.figure.renderers.remove(self.right)
+        # TODO removing causes problems, because bokeh, sigh
+        # TODO could create a list of disabled labels/boxes to reuse instead of making new ones
+        #  (if we have one to recycle)
+        self.label.text = ""
+        self.box.fill_alpha = 0.0
+        # self.gifig.figure.renderers.remove(self.label)
+        # self.gifig.figure.renderers.remove(self.box)
 
 
 class GIApertureSliders(object):
@@ -1083,7 +1105,7 @@ class GIApertureView(object):
             End of the aperture in x coordinates
 
         """
-        if aperture_id in self.aps:
+        if aperture_id in self.aps and self.aps[aperture_id] is not None:
             ap = self.aps[aperture_id]
             ap.update(start, end)
         else:
@@ -1106,7 +1128,8 @@ class GIApertureView(object):
         -------
 
         """
-        if aperture_id in self.aps:
+        if aperture_id in self.aps and self.aps[aperture_id] is not None:
             ap = self.aps[aperture_id]
             ap.delete()
             self.controls.children.remove(self.ap_sliders[aperture_id].component)
+            self.aps[aperture_id] = None
