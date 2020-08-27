@@ -1853,16 +1853,6 @@ class Spect(PrimitivesBASE):
                     objfit += skyfit
                     del skyfit, input_copy
 
-                if debug:
-                    fig, axes = plt.subplots(3, 1, figsize=(15, 8),
-                                             sharex=True, sharey=True)
-                    imgs = (ext.data, objfit, ext.data - objfit)
-                    titles = ('data', 'bkg fit', 'residual')
-                    for ax, data, title in zip(axes, imgs, titles):
-                        ax.imshow(data, origin='lower')
-                        ax.set_title(title)
-                    plt.show()
-
                 if ext.mask is not None:
                     mask = (ext.mask & bitmask) > 0
                 else:
@@ -1883,6 +1873,9 @@ class Spect(PrimitivesBASE):
                     ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
                 else:
                     ext.mask[crmask] = DQ.cosmic_ray
+
+                if debug:
+                    plot_cosmics(ext.data, objfit, crmask)
 
             ad.update_filename(suffix=suffix, strip=True)
 
@@ -3356,3 +3349,16 @@ def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
         fake_arc += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
     p = correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
     return c0 - 2 * p * c1/(len_data - 1)
+
+
+def plot_cosmics(data, objfit, crmask):
+    from astropy.visualization import (ZScaleInterval, imshow_norm)
+    fig, axes = plt.subplots(4, 1, figsize=(15, 4*3), sharex=True, sharey=True)
+    imgs = (data, objfit, data - objfit, crmask)
+    titles = ('data', 'bkg fit', 'residual', 'crmask')
+    for ax, data, title in zip(axes, imgs, titles):
+        interval = ZScaleInterval() if title != 'crmask' else None
+        imshow_norm(data, ax=ax, origin='lower', interval=interval,
+                    cmap='Greys_r' if title != 'crmask' else 'Greys')
+        ax.set_title(title)
+    plt.show()
