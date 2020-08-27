@@ -10,6 +10,7 @@ import gemini_instruments
 
 from astrodata.testing import download_from_archive
 from geminidr.gmos.primitives_gmos_image import GMOSImage
+from gempy.utils import logutils
 
 
 @pytest.mark.parametrize("filename", ["N20190102S0162.fits"])
@@ -22,6 +23,7 @@ def test_oiwfs_not_used_in_observation(caplog, filename):
     caplog : fixture
     filename : str
     """
+    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
@@ -43,12 +45,14 @@ def test_warn_if_dq_does_not_exist(caplog, filename):
     caplog : fixture
     filename : str
     """
+    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
     p = GMOSImage([ad])
     p.addOIWFSToDQ()
 
+    print(caplog)
     assert any("No DQ plane for" in r.message for r in caplog.records)
 
 
@@ -64,6 +68,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
     caplog : fixture
     filename : str
     """
+    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
@@ -101,6 +106,7 @@ def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     caplog : fixture
     filename : str
     """
+    logutils.config(mode='standard', file_name=filename.replace('.fits', '.log'))
     file_path = download_from_archive(filename)
     ad = astrodata.open(file_path)
 
