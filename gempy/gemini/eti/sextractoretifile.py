@@ -50,8 +50,11 @@ class SExtractorETIFile(ETIFile):
         hdulist = fits.HDUList()
 
         # By using the to_hdulist() method, we write the current gWCS
+        # TODO: to_hdulist() method writes entire parent AD object, not just
+        # the single slice we want
+        extver = self.ext.hdr['EXTVER']
         for hdu in self.ext.to_hdulist():
-            if hdu.header.get('EXTNAME') in ('SCI', 'DQ'):
+            if hdu.header.get('EXTNAME') in ('SCI', 'DQ') and hdu.header['EXTVER'] == extver:
                 hdulist.append(hdu)
 
         # Replace SCI with bitmasked data, and DQ as int16
