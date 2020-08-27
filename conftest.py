@@ -19,7 +19,7 @@ def pytest_addoption(parser):
             "--dragons-remote-data",
             action="store_true",
             default=False,
-            help="enable tests that use the cache_file_from_archive fixture"
+            help="Enable tests that use the download_from_archive function."
         )
         parser.addoption(
             "--do-plots",
