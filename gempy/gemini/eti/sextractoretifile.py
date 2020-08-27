@@ -32,12 +32,13 @@ class SExtractorETIFile(ETIFile):
             name=strip_fits(input.filename)+'_{}'.format(input.hdr['EXTVER']))
         # Replace bad pixels with median value of good data, so need to
         # copy the data plane in case we edit it
-        self.data = input.data.copy()
-        self.mask = input.mask
-        self.header = input.hdr
         if mask_dq_bits and self.mask is not None:
-            self.data[(self.mask & mask_dq_bits)>0] = np.median(
-                self.data[(self.mask & mask_dq_bits)==0])
+            self.data = input.data.copy()
+            self.data[(self.mask & mask_dq_bits) > 0] = np.median(
+                self.data[(self.mask & mask_dq_bits) == 0])
+        else:
+            self.data = input.data
+        self.ext = input
         self._disk_file = None
         self._catalog_file = None
 
@@ -47,19 +48,21 @@ class SExtractorETIFile(ETIFile):
         self._objmask_file = os.path.join(self.directory, PREFIX + self.name + '_obj' + SUFFIX)
         filename = os.path.join(self.directory, PREFIX + self.name + SUFFIX)
         hdulist = fits.HDUList()
-        hdulist.append(fits.ImageHDU(self.data,
-                                     header=self.header, name='SCI'))
-        self._sci_image = filename+'[0]'
-        if self.mask is not None:
-            hdulist.append(fits.ImageHDU(np.array(self.mask, dtype=np.int16),
-                                         header=self.header, name='DQ'))
-            self._dq_image = filename+'[1]'
+
+        # By using the to_hdulist() method, we write the current gWCS
+        for hdu in self.ext.to_hdulist():
+            if hdu.header.get('EXTNAME') in ('SCI', 'DQ'):
+                hdulist.append(hdu)
+
+        # Replace SCI with bitmasked data, and DQ as int16
+        hdulist[0].data = self.data
+        self._sci_image = filename + '[0]'
+        if len(hdulist) > 1:
+            hdulist[1].data = hdulist[1].data.astype(FLAGS_DTYPE)
+            self._dq_image = filename + '[1]'
         else:
             self._dq_image = None
-        #else:
-        #    # Need a dummy DQ array because .param file needs a FLAG_IMAGE
-        #    hdulist.append(fits.ImageHDU(np.zeros_like(self.data, dtype=np.int16),
-        #                                 header=self.header, name='DQ'))
+
         hdulist.writeto(filename, overwrite=True)
         self._disk_file = filename
 
