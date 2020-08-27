@@ -25,14 +25,17 @@ def reduceScience(p):
     p.flatCorrect()
     p.QECorrect()
     p.distortionCorrect()
-    p.writeOutputs()
     p.findSourceApertures()
     p.skyCorrectFromSlit()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
+    p.findSourceApertures()
     p.traceApertures()
+    p.storeProcessedScience()
     p.extract1DSpectra()
-    p.linearizeSpectra()
     p.fluxCalibrate()
-    p.writeOutputs()
+    p.linearizeSpectra()
     p.storeProcessedScience()
 
 
@@ -60,8 +63,10 @@ def reduceStandard(p):
     p.skyCorrectFromSlit()
     p.traceApertures()
     p.extract1DSpectra()
-    p.linearizeSpectra()  # TODO: needed?
+    p.resampleToCommonFrame()
+    p.stackFrames()
     p.calculateSensitivity()
+    #p.linearizeSpectra()  # TODO: needed?
     p.storeProcessedStandard()
     p.writeOutputs()
 

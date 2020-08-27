@@ -16,7 +16,8 @@ class addCalibrationConfig(config.Config):
                  "processed_dark": "processed DARK",
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
-                 "processed_standard": "processed standard"
+                 "processed_standard": "processed standard",
+                 "processed_slitillum": "processed slitillum",
                  }
         )
 
@@ -33,7 +34,8 @@ class getCalibrationConfig(config.Config):
                  "processed_dark": "processed DARK",
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
-                 "processed_standard": "processed standard"
+                 "processed_standard": "processed standard",
+                 "processed_slitillum": "processed slitillum",
                  },
         optional=False
     )
@@ -77,6 +79,10 @@ class getProcessedStandardConfig(config.Config):
     refresh = config.Field("Refresh existing calibration associations?", bool, True)
 
 
+class getProcessedSlitIllumConfig(config.Config):
+    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+
+
 class getMDFConfig(config.Config):
     pass
 
@@ -94,7 +100,8 @@ class storeCalibrationConfig(config.Config):
                  "sq": "science quality",
                  "qa": "QA",
                  "ql": "quick look",
-                 "processed_standard": "processed standard"
+                 "processed_standard": "processed standard",
+                 "processed_slitillum": "processed slitillum",
                  },
         optional=False
     )
@@ -134,3 +141,7 @@ class storeProcessedScienceConfig(config.Config):
 
 class storeProcessedStandardConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_standard", optional=True)
+
+
+class storeProcessedSlitIllumConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitIllum", optional=True)

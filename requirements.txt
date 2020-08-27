@@ -4,6 +4,7 @@ astroquery
 cython
 future
 ginga
+gwcs>=0.14
 imexam
 matplotlib
 numpy
@@ -13,5 +14,3 @@ pytest
 scipy
 specutils
 sqlalchemy
--e git+https://github.com/spacetelescope/gwcs.git#egg=gwcs
-

@@ -12,6 +12,28 @@ import astrodata
 from astrodata.testing import assert_same_class, download_from_archive
 
 
+def test_change_working_dir(change_working_dir):
+    """
+    Test the change_working_dir fixture.
+
+    Parameters
+    ----------
+    change_working_dir : fixture
+        Custom DRAGONS fixture.
+    """
+    assert "astrodata/test_testing/outputs" not in os.getcwd()
+
+    with change_working_dir():
+        assert "astrodata/test_testing/outputs" in os.getcwd()
+
+    assert "astrodata/test_testing/outputs" not in os.getcwd()
+
+    with change_working_dir("my_sub_dir"):
+        assert "astrodata/test_testing/outputs/my_sub_dir" in os.getcwd()
+
+    assert "astrodata/test_testing/outputs" not in os.getcwd()
+
+
 def test_download_from_archive_raises_ValueError_if_envvar_does_not_exists():
     with pytest.raises(ValueError):
         download_from_archive('N20180304S0126.fits', env_var='')

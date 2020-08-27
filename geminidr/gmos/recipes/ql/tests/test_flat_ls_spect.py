@@ -34,6 +34,8 @@ associated_calibrations = {
 
 
 # -- Tests --------------------------------------------------------------------
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_median_around_one(processed_flat):
@@ -50,6 +52,8 @@ def test_processed_flat_has_median_around_one(processed_flat):
         np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
 
 
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_small_std(processed_flat):
@@ -66,6 +70,8 @@ def test_processed_flat_has_small_std(processed_flat):
         np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
+# ToDo - @bquint - Perform clean up after running tests
+@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_regression_processed_flat(processed_flat, ref_ad_factory):
@@ -144,7 +150,7 @@ def create_master_bias_for_tests():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/recipes/ql/test_make_processed_flat/"
+    module_path = f"geminidr/gmos/recipes/ql/{__file__.split('.')[0]}/"
     path = os.path.join(root_path, module_path, "inputs/")
 
     os.makedirs(path, exist_ok=True)

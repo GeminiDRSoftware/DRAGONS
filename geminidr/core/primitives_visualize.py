@@ -537,6 +537,10 @@ class Visualize(PrimitivesBASE):
             group_id = ad.group_id().split('_[')[0]
             group_id += ad.group_id().split(']')[1]
 
+            offset = (ad.telescope_y_offset() if ad.dispersion_axis()[0] == 1
+                      else ad.telescope_x_offset())
+            offset /= ad.pixel_scale()
+
             spec_pack = {
                 "apertures": [],
                 "data_label": ad.data_label(),
@@ -546,6 +550,7 @@ class Visualize(PrimitivesBASE):
                 "stack_size": stack_size,
                 "metadata": [],
                 "msgtype": "specjson",
+                "offset": offset,
                 "pixel_scale": ad.pixel_scale(),
                 "program_id": ad.program_id(),
                 "timestamp": timestamp,
@@ -582,6 +587,8 @@ class Visualize(PrimitivesBASE):
                     [float(w), float(s)]
                     for w, s in zip(wavelength, stddev)]
 
+                _units = ext.hdr["BUNIT"]
+
                 center = np.round(ext.hdr["XTRACTED"])
                 lower = np.round(ext.hdr["XTRACTLO"])
                 upper = np.round(ext.hdr["XTRACTHI"])
@@ -592,7 +599,9 @@ class Visualize(PrimitivesBASE):
                     "upper": upper,
                     "dispersion": w_dispersion,
                     "wavelength_units": w_units,
+                    "id": np.round(center + offset),
                     "intensity": _intensity,
+                    "intensity_units": _units,
                     "stddev": _stddev,
                 }
 

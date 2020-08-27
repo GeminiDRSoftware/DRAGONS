@@ -5,6 +5,96 @@ body {
   padding: 10px;
 }
 
+button.settings {
+  border: 0px;
+  background-color: inherit;
+  transition: all .2s linear;
+}
+
+button.settings img {
+  width: 100%;
+  height: 100%;
+}
+
+button.settings:hover {
+  border: 0px;
+  background-color: #d9d9d9;
+}
+
+button.settings:active,
+button.settings:focus {
+  border: 0px;
+  background-color: #c1c1c1;
+}
+
+div.settings {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+  transition: all .5s linear;
+  border-radius: 5px;
+  cursor: default;
+}
+
+div.settings div.settings-content {
+    background-color: #fefefe;
+    border: 1px solid #888;
+    border-radius: 10px;
+    box-shadow: 0px 0px 30px rgba(0,0,0,0.4);
+    margin: auto;
+    padding: 10px 20px 20px 20px;
+    width: 50%;
+}
+
+div.settings button {
+    border: 1px solid #d9d9d9;
+    border-radius: 5px;
+    width: 100px;
+    padding: 5px 10px 5px 10px;
+}
+
+div.settings button:hover {
+    cursor: pointer;
+    background-color: #d9d9d9;
+    border: 1px solid #c1c1c1;
+}
+
+div.settings button:focus {
+    cursor: pointer;
+    background-color: #c1c1c1;
+}
+
+div.settings form {
+    padding-top: 5px;
+    padding-bottom: 10px;
+}
+
+div.settings h3 {
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+div.settings input {
+    border: 1px solid gray;
+    border-radius: 5px;
+    padding: 3px 2px;
+    text-align: right;
+    width: 50px;
+}
+
+img.settings {
+    width: 100%;
+    height: 100%;
+}
+
 .apertureInfo {
   padding: 5px 7px;
 }
@@ -18,6 +108,20 @@ body {
 
 .app-info-field:hover {
   background-color: #ddd;
+}
+
+.close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .countdown {
@@ -53,9 +157,27 @@ body {
   display: table-cell;
 }
 
+@keyframes flash-animation {
+    from { background: #007FFF }
+    to   { background: #ddd; }
+}
+
+@-webkit-keyframes flash-animation {
+    from { background: #007FFF}
+    to   { background: #ddd; }
+}
+
+.flash {
+  -webkit-animation-name: flash-animation;
+  -webkit-animation-duration: 1s;
+  animation-name: flash-animation;
+  animation-duration: 1s;
+}
+
 .footer {
-  margin-top: 5px;
   color: #999;
+  font-size: 10pt;
+  margin-top: 5px;
 }
 
 .header {
@@ -68,15 +190,21 @@ body {
   border-radius: 5px;
   padding: 5px 15px;
   width: inherit;
+
 }
 
 .info.single {
-  margin-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .info.stack {
-  margin-bottom: 5px;
-  margin-top: 5px;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.info p.d-table-cell {
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 .jqplot-grid-canvas {
@@ -134,6 +262,14 @@ body {
   width: inherit;
 }
 
+.ui-tooltip {
+    padding: 5px 20px;
+    border: none;
+    border-radius: 20px;
+    font: bold 14px "Helvetica Neue", Sans-Serif;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+  }
+
 .w-100 {
   width: 100%;
 }
@@ -143,6 +279,20 @@ body {
   height: 100%;
 }
 
+#flashOnRefresh {
+    width: 15px;
+    height: 15px;
+    margin: 0px;
+}
+
 #specViewer {
   transition: all .5s linear;
+}
+
+#specViewer ul.ui-tabs-nav li.ui-tabs-tab.ui-tabs-active a.ui-tabs-anchor {
+    cursor:default;
+}
+
+#specViewer ul.ui-tabs-nav li.ui-tabs-tab {
+    cursor:pointer;
 }

@@ -31,6 +31,7 @@ from astropy.modeling import models, Model
 from astropy.modeling.core import _model_oper, fix_inputs
 from astropy import table, units as u
 from astropy.wcs import WCS
+from astropy.io.fits import Header
 
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -43,6 +44,7 @@ import multiprocessing as multi
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 import astrodata
+from astrodata import wcs as adwcs
 
 from .astromodels import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
@@ -176,8 +178,8 @@ class Block:
     @property
     def wcs(self):
         """WCS object"""
-        if self.corners[0] != (0, 0):
-            raise ValueError("First element does not start at (0, 0)")
+        if not all (c == 0 for c in self.corners[0]):
+            raise ValueError("First element does not start at origin")
         return self._elements[0].wcs
 
     def _return_array(self, elements):
@@ -527,7 +529,7 @@ class Transform:
             else:
                 self._models[i:i] = sequence
         # Update affinity based on new model (leave existing stuff alone)
-        self._affine &= astrodata.wcs.model_is_affine(model)
+        self._affine &= adwcs.model_is_affine(model)
 
     @staticmethod
     def split_compound_model(tree, ndim):
@@ -614,7 +616,7 @@ class Transform:
         """
         Test for affinity.
         """
-        return np.logical_and.reduce([astrodata.wcs.model_is_affine(m)
+        return np.logical_and.reduce([adwcs.model_is_affine(m)
                                       for m in self._models])
 
     @property
@@ -647,7 +649,7 @@ class Transform:
             except TypeError:  # self.ndim is None
                 raise TypeError("Cannot compute affine matrices without a "
                                 "dimensionality")
-        return astrodata.wcs.calculate_affine_matrices(self, shape)
+        return adwcs.calculate_affine_matrices(self, shape)
 
     def add_bounds(self, param, range):
         """Add bounds to a parameter"""
@@ -1901,7 +1903,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
     # Create the blocks (individual physical detectors)
     if is_single:
-        blocks = Block(ad)
+        blocks = [Block(ad)]
     else:
         array_info = gt.array_information(ad)
         blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
@@ -1983,21 +1985,28 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     header = ad_out[0].hdr
     keywords = {sec: ad._keyword_for('{}_section'.format(sec))
                 for sec in ('array', 'data', 'detector')}
+
     # Data section probably has meaning even if ndim!=2
-    ad_out.hdr[keywords['data']] = '['+','.join('1:{}'.format(length)
-                                for length in ad_out[0].shape[::-1])+']'
+    ad_out.hdr[keywords['data']] = \
+        '['+','.join('1:{}'.format(length)
+                     for length in ad_out[0].shape[::-1])+']'
+
     # These descriptor returns are unclear in non-2D data
     if ndim == 2:
+
         # If detector_section returned something, set an appropriate value
         all_detsec = np.array([ext.detector_section() for ext in ad]).T
-        ad_out.hdr[keywords['detector']] = '['+','.join('{}:{}'.format(min(c1)+1, max(c2))
-                            for c1, c2 in zip(all_detsec[::2], all_detsec[1::2]))+']'
+        ad_out.hdr[keywords['detector']] = \
+            '['+','.join('{}:{}'.format(min(c1)+1, max(c2))
+                         for c1, c2 in zip(all_detsec[::2], all_detsec[1::2]))+']'
+
         # array_section only has meaning now if the inputs were from a
         # single physical array
         if len(blocks) == 1:
             all_arrsec = np.array([ext.array_section() for ext in ad]).T
-            ad_out.hdr[keywords['array']] = '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
-                                for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
+            ad_out.hdr[keywords['array']] = \
+                '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
+                               for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
         else:
             del ad_out.hdr[keywords['array']]
 
@@ -2059,6 +2068,19 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             objcat = table.vstack(tables, metadata_conflicts='silent')
             objcat['NUMBER'] = np.arange(len(objcat)) + 1
             setattr(ad_out[0], table_name, cat_table)
+
+    # We may need to remake the gWCS object. The issue here is with 2D spectra,
+    # where the resetting of the dispersion direction is done before the
+    # complete model and so isn't within the "WAVE" submodel. Converting to
+    # a FITS header and back results in a reconstructed model where "WAVE" is
+    # a distinct submodel.
+    if ad_out[0].wcs is not None:
+        wcs_dict = adwcs.gwcs_to_fits(ad_out[0].nddata,
+                                      hdr=ad_out.phu)
+        if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
+            hdr = ad_out[0].hdr.copy()
+            hdr.update(wcs_dict)
+            ad_out[0].wcs = adwcs.fitswcs_to_gwcs(hdr)
 
     return ad_out
 
