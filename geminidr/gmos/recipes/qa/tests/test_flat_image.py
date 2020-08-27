@@ -23,8 +23,6 @@ test_data = [
 ]
 
 
-# ToDo - @bquint - Perform clean up after running tests
-@pytest.mark.skip("Using too much space - enable clean up")
 @pytest.mark.integration_test
 @pytest.mark.parametrize("master_bias, flat_fnames", test_data)
 def test_make_processed_flat(
