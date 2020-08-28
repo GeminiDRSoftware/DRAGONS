@@ -101,13 +101,14 @@ pipeline {
                     environment {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                        DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -- --basetemp=/rtfproc/tmp --junit-xml reports/unittests_results.xml'
+                        sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -128,13 +129,14 @@ pipeline {
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py36-gmosls -v -- --basetemp=/rtfproc/tmp --junit-xml reports/unittests_results.xml'
+                sh 'tox -e py36-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F gmosls'
             }  // end steps
@@ -155,6 +157,7 @@ pipeline {
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -162,7 +165,7 @@ pipeline {
                 echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Integration tests"
-                sh 'tox -e py36-integ -v -- --basetemp=/rtfproc/tmp --junit-xml reports/integration_results.xml'
+                sh 'tox -e py36-integ -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F integration'
             } // end steps

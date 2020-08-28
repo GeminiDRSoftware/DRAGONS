@@ -410,10 +410,11 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
 @pytest.fixture(scope='module')
 def path_to_outputs(request, tmp_path_factory):
     """
-    PyTest fixture that creates a temporary folder to save tests outputs.
+    PyTest fixture that creates a temporary folder to save tests outputs. You can
+    set the base directory by passing the ``--basetemp=mydir/`` argument to the
+    PyTest call (See [Pytest - Temporary Directories and Files][1]).
 
-    This output folder can be override via $DRAGONS_TEST_OUTPUTS environment
-    variable or via `--basetemp` argument.
+    [1]: https://docs.pytest.org/en/stable/tmpdir.html#temporary-directories-and-files
 
     Returns
     -------
@@ -425,18 +426,11 @@ def path_to_outputs(request, tmp_path_factory):
     IOError
         If output path does not exits.
     """
-    if os.getenv('DRAGONS_TEST_OUTPUTS'):
-        path = os.path.expanduser(os.getenv('DRAGONS_TEST_OUTPUTS'))
-        if not os.path.exists(path):
-            raise OSError(
-                "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
-                "{}\n Using current working directory".format(path))
-    else:
-        path = str(tmp_path_factory.getbasetemp())
+    path = tmp_path_factory.mktemp(basename="dragons-test-", numbered=True)
 
     module_path = request.module.__name__.split('.')
     module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path, *module_path)
+    path = os.path.join(str(path), *module_path)
     os.makedirs(path, exist_ok=True)
 
     return path
