@@ -164,6 +164,20 @@ class flagCosmicRaysConfig(config.Config):
         default="_CRMasked",
         optional=True,
     )
+    bitmask = config.Field(
+        doc="Bits in the input data quality `flags` that are to be used to "
+        "exclude bad pixels from cosmic ray detection and cleaning. Default "
+        "65535 (all non-zero bits, up to 16 planes).",
+        dtype=int,
+        optional=True,
+        default=65535,
+    )
+    debug = config.Field(
+        doc="Make diagnostic plots?",
+        dtype=bool,
+        default=False
+    )
+    # Fit parameters --------------------------------------------------------
     x_order = config.Field(
         doc="Order for fitting and subtracting object continuum and sky line "
         "models, prior to running the main cosmic ray detection algorithm. "
@@ -182,14 +196,27 @@ class flagCosmicRaysConfig(config.Config):
         optional=True,
         default=None,
     )
-    bitmask = config.Field(
-        doc="Bits in the input data quality `flags` that are to be used to "
-        "exclude bad pixels from cosmic ray detection and cleaning. Default "
-        "65535 (all non-zero bits, up to 16 planes).",
+    bkgfit_iterations = config.Field(
+        doc="Maximum number of iterations for the objects and sky fits.",
         dtype=int,
         optional=True,
-        default=65535,
+        default=3,
     )
+    bkgfit_lsigma = config.Field(
+        doc="Rejection threshold in standard deviations below the mean, "
+        "for the objects and sky fits.",
+        dtype=float,
+        optional=True,
+        default=4.0,
+    )
+    bkgfit_hsigma = config.Field(
+        doc="Rejection threshold in standard deviations above the mean, "
+        "for the objects and sky fits.",
+        dtype=float,
+        optional=True,
+        default=4.0,
+    )
+    # Astroscrappy's detect_cosmics parameters ------------------------------
     sigclip = config.Field(
         doc="Laplacian-to-noise limit for cosmic ray detection. Lower "
         "values will flag more pixels as cosmic rays.",
@@ -291,7 +318,6 @@ class flagCosmicRaysConfig(config.Config):
         optional=True,
         default=False,
     )
-    debug = config.Field("Make diagnostic plots?", bool, False)
 
 
 def flux_units_check(value):

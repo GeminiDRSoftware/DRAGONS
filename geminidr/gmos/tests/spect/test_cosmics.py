@@ -41,7 +41,9 @@ def test_cosmics(adinputs, caplog):
     ext.append(crmask, name='CRMASK')
 
     p = GMOSSpect(adinputs)
-    adout = p.flagCosmicRays(debug=True)[0]
+    adout = p.flagCosmicRays(y_order=3,
+                             bkgfit_iterations=5,
+                             debug=os.getenv('DEBUG') is not None)[0]
     p.writeOutputs()
     mask = adout[0].mask
     # check some pixels with real cosmics
@@ -54,8 +56,9 @@ def test_cosmics(adinputs, caplog):
 
 @pytest.fixture(scope='function')
 def adinputs(path_to_inputs):
-    return [astrodata.open(os.path.join(path_to_inputs, f))
-            for f in test_datasets]
+    return [
+        astrodata.open(os.path.join(path_to_inputs, f)) for f in test_datasets
+    ]
 
 
 # -- Recipe to create pre-processed data --------------------------------------

@@ -1819,11 +1819,18 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        bitmask = params.pop('bitmask')
         debug = params.pop('debug')
         suffix = params.pop('suffix')
-        bitmask = params.pop('bitmask')
         x_order_in = params.pop('x_order')
         y_order_in = params.pop('y_order')
+
+        fit_1D_params = dict(
+            hsigma=params.pop('bkgfit_hsigma'),
+            iterations=params.pop('bkgfit_iterations'),
+            lsigma=params.pop('bkgfit_lsigma'),
+            plot=debug,
+        )
 
         for ad in adinputs:
             for ext in ad:
@@ -1844,11 +1851,10 @@ class Spect(PrimitivesBASE):
                 # Fit the object spectrum:
                 if x_order > 0:
                     objfit = fit_1D(ext.data, function='legendre',
+                                    axis=dispaxis,
+                                    order=x_order,
                                     # weights=weights,
-                                    order=x_order, axis=dispaxis,
-                                    lsigma=4.0, hsigma=3.0, iterations=3,
-                                    # plot=True
-                                    )
+                                    **fit_1D_params)
                     if debug:
                         ext.append(objfit.copy(), name='OBJFIT')
                 else:
@@ -1859,11 +1865,11 @@ class Spect(PrimitivesBASE):
                 # Fit sky lines:
                 if y_order > 0:
                     skyfit = fit_1D(input_copy, function='legendre',
+                                    axis=1 - dispaxis,
+                                    order=y_order,
                                     # weights=weights,
-                                    order=y_order, axis=1 - dispaxis,
-                                    lsigma=4.0, hsigma=3.0, iterations=3,
-                                    # plot=True
-                                    )
+                                    **fit_1D_params)
+
                     # keep combined fits for later restoration
                     objfit += skyfit
                     if debug:
