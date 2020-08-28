@@ -1846,7 +1846,9 @@ class Spect(PrimitivesBASE):
                     objfit = fit_1D(ext.data, function='legendre',
                                     # weights=weights,
                                     order=x_order, axis=dispaxis,
-                                    lsigma=4.0, hsigma=3.0, iterations=3)
+                                    lsigma=4.0, hsigma=3.0, iterations=3,
+                                    # plot=True
+                                    )
                     if debug:
                         ext.append(objfit.copy(), name='OBJFIT')
                 else:
@@ -1859,7 +1861,9 @@ class Spect(PrimitivesBASE):
                     skyfit = fit_1D(input_copy, function='legendre',
                                     # weights=weights,
                                     order=y_order, axis=1 - dispaxis,
-                                    lsigma=4.0, hsigma=3.0, iterations=3)
+                                    lsigma=4.0, hsigma=3.0, iterations=3,
+                                    # plot=True
+                                    )
                     # keep combined fits for later restoration
                     objfit += skyfit
                     if debug:
@@ -1887,7 +1891,7 @@ class Spect(PrimitivesBASE):
                     ext.mask[crmask] = DQ.cosmic_ray
 
                 if debug:
-                    plot_cosmics(ext, objfit, crmask)
+                    plot_cosmics(ext, crmask)
 
             ad.update_filename(suffix=suffix, strip=True)
 
@@ -3363,11 +3367,13 @@ def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
     return c0 - 2 * p * c1/(len_data - 1)
 
 
-def plot_cosmics(ext, objfit, crmask):
-    from astropy.visualization import (ZScaleInterval, imshow_norm)
-    fig, axes = plt.subplots(4, 1, figsize=(15, 4*3), sharex=True, sharey=True)
-    imgs = (ext.data, objfit, ext.data - objfit, crmask)
-    titles = ('data', 'bkg fit', 'residual', 'crmask')
+def plot_cosmics(ext, crmask):
+    from astropy.visualization import ZScaleInterval, imshow_norm
+
+    fig, axes = plt.subplots(5, 1, figsize=(15, 5*2), sharex=True, sharey=True)
+    imgs = (ext.data, ext.OBJFIT, ext.SKYFIT,
+            ext.data - (ext.OBJFIT + ext.SKYFIT), crmask)
+    titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')
     mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
 
     for ax, data, title in zip(axes, imgs, titles):
