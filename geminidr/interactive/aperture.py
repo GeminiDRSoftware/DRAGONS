@@ -1,6 +1,6 @@
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Column, Div
+from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.interactive import GILine, GIFigure, GISlider, GIApertureModel, GIApertureView
@@ -66,6 +66,10 @@ class FindSourceAperturesModel:
         for l in self.listeners:
             l(self.locations, self.all_limits)
 
+    def delete_aperture(self, aperture_id):
+        del self.locations[aperture_id-1]
+        del self.all_limits[aperture_id-1]
+
 
 class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
     def __init__(self, model):
@@ -113,6 +117,15 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.aperture_model = None
         self.details = None
 
+    def clear_and_recalc(self):
+        self.aperture_model.clear_apertures()
+        self.model.recalc_apertures()
+
+    def add_aperture(self):
+        x = (self.p.figure.x_range.start + self.p.figure.x_range.end)/2
+        self.aperture_model.add_aperture(x, x)
+        self.update_details()
+
     def visualize(self, doc):
         """
         Build the visualization in bokeh in the given browser document.
@@ -129,10 +142,10 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
 
         max_apertures_slider = GISlider("Max Apertures", self.model.max_apertures, 1, 1, 20,
-                                        self.model, "max_apertures", self.model.recalc_apertures,
+                                        self.model, "max_apertures", self.clear_and_recalc,
                                         throttled=True)
         threshold_slider = GISlider("Threshold", self.model.threshold, 1, 0, 1,
-                                    self.model, "threshold", self.model.recalc_apertures,
+                                    self.model, "threshold", self.clear_and_recalc,
                                     throttled=True)
 
         # Create a blank figure with labels
@@ -153,8 +166,12 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         # self.model.recalc_apertures()
 
         line = GILine(self.p, range(self.model.profile.shape[0]), self.model.profile, color="black")
+
+        add_button = Button(label="Add Aperture")
+        add_button.on_click(self.add_aperture)
+
         controls = Column(max_apertures_slider.component, threshold_slider.component,
-                          aperture_view.controls, self.submit_button)
+                          aperture_view.controls, add_button, self.submit_button)
 
         self.details = Div(text="")
         self.model.recalc_apertures()
@@ -167,12 +184,18 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
     def handle_aperture(self, aperture_id, start, end):
         location = (start+end)/2
-        self.model.locations[aperture_id-1] = location
-        self.model.all_limits[aperture_id-1] = (start, end)
+        if aperture_id == len(self.model.locations)+1:
+            self.model.locations = np.append(self.model.locations, location)
+            self.model.all_limits.append( (start, end) )
+        else:
+            self.model.locations[aperture_id-1] = location
+            self.model.all_limits[aperture_id-1] = (start, end)
         self.update_details()
 
     def delete_aperture(self, aperture_id):
         # ruh-roh raggy
+        self.model.locations = np.delete(self.model.locations, aperture_id-1)
+        del self.model.all_limits[aperture_id-1]
         self.update_details()
 
     def update_details(self):

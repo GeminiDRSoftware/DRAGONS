@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from astropy.units import Quantity
 from bokeh.layouts import row
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column
+from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div
 from bokeh.plotting import figure
 
 from geminidr.interactive import server
@@ -856,11 +856,8 @@ class GIApertureModel(object):
         -------
             int id of the aperture
         """
-        if self.spare_ids:
-            aperture_id = self.spare_ids.pop(0)
-        else:
-            aperture_id = self.aperture_id
-            self.aperture_id += 1
+        aperture_id = self.aperture_id
+        self.aperture_id += 1
         self.adjust_aperture(aperture_id, start, end)
         return aperture_id
 
@@ -901,14 +898,11 @@ class GIApertureModel(object):
         """
         for listener in self.listeners:
             listener.delete_aperture(aperture_id)
-        self.spare_ids.append(aperture_id)
+        self.aperture_id = self.aperture_id-1
 
     def clear_apertures(self):
-        for id in range(1, self.aperture_id):
-            if id not in self.spare_ids:
-                self.delete_aperture(id)
-        self.spare_ids.clear()
-        self.aperture_id=1
+        while self.aperture_id > 1:
+            self.delete_aperture(self.aperture_id-1)
 
 
 class GISingleApertureView(object):
@@ -929,6 +923,7 @@ class GISingleApertureView(object):
         end : float
             End of the x-range for the aperture
         """
+        self.aperture_id = aperture_id
         self.box = None
         self.label = None
         self.left_source = None
@@ -1049,23 +1044,32 @@ class GISingleApertureView(object):
         #  (if we have one to recycle)
         self.label.text = ""
         self.box.fill_alpha = 0.0
-        # self.gifig.figure.renderers.remove(self.label)
-        # self.gifig.figure.renderers.remove(self.box)
 
 
 class GIApertureSliders(object):
-    def __init__(self, model, aperture_id, start, end):
+    def __init__(self, view, gifig, model, aperture_id, start, end):
+        self.view = view
         self.model = model
         self.aperture_id = aperture_id
         self.start = start
         self.end = end
 
-        self.lower_slider = GISlider("Aperture %s Start" % aperture_id, start, 0.01, 0, 5000,
-                                     obj=self, attr="start", handler=self.do_update)
-        self.upper_slider = GISlider("Aperture %s End" % aperture_id, end, 0.01, 0, 5000,
-                                     obj=self, attr="end", handler=self.do_update)
+        slider_start = gifig.figure.x_range.start
+        slider_end = gifig.figure.x_range.end
 
-        self.component = Column(self.lower_slider.component, self.upper_slider.component)
+        title = "<h3>Aperture %s</h3>" % aperture_id
+        self.label = Div(text=title)
+        self.lower_slider = GISlider("Start", start, 0.01, slider_start, slider_end,
+                                     obj=self, attr="start", handler=self.do_update)
+        self.upper_slider = GISlider("End", end, 0.01, slider_start, slider_end,
+                                     obj=self, attr="end", handler=self.do_update)
+        button = Button(label="Delete")
+        button.on_click(self.delete_from_model)
+
+        self.component = Column(self.label, self.lower_slider.component, self.upper_slider.component, button)
+
+    def delete_from_model(self):
+        self.model.delete_aperture(self.aperture_id)
 
     def update_viewport(self, start, end):
         if self.lower_slider.slider.value < start or self.lower_slider.slider.value > end:
@@ -1106,8 +1110,8 @@ class GIApertureView(object):
         gifig : :class:`GIFigure`
             Plot for displaying the bands
         """
-        self.aps = dict()
-        self.ap_sliders = dict()
+        self.aps = list()
+        self.ap_sliders = list()
 
         self.gifig = gifig
         self.controls = Column()
@@ -1126,7 +1130,7 @@ class GIApertureView(object):
     def update_viewport(self, start, end):
         self.view_start = start
         self.view_end = end
-        for ap_slider in self.ap_sliders.values():
+        for ap_slider in self.ap_sliders:
             ap_slider.update_viewport(start, end)
 
     def handle_aperture(self, aperture_id, start, end):
@@ -1146,14 +1150,14 @@ class GIApertureView(object):
             End of the aperture in x coordinates
 
         """
-        if aperture_id in self.aps and self.aps[aperture_id] is not None:
-            ap = self.aps[aperture_id]
+        if aperture_id <= len(self.aps):
+            ap = self.aps[aperture_id-1]
             ap.update(start, end)
         else:
             ap = GISingleApertureView(self.gifig, aperture_id, start, end)
-            self.aps[aperture_id] = ap
-            slider = GIApertureSliders(self.model, aperture_id, start, end)
-            self.ap_sliders[aperture_id] = slider
+            self.aps.append(ap)
+            slider = GIApertureSliders(self, self.gifig, self.model, aperture_id, start, end)
+            self.ap_sliders.append(slider)
             self.controls.children.append(slider.component)
 
     def delete_aperture(self, aperture_id):
@@ -1169,8 +1173,15 @@ class GIApertureView(object):
         -------
 
         """
-        if aperture_id in self.aps and self.aps[aperture_id] is not None:
-            ap = self.aps[aperture_id]
+        if aperture_id <= len(self.aps):
+            ap = self.aps[aperture_id-1]
             ap.delete()
-            self.controls.children.remove(self.ap_sliders[aperture_id].component)
-            self.aps[aperture_id] = None
+            self.controls.children.remove(self.ap_sliders[aperture_id-1].component)
+            del self.aps[aperture_id-1]
+            del self.ap_sliders[aperture_id-1]
+        for ap in self.aps[aperture_id-1:]:
+            ap.aperture_id = ap.aperture_id-1
+            ap.label.text = "%s" % ap.aperture_id
+        for ap_slider in self.ap_sliders[aperture_id-1:]:
+            ap_slider.aperture_id = ap_slider.aperture_id-1
+            ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id
