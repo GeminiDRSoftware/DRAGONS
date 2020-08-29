@@ -5,8 +5,13 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from astropy.wcs import WCS
+from astropy.modeling import models, Model
+from gwcs.wcs import WCS as gWCS
 
-from gempy.library.transform import Transform, AstroDataGroup
+from functools import reduce
+from copy import copy
+
+from gempy.library import transform
 from gempy.library.matching import Pix2Sky
 from gempy.gemini import gemini_tools as gt
 
@@ -91,8 +96,8 @@ class Resample(PrimitivesBASE):
 
         # Clean data en masse (improves logging by showing a single call)
         if clean_data:
-            adinputs = self.applyDQPlane(adinputs, replace_flags=65535 ^ (DQ.non_linear | DQ.saturated | DQ.no_data),
-                                   replace_value="median", inner_radius=3, outer_radius=5)[0]
+            adinputs = self.applyDQPlane(adinputs, replace_flags=DQ.not_signal ^ DQ.no_data,
+                                   replace_value="median", inner=3, outer=5)
 
         ad_ref = adinputs[0]
         ref_wcs = WCS(ad_ref[0].hdr)
@@ -103,7 +108,7 @@ class Resample(PrimitivesBASE):
         #    print(WCS(ad[0].hdr))
 
         # No transform for the reference AD
-        transforms = [Transform()] + [Transform([Pix2Sky(WCS(ad[0].hdr)),
+        transforms = [transform.Transform()] + [transform.Transform([Pix2Sky(WCS(ad[0].hdr)),
                                                  Pix2Sky(ref_wcs).inverse])
                                       for ad in adinputs[1:]]
         for t in transforms:
@@ -122,16 +127,16 @@ class Resample(PrimitivesBASE):
             # the size and relative location of output image. We do this by
             # making an AstroDataGroup containing all of them, although we're
             # not going to process it.
-            adg = AstroDataGroup(adinputs, transforms)
+            adg = transform.AstroDataGroup(adinputs, transforms)
             adg.calculate_output_shape()
             output_shape = adg.output_shape
             origin = adg.origin
         log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
 
         adoutputs = []
-        for ad, transform in zip(adinputs, transforms):
+        for ad, t in zip(adinputs, transforms):
             #print(ad.filename+" "+repr(transform.affine_matrices(shape=ad[0].shape)))
-            adg = AstroDataGroup(ad, [transform])
+            adg = transform.AstroDataGroup(ad, [t])
             # Set the output shape and origin to keep coordinate frame
             adg.output_shape = output_shape
             adg.origin = origin
@@ -151,6 +156,131 @@ class Resample(PrimitivesBASE):
             ad_out.update_filename(suffix=sfx, strip=True)
             log.fullinfo("{} resampled with jfactor {:.2f}".
                          format(ad.filename, adg.jfactors[0]))
+            adoutputs.append(ad_out)
+
+        return adoutputs
+
+    def shiftImages(self, adinputs=None, **params):
+        """
+        This primitive will shift images by user-defined amounts along each
+        axis.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        shifts: str
+            either: (a) list of colon-separated xshift,yshift pairs, or
+                    (b) filename containing shifts, one set per image
+        order: int (0-5)
+            order of interpolation (0=nearest, 1=linear, etc.)
+        trim_data: bool
+            trim image to size of reference image?
+        clean_data: bool
+            replace bad pixels with a ring median of their values to avoid
+            ringing if using a high-order interpolation?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        shifts_param = params.pop("shifts")
+        sfx = params.pop("suffix")
+
+        # TODO: Maybe remove this requirement
+        if not all(len(ad) == 1 for ad in adinputs):
+            raise OSError("All input images must have only one extension.")
+
+        # Check we can get some numerical shifts and that the number is
+        # compatible with the number of images
+        try:
+            shifts = [tuple(float(x) for x in s.split(','))
+                      for s in shifts_param.split(":")]
+        except (TypeError, ValueError):
+            try:
+                f = open(shifts_param)
+            except OSError:
+                raise ValueError("Cannot parse parameter 'shifts' as either a "
+                                 "list of shifts or a filename.")
+            else:
+                try:
+                    shifts = [tuple(float(x) for x in line.strip().split(' '))
+                              for line in f.readlines()]
+                except (TypeError, ValueError):
+                    raise ValueError(f"Cannot parse shifts from file {shifts_param}")
+        log.debug("Shifts are: "+repr(shifts))
+
+        num_shifts, num_images = len(shifts), len(adinputs)
+        if num_shifts == 1:
+            shifts *= num_images
+        elif num_shifts != num_images:
+            raise ValueError(f"Number of shifts ({num_shifts}) incompatible "
+                             f"with number of images ({num_images})")
+
+        for ad, shift in zip(adinputs, shifts):
+            if len(shift) != len(ad[0].shape):
+                raise ValueError(f"Shift {shift} incompatible with "
+                                 f"dimensionality of {ad.filename}")
+            shift_model = reduce(Model.__and__,
+                                 [models.Shift(offset) for offset in shift])
+            wcs = ad[0].wcs
+            shifted_frame = copy(wcs.input_frame)
+            shifted_frame.name = "shifted"
+            # TODO: use insert_frame method
+            ad[0].wcs = gWCS([(wcs.input_frame, shift_model),
+                              (shifted_frame, wcs.pipeline[0].transform)] +
+                               wcs.pipeline[1:])
+            ad[0].wcs.insert_transform(shifted_frame, shift_model.inverse,
+                                       after=True)
+
+        adoutputs = self._resample_to_new_frame(adinputs, frame="shifted", **params)
+        for ad in adoutputs:
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adoutputs
+
+    def _resample_to_new_frame(self, adinputs=None, frame=None, order=3,
+                               trim_data=False, clean_data=False):
+        """
+        This private method resamples a number of AstroData objects to a
+        CoordinateFrame they share. It is basically just a wrapper for the
+        transform.resample_from_wcs() method that creates an
+        appropriately-sized output based on the complete set of input
+        AstroData objects.
+
+        Parameters
+        ----------
+        frame: str
+            name of CoordinateFrame to be resampled to
+        order: int (0-5)
+            order of interpolation (0=nearest, 1=linear, etc.)
+        trim_data: bool
+            trim image to size of reference image?
+        clean_data: bool
+            replace bad pixels with a ring median of their values to avoid
+            ringing if using a high-order interpolation?
+        """
+
+        if clean_data:
+            self.applyDQPlane(adinputs, replace_flags=DQ.not_signal ^ DQ.no_data,
+                              replace_value="median", inner=3, outer=5)
+
+        if trim_data:
+            output_shape = adinputs[0][0].shape
+            origin = (0,) * len(output_shape)
+        else:
+            all_corners = np.concatenate([transform.get_output_corners(
+                ad[0].wcs.get_transform(ad[0].wcs.input_frame, frame),
+                input_shape=ad[0].shape) for ad in adinputs], axis=1)
+            origin = tuple(np.ceil(min(corners)) for corners in all_corners)
+            output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
+                                 for corners in all_corners)
+
+        adoutputs = []
+        for ad in adinputs:
+            self.log.stdinfo(f"Resampling {ad.filename}")
+            # We can process the OBJCAT because we're just shifting images
+            ad_out = transform.resample_from_wcs(ad, frame, order=order,
+                                                 output_shape=output_shape, origin=origin,
+                                                 process_objcat=True)
             adoutputs.append(ad_out)
 
         return adoutputs
@@ -195,13 +325,13 @@ class Resample(PrimitivesBASE):
 
         for ad in adinputs:
             for ext, source_ext in zip(ad, ad_source):
-                transform = Transform([Pix2Sky(WCS(source_ext.hdr)),
-                                       Pix2Sky(WCS(ext.hdr)).inverse])
-                transform._affine = True
+                t = transform.Transform([Pix2Sky(WCS(source_ext.hdr)),
+                                         Pix2Sky(WCS(ext.hdr)).inverse])
+                t._affine = True
                 try:
                     # Convert OBJMASK to float or else uint8 will be returned
-                    objmask = transform.apply(source_ext.OBJMASK.astype(np.float32),
-                                              output_shape=ext.shape, order=order, cval=0)
+                    objmask = t.apply(source_ext.OBJMASK.astype(np.float32),
+                                      output_shape=ext.shape, order=order, cval=0)
                     ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
                 except:  # source_ext.OBJMASK not present, or None
                     pass
