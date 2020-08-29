@@ -223,9 +223,23 @@ def change_working_dir(path_to_outputs):
     os.makedirs(path, exist_ok=True)
 
     @contextmanager
-    def _change_working_dir():
+    def _change_working_dir(sub_path=""):
+        """
+        Changed the current working directory temporarily easily using the 
+        `with` statement.
+         
+        Parameters
+        ----------
+        sub_path : str 
+            Sub-path inside the directory where we are working.
+        """
         oldpwd = os.getcwd()
         os.chdir(path)
+        
+        if sub_path:
+            os.makedirs(sub_path, exist_ok=True)
+            os.chdir(sub_path)
+                        
         try:
             yield
         finally:
@@ -342,9 +356,8 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
     path = os.path.join(path_to_test_data, *module_path)
 
     if not os.path.exists(path):
-        print(" Creating new directory to store input data for DRAGONS tests:"
-              "\n    {:s}".format(path))
-        os.makedirs(path)
+        raise FileNotFoundError(
+            " Could not find path to input data:\n    {:s}".format(path))
 
     if not os.access(path, os.R_OK):
         pytest.fail('\n  Path to input test data exists but is not accessible: '

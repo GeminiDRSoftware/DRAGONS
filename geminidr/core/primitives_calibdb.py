@@ -28,7 +28,8 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'sq': [],
                      'ql': [],
                      'qa': [],
-                     'processed_standard': ['PROCESSED', 'STANDARD']}
+                     'processed_standard': ['PROCESSED', 'STANDARD'],
+                     'processed_slitillum': ['PROCESSED', 'SLITILLUM']}
 
 
 # ------------------------------------------------------------------------------
@@ -146,6 +147,12 @@ class CalibDB(PrimitivesBASE):
 
     def getProcessedStandard(self, adinputs=None, **params):
         caltype = "processed_standard"
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self._assert_calibrations(adinputs, caltype)
+        return adinputs
+
+    def getProcessedSlitIllum(self, adinputs=None, **params):
+        caltype = "processed_slitillum"
         self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
@@ -351,6 +358,35 @@ class CalibDB(PrimitivesBASE):
             if passes:
                 procstdads = self._markAsCalibration([ad], suffix=suffix,
                                            primname=self.myself(), keyword="PROCSTND")
+                adoutputs.extend(procstdads)
+            else:
+                adoutputs.append(ad)
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adoutputs
+
+    def storeProcessedSlitIllum(self, adinputs=None, suffix=None):
+        """
+        Stores the Processed Slit Illumination file.
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Data that contain the Slit Illumination Response Function.
+        suffix : str
+            Suffix to be added to each of the input files.
+
+        Returns
+        -------
+        list of AstroData : the input data is simply forwarded.
+        """
+        caltype = 'processed_slitillum'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adoutputs = list()
+        for ad in adinputs:
+            passes = 'MAKESILL' in ad.phu
+            if passes:
+                procstdads = self._markAsCalibration([ad], suffix=suffix,
+                                                     primname=self.myself(), keyword="PROCILLM")
                 adoutputs.extend(procstdads)
             else:
                 adoutputs.append(ad)

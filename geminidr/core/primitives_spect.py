@@ -16,6 +16,7 @@ import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
+from astropy.io.fits import Header
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -333,10 +334,11 @@ class Spect(PrimitivesBASE):
                         # Regardless of whether FLUX column is f_nu or f_lambda
                         flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
                                            equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                        wave.append(w0)
-                        # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                        zpt.append(u.Magnitude(data / flux))
-                        zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                        if data > 0:
+                            wave.append(w0)
+                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                            zpt.append(u.Magnitude(data / flux))
+                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
                 # TODO: Abstract to interactive fitting
                 wave = array_from_list(wave, unit=u.nm)
@@ -380,7 +382,9 @@ class Spect(PrimitivesBASE):
                                                                             grow=grow)
                 knots, coeffs, degree = spline.tck
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                 names=('knots', 'coefficients'))
+                                 names=('knots', 'coefficients'),
+                                 meta={'header': Header()})
+                sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
                 ext.SENSFUNC = sensfunc
                 calculated = True
 
@@ -1104,7 +1108,7 @@ class Spect(PrimitivesBASE):
                 # Compute all the different types of weightings so we can
                 # change between them as needs require
                 weights = {'none': np.ones((len(peaks),)),
-                           'natural': peak_snrs}
+                           'natural': np.sqrt(peak_snrs)}
                 # The "relative" weights compares each line strength to
                 # those of the lines close to it
                 tree = spatial.cKDTree(np.array([peaks]).T)
@@ -1150,7 +1154,9 @@ class Spect(PrimitivesBASE):
                                                     domain=[0, len(data) - 1])
                         fit_it = fitting.LinearLSQFitter()
                         matched = np.where(matches > -1)
-                        m_final = fit_it(m_init, peaks[matched], arc_lines[matches[matched]])
+                        matched_peaks = peaks[matched]
+                        matched_arc_lines = arc_lines[matches[matched]]
+                        m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
 
                         # We're close to the correct solution, perform a KDFit
                         m_init = m_final.copy()
@@ -1200,7 +1206,7 @@ class Spect(PrimitivesBASE):
 
                 if not acceptable_fit:
                     log.warning(f"No acceptable wavelength solution found for {ad.filename}")
-                    scores = [m.rms_output / (len(m) - order - 1) for m in all_fits]
+                    scores = [m.rms_output / max(len(m) - order - 1, np.finfo(float).eps) for m in all_fits]
                     m = all_fits[np.argmin(scores)]
 
                 if debug:
@@ -1604,7 +1610,8 @@ class Spect(PrimitivesBASE):
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
                 signal = (data if (variance is None or not use_snr) else
-                          data/(np.sqrt(variance) + np.spacing(0, dtype=np.float32)))
+                          np.divide(data, np.sqrt(variance),
+                                    out=np.zeros_like(data), where=variance>0))
                 masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
                 # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
@@ -1633,7 +1640,7 @@ class Spect(PrimitivesBASE):
                     #   idea whether sources will be extended or not
                     widths = np.arange(3, 20)
                     peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                        variance=None, reject_bad=False,
+                                                        variance=1.0, reject_bad=False,
                                                         min_snr=3, min_frac=0.2)
 
                     if peaks_and_snrs.size == 0:
@@ -1742,12 +1749,18 @@ class Spect(PrimitivesBASE):
                 else:
                     log.warning("No changes will be made to {}, since no "
                                 "standard was specified".format(ad.filename))
+                    continue
 
             len_std, len_ad = len(std), len(ad)
             if len_std not in (1, len_ad):
                 log.warning("{} has {} extensions so cannot be used to "
-                            "calibrate {} with {} extensions.".
+                            "calibrate {} with {} extensions".
                             format(std.filename, len_std, ad.filename, len_ad))
+                continue
+
+            if not all(hasattr(ext, "SENSFUNC") for ext in std):
+                log.warning("SENSFUNC table missing from one or more extensions"
+                            f" of {std.filename} so cannot flux calibrate")
                 continue
 
             # Since 2D flux calibration just uses the wavelength info for the
@@ -1767,12 +1780,7 @@ class Spect(PrimitivesBASE):
 
             for index, ext in enumerate(ad):
                 ext_std = std[max(index, len_std-1)]
-                try:
-                    sensfunc = ext_std.SENSFUNC
-                except AttributeError:
-                    log.warning("{}:{} has no SENSFUNC table. Cannot flux calibrate".
-                                format(std.filename, ext_std.hdr['EXTVER']))
-                    continue
+                sensfunc = ext_std.SENSFUNC
 
                 extver = '{}:{}'.format(ad.filename, ext.hdr['EXTVER'])
 
@@ -1818,7 +1826,8 @@ class Spect(PrimitivesBASE):
                 pixel_sizes = abs(np.diff(all_waves[::2]))
 
                 # Reconstruct the spline and evaluate it at every wavelength
-                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, 3)
+                order = sensfunc.meta['header'].get('ORDER', 3)
+                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
                 sens_factor = spline(waves.to(sensfunc['knots'].unit)) * sensfunc['coefficients'].unit
                 try:  # conversion from magnitude/logarithmic units
                     sens_factor = sens_factor.physical

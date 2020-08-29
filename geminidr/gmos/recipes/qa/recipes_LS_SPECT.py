@@ -6,7 +6,7 @@ Default is "reduce".
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
 
 
-def reduce(p):
+def reduceScience(p):
     """
     This recipe performs the standardization and corrections needed to
     convert the raw input science images into a stacked image (TODO: stacking).
@@ -18,24 +18,74 @@ def reduce(p):
 
     """
     p.prepare()
-    p.addDQ(static_bpm=None)
+    p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
+    p.measureIQ(display=True)
     p.biasCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
-    p.measureIQ(display=True)
     p.flatCorrect()
+    p.QECorrect()
     p.distortionCorrect()
-    # Some sort of stacking here, with addToList() etc
+    p.measureIQ(display=True)
     p.findSourceApertures()
     p.skyCorrectFromSlit()
-    p.traceApertures()
     p.measureIQ(display=True)
+
+    # side stream to generate 1D spectra from individual frame, pre-stack
+    p.traceApertures(outstream='prestack')
+    p.extrac1DSpectra(stream='prestack')
+    p.fluxCalibrate(stream='prestack')
+    p.plotSpectraForQA(stream='prestack')
+
+    # continuing with main stream of 2D pre-stack.
+    p.addToList(purpose='forStack')
+    p.getList(purpose='forStack')
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
+    p.findSourceApertures()
+    p.measureIQ(display=True)
+    p.traceApertures()
     p.extract1DSpectra()
-    p.linearizeSpectra()
+    p.fluxCalibrate()
     p.plotSpectraForQA()
-    p.writeOutputs()
 
 
-_default = reduce
+_default = reduceScience
+
+
+def reduceStandard(p):
+    """
+    todo: add docstring
+
+    Parameters
+    ----------
+    p : :class:`geminidr.gmos.primitives_gmos_longslit.GMOSLongslit`
+
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.measureIQ(display=True)
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.flatCorrect()
+    p.QECorrect()
+    p.distortionCorrect()
+    p.findSourceApertures(max_apertures=1)
+    p.skyCorrectFromSlit()
+    p.measureIQ(display=True)
+    p.traceApertures()
+    p.extract1DSpectra()
+    p.plotSpectraForQA()
+    p.addToList(purpose='forStack')
+    p.getList(purpose='forStack')
+    p.resampleToCommonFrame()
+    p.stackFrames()
+    p.plotSpectraForQA()
+    p.calculateSensitivity()
+    p.storeProcessedStandard()
