@@ -1885,7 +1885,10 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     -------
     AstroData: single-extension AD with suitable WCS
     """
-    array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
+    array_attributes = ['data', 'mask', 'variance']
+    for k, v in ad.nddata[0].meta['other'].items():
+        if isinstance(v, np.ndarray) and v.shape == ad[0].data.shape:
+            array_attributes.append(k)
     is_single = ad.is_single
 
     # It's not clear how much checking we should do here but at a minimum
@@ -1969,9 +1972,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     else:
         new_wcs = gWCS(new_pipeline)
         if set(new_origin) != {0}:
+            origin_model = reduce(Model.__and__, [models.Shift(s) for s in new_origin])
+            transform.append(origin_model.inverse)
             #new_pipeline = [(cf.Frame2D(name='pixels'), reduce(Model.__and__, [models.Shift(s) for s in new_origin]))] + new_pipeline
-            new_wcs.insert_transform(new_wcs.input_frame,
-                reduce(Model.__and__, [models.Shift(s) for s in new_origin]), after=True)
+            new_wcs.insert_transform(new_wcs.input_frame, origin_model,
+                                     after=True)
     ad_out[0].wcs = new_wcs
 
     # Storing this could be very helpful
