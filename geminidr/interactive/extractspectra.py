@@ -177,31 +177,6 @@ class ExtractSpectraVisualizer(interactive.PrimitiveVisualizer):
 
 def interactive_extract_spectra(apnum, aperture, ext, method, dispaxis,
                                 x_axis_label="X", y_axis_label="Y"):
-    """
-    Build a spline via user interaction.
-
-    This method spins up bokeh and uses a web-based bokeh gui to create a spline
-    from user input.  Values passed in are used for the data points and as a
-    starting point for the interface.
-
-    Parameters
-    ----------
-    ext
-        FITS extension from astrodata
-    width
-    aper_lower
-    aper_upper
-    method
-    dispaxis
-    x_axis_label : str (optional)
-        Label for X-Axis
-    y_axis_label : str (optional)
-        Label for Y-Axis
-
-    Returns
-    -------
-    :class:`~NDAstroData`
-    """
     model = ExtractSpectraModel(apnum, aperture, ext, method, dispaxis)
     vis = ExtractSpectraVisualizer(model, x_axis_label, y_axis_label)
     server.set_visualizer(vis)
