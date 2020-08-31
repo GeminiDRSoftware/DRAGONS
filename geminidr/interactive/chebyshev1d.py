@@ -198,7 +198,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
                       band_model=band_model, aperture_model=aperture_model)
         self.line2 = GILine(p2)
         differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
-        differencing_model.add_coord_listener(self.line2)
+        differencing_model.add_coord_listener(self.line2.update_coords)
 
         # helptext is where the Controller will put help messages for the end user
         # This controls area is a vertical set of UI controls we are placing on the left
