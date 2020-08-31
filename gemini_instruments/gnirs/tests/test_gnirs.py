@@ -117,3 +117,25 @@ def test_descriptor_matches_type(ad, descriptor, expected_type):
     value = getattr(ad, descriptor)()
     assert isinstance(value, expected_type) or value is None, \
         "Assertion failed for file: {}".format(ad.filename)
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
+def test_ra_and_dec_always_returns_float(ad):
+    """
+    Tests that the get the RA/DEC coordinates using descriptors.
+
+    Parameters
+    ----------
+    ad : fixture
+        Custom fixture that downloads and opens the input file.
+    """
+    if isinstance(ad.wcs_ra(), float) or ad.wcs_ra() is None:
+        assert isinstance(ad.ra(), float)
+
+    if isinstance(ad.wcs_dec(), float) or ad.wcs_dec() is None:
+        assert isinstance(ad.dec(), float)
+
+
+if __name__ == "__main__":
+    pytest.main()
