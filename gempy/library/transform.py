@@ -1139,7 +1139,7 @@ class DataGroup:
         trans_corners = transform(*corners)
         if len(input_array.shape) == 1:
             trans_corners = (trans_corners,)
-        self.corners.append(trans_corners)
+        self.corners.append(trans_corners[::-1])  # standard python order
         min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
         max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
         self.log.stdinfo("Array maps to ["+",".join(["{}:{}".format(min_+1, max_)
@@ -1893,7 +1893,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
     # It's not clear how much checking we should do here but at a minimum
     # we should probably confirm that each extension is purely data. It's
-    # up to a primitve to catch this, call trim_to_data_section(), and try again
+    # up to a primitive to catch this, call trim_to_data_section(), and try again
     if is_single:
         addatsec = (0, ad.shape[0]) if len(ad.shape) == 1 else ad.data_section()
         shapes_ok = np.array_equal(np.ravel([(0, length) for length in ad.shape[::-1]]),
@@ -1957,6 +1957,10 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     for key, value in dg.output_dict.items():
         if key != 'data':  # already done this
             setattr(ad_out[0], key, value)
+
+    # Store this information so the calling primitive can access it
+    ad_out[0].nddata.meta['transform'] = {'corners': dg.corners,
+                                          'jfactors': dg.jfactors}
 
     # Create a new gWCS object describing the remaining transformation.
     # Not all gWCS objects have to have the same steps, so we need to
