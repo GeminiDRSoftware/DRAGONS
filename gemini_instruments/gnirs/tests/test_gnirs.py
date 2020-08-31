@@ -22,6 +22,20 @@ GNIRS_DESCRIPTORS_TYPES = [
 
 @pytest.fixture(params=test_files)
 def ad(request):
+    """
+    Fixture that will download a file from specified as a test parameter,
+    open it as an AstroData object and return it.
+
+    Parameters
+    ----------
+    request : fixture
+        Pytest built-in fixture containing information about the parent test.
+
+    Returns
+    -------
+    AstroData
+        Raw file downloaded from the archive and cached locally.
+    """
     filename = request.param
     path = astrodata.testing.download_from_archive(filename)
     return astrodata.open(path)
