@@ -15,6 +15,8 @@ from gempy.library import transform
 from gempy.library.matching import Pix2Sky
 from gempy.gemini import gemini_tools as gt
 
+from astrodata import wcs as adwcs
+
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
@@ -74,10 +76,9 @@ class Resample(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        order = params["order"]
-        trim_data = params["trim_data"]
-        clean_data = params["clean_data"]
-        sfx = params["suffix"]
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params.pop("suffix")
+        force_affine = True
 
         if len(adinputs) < 2:
             log.warning("No alignment will be performed, since at least two "
@@ -88,75 +89,52 @@ class Resample(PrimitivesBASE):
         # TODO: Can we make it so that we don't need to mosaic detectors
         # before doing this? That would mean we only do one interpolation,
         # not two, and that's definitely better!
-        if not all(len(ad)==1 for ad in adinputs):
+        if not all(len(ad) == 1 for ad in adinputs):
             raise OSError("All input images must have only one extension.")
 
-        attributes = [attr for attr in ('data', 'mask', 'variance', 'OBJMASK')
-                      if all(hasattr(ad[0], attr) for ad in adinputs)]
-
-        # Clean data en masse (improves logging by showing a single call)
-        if clean_data:
-            adinputs = self.applyDQPlane(adinputs, replace_flags=DQ.not_signal ^ DQ.no_data,
-                                   replace_value="median", inner=3, outer=5)
-
         ad_ref = adinputs[0]
-        ref_wcs = WCS(ad_ref[0].hdr)
         ndim = len(ad_ref[0].shape)
 
-        #for ad in adinputs[1:]:
-        #    print(ad.filename)
-        #    print(WCS(ad[0].hdr))
-
         # No transform for the reference AD
-        transforms = [transform.Transform()] + [transform.Transform([Pix2Sky(WCS(ad[0].hdr)),
-                                                 Pix2Sky(ref_wcs).inverse])
-                                      for ad in adinputs[1:]]
-        for t in transforms:
-            t._affine = True  # We'll perform an approximation
+        for i_ad, ad in enumerate(adinputs):
+            if i_ad == 0:
+                ref_wcs = ad[0].wcs
+                t_align = models.Identity(ndim)
+            else:
+                t_align = ad[0].wcs.forward_transform | ref_wcs.backward_transform
+                if force_affine:
+                    affine = adwcs.calculate_affine_matrices(t_align, ad[0].shape)
+                    t_align = models.AffineTransformation2D(matrix=affine.matrix[::-1, ::-1],
+                                                            translation=affine.offset[::-1])
 
-        # Compute output frame. If we're trimming data, this is the frame of
-        # the reference image; otherwise we have to calculate it as the
-        # smallest rectangle (in 2D) including all transformed inputs
-        if trim_data:
-            log.fullinfo("Trimming data to size of reference image")
-            output_shape = ad_ref[0].shape
-            origin = (0,) * ndim
-        else:
-            log.fullinfo("Output image will contain all transformed images")
-            # Calculate corners of all transformed images so we can compute
-            # the size and relative location of output image. We do this by
-            # making an AstroDataGroup containing all of them, although we're
-            # not going to process it.
-            adg = transform.AstroDataGroup(adinputs, transforms)
-            adg.calculate_output_shape()
-            output_shape = adg.output_shape
-            origin = adg.origin
-        log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
+            resampled_frame = copy(ad[0].wcs.input_frame)
+            resampled_frame.name = "resampled"
+            ad[0].wcs = gWCS([(ad[0].wcs.input_frame, t_align),
+                              (resampled_frame, ref_wcs.pipeline[0].transform)] +
+                              ref_wcs.pipeline[1:])
 
-        adoutputs = []
-        for ad, t in zip(adinputs, transforms):
-            #print(ad.filename+" "+repr(transform.affine_matrices(shape=ad[0].shape)))
-            adg = transform.AstroDataGroup(ad, [t])
-            # Set the output shape and origin to keep coordinate frame
-            adg.output_shape = output_shape
-            adg.origin = origin
-            ad_out = adg.transform(attributes=attributes, order=order)
+        adoutputs = self._resample_to_new_frame(adinputs, frame="resampled",
+                                                process_objcat=False, **params)
+        for ad in adoutputs:
+            try:
+                trans_data = ad.nddata[0].meta['transform']
+            except KeyError:
+                pass
+            else:
+                corners = np.array(trans_data['corners'][0])
+                ncorners = len(corners)
+                ad.hdr["AREATYPE"] = (f"P{ncorners}",
+                                      f"Region with {ncorners} vertices")
+                for i, corner in enumerate(zip(*corners), start=1):
+                    for axis, value in enumerate(reversed(corner), start=1):
+                        key_name = f"AREA{i}_{axis}"
+                        key_comment = f"Vertex {i}, dimension {axis}"
+                        ad.hdr[key_name] = (value + 1, key_comment)
+                jfactor = trans_data['jfactors'][0]
+                ad.hdr["JFACTOR"] = (jfactor, "J-factor in resampling")
 
-            # Add a bunch of header keywords describing the transformed shape
-            corners = adg.corners[0]
-            ad_out[0].hdr["AREATYPE"] = ("P{}".format(len(corners)),
-                                         "Region with {} vertices".format(len(corners)))
-            for i, corner in enumerate(zip(*corners), start=1):
-                for axis, value in enumerate(corner, start=1):
-                    key_name = "AREA{}_{}".format(i, axis)
-                    key_comment = "Vertex {}, dimension {}".format(i, axis)
-                    ad_out[0].hdr[key_name] = (value+1, key_comment)
-
-            # Timestamp and update filename
-            ad_out.update_filename(suffix=sfx, strip=True)
-            log.fullinfo("{} resampled with jfactor {:.2f}".
-                         format(ad.filename, adg.jfactors[0]))
-            adoutputs.append(ad_out)
+            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
         return adoutputs
 
@@ -231,14 +209,16 @@ class Resample(PrimitivesBASE):
             ad[0].wcs.insert_transform(shifted_frame, shift_model.inverse,
                                        after=True)
 
-        adoutputs = self._resample_to_new_frame(adinputs, frame="shifted", **params)
+        adoutputs = self._resample_to_new_frame(adinputs, frame="shifted",
+                                                process_objcat=True, **params)
         for ad in adoutputs:
             ad.update_filename(suffix=sfx, strip=True)
 
         return adoutputs
 
     def _resample_to_new_frame(self, adinputs=None, frame=None, order=3,
-                               trim_data=False, clean_data=False):
+                               trim_data=False, clean_data=False,
+                               process_objcat=False):
         """
         This private method resamples a number of AstroData objects to a
         CoordinateFrame they share. It is basically just a wrapper for the
@@ -257,7 +237,10 @@ class Resample(PrimitivesBASE):
         clean_data: bool
             replace bad pixels with a ring median of their values to avoid
             ringing if using a high-order interpolation?
+        process_objcat: bool
+            update (rather than delete) the OBJCAT?
         """
+        log = self.log
 
         if clean_data:
             self.applyDQPlane(adinputs, replace_flags=DQ.not_signal ^ DQ.no_data,
@@ -274,13 +257,13 @@ class Resample(PrimitivesBASE):
             output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
                                  for corners in all_corners)
 
+        log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
         adoutputs = []
         for ad in adinputs:
-            self.log.stdinfo(f"Resampling {ad.filename}")
-            # We can process the OBJCAT because we're just shifting images
+            log.stdinfo(f"Resampling {ad.filename}")
             ad_out = transform.resample_from_wcs(ad, frame, order=order,
                                                  output_shape=output_shape, origin=origin,
-                                                 process_objcat=True)
+                                                 process_objcat=process_objcat)
             adoutputs.append(ad_out)
 
         return adoutputs
