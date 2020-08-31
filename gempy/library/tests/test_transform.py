@@ -10,7 +10,8 @@ GMOS_STAR_LOCATIONS = ((200, 50), (204, 450), (4000, 50), (4004, 450))
 
 astrofaker = pytest.importorskip("astrofaker")
 
-
+# This functionality (which isn't used in DRAGONS) is no longer available
+@pytest.skip
 @pytest.mark.parametrize('binning', (1, 2, 4))
 def test_inverse_transform_gmos(binning):
     # Creates GMOS images with stars at predefined points
