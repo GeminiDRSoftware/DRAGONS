@@ -4,11 +4,7 @@ import glob
 import pytest
 import os
 
-import astrodata
-import gemini_instruments
-
 from astrodata.testing import download_from_archive
-from gempy.adlibrary import dataselect
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
@@ -39,7 +35,7 @@ datasets = {
         "flat": [f"S20171206S{n:04d}.fits" for n in range(120, 128)],
         "sci": [f"S20171205S{n:04d}.fits" for n in range(62, 77)],
         "ucals": [
-            # ('stackFrames:memory', 1),
+            ('stackFrames:memory', 1),
             # ('addDQ:user_bpm', 'fixed_bpm_1x1_FullFrame.fits'),
             ('adjustWCSToReference:rotate', True),
             ('adjustWCSToReference:scale', True),
@@ -51,7 +47,7 @@ datasets = {
         "flat": [f"S20171120S{n:04d}.fits" for n in range(131, 140)],
         "std": ["S20171205S0077.fits"],
         "ucals": [
-            # ('stackFrames:memory', 1),
+            ('stackFrames:memory', 1),
             # ('addDQ:user_bpm', 'fixed_bpm_2x2_FullFrame.fits'),
             ('resampleToCommonFrame:interpolator', 'spline3')
         ]
