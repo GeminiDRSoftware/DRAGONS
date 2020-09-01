@@ -1915,8 +1915,6 @@ class Spect(PrimitivesBASE):
                 transform.add_mosaic_wcs(ad, geotable)
                 admos = transform.resample_from_wcs(ad, "mosaic", attributes=None,
                                                     order=3, process_objcat=False)
-                #adg = transform.create_mosaic_transform(ad, geotable)
-                #admos = adg.transform(attributes=None, order=1)
                 mosaicked = True
             else:
                 admos = ad
