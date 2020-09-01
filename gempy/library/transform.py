@@ -1959,7 +1959,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             setattr(ad_out[0], key, value)
 
     # Store this information so the calling primitive can access it
-    ad_out[0].nddata.meta['transform'] = {'corners': dg.corners,
+    ad_out[0].nddata.meta['transform'] = {'origin': dg.origin,
+                                          'corners': dg.corners,
                                           'jfactors': dg.jfactors}
 
     # Create a new gWCS object describing the remaining transformation.
@@ -1982,9 +1983,6 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
             new_wcs.insert_transform(new_wcs.input_frame, origin_model,
                                      after=True)
     ad_out[0].wcs = new_wcs
-
-    # Storing this could be very helpful
-    ad_out.phu['ORIGTRAN'] = str(dg.origin[::-1])
 
     # Update and delete keywords from extension (_update_headers)
     ndim = len(ref_ext.shape)
