@@ -161,7 +161,8 @@ class GISlider(object):
                 new = float(new)
             if self.obj and self.attr:
                 self.obj.__setattr__(self.attr, new)
-            self.handler()
+            if self.handler:
+                self.handler()
 
         if throttled:
             # Since here the text_input calls handle_value, we don't
