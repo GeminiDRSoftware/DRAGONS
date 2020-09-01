@@ -117,7 +117,7 @@ class Resample(PrimitivesBASE):
                                                 process_objcat=False, **params)
         for ad in adoutputs:
             try:
-                trans_data = ad.nddata[0].meta['transform']
+                trans_data = ad.nddata[0].meta.pop('transform')
             except KeyError:
                 pass
             else:
