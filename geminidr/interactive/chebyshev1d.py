@@ -34,6 +34,9 @@ class ChebyshevModel(GICoordsSource, GIModelSource):
         # do this last since it will trigger an update, which triggers a recalc
         self.coords.add_mask_listener(self.update_coords)
 
+    def update_in_coords(self, in_coords):
+        self.coords.set_coords(in_coords[1-self.dispaxis], in_coords[self.dispaxis])
+
     def update_coords(self, x_coords, y_coords):
         # The masked coordinates changed, so update our copy and recalculate the model
         self.x = x_coords

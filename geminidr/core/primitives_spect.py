@@ -52,7 +52,7 @@ import matplotlib
 from ..interactive.aperture import interactive_find_source_apertures
 from ..interactive.chebyshev2d import interactive_chebyshev2d
 from ..interactive.extractspectra import interactive_extract_spectra
-from ..interactive.trace_apertures import TraceApertureList, TraceApertureInfo, interactive_trace_apertures
+from ..interactive.trace_apertures import TraceApertureList, TraceApertureInfo, interactive_trace_apertures, calc_coords
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -2498,32 +2498,8 @@ class Spect(PrimitivesBASE):
                     self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-                # For efficiency, we would like to trace all sources
-                # simultaneously (like we do with arc lines), but we need to
-                # start somewhere the source is bright enough, and there may
-                # not be a single location where that is true for all sources
-                for i, loc in enumerate(locations):
-                    c0 = int(loc + 0.5)
-                    spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:,c0]
-                    start = np.argmax(boxcar(spectrum, size=3))
-
-                    # The coordinates are always returned as (x-coords, y-coords)
-                    ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                start=start, initial=[loc],
-                                                                rwidth=None, cwidth=5, step=step,
-                                                                nsum=nsum, max_missed=max_missed,
-                                                                initial_tolerance=None,
-                                                                max_shift=max_shift,
-                                                                viewer=self.viewer if debug else None)
-                    if i:
-                        all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
-                        all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
-                    else:
-                        all_ref_coords = ref_coords
-                        all_in_coords = in_coords
-
                 self.viewer.color = "blue"
-                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
+
                 all_column_names = []
                 all_model_dicts = []
 
@@ -2538,17 +2514,10 @@ class Spect(PrimitivesBASE):
                                 min_order = field.min
                             if hasattr(field, 'max'):
                                 max_order = field.max
-                    ap_list = TraceApertureList()
-                    for aperture in aptable:
-                        location = aperture['c0']
-                        coords = np.array([list(c1) + list(c2)
-                                           for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
-                                           if c1[dispaxis] == location])
-                        values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
-                        ref_coords, in_coords = values[:2], values[2:]
-                        ap_list.add_aperture(TraceApertureInfo(aperture, location, ref_coords, in_coords))
-                    interactive_trace_apertures(ap_list, ext, order, dispaxis, sigma_clip,
-                                                spectral_coords, min_order, max_order)
+
+                    ap_list = interactive_trace_apertures(locations, step, nsum, max_missed, max_shift,
+                                                          aptable, ext, order, dispaxis,
+                                                          sigma_clip, min_order, max_order)
                     for ap_info in ap_list.apertures:
                         m_final = ap_info.m_final
                         model_dict = ap_info.model_dict
@@ -2562,6 +2531,11 @@ class Spect(PrimitivesBASE):
                                                  if k not in all_column_names])
                         all_model_dicts.append(model_dict)
                 else:
+                    all_ref_coords, all_in_coords, spectral_coords = \
+                        calc_coords(locations, ext, dispaxis, step, nsum,
+                                    max_missed,
+                                    max_shift, viewer=self.viewer if debug else None)
+
                     for aperture in aptable:
                         location = aperture['c0']
                         # Funky stuff to extract the traced coords associated with
@@ -2576,40 +2550,25 @@ class Spect(PrimitivesBASE):
 
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
-                        if interactive:
-                            # TODO there must be a better way, or we should agree on one
-                            # TODO also perhaps parameter extraction deserves some sort of utility
-                            # API in the interactive code.  Hopefully N>>1 examples will clear this up
-                            min_order = None
-                            max_order = None
-                            for field in self.params["traceApertures"].iterfields():
-                                if field.name == 'trace_order':
-                                    if hasattr(field, 'min'):
-                                        min_order = field.min
-                                    if hasattr(field, 'max'):
-                                        max_order = field.max
-                            model_dict, m_final = interactive_chebyshev(ext, order, location, dispaxis, sigma_clip,
-                                                                        in_coords, spectral_coords, min_order, max_order)
+                        m_init = models.Chebyshev1D(degree=order, c0=location,
+                                                    domain=[0, ext.shape[dispaxis] - 1])
+                        fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                                   sigma_clip, sigma=3)
+                        try:
+                            m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
+                        except (IndexError, np.linalg.linalg.LinAlgError):
+                            # This hides a multitude of sins, including no points
+                            # returned by the trace, or insufficient points to
+                            # constrain the request order of polynomial.
+                            log.warning("Unable to trace aperture {}".format(aperture["number"]))
+                            m_final = models.Chebyshev1D(degree=0, c0=location,
+                                                         domain=[0, ext.shape[dispaxis] - 1])
                         else:
-                            m_init = models.Chebyshev1D(degree=order, c0=location,
-                                                        domain=[0, ext.shape[dispaxis] - 1])
-                            fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                                       sigma_clip, sigma=3)
-                            try:
-                                m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
-                            except (IndexError, np.linalg.linalg.LinAlgError):
-                                # This hides a multitude of sins, including no points
-                                # returned by the trace, or insufficient points to
-                                # constrain the request order of polynomial.
-                                log.warning("Unable to trace aperture {}".format(aperture["number"]))
-                                m_final = models.Chebyshev1D(degree=0, c0=location,
-                                                             domain=[0, ext.shape[dispaxis] - 1])
-                            else:
-                                if debug:
-                                    plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
-                                    self.viewer.polygon(plot_coords, closed=False,
-                                                        xfirst=(dispaxis == 1), origin=0)
-                            model_dict = astromodels.chebyshev_to_dict(m_final)
+                            if debug:
+                                plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
+                                self.viewer.polygon(plot_coords, closed=False,
+                                                    xfirst=(dispaxis == 1), origin=0)
+                        model_dict = astromodels.chebyshev_to_dict(m_final)
 
                         # Recalculate aperture limits after rectification
                         apcoords = m_final(np.arange(ext.shape[dispaxis]))

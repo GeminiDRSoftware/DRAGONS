@@ -1,9 +1,13 @@
+import numpy as np
+
 from bokeh.layouts import row, column
 from bokeh.models import Tabs, Panel, Button, Div
 
 from geminidr.interactive import interactive, server
 from geminidr.interactive.chebyshev1d import ChebyshevModel
 from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIFigure, GIMaskedSigmadScatter, GILine, GISlider
+from gempy.library import tracing
+from gempy.library.astrotools import boxcar
 
 
 class TraceApertureInfo:
@@ -75,15 +79,65 @@ class TraceApertureUI:
 
 
 class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
-    def __init__(self, api_models, min_order, max_order):
+    def __init__(self, aptable, locations, ext, dispaxis, step, nsum, max_missed,
+                 order, sigma_clip, max_shift, min_order, max_order):
         super().__init__()
+
+        self.locations = locations
+        self.ext = ext
+        self.dispaxis = dispaxis
+        self.step = step
+        self.nsum = nsum
+        self.max_missed = max_missed
+        self.max_shift = max_shift
+
+        all_ref_coords, all_in_coords, spectral_coords = calc_coords(locations, ext, dispaxis, step, nsum, max_missed,
+                                                                     max_shift, viewer=None)
+        self.ap_list = TraceApertureList()
+        for aperture in aptable:
+            location = aperture['c0']
+            coords = np.array([list(c1) + list(c2)
+                               for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
+                               if c1[dispaxis] == location])
+            values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
+            ref_coords, in_coords = values[:2], values[2:]
+            self.ap_list.add_aperture(TraceApertureInfo(aperture, location, ref_coords, in_coords))
+
+        api_models = list()
+        for ap_info in self.ap_list.apertures:
+            masked_coords = GIMaskedSigmadCoords(ap_info.in_coords[1 - dispaxis], ap_info.in_coords[dispaxis])
+            model = ChebyshevModel(order, ap_info.location, dispaxis, sigma_clip,
+                                   masked_coords, spectral_coords, ext)
+            api_models.append((ap_info, model))
 
         self.api_models = api_models
         self.min_order = min_order
         self.max_order = max_order
 
+        self.step_slider = GISlider("Step", self.step, 1, 1, 100, self, "step")
+        self.button = Button(label="Update Fits")
+        self.button.on_click(self.update_fits)
+
+    def update_fits(self):
+        # button disable doesn't actually work like this since all of this happens on a single pass of the event queue
+        self.button.disabled = True
+        all_ref_coords, all_in_coords, spectral_coords = calc_coords(self.locations, self.ext, self.dispaxis, self.step,
+                                                                     self.nsum, self.max_missed,
+                                                                     self.max_shift, viewer=None)
+        for (api_info, model) in self.api_models:
+            coords = np.array([list(c1) + list(c2)
+                               for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
+                               if c1[self.dispaxis] == api_info.location])
+            values = np.array(sorted(coords, key=lambda c: c[1 - self.dispaxis])).T
+            ref_coords, in_coords = values[:2], values[2:]
+            model.update_in_coords(in_coords)
+            model.recalc_chebyshev()
+        self.button.disabled = False
+
     def visualize(self, doc):
         super().visualize(doc)
+
+        ctrls = column(self.step_slider.component, self.button)
 
         tabs = Tabs(tabs=[], name="tabs")
 
@@ -93,26 +147,51 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
 
             tabs.tabs.append(tab)
 
-        layout = column(tabs, self.submit_button)
+        layout = row(ctrls, column(tabs, self.submit_button))
 
         doc.add_root(layout)
 
 
-def interactive_trace_apertures(ap_list, ext, order, dispaxis, sigma_clip,
-                                spectral_coords, min_order, max_order):
-    api_models = list()
-    for ap_info in ap_list.apertures:
-        masked_coords = GIMaskedSigmadCoords(ap_info.in_coords[1 - dispaxis], ap_info.in_coords[dispaxis])
-        model = ChebyshevModel(order, ap_info.location, dispaxis, sigma_clip,
-                               masked_coords, spectral_coords, ext)
-        api_models.append((ap_info, model))
+def calc_coords(locations, ext, dispaxis, step, nsum, max_missed, max_shift, viewer):
+    for i, loc in enumerate(locations):
+        c0 = int(loc + 0.5)
+        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+        start = np.argmax(boxcar(spectrum, size=3))
 
-    server.set_visualizer(TraceApertureVisualizer(api_models, min_order, max_order))
+        # The coordinates are always returned as (x-coords, y-coords)
+        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                    start=start, initial=[loc],
+                                                    rwidth=None, cwidth=5, step=step,
+                                                    nsum=nsum, max_missed=max_missed,
+                                                    initial_tolerance=None,
+                                                    max_shift=max_shift,
+                                                    viewer=viewer)
+        if i:
+            all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+            all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+        else:
+            all_ref_coords = ref_coords
+            all_in_coords = in_coords
+
+    spectral_coords = np.arange(0, ext.shape[dispaxis], step)
+
+    return all_ref_coords, all_in_coords, spectral_coords
+
+
+def interactive_trace_apertures(locations, step, nsum, max_missed, max_shift, aptable, ext, order, dispaxis, sigma_clip,
+                                min_order, max_order):
+    visualizer = TraceApertureVisualizer(aptable, locations, ext, dispaxis, step, nsum, max_missed, order, sigma_clip,
+                                         max_shift, min_order, max_order)
+    server.set_visualizer(visualizer)
 
     server.start_server()
-
     server.set_visualizer(None)
+
+    api_models = visualizer.api_models
 
     for (ap_info, model) in api_models:
         ap_info.model_dict = model.model_dict
         ap_info.m_final = model.m_final
+
+    return visualizer.ap_list
+

@@ -375,6 +375,19 @@ class GIMaskedSigmadCoords(GICoordsSource):
         self.mask_listeners = list()
         self.sigma_listeners = list()
 
+    def set_coords(self, x_coords, y_coords):
+        self.x_coords = x_coords
+        self.y_coords = y_coords
+        # intially, all points are masked = included
+        self.mask = [True] * len(x_coords)
+        # initially, all points are not sigma = excluded
+        self.sigma = [False] * len(x_coords)
+        self.notify_coord_listeners(self.x_coords, self.y_coords)
+        for mask_listener in self.mask_listeners:
+            mask_listener(self.x_coords[self.mask], self.y_coords[self.mask])
+        for sigma_listener in self.sigma_listeners:
+            sigma_listener([], [])
+
     def add_coord_listener(self, coords_listener):
         """
         Add a listener for updates.
