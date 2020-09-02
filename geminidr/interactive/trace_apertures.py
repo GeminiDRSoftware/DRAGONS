@@ -1,7 +1,7 @@
 import numpy as np
 
 from bokeh.layouts import row, column
-from bokeh.models import Tabs, Panel, Button, Div
+from bokeh.models import Tabs, Panel, Button, Div, CustomJS
 
 from geminidr.interactive import interactive, server
 from geminidr.interactive.chebyshev1d import ChebyshevModel
@@ -80,8 +80,8 @@ class TraceApertureUI:
 
 class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
     def __init__(self, aptable, locations, ext, dispaxis, step, nsum, max_missed,
-                 order, sigma_clip, max_shift, min_order, max_order):
-        super().__init__()
+                 order, sigma_clip, max_shift, min_order, max_order, *, log=None):
+        super().__init__(log=log)
 
         self.locations = locations
         self.ext = ext
@@ -118,9 +118,18 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
         self.button = Button(label="Update Fits")
         self.button.on_click(self.update_fits)
 
-    def update_fits(self):
-        # button disable doesn't actually work like this since all of this happens on a single pass of the event queue
-        self.button.disabled = True
+        # Pop up the modal any time this submit button is disabled
+        callback = CustomJS(args=dict(source=self.button), code="""
+            console.log("checking button state");
+            if (source.disabled) {
+                openModal('<b>Recalculating Points</b><br/>This may take 20 seconds');
+            } else {
+                closeModal();
+            }
+        """)
+        self.button.js_on_change('disabled', callback)
+
+    def _do_update_fits(self):
         all_ref_coords, all_in_coords, spectral_coords = calc_coords(self.locations, self.ext, self.dispaxis, self.step,
                                                                      self.nsum, self.max_missed,
                                                                      self.max_shift, viewer=None)
@@ -133,6 +142,11 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
             model.update_in_coords(in_coords)
             model.recalc_chebyshev()
         self.button.disabled = False
+
+    def update_fits(self):
+        # button disable doesn't actually work like this since all of this happens on a single pass of the event queue
+        self.button.disabled = True
+        self.do_later(self._do_update_fits)
 
     def visualize(self, doc):
         super().visualize(doc)
@@ -179,9 +193,9 @@ def calc_coords(locations, ext, dispaxis, step, nsum, max_missed, max_shift, vie
 
 
 def interactive_trace_apertures(locations, step, nsum, max_missed, max_shift, aptable, ext, order, dispaxis, sigma_clip,
-                                min_order, max_order):
+                                min_order, max_order, *, log=None):
     visualizer = TraceApertureVisualizer(aptable, locations, ext, dispaxis, step, nsum, max_missed, order, sigma_clip,
-                                         max_shift, min_order, max_order)
+                                         max_shift, min_order, max_order, log=log)
     server.set_visualizer(visualizer)
 
     server.start_server()

@@ -31,7 +31,7 @@ def _dequantity(x, y):
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self):
+    def __init__(self, log=None):
         """
         Initialize a visualizer.
 
@@ -41,12 +41,15 @@ class PrimitiveVisualizer(ABC):
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
         """
+        self.log = log
+
         self.submit_button = Button(label="Submit")
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
             window.close();
         """)
         self.submit_button.js_on_click(callback)
+        self.doc = None
 
     def submit_button_handler(self, stuff):
         """
@@ -79,7 +82,16 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
+        self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
+
+    def do_later(self, fn):
+        if self.doc is None:
+            if self.log is not None:
+                self.log.warn("Call to do_later, but no document is set.  Does this PrimitiveVisualizer call "
+                              "super().visualize(doc)?")
+        else:
+            self.doc.add_next_tick_callback(lambda: fn())
 
 
 class GISlider(object):
