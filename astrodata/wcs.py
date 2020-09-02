@@ -55,7 +55,7 @@ def fitswcs_to_gwcs(hdr):
         except KeyError:
             if output in coordinate_outputs:
                 continue
-            frame = cf.CoordinateFrame(naxes=1, axes_type=None,
+            frame = cf.CoordinateFrame(naxes=1, axes_type=("SPATIAL",),
                                        axes_order=(i,), unit=unit,
                                        axes_names=(output,), name=output)
         out_frames.append(frame)
