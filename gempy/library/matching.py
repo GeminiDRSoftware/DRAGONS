@@ -1,12 +1,13 @@
 # Copyright(c) 2017-2020 Association of Universities for Research in Astronomy, Inc.
 
 import numpy as np
-from astropy.modeling import fitting, models, FittableModel, Parameter
+from astropy.modeling import fitting, models, FittableModel
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter,
                                       _convert_input)
 from astropy.wcs import WCS
+from astrodata import wcs as adwcs
 
 from scipy import optimize, spatial
 from datetime import datetime
@@ -19,7 +20,7 @@ from gempy.gemini import gemini_tools as gt
 from ..utils import logutils
 
 from .transform import Transform
-from .astromodels import Pix2Sky
+from .astromodels import Pix2Sky, Rotate2D, Scale2D
 
 
 ##############################################################################
@@ -852,7 +853,7 @@ def _show_model(model, intro=""):
         iterator = [model]
     # Only display parameters of those models that have names
     for m in iterator:
-        if m.name is not None:
+        if m.name is not 'xx':
             for param in [getattr(m, name) for name in m.param_names]:
                 if not (param.fixed or (param.bounds[0] == param.bounds[1]
                                         and param.bounds[0] is not None)):
@@ -995,7 +996,7 @@ def match_sources(incoords, refcoords, radius=2.0):
     return matched
 
 
-def align_images_from_wcs(adinput, adref, transform=None, cull_sources=False,
+def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
                           min_sources=1, search_radius=10, rotate=False,
                           scale=False, full_wcs=False, return_matches=False):
     """
@@ -1029,8 +1030,9 @@ def align_images_from_wcs(adinput, adref, transform=None, cull_sources=False,
     scale: bool
         add a magnification to the alignment transform?
     full_wcs: bool
-        use recomputed WCS at each iteration, rather than modify the positions
-        in pixel space?
+        use the two images' WCSs to reproject the reference image's coordinates
+        onto the input image's pixel plane, rather than just align the OBJCAT
+        coordinates?
     return_matches: bool
         return a list of matched objects as well as the Transform?
 
@@ -1056,9 +1058,14 @@ def align_images_from_wcs(adinput, adref, transform=None, cull_sources=False,
         log.warning("Too few sources in one or both images. Cannot align.")
         return None
 
+    largest_dimension = max(*adinput[0].shape, *adref[0].shape)
+    # Values larger than these result in errors of >1 pixel
+    mag_threshold = 1. / largest_dimension
+    rot_threshold = np.degrees(mag_threshold)
+
     # OK, we can proceed
-    incoords = (input_objcat['X_IMAGE'].data, input_objcat['Y_IMAGE'].data)
-    refcoords = (ref_objcat['X_IMAGE'], ref_objcat['Y_IMAGE'])
+    incoords = (input_objcat['X_IMAGE'].data-1, input_objcat['Y_IMAGE'].data-1)
+    refcoords = (ref_objcat['X_IMAGE'].data-1, ref_objcat['Y_IMAGE'].data-1)
     if cull_sources:
         good_src1 = gt.clip_sources(adinput)[0]
         good_src2 = gt.clip_sources(adref)[0]
@@ -1066,53 +1073,66 @@ def align_images_from_wcs(adinput, adref, transform=None, cull_sources=False,
             log.warning("Too few sources in culled list, using full set "
                         "of sources")
         else:
-            incoords = (good_src1["x"], good_src1["y"])
-            refcoords = (good_src2["x"], good_src2["y"])
+            incoords = (good_src1["x"]-1, good_src1["y"]-1)
+            refcoords = (good_src2["x"]-1, good_src2["y"]-1)
 
-    # Nomenclature here is that the ref_transform transforms the reference
-    # OBJCAT coords immutably, and then the fit_transform is the fittable
-    # thing we're trying to get to map those to the input OBJCAT coords
-    ref_transform = Transform(Pix2Sky(WCS(adref[0].hdr)))
-    # pixel_range = max(adinput[0].data.shape)
-    if full_wcs:
-        # fit_transform = Transform(Pix2Sky(WCS(adinput[0].hdr), factor=pixel_range, factor_scale=pixel_range, angle_scale=pixel_range/57.3).inverse)
-        fit_transform = Transform(Pix2Sky(WCS(adinput[0].hdr)).rename('WCS').inverse)
-        fit_transform.angle.fixed = not rotate
-        fit_transform.factor.fixed = not scale
+    # May be overridden later
+    magnification = 1
+    rotation = 0
+    try:
+        t = adref[0].wcs.forward_transform | adinput[0].wcs.backward_transform
+    except AttributeError:  # for cases with no defined WCS
+        m_init = models.Shift(0) & models.Shift(0)
     else:
-        ref_transform.append(Pix2Sky(WCS(adinput[0].hdr)).inverse)
-        fit_transform = Transform.create2d(translation=(0, 0),
-                                           rotation=0 if rotate else None,
-                                           magnification=1 if scale else None,
-                                           shape=adinput[0].shape)
+        if full_wcs:
+            refcoords = t(*refcoords)
+            m_init = transform or (models.Shift(0) & models.Shift(0))
+        else:
+            # A good guess at the initial pixel transformation
+            if transform is None:
+                transform = adinput[0].wcs.forward_transform | adref[0].wcs.backward_transform
+            affine = adwcs.calculate_affine_matrices(transform, adinput[0].shape)
+            m_init = models.Shift(affine.offset[1]) & models.Shift(affine.offset[0])
 
-    # Copy parameters across. We don't simply start with the provided
-    # transform, because we may be moving from a geometric one to WCS
-    if transform is not None:
-        for param in fit_transform.param_names:
-            if param in transform.param_names:
-                setattr(fit_transform, param, getattr(transform, param))
-    fit_transform.add_bounds('x_offset', search_radius)
-    fit_transform.add_bounds('y_offset', search_radius)
+            # This is approximate since the affine matrix might have differential
+            # scaling and a shear
+            magnification = np.linalg.det(affine.matrix)
+            rotation = np.degrees(np.arctan2(affine.matrix[1,0] - affine.matrix[0,1],
+                                             affine.matrix[0,0] + affine.matrix[1,1]))
+
+    m_init.offset_0.bounds = (m_init.offset_0 - search_radius,
+                              m_init.offset_0 + search_radius)
+    m_init.offset_1.bounds = (m_init.offset_1 - search_radius,
+                              m_init.offset_1 + search_radius)
+
+    m_rotate = Rotate2D(rotation)
     if rotate:
-        fit_transform.add_bounds('angle', 5.)
-    if scale:
-        fit_transform.add_bounds('factor', 0.05)
+        m_rotate.angle.bounds = (rotation-5, rotation+5)
+        m_init = m_rotate | m_init
+    elif abs(rotation) > rot_threshold:
+        m_rotate.angle.fixed = True
+        m_init = m_rotate | m_init
+        log.warning("A rotation of {:.3f} degrees is expected but the "
+                    "rotation is fixed".format(rotation))
 
-    # Do the fit, and update the transform with the fitted parameters
-    transformed_ref_coords = ref_transform(*refcoords)
-    refine = (transform is not None)
-    fitted_model = fit_model(fit_transform.asModel(), transformed_ref_coords,
-                             incoords, sigma=10, tolerance=1e-6, brute=not refine)
-    fit_transform.replace(fitted_model)
+    m_magnify = Scale2D(magnification)
+    if scale:
+        m_magnify.factor.bounds = (magnification-0.05, magnification+0.05)
+        m_init = m_magnify | m_init
+    elif abs(magnification - 1) > mag_threshold:
+        m_magnify.factor.fixed = True
+        m_init = m_magnify | m_init
+        log.warning("A magnification of {:.4f} is expected but the "
+                    "magnification is fixed".format(magnification))
+
+    m_final = fit_model(m_init, incoords, refcoords, sigma=10, tolerance=1e-6,
+                        brute=True)
 
     if return_matches:
-        matched = match_sources(fitted_model(*transformed_ref_coords), incoords,
-                                radius=1.0)
+        matched = match_sources(m_final(*incoords), refcoords, radius=1.0)
         ind2 = np.where(matched >= 0)
         ind1 = matched[ind2]
-        obj_list = [[], []] if len(ind1) < 1 else [np.array(list(zip(*incoords)))[ind1],
-                                                   np.array(list(zip(*refcoords)))[ind2]]
-        return obj_list, fit_transform
-
-    return fit_transform
+        obj_list = [[], []] if len(ind1) < 1 else [np.array(list(zip(*incoords)))[ind2],
+                                                   np.array(list(zip(*refcoords)))[ind1]]
+        return obj_list, m_final
+    return m_final

@@ -8,6 +8,9 @@ import numpy as np
 from astropy.wcs import WCS
 from astropy.modeling import models
 
+from gwcs.wcs import WCS as gWCS
+from gwcs import coordinate_frames as cf
+
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
@@ -125,10 +128,14 @@ class Register(PrimitivesBASE):
         scale = params["scale"]
 
         # Use first image in list as reference
-        ref_ad = adinputs[0]
-        log.stdinfo("Reference image: {}".format(ref_ad.filename))
+        adref = adinputs[0]
+        log.stdinfo("Reference image: {}".format(adref.filename))
+        # Create a dummy WCS to facilitate future operations
+        if adref[0].wcs is None:
+            adref[0].wcs = gWCS([(cf.Frame2D(name="pixels"), models.Identity(len(adref[0].shape))),
+                                  (cf.Frame2D(name="world"), None)])
 
-        if (not hasattr(ref_ad[0], 'OBJCAT') or len(ref_ad[0].OBJCAT)
+        if (not hasattr(adref[0], 'OBJCAT') or len(adref[0].OBJCAT)
                                         < min_sources) and method == 'sources':
             log.warning("Too few objects found in reference image. "
                         "{}.".format(warnings[fallback]))
@@ -137,7 +144,7 @@ class Register(PrimitivesBASE):
             else:
                 method = fallback
 
-        adoutputs = [ref_ad]
+        adoutputs = [adref]
         if method == "offsets":
             log.stdinfo("Using offsets specified in header for alignment.")
 
@@ -146,9 +153,9 @@ class Register(PrimitivesBASE):
             # update the WCS to give us a better starting point
             # TODO: Think about what we really really really want
             if method == "offsets" or fallback == "offsets":
-                #_create_wcs_from_offsets(ad, ref_ad)
+                #_create_wcs_from_offsets(ad, adref)
                 if method == "offsets":
-                    _create_wcs_from_offsets(ad, ref_ad)
+                    _create_wcs_from_offsets(ad, adref)
                     adoutputs.append(ad)
                     continue
 
@@ -164,19 +171,19 @@ class Register(PrimitivesBASE):
 
             log.fullinfo("Number of objects in {}: {}".format(ad.filename, nobj))
             log.stdinfo("Cross-correlating sources in {}, {}".
-                         format(ref_ad.filename, ad.filename))
+                         format(adref.filename, ad.filename))
 
             # GNIRS WCS is dubious, so update WCS by using the ref
             # image's WCS and the telescope offsets
             #if ad.instrument() == 'GNIRS':
             #    log.stdinfo("Recomputing WCS for GNIRS from offsets")
-            #    ad = _create_wcs_from_offsets(ad, ref_ad)
+            #    ad = _create_wcs_from_offsets(ad, adref)
 
             # Calculate the offsets quickly using only a translation
             firstpasspix = first_pass / ad.pixel_scale()
-            obj_list, transform = align_images_from_wcs(ad, ref_ad,
+            obj_list, transform = align_images_from_wcs(ad, adref,
                     search_radius=firstpasspix, min_sources=min_sources,
-                    cull_sources=cull_sources, full_wcs=False,
+                    cull_sources=cull_sources, full_wcs=True,
                     rotate=False, scale=False, return_matches=True)
 
             n_corr = len(obj_list[0])
@@ -198,16 +205,23 @@ class Register(PrimitivesBASE):
             # Check the fit geometry depending on the number of objects
             if n_corr < min_sources + 2 and (rotate or scale):
                 log.warning("Too few objects. Setting rotate=False, scale=False")
-                rotate=False
-                scale=False
+                rotate = False
+                scale = False
 
-            # Determine a more accurate fit, and get the WCS
-            wcs = align_images_from_wcs(ad, ref_ad, transform=transform,
-                        search_radius=0.2*firstpasspix,
-                        cull_sources=cull_sources, full_wcs=True,
-                        rotate=rotate, scale=scale, return_matches=False).wcs
-            _write_wcs_keywords(ad, wcs, self.keyword_comments)
-            #_apply_model_to_wcs(ad, transform, keyword_comments=self.keyword_comments)
+            # Determine a more accurate fit
+            if rotate or scale:
+                transform = align_images_from_wcs(ad, adref, transform=transform,
+                                                  search_radius=0.2*firstpasspix,
+                                                  cull_sources=cull_sources,
+                                                  full_wcs=True,
+                                                  rotate=rotate, scale=scale,
+                                                  return_matches=False)
+
+            try:
+                ad[0].wcs.insert_transform(ad[0].wcs.input_frame, transform, after=True)
+            except AttributeError:  # no WCS
+                ad[0].wcs = gWCS([(cf.Frame2D(name="pixels"), transform),
+                                  (cf.Frame2D(name="world"), None)])
             adoutputs.append(ad)
 
         # Timestamp and update filenames
