@@ -8,6 +8,8 @@ import numpy as np
 from astropy.wcs import WCS
 from astropy.modeling import models
 
+from copy import deepcopy
+
 from gwcs.wcs import WCS as gWCS
 from gwcs import coordinate_frames as cf
 
@@ -145,19 +147,12 @@ class Register(PrimitivesBASE):
                 method = fallback
 
         adoutputs = [adref]
-        if method == "offsets":
-            log.stdinfo("Using offsets specified in header for alignment.")
 
         for ad in adinputs[1:]:
-            # If we're doing source alignment but fallback is "offsets",
-            # update the WCS to give us a better starting point
-            # TODO: Think about what we really really really want
-            if method == "offsets" or fallback == "offsets":
-                #_create_wcs_from_offsets(ad, adref)
-                if method == "offsets":
-                    _create_wcs_from_offsets(ad, adref)
-                    adoutputs.append(ad)
-                    continue
+            if method == "offsets":
+                log.stdinfo("Using offsets specified in header for alignment.")
+                _create_wcs_from_offsets(ad, adref)
+                continue
 
             try:
                 nobj = len(ad[0].OBJCAT)
@@ -191,6 +186,8 @@ class Register(PrimitivesBASE):
             if n_corr < min_sources:
                 log.warning("Too few correlated sources found. "
                             "{}".format(warnings[fallback]))
+                if fallback == 'offsets':
+                    _create_wcs_from_offsets(ad, adref)
                 adoutputs.append(ad)
                 continue
 
@@ -466,9 +463,11 @@ class Register(PrimitivesBASE):
 def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     """
     This function uses the POFFSET, QOFFSET, and PA header keywords to create
-    a new WCS for an image. Its primary role is for GNIRS. For ease, it works
-    out the (RA,DEC) of the centre of rotation in the reference image and
-    determines where in the input image this is.
+    a transform between pixel coordinates. Its primary role is for GNIRS.
+    For ease, it works out the (RA,DEC) of the centre of rotation in the
+    reference image and determines where in the input image this is. The
+    AstroData object's WCS is updated with a new WCS based on the WCS of the
+    reference AD and the relative offsets/rotation from the headers.
 
     Parameters
     ----------
@@ -483,41 +482,46 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     if len(adinput) != len(adref):
         log.warning("Number of extensions in input files are different. "
                     "Cannot correct WCS.")
-        return adinput
+        return
 
-    log.stdinfo("Updating WCS of {} based on {}".format(adinput.filename,
-                                                        adref.filename))
+    log.stdinfo(f"Updating WCS of {adinput.filename} from {adref.filename}")
     try:
-        xdiff = adref.detector_x_offset() - adinput.detector_x_offset()
-        ydiff = adref.detector_y_offset() - adinput.detector_y_offset()
+        xoff_in, yoff_in = adinput.detector_x_offset(), adinput.detector_y_offset()
+        xoff_ref, yoff_ref = adref.detector_x_offset(), adref.detector_y_offset()
         pa1 = adref.phu['PA']
         pa2 = adinput.phu['PA']
     except (KeyError, TypeError):  # TypeError if offset is None
         log.warning("Cannot obtain necessary offsets from headers "
                     "so no change will be made")
-        return adinput
+        return
 
-    # We expect mosaicked inputs but there's no reason why this couldn't
-    # work for all extensions in an image
-    for extin, extref in zip(adinput, adref):
-        # Will need to have some sort of LUT here eventually. But for now...
-        if center_of_rotation is None:
-            center_of_rotation = (630.0, 520.0) if 'GNIRS' in adref.tags \
-                else tuple(0.5*(x-1) for x in extref.data.shape[::-1])
+    if center_of_rotation is None:
+        if 'GNIRS' in adref.tags:
+            center_of_rotation = (629.0, 519.0)  # (x, y; 0-indexed)
+        else:
+            try:
+                for m in adref[0].wcs.forward_transform:
+                    if isinstance(m, models.RotateNative2Celestial):
+                        ra, dec = m.lon.value, m.lat.value
+                        center_of_rotation = adref[0].wcs.backward_transform(ra, dec)
+                        break
+            except (AttributeError, IndexError):
+                if len(adref) == 1:
+                    # Assume it's the center of the image
+                    center_of_rotation = tuple(0.5 * (x - 1)
+                                               for x in adref[0].shape[::-1])
+                else:
+                    log.warning("Cannot determine center of rotation so no "
+                                "change will be made")
+                    return
 
-        wcsref = WCS(extref.hdr)
-        ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
-                                         center_of_rotation[1], 1)
-        extin.hdr['CRVAL1'] = float(ra0)
-        extin.hdr['CRVAL2'] = float(dec0)
-        extin.hdr['CRPIX1'] = center_of_rotation[0] - xdiff
-        extin.hdr['CRPIX2'] = center_of_rotation[1] - ydiff
-        cd = models.Rotation2D(angle=pa1-pa2)(*wcsref.wcs.cd)
-        extin.hdr['CD1_1'] = cd[0][0]
-        extin.hdr['CD1_2'] = cd[0][1]
-        extin.hdr['CD2_1'] = cd[1][0]
-        extin.hdr['CD2_2'] = cd[1][1]
-    return adinput
+    t = ((models.Shift(-xoff_in - center_of_rotation[1]) & models.Shift(-yoff_in - center_of_rotation[0])) |
+         models.Rotation2D(pa1 - pa2) |
+         (models.Shift(xoff_ref + center_of_rotation[1]) & models.Shift(yoff_ref + center_of_rotation[0])))
+    adinput[0].wcs = deepcopy(adref[0].wcs)
+    adinput[0].wcs.insert_transform(adinput[0].wcs.input_frame, t, after=True)
+
+
 
 def _apply_model_to_wcs(ad, transform=None, fix_crpix=False,
                         keyword_comments=None):
