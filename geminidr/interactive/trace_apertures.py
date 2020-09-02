@@ -10,6 +10,8 @@ class TraceApertureInfo:
     def __init__(self, aperture, location, ref_coords, in_coords):
         self.aperture = aperture
         self.number = aperture['number']
+        self.aper_upper = aperture['aper_upper']
+        self.aper_lower = aperture['aper_lower']
         self.location = location
         self.ref_coords = ref_coords
         self.in_coords = in_coords
@@ -54,7 +56,8 @@ class TraceApertureUI:
         unmask_button = Button(label="Unmask")
         unmask_button.on_click(self.unmask_button_handler)
 
-        info = Div(text="Aperture: %s<br/>\nLocation: %s<br/>\n" % (ap_info.number, ap_info.location))
+        info = Div(text="Aperture: %s<br/>\nLocation: %s<br/>\nUpper: %s<br/>Lower: %s<br/>"
+                        % (ap_info.number, ap_info.location, ap_info.aper_upper, ap_info.aper_lower))
 
         controls = column(order_slider.component, sigma_slider.component, mask_button, unmask_button, info)
 
@@ -97,13 +100,11 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
 
 def interactive_trace_apertures(ap_list, ext, order, dispaxis, sigma_clip,
                                 spectral_coords, min_order, max_order):
-    models = list()
     api_models = list()
     for ap_info in ap_list.apertures:
         masked_coords = GIMaskedSigmadCoords(ap_info.in_coords[1 - dispaxis], ap_info.in_coords[dispaxis])
         model = ChebyshevModel(order, ap_info.location, dispaxis, sigma_clip,
                                masked_coords, spectral_coords, ext)
-        models.append(model)
         api_models.append((ap_info, model))
 
     server.set_visualizer(TraceApertureVisualizer(api_models, min_order, max_order))
@@ -112,6 +113,6 @@ def interactive_trace_apertures(ap_list, ext, order, dispaxis, sigma_clip,
 
     server.set_visualizer(None)
 
-    for (ap_info, model) in zip(ap_list.apertures, models):
+    for (ap_info, model) in api_models:
         ap_info.model_dict = model.model_dict
         ap_info.m_final = model.m_final
