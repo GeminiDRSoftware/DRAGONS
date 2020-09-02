@@ -115,6 +115,10 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
         self.max_order = max_order
 
         self.step_slider = GISlider("Step", self.step, 1, 1, 100, self, "step")
+        self.nsum_slider = GISlider("Lines to Sum", self.nsum, 1, 1, 100, self, "nsum")
+        self.max_missed_slider = GISlider("Max Steps Missed", self.max_missed, 1, 1, 100, self, "max_missed")
+        self.max_shift_slider = GISlider("Max Shift per Pixel", self.max_shift, 0.001, 0.001, 1, self, "max_shift")
+
         self.button = Button(label="Update Fits")
         self.button.on_click(self.update_fits)
 
@@ -151,7 +155,8 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
     def visualize(self, doc):
         super().visualize(doc)
 
-        ctrls = column(self.step_slider.component, self.button)
+        ctrls = column(self.step_slider.component, self.nsum_slider.component, self.max_missed_slider.component,
+                       self.max_shift_slider.component, self.button)
 
         tabs = Tabs(tabs=[], name="tabs")
 
