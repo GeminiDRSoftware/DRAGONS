@@ -24,18 +24,10 @@ from . import parameters_resample
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
-interpolators = {"nearest": 0,
-                 "linear": 1,
-                 "spline2": 2,
-                 "spline3": 3,
-                 "spline4": 4,
-                 "spline5": 5,
-                 }
-# ------------------------------------------------------------------------------
 @parameter_override
 class Resample(PrimitivesBASE):
     """
-    This is the class containing all of the primitives for resampling.
+    This is the class containing all of the primitives for resampling images.
     """
     tagset = None
 
