@@ -1,7 +1,7 @@
 # Copyright(c) 2017-2020 Association of Universities for Research in Astronomy, Inc.
 
 import numpy as np
-from astropy.modeling import fitting, models, FittableModel
+from astropy.modeling import fitting, models, Model, FittableModel
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter,
@@ -11,7 +11,7 @@ from astrodata import wcs as adwcs
 
 from scipy import optimize, spatial
 from datetime import datetime
-from functools import partial
+from functools import partial, reduce
 import inspect
 
 from matplotlib import pyplot as plt
@@ -891,18 +891,12 @@ def align_catalogs(incoords, refcoords, transform=None, tolerance=0.1):
     Model: a model that maps (xin, yin) to (xref, yref)
     """
     if transform is None:
+        transform = reduce(Model.__and__, [models.Shift(0)] * len(incoords))
 
-        if len(incoords) == 2:
-            transform = Transform.create2d()
-        else:
-            raise ValueError("No transformation provided and data are not 2D")
+    m_final = fit_model(transform, incoords, refcoords,
+                        sigma=10.0, tolerance=tolerance, brute=True)
 
-    final_model = fit_model(transform.asModel(), incoords, refcoords,
-                            sigma=10.0, tolerance=tolerance, brute=True)
-
-    transform.replace(final_model)
-
-    return transform
+    return m_final
 
 
 # def match_sources(incoords, refcoords, radius=2.0, priority=[]):

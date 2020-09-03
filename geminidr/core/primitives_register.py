@@ -17,9 +17,8 @@ from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
-from gempy.library.matching import align_images_from_wcs, align_catalogs, match_sources
+from gempy.library.matching import align_images_from_wcs, fit_model, match_sources
 from gempy.library.transform import Transform
-from gempy.library.astromodels import Pix2Sky
 
 from geminidr import PrimitivesBASE
 from . import parameters_register
@@ -247,7 +246,6 @@ class Register(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        full_wcs = params["full_wcs"]
 
         for ad in adinputs:
             # Check we have a REFCAT and at least one OBJCAT to match
@@ -278,8 +276,6 @@ class Register(PrimitivesBASE):
             offset_range = params["initial"] / pixscale  # Search box size
             final = params["final"] / pixscale  # Matching radius
             max_ref_sources = 100 if 'qa' in self.mode else None  # No more than this
-            if full_wcs is None:
-                full_wcs = not ('qa' in self.mode)
 
             best_matches = 0
             best_model = None
@@ -287,37 +283,35 @@ class Register(PrimitivesBASE):
             for index in objcat_order:
                 ext = ad[index]
                 extver = ext.hdr['EXTVER']
+                if not isinstance(ext.wcs.output_frame, cf.CelestialFrame):
+                    log.warning(f"WCS of {ad.filename}:{extver} does not "
+                                "transform to a CelestialFrame -- cannot "
+                                "perform astrometry")
+                    info_list.append({})
+                    continue
                 try:
                     objcat = ad[index].OBJCAT
                 except AttributeError:
-                    log.stdinfo('No OBJCAT in {}:{} -- cannot perform '
-                                'astrometry'.format(ad.filename, extver))
+                    log.stdinfo(f'No OBJCAT in {ad.filename}:{extver} -- '
+                                'cannot perform astrometry')
                     info_list.append({})
                     continue
                 objcat_len = len(objcat)
 
                 # We always fit in pixel space of the image
-                wcs = WCS(ad[index].hdr)
-                xref, yref = refcat['RAJ2000'], refcat['DEJ2000']
-                if full_wcs:
-                    # Transform REFCAT RA,dec to OBJCAT x,y
-                    fit_transform = Transform(Pix2Sky(wcs).inverse.rename("WCS"))
-                    fit_transform.factor.fixed = True
-                    fit_transform.angle.fixed = True
-                    if best_model is not None:
-                        fit_transform.x_offset = best_model.x_offset
-                        fit_transform.y_offset = best_model.y_offset
-                else:
-                    # Transform REFCAT x,y (via image WCS) to OBJCAT x,y
-                    xref, yref = wcs.all_world2pix(xref, yref, 1)
-                    fit_transform = (Transform.create2d(shape=ext.shape)
-                                     if best_model is None else best_model.copy())
-
-                fit_transform.add_bounds('x_offset', offset_range)
-                fit_transform.add_bounds('y_offset', offset_range)
+                xref, yref = ext.wcs.backward_transform(refcat['RAJ2000'],
+                                                        refcat['DEJ2000'])
+                try:
+                    m_init = best_model.copy()
+                except AttributeError:
+                    m_init = (models.Shift(0) & models.Shift(0))
+                m_init.offset_0.bounds = (m_init.offset_0 - offset_range,
+                                          m_init.offset_0 + offset_range)
+                m_init.offset_1.bounds = (m_init.offset_1 - offset_range,
+                                          m_init.offset_1 + offset_range)
 
                 # First: estimate number of reference sources in field
-                xx, yy = fit_transform(xref, yref)
+                xx, yy = m_init.inverse(xref, yref)
                 # Could tweak y1, y2 here for GNIRS
                 x1 = y1 = 0
                 y2, x2 = ext.shape
@@ -346,9 +340,7 @@ class Register(PrimitivesBASE):
                             else:
                                 if not np.all(np.where(np.isnan(ref_mags), -999,
                                                        ref_mags) < -99):
-                                    log.stdinfo('Using {} magnitude instead'.
-                                                format(filt))
-                                    break
+                                    log.stdinfo(f'Using {filt} magnitude instead')
 
                     if ref_mags is not None:
                         in_field &= (ref_mags > -99)
@@ -373,15 +365,15 @@ class Register(PrimitivesBASE):
                 if num_ref_sources > 0:
                     log.stdinfo('Aligning {}:{} with {} REFCAT and {} OBJCAT sources'.
                                 format(ad.filename, extver, num_ref_sources, keep_num))
-                    transform = align_catalogs((xref[in_field], yref[in_field]),
-                                               (objcat['X_IMAGE'][sorted_idx],
-                                                objcat['Y_IMAGE'][sorted_idx]),
-                                               transform=fit_transform, tolerance=0.05)
-                    matched = match_sources(transform(xref, yref),
-                                            (objcat['X_IMAGE'], objcat['Y_IMAGE']),
+                    transform = fit_model(m_init, (objcat['X_IMAGE'][sorted_idx]-1,
+                                                   objcat['Y_IMAGE'][sorted_idx]-1),
+                                           (xref[in_field], yref[in_field]),
+                                          sigma=10.0, tolerance=0.1, brute=True)
+                    matched = match_sources(transform.inverse(xref, yref),
+                                            (objcat['X_IMAGE']-1, objcat['Y_IMAGE']-1),
                                             radius=final)
                 else:
-                    log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
+                    log.stdinfo(f'No REFCAT sources in field of extver {extver}')
                     continue
 
                 num_matched = np.sum(matched >= 0)
@@ -395,19 +387,16 @@ class Register(PrimitivesBASE):
                     offset_range = 2.5 / pixscale
 
                 if num_matched > 0:
-                    # Update WCS in the header and OBJCAT (X_WORLD, Y_WORLD)
-                    if full_wcs:
-                        _write_wcs_keywords(ext, transform.wcs, self.keyword_comments)
-                    else:
-                        _apply_model_to_wcs(ext, fit_transform, keyword_comments=self.keyword_comments)
-                    new_wcs = WCS(ext.hdr)
-                    objcat['X_WORLD'], objcat['Y_WORLD'] = new_wcs.all_pix2world(
-                        objcat['X_IMAGE'], objcat['Y_IMAGE'], 1)
+                    # Update OBJCAT (X_WORLD, Y_WORLD)
+                    crpix = (0, 0)  # doesn't matter since we're only doing a shift
+                    ra0, dec0 = ext.wcs(*crpix)
+                    ext.wcs.insert_transform(ext.wcs.input_frame, transform, after=True)
+                    objcat['X_WORLD'], objcat['Y_WORLD'] = ext.wcs(objcat['X_IMAGE']-1,
+                                                                   objcat['Y_IMAGE']-1)
 
                     # Sky coordinates of original CRPIX location with old
                     # and new WCS (easier than using the transform)
-                    ra0, dec0 = wcs.all_pix2world([wcs.wcs.crpix], 1)[0]
-                    ra1, dec1 = new_wcs.all_pix2world([wcs.wcs.crpix], 1)[0]
+                    ra1, dec1 = ext.wcs(*crpix)
                     cosdec = math.cos(math.radians(dec0))
                     delta_ra = 3600 * (ra1-ra0) * cosdec
                     delta_dec = 3600 * (dec1-dec0)
@@ -520,73 +509,3 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
          (models.Shift(xoff_ref + center_of_rotation[1]) & models.Shift(yoff_ref + center_of_rotation[0])))
     adinput[0].wcs = deepcopy(adref[0].wcs)
     adinput[0].wcs.insert_transform(adinput[0].wcs.input_frame, t, after=True)
-
-
-
-def _apply_model_to_wcs(ad, transform=None, fix_crpix=False,
-                        keyword_comments=None):
-    """
-    This function modifies the WCS of an input image according to a
-    Transform that describes how to map the input image pixels to their
-    correct location, i.e., an input pixel (x,y) should have the world
-    coordinates WCS(m(x,y)), where m is the transformation model.
-
-    Parameters
-    ----------
-    ad: AstroData
-        input image for WCS to be modified
-    transform: Transform
-        transformation (in pixel space)
-    fix_crpix: bool
-        if True, keep CRPIXi values fixed; otherwise keep CRVALi fixed
-    keyword_comments: dict
-        the comment for each FITS keyword
-
-    Returns
-    -------
-    AstroData: modified AD instance
-    """
-    if ad.is_single:
-        ext = ad
-    else:
-        if len(ad) > 1:
-            raise ValueError("Cannot modify WCS of multi-extension AstroData object")
-        ext = ad[0]
-    wcs = WCS(ext.hdr)
-    affine = transform.affine_matrices(ext.shape)
-
-    # Affine matrix and offset are in python order!
-    if fix_crpix:
-        wcs.wcs.crval = wcs.all_pix2world(*transform(*wcs.wcs.crpix), 1)
-    else:
-        wcs.wcs.crpix = np.dot(np.linalg.inv(affine.matrix),
-                               wcs.wcs.crpix[::-1] - affine.offset)[::-1]
-    # np.flip(axis=None) available in v1.15
-    wcs.wcs.cd = np.dot(affine.matrix[::-1,::-1], wcs.wcs.cd)
-
-    _write_wcs_keywords(ext, wcs, keyword_comments)
-    return ad
-
-def _write_wcs_keywords(ad, wcs, keyword_comments):
-    """
-    Updates the FITS header WCS keywords, with comments. Will at some point
-    probably be superseded by the WCS.to_header() method
-
-    Parameters
-    ----------
-    ad: AstroData
-        the AD object (or slice) to have its WCS keywords modified in place
-    wcs: WCS
-        WCS object with the information
-    keyword_comments:
-        list of comments for the keywords
-    """
-    for ax in (1, 2):
-        ad.hdr.set('CRPIX{}'.format(ax), wcs.wcs.crpix[ax-1],
-                   comment=keyword_comments["CRPIX{}".format(ax)])
-        ad.hdr.set('CRVAL{}'.format(ax), wcs.wcs.crval[ax-1],
-                   comment=keyword_comments["CRVAL{}".format(ax)])
-        for ax2 in 1, 2:
-            ad.hdr.set('CD{}_{}'.format(ax, ax2), wcs.wcs.cd[ax-1, ax2-1],
-                       comment=keyword_comments["CD{}_{}".format(ax, ax2)])
-    return

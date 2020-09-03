@@ -12,6 +12,11 @@ Change Logs
 Bug Fixes
 ---------
 
+**geminidr.core**
+
+* Remove ``full_wcs`` parameter from determineAstrometricSolution primitive
+  since it had not been correctly implemented and did nothing
+
 **gempy.gemini**
 
 * Ensure NIRI skyflats satisfy calibration association requirements
