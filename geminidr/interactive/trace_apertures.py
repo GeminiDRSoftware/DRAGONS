@@ -70,7 +70,7 @@ class TraceApertureUI:
         differencing_model.add_coord_listener(self.line2.update_coords)
 
         order_slider = GISlider("Order", model.m_init.degree, 1, min_order, max_order,
-                                model.m_init, "degree", model.recalc_chebyshev)
+                                model.m_init, "_degree", model.recalc_chebyshev)
         sigma_slider = GISlider("Sigma", model.sigma, 0.1, 2, 10,
                                 model, "sigma", model.recalc_chebyshev)
 
