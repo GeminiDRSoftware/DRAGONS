@@ -1,4 +1,5 @@
 import numpy as np
+from astropy.modeling import models, fitting
 
 from bokeh.layouts import row, column
 from bokeh.models import Tabs, Panel, Button, Div, CustomJS
@@ -15,7 +16,7 @@ class TraceApertureInfo:
     """
     Convenience class to hold a bunch of information for an aperture
     """
-    def __init__(self, aperture, location, ref_coords, in_coords):
+    def __init__(self, aperture, location, ref_coords, in_coords, m_init, fit_it):
         self.aperture = aperture
         self.number = aperture['number']
         self.aper_upper = aperture['aper_upper']
@@ -23,6 +24,8 @@ class TraceApertureInfo:
         self.location = location
         self.ref_coords = ref_coords
         self.in_coords = in_coords
+        self.m_init = m_init
+        self.fit_it = fit_it
 
         # outputs
         self.model_dict = None
@@ -66,8 +69,8 @@ class TraceApertureUI:
         differencing_model = GIDifferencingModel(model.coords, model, model.model_calculate)
         differencing_model.add_coord_listener(self.line2.update_coords)
 
-        order_slider = GISlider("Order", model.order, 1, min_order, max_order,
-                                model, "order", model.recalc_chebyshev)
+        order_slider = GISlider("Order", model.m_init.degree, 1, min_order, max_order,
+                                model.m_init, "degree", model.recalc_chebyshev)
         sigma_slider = GISlider("Sigma", model.sigma, 0.1, 2, 10,
                                 model, "sigma", model.recalc_chebyshev)
 
@@ -120,7 +123,11 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
                                if c1[dispaxis] == location])
             values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
             ref_coords, in_coords = values[:2], values[2:]
-            self.ap_list.add_aperture(TraceApertureInfo(aperture, location, ref_coords, in_coords))
+            m_init = models.Chebyshev1D(degree=order, c0=location,
+                                        domain=[0, ext.shape[dispaxis] - 1])
+            fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                       sigma_clip, sigma=3)
+            self.ap_list.add_aperture(TraceApertureInfo(aperture, location, ref_coords, in_coords, m_init, fit_it))
 
         api_models = list()
         for ap_info in self.ap_list.apertures:
@@ -128,7 +135,7 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
             # and which were sigmad by the fit.  These three states get communicated to the plotting
             masked_coords = GIMaskedSigmadCoords(ap_info.in_coords[1 - dispaxis], ap_info.in_coords[dispaxis])
             model = ChebyshevModel(order, ap_info.location, dispaxis, sigma_clip,
-                                   masked_coords, spectral_coords, ext)
+                                   masked_coords, spectral_coords, ext, ap_info.m_init, ap_info.fit_it)
             api_models.append((ap_info, model))
 
         self.api_models = api_models
