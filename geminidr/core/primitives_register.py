@@ -5,7 +5,6 @@
 # ------------------------------------------------------------------------------
 import math
 import numpy as np
-from astropy.wcs import WCS
 from astropy.modeling import models
 
 from copy import deepcopy
@@ -15,10 +14,10 @@ from gwcs import coordinate_frames as cf
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
+from gempy.library import astromodels as am
 from gempy.utils import logutils
 
 from gempy.library.matching import align_images_from_wcs, fit_model, match_sources
-from gempy.library.transform import Transform
 
 from geminidr import PrimitivesBASE
 from . import parameters_register
@@ -238,14 +237,16 @@ class Register(PrimitivesBASE):
             search radius for cross-correlation (arcsec)
         final: float
             search radius for object matching (arcsec)
-        full_wcs: bool (or None)
-            use an updated WCS for each matching iteration, rather than simply
-            applying pixel-based corrections to the initial mapping?
-            (None => not ('qa' in mode))
+        rotate: bool
+            allow image rotation to align to reference catalog?
+        scale: bool
+            allow image scaling to align to reference catalog?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        rotate = params["rotate"]
+        scale = params["scale"]
 
         for ad in adinputs:
             # Check we have a REFCAT and at least one OBJCAT to match
@@ -305,10 +306,14 @@ class Register(PrimitivesBASE):
                     m_init = best_model.copy()
                 except AttributeError:
                     m_init = (models.Shift(0) & models.Shift(0))
-                m_init.offset_0.bounds = (m_init.offset_0 - offset_range,
-                                          m_init.offset_0 + offset_range)
-                m_init.offset_1.bounds = (m_init.offset_1 - offset_range,
-                                          m_init.offset_1 + offset_range)
+                    m_init.offset_0.bounds = (m_init.offset_0 - offset_range,
+                                              m_init.offset_0 + offset_range)
+                    m_init.offset_1.bounds = (m_init.offset_1 - offset_range,
+                                              m_init.offset_1 + offset_range)
+                    if rotate:
+                        m_init = am.Rotate2D(0, bounds={'angle': (-5, 5)}) | m_init
+                    if scale:
+                        m_init = am.Scale2D(1, bounds={'factor': (0.95, 1.05)}) | m_init
 
                 # First: estimate number of reference sources in field
                 xx, yy = m_init.inverse(xref, yref)
@@ -368,7 +373,7 @@ class Register(PrimitivesBASE):
                     transform = fit_model(m_init, (objcat['X_IMAGE'][sorted_idx]-1,
                                                    objcat['Y_IMAGE'][sorted_idx]-1),
                                            (xref[in_field], yref[in_field]),
-                                          sigma=10.0, tolerance=0.1, brute=True)
+                                          sigma=10.0, tolerance=0.0001, brute=True)
                     matched = match_sources(transform.inverse(xref, yref),
                                             (objcat['X_IMAGE']-1, objcat['Y_IMAGE']-1),
                                             radius=final)

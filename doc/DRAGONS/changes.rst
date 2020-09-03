@@ -17,6 +17,8 @@ Bug Fixes
 * Remove ``full_wcs`` parameter from determineAstrometricSolution primitive
   since it had not been correctly implemented and did nothing
 
+* Add ``rotate`` and ``scale`` parameters to determineAstrometricSolution
+
 **gempy.gemini**
 
 * Ensure NIRI skyflats satisfy calibration association requirements
