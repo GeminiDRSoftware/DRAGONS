@@ -1006,7 +1006,7 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
 
             # This is approximate since the affine matrix might have differential
             # scaling and a shear
-            magnification = np.linalg.det(affine.matrix)
+            magnification = np.sqrt(np.linalg.det(affine.matrix))
             rotation = np.degrees(np.arctan2(affine.matrix[1,0] - affine.matrix[0,1],
                                              affine.matrix[0,0] + affine.matrix[1,1]))
 
