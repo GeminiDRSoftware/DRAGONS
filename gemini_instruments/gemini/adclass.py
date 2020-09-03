@@ -9,11 +9,6 @@ import re
 import math
 import datetime
 import dateutil.parser
-import warnings
-
-from astropy.wcs import WCS
-from astropy.wcs import FITSFixedWarning
-from astropy.wcs._wcs import InconsistentAxisTypesError
 
 from astrodata import AstroDataFits
 from astrodata import astro_data_tag
@@ -1883,8 +1878,8 @@ class AstroDataGemini(AstroDataFits):
         """
         # Return None if the WCS isn't sky coordinates
         try:
-            return self._get_wcs_coords()[0]
-        except InconsistentAxisTypesError:
+            return self._get_wcs_coords()['lon']
+        except KeyError:
             return None
 
     @astro_data_descriptor
@@ -1900,8 +1895,8 @@ class AstroDataGemini(AstroDataFits):
         """
         # Return None if the WCS isn't sky coordinates
         try:
-            return self._get_wcs_coords()[1]
-        except InconsistentAxisTypesError:
+            return self._get_wcs_coords()['lat']
+        except KeyError:
             return None
 
     @astro_data_descriptor
@@ -1918,42 +1913,28 @@ class AstroDataGemini(AstroDataFits):
 
     def _get_wcs_coords(self):
         """
-        Returns the RA and dec of the middle of the first extension
+        Returns the RA and dec of the location around which the celestial
+        sphere is being projected (CRVALi in a FITS representation)
 
         Returns
         -------
         tuple
             (right ascension, declination)
         """
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=FITSFixedWarning)
-            # header[0] is PHU, header[1] is first extension HDU
-            # If no CTYPE1 in first HDU, try PHU
+        wcs = self.wcs if self.is_single else self[0].wcs
+        coords = {name: None for name in wcs.output_frame.axes_names}
+        for m in wcs.forward_transform:
             try:
-                ctypes = (self[0].hdr['CTYPE1'], self[0].hdr['CTYPE2'])
-            except KeyError:
-                try:
-                    ctypes = (self.phu['CTYPE1'], self.phu['CTYPE2'])
-                except KeyError:
-                    return (None, None)
-                else:
-                    wcs = WCS(self.phu)
-            else:
-                wcs = WCS(self[0].hdr)
-
-            if not (ctypes[0].startswith('RA') and ctypes[1].startswith('DEC')):
-                return (None, None)
-
-            x, y = [0.5 * self[0].hdr[naxis]
-                    for naxis in ('NAXIS1', 'NAXIS2')]
-            result = wcs.wcs_pix2world(x,y, 1)
-        ra, dec = float(result[0]), float(result[1])
+                coords['lon'] = m.lon.value
+                coords['lat'] = m.lat.value
+            except AttributeError:
+                pass
 
         # TODO: This isn't in old Gemini descriptors. Should it be?
         #if 'NON_SIDEREAL' in self.tags:
         #    ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
 
-        return (ra, dec)
+        return coords
 
     # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
     def _get_wcs_pixel_scale(self, mean=True):
