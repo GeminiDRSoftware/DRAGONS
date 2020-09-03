@@ -8,20 +8,18 @@ import os
 import re
 import numbers
 import itertools
-import numpy as np
-
 from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
-
 from functools import wraps
+from collections import namedtuple
+
+import numpy as np
+from scipy.special import erf
 
 from astropy.stats import sigma_clip
-from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
-
-from scipy.special import erf
 
 from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
@@ -29,10 +27,8 @@ from ..utils import logutils
 
 import astrodata
 
-from collections import namedtuple
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
-
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
@@ -1624,7 +1620,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
     for ext in adoutput:
         outextver = ext.hdr['EXTVER']
-        output_wcs = WCS(ext.hdr)
+        output_wcs = ext.wcs
         indices = [i for i in range(len(ext_mapping))
                    if ext_mapping[i] == outextver]
         inp_objcats = [adinput[i].OBJCAT for i in indices if
@@ -1636,9 +1632,9 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             # Get new pixel coords for objects from RA/Dec and the output WCS
             ra = out_objcat["X_WORLD"]
             dec = out_objcat["Y_WORLD"]
-            newx, newy = output_wcs.all_world2pix(ra, dec, 1)
-            out_objcat["X_IMAGE"] = newx
-            out_objcat["Y_IMAGE"] = newy
+            newx, newy = output_wcs(ra, dec)
+            out_objcat["X_IMAGE"] = newx + 1
+            out_objcat["Y_IMAGE"] = newy + 1
 
             # Remove the NUMBER column so add_objcat renumbers
             out_objcat.remove_column('NUMBER')
