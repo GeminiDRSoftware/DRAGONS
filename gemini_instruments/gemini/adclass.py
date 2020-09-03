@@ -10,6 +10,8 @@ import math
 import datetime
 import dateutil.parser
 
+import numpy as np
+
 from astrodata import AstroDataFits
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
@@ -1952,26 +1954,21 @@ class AstroDataGemini(AstroDataFits):
         list of floats/float
             List of pixel scales, one per extension
         """
-        try:
-            cd11 = self.hdr['CD1_1']
-            cd12 = self.hdr['CD1_2']
-            cd21 = self.hdr['CD2_1']
-            cd22 = self.hdr['CD2_2']
-        except KeyError:
-            # Make sure we return the right type of object
-            return None if mean else [None] * len(self)
-
         if self.is_single:
-            return 3600 * 0.5 * (math.sqrt(cd11*cd11 + cd12*cd12) +
-                                 math.sqrt(cd21*cd21 + cd22*cd22))
-        else:
-            pixel_scale_list = [3600 * 0.5 * (math.sqrt(a*a + b*b) +
-                                  math.sqrt(c*c + d*d))
-                for a,b,c,d in zip(cd11,cd12,cd21,cd22)]
-            if mean:
-                return sum(pixel_scale_list) / len(pixel_scale_list)
-            else:
-                return pixel_scale_list
+            try:
+                return 3600 * np.sqrt(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix))
+            except IndexError:
+                return None
+
+        pixel_scale_list = []
+        for ext in self:
+            try:
+                pixel_scale_list.append(3600 * np.sqrt(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix)))
+            except IndexError:
+                pixel_scale_list.append(None)
+        if mean:
+            return np.mean([pixscale for pixscale in pixel_scale_list if pixscale is not None])
+        return pixel_scale_list
 
     def _grating(self):
         """
