@@ -284,6 +284,7 @@ class Resample(PrimitivesBASE):
         order = params["order"]
         threshold = params["threshold"]
         sfx = params["suffix"]
+        force_affine = True
 
         try:
             source_stream = self.streams[source]
@@ -310,11 +311,16 @@ class Resample(PrimitivesBASE):
             for ext, source_ext in zip(ad, ad_source):
                 if getattr(ext, 'OBJMASK') is not None:
                     t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
-                    affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
-                    objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
-                                               affine.matrix, affine.offset,
-                                               output_shape=ext.shape, order=order,
-                                               cval=0)
+                    if force_affine:
+                        affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                        objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
+                                                   affine.matrix, affine.offset,
+                                                   output_shape=ext.shape, order=order,
+                                                   cval=0)
+                    else:
+                        objmask = transform.Transform(t_align).apply(source_ext.OBJMASK.astype(np.float32),
+                                                                     output_shape=ext.shape, order=order,
+                                                                     cval=0)
                     ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
                 # We will deliberately keep the input image's OBJCAT (if it
                 # exists) since this will be required for aligning the inputs.
