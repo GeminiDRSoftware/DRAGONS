@@ -4,18 +4,18 @@
 #                                                         primitives_resample.py
 # ------------------------------------------------------------------------------
 import numpy as np
-from astropy.wcs import WCS
-from astropy.modeling import models, Model
-from gwcs.wcs import WCS as gWCS
-
 from functools import reduce
 from copy import copy
 
-from gempy.library import transform
-from gempy.library.matching import Pix2Sky
-from gempy.gemini import gemini_tools as gt
+from scipy.ndimage import affine_transform
+from astropy.modeling import models, Model
+from gwcs.wcs import WCS as gWCS
 
+import astrodata, gemini_instruments
 from astrodata import wcs as adwcs
+
+from gempy.library import transform
+from gempy.gemini import gemini_tools as gt
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -293,13 +293,21 @@ class Resample(PrimitivesBASE):
         threshold = params["threshold"]
         sfx = params["suffix"]
 
-        source_stream = self.streams.get(source, [])
-        if len(source_stream) != 1:
-            log.warning("Stream {} not found or does not contain single "
-                        "AstroData object. Continuing.".format(source_stream))
-            return adinputs
+        try:
+            source_stream = self.streams[source]
+        except KeyError:
+            try:
+                ad_source = astrodata.open(source)
+            except:
+                log.warning(f"Cannot find stream or file named {source}. Continuing.")
+                return adinputs
+        else:
+            if len(source_stream) != 1:
+                log.warning(f"Stream {source} does not contain single "
+                            "AstroData object. Continuing.")
+                return adinputs
+            ad_source = source_stream[0]
 
-        ad_source = source_stream[0]
         # There's no reason why we can't handle multiple extensions
         if any(len(ad) != len(ad_source) for ad in adinputs):
             log.warning("At least one AstroData input has a different number "
@@ -308,16 +316,14 @@ class Resample(PrimitivesBASE):
 
         for ad in adinputs:
             for ext, source_ext in zip(ad, ad_source):
-                t = transform.Transform([Pix2Sky(WCS(source_ext.hdr)),
-                                         Pix2Sky(WCS(ext.hdr)).inverse])
-                t._affine = True
-                try:
-                    # Convert OBJMASK to float or else uint8 will be returned
-                    objmask = t.apply(source_ext.OBJMASK.astype(np.float32),
-                                      output_shape=ext.shape, order=order, cval=0)
+                if getattr(ext, 'OBJMASK') is not None:
+                    t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
+                    affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                    objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
+                                               affine.matrix, affine.offset,
+                                               output_shape=ext.shape, order=order,
+                                               cval=0)
                     ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
-                except:  # source_ext.OBJMASK not present, or None
-                    pass
                 # We will deliberately keep the input image's OBJCAT (if it
                 # exists) since this will be required for aligning the inputs.
             ad.update_filename(suffix=sfx, strip=True)

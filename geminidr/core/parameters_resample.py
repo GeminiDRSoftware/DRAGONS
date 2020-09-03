@@ -17,6 +17,6 @@ class shiftImagesConfig(config.Config):
 
 class applyStackedObjectMaskConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_stackedObjMaskApplied", optional=True)
-    source = config.Field("Stream containing stacked image", str, None)
+    source = config.Field("Filename of/Stream containing stacked image", str, None)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
