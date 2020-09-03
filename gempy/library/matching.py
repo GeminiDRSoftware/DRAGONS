@@ -1,27 +1,24 @@
 # Copyright(c) 2017-2020 Association of Universities for Research in Astronomy, Inc.
 
 import numpy as np
+from datetime import datetime
+from functools import partial
+import inspect
+
+from scipy import optimize, spatial
 from astropy.modeling import fitting, models, Model, FittableModel
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter,
                                       _convert_input)
-from astropy.wcs import WCS
+
 from astrodata import wcs as adwcs
-
-from scipy import optimize, spatial
-from datetime import datetime
-from functools import partial, reduce
-import inspect
-
-from matplotlib import pyplot as plt
 
 from gempy.gemini import gemini_tools as gt
 from ..utils import logutils
+from .astromodels import Rotate2D, Scale2D
 
-from .transform import Transform
-from .astromodels import Pix2Sky, Rotate2D, Scale2D
-
+from matplotlib import pyplot as plt
 
 ##############################################################################
 class MatchBox:
