@@ -93,6 +93,17 @@ class PrimitiveVisualizer(ABC):
         else:
             self.doc.add_next_tick_callback(lambda: fn())
 
+    def make_modal(self, widget, message):
+        callback = CustomJS(args=dict(source=widget), code="""
+            console.log("checking button state");
+            if (source.disabled) {
+                openModal('%s');
+            } else {
+                closeModal();
+            }
+        """ % message)
+        widget.js_on_change('disabled', callback)
+
 
 class GISlider(object):
     """
@@ -471,11 +482,11 @@ class GIMaskedSigmadCoords(GICoordsSource):
         for i in coords:
             self.mask[i] = True
         self.sigma = [False] * len(self.x_coords[self.mask])
+        for sigma_listener in self.sigma_listeners:
+            sigma_listener([], [])
         self.notify_coord_listeners(self.x_coords, self.y_coords)
         for mask_listener in self.mask_listeners:
             mask_listener(self.x_coords[self.mask], self.y_coords[self.mask])
-        for sigma_listener in self.sigma_listeners:
-            sigma_listener([], [])
 
     def set_sigma(self, coords):
         """

@@ -5,12 +5,16 @@ from bokeh.models import Tabs, Panel, Button, Div, CustomJS
 
 from geminidr.interactive import interactive, server
 from geminidr.interactive.chebyshev1d import ChebyshevModel
-from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIFigure, GIMaskedSigmadScatter, GILine, GISlider
+from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIFigure, GIMaskedSigmadScatter, GILine, GISlider, \
+    GIDifferencingModel
 from gempy.library import tracing
 from gempy.library.astrotools import boxcar
 
 
 class TraceApertureInfo:
+    """
+    Convenience class to hold a bunch of information for an aperture
+    """
     def __init__(self, aperture, location, ref_coords, in_coords):
         self.aperture = aperture
         self.number = aperture['number']
@@ -26,6 +30,10 @@ class TraceApertureInfo:
 
 
 class TraceApertureList:
+    """
+    I thought I was going to have some clever functionality in
+    here instead of a glorified list().
+    """
     def __init__(self):
         self.apertures = list()
 
@@ -35,10 +43,12 @@ class TraceApertureList:
 
 class TraceApertureUI:
     def __init__(self, ap_info, model, min_order, max_order):
+        # This holds all the bits that go into a tab for an aperture
+
         self.model = model
 
-        p = GIFigure(plot_width=600, plot_height=500,
-                     title='Interactive Chebyshev',
+        p = GIFigure(plot_width=600, plot_height=400,
+                     title='Chebyshev Fit',
                      x_axis_label='X', y_axis_label='Y',
                      tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
 
@@ -48,6 +58,13 @@ class TraceApertureUI:
         model.add_coord_listener(line.update_coords)
 
         model.recalc_chebyshev()
+
+        p2 = GIFigure(plot_width=600, plot_height=200,
+                      title='Fit Differential',
+                      x_axis_label='X', y_axis_label='Y')
+        self.line2 = GILine(p2)
+        differencing_model = GIDifferencingModel(model.coords, model, model.model_calculate)
+        differencing_model.add_coord_listener(self.line2.update_coords)
 
         order_slider = GISlider("Order", model.order, 1, min_order, max_order,
                                 model, "order", model.recalc_chebyshev)
@@ -60,12 +77,14 @@ class TraceApertureUI:
         unmask_button = Button(label="Unmask")
         unmask_button.on_click(self.unmask_button_handler)
 
-        info = Div(text="Aperture: %s<br/>\nLocation: %s<br/>\nUpper: %s<br/>Lower: %s<br/>"
+        info = Div(text="<table><tr><th align='left'>Aperture:</th><td>%s</td></tr><tr><th align='left'>Location:</th>"
+                        "<td>%s</td></tr><tr><th align='left'>Upper:</th><td>%s</td></tr>"
+                        "<tr><th align='left'>Lower:</th><td>%s</td></tr></table>"
                         % (ap_info.number, ap_info.location, ap_info.aper_upper, ap_info.aper_lower))
 
         controls = column(order_slider.component, sigma_slider.component, mask_button, unmask_button, info)
 
-        self.component = row(controls, p.figure)
+        self.component = row(controls, column(p.figure, p2.figure))
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
@@ -105,6 +124,8 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
 
         api_models = list()
         for ap_info in self.ap_list.apertures:
+            # masked_coords is a UI helper that understands the coordinates, which are currently masked/excluded,
+            # and which were sigmad by the fit.  These three states get communicated to the plotting
             masked_coords = GIMaskedSigmadCoords(ap_info.in_coords[1 - dispaxis], ap_info.in_coords[dispaxis])
             model = ChebyshevModel(order, ap_info.location, dispaxis, sigma_clip,
                                    masked_coords, spectral_coords, ext)
@@ -114,24 +135,28 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
         self.min_order = min_order
         self.max_order = max_order
 
+        # GISLider is my own creation - this one starts with a value of 'self.step' and when you adjust
+        # the slider, it changes the "step" attribute on the self object.  The label in the UI is "Step"
+        # It gets added to pure bokeh calls using self.step_slider.component
         self.step_slider = GISlider("Step", self.step, 1, 1, 100, self, "step")
         self.nsum_slider = GISlider("Lines to Sum", self.nsum, 1, 1, 100, self, "nsum")
         self.max_missed_slider = GISlider("Max Steps Missed", self.max_missed, 1, 1, 100, self, "max_missed")
         self.max_shift_slider = GISlider("Max Shift per Pixel", self.max_shift, 0.001, 0.001, 1, self, "max_shift")
 
+        # This is the button below the top-level parameters.
+        # Right now, if you click it, it calls update_fits
+        # which causes the coords to get regenerated in here
+        # You would want to change the implementation to "set this
+        # flag to 'we're not done yet' and then call to the
+        # server.stop_server() to exit bokeh.  Then
+        # your primitive code responds to the not done flag
+        # and regenerates the coords and calls back into the
+        # top level call
         self.button = Button(label="Update Fits")
         self.button.on_click(self.update_fits)
 
         # Pop up the modal any time this submit button is disabled
-        callback = CustomJS(args=dict(source=self.button), code="""
-            console.log("checking button state");
-            if (source.disabled) {
-                openModal('<b>Recalculating Points</b><br/>This may take 20 seconds');
-            } else {
-                closeModal();
-            }
-        """)
-        self.button.js_on_change('disabled', callback)
+        self.make_modal(self.button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
 
     def _do_update_fits(self):
         all_ref_coords, all_in_coords, spectral_coords = calc_coords(self.locations, self.ext, self.dispaxis, self.step,
@@ -150,11 +175,19 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
     def update_fits(self):
         # button disable doesn't actually work like this since all of this happens on a single pass of the event queue
         self.button.disabled = True
+        # do_later is a utility call that adds an event on the bokeh
+        # event queue to call self._do_update_fits.  That then allows
+        # the self.button.disabled=True logic to execute and the bokeh
+        # UI to respond to it.
         self.do_later(self._do_update_fits)
 
     def visualize(self, doc):
         super().visualize(doc)
 
+        # These are the "outside the aperture tabs" controls
+        # These ctrls are what you want to replace with your dynamic list.
+        # Though for prototyping your vision maybe we should skip that.
+        # I'm more interested in the looping behavior.
         ctrls = column(self.step_slider.component, self.nsum_slider.component, self.max_missed_slider.component,
                        self.max_shift_slider.component, self.button)
 
@@ -199,6 +232,16 @@ def calc_coords(locations, ext, dispaxis, step, nsum, max_missed, max_shift, vie
 
 def interactive_trace_apertures(locations, step, nsum, max_missed, max_shift, aptable, ext, order, dispaxis, sigma_clip,
                                 min_order, max_order, *, log=None):
+    """
+    This is the blocking call.  When this starts, bokeh will start and open a UI window.  The start_server() call
+    will block.
+
+    When the user hits the "submit" button below the aperture tabs, or closes the browser tab, this method will
+    continue.  Then it is pulling out the api_models that were set in the visualizer as a return.
+
+    The previous stuff is still around in chebyshev1d.interactive_chebyshev - and for now this file reuses some
+    of the constructs from there.
+    """
     visualizer = TraceApertureVisualizer(aptable, locations, ext, dispaxis, step, nsum, max_missed, order, sigma_clip,
                                          max_shift, min_order, max_order, log=log)
     server.set_visualizer(visualizer)

@@ -2554,6 +2554,7 @@ class Spect(PrimitivesBASE):
                                                     domain=[0, ext.shape[dispaxis] - 1])
                         fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                                    sigma_clip, sigma=3)
+
                         try:
                             m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
                         except (IndexError, np.linalg.linalg.LinAlgError):
