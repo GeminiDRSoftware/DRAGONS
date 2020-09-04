@@ -24,8 +24,8 @@ class SplineModel:
         # register to listen to these two coordinate sets to get updates.
         # Whenever there is a call to recalc_spline, these coordinate
         # sets will update and will notify all registered listeners.
-        self.mask_points = GICoordsSource()
-        self.fit_line = GICoordsSource()
+        self.mask_points_listeners = list()
+        self.fit_line_listeners = list()
 
         self.spline = None
 
@@ -64,8 +64,10 @@ class SplineModel:
 
         splinex = np.linspace(min(x), max(x), ext.shape[0])
 
-        self.mask_points.notify_coord_listeners(x[self.spline.mask], y[self.spline.mask])
-        self.fit_line.notify_coord_listeners(splinex, self.spline(splinex))
+        for fn in self.mask_points_listeners:
+            fn(x[self.spline.mask], y[self.spline.mask])
+        for fn in self.fit_line_listeners:
+            fn(splinex, self.spline(splinex))
 
 
 class SplineVisualizer(interactive.PrimitiveVisualizer):
@@ -112,6 +114,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         # from field name to the underlying config.Field entry, even though fields just comes in as
         # an iterable
         self.model = SplineModel(ext, coords, weights, order, niter, grow)
+        self.model.recalc_spline()
         self.p = None
         self.spline = None
         self.scatter_masked_source = None
@@ -189,24 +192,24 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
         self.scatter_all_source = build_cds(x, y)
-        self.scatter_all = self.p.scatter(source=self.scatter_all_source, color="blue", radius=5)
+        self.scatter_all = self.p.scatter(x='x', y='y', source=self.scatter_all_source, color="blue", radius=5)
 
         self.scatter_masked_source = build_cds()
-        self.scatter_masked = self.p.scatter(source=self.scatter_masked_source, color="black", radius=5)
-        self.model.coords.add_mask_listener(connect_update_coords(self.scatter_masked_source))
+        self.scatter_masked = self.p.scatter(x='x', y='y', source=self.scatter_masked_source, color="black", radius=5)
+        self.model.mask_points_listeners.append(connect_update_coords(self.scatter_masked_source))
 
         line_source = build_cds()
-        self.line = self.p.line(source=line_source, color="red")
-        self.model.fit_line.add_coord_listener(connect_update_coords(line_source))
+        self.line = self.p.line(x='x', y='y', source=line_source, color="red")
+        self.model.fit_line_listeners.append(connect_update_coords(line_source))
 
         controls = Column(order_slider, niter_slider, grow_slider,
                           mask_button, unmask_button, self.submit_button)
 
         self.details = Div(text="")
-        self.model.fit_line.add_coord_listener(self.update_details)
+        self.model.fit_line_listeners.append(self.update_details)
         self.model.recalc_spline()
 
-        col = column(self.p.figure, self.details)
+        col = column(self.p, self.details)
         layout = row(controls, col)
 
         doc.add_root(layout)

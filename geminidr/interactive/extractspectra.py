@@ -29,8 +29,8 @@ class ExtractSpectraModel:
         # register to listen to these two coordinate sets to get updates.
         # Whenever there is a call to recalc_spline, these coordinate
         # sets will update and will notify all registered listeners.
-        self.points1 = GICoordsSource()
-        self.points2 = GICoordsSource()
+        self.points1_listeners = list()
+        self.points2_listeners = list()
 
     def recalc_extract(self):
         """
@@ -67,10 +67,12 @@ class ExtractSpectraModel:
         # Display extraction edges on viewer, every 10 pixels (for speed)
         pixels = np.arange(npix)
         # edge_coords = np.array([pixels, all_x1]).T
-        self.points1.notify_coord_listeners(pixels, all_x1)
+        for fn in self.points1_listeners:
+            fn(pixels, all_x1)
         # viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis == 1), origin=0)
         # edge_coords = np.array([pixels, all_x2]).T
-        self.points2.notify_coord_listeners(pixels, all_x2)
+        for fn in self.points2_listeners:
+            fn(pixels, all_x2)
         # viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis == 1), origin=0)
 
 
@@ -139,14 +141,14 @@ class ExtractSpectraVisualizer(interactive.PrimitiveVisualizer):
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
         self.poly1 = GIPatch(self.p)
-        self.model.points1.add_coord_listener(self.poly1.update_coords)
+        self.model.points1_listeners.append(self.poly1.update_coords)
         self.poly2 = GIPatch(self.p)
-        self.model.points2.add_coord_listener(self.poly2.update_coords)
+        self.model.points2_listeners.append(self.poly2.update_coords)
 
-        controls = Column(width_slider.component, self.submit_button)
+        controls = column(width_slider, self.submit_button)
 
         self.details = Div(text="")
-        self.model.points1.add_coord_listener(self.update_details)
+        self.model.points1_listeners.append(self.update_details)
         self.model.recalc_extract()
 
         col = column(self.p, self.details)

@@ -268,7 +268,7 @@ class GIModelSource(object):
             listener_fn()
 
 
-class GIDifferencingModel(GICoordsSource):
+class GIDifferencingModel(object):
     """
     A coordinate model for tracking the difference in x/y
     coordinates and what is calculated by a function(x).
@@ -304,9 +304,10 @@ class GIDifferencingModel(GICoordsSource):
         self.data_y_coords = None
         coords.add_coord_listener(self.update_coords)
         cmodel.add_model_listener(self.update_model)
+        self.coord_listeners = list()
 
     def add_coord_listener(self, l):
-        super().add_coord_listener(l)
+        self.coord_listeners.append(l)
         if self.data_x_coords is not None:
             l(self.data_x_coords, self.data_y_coords - self.fn(self.data_x_coords))
 
@@ -340,7 +341,8 @@ class GIDifferencingModel(GICoordsSource):
         """
         x = self.data_x_coords
         y = self.data_y_coords - self.fn(x)
-        self.notify_coord_listeners(x, y)
+        for fn in self.coord_listeners:
+            fn(x, y)
 
 
 class GIMaskedSigmadCoords(GICoordsSource):
@@ -595,7 +597,7 @@ class GIPatch:
         if y_coords is None:
             y_coords = []
         self.patch_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.patch = fig.figure.patch(x='x', y='y', source=self.patch_source, color=color)
+        self.patch = fig.patch(x='x', y='y', source=self.patch_source, color=color)
 
     def update_coords(self, x_coords, y_coords):
         x, y = _dequantity(x_coords, y_coords)
