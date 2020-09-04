@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from astropy.units import Quantity
-from bokeh.layouts import row
+from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div
 from bokeh.plotting import figure
 
@@ -105,108 +105,91 @@ class PrimitiveVisualizer(ABC):
         widget.js_on_change('disabled', callback)
 
 
-class GISlider(object):
+def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
+                      throttled=False):
     """
-    This is a slider widget that also allows for text input.
+    Make a slider widget to use in the bokeh interface.
+
+    This method handles some extra boilerplate logic for inspecting
+    our primitive field configurations and determining sensible values
+    for minimum, maximum, etc.
+
+    Parameters
+    ----------
+    title : str
+        Title for the slider
+    value : int
+        Value to initially set
+    step : float
+        Step size
+    min_value : int
+        Minimum slider value, or None defaults to min(value,0)
+    max_value : int
+        Maximum slider value, or None defaults to value*2
+    obj : object
+        Instance to modify the attribute of when slider changes
+    attr : str
+        Name of attribute in obj to be set with the new value
+    handler : method
+        Function to call after setting the attribute
+    throttled : bool
+        Set to `True` to limit handler calls to when the slider is released (default False)
+
+    Returns
+    -------
+        :class:`bokeh.models.Slider` slider widget for bokeh interface
     """
+    start = min(value, min_value) if min_value else min(value, 0)
+    end = max(value, max_value) if max_value else max(10, value*2)
+    slider = Slider(start=start, end=end, value=value, step=step, title=title)
+    slider.width = 256
 
-    def __init__(self, title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
-                 throttled=False):
-        """
-        Make a slider widget to use in the bokeh interface.
+    text_input = TextInput()
+    text_input.width = 64
+    text_input.value = str(value)
+    component = row(slider, text_input)
 
-        This method handles some extra boilerplate logic for inspecting
-        our primitive field configurations and determining sensible values
-        for minimum, maximum, etc.
+    slider = slider
+    text_input = text_input
 
-        Parameters
-        ----------
-        title : str
-            Title for the slider
-        value : int
-            Value to initially set
-        step : float
-            Step size
-        min_value : int
-            Minimum slider value, or None defaults to min(value,0)
-        max_value : int
-            Maximum slider value, or None defaults to value*2
-        obj : object
-            Instance to modify the attribute of when slider changes
-        attr : str
-            Name of attribute in obj to be set with the new value
-        handler : method
-            Function to call after setting the attribute
-        throttled : bool
-            Set to `True` to limit handler calls to when the slider is released (default False)
+    def update_slider(attrib, old, new):
+        if old != new:
+            ival = None
+            try:
+                ival = int(new)
+            except ValueError:
+                ival = float(new)
+            if ival > slider.end and not max_value:
+                slider.end = ival
+            if 0 <= ival < slider.start and min_value is None:
+                slider.start = ival
+            if slider.start <= ival <= slider.end:
+                slider.value = ival
 
-        Returns
-        -------
-            :class:`bokeh.models.Slider` slider widget for bokeh interface
-        """
-        self.obj = obj
-        self.attr = attr
-        self.handler = handler
+    def update_text_input(attrib, old, new):
+        if new != old:
+            text_input.value = str(new)
 
-        start = min(value, min_value) if min_value else min(value, 0)
-        end = max(value, max_value) if max_value else max(10, value*2)
-        slider = Slider(start=start, end=end, value=value, step=step, title=title)
-        slider.width = 256
+    def handle_value(attrib, old, new):
+        if isinstance(new, str):
+            new = float(new)
+        if obj and attr:
+            obj.__setattr__(attr, new)
+        if handler:
+            handler()
 
-        text_input = TextInput()
-        text_input.width = 64
-        text_input.value = str(value)
-        component = row(slider, text_input)
-
-        self.slider = slider
-        self.text_input = text_input
-
-        def update_slider(attr, old, new):
-            if old != new:
-                ival = None
-                try:
-                    ival = int(new)
-                except ValueError:
-                    ival = float(new)
-                if ival > slider.end and not max_value:
-                    slider.end = ival
-                if 0 <= ival < slider.start and min_value is None:
-                    slider.start = ival
-                if slider.start <= ival <= slider.end:
-                    slider.value = ival
-
-        def update_text_input(attr, old, new):
-            if new != old:
-                text_input.value = str(new)
-
-        def handle_value(attr, old, new):
-            if isinstance(new, str):
-                new = float(new)
-            if self.obj and self.attr:
-                self.obj.__setattr__(self.attr, new)
-            if self.handler:
-                self.handler()
-
-        if throttled:
-            # Since here the text_input calls handle_value, we don't
-            # have to call it from the slider as it will happen as
-            # a side-effect of update_text_input
-            slider.on_change("value_throttled", update_text_input)
-            text_input.on_change("value", update_slider, handle_value)
-        else:
-            slider.on_change("value", update_text_input, handle_value)
-            # since slider is listening to value, this next line will cause the slider
-            # to call the handle_value method and we don't need to do so explicitly
-            text_input.on_change("value", update_slider)
-        self.component = component
-
-    def enable(self):
-        self.slider.disabled = False
-        self.text_input.disabled = False
-
-    def disable(self):
-        self.slider.disabled = True
-        self.text_input.disabled = True
+    if throttled:
+        # Since here the text_input calls handle_value, we don't
+        # have to call it from the slider as it will happen as
+        # a side-effect of update_text_input
+        slider.on_change("value_throttled", update_text_input)
+        text_input.on_change("value", update_slider, handle_value)
+    else:
+        slider.on_change("value", update_text_input, handle_value)
+        # since slider is listening to value, this next line will cause the slider
+        # to call the handle_value method and we don't need to do so explicitly
+        text_input.on_change("value", update_slider)
+    return component
 
 
 class GICoordsSource:
@@ -926,7 +909,7 @@ class GISingleApertureView(object):
         fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
         fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
         # feels like I need this to convince the aperture lines to update on zoom
-        fig.y_range.js_on_change('end', CustomJS(args=dict(plot=figure),
+        fig.y_range.js_on_change('end', CustomJS(args=dict(plot=fig),
                                                  code="plot.properties.renderers.change.emit()"))
 
     def update_viewport(self):
@@ -998,31 +981,35 @@ class GIApertureSliders(object):
 
         title = "<h3>Aperture %s</h3>" % aperture_id
         self.label = Div(text=title)
-        self.lower_slider = GISlider("Start", start, 0.01, slider_start, slider_end,
-                                     obj=self, attr="start", handler=self.do_update)
-        self.upper_slider = GISlider("End", end, 0.01, slider_start, slider_end,
-                                     obj=self, attr="end", handler=self.do_update)
+        self.lower_slider = build_text_slider("Start", start, 0.01, slider_start, slider_end,
+                                              obj=self, attr="start", handler=self.do_update)
+        self.upper_slider = build_text_slider("End", end, 0.01, slider_start, slider_end,
+                                              obj=self, attr="end", handler=self.do_update)
         button = Button(label="Delete")
         button.on_click(self.delete_from_model)
 
-        self.component = Column(self.label, self.lower_slider.component, self.upper_slider.component, button)
+        self.component = Column(self.label, self.lower_slider, self.upper_slider, button)
 
     def delete_from_model(self):
         self.model.delete_aperture(self.aperture_id)
 
     def update_viewport(self, start, end):
-        if self.lower_slider.slider.value < start or self.lower_slider.slider.value > end:
-            self.lower_slider.disable()
+        if self.start < start or self.end > end:
+            self.lower_slider.children[0].disabled = True
+            self.lower_slider.children[1].disabled = True
         else:
-            self.lower_slider.enable()
-            self.lower_slider.slider.start = start
-            self.lower_slider.slider.end = end
-        if self.upper_slider.slider.value < start or self.upper_slider.slider.value > end:
-            self.upper_slider.disable()
+            self.lower_slider.children[0].disabled = False
+            self.lower_slider.children[1].disabled = False
+            self.lower_slider.children[0].start = start
+            self.lower_slider.children[0].end = end
+        if self.upper_slider.children[0].value < start or self.upper_slider.children[0].value > end:
+            self.upper_slider.children[0].disabled = True
+            self.upper_slider.children[1].disabled = True
         else:
-            self.upper_slider.enable()
-            self.upper_slider.slider.start = start
-            self.upper_slider.slider.end = end
+            self.upper_slider.children[0].disabled = False
+            self.upper_slider.children[1].disabled = False
+            self.upper_slider.children[0].start = start
+            self.upper_slider.children[0].end = end
 
     def do_update(self):
         if self.start > self.end:
@@ -1052,19 +1039,19 @@ class GIApertureView(object):
         self.aps = list()
         self.ap_sliders = list()
 
-        self.gifig = fig
-        self.controls = Column()
+        self.fig = fig
+        self.controls = column()
         self.model = model
         model.add_listener(self)
 
-        self.view_start = fig.figure.x_range.start
-        self.view_end = fig.figure.x_range.end
+        self.view_start = fig.x_range.start
+        self.view_end = fig.x_range.end
 
         # listen here because ap sliders can come and go, and we don't have to
         # convince the figure to release those references since it just ties to
         # this top-level container
-        fig.figure.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
-        fig.figure.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
+        fig.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
+        fig.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
 
     def update_viewport(self, start, end):
         self.view_start = start

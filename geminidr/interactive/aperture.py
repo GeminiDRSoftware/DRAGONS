@@ -3,7 +3,7 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GISlider, GIApertureModel, GIApertureView, build_figure
+from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_figure, build_text_slider
 from gempy.library import tracing
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -95,12 +95,12 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        max_apertures_slider = GISlider("Max Apertures", self.model.max_apertures, 1, 1, 20,
-                                        self.model, "max_apertures", self.clear_and_recalc,
-                                        throttled=True)
-        threshold_slider = GISlider("Threshold", self.model.threshold, 1, 0, 1,
-                                    self.model, "threshold", self.clear_and_recalc,
-                                    throttled=True)
+        max_apertures_slider = build_text_slider("Max Apertures", self.model.max_apertures, 1, 1, 20,
+                                                 self.model, "max_apertures", self.clear_and_recalc,
+                                                 throttled=True)
+        threshold_slider = build_text_slider("Threshold", self.model.threshold, 1, 0, 1,
+                                             self.model, "threshold", self.clear_and_recalc,
+                                             throttled=True)
 
         # Create a blank figure with labels
         self.fig = build_figure(plot_width=600, plot_height=500,
@@ -124,7 +124,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
-        controls = Column(max_apertures_slider.component, threshold_slider.component,
+        controls = Column(max_apertures_slider, threshold_slider,
                           aperture_view.controls, add_button, self.submit_button)
 
         self.details = Div(text="")

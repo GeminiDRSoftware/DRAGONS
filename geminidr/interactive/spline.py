@@ -3,8 +3,8 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GISlider, _dequantity, \
-    GIMaskedSigmadCoords, build_figure, build_cds, connect_update_coords, clear_selection
+from geminidr.interactive.interactive import GICoordsSource, _dequantity, \
+    GIMaskedSigmadCoords, build_figure, build_cds, connect_update_coords, clear_selection, build_text_slider
 from gempy.library import astromodels
 
 
@@ -166,12 +166,12 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         niter = self.model.niter
         grow = self.model.grow
 
-        order_slider = GISlider("Order", order, 1, self.min_order, self.max_order,
-                                self.model, "order", self.model.recalc_spline)
-        niter_slider = GISlider("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
-                                self.model, "niter", self.model.recalc_spline)
-        grow_slider = GISlider("Grow", grow, 1, self.min_grow, self.max_grow,
-                               self.model, "grow", self.model.recalc_spline)
+        order_slider = build_text_slider("Order", order, 1, self.min_order, self.max_order,
+                                         self.model, "order", self.model.recalc_spline)
+        niter_slider = build_text_slider("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
+                                         self.model, "niter", self.model.recalc_spline)
+        grow_slider = build_text_slider("Grow", grow, 1, self.min_grow, self.max_grow,
+                                        self.model, "grow", self.model.recalc_spline)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -199,7 +199,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.line = self.p.line(source=line_source, color="red")
         self.model.fit_line.add_coord_listener(connect_update_coords(line_source))
 
-        controls = Column(order_slider.component, niter_slider.component, grow_slider.component,
+        controls = Column(order_slider, niter_slider, grow_slider,
                           mask_button, unmask_button, self.submit_button)
 
         self.details = Div(text="")

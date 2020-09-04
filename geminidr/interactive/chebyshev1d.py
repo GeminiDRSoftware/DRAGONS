@@ -6,8 +6,9 @@ from bokeh.models import Button, Column, Panel, Tabs, Div
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GICoordsSource, \
-    GIBandModel, GIApertureModel, GISlider, GIMaskedSigmadCoords, \
-    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure, build_cds, connect_update_coords
+    GIBandModel, GIApertureModel, GIMaskedSigmadCoords, \
+    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure, build_cds, connect_update_coords, \
+    build_text_slider
 from gempy.library import astromodels
 
 
@@ -169,10 +170,10 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         # Just sandboxing a sample Aperture UI
         aperture_model = GIApertureModel()
 
-        order_slider = GISlider("Order", self.model.order, 1, self.min_order, self.max_order,
-                                self.model, "order", self.model.recalc_chebyshev)
-        sigma_slider = GISlider("Sigma", self.model.sigma, 0.1, 2, 10,
-                                self.model, "sigma", self.model.recalc_chebyshev)
+        order_slider = build_text_slider("Order", self.model.order, 1, self.min_order, self.max_order,
+                                         self.model, "order", self.model.recalc_chebyshev)
+        sigma_slider = build_text_slider("Sigma", self.model.sigma, 0.1, 2, 10,
+                                         self.model, "sigma", self.model.recalc_chebyshev)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)

@@ -3,9 +3,8 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GISlider, \
-    GIPatch, build_figure
-
+from geminidr.interactive.interactive import GICoordsSource, \
+    GIPatch, build_figure, build_text_slider
 
 __all__ = ["interactive_extract_spectra", ]
 
@@ -126,8 +125,8 @@ class ExtractSpectraVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        width_slider = GISlider("Width", self.model.width, 1, 0, self.model.width * 2,
-                                self.model, "width", self.model.recalc_extract, throttled=True)
+        width_slider = build_text_slider("Width", self.model.width, 1, 0, self.model.width * 2,
+                                         self.model, "width", self.model.recalc_extract, throttled=True)
 
         # Create a blank figure with labels
         self.p = build_figure(plot_width=600, plot_height=500,

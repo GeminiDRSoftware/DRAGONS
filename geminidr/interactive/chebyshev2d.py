@@ -1,13 +1,12 @@
-import numpy as np
 from astropy.modeling import models, fitting
 from bokeh.layouts import row
 from bokeh.models import Button, Column, Panel, Tabs
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.interactive import GICoordsSource, \
-    GISlider, GIMaskedSigmadCoords, \
+    GIMaskedSigmadCoords, \
     GIModelSource, GIMaskedSigmadScatter, build_figure, build_cds, \
-    connect_update_coords
+    connect_update_coords, build_text_slider
 from gempy.library import astromodels
 
 
@@ -158,9 +157,11 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
 
         super().visualize(doc)
 
-        self.spectral_order_slider = GISlider("Spectral Order", self.model.spectral_order, 1, self.min_order, self.max_order)
-        self.spatial_order_slider = GISlider("Spatial Order", self.model.spectral_order, 1, self.min_order, self.max_order)
-        self.sigma_slider = GISlider("Sigma", self.model.sigma, 0.1, 2, 10)
+        self.spectral_order_slider = build_text_slider("Spectral Order", self.model.spectral_order, 1,
+                                              self.min_order, self.max_order, self.model, "spectral_order")
+        self.spatial_order_slider = build_text_slider("Spatial Order", self.model.spatial_order, 1,
+                                             self.min_order, self.max_order, self.model, "spatial_order")
+        self.sigma_slider = build_text_slider("Sigma", self.model.sigma, 0.1, 2, 10, self.model, "sigma")
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)

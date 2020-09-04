@@ -5,8 +5,8 @@ from bokeh.models import Tabs, Panel, Button, Div, CustomJS
 
 from geminidr.interactive import interactive, server
 from geminidr.interactive.chebyshev1d import ChebyshevModel
-from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIMaskedSigmadScatter, GISlider, \
-    GIDifferencingModel, build_figure, build_cds, connect_update_coords
+from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIMaskedSigmadScatter, \
+    GIDifferencingModel, build_figure, build_cds, connect_update_coords, build_text_slider
 from gempy.library import tracing
 from gempy.library.astrotools import boxcar
 
@@ -68,10 +68,14 @@ class TraceApertureUI:
         differencing_model = GIDifferencingModel(model.coords, model, model.model_calculate)
         differencing_model.add_coord_listener(connect_update_coords(line2_source))
 
-        order_slider = GISlider("Order", model.order, 1, min_order, max_order,
-                                model, "order", model.recalc_chebyshev)
-        sigma_slider = GISlider("Sigma", model.sigma, 0.1, 2, 10,
-                                model, "sigma", model.recalc_chebyshev)
+        # order_slider = GISlider("Order", model.order, 1, min_order, max_order,
+        #                         model, "order", model.recalc_chebyshev)
+        # sigma_slider = GISlider("Sigma", model.sigma, 0.1, 2, 10,
+        #                         model, "sigma", model.recalc_chebyshev)
+        order_slider = build_text_slider("Order", model.order, 1, min_order, max_order,
+                                         model, "order", model.recalc_chebyshev)
+        sigma_slider = build_text_slider("Sigma", model.sigma, 0.1, 2, 10,
+                                         model, "sigma", model.recalc_chebyshev)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -84,7 +88,7 @@ class TraceApertureUI:
                         "<tr><th align='left'>Lower:</th><td>%s</td></tr></table>"
                         % (ap_info.number, ap_info.location, ap_info.aper_upper, ap_info.aper_lower))
 
-        controls = column(order_slider.component, sigma_slider.component, mask_button, unmask_button, info)
+        controls = column(order_slider, sigma_slider, mask_button, unmask_button, info)
 
         self.component = row(controls, column(fig, fig2))
 
@@ -140,10 +144,10 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
         # GISLider is my own creation - this one starts with a value of 'self.step' and when you adjust
         # the slider, it changes the "step" attribute on the self object.  The label in the UI is "Step"
         # It gets added to pure bokeh calls using self.step_slider.component
-        self.step_slider = GISlider("Step", self.step, 1, 1, 100, self, "step")
-        self.nsum_slider = GISlider("Lines to Sum", self.nsum, 1, 1, 100, self, "nsum")
-        self.max_missed_slider = GISlider("Max Steps Missed", self.max_missed, 1, 1, 100, self, "max_missed")
-        self.max_shift_slider = GISlider("Max Shift per Pixel", self.max_shift, 0.001, 0.001, 1, self, "max_shift")
+        self.step_slider = build_text_slider("Step", self.step, 1, 1, 100, self, "step")
+        self.nsum_slider = build_text_slider("Lines to Sum", self.nsum, 1, 1, 100, self, "nsum")
+        self.max_missed_slider = build_text_slider("Max Steps Missed", self.max_missed, 1, 1, 100, self, "max_missed")
+        self.max_shift_slider = build_text_slider("Max Shift per Pixel", self.max_shift, 0.001, 0.001, 1, self, "max_shift")
 
         # This is the button below the top-level parameters.
         # Right now, if you click it, it calls update_fits
@@ -190,8 +194,8 @@ class TraceApertureVisualizer(interactive.PrimitiveVisualizer):
         # These ctrls are what you want to replace with your dynamic list.
         # Though for prototyping your vision maybe we should skip that.
         # I'm more interested in the looping behavior.
-        ctrls = column(self.step_slider.component, self.nsum_slider.component, self.max_missed_slider.component,
-                       self.max_shift_slider.component, self.button)
+        ctrls = column(self.step_slider, self.nsum_slider, self.max_missed_slider,
+                       self.max_shift_slider, self.button)
 
         tabs = Tabs(tabs=[], name="tabs")
 
