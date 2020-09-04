@@ -3,8 +3,8 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GILine, GIFigure, GISlider, GIApertureModel, GIApertureView
-from gempy.library import astromodels, tracing
+from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_figure, build_text_slider
+from gempy.library import tracing
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 
@@ -69,13 +69,14 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         self.aperture_model = None
         self.details = None
+        self.fig = None
 
     def clear_and_recalc(self):
         self.aperture_model.clear_apertures()
         self.model.recalc_apertures()
 
     def add_aperture(self):
-        x = (self.p.figure.x_range.start + self.p.figure.x_range.end)/2
+        x = (self.fig.x_range.start + self.fig.figure.x_range.end) / 2
         self.aperture_model.add_aperture(x, x)
         self.update_details()
 
@@ -94,21 +95,21 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        max_apertures_slider = GISlider("Max Apertures", self.model.max_apertures, 1, 1, 20,
-                                        self.model, "max_apertures", self.clear_and_recalc,
-                                        throttled=True)
-        threshold_slider = GISlider("Threshold", self.model.threshold, 1, 0, 1,
-                                    self.model, "threshold", self.clear_and_recalc,
-                                    throttled=True)
+        max_apertures_slider = build_text_slider("Max Apertures", self.model.max_apertures, 1, 1, 20,
+                                                 self.model, "max_apertures", self.clear_and_recalc,
+                                                 throttled=True)
+        threshold_slider = build_text_slider("Threshold", self.model.threshold, 1, 0, 1,
+                                             self.model, "threshold", self.clear_and_recalc,
+                                             throttled=True)
 
         # Create a blank figure with labels
-        self.p = GIFigure(plot_width=600, plot_height=500,
-                          title='Source Apertures',
-                          tools="pan,wheel_zoom,box_zoom,reset",
-                          x_range=(0, self.model.profile.shape[0]))
+        self.fig = build_figure(plot_width=600, plot_height=500,
+                                title='Source Apertures',
+                                tools="pan,wheel_zoom,box_zoom,reset",
+                                x_range=(0, self.model.profile.shape[0]))
 
         self.aperture_model = GIApertureModel()
-        aperture_view = GIApertureView(self.aperture_model, self.p)
+        aperture_view = GIApertureView(self.aperture_model, self.fig)
         self.aperture_model.add_listener(self)
 
         def apl(locations, all_limits):
@@ -118,19 +119,19 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.add_listener(apl)
         # self.model.recalc_apertures()
 
-        line = GILine(self.p, range(self.model.profile.shape[0]), self.model.profile, color="black")
+        line = self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
-        controls = Column(max_apertures_slider.component, threshold_slider.component,
+        controls = Column(max_apertures_slider, threshold_slider,
                           aperture_view.controls, add_button, self.submit_button)
 
         self.details = Div(text="")
         self.model.recalc_apertures()
         self.update_details()
 
-        col = column(self.p.figure, self.details)
+        col = column(self.fig, self.details)
         layout = row(controls, col)
 
         doc.add_root(layout)

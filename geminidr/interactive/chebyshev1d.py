@@ -5,13 +5,14 @@ from bokeh.models import Button, Column, Panel, Tabs, Div
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GILine, GICoordsSource, \
-    GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedSigmadCoords, \
-    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter
+from geminidr.interactive.interactive import GICoordsSource, \
+    GIBandModel, GIApertureModel, GIMaskedSigmadCoords, \
+    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure, build_cds, connect_update_coords, \
+    build_text_slider
 from gempy.library import astromodels
 
 
-__all__ = ["interactive_chebyshev",]
+__all__ = ["interactive_chebyshev", "ChebyshevModel"]
 
 
 class ChebyshevModel(GICoordsSource, GIModelSource):
@@ -138,7 +139,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
+        self.scatter.source.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self, stuff):
@@ -169,10 +170,10 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         # Just sandboxing a sample Aperture UI
         aperture_model = GIApertureModel()
 
-        order_slider = GISlider("Order", self.model.order, 1, self.min_order, self.max_order,
-                                self.model, "order", self.model.recalc_chebyshev)
-        sigma_slider = GISlider("Sigma", self.model.sigma, 0.1, 2, 10,
-                                self.model, "sigma", self.model.recalc_chebyshev)
+        order_slider = build_text_slider("Order", self.model.order, 1, self.min_order, self.max_order,
+                                         self.model, "order", self.model.recalc_chebyshev)
+        sigma_slider = build_text_slider("Sigma", self.model.sigma, 0.1, 2, 10,
+                                         self.model, "sigma", self.model.recalc_chebyshev)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -181,27 +182,29 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         unmask_button.on_click(self.unmask_button_handler)
 
         # Create a blank figure with labels
-        p = GIFigure(plot_width=600, plot_height=500,
-                     title='Interactive Chebyshev',
-                     x_axis_label='X', y_axis_label='Y',
-                     tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                     band_model=band_model, aperture_model=aperture_model)
+        p = build_figure(plot_width=600, plot_height=500,
+                         title='Interactive Chebyshev',
+                         x_axis_label='X', y_axis_label='Y',
+                         tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                         band_model=band_model, aperture_model=aperture_model)
 
         self.p = p
 
         self.scatter = GIMaskedSigmadScatter(p, self.model.coords)
 
-        self.line = GILine(p)
-        self.model.add_coord_listener(self.line.update_coords)
+        line_source = build_cds()
+        self.line = p.line(line_source)
+        self.model.add_coord_listener(connect_update_coords(line_source))
 
         # p2 goes in tab 2 and shows the difference between the data y values and the model calculated values
-        p2 = GIFigure(plot_width=600, plot_height=500,
-                      title='Model Differential',
-                      x_axis_label='X', y_axis_label='Y',
-                      band_model=band_model, aperture_model=aperture_model)
-        self.line2 = GILine(p2)
+        p2 = build_figure(plot_width=600, plot_height=500,
+                          title='Model Differential',
+                          x_axis_label='X', y_axis_label='Y',
+                          band_model=band_model, aperture_model=aperture_model)
+        line2_source = build_cds()
+        self.line2 = p2.line(source=line2_source, color="red")
         differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
-        differencing_model.add_coord_listener(self.line2.update_coords)
+        differencing_model.add_coord_listener(connect_update_coords(line2_source))
 
         # helptext is where the Controller will put help messages for the end user
         # This controls area is a vertical set of UI controls we are placing on the left
@@ -214,8 +217,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.model.recalc_chebyshev()
 
         # add the two plots as tabs and place them with controls to the left
-        tab1 = Panel(child=p.figure, title="Chebyshev Fit")
-        tab2 = Panel(child=p2.figure, title="Chebyshev Differential")
+        tab1 = Panel(child=p, title="Chebyshev Fit")
+        tab2 = Panel(child=p2, title="Chebyshev Differential")
         tabs = Tabs(tabs=[tab1, tab2], name="tabs")
         layout = row(self.controls, tabs)
 

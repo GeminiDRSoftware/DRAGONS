@@ -3,8 +3,8 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider, _dequantity, \
-    GIMaskedSigmadCoords
+from geminidr.interactive.interactive import GICoordsSource, _dequantity, \
+    GIMaskedSigmadCoords, build_figure, build_cds, connect_update_coords, clear_selection, build_text_slider
 from gempy.library import astromodels
 
 
@@ -114,7 +114,9 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.model = SplineModel(ext, coords, weights, order, niter, grow)
         self.p = None
         self.spline = None
+        self.scatter_masked_source = None
         self.scatter_masked = None
+        self.scatter_all_source = None
         self.scatter_all = None
         self.line = None
         self.scatter_source = None
@@ -133,14 +135,14 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self):
         indices = self.scatter_all.source.selected.indices
-        self.scatter_all.clear_selection()
-        self.scatter_masked.clear_selection()
+        clear_selection(self.scatter_all_source.selection)
+        clear_selection(self.scatter_masked_source)
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self):
         indices = self.scatter_all.source.selected.indices
-        self.scatter_all.clear_selection()
-        self.scatter_masked.clear_selection()
+        clear_selection(self.scatter_all_source)
+        clear_selection(self.scatter_masked_source)
         self.model.coords.unmask(indices)
 
     def visualize(self, doc):
@@ -164,12 +166,12 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         niter = self.model.niter
         grow = self.model.grow
 
-        order_slider = GISlider("Order", order, 1, self.min_order, self.max_order,
-                                self.model, "order", self.model.recalc_spline)
-        niter_slider = GISlider("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
-                                self.model, "niter", self.model.recalc_spline)
-        grow_slider = GISlider("Grow", grow, 1, self.min_grow, self.max_grow,
-                               self.model, "grow", self.model.recalc_spline)
+        order_slider = build_text_slider("Order", order, 1, self.min_order, self.max_order,
+                                         self.model, "order", self.model.recalc_spline)
+        niter_slider = build_text_slider("Num Iterations", niter, 1,  self.min_niter, self.max_niter,
+                                         self.model, "niter", self.model.recalc_spline)
+        grow_slider = build_text_slider("Grow", grow, 1, self.min_grow, self.max_grow,
+                                        self.model, "grow", self.model.recalc_spline)
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -178,23 +180,26 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         unmask_button.on_click(self.unmask_button_handler)
 
         # Create a blank figure with labels
-        self.p = GIFigure(plot_width=600, plot_height=500,
-                          title='Interactive Spline',
-                          tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                          x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label)
+        self.p = build_figure(plot_width=600, plot_height=500,
+                              title='Interactive Spline',
+                              tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                              x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label)
 
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.scatter_all = GIScatter(self.p, x, y, color="blue", radius=5)
+        self.scatter_all_source = build_cds(x, y)
+        self.scatter_all = self.p.scatter(source=self.scatter_all_source, color="blue", radius=5)
 
-        self.scatter_masked = GIScatter(self.p, color="black")
-        self.model.coords.add_mask_listener(self.scatter_masked.update_coords)
+        self.scatter_masked_source = build_cds()
+        self.scatter_masked = self.p.scatter(source=self.scatter_masked_source, color="black", radius=5)
+        self.model.coords.add_mask_listener(connect_update_coords(self.scatter_masked_source))
 
-        self.line = GILine(self.p)
-        self.model.fit_line.add_coord_listener(self.line.update_coords)
+        line_source = build_cds()
+        self.line = self.p.line(source=line_source, color="red")
+        self.model.fit_line.add_coord_listener(connect_update_coords(line_source))
 
-        controls = Column(order_slider.component, niter_slider.component, grow_slider.component,
+        controls = Column(order_slider, niter_slider, grow_slider,
                           mask_button, unmask_button, self.submit_button)
 
         self.details = Div(text="")

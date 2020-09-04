@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from astropy.units import Quantity
-from bokeh.layouts import row
+from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div
 from bokeh.plotting import figure
 
@@ -105,108 +105,91 @@ class PrimitiveVisualizer(ABC):
         widget.js_on_change('disabled', callback)
 
 
-class GISlider(object):
+def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
+                      throttled=False):
     """
-    This is a slider widget that also allows for text input.
+    Make a slider widget to use in the bokeh interface.
+
+    This method handles some extra boilerplate logic for inspecting
+    our primitive field configurations and determining sensible values
+    for minimum, maximum, etc.
+
+    Parameters
+    ----------
+    title : str
+        Title for the slider
+    value : int
+        Value to initially set
+    step : float
+        Step size
+    min_value : int
+        Minimum slider value, or None defaults to min(value,0)
+    max_value : int
+        Maximum slider value, or None defaults to value*2
+    obj : object
+        Instance to modify the attribute of when slider changes
+    attr : str
+        Name of attribute in obj to be set with the new value
+    handler : method
+        Function to call after setting the attribute
+    throttled : bool
+        Set to `True` to limit handler calls to when the slider is released (default False)
+
+    Returns
+    -------
+        :class:`bokeh.models.Slider` slider widget for bokeh interface
     """
+    start = min(value, min_value) if min_value else min(value, 0)
+    end = max(value, max_value) if max_value else max(10, value*2)
+    slider = Slider(start=start, end=end, value=value, step=step, title=title)
+    slider.width = 256
 
-    def __init__(self, title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
-                 throttled=False):
-        """
-        Make a slider widget to use in the bokeh interface.
+    text_input = TextInput()
+    text_input.width = 64
+    text_input.value = str(value)
+    component = row(slider, text_input)
 
-        This method handles some extra boilerplate logic for inspecting
-        our primitive field configurations and determining sensible values
-        for minimum, maximum, etc.
+    slider = slider
+    text_input = text_input
 
-        Parameters
-        ----------
-        title : str
-            Title for the slider
-        value : int
-            Value to initially set
-        step : float
-            Step size
-        min_value : int
-            Minimum slider value, or None defaults to min(value,0)
-        max_value : int
-            Maximum slider value, or None defaults to value*2
-        obj : object
-            Instance to modify the attribute of when slider changes
-        attr : str
-            Name of attribute in obj to be set with the new value
-        handler : method
-            Function to call after setting the attribute
-        throttled : bool
-            Set to `True` to limit handler calls to when the slider is released (default False)
+    def update_slider(attrib, old, new):
+        if old != new:
+            ival = None
+            try:
+                ival = int(new)
+            except ValueError:
+                ival = float(new)
+            if ival > slider.end and not max_value:
+                slider.end = ival
+            if 0 <= ival < slider.start and min_value is None:
+                slider.start = ival
+            if slider.start <= ival <= slider.end:
+                slider.value = ival
 
-        Returns
-        -------
-            :class:`bokeh.models.Slider` slider widget for bokeh interface
-        """
-        self.obj = obj
-        self.attr = attr
-        self.handler = handler
+    def update_text_input(attrib, old, new):
+        if new != old:
+            text_input.value = str(new)
 
-        start = min(value, min_value) if min_value else min(value, 0)
-        end = max(value, max_value) if max_value else max(10, value*2)
-        slider = Slider(start=start, end=end, value=value, step=step, title=title)
-        slider.width = 256
+    def handle_value(attrib, old, new):
+        if isinstance(new, str):
+            new = float(new)
+        if obj and attr:
+            obj.__setattr__(attr, new)
+        if handler:
+            handler()
 
-        text_input = TextInput()
-        text_input.width = 64
-        text_input.value = str(value)
-        component = row(slider, text_input)
-
-        self.slider = slider
-        self.text_input = text_input
-
-        def update_slider(attr, old, new):
-            if old != new:
-                ival = None
-                try:
-                    ival = int(new)
-                except ValueError:
-                    ival = float(new)
-                if ival > slider.end and not max_value:
-                    slider.end = ival
-                if 0 <= ival < slider.start and min_value is None:
-                    slider.start = ival
-                if slider.start <= ival <= slider.end:
-                    slider.value = ival
-
-        def update_text_input(attr, old, new):
-            if new != old:
-                text_input.value = str(new)
-
-        def handle_value(attr, old, new):
-            if isinstance(new, str):
-                new = float(new)
-            if self.obj and self.attr:
-                self.obj.__setattr__(self.attr, new)
-            if self.handler:
-                self.handler()
-
-        if throttled:
-            # Since here the text_input calls handle_value, we don't
-            # have to call it from the slider as it will happen as
-            # a side-effect of update_text_input
-            slider.on_change("value_throttled", update_text_input)
-            text_input.on_change("value", update_slider, handle_value)
-        else:
-            slider.on_change("value", update_text_input, handle_value)
-            # since slider is listening to value, this next line will cause the slider
-            # to call the handle_value method and we don't need to do so explicitly
-            text_input.on_change("value", update_slider)
-        self.component = component
-
-    def enable(self):
-        self.slider.disabled = False
-        self.text_input.disabled = False
-
-    def disable(self):
-        self.slider.disabled = True
-        self.text_input.disabled = True
+    if throttled:
+        # Since here the text_input calls handle_value, we don't
+        # have to call it from the slider as it will happen as
+        # a side-effect of update_text_input
+        slider.on_change("value_throttled", update_text_input)
+        text_input.on_change("value", update_slider, handle_value)
+    else:
+        slider.on_change("value", update_text_input, handle_value)
+        # since slider is listening to value, this next line will cause the slider
+        # to call the handle_value method and we don't need to do so explicitly
+        text_input.on_change("value", update_slider)
+    return component
 
 
 class GICoordsSource:
@@ -221,7 +204,7 @@ class GICoordsSource:
 
     def add_coord_listener(self, coords_listener):
         """
-        Add a listener - either an instance of :class:`GICoordsListener` or a function that will take x and y
+        Add a listener - a function that will take x and y
         arguments as lists of values.
         """
         if callable(coords_listener):
@@ -508,95 +491,57 @@ class GIMaskedSigmadCoords(GICoordsSource):
             sigma_listener(self.x_coords[self.mask][self.sigma], self.y_coords[self.mask][self.sigma])
 
 
-class GIFigure(object):
-    """
-    This abstracts out any bugfixes or special handling we may need.  We may be able to deprecate it
-    if bokeh bugs are fixed or if the benefits don't outweigh the complexity.
-    """
-    def __init__(self, title='Plot',
+def build_figure(title='Plot',
                  plot_width=600, plot_height=500,
                  x_axis_label='X', y_axis_label='Y',
                  tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                  band_model=None, aperture_model=None, x_range=None, y_range=None):
+    # This wrapper around figure provides somewhat limited value, but for now I think it is
+    # worth it.  It primarily does three things:
+    #
+    #  * allows alternate defaults for things like the list of tools and backend
+    #  * integrates aperture and band information to reduce boilerplate in the visualizer code
+    #  * wraps any bugfix hackery we need to do so it always happens and we don't have to remember it everywhere
 
-        # This wrapper around figure provides somewhat limited value, but for now I think it is
-        # worth it.  It primarily does three things:
-        #
-        #  * allows alternate defaults for things like the list of tools and backend
-        #  * integrates aperture and band information to reduce boilerplate in the visualizer code
-        #  * wraps any bugfix hackery we need to do so it always happens and we don't have to remember it everywhere
+    fig = figure(plot_width=plot_width, plot_height=plot_height, title=title, x_axis_label=x_axis_label,
+                 y_axis_label=y_axis_label, tools=tools, output_backend="webgl", x_range=x_range,
+                 y_range=y_range)
 
-        self.figure = figure(plot_width=plot_width, plot_height=plot_height, title=title, x_axis_label=x_axis_label,
-                             y_axis_label=y_axis_label, tools=tools, output_backend="webgl", x_range=x_range,
-                             y_range=y_range)
+    # If we have bands or apertures to show, show them
+    if band_model:
+        bands = GIBandView(fig, band_model)
+    if aperture_model:
+        aperture_view = GIApertureView(aperture_model, fig)
 
-        # If we have bands or apertures to show, show them
-        if band_model:
-            self.bands = GIBandView(self, band_model)
-        if aperture_model:
-            self.aperture_view = GIApertureView(aperture_model, self)
+    # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
+    # apertures and bands will not update properly after the figure is visible.
+    fig.js_on_change('center', CustomJS(args=dict(plot=fig),
+                                           code="plot.properties.renderers.change.emit()"))
 
-        # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
-        # apertures and bands will not update properly after the figure is visible.
-        self.figure.js_on_change('center', CustomJS(args=dict(plot=self.figure),
-                                                    code="plot.properties.renderers.change.emit()"))
+    return fig
 
 
-class GIScatter:
-    def __init__(self, gifig, x_coords=None, y_coords=None, color="blue", radius=5):
-        """
-        Scatter plot
+def build_cds(x_coords=[], y_coords=[]):
+    if x_coords is None:
+        x_coords = []
+    if y_coords is None:
+        y_coords = []
+    return ColumnDataSource({'x': x_coords, 'y': y_coords})
 
-        Parameters
-        ----------
-        gifig : :class:`GIFigure`
-            figure to plot in
-        x_coords : ndarray
-            x coordinates
-        y_coords : ndarray
-            y coordinates
-        color : str
-            color value, default "blue"
-        radius : int
-            radius in pixels for the dots
-        """
-        if x_coords is None:
-            x_coords = []
-        if y_coords is None:
-            y_coords = []
-        self.source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.scatter = gifig.figure.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
 
-    def update_coords(self, x_coords, y_coords):
-        """
-        Respond to new coordinates.
-
-        We usuaslly subscribe to some sort of GICoordsSource and this
-        is where it will let us know of any data updates.
-
-        Parameters
-        ----------
-        x_coords : ndarray
-            x coordinates
-        y_coords : ndarray
-            y coordinates
-
-        """
+def connect_update_coords(source):
+    def update_coords(x_coords, y_coords):
         x, y = _dequantity(x_coords, y_coords)
-        self.source.data = {'x': x, 'y': y}
+        source.data = {'x': x, 'y': y}
+    return update_coords
 
-    def clear_selection(self):
-        """
-        Clear the selection in the scatter plot.
 
-        This is useful once we have applied the selection in some way,
-        to reset the plot back to an unselected state.
-        """
-        self.source.selected.update(indices=[])
+def clear_selection(source):
+    source.selected.update(indices=[])
 
 
 class GIMaskedSigmadScatter:
-    def __init__(self, gifig, coords, color="red",
+    def __init__(self, fig, coords, color="red",
                  masked_color="blue", sigma_color="orange", radius=5):
         """
         Masked/Sigmad Scatter plot
@@ -623,35 +568,13 @@ class GIMaskedSigmadScatter:
         self.source = ColumnDataSource({'x': x_coords, 'y': y_coords})
         self.masked_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
         self.sigmad_source = ColumnDataSource({'x': [], 'y': []})
-        self.scatter = gifig.figure.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
-        self.masked_scatter = gifig.figure.scatter(x='x', y='y', source=self.masked_source, color=masked_color, radius=radius)
-        self.sigma_scatter = gifig.figure.scatter(x='x', y='y', source=self.sigmad_source, color=sigma_color, radius=radius)
-        coords.add_coord_listener(self.update_coords)
-        coords.add_mask_listener(self.update_masked_coords)
-        coords.add_sigma_listener(self.update_sigmad_coords)
+        self.scatter = fig.scatter(x='x', y='y', source=self.source, color=color, radius=radius)
+        self.masked_scatter = fig.scatter(x='x', y='y', source=self.masked_source, color=masked_color, radius=radius)
+        self.sigma_scatter = fig.scatter(x='x', y='y', source=self.sigmad_source, color=sigma_color, radius=radius)
 
-    def update_coords(self, x_coords, y_coords):
-        """
-        Respond to new coordinates.
-
-        We usually subscribe to some sort of GICoordsSource and this
-        is where it will let us know of any data updates.
-
-        Parameters
-        ----------
-        x_coords : ndarray
-            x coordinates
-        y_coords : ndarray
-            y coordinates
-
-        """
-        self.source.data = {'x': x_coords, 'y': y_coords}
-
-    def update_masked_coords(self, x_coords, y_coords):
-        self.masked_source.data = {'x': x_coords, 'y': y_coords}
-
-    def update_sigmad_coords(self, x_coords, y_coords):
-        self.sigmad_source.data = {'x': x_coords, 'y': y_coords}
+        coords.add_coord_listener(connect_update_coords(self.source))
+        coords.add_mask_listener(connect_update_coords(self.masked_source))
+        coords.add_sigma_listener(connect_update_coords(self.sigmad_source))
 
     def clear_selection(self):
         """
@@ -665,51 +588,14 @@ class GIMaskedSigmadScatter:
         self.sigmad_source.selected.update(indices=[])
 
 
-class GILine:
-    def __init__(self, gifig, x_coords=[], y_coords=[], color="red"):
-        """
-        Line plot
-
-        Parameters
-        ----------
-        gifig : :class:`GIFigure` figure to plot in
-        x_coords : array of float coordinates
-        y_coords : array of float coordinates
-        color : color for line, default "red"
-        """
-        if x_coords is None:
-            x_coords = []
-        if y_coords is None:
-            y_coords = []
-        self.line_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.line = gifig.figure.line(x='x', y='y', source=self.line_source, color=color)
-
-    def update_coords(self, x_coords, y_coords):
-        """
-        Update the coordinates for the line plot.
-
-        We usually subscribe to some sort of GICoordsSource and this
-        is where it will let us know of any updates to the data.
-
-        Parameters
-        ----------
-        x_coords : ndarray
-            x coordinates
-        y_coords : ndarray
-            y coordinates
-        """
-        x, y = _dequantity(x_coords, y_coords)
-        self.line_source.data = {'x': x, 'y': y}
-
-
 class GIPatch:
-    def __init__(self, gifig, x_coords=[], y_coords=[], color="blue"):
+    def __init__(self, fig, x_coords=[], y_coords=[], color="blue"):
         if x_coords is None:
             x_coords = []
         if y_coords is None:
             y_coords = []
         self.patch_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.patch = gifig.figure.patch(x='x', y='y', source=self.patch_source, color=color)
+        self.patch = fig.figure.patch(x='x', y='y', source=self.patch_source, color=color)
 
     def update_coords(self, x_coords, y_coords):
         x, y = _dequantity(x_coords, y_coords)
@@ -943,7 +829,7 @@ class GIApertureModel(object):
 
 
 class GISingleApertureView(object):
-    def __init__(self, gifig, aperture_id, start, end):
+    def __init__(self, fig, aperture_id, start, end):
         """
         Create a visible glyph-set to show the existance
         of an aperture on the given figure.  This display
@@ -969,13 +855,13 @@ class GISingleApertureView(object):
         self.right = None
         self.line_source = None
         self.line = None
-        self.gifig = None
-        if gifig.figure.document:
-            gifig.figure.document.add_next_tick_callback(lambda: self.build_ui(gifig, aperture_id, start, end))
+        self.fig = None
+        if fig.document:
+            fig.document.add_next_tick_callback(lambda: self.build_ui(fig, aperture_id, start, end))
         else:
-            self.build_ui(gifig, aperture_id, start, end)
+            self.build_ui(fig, aperture_id, start, end)
 
-    def build_ui(self, gifig, aperture_id, start, end):
+    def build_ui(self, fig, aperture_id, start, end):
         """
         Build the view in the figure.
 
@@ -985,8 +871,8 @@ class GISingleApertureView(object):
 
         Parameters
         ----------
-        gifig : :class:`GIFigure`
-            figure to attach glyphs to
+        fig : :class:`Figure`
+            bokeh figure to attach glyphs to
         aperture_id : int
             ID of this aperture, displayed
         start : float
@@ -995,8 +881,7 @@ class GISingleApertureView(object):
             End of x-range of aperture
 
         """
-        figure = gifig.figure
-        if figure.y_range.start is not None and figure.y_range.end is not None:
+        if fig.y_range.start is not None and fig.y_range.end is not None:
             ymin = figure.y_range.start
             ymax = figure.y_range.end
             ymid = (ymax-ymin)*.8+ymin
@@ -1009,23 +894,23 @@ class GISingleApertureView(object):
             ytop=0
             ybottom=0
         self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
-        figure.add_layout(self.box)
+        fig.add_layout(self.box)
         self.label = Label(x=(start+end)/2-5, y=ymid, text="%s" % aperture_id)
-        figure.add_layout(self.label)
+        fig.add_layout(self.label)
         self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
-        self.left = figure.line(x='x', y='y', source=self.left_source, color="purple")
+        self.left = fig.line(x='x', y='y', source=self.left_source, color="purple")
         self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
-        self.right = figure.line(x='x', y='y', source=self.right_source, color="purple")
+        self.right = fig.line(x='x', y='y', source=self.right_source, color="purple")
         self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
-        self.line = figure.line(x='x', y='y', source=self.line_source, color="purple")
+        self.line = fig.line(x='x', y='y', source=self.line_source, color="purple")
 
-        self.gifig = gifig
+        self.fig = fig
 
-        figure.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
-        figure.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
+        fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
+        fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
         # feels like I need this to convince the aperture lines to update on zoom
-        figure.y_range.js_on_change('end', CustomJS(args=dict(plot=figure),
-                                                    code="plot.properties.renderers.change.emit()"))
+        fig.y_range.js_on_change('end', CustomJS(args=dict(plot=fig),
+                                                 code="plot.properties.renderers.change.emit()"))
 
     def update_viewport(self):
         """
@@ -1037,9 +922,9 @@ class GISingleApertureView(object):
         Y axis.
 
         """
-        if self.gifig.figure.y_range.start is not None and self.gifig.figure.y_range.end is not None:
-            ymin = self.gifig.figure.y_range.start
-            ymax = self.gifig.figure.y_range.end
+        if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
+            ymin = self.fig.y_range.start
+            ymax = self.fig.y_range.end
             ymid = (ymax-ymin)*.8+ymin
             ytop = ymid + 0.05*(ymax-ymin)
             ybottom = ymid - 0.05*(ymax-ymin)
@@ -1073,9 +958,9 @@ class GISingleApertureView(object):
         """
         Delete this aperture from it's view.
         """
-        self.gifig.figure.renderers.remove(self.line)
-        self.gifig.figure.renderers.remove(self.left)
-        self.gifig.figure.renderers.remove(self.right)
+        self.fig.renderers.remove(self.line)
+        self.fig.renderers.remove(self.left)
+        self.fig.renderers.remove(self.right)
         # TODO removing causes problems, because bokeh, sigh
         # TODO could create a list of disabled labels/boxes to reuse instead of making new ones
         #  (if we have one to recycle)
@@ -1084,43 +969,47 @@ class GISingleApertureView(object):
 
 
 class GIApertureSliders(object):
-    def __init__(self, view, gifig, model, aperture_id, start, end):
+    def __init__(self, view, fig, model, aperture_id, start, end):
         self.view = view
         self.model = model
         self.aperture_id = aperture_id
         self.start = start
         self.end = end
 
-        slider_start = gifig.figure.x_range.start
-        slider_end = gifig.figure.x_range.end
+        slider_start = fig.x_range.start
+        slider_end = fig.x_range.end
 
         title = "<h3>Aperture %s</h3>" % aperture_id
         self.label = Div(text=title)
-        self.lower_slider = GISlider("Start", start, 0.01, slider_start, slider_end,
-                                     obj=self, attr="start", handler=self.do_update)
-        self.upper_slider = GISlider("End", end, 0.01, slider_start, slider_end,
-                                     obj=self, attr="end", handler=self.do_update)
+        self.lower_slider = build_text_slider("Start", start, 0.01, slider_start, slider_end,
+                                              obj=self, attr="start", handler=self.do_update)
+        self.upper_slider = build_text_slider("End", end, 0.01, slider_start, slider_end,
+                                              obj=self, attr="end", handler=self.do_update)
         button = Button(label="Delete")
         button.on_click(self.delete_from_model)
 
-        self.component = Column(self.label, self.lower_slider.component, self.upper_slider.component, button)
+        self.component = Column(self.label, self.lower_slider, self.upper_slider, button)
 
     def delete_from_model(self):
         self.model.delete_aperture(self.aperture_id)
 
     def update_viewport(self, start, end):
-        if self.lower_slider.slider.value < start or self.lower_slider.slider.value > end:
-            self.lower_slider.disable()
+        if self.start < start or self.end > end:
+            self.lower_slider.children[0].disabled = True
+            self.lower_slider.children[1].disabled = True
         else:
-            self.lower_slider.enable()
-            self.lower_slider.slider.start = start
-            self.lower_slider.slider.end = end
-        if self.upper_slider.slider.value < start or self.upper_slider.slider.value > end:
-            self.upper_slider.disable()
+            self.lower_slider.children[0].disabled = False
+            self.lower_slider.children[1].disabled = False
+            self.lower_slider.children[0].start = start
+            self.lower_slider.children[0].end = end
+        if self.upper_slider.children[0].value < start or self.upper_slider.children[0].value > end:
+            self.upper_slider.children[0].disabled = True
+            self.upper_slider.children[1].disabled = True
         else:
-            self.upper_slider.enable()
-            self.upper_slider.slider.start = start
-            self.upper_slider.slider.end = end
+            self.upper_slider.children[0].disabled = False
+            self.upper_slider.children[1].disabled = False
+            self.upper_slider.children[0].start = start
+            self.upper_slider.children[0].end = end
 
     def do_update(self):
         if self.start > self.end:
@@ -1137,32 +1026,32 @@ class GIApertureView(object):
     show where the defined apertures are, along with a numeric
     ID for each.
     """
-    def __init__(self, model, gifig):
+    def __init__(self, model, fig):
         """
 
         Parameters
         ----------
         model : :class:`GIApertureModel`
             Model for tracking the apertures, may be shared across multiple views
-        gifig : :class:`GIFigure`
-            Plot for displaying the bands
+        fig : :class:`~Figure`
+            bokeh plot for displaying the bands
         """
         self.aps = list()
         self.ap_sliders = list()
 
-        self.gifig = gifig
-        self.controls = Column()
+        self.fig = fig
+        self.controls = column()
         self.model = model
         model.add_listener(self)
 
-        self.view_start = gifig.figure.x_range.start
-        self.view_end = gifig.figure.x_range.end
+        self.view_start = fig.x_range.start
+        self.view_end = fig.x_range.end
 
         # listen here because ap sliders can come and go, and we don't have to
         # convince the figure to release those references since it just ties to
         # this top-level container
-        gifig.figure.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
-        gifig.figure.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
+        fig.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
+        fig.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
 
     def update_viewport(self, start, end):
         self.view_start = start
@@ -1191,9 +1080,9 @@ class GIApertureView(object):
             ap = self.aps[aperture_id-1]
             ap.update(start, end)
         else:
-            ap = GISingleApertureView(self.gifig, aperture_id, start, end)
+            ap = GISingleApertureView(self.fig, aperture_id, start, end)
             self.aps.append(ap)
-            slider = GIApertureSliders(self, self.gifig, self.model, aperture_id, start, end)
+            slider = GIApertureSliders(self, self.fig, self.model, aperture_id, start, end)
             self.ap_sliders.append(slider)
             self.controls.children.append(slider.component)
 
