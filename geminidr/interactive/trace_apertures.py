@@ -5,8 +5,8 @@ from bokeh.models import Tabs, Panel, Button, Div, CustomJS
 
 from geminidr.interactive import interactive, server
 from geminidr.interactive.chebyshev1d import ChebyshevModel
-from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIMaskedSigmadScatter, GILine, GISlider, \
-    GIDifferencingModel, build_figure
+from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIMaskedSigmadScatter, GISlider, \
+    GIDifferencingModel, build_figure, build_cds, connect_update_coords
 from gempy.library import tracing
 from gempy.library.astrotools import boxcar
 
@@ -54,17 +54,19 @@ class TraceApertureUI:
 
         self.scatter = GIMaskedSigmadScatter(fig, model.coords)
 
-        line = GILine(fig)
-        model.add_coord_listener(line.update_coords)
+        line_source = build_cds()
+        line = fig.line(x='x', y='y', source=line_source, color="red")
+        model.add_coord_listener(connect_update_coords(line_source))
 
         model.recalc_chebyshev()
 
         fig2 = build_figure(plot_width=600, plot_height=200,
                             title='Fit Differential',
                             x_axis_label='X', y_axis_label='Y')
-        self.line2 = GILine(fig2)
+        line2_source = build_cds()
+        self.line2 = fig2.line(x='x', y='y', source=line2_source)
         differencing_model = GIDifferencingModel(model.coords, model, model.model_calculate)
-        differencing_model.add_coord_listener(self.line2.update_coords)
+        differencing_model.add_coord_listener(connect_update_coords(line2_source))
 
         order_slider = GISlider("Order", model.order, 1, min_order, max_order,
                                 model, "order", model.recalc_chebyshev)

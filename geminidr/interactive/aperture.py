@@ -3,8 +3,8 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GILine, GISlider, GIApertureModel, GIApertureView, build_figure
-from gempy.library import astromodels, tracing
+from geminidr.interactive.interactive import GISlider, GIApertureModel, GIApertureView, build_figure
+from gempy.library import tracing
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 
@@ -119,7 +119,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.add_listener(apl)
         # self.model.recalc_apertures()
 
-        line = GILine(self.fig, range(self.model.profile.shape[0]), self.model.profile, color="black")
+        line = self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)

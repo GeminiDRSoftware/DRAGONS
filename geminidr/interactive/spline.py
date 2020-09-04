@@ -3,8 +3,8 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GISlider, _dequantity, \
-    GIMaskedSigmadCoords, build_figure, build_cds, build_scatter, connect_update_coords, clear_selection
+from geminidr.interactive.interactive import GICoordsSource, GISlider, _dequantity, \
+    GIMaskedSigmadCoords, build_figure, build_cds, connect_update_coords, clear_selection
 from gempy.library import astromodels
 
 
@@ -189,14 +189,15 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
         self.scatter_all_source = build_cds(x, y)
-        self.scatter_all = build_scatter(self.p, source=self.scatter_all_source, color="blue", radius=5)
+        self.scatter_all = self.p.scatter(source=self.scatter_all_source, color="blue", radius=5)
 
         self.scatter_masked_source = build_cds()
-        self.scatter_masked = build_scatter(self.p, source=self.scatter_masked_source, color="black")
+        self.scatter_masked = self.p.scatter(source=self.scatter_masked_source, color="black", radius=5)
         self.model.coords.add_mask_listener(connect_update_coords(self.scatter_masked_source))
 
-        self.line = GILine(self.p)
-        self.model.fit_line.add_coord_listener(self.line.update_coords)
+        line_source = build_cds()
+        self.line = self.p.line(source=line_source, color="red")
+        self.model.fit_line.add_coord_listener(connect_update_coords(line_source))
 
         controls = Column(order_slider.component, niter_slider.component, grow_slider.component,
                           mask_button, unmask_button, self.submit_button)

@@ -6,7 +6,7 @@ from bokeh.models import Button, Column, Panel, Tabs
 from geminidr.interactive import server, interactive
 from geminidr.interactive.interactive import GICoordsSource, \
     GISlider, GIMaskedSigmadCoords, \
-    GIModelSource, GIMaskedSigmadScatter, build_figure, build_cds, build_scatter, \
+    GIModelSource, GIMaskedSigmadScatter, build_figure, build_cds, \
     connect_update_coords
 from gempy.library import astromodels
 
@@ -184,7 +184,7 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
                             title='Model Differential',
                             x_axis_label='X', y_axis_label='Y')
         scatter_residuals_source = build_cds()
-        self.scatter_residuals = build_scatter(fig2, source=scatter_residuals_source)
+        self.scatter_residuals = fig2.scatter(source=scatter_residuals_source, color="blue", radius=5)
         self.model.add_coord_listener(connect_update_coords(self.scatter_residuals_source))
         # differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
         # differencing_model.add_coord_listener(self.line2.update_coords)

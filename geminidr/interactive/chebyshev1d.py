@@ -5,9 +5,9 @@ from bokeh.models import Button, Column, Panel, Tabs, Div
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GILine, GICoordsSource, \
+from geminidr.interactive.interactive import GICoordsSource, \
     GIBandModel, GIApertureModel, GISlider, GIMaskedSigmadCoords, \
-    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure
+    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure, build_cds, connect_update_coords
 from gempy.library import astromodels
 
 
@@ -191,17 +191,19 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
         self.scatter = GIMaskedSigmadScatter(p, self.model.coords)
 
-        self.line = GILine(p)
-        self.model.add_coord_listener(self.line.update_coords)
+        line_source = build_cds()
+        self.line = p.line(line_source)
+        self.model.add_coord_listener(connect_update_coords(line_source))
 
         # p2 goes in tab 2 and shows the difference between the data y values and the model calculated values
         p2 = build_figure(plot_width=600, plot_height=500,
                           title='Model Differential',
                           x_axis_label='X', y_axis_label='Y',
                           band_model=band_model, aperture_model=aperture_model)
-        self.line2 = GILine(p2)
+        line2_source = build_cds()
+        self.line2 = p2.line(source=line2_source, color="red")
         differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
-        differencing_model.add_coord_listener(self.line2.update_coords)
+        differencing_model.add_coord_listener(connect_update_coords(line2_source))
 
         # helptext is where the Controller will put help messages for the end user
         # This controls area is a vertical set of UI controls we are placing on the left
