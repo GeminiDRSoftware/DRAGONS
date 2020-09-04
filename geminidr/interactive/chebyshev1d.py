@@ -5,7 +5,7 @@ from bokeh.models import Button, Column, Panel, Tabs, Div
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GICoordsSource, \
+from geminidr.interactive.interactive import \
     GIBandModel, GIApertureModel, GIMaskedSigmadCoords, \
     GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure, build_cds, connect_update_coords, \
     build_text_slider
@@ -15,7 +15,7 @@ from gempy.library import astromodels
 __all__ = ["interactive_chebyshev", "ChebyshevModel"]
 
 
-class ChebyshevModel(GICoordsSource, GIModelSource):
+class ChebyshevModel(GIModelSource):
     def __init__(self, order, location, dispaxis, sigma_clip, coords, spectral_coords, ext):
         super().__init__()
         GIModelSource.__init__(self)
@@ -25,6 +25,7 @@ class ChebyshevModel(GICoordsSource, GIModelSource):
         self.sigma_clip = sigma_clip
         self.sigma=3
         self.coords = coords
+        self.coord_listeners = list()
         self.spectral_coords = spectral_coords
         self.ext = ext
         self.m_final = None
@@ -82,7 +83,8 @@ class ChebyshevModel(GICoordsSource, GIModelSource):
         self.model_dict = astromodels.chebyshev_to_dict(self.m_final)
 
         # notify listeners of new x/y plot data based on our model function
-        self.notify_coord_listeners(self.spectral_coords, self.m_final(self.spectral_coords))
+        for fn in self.coord_listeners:
+            fn(self.spectral_coords, self.m_final(self.spectral_coords))
         # notify model listeners that our model function has changed
         self.notify_model_listeners()
 
@@ -204,6 +206,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         line2_source = build_cds()
         self.line2 = p2.line(source=line2_source, color="red")
         differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
+        self.model.coord_listeners.append(differencing_model.update_coords)
         differencing_model.add_coord_listener(connect_update_coords(line2_source))
 
         # helptext is where the Controller will put help messages for the end user

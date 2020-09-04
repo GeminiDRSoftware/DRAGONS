@@ -3,7 +3,7 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, \
+from geminidr.interactive.interactive import \
     GIPatch, build_figure, build_text_slider
 
 __all__ = ["interactive_extract_spectra", ]

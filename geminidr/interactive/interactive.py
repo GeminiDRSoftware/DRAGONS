@@ -192,43 +192,43 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     return component
 
 
-class GICoordsSource:
-    """
-    A source for coordinate data.
-
-    Downstream code can subscribe for updates on this to be notified when the
-    coordinates change for some reason.
-    """
-    def __init__(self):
-        self.listeners = list()
-
-    def add_coord_listener(self, coords_listener):
-        """
-        Add a listener - a function that will take x and y
-        arguments as lists of values.
-        """
-        if callable(coords_listener):
-            self.listeners.append(coords_listener)
-        else:
-            raise ValueError("Must pass a fn(x,y)")
-
-    def notify_coord_listeners(self, x_coords, y_coords):
-        """
-        Notify all registered users of the updated coordinagtes.
-
-        Coordinates are set as two separate arrays of `ndarray`
-        x and y coordinates.
-
-        Parameters
-        ----------
-        x_coords : ndarray
-            x coordinate array
-        y_coords : ndarray
-            y coordinate array
-
-        """
-        for l in self.listeners:
-            l(x_coords, y_coords)
+# class GICoordsSource:
+#     """
+#     A source for coordinate data.
+#
+#     Downstream code can subscribe for updates on this to be notified when the
+#     coordinates change for some reason.
+#     """
+#     def __init__(self):
+#         self.listeners = list()
+#
+#     def add_coord_listener(self, coords_listener):
+#         """
+#         Add a listener - a function that will take x and y
+#         arguments as lists of values.
+#         """
+#         if callable(coords_listener):
+#             self.listeners.append(coords_listener)
+#         else:
+#             raise ValueError("Must pass a fn(x,y)")
+#
+#     def notify_coord_listeners(self, x_coords, y_coords):
+#         """
+#         Notify all registered users of the updated coordinagtes.
+#
+#         Coordinates are set as two separate arrays of `ndarray`
+#         x and y coordinates.
+#
+#         Parameters
+#         ----------
+#         x_coords : ndarray
+#             x coordinate array
+#         y_coords : ndarray
+#             y coordinate array
+#
+#         """
+#         for l in self.listeners:
+#             l(x_coords, y_coords)
 
 
 class GIModelSource(object):
@@ -345,7 +345,7 @@ class GIDifferencingModel(object):
             fn(x, y)
 
 
-class GIMaskedSigmadCoords(GICoordsSource):
+class GIMaskedSigmadCoords(object):
     """
     This is a helper class for handling masking of coordinate
     values.
@@ -382,6 +382,7 @@ class GIMaskedSigmadCoords(GICoordsSource):
         self.sigma = [False] * len(x_coords)
         self.mask_listeners = list()
         self.sigma_listeners = list()
+        self.coord_listeners = list()
 
     def set_coords(self, x_coords, y_coords):
         self.x_coords = x_coords
@@ -410,11 +411,8 @@ class GIMaskedSigmadCoords(GICoordsSource):
             The listener to add
 
         """
-        super().add_coord_listener(coords_listener)
-        if callable(coords_listener):
-            coords_listener(self.x_coords, self.y_coords)
-        else:
-            coords_listener.update_coords(self.x_coords, self.y_coords)
+        self.coord_listeners.append(coords_listener)
+        coords_listener(self.x_coords, self.y_coords)
 
     def add_mask_listener(self, mask_listener: callable):
         if callable(mask_listener):
@@ -445,7 +443,8 @@ class GIMaskedSigmadCoords(GICoordsSource):
         for i in coords:
             self.mask[i] = False
         self.sigma = [False] * len(self.x_coords[self.mask])
-        self.notify_coord_listeners(self.x_coords, self.y_coords)
+        for fn in self.coord_listeners:
+            fn(self.x_coords, self.y_coords)
         for mask_listener in self.mask_listeners:
             mask_listener(self.x_coords[self.mask], self.y_coords[self.mask])
         for sigma_listener in self.sigma_listeners:
@@ -469,7 +468,8 @@ class GIMaskedSigmadCoords(GICoordsSource):
         self.sigma = [False] * len(self.x_coords[self.mask])
         for sigma_listener in self.sigma_listeners:
             sigma_listener([], [])
-        self.notify_coord_listeners(self.x_coords, self.y_coords)
+        for fn in self.coord_listeners:
+            fn(self.x_coords, self.y_coords)
         for mask_listener in self.mask_listeners:
             mask_listener(self.x_coords[self.mask], self.y_coords[self.mask])
 
@@ -884,8 +884,8 @@ class GISingleApertureView(object):
 
         """
         if fig.y_range.start is not None and fig.y_range.end is not None:
-            ymin = figure.y_range.start
-            ymax = figure.y_range.end
+            ymin = fig.y_range.start
+            ymax = fig.y_range.end
             ymid = (ymax-ymin)*.8+ymin
             ytop = ymid + 0.05*(ymax-ymin)
             ybottom = ymid - 0.05*(ymax-ymin)

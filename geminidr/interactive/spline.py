@@ -3,7 +3,7 @@ from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, _dequantity, \
+from geminidr.interactive.interactive import _dequantity, \
     GIMaskedSigmadCoords, build_figure, build_cds, connect_update_coords, clear_selection, build_text_slider
 from gempy.library import astromodels
 
