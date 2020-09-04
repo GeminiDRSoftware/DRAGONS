@@ -3,7 +3,7 @@ from bokeh.layouts import row
 from bokeh.models import Button, Column, Panel, Tabs
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, \
+from geminidr.interactive.interactive import \
     GIMaskedSigmadCoords, \
     GIModelSource, GIMaskedSigmadScatter, build_figure, build_cds, \
     connect_update_coords, build_text_slider
@@ -13,7 +13,7 @@ from gempy.library import astromodels
 __all__ = ["interactive_chebyshev2d", ]
 
 
-class Chebyshev2DModel(GICoordsSource, GIModelSource):
+class Chebyshev2DModel(GIModelSource):
     def __init__(self, spectral_order, spatial_order, dispaxis, sigma_clip, coords, in_coords, ref_coords, ext):
         super().__init__()
         GIModelSource.__init__(self)
@@ -23,6 +23,7 @@ class Chebyshev2DModel(GICoordsSource, GIModelSource):
         self.sigma_clip = sigma_clip
         self.sigma=3
         self.coords = coords
+        self.coord_listeners = list()
         self.in_coords = in_coords
         self.ref_coords = ref_coords
         self.ext = ext
@@ -74,7 +75,8 @@ class Chebyshev2DModel(GICoordsSource, GIModelSource):
 
         residuals = self.m_final(*self.in_coords) - self.ref_coords[1-dispaxis]
         # notify listeners of new x/y plot data based on our model function
-        self.notify_coord_listeners(self.in_coords[1], residuals) # self.m_final(self.in_coords[0], self.in_coords[1]))
+        for fn in self.coord_listeners:
+            fn(self.in_coords[1], residuals) # self.m_final(self.in_coords[0], self.in_coords[1]))
         # notify model listeners that our model function has changed
         # self.notify_model_listeners()
 
@@ -136,9 +138,6 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
         self.model.coords.unmask(indices)
 
     def recalc_button_handler(self, stuff):
-        self.model.spectral_order = self.spectral_order_slider.value
-        self.model.spatial_order = self.spatial_order_slider.value
-        self.model.sigma = self.sigma_slider.value
         self.model.recalc_chebyshev()
 
     def visualize(self, doc):
@@ -185,14 +184,14 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
                             title='Model Differential',
                             x_axis_label='X', y_axis_label='Y')
         scatter_residuals_source = build_cds()
-        self.scatter_residuals = fig2.scatter(source=scatter_residuals_source, color="blue", radius=5)
-        self.model.add_coord_listener(connect_update_coords(self.scatter_residuals_source))
+        self.scatter_residuals = fig2.scatter(x='x', y='y', source=scatter_residuals_source, color="blue", radius=5)
+        self.model.coord_listeners.append(connect_update_coords(scatter_residuals_source))
         # differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
         # differencing_model.add_coord_listener(self.line2.update_coords)
 
-        self.controls = Column(self.spectral_order_slider.component,
-                               self.spatial_order_slider.component,
-                               self.sigma_slider.component,
+        self.controls = Column(self.spectral_order_slider,
+                               self.spatial_order_slider,
+                               self.sigma_slider,
                                recalculate_button,
                                self.submit_button,
                                mask_button,

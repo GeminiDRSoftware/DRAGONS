@@ -56,7 +56,7 @@ class TraceApertureUI:
 
         line_source = build_cds()
         line = fig.line(x='x', y='y', source=line_source, color="red")
-        model.add_coord_listener(connect_update_coords(line_source))
+        model.coord_listeners.append(connect_update_coords(line_source))
 
         model.recalc_chebyshev()
 
