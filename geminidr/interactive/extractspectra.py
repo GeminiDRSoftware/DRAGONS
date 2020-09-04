@@ -1,11 +1,10 @@
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Column, Div, Button
+from bokeh.models import Column, Div
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider, _dequantity, \
-    GIMaskedSigmadCoords, GIPatch
-from gempy.library import astromodels
+from geminidr.interactive.interactive import GICoordsSource, GISlider, \
+    GIPatch, build_figure
 
 
 __all__ = ["interactive_extract_spectra", ]
@@ -131,11 +130,11 @@ class ExtractSpectraVisualizer(interactive.PrimitiveVisualizer):
                                 self.model, "width", self.model.recalc_extract, throttled=True)
 
         # Create a blank figure with labels
-        self.p = GIFigure(plot_width=600, plot_height=500,
-                          title='Spectra 1D',
-                          tools="pan,wheel_zoom,box_zoom,reset",
-                          x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label,
-                          x_range=(0, self.model.ext.shape[0]), y_range=(0, self.model.ext.shape[1]))
+        self.p = build_figure(plot_width=600, plot_height=500,
+                              title='Spectra 1D',
+                              tools="pan,wheel_zoom,box_zoom,reset",
+                              x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label,
+                              x_range=(0, self.model.ext.shape[0]), y_range=(0, self.model.ext.shape[1]))
 
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
@@ -151,7 +150,7 @@ class ExtractSpectraVisualizer(interactive.PrimitiveVisualizer):
         self.model.points1.add_coord_listener(self.update_details)
         self.model.recalc_extract()
 
-        col = column(self.p.figure, self.details)
+        col = column(self.p, self.details)
         layout = row(controls, col)
 
         doc.add_root(layout)

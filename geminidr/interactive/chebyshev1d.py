@@ -6,12 +6,12 @@ from bokeh.models import Button, Column, Panel, Tabs, Div
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GILine, GICoordsSource, \
-    GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedSigmadCoords, \
-    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter
+    GIBandModel, GIApertureModel, GISlider, GIMaskedSigmadCoords, \
+    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure
 from gempy.library import astromodels
 
 
-__all__ = ["interactive_chebyshev",]
+__all__ = ["interactive_chebyshev", "ChebyshevModel"]
 
 
 class ChebyshevModel(GICoordsSource, GIModelSource):
@@ -138,7 +138,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
+        self.scatter.source.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self, stuff):
@@ -181,11 +181,11 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         unmask_button.on_click(self.unmask_button_handler)
 
         # Create a blank figure with labels
-        p = GIFigure(plot_width=600, plot_height=500,
-                     title='Interactive Chebyshev',
-                     x_axis_label='X', y_axis_label='Y',
-                     tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                     band_model=band_model, aperture_model=aperture_model)
+        p = build_figure(plot_width=600, plot_height=500,
+                         title='Interactive Chebyshev',
+                         x_axis_label='X', y_axis_label='Y',
+                         tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                         band_model=band_model, aperture_model=aperture_model)
 
         self.p = p
 
@@ -195,10 +195,10 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.model.add_coord_listener(self.line.update_coords)
 
         # p2 goes in tab 2 and shows the difference between the data y values and the model calculated values
-        p2 = GIFigure(plot_width=600, plot_height=500,
-                      title='Model Differential',
-                      x_axis_label='X', y_axis_label='Y',
-                      band_model=band_model, aperture_model=aperture_model)
+        p2 = build_figure(plot_width=600, plot_height=500,
+                          title='Model Differential',
+                          x_axis_label='X', y_axis_label='Y',
+                          band_model=band_model, aperture_model=aperture_model)
         self.line2 = GILine(p2)
         differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
         differencing_model.add_coord_listener(self.line2.update_coords)
@@ -214,8 +214,8 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         self.model.recalc_chebyshev()
 
         # add the two plots as tabs and place them with controls to the left
-        tab1 = Panel(child=p.figure, title="Chebyshev Fit")
-        tab2 = Panel(child=p2.figure, title="Chebyshev Differential")
+        tab1 = Panel(child=p, title="Chebyshev Fit")
+        tab2 = Panel(child=p2, title="Chebyshev Differential")
         tabs = Tabs(tabs=[tab1, tab2], name="tabs")
         layout = row(self.controls, tabs)
 

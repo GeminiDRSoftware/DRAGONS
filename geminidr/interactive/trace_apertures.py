@@ -5,8 +5,8 @@ from bokeh.models import Tabs, Panel, Button, Div, CustomJS
 
 from geminidr.interactive import interactive, server
 from geminidr.interactive.chebyshev1d import ChebyshevModel
-from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIFigure, GIMaskedSigmadScatter, GILine, GISlider, \
-    GIDifferencingModel
+from geminidr.interactive.interactive import GIMaskedSigmadCoords, GIMaskedSigmadScatter, GILine, GISlider, \
+    GIDifferencingModel, build_figure
 from gempy.library import tracing
 from gempy.library.astrotools import boxcar
 
@@ -47,22 +47,22 @@ class TraceApertureUI:
 
         self.model = model
 
-        p = GIFigure(plot_width=600, plot_height=400,
-                     title='Chebyshev Fit',
-                     x_axis_label='X', y_axis_label='Y',
-                     tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
+        fig = build_figure(plot_width=600, plot_height=400,
+                           title='Chebyshev Fit',
+                           x_axis_label='X', y_axis_label='Y',
+                           tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
 
-        self.scatter = GIMaskedSigmadScatter(p, model.coords)
+        self.scatter = GIMaskedSigmadScatter(fig, model.coords)
 
-        line = GILine(p)
+        line = GILine(fig)
         model.add_coord_listener(line.update_coords)
 
         model.recalc_chebyshev()
 
-        p2 = GIFigure(plot_width=600, plot_height=200,
-                      title='Fit Differential',
-                      x_axis_label='X', y_axis_label='Y')
-        self.line2 = GILine(p2)
+        fig2 = build_figure(plot_width=600, plot_height=200,
+                            title='Fit Differential',
+                            x_axis_label='X', y_axis_label='Y')
+        self.line2 = GILine(fig2)
         differencing_model = GIDifferencingModel(model.coords, model, model.model_calculate)
         differencing_model.add_coord_listener(self.line2.update_coords)
 
@@ -84,7 +84,7 @@ class TraceApertureUI:
 
         controls = column(order_slider.component, sigma_slider.component, mask_button, unmask_button, info)
 
-        self.component = row(controls, column(p.figure, p2.figure))
+        self.component = row(controls, column(fig, fig2))
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
