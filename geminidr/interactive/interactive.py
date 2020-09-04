@@ -192,45 +192,6 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     return component
 
 
-# class GICoordsSource:
-#     """
-#     A source for coordinate data.
-#
-#     Downstream code can subscribe for updates on this to be notified when the
-#     coordinates change for some reason.
-#     """
-#     def __init__(self):
-#         self.listeners = list()
-#
-#     def add_coord_listener(self, coords_listener):
-#         """
-#         Add a listener - a function that will take x and y
-#         arguments as lists of values.
-#         """
-#         if callable(coords_listener):
-#             self.listeners.append(coords_listener)
-#         else:
-#             raise ValueError("Must pass a fn(x,y)")
-#
-#     def notify_coord_listeners(self, x_coords, y_coords):
-#         """
-#         Notify all registered users of the updated coordinagtes.
-#
-#         Coordinates are set as two separate arrays of `ndarray`
-#         x and y coordinates.
-#
-#         Parameters
-#         ----------
-#         x_coords : ndarray
-#             x coordinate array
-#         y_coords : ndarray
-#             y coordinate array
-#
-#         """
-#         for l in self.listeners:
-#             l(x_coords, y_coords)
-
-
 class GIModelSource(object):
     """"
     An object for reporting updates to a model (such as a fit line).
