@@ -152,7 +152,20 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     slider = slider
     text_input = text_input
 
+    def _float_check(val):
+        if isinstance(val, int) or isinstance(val, float):
+            return True
+        try:
+            chk = float(val)
+            return True
+        except ValueError:
+            return False
+
     def update_slider(attrib, old, new):
+        if not _float_check(new):
+            if _float_check(old):
+                text_input.value = str(old)
+            return
         if old != new:
             ival = None
             try:
@@ -171,6 +184,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
             text_input.value = str(new)
 
     def handle_value(attrib, old, new):
+        if not _float_check(new):
+            return
         if isinstance(new, str):
             new = float(new)
         if obj and attr:
@@ -549,20 +564,6 @@ class GIMaskedSigmadScatter:
         self.source.selected.update(indices=[])
         self.masked_source.selected.update(indices=[])
         self.sigmad_source.selected.update(indices=[])
-
-
-class GIPatch:
-    def __init__(self, fig, x_coords=[], y_coords=[], color="blue"):
-        if x_coords is None:
-            x_coords = []
-        if y_coords is None:
-            y_coords = []
-        self.patch_source = ColumnDataSource({'x': x_coords, 'y': y_coords})
-        self.patch = fig.patch(x='x', y='y', source=self.patch_source, color=color)
-
-    def update_coords(self, x_coords, y_coords):
-        x, y = _dequantity(x_coords, y_coords)
-        self.patch_source.data = {'x': x, 'y': y}
 
 
 class GIBandListener(ABC):
