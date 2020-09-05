@@ -137,7 +137,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
 
     Returns
     -------
-        :class:`bokeh.models.Slider` slider widget for bokeh interface
+        :class:`~Row` bokeh Row component with the interface inside
     """
     start = min(value, min_value) if min_value else min(value, 0)
     end = max(value, max_value) if max_value else max(10, value*2)
