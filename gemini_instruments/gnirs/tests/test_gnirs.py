@@ -121,7 +121,7 @@ def test_descriptor_matches_type(ad, descriptor, expected_type):
 
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
-def test_ra_and_dec_always_returns_float(ad):
+def test_ra_and_dec_always_returns_float(ad, monkeypatch):
     """
     Tests that the get the RA/DEC coordinates using descriptors.
 
@@ -135,6 +135,26 @@ def test_ra_and_dec_always_returns_float(ad):
 
     if isinstance(ad.wcs_dec(), float) or ad.wcs_dec() is None:
         assert isinstance(ad.dec(), float)
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
+def test_ra_and_dec_wcs_fallback(ad, monkeypatch):
+    """
+    Tests that the get the RA/DEC coordinates using descriptors.
+
+    Parameters
+    ----------
+    ad : fixture
+        Custom fixture that downloads and opens the input file.
+    """
+    def _fake_wcs_call():
+        return None
+
+    monkeypatch.setattr(ad, 'wcs_ra', _fake_wcs_call)
+    monkeypatch.setattr(ad, 'wcs_dec', _fake_wcs_call)
+    assert(ad.ra() == ad.phu.get('RA', None))
+    assert(ad.dec() == ad.phu.get('DEC', None))
 
 
 if __name__ == "__main__":
