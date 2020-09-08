@@ -2,11 +2,12 @@ from abc import ABC, abstractmethod
 
 from astropy.units import Quantity
 from bokeh.layouts import row, column
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div
+from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, Dropdown
 from bokeh.plotting import figure
 
 from geminidr.interactive import server
 
+from gempy.library.config import FieldValidationError
 
 def _dequantity(x, y):
     """
@@ -42,6 +43,7 @@ class PrimitiveVisualizer(ABC):
         top level call you are visualizing from.
         """
         self.log = log
+        self.user_satisfied = False
 
         self.submit_button = Button(label="Submit")
         self.submit_button.on_click(self.submit_button_handler)
@@ -65,6 +67,7 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
+        self.user_satisfied = True
         server.stop_server()
 
     def visualize(self, doc):
@@ -103,6 +106,42 @@ class PrimitiveVisualizer(ABC):
             }
         """ % message)
         widget.js_on_change('disabled', callback)
+
+    def make_widgets_from_config(self, config, params):
+        """Makes appropriate widgets for all the parameters in params,
+        using the config to determine the type. Also adds these widgets
+        to a dict so they can be accessed from the calling primitive"""
+        widgets = []
+        for pname, value in config.items():
+            if pname not in params:
+                continue
+            field = config._fields[pname]
+            # Do some inspection of the config to determine what sort of widget we want
+            doc = field.doc.split('\n')[0]
+            if hasattr(field, 'min'):
+                # RangeField => Slider
+                start, end = field.min, field.max
+                # TODO: Be smarter here!
+                if start is None:
+                    start = -20
+                if end is None:
+                    end = 50
+                step = start
+                widget = build_text_slider(doc, value, step, start, end, obj=config, attr=pname)
+                self.widgets[pname] = widget.children[0]
+            elif hasattr(field, 'allowed'):
+                # ChoiceField => drop-down menu
+                widget = Dropdown(label=doc, menu=list(config.allowed.keys()))
+            else:
+                # Anything else
+                widget = TextInput(label=doc)
+
+            widgets.append(widget)
+            # Complex multi-widgets will already have been added
+            if pname not in self.widgets:
+                self.widgets[pname] = widget
+
+        return widgets
 
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
@@ -171,10 +210,20 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
             text_input.value = str(new)
 
     def handle_value(attrib, old, new):
-        if isinstance(new, str):
-            new = float(new)
         if obj and attr:
-            obj.__setattr__(attr, new)
+            try:
+                value = int(new)
+            except ValueError:
+                value = float(new)
+            try:
+                obj.__setattr__(attr, value)
+            except FieldValidationError:
+                # reset textbox
+                text_input.remove_on_change("value", handle_value)
+                text_input.value = str(old)
+                text_input.on_change("value", handle_value)
+            else:
+                update_slider(attrib, old, new)
         if handler:
             handler()
 
@@ -183,12 +232,12 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
         # have to call it from the slider as it will happen as
         # a side-effect of update_text_input
         slider.on_change("value_throttled", update_text_input)
-        text_input.on_change("value", update_slider, handle_value)
+        text_input.on_change("value", handle_value)
     else:
-        slider.on_change("value", update_text_input, handle_value)
+        slider.on_change("value", update_text_input)
         # since slider is listening to value, this next line will cause the slider
         # to call the handle_value method and we don't need to do so explicitly
-        text_input.on_change("value", update_slider)
+        text_input.on_change("value", handle_value)
     return component
 
 
