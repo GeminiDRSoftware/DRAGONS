@@ -141,7 +141,7 @@ def test_ra_and_dec_always_returns_float(ad, monkeypatch):
 @pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
 def test_ra_and_dec_wcs_fallback(ad, monkeypatch):
     """
-    Tests that the get the RA/DEC coordinates using descriptors.
+    Tests that the get the RA/DEC coordinates using descriptors when the WCS coordinate mapping fails
 
     Parameters
     ----------
