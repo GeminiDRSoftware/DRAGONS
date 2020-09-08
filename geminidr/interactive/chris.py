@@ -75,6 +75,10 @@ class InteractiveModel1D(InteractiveModel):
     def __init__(self, model, x=None, y=None, mask=None, var=None,
                  grow=0, sigma=3, lsigma=None, hsigma=None, maxiter=3,
                  section=None):
+        if isinstance(model, models.Chebyshev1D):
+            model = InteractiveChebyshev1D(model)
+        else:
+            model = InteractiveSpline1D(model)
         super().__init__(model)
         if mask is None:
             try:  # Handle y as masked array
@@ -121,6 +125,14 @@ class InteractiveModel1D(InteractiveModel):
         self.maxiter = maxiter
 
     @property
+    def x(self):
+        return self.data.data['x']
+
+    @property
+    def y(self):
+        return self.data.data['y']
+
+    @property
     def sigma(self):
         if self.lsigma == self.hsigma:
             return self.lsigma
@@ -130,22 +142,38 @@ class InteractiveModel1D(InteractiveModel):
     def sigma(self, value):
         self.lsigma = self.hsigma = float(value)
 
+    @property
+    def order(self):
+        return self.model.order
+
+    @order.setter
+    def order(self, value):
+        self.model.order = value
+
+    @property
+    def domain(self):
+        return self.model.domain
+
+    def perform_fit(self):
+        self.model.perform_fit(self)
+        self.update_mask()
+        if 'residuals' in self.data.data:
+            self.data.data['residuals'] = self.y - self.evaluate(self.x)
+        if 'ratio' in self.data.data:
+            self.data.data['ratio'] = self.y / self.evaluate(self.x)
+        self.notify_listeners()
+
     def evaluate(self, x):
         return self.model(x)
 
-    @property
-    def x(self):
-        return self.data.data['x']
 
-    @property
-    def y(self):
-        return self.data.data['y']
-
-
-class InteractiveChebyshev1D(InteractiveModel1D):
-    def __init__(self, model, *args, **kwargs):
+class InteractiveChebyshev1D:
+    def __init__(self, model):
         assert isinstance(model, models.Chebyshev1D)
-        super().__init__(model, *args, **kwargs)
+        self.model = model
+
+    def __call__(self, x):
+        return self.model(x)
 
     @property
     def order(self):
@@ -164,53 +192,47 @@ class InteractiveChebyshev1D(InteractiveModel1D):
         # Defined explicitly here since a spline doesn't have a domain
         return self.model.domain
 
-    def perform_fit(self):
+    def perform_fit(self, parent):
         """
         Perform the fit, update self.model, self.fit_mask
         """
-        goodpix = ~(self.init_mask | self.user_mask)
-        if self.var is None:
+        goodpix = ~(parent.init_mask | parent.user_mask)
+        if parent.var is None:
             weights = None
         else:
-            weights = np.divide(1.0, self.var, out=np.zeros_like(self.x),
-                                where=self.var > 0)[goodpix]
+            weights = np.divide(1.0, parent.var, out=np.zeros_like(self.x),
+                                where=parent.var > 0)[goodpix]
 
-        if self.sigma_clip:
+        if parent.sigma_clip:
             fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                       sigma_clip, sigma=self.sigma,
-                                                       niter=self.maxiter)
+                                                       sigma_clip, sigma=parent.sigma,
+                                                       niter=parent.maxiter)
             try:
-                new_model, mask = fit_it(self.model, self.x[goodpix], self.y[goodpix], weights=weights)
+                new_model, mask = fit_it(self.model, parent.x[goodpix], parent.y[goodpix], weights=weights)
             except (IndexError, np.linalg.linalg.LinAlgError):
                 print("Problem with fitting")
             else:
                 ngood = np.sum(~mask)
                 if ngood > self.order:
-                    rms = np.sqrt(np.sum((new_model(self.x[goodpix][~mask]) - self.y[goodpix][~mask])**2) / ngood)
+                    rms = np.sqrt(np.sum((new_model(parent.x[goodpix][~mask]) - parent.y[goodpix][~mask])**2) / ngood)
                     # I'm not sure how to report the rms
                     self.model = new_model
-                    self.fit_mask = np.zeros_like(self.init_mask)
-                    self.fit_mask[goodpix] = mask
+                    parent.fit_mask = np.zeros_like(parent.init_mask)
+                    parent.fit_mask[goodpix] = mask
                 else:
                     print("Too few remaining points to constrain the fit")
         else:
             fit_it = fitting.LinearLSQFitter()
             try:
-                new_model = fit_it(self.model, self.x[goodpix], self.y[goodpix], weights=weights)
+                new_model = fit_it(self.model, parent.x[goodpix], parent.y[goodpix], weights=weights)
             except (IndexError, np.linalg.linalg.LinAlgError):
                 print("Problem with fitting")
             else:
                 self.model = new_model
-                self.fit_mask = np.zeros_like(self.init_mask)
-        self.update_mask()
-        if 'residuals' in self.data.data:
-            self.data.data['residuals'] = self.y - self.evaluate(self.x)
-        if 'ratio' in self.data.data:
-            self.data.data['ratio'] = self.y / self.evaluate(self.x)
-        self.notify_listeners()
+                parent.fit_mask = np.zeros_like(parent.init_mask)
 
 
-class InteractiveSpline1D(InteractiveModel1D):
+class InteractiveSpline1D:
     pass
 # ----------------------------------------------------------------------------
 
@@ -221,15 +243,7 @@ class Fit1DPanel:
         """A class that handles a 1d model and its visualization (maybe in a tab)"""
 
         # Probably do something better here with factory function/class
-        for model_type in (InteractiveChebyshev1D, InteractiveSpline1D):
-            try:
-                self.fit = model_type(model, x, y)
-            except AssertionError:
-                pass
-            else:
-                break
-        else:
-            raise ValueError("Cannot recognize model type")
+        self.fit = InteractiveModel1D(model, x, y)
 
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
