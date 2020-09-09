@@ -250,7 +250,7 @@ class InteractiveSpline1D:
 
 class Fit1DPanel:
     def __init__(self, model, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True):
+                 plot_width=600, plot_height=400, plot_residuals=True, grow_slider=True):
         """A class that handles a 1d model and its visualization (maybe in a tab)"""
 
         # Probably do something better here with factory function/class
@@ -263,10 +263,12 @@ class Fit1DPanel:
                                                      fit, "sigma", self.sigma_slider_handler)
         sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         sigma_button.on_change('active', self.sigma_button_handler)
-        grow_slider = interactive.build_text_slider("Growth radius", fit.grow, 1, 0, 10,
-                                                    fit, "grow", fit.perform_fit)
-        iter_slider = interactive.build_text_slider("Max iterations", fit.maxiter, 1, 0, 10,
-                                                    fit, "maxiter", fit.perform_fit)
+        controls_column = [order_slider, row(sigma_slider, sigma_button)]
+        if grow_slider:
+            controls_column.append(interactive.build_text_slider("Growth radius", fit.grow, 1, 0, 10,
+                                                        fit, "grow", fit.perform_fit))
+        controls_column.append(interactive.build_text_slider("Max iterations", fit.maxiter, 1, 0, 10,
+                                                    fit, "maxiter", fit.perform_fit))
 
         # Only need this if there are multiple tabs
         apply_button = bm.Button(label="Apply model universally")
@@ -278,7 +280,7 @@ class Fit1DPanel:
         unmask_button = bm.Button(label="Unmask")
         unmask_button.on_click(self.unmask_button_handler)
 
-        controls = column(order_slider, row(sigma_slider, sigma_button), grow_slider, iter_slider,
+        controls = column(*controls_column,
                           apply_button, row(mask_button, unmask_button))
 
         # Now the figures
@@ -362,7 +364,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     def __init__(self, allx, ally, models, config, log=None,
                  reinit_params=None, order_param=None,
                  min_order=1, max_order=10, tab_name_fmt='{}',
-                 xlabel='x', ylabel='y'):
+                 xlabel='x', ylabel='y', **kwargs):
         """
         Parameters
         ----------
@@ -408,7 +410,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.reinit_panel = None
 
         field = self.config._fields[order_param]
-        kwargs = {'xlabel': xlabel, 'ylabel': ylabel}
+        kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
         if field.min:
             kwargs['min_order'] = field.min
         if field.max:

@@ -2527,7 +2527,8 @@ class Spect(PrimitivesBASE):
                                                        reinit_params=reinit_params,
                                                        order_param='trace_order',
                                                        tab_name_fmt="Aperture {}",
-                                                       xlabel='yx'[dispaxis], ylabel='xy'[dispaxis])
+                                                       xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
+                                                                  grow_slider=True)
                     status = chris.interactive_fitter(visualizer)
                     all_m_final = [fit.model.model for fit in visualizer.fits]
                     for m in all_m_final:
