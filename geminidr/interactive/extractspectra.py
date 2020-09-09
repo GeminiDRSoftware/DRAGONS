@@ -1,10 +1,10 @@
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Column, Div
+from bokeh.models import Div
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.interactive import \
-    GIPatch, build_figure, build_text_slider
+    build_figure, build_text_slider, build_cds, connect_update_coords
 
 __all__ = ["interactive_extract_spectra", ]
 
@@ -140,10 +140,12 @@ class ExtractSpectraVisualizer(interactive.PrimitiveVisualizer):
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.poly1 = GIPatch(self.p)
-        self.model.points1_listeners.append(self.poly1.update_coords)
-        self.poly2 = GIPatch(self.p)
-        self.model.points2_listeners.append(self.poly2.update_coords)
+        coords = build_cds()
+        self.poly1 = self.p.patch(x='x', y='y', source=coords, color="blue")
+        self.model.points1_listeners.append(connect_update_coords(coords))
+        coords = build_cds()
+        self.poly2 = self.p.patch(x='x', y='y', source=coords, color="blue")
+        self.model.points2_listeners.append(connect_update_coords(coords))
 
         controls = column(width_slider, self.submit_button)
 
