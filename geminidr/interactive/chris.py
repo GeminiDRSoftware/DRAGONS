@@ -11,6 +11,7 @@ from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
 from geminidr.interactive import interactive, server
+from gempy.library import tracing, astrotools as at
 
 # ------------------ class/subclasses to store the models -----------------
 class InteractiveModel(ABC):
@@ -24,8 +25,7 @@ class InteractiveModel(ABC):
         (c) the way the fitting is performed
         (d) the input and output coordinates, mask, and weights
 
-    There will be 3 masks defined (all booleans):
-        init_mask: when data are sent (init_masked points are never plotted)
+    There will be 2 masks defined (all booleans):
         user_mask: points masked by the user
         fit_mask:  points rejected by the fit
     """
@@ -50,11 +50,11 @@ class InteractiveModel(ABC):
     def evaluate(self, x):
         pass
 
-    @property
-    def view(self):
-        # Return a CDSView of what we're interested in
-        return bm.CDSView(source=self.data,
-                          filters=[bm.BooleanFilter(~self.init_mask)])
+#    @property
+#    def view(self):
+#        # Return a CDSView of what we're interested in
+#        return bm.CDSView(source=self.data,
+#                          filters=[bm.BooleanFilter(~self.init_mask)])
 
     def mask_rendering_kwargs(self):
         return {'marker': bt.factor_mark('mask', self.MARKERS, self.MASK_TYPE),
@@ -80,37 +80,12 @@ class InteractiveModel1D(InteractiveModel):
         else:
             model = InteractiveSpline1D(model)
         super().__init__(model)
-        if mask is None:
-            try:  # Handle y as masked array
-                self.init_mask = y.mask or np.zeros_like(x, dtype=bool)
-            except AttributeError:
-                self.init_mask = np.zeros_like(x, dtype=bool)
-            else:
-                y = y.data
-        else:
-            self.init_mask = mask
-        self.var = var
-        if var is not None:
-            self.init_mask |= (self.var <= 0)
-
-        self.fit_mask = np.zeros_like(self.init_mask)
-        # "section" is the valid section provided by the user,
-        # i.e., points not in this region(s) are user-masked
-        if section is None:
-            self.user_mask = np.zeros_like(self.init_mask)
-        else:
-            self.user_mask = np.ones_like(self.init_mask)
-            for slice_ in section:
-                self.user_mask[slice_] = False
-
-        # Might put the variance in here for errorbars, but it's not needed
-        # at the moment
-        self.data = bm.ColumnDataSource({'x': x, 'y': y, 'mask': ['good'] * len(x)})
-        self.update_mask()
-
+        self.section = section
+        self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
         xlinspace = np.linspace(*self.domain, 100)
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
                                                'model': self.evaluate(xlinspace)})
+        self.populate_bokeh_objects(x, y, mask, var)
 
         # Our single slider isn't well set up for different low/hi sigma
         # We can worry about how we want to deal with that later
@@ -123,6 +98,42 @@ class InteractiveModel1D(InteractiveModel):
         self.lsigma = self.hsigma = self.sigma  # placeholder
         self.grow = grow
         self.maxiter = maxiter
+
+    def populate_bokeh_objects(self, x, y, mask=None, var=None):
+        if mask is None:
+            try:  # Handle y as masked array
+                init_mask = y.mask or np.zeros_like(x, dtype=bool)
+            except AttributeError:
+                init_mask = np.zeros_like(x, dtype=bool)
+            else:
+                y = y.data
+        else:
+            init_mask = mask
+        self.var = var
+        if var is not None:
+            init_mask |= (self.var <= 0)
+
+        x = x[~init_mask]
+        y = y[~init_mask]
+
+        self.fit_mask = np.zeros_like(x, dtype=bool)
+        # "section" is the valid section provided by the user,
+        # i.e., points not in this region(s) are user-masked
+        if self.section is None:
+            self.user_mask = np.zeros_like(self.fit_mask)
+        else:
+            self.user_mask = np.ones_like(self.fit_mask)
+            for slice_ in self.section:
+                self.user_mask[slice_.start < x < slice._stop] = False
+
+        # Might put the variance in here for errorbars, but it's not needed
+        # at the moment
+        bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x)}
+        for extra_column in ('residuals', 'ratio'):
+            if extra_column in self.data.data:
+                bokeh_data[extra_column] = np.zeros_like(y)
+        self.data.data = bokeh_data
+        self.update_mask()
 
     @property
     def x(self):
@@ -194,9 +205,9 @@ class InteractiveChebyshev1D:
 
     def perform_fit(self, parent):
         """
-        Perform the fit, update self.model, self.fit_mask
+        Perform the fit, update self.model, parent.fit_mask
         """
-        goodpix = ~(parent.init_mask | parent.user_mask)
+        goodpix = ~parent.user_mask
         if parent.var is None:
             weights = None
         else:
@@ -217,7 +228,7 @@ class InteractiveChebyshev1D:
                     rms = np.sqrt(np.sum((new_model(parent.x[goodpix][~mask]) - parent.y[goodpix][~mask])**2) / ngood)
                     # I'm not sure how to report the rms
                     self.model = new_model
-                    parent.fit_mask = np.zeros_like(parent.init_mask)
+                    parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
                     parent.fit_mask[goodpix] = mask
                 else:
                     print("Too few remaining points to constrain the fit")
@@ -229,7 +240,7 @@ class InteractiveChebyshev1D:
                 print("Problem with fitting")
             else:
                 self.model = new_model
-                parent.fit_mask = np.zeros_like(parent.init_mask)
+                parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
 
 
 class InteractiveSpline1D:
@@ -286,16 +297,14 @@ class Fit1DPanel:
             fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
+            p_resid.scatter(x='x', y='residuals', source=self.fit.data, #view=self.fit.view,
+                                          size=5, **self.fit.mask_rendering_kwargs())
 
-        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data, view=self.fit.view,
+        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data, #view=self.fit.view,
                                       size=5, **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=1, color='red')
-
-
-        p_resid.scatter(x='x', y='residuals', source=self.fit.data, view=self.fit.view,
-                                      size=5, **self.fit.mask_rendering_kwargs())
 
         self.component = row(controls, column(*fig_column))
 
@@ -335,6 +344,19 @@ class Fit1DPanel:
 class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     """
     The generic class for interactive fitting of one or more 1D functions
+
+    Attributes:
+        reinit_panel: layout containing widgets that control the parameters
+                      affecting the initialization of the (x,y) array(s)
+        reinit_button: the button to reconstruct the (x,y) array(s)
+        tabs: layout containing all the stuff required for an interactive 1D fit
+        submit_button: the button signifying a successful end to the interactive session
+
+        config: the Config object describing the parameters are their constraints
+        widgets: a dict of (param_name, widget) elements that allow the properties
+                 of the widgets to be set/accessed by the calling primitive. So far
+                 I'm only including the widgets in the reinit_panel
+        fits: list of InteractiveModel instances, one per (x,y) array
     """
 
     def __init__(self, allx, ally, models, config, log=None,
@@ -352,6 +374,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         """
         super().__init__(log=log)
 
+        self.config = copy(config)
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
@@ -372,46 +395,49 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # Make the panel with widgets to control the creation of (x, y) arrays
         if reinit_params is not None:
             # Create left panel
-            reinit_widgets = self.make_widgets_from_config(copy(config), reinit_params)
+            reinit_widgets = self.make_widgets_from_config(reinit_params)
 
             # This should really go in the parent class, like submit_button
-            button = bm.Button(label="Reconstruct points")
-            button.on_click(self.reconstruct_points)
-            callback = bm.CustomJS(code="""
-                window.close();
-            """)
-            button.js_on_click(callback)
-            reinit_widgets.append(button)
+            self.reinit_button = bm.Button(label="Reconstruct points")
+            self.reinit_button.on_click(self.reconstruct_points)
+            self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
+            reinit_widgets.append(self.reinit_button)
 
             self.reinit_panel = column(*reinit_widgets)
         else:
             self.reinit_panel = None
 
-        field = config._fields[order_param]
+        field = self.config._fields[order_param]
         kwargs = {'xlabel': xlabel, 'ylabel': ylabel}
         if field.min:
             kwargs['min_order'] = field.min
         if field.max:
             kwargs['max_order'] = field.max
         self.tabs = bm.Tabs(tabs=[], name="tabs")
+        self.fits = []
         if self.nmodels > 1:
             for i, (model, x, y) in enumerate(zip(models, allx, ally), start=1):
                 tui = Fit1DPanel(model, x, y, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
+                self.fits.append(tui.fit)
         else:
             tui = Fit1DPanel(models, allx, ally, **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
+            self.fits.append(tui.fit)
 
     def visualize(self, doc):
         super().visualize(doc)
         layout = row(self.reinit_panel, column(self.tabs, self.submit_button))
-        #layout = row(self.reinit_panel, self.submit_button)
         doc.add_root(layout)
 
     def reconstruct_points(self):
-        server.stop_server()
+        """Top-level code to update the Config with the values from the widgets"""
+        config_update = {k: v.value for k, v in self.widgets.items()}
+        for k, v in config_update.items():
+            print(f'{k} = {v}')
+        self.config.update(**config_update)
 
 
 def interactive_fitter(visualizer):
@@ -420,3 +446,42 @@ def interactive_fitter(visualizer):
     server.set_visualizer(None)
     return visualizer.user_satisfied
 
+
+class TraceApertures1DVisualizer(Fit1DVisualizer):
+    def __init__(self, allx, ally, models, config, ext=None, locations=None,
+                 **kwargs):
+        self.ext = ext
+        self.locations = locations
+        super().__init__(allx, ally, models, config, **kwargs)
+
+    def reconstruct_points(self):
+        # super() to update the Config with the widget values
+        # In this primitive, init_mask is always empty
+        super().reconstruct_points()
+        all_coords = trace_apertures_reconstruct_points(self.ext, self.locations, self.config)
+        for fit, coords in zip(self.fits, all_coords):
+            fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
+            fit.perform_fit()
+        self.reinit_button.disabled = False
+
+def trace_apertures_reconstruct_points(ext, locations, config):
+    dispaxis = 2 - ext.dispersion_axis()
+    all_coords = []
+    for loc in locations:
+        c0 = int(loc + 0.5)
+        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+        start = np.argmax(at.boxcar(spectrum, size=3))
+
+        # The coordinates are always returned as (x-coords, y-coords)
+        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                    start=start, initial=[loc],
+                                                    rwidth=None, cwidth=5, step=config.step,
+                                                    nsum=config.nsum, max_missed=config.max_missed,
+                                                    initial_tolerance=None,
+                                                    max_shift=config.max_shift)
+        # Store as spectral coordinate first (i.e., x in the y(x) fit)
+        if dispaxis == 0:
+            all_coords.append(in_coords[::-1])
+        else:
+            all_coords.append(in_coords)
+    return all_coords

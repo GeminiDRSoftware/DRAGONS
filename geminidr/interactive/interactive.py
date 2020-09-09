@@ -107,15 +107,15 @@ class PrimitiveVisualizer(ABC):
         """ % message)
         widget.js_on_change('disabled', callback)
 
-    def make_widgets_from_config(self, config, params):
+    def make_widgets_from_config(self, params):
         """Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
         to a dict so they can be accessed from the calling primitive"""
         widgets = []
-        for pname, value in config.items():
+        for pname, value in self.config.items():
             if pname not in params:
                 continue
-            field = config._fields[pname]
+            field = self.config._fields[pname]
             # Do some inspection of the config to determine what sort of widget we want
             doc = field.doc.split('\n')[0]
             if hasattr(field, 'min'):
@@ -127,11 +127,11 @@ class PrimitiveVisualizer(ABC):
                 if end is None:
                     end = 50
                 step = start
-                widget = build_text_slider(doc, value, step, start, end, obj=config, attr=pname)
+                widget = build_text_slider(doc, value, step, start, end, obj=self.config, attr=pname)
                 self.widgets[pname] = widget.children[0]
             elif hasattr(field, 'allowed'):
                 # ChoiceField => drop-down menu
-                widget = Dropdown(label=doc, menu=list(config.allowed.keys()))
+                widget = Dropdown(label=doc, menu=list(self.config.allowed.keys()))
             else:
                 # Anything else
                 widget = TextInput(label=doc)

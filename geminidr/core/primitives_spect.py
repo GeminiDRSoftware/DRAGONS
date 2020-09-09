@@ -2508,78 +2508,49 @@ class Spect(PrimitivesBASE):
                 # Set up the initial tracing models, one per aperture
                 all_m_init = [models.Chebyshev1D(degree=order, c0=c0,
                                                  domain=[0, ext.shape[dispaxis] - 1]) for c0 in locations]
-                all_m_final = []
 
                 # It's unfortunate that we have to do this
                 config = self.params[self.myself()]
                 config.update(**params)
                 reinit_params = ('step', 'nsum', 'max_missed', 'max_shift')
 
-                user_satisfied = False
-                while not user_satisfied:
-                    # Produce the arrays of input and output coordinates for the fit
-                    # For efficiency, we would like to trace all sources
-                    # simultaneously (like we do with arc lines), but we need to
-                    # start somewhere the source is bright enough, and there may
-                    # not be a single location where that is true for all sources
-                    all_coords = []
-                    for i, loc in enumerate(locations):
-                        c0 = int(loc + 0.5)
-                        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(boxcar(spectrum, size=3))
+                all_coords = chris.trace_apertures_reconstruct_points(ext, locations, config)
 
-                        # The coordinates are always returned as (x-coords, y-coords)
-                        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                    start=start, initial=[loc],
-                                                                    rwidth=None, cwidth=5, step=config.step,
-                                                                    nsum=config.nsum, max_missed=config.max_missed,
-                                                                    initial_tolerance=None,
-                                                                    max_shift=config.max_shift,
-                                                                    viewer=self.viewer if debug else None)
-                        # Store as spectral coordinate first (i.e., x in the y(x) fit)
-                        if dispaxis == 0:
-                            all_coords.append(in_coords[::-1])
-                        else:
-                            all_coords.append(in_coords)
+                # Purely for drawing in the image display
+                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
 
-                    # Purely for drawing in the image display
-                    spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-
-                    if interactive:
-                        allx = [coords[0] for coords in all_coords]
-                        ally = [coords[1] for coords in all_coords]
-                        visualizer = chris.Fit1DVisualizer(allx, ally, all_m_init, config,
-                                                           reinit_params=reinit_params,
-                                                           order_param='trace_order',
-                                                           tab_name_fmt="Aperture {}",
-                                                           xlabel='yx'[dispaxis], ylabel='xy'[dispaxis])
-                        user_satisfied = chris.interactive_fitter(visualizer)
-                        print("Control returned!", user_satisfied)
-                        # I can recover the reinit params
-                        config_update = {p: visualizer.widgets[p].value for p in reinit_params}
-                        for k, v in config_update.items():
-                            print(f'{k} = {v}')
-                        config.update(**config_update)
-
-                    else:
-                        all_m_final = []
-                        fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                                   sigma_clip, sigma=3)
-                        for aperture, coords, m_init, in zip(aptable, all_coords, all_m_init):
-                            location = aperture['c0']
-                            try:
-                                m_final, _ = fit_it(m_init, coords[0], coords[1])
-                            except (IndexError, np.linalg.linalg.LinAlgError):
-                                # This hides a multitude of sins, including no points
-                                # returned by the trace, or insufficient points to
-                                # constrain the requested order of polynomial.
-                                log.warning("Unable to trace aperture {}".format(aperture["number"]))
-                                m_final = m_init
-                            all_m_final.append(m_final)
-                        user_satisfied = True
+                if interactive:
+                    allx = [coords[0] for coords in all_coords]
+                    ally = [coords[1] for coords in all_coords]
+                    visualizer = chris.TraceApertures1DVisualizer(allx, ally, all_m_init, config,
+                                                                  ext, locations,
+                                                       reinit_params=reinit_params,
+                                                       order_param='trace_order',
+                                                       tab_name_fmt="Aperture {}",
+                                                       xlabel='yx'[dispaxis], ylabel='xy'[dispaxis])
+                    status = chris.interactive_fitter(visualizer)
+                    all_m_final = [fit.model.model for fit in visualizer.fits]
+                    for m in all_m_final:
+                        print(m)
+                else:
+                    all_m_final = []
+                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                               sigma_clip, sigma=3)
+                    for aperture, coords, m_init, in zip(aptable, all_coords, all_m_init):
+                        location = aperture['c0']
+                        try:
+                            m_final, _ = fit_it(m_init, coords[0], coords[1])
+                        except (IndexError, np.linalg.linalg.LinAlgError):
+                            # This hides a multitude of sins, including no points
+                            # returned by the trace, or insufficient points to
+                            # constrain the requested order of polynomial.
+                            log.warning("Unable to trace aperture {}".format(aperture["number"]))
+                            m_final = m_init
+                        all_m_final.append(m_final)
 
                 # Create dicts from the final models
-                for m_final in all_m_final:
+                for aperture, m_final in zip(aptable, all_m_final):
+                    location = aperture['c0']
                     if debug:
                         self.viewer.color = "blue"
                         plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
