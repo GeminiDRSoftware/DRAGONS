@@ -16,7 +16,8 @@ from gempy.library import tracing, astrotools as at
 # ------------------ class/subclasses to store the models -----------------
 class InteractiveModel(ABC):
     MASK_TYPE = ['user', 'good', 'fit']
-    MARKERS = ['circle', 'triangle', 'plus']
+    # MARKERS = ['circle', 'triangle', 'plus']
+    MARKERS = ['circle', 'triangle', 'square']
     PALETTE = Category10[3]
     """
     Base class for all interactive models, containing:
@@ -327,20 +328,18 @@ class Fit1DPanel:
         return
 
     def mask_button_handler(self, stuff):
-        return
-        indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
-        self.model.coords.addmask(indices)
+        indices = self.fit.data.selected.indices
+        self.fit.data.selected.update(indices=[])
+        for i in indices:
+            self.fit.user_mask[i] = 1
+        self.fit.perform_fit()
 
     def unmask_button_handler(self, stuff):
-        return
-        indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
-        self.model.coords.unmask(indices)
-
-
-
-
+        indices = self.fit.data.selected.indices
+        self.fit.data.selected.update(indices=[])
+        for i in indices:
+            self.fit.user_mask[i] = 0
+        self.fit.perform_fit()
 
 
 class Fit1DVisualizer(interactive.PrimitiveVisualizer):
