@@ -1669,8 +1669,6 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
         log.error("TypeError: keyword comments dict was not received.")
         raise TypeError("keyword comments dict required")
 
-    adoutput_list = []
-
     for ad in adinput:
         # Get the keyword associated with the data_section descriptor
         datasec_kw = ad._keyword_for('data_section')
@@ -1705,28 +1703,12 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
             # Update header keys to match new dimensions
             newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
                                                  datasec.y2-datasec.y1)
-            ext.hdr.set('NAXIS1', datasec.x2-datasec.x1, keyword_comments['NAXIS1'])
-            ext.hdr.set('NAXIS2', datasec.y2-datasec.y1, keyword_comments['NAXIS2'])
             ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments[datasec_kw])
             ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
             if oversec_kw in ext.hdr:
                 del ext.hdr[oversec_kw]
 
-
-            # Update WCS reference pixel coordinate
-            try:
-                crpix1 = ext.hdr['CRPIX1'] - datasec.x1
-                crpix2 = ext.hdr['CRPIX2'] - datasec.y1
-            except:
-                log.warning("Could not access WCS keywords; using dummy "
-                            "CRPIX1 and CRPIX2")
-                crpix1 = 1
-                crpix2 = 1
-            ext.hdr.set('CRPIX1', crpix1, comment=keyword_comments["CRPIX1"])
-            ext.hdr.set('CRPIX2', crpix2, comment=keyword_comments["CRPIX2"])
-        adoutput_list.append(ad)
-
-    return adoutput_list
+    return adinput
 
 def write_database(ad, database_name=None, input_name=None):
     """
