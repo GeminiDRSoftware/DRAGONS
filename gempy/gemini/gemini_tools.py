@@ -1673,54 +1673,81 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
         log.error("TypeError: keyword comments dict was not received.")
         raise TypeError("keyword comments dict required")
 
-    adoutput_list = []
-
     for ad in adinput:
         # Get the keyword associated with the data_section descriptor
         datasec_kw = ad._keyword_for('data_section')
         oversec_kw = ad._keyword_for('overscan_section')
+        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
 
         for ext in ad:
             # Get data section as string and as a tuple
             datasecStr = ext.data_section(pretty=True)
             datasec = ext.data_section()
 
-            # Check whether data need to be trimmed
-            sci_shape = ext.data.shape
-            if (sci_shape[0]==datasec.y2 and sci_shape[1]==datasec.x2 and
-                datasec.x1==0 and datasec.y1==0):
-                log.fullinfo('No changes will be made to {}[*,{}], since '
-                             'the data section matches the data shape'.format(
-                             ad.filename,ext.hdr['EXTVER']))
-                continue
+            if isinstance(datasec, list):
+                arrsec = ext.array_section()
+                if len(arrsec) != len(datasec):
+                    raise ValueError("data_section and array_section lists of "
+                                     f"{ad.filename} are not the same length")
+                ax1 = min(sec.x1 for sec in arrsec)
+                ay1 = min(sec.y1 for sec in arrsec)
+                nxpix = (max(sec.x2 for sec in arrsec) - ax1) // xbin
+                nypix = (max(sec.y2 for sec in arrsec) - ay1) // ybin
+                x1 = min(sec.x1 for sec in datasec)
+                y1 = min(sec.y1 for sec in datasec)
 
-            # Update logger with the section being kept
-            log.fullinfo('For {}:{}, keeping the data from the section {}'.
-                         format(ad.filename, ext.hdr['EXTVER'], datasecStr))
+                old_ext = deepcopy(ext)[0]
+                # Trim SCI, VAR, DQ to new section, aligned at bottom-left.
+                # This slicing will update the gWCS properly too.
+                ext.reset(ext.nddata[y1:y1+nypix,x1:x1+nxpix])
+                has_objmask = hasattr(old_ext, 'OBJMASK')
+                if has_objmask:
+                    ext.OBJMASK = old_ext.OBJMASK[y1:y1+nypix,x1:x1+nxpix]
 
-            # Trim SCI, VAR, DQ to new section
-            ext.reset(ext.nddata[datasec.y1:datasec.y2,datasec.x1:datasec.x2])
-            # And OBJMASK (if it exists)
-            # TODO: should check more generally for any image extensions
-            if hasattr(ext, 'OBJMASK'):
-                ext.OBJMASK = ext.OBJMASK[datasec.y1:datasec.y2,
-                              datasec.x1:datasec.x2]
+                for dsec, asec in zip(datasec, arrsec):
+                    datasecStr = '[{}:{},{}:{}]'.format(dsec.x1+1, dsec.x2,
+                                                        dsec.y1+1, dsec.y2)
+                    log.fullinfo('For {}:{}, keeping the data from the section {}'.
+                                 format(ad.filename, ext.hdr['EXTVER'], datasecStr))
+                    newslice = (slice((asec.y1-ay1) // ybin, (asec.y2-ay1) // ybin),
+                                slice((asec.x1-ax1) // xbin, (asec.x2-ax1) // xbin))
+                    oldslice = (slice(dsec.y1, dsec.y2), slice(dsec.x1, dsec.x2))
+                    ext.data[newslice] = old_ext.data[oldslice]
+                    if ext.mask is not None:
+                        ext.mask[newslice] = old_ext.mask[oldslice]
+                    if ext.variance is not None:
+                        ext.variance[newslice] = old_ext.variance[oldslice]
+                    if has_objmask:
+                        ext.OBJMASK[newslice] = old_ext.OBJMASK[oldslice]
+                del ext.hdr[datasec_kw+'*']
 
-            # Update header keys to match new dimensions
-            newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
-                                                 datasec.y2-datasec.y1)
-            ext.hdr.set('NAXIS1', datasec.x2-datasec.x1, keyword_comments['NAXIS1'])
-            ext.hdr.set('NAXIS2', datasec.y2-datasec.y1, keyword_comments['NAXIS2'])
-            ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments[datasec_kw])
-            ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
-            if oversec_kw in ext.hdr:
-                del ext.hdr[oversec_kw]
+            else:
+                # Check whether data need to be trimmed
+                x1, x2 = datasec.x1, datasec.x2
+                y1, y2 = datasec.y1, datasec.y2
+                sci_shape = ext.data.shape
+                if x1 == 0 and y1 == 0 and sci_shape == (y2, x2):
+                    log.fullinfo('No changes will be made to {}[*,{}], since '
+                                 'the data section matches the data shape'.format(
+                                 ad.filename,ext.hdr['EXTVER']))
+                    continue
 
+                # Update logger with the section being kept
+                log.fullinfo('For {}:{}, keeping the data from the section {}'.
+                             format(ad.filename, ext.hdr['EXTVER'], datasecStr))
 
+                # Trim SCI, VAR, DQ to new section
+                ext.reset(ext.nddata[y1:y2,x1:x2])
+                # And OBJMASK (if it exists)
+                # TODO: should check more generally for any image extensions
+                if hasattr(ext, 'OBJMASK'):
+                    ext.OBJMASK = ext.OBJMASK[y1:y2,x1:x2]
+
+            # TODO: Delete after gWCS imaging is merged
             # Update WCS reference pixel coordinate
             try:
-                crpix1 = ext.hdr['CRPIX1'] - datasec.x1
-                crpix2 = ext.hdr['CRPIX2'] - datasec.y1
+                crpix1 = ext.hdr['CRPIX1'] - x1
+                crpix2 = ext.hdr['CRPIX2'] - y1
             except:
                 log.warning("Could not access WCS keywords; using dummy "
                             "CRPIX1 and CRPIX2")
@@ -1728,9 +1755,17 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 crpix2 = 1
             ext.hdr.set('CRPIX1', crpix1, comment=keyword_comments["CRPIX1"])
             ext.hdr.set('CRPIX2', crpix2, comment=keyword_comments["CRPIX2"])
-        adoutput_list.append(ad)
 
-    return adoutput_list
+            # Update header keys to match new dimensions
+            nypix, nxpix = ext.shape
+            newDataSecStr = f'[1:{nxpix},1:{nypix}]'
+            ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments.get(datasec_kw))
+            ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
+
+            if oversec_kw in ext.hdr:
+                del ext.hdr[oversec_kw]
+
+    return adinput
 
 def write_database(ad, database_name=None, input_name=None):
     """
