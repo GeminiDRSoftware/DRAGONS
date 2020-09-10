@@ -1677,24 +1677,32 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
         # Get the keyword associated with the data_section descriptor
         datasec_kw = ad._keyword_for('data_section')
         oversec_kw = ad._keyword_for('overscan_section')
-        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+        all_datasecs = ad.data_section()
 
-        for ext in ad:
-            # Get data section as string and as a tuple
-            datasecStr = ext.data_section(pretty=True)
-            datasec = ext.data_section()
-
+        for ext, datasec in zip(ad, all_datasecs):
             if isinstance(datasec, list):
-                arrsec = ext.array_section()
-                if len(arrsec) != len(datasec):
-                    raise ValueError("data_section and array_section lists of "
-                                     f"{ad.filename} are not the same length")
-                ax1 = min(sec.x1 for sec in arrsec)
-                ay1 = min(sec.y1 for sec in arrsec)
-                nxpix = (max(sec.x2 for sec in arrsec) - ax1) // xbin
-                nypix = (max(sec.y2 for sec in arrsec) - ay1) // ybin
-                x1 = min(sec.x1 for sec in datasec)
-                y1 = min(sec.y1 for sec in datasec)
+                # Starting with the bottom-leftmost sections, we shift all
+                # the sections as far as they can do down and to the left
+                # which should end up producing a contiguous region
+                sections = np.array(datasec, dtype=[('x1', int), ('x2', int),
+                                                    ('y1', int), ('y2', int)])
+                args = np.argsort(sections, order=('y1', 'x1'))
+                new_sections = np.zeros_like(sections)
+
+                for arg in args:
+                    x1, y1 = sections[arg]['x1'], sections[arg]['y1']
+                    new_x1 = max(filter(lambda x: x <= x1, new_sections['x2']))
+                    xshift = x1 - new_x1
+                    new_y1 = max(filter(lambda y: y <= y1, new_sections['y2']))
+                    yshift = y1 - new_y1
+                    new_sections[arg]['x1'] = x1 - xshift
+                    new_sections[arg]['x2'] = sections[arg]['x2'] - xshift
+                    new_sections[arg]['y1'] = y1 - yshift
+                    new_sections[arg]['y2'] = sections[arg]['y2'] - yshift
+
+                x1, y1 = sections['x1'].min(), sections['y1'].min()
+                nxpix = new_sections['x2'].max() - new_sections['x1'].min()
+                nypix = new_sections['y2'].max() - new_sections['y1'].min()
 
                 old_ext = deepcopy(ext)[0]
                 # Trim SCI, VAR, DQ to new section, aligned at bottom-left.
@@ -1704,14 +1712,13 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 if has_objmask:
                     ext.OBJMASK = old_ext.OBJMASK[y1:y1+nypix,x1:x1+nxpix]
 
-                for dsec, asec in zip(datasec, arrsec):
-                    datasecStr = '[{}:{},{}:{}]'.format(dsec.x1+1, dsec.x2,
-                                                        dsec.y1+1, dsec.y2)
+                for i, (oldsec, newsec) in enumerate(zip(sections, new_sections), start=1):
+                    datasecStr = '[{}:{},{}:{}]'.format(oldsec['x1']+1, oldsec['x2'],
+                                                        oldsec['y1']+1, oldsec['y2'])
                     log.fullinfo('For {}:{}, keeping the data from the section {}'.
                                  format(ad.filename, ext.hdr['EXTVER'], datasecStr))
-                    newslice = (slice((asec.y1-ay1) // ybin, (asec.y2-ay1) // ybin),
-                                slice((asec.x1-ax1) // xbin, (asec.x2-ax1) // xbin))
-                    oldslice = (slice(dsec.y1, dsec.y2), slice(dsec.x1, dsec.x2))
+                    newslice = (slice(newsec['y1'], newsec['y2']), slice(newsec['x1'], newsec['x2']))
+                    oldslice = (slice(oldsec['y1'], oldsec['y2']), slice(oldsec['x1'], oldsec['x2']))
                     ext.data[newslice] = old_ext.data[oldslice]
                     if ext.mask is not None:
                         ext.mask[newslice] = old_ext.mask[oldslice]
@@ -1719,6 +1726,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                         ext.variance[newslice] = old_ext.variance[oldslice]
                     if has_objmask:
                         ext.OBJMASK[newslice] = old_ext.OBJMASK[oldslice]
+                    ext.hdr.set(f'TRIMSEC{i}', datasecStr, comment=keyword_comments['TRIMSEC'])
                 del ext.hdr[datasec_kw+'*']
 
             else:
@@ -1733,6 +1741,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                     continue
 
                 # Update logger with the section being kept
+                datasecStr = ext.data_section(pretty=True)
                 log.fullinfo('For {}:{}, keeping the data from the section {}'.
                              format(ad.filename, ext.hdr['EXTVER'], datasecStr))
 
@@ -1742,6 +1751,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 # TODO: should check more generally for any image extensions
                 if hasattr(ext, 'OBJMASK'):
                     ext.OBJMASK = ext.OBJMASK[y1:y2,x1:x2]
+                ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
 
             # TODO: Delete after gWCS imaging is merged
             # Update WCS reference pixel coordinate
@@ -1760,7 +1770,6 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
             nypix, nxpix = ext.shape
             newDataSecStr = f'[1:{nxpix},1:{nypix}]'
             ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments.get(datasec_kw))
-            ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
 
             if oversec_kw in ext.hdr:
                 del ext.hdr[oversec_kw]
