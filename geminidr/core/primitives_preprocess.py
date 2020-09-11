@@ -107,8 +107,24 @@ class Preprocess(PrimitivesBASE):
                        "the gain".format(ad.filename))
             for ext, gain in zip(ad, gain_list):
                 extver = ext.hdr['EXTVER']
-                log.stdinfo("  gain for EXTVER {} = {}".format(extver, gain))
-                ext.multiply(gain)
+                if isinstance(gain, list):
+                    datasec = ext.data_section()
+                    oversec = ext.overscan_section()
+                    gain_image = np.ones(ext.shape, dtype=np.float32)
+                    for i, (g, dsec) in enumerate(zip(gain, datasec)):
+                        sections = [dsec]
+                        if isinstance(oversec, list):
+                            sections.append(oversec[i])
+                        elif isinstance(oversec, dict):
+                            sections.extend(sec[i] for sec in oversec.values())
+                        for sec in sections:
+                            gain_image[sec.y1:sec.y2, sec.x1:sec.x2] = g
+                        log.stdinfo(f"  gain for EXTVER {extver} [{dsec.x1+1}:"
+                                    f"{dsec.x2},{dsec.y1+1}:{dsec.y2}] = {g}")
+                    ext.multiply(gain_image)
+                else:
+                    log.stdinfo("  gain for EXTVER {} = {}".format(extver, gain))
+                    ext.multiply(gain)
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
