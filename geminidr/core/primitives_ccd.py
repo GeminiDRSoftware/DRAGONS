@@ -142,6 +142,8 @@ class CCD(PrimitivesBASE):
             function to fit ("poly" | "spline" | "none")
         order: int/None
             order of polynomial fit or number of spline pieces
+        bias_type: str
+            For multiple overscan regions, selects which one to use
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -153,7 +155,8 @@ class CCD(PrimitivesBASE):
         hi_rej = params["high_reject"]
         order = params["order"] or 0  # None is the same as 0
         func = (params["function"] or 'none').lower()
-        nbiascontam = params["nbiascontam"]
+        nbiascontam = params.get("nbiascontam", 0)
+        bias_type = params.get("bias_type")
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -162,22 +165,36 @@ class CCD(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            osec_list = ad.overscan_section()
+            if bias_type:
+                osec_list = ad.overscan_section()[bias_type]
+            else:
+                osec_list = ad.overscan_section()
             dsec_list = ad.data_section()
             for ext, osec, dsec in zip(ad, osec_list, dsec_list):
                 x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
-                if x1 > dsec.x1:  # Bias on right
-                    x1 += nbiascontam
-                    x2 -= 1
-                else:  # Bias on left
-                    x1 += 1
-                    x2 -= nbiascontam
+                axis = np.argmin([y2 - y1, x2 - x1])
+                if axis == 1:
+                    if x1 > dsec.x1:  # Bias on right
+                        x1 += nbiascontam
+                        x2 -= 1
+                    else:  # Bias on left
+                        x1 += 1
+                        x2 -= nbiascontam
+                    pixels = np.arange(y1, y2)
+                    wt = np.sqrt(x2 - x1) / ext.read_noise()
+                else:
+                    if y1 > dsec.y1:  # Bias on top
+                        y1 += nbiascontam
+                        y2 -= 1
+                    else:  # Bias on bottom
+                        y1 += 1
+                        y2 -= nbiascontam
+                    pixels = np.arange(x1, x2)  # It's really the column
+                    wt = np.sqrt(y2 - y1) / ext.read_noise()
 
-                row = np.arange(y1, y2)
-                data = np.mean(ext.data[y1:y2, x1:x2], axis=1)
+                data = np.mean(ext.data[y1:y2, x1:x2], axis=axis)
                 # Weights are used to determine number of spline pieces
                 # should be the estimate of the mean
-                wt = np.sqrt(x2 - x1) / ext.read_noise()
                 if ext.is_in_adu():
                     wt *= ext.gain()
 
@@ -187,15 +204,14 @@ class CCD(PrimitivesBASE):
                     # fit bad rows. Need to mask these before starting, so use a
                     # running median. Probably a good starting point for all fits.
                     if iter == 0 or func == 'none':
-                        medarray = np.full((medboxsize * 2 + 1, y2 - y1), np.nan)
+                        medarray = np.full((medboxsize * 2 + 1, pixels.size), np.nan)
                         for i in range(-medboxsize, medboxsize + 1):
                             mx1 = max(i, 0)
-                            mx2 = min(y2 - y1, y2 - y1 + i)
+                            mx2 = min(pixels.size, pixels.size + i)
                             medarray[medboxsize + i, mx1:mx2] = data[:mx2 - mx1]
-                        runmed = np.ma.median(np.ma.masked_where(np.isnan(medarray),
-                                                                 medarray), axis=0)
+                        runmed = np.nanmedian(medarray, axis=0)
                         residuals = data - runmed
-                        sigma = np.sqrt(x2 - x1) / wt  # read noise
+                        sigma = 1.0 / wt  # read noise
 
                     mask = np.logical_or(residuals > hi_rej * sigma
                                         if hi_rej is not None else False,
@@ -210,27 +226,29 @@ class CCD(PrimitivesBASE):
                         if func == 'spline':
                             if order:
                                 # Equally-spaced knots (like IRAF)
-                                knots = np.linspace(row[0], row[-1], order+1)[1:-1]
-                                bias = LSQUnivariateSpline(row[~mask], data[~mask], knots)
+                                knots = np.linspace(pixels[0], pixels[-1], order+1)[1:-1]
+                                bias = LSQUnivariateSpline(pixels[~mask], data[~mask], knots)
                             else:
-                                bias = UnivariateSpline(row[~mask], data[~mask],
+                                bias = UnivariateSpline(pixels[~mask], data[~mask],
                                                         w=[wt]*np.sum(~mask))
                         else:
                             bias_init = models.Chebyshev1D(degree=order,
                                                            c0=np.median(data[~mask]))
                             fit_f = fitting.LinearLSQFitter()
-                            bias = fit_f(bias_init, row[~mask], data[~mask])
+                            bias = fit_f(bias_init, pixels[~mask], data[~mask])
 
-                        residuals = data - bias(row)
+                        residuals = data - bias(pixels)
                         sigma = np.std(residuals[~mask])
 
                 # using "-=" won't change from int to float
                 if func != 'none':
                     data = bias(np.arange(0, ext.data.shape[0]))
-                ext.data = ext.data - np.tile(data,
-                                        (ext.data.shape[1],1)).T.astype(np.float32)
+                if axis == 1:
+                    ext.data = ext.data - data[:, np.newaxis].astype(np.float32)
+                else:
+                    ext.data = ext.data - data.astype(np.float32)
 
-                ext.hdr.set('OVERSEC', '[{}:{},{}:{}]'.format(x1+1,x2,y1+1,y2),
+                ext.hdr.set('OVERSEC', f'[{x1+1}:{x2},{y1+1}:{y2}]',
                             self.keyword_comments['OVERSEC'])
                 ext.hdr.set('OVERSCAN', np.mean(data),
                             self.keyword_comments['OVERSCAN'])
