@@ -520,17 +520,35 @@ class Standardize(PrimitivesBASE):
                 log.warning("Read noise already added for "
                             "{}:{}".format(ad.filename, extver))
                 continue
-            if read_noise is None:
-                log.warning("Read noise for {}:{} = None. Setting to "
-                            "zero".format(ad.filename, extver))
-                read_noise = 0.0
+            if isinstance(read_noise, list):
+                var_array = np.zeros_like(ext.data, dtype=dtype)
+                datasec = ext.data_section()
+                oversec = ext.overscan_section()
+                for i, (g, rn, dsec) in enumerate(zip(gain, read_noise, datasec)):
+                    log.stdinfo(f"  read noise for EXTVER {extver} [{dsec.x1 + 1}:"
+                                f"{dsec.x2},{dsec.y1 + 1}:{dsec.y2}] = {rn} electrons")
+                    if ext.is_in_adu():
+                        rn /= g
+                    sections = [dsec]
+                    if isinstance(oversec, list):
+                        sections.append(oversec[i])
+                    elif isinstance(oversec, dict):
+                        sections.extend(sec[i] for sec in oversec.values())
+                    for sec in sections:
+                        var_array[sec.y1:sec.y2, sec.x1:sec.x2] = rn * rn
             else:
-                log.fullinfo('Read noise for {}:{} = {} electrons'.
-                             format(ad.filename, extver, read_noise))
-            if ext.is_in_adu():
-                read_noise /= gain
-            var_array = np.full_like(ext.data, read_noise * read_noise,
-                                     dtype=dtype)
+                if read_noise is None:
+                    log.warning("Read noise for {}:{} = None. Setting to "
+                                "zero".format(ad.filename, extver))
+                    read_noise = 0.0
+                else:
+                    log.fullinfo('Read noise for {}:{} = {} electrons'.
+                                 format(ad.filename, extver, read_noise))
+                if ext.is_in_adu():
+                    read_noise /= gain
+                var_array = np.full_like(ext.data, read_noise * read_noise,
+                                         dtype=dtype)
+
             if ext.variance is None:
                 ext.variance = var_array
             else:
