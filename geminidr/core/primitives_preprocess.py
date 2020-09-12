@@ -107,6 +107,9 @@ class Preprocess(PrimitivesBASE):
                        "the gain".format(ad.filename))
             for ext, gain in zip(ad, gain_list):
                 extver = ext.hdr['EXTVER']
+                if not ext.is_in_adu():
+                    log.warning(f"  EXTVER {extver} is already in ADU. Continuing.")
+                    continue
                 if isinstance(gain, list):
                     datasec = ext.data_section()
                     oversec = ext.overscan_section()
