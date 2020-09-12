@@ -112,6 +112,9 @@ class Preprocess(PrimitivesBASE):
                     continue
                 if isinstance(gain, list):
                     datasec = ext.data_section()
+                    if not (isinstance(datasec, list) and len(datasec) == len(gain)):
+                        raise ValueError(f"  EXTVER {extver} has incompatible "
+                                         "number of gains and data_sections")
                     oversec = ext.overscan_section()
                     gain_image = np.ones(ext.shape, dtype=np.float32)
                     for i, (g, dsec) in enumerate(zip(gain, datasec)):

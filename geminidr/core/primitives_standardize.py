@@ -507,7 +507,14 @@ class Standardize(PrimitivesBASE):
         existing plane if there is no header keyword indicating this operation
         has already been performed.
 
-        This primitive should be invoked by calling addVAR(read_noise=True)
+        This method should be invoked by calling addVAR(read_noise=True)
+
+        If an extension is composed of data from multiple amplifiers, the read
+        noise can be added provided there are the same number of Sections in
+        the data_section() descriptor as there are values in read_noise(). The
+        read noise will also be added to the overscan regions if the descriptor
+        returns Sections. If the data are in ADU, then the gain() descriptor
+        must also return a list of the same length.
         """
         log = self.log
 
@@ -524,11 +531,16 @@ class Standardize(PrimitivesBASE):
                 var_array = np.zeros_like(ext.data, dtype=dtype)
                 datasec = ext.data_section()
                 oversec = ext.overscan_section()
-                for i, (g, rn, dsec) in enumerate(zip(gain, read_noise, datasec)):
+                if not (isinstance(datasec, list) and len(datasec) == len(read_noise)
+                        and (not ext.is_in_adu() or
+                             isinstance(gain, list) and len(gain) == len(read_noise))):
+                    raise ValueError(f"  EXTVER {extver} has incompatible "
+                                     "number of gains, read_noises and data_sections")
+                for i, (rn, dsec) in enumerate(zip(read_noise, datasec)):
                     log.stdinfo(f"  read noise for EXTVER {extver} [{dsec.x1 + 1}:"
                                 f"{dsec.x2},{dsec.y1 + 1}:{dsec.y2}] = {rn} electrons")
                     if ext.is_in_adu():
-                        rn /= g
+                        rn /= gain[i]
                     sections = [dsec]
                     if isinstance(oversec, list):
                         sections.append(oversec[i])
