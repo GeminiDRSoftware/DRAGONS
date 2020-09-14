@@ -434,11 +434,15 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         doc.add_root(layout)
 
     def reconstruct_points(self):
-        """Top-level code to update the Config with the values from the widgets"""
-        config_update = {k: v.value for k, v in self.widgets.items()}
-        for k, v in config_update.items():
-            print(f'{k} = {v}')
-        self.config.update(**config_update)
+        self.reinit_button.disabled = True
+
+        def fn():
+            """Top-level code to update the Config with the values from the widgets"""
+            config_update = {k: v.value for k, v in self.widgets.items()}
+            for k, v in config_update.items():
+                print(f'{k} = {v}')
+            self.config.update(**config_update)
+        self.do_later(fn)
 
 
 def interactive_fitter(visualizer):
@@ -459,11 +463,14 @@ class TraceApertures1DVisualizer(Fit1DVisualizer):
         # super() to update the Config with the widget values
         # In this primitive, init_mask is always empty
         super().reconstruct_points()
-        all_coords = trace_apertures_reconstruct_points(self.ext, self.locations, self.config)
-        for fit, coords in zip(self.fits, all_coords):
-            fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
-            fit.perform_fit()
-        self.reinit_button.disabled = False
+
+        def fn():
+            all_coords = trace_apertures_reconstruct_points(self.ext, self.locations, self.config)
+            for fit, coords in zip(self.fits, all_coords):
+                fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
+                fit.perform_fit()
+            self.reinit_button.disabled = False
+        self.do_later(fn)
 
 def trace_apertures_reconstruct_points(ext, locations, config):
     dispaxis = 2 - ext.dispersion_axis()
