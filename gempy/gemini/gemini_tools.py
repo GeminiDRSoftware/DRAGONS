@@ -1719,11 +1719,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                                  format(ad.filename, ext.hdr['EXTVER'], datasecStr))
                     newslice = (slice(newsec['y1'], newsec['y2']), slice(newsec['x1'], newsec['x2']))
                     oldslice = (slice(oldsec['y1'], oldsec['y2']), slice(oldsec['x1'], oldsec['x2']))
-                    ext.data[newslice] = old_ext.data[oldslice]
-                    if ext.mask is not None:
-                        ext.mask[newslice] = old_ext.mask[oldslice]
-                    if ext.variance is not None:
-                        ext.variance[newslice] = old_ext.variance[oldslice]
+                    ext.nddata.set_section(newslice, old_ext.nddata[oldslice])
                     if has_objmask:
                         ext.OBJMASK[newslice] = old_ext.OBJMASK[oldslice]
                     ext.hdr.set(f'TRIMSEC{i}', datasecStr, comment=keyword_comments['TRIMSEC'])
