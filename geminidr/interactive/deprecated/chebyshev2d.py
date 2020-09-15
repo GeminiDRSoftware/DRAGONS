@@ -1,12 +1,20 @@
+#
+# DEPRECATED
+#
+# This needs to be redone with an approach more like Chris did with traceApertures
+# and with a generic concept of a 2-D fit.
+#
+
 from astropy.modeling import models, fitting
 from bokeh.layouts import row
 from bokeh.models import Button, Column, Panel, Tabs
 
+import geminidr.interactive.deprecated.deprecated_interactive
 from geminidr.interactive import server, interactive
 from geminidr.interactive.interactive import \
-    GIMaskedSigmadCoords, \
-    GIModelSource, GIMaskedSigmadScatter, build_figure, build_cds, \
-    connect_update_coords, build_text_slider
+    build_text_slider
+from geminidr.interactive.deprecated.deprecated_interactive import GIMaskedSigmadScatter, build_cds, \
+    connect_update_coords, GIMaskedSigmadCoords, GIModelSource, build_figure
 from gempy.library import astromodels
 
 
@@ -129,12 +137,12 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
+        geminidr.interactive.deprecated.deprecated_interactive.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
+        geminidr.interactive.deprecated.deprecated_interactive.clear_selection()
         self.model.coords.unmask(indices)
 
     def recalc_button_handler(self, stuff):

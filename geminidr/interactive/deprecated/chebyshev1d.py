@@ -3,12 +3,13 @@ from astropy.modeling import models, fitting
 from bokeh.layouts import row
 from bokeh.models import Button, Column, Panel, Tabs, Div
 
+import geminidr.interactive.deprecated.deprecated_interactive
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import \
-    GIBandModel, GIApertureModel, GIMaskedSigmadCoords, \
-    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, build_figure, build_cds, connect_update_coords, \
-    build_text_slider
+    GIBandModel, GIApertureModel, build_text_slider
+from geminidr.interactive.deprecated.deprecated_interactive import GIMaskedSigmadScatter, build_cds, \
+    connect_update_coords, GIMaskedSigmadCoords, GIDifferencingModel, GIModelSource, build_figure
 from gempy.library import astromodels
 
 
@@ -141,12 +142,12 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.source.clear_selection()
+        geminidr.interactive.deprecated.deprecated_interactive.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
+        geminidr.interactive.deprecated.deprecated_interactive.clear_selection()
         self.model.coords.unmask(indices)
 
     def visualize(self, doc):

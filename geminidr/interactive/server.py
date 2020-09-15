@@ -5,6 +5,7 @@ from jinja2 import Template
 
 from geminidr.interactive import controls
 
+__all__ = ["interactive_fitter", "stop_server"]
 
 _bokeh_server = None
 _visualizer = None
@@ -90,3 +91,10 @@ def stop_server():
     """
     global _bokeh_server
     _bokeh_server.io_loop.stop()
+
+
+def interactive_fitter(visualizer):
+    set_visualizer(visualizer)
+    start_server()
+    set_visualizer(None)
+    return visualizer.user_satisfied

@@ -7,7 +7,7 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from copy import copy, deepcopy
+from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
 import warnings
@@ -33,14 +33,15 @@ from itertools import product as cart_product
 from bisect import bisect
 
 import astrodata
-import geminidr.interactive.spline
+import geminidr.interactive.deprecated.spline
+import geminidr.interactive.server
 from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
-from gempy.library.astrotools import array_from_list, boxcar
+from gempy.library.astrotools import array_from_list
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -49,17 +50,15 @@ from . import parameters_spect
 
 import matplotlib
 
-from ..interactive import chris
+from ..interactive.fit import fit1d
 
-from ..interactive.aperture import interactive_find_source_apertures
-from ..interactive.chebyshev2d import interactive_chebyshev2d
-from ..interactive.extractspectra import interactive_extract_spectra
-from ..interactive.trace_apertures import TraceApertureList, TraceApertureInfo, interactive_trace_apertures, calc_coords
+from geminidr.interactive.fit.aperture import interactive_find_source_apertures
+from geminidr.interactive.deprecated.chebyshev2d import interactive_chebyshev2d
+from geminidr.interactive.deprecated.extractspectra import interactive_extract_spectra
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
 # ------------------------------------------------------------------------------
-from ..interactive.chebyshev1d import interactive_chebyshev
 
 
 @parameter_override
@@ -372,11 +371,11 @@ class Spect(PrimitivesBASE):
                                 min_grow = field.min
                             if hasattr(field, 'max'):
                                 max_grow = field.max
-                    spline = geminidr.interactive.spline.interactive_spline(ext, wave, zpt, zpt_err, order,
-                                                                            niter, grow,
-                                                                            min_order, max_order,
-                                                                            min_niter, max_niter,
-                                                                            min_grow, max_grow)
+                    spline = geminidr.interactive.deprecated.spline.interactive_spline(ext, wave, zpt, zpt_err, order,
+                                                                                       niter, grow,
+                                                                                       min_order, max_order,
+                                                                                       min_niter, max_niter,
+                                                                                       min_grow, max_grow)
                 else:
                     # we now return you to your regularly scheduled non-interactive spline
                     spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
@@ -2514,7 +2513,7 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
                 reinit_params = ('step', 'nsum', 'max_missed', 'max_shift')
 
-                all_coords = chris.trace_apertures_reconstruct_points(ext, locations, config)
+                all_coords = fit1d.trace_apertures_reconstruct_points(ext, locations, config)
 
                 # Purely for drawing in the image display
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -2522,14 +2521,14 @@ class Spect(PrimitivesBASE):
                 if interactive:
                     allx = [coords[0] for coords in all_coords]
                     ally = [coords[1] for coords in all_coords]
-                    visualizer = chris.TraceApertures1DVisualizer(allx, ally, all_m_init, config,
+                    visualizer = fit1d.TraceApertures1DVisualizer(allx, ally, all_m_init, config,
                                                                   ext, locations,
-                                                       reinit_params=reinit_params,
-                                                       order_param='trace_order',
-                                                       tab_name_fmt="Aperture {}",
-                                                       xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
+                                                                  reinit_params=reinit_params,
+                                                                  order_param='trace_order',
+                                                                  tab_name_fmt="Aperture {}",
+                                                                  xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
                                                                   grow_slider=True)
-                    status = chris.interactive_fitter(visualizer)
+                    status = geminidr.interactive.server.interactive_fitter(visualizer)
                     all_m_final = [fit.model.model for fit in visualizer.fits]
                     for m in all_m_final:
                         print(m)
@@ -2572,36 +2571,6 @@ class Spect(PrimitivesBASE):
                     aptable[name] = [model_dict.get(name, 0) for model_dict in all_model_dicts]
                 # We don't need to reattach the Table because it was a
                 # reference all along!
-
-
-                if False:
-                    # have to do these all in one go, since eventually the coord generation above
-                    # will be part of the interactive code (so this has to be at that level)
-                    min_order = None
-                    max_order = None
-                    for field in self.params["traceApertures"].iterfields():
-                        if field.name == 'trace_order':
-                            if hasattr(field, 'min'):
-                                min_order = field.min
-                            if hasattr(field, 'max'):
-                                max_order = field.max
-
-                    ap_list = interactive_trace_apertures(locations, step, nsum, max_missed, max_shift,
-                                                          aptable, ext, order, dispaxis,
-                                                          sigma_clip, min_order, max_order)
-                    for ap_info in ap_list.apertures:
-                        m_final = ap_info.m_final
-                        model_dict = ap_info.model_dict
-                        # Recalculate aperture limits after rectification
-                        apcoords = m_final(np.arange(ext.shape[dispaxis]))
-                        model_dict['aper_lower'] = ap_info.aperture['aper_lower'] \
-                                                   + (ap_info.location - np.min(apcoords))
-                        model_dict['aper_upper'] = ap_info.aperture['aper_upper'] \
-                                                   - (np.max(apcoords) - ap_info.location)
-                        all_column_names.extend([k for k in model_dict.keys()
-                                                 if k not in all_column_names])
-                        all_model_dicts.append(model_dict)
-
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

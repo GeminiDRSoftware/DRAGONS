@@ -1,10 +1,17 @@
+#
+# DEPRECATED
+#
+# This needs to be redone with an approach more like trace_apertures
+#
+
 import numpy as np
 from bokeh.layouts import row, column
 from bokeh.models import Div
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.interactive import \
-    build_figure, build_text_slider, build_cds, connect_update_coords
+    build_text_slider
+from geminidr.interactive.deprecated.deprecated_interactive import build_cds, connect_update_coords, build_figure
 
 __all__ = ["interactive_extract_spectra", ]
 

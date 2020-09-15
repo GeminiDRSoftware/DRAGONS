@@ -1,10 +1,17 @@
+#
+# DEPRECATED
+#
+# This needs to be redone with an approach more like Chris did for traceApertures
+#
+
 import numpy as np
 from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import _dequantity, \
-    GIMaskedSigmadCoords, build_figure, build_cds, connect_update_coords, clear_selection, build_text_slider
+from geminidr.interactive.interactive import build_text_slider
+from geminidr.interactive.deprecated.deprecated_interactive import build_cds, connect_update_coords, clear_selection, \
+    GIMaskedSigmadCoords, _dequantity, build_figure
 from gempy.library import astromodels
 
 

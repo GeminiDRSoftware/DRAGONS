@@ -7,16 +7,18 @@ from astropy.stats import sigma_clip
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
+from bokeh.models import Div
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
-from geminidr.interactive import interactive, server
+from geminidr.interactive import interactive
+from geminidr.interactive.controls import Controller
+from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras
 from gempy.library import tracing, astrotools as at
 
-# ------------------ class/subclasses to store the models -----------------
+
 class InteractiveModel(ABC):
     MASK_TYPE = ['user', 'good', 'fit']
-    # MARKERS = ['circle', 'triangle', 'plus']
     MARKERS = ['circle', 'triangle', 'square']
     PALETTE = Category10[3]
     """
@@ -33,6 +35,9 @@ class InteractiveModel(ABC):
     def __init__(self, model):
         self.model = model
         self.listeners = []
+        self.data = None
+        self.user_mask = None
+        self.fit_mask = None
 
     def add_listener(self, listener):
         if not callable(listener):
@@ -51,12 +56,6 @@ class InteractiveModel(ABC):
     def evaluate(self, x):
         pass
 
-#    @property
-#    def view(self):
-#        # Return a CDSView of what we're interested in
-#        return bm.CDSView(source=self.data,
-#                          filters=[bm.BooleanFilter(~self.init_mask)])
-
     def mask_rendering_kwargs(self):
         return {'marker': bt.factor_mark('mask', self.MARKERS, self.MASK_TYPE),
                 'color': bt.factor_cmap('mask', self.PALETTE, self.MASK_TYPE)}
@@ -70,6 +69,7 @@ class InteractiveModel(ABC):
             if um:
                 new_mask[i] = 'user'
         self.data.data['mask'] = new_mask
+
 
 class InteractiveModel1D(InteractiveModel):
     """Subclass for 1D models"""
@@ -99,6 +99,8 @@ class InteractiveModel1D(InteractiveModel):
         self.lsigma = self.hsigma = self.sigma  # placeholder
         self.grow = grow
         self.maxiter = maxiter
+        self.user_mask = None
+        self.var = None
 
     def populate_bokeh_objects(self, x, y, mask=None, var=None):
         if mask is None:
@@ -125,7 +127,7 @@ class InteractiveModel1D(InteractiveModel):
         else:
             self.user_mask = np.ones_like(self.fit_mask)
             for slice_ in self.section:
-                self.user_mask[slice_.start < x < slice._stop] = False
+                self.user_mask[slice_.start < x < slice_.stop] = False
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
@@ -281,14 +283,20 @@ class Fit1DPanel:
         unmask_button = bm.Button(label="Unmask")
         unmask_button.on_click(self.unmask_button_handler)
 
+        controller_div = Div()
+
         controls = column(*controls_column,
-                          apply_button, row(mask_button, unmask_button))
+                          apply_button, row(mask_button, unmask_button), controller_div)
 
         # Now the figures
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
                             title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                             tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                             output_backend="webgl", x_range=None, y_range=None)
+        aperture_model = GIApertureModel()
+        band_model = GIBandModel()
+        connect_figure_extras(p_main, aperture_model, band_model)
+        controller = Controller(p_main, aperture_model, band_model, controller_div)
         fig_column = [p_main]
 
         if plot_residuals:
@@ -300,17 +308,16 @@ class Fit1DPanel:
             fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
-            p_resid.scatter(x='x', y='residuals', source=self.fit.data, #view=self.fit.view,
+            p_resid.scatter(x='x', y='residuals', source=self.fit.data,
                                           size=5, **self.fit.mask_rendering_kwargs())
 
-        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data, #view=self.fit.view,
+        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
                                       size=5, **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=1, color='red')
 
         self.component = row(controls, column(*fig_column))
-
 
     def model_change_handler(self):
         self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
@@ -445,13 +452,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.do_later(fn)
 
 
-def interactive_fitter(visualizer):
-    server.set_visualizer(visualizer)
-    server.start_server()
-    server.set_visualizer(None)
-    return visualizer.user_satisfied
-
-
 class TraceApertures1DVisualizer(Fit1DVisualizer):
     def __init__(self, allx, ally, models, config, ext=None, locations=None,
                  **kwargs):
@@ -471,6 +471,7 @@ class TraceApertures1DVisualizer(Fit1DVisualizer):
                 fit.perform_fit()
             self.reinit_button.disabled = False
         self.do_later(fn)
+
 
 def trace_apertures_reconstruct_points(ext, locations, config):
     dispaxis = 2 - ext.dispersion_axis()

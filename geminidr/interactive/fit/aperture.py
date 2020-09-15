@@ -1,9 +1,10 @@
 import numpy as np
 from bokeh.layouts import row, column
 from bokeh.models import Column, Div, Button
+from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_figure, build_text_slider
+from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_text_slider
 from gempy.library import tracing
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -26,9 +27,9 @@ class FindSourceAperturesModel:
 
         self.listeners = list()
 
-    def add_listener(self, l):
-        # l should be fn(locations, all_limits)
-        self.listeners.append(l)
+    def add_listener(self, listener):
+        # listener should be fn(locations, all_limits)
+        self.listeners.append(listener)
 
     def recalc_apertures(self):
         max_apertures = self.max_apertures
@@ -48,11 +49,11 @@ class FindSourceAperturesModel:
         else:
             # Reverse-sort by SNR and return only the locations
             self.locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                        reverse=True)[:max_apertures]).T[0]
+                                      reverse=True)[:max_apertures]).T[0]
             self.all_limits = tracing.get_limits(np.nan_to_num(self.profile), self.prof_mask, peaks=self.locations,
-                                            threshold=self.threshold, method=self.sizing_method)
-        for l in self.listeners:
-            l(self.locations, self.all_limits)
+                                                 threshold=self.threshold, method=self.sizing_method)
+        for listener in self.listeners:
+            listener(self.locations, self.all_limits)
 
     def delete_aperture(self, aperture_id):
         del self.locations[aperture_id-1]
@@ -103,10 +104,10 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                              throttled=True)
 
         # Create a blank figure with labels
-        self.fig = build_figure(plot_width=600, plot_height=500,
-                                title='Source Apertures',
-                                tools="pan,wheel_zoom,box_zoom,reset",
-                                x_range=(0, self.model.profile.shape[0]))
+        self.fig = figure(plot_width=600, plot_height=500,
+                          title='Source Apertures',
+                          tools="pan,wheel_zoom,box_zoom,reset",
+                          x_range=(0, self.model.profile.shape[0]))
 
         self.aperture_model = GIApertureModel()
         aperture_view = GIApertureView(self.aperture_model, self.fig)
@@ -119,7 +120,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.add_listener(apl)
         # self.model.recalc_apertures()
 
-        line = self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
+        self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
@@ -140,7 +141,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         location = (start+end)/2
         if aperture_id == len(self.model.locations)+1:
             self.model.locations = np.append(self.model.locations, location)
-            self.model.all_limits.append( (start, end) )
+            self.model.all_limits.append((start, end))
         else:
             self.model.locations[aperture_id-1] = location
             self.model.all_limits[aperture_id-1] = (start, end)
