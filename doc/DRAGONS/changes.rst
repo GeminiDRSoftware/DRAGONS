@@ -6,11 +6,22 @@
 Change Logs
 ***********
 
+[KL: TO REMOVE BEFORE RELEASE.  Last update up to commit  Wed Aug 26 14:24:56 2020]
+
 2.1.2
 =====
 
 Bug Fixes
 ---------
+
+**gemini_instruments.gemini**
+
+* Fix the GCALLAMP tag for NIR data to include the QH lamp.
+
+**geminidr.gemini**
+
+* Fix to the calculation of the CC-band used in nighttime sky quality assessment.
+* Fix to the calculation of the BG-band used in nighttime sky quality assessment.
 
 **gempy.gemini**
 
@@ -22,6 +33,14 @@ New Features
 **geminidr.core**
 
 * Add ``remove_first`` parameter to removeFirstFrame primitive
+* Add an IRAF compatibility primitive and recipe for Flamingos 2.
+
+Documentation
+-------------
+
+* Fix various links in the documentation.
+* Add examples and cross-reference to disco-stu usage documentation.
+
 
 2.1.1
 =====
@@ -39,7 +58,7 @@ Bug Fixes
 
 **gempy.library**
 
-* fix to Jacobian calculation for non-affine transforms 
+* Fix to Jacobian calculation for non-affine transforms
 
 **recipe_system.adcc**
 
