@@ -257,6 +257,10 @@ class GIBandListener(ABC):
     def delete_band(self, band_id):
         pass
 
+    @abstractmethod
+    def finish_bands(self):
+        pass
+
 
 class GIBandModel(object):
     """
@@ -271,6 +275,7 @@ class GIBandModel(object):
         # kept in here.
         self.band_id = 1
         self.listeners = list()
+        self.bands = dict()
 
     def add_listener(self, listener):
         """
@@ -308,8 +313,23 @@ class GIBandModel(object):
             Ending coordinate of the x range
 
         """
+        if start > stop:
+            start, stop = stop, start
+        self.bands[band_id] = (start, stop)
         for listener in self.listeners:
             listener.adjust_band(band_id, start, stop)
+
+    def finish_bands(self):
+        for listener in self.listeners:
+            listener.finish_bands()
+
+    def in_range(self, x):
+        if len(self.bands.values() == 0):
+            return True
+        for b in self.bands:
+            if b[0] < x < b[1]:
+                return True
+        return False
 
 
 class GIBandView(GIBandListener):
@@ -375,6 +395,9 @@ class GIBandView(GIBandListener):
         if band_id in self.bands:
             band = self.bands[band_id]
             # TODO remove it
+
+    def finish_bands(self):
+        pass
 
 
 class GIApertureModel(object):
