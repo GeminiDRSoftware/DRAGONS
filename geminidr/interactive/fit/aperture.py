@@ -125,8 +125,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
-        controls = Column(max_apertures_slider, threshold_slider,
-                          aperture_view.controls, add_button, self.submit_button)
+        controls = column(children=[max_apertures_slider, threshold_slider,
+                          aperture_view.controls, add_button, self.submit_button])
 
         self.details = Div(text="")
         self.model.recalc_apertures()

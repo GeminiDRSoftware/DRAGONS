@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 
 from bokeh.layouts import row, column
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, Dropdown
+from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, \
+    Dropdown
 
 from geminidr.interactive import server
 
@@ -66,6 +67,20 @@ class PrimitiveVisualizer(ABC):
         doc.on_session_destroyed(self.submit_button_handler)
 
     def do_later(self, fn):
+        """
+        Perform an operation later, on the bokeh event loop.
+
+        This call lets you stage a function to execute within the bokeh event loop.
+        This is necessary if you want to interact with the bokeh and you are not
+        coming from code that is already executing in that context.  Basically,
+        this happens when the code is executing because a key press in the browser
+        came in through the tornado server via the `handle_key` URL.
+
+        Parameters
+        ----------
+        fn : function
+            Function to execute in the bokeh loop
+        """
         if self.doc is None:
             if self.log is not None:
                 self.log.warn("Call to do_later, but no document is set.  Does this PrimitiveVisualizer call "
@@ -74,8 +89,26 @@ class PrimitiveVisualizer(ABC):
             self.doc.add_next_tick_callback(lambda: fn())
 
     def make_modal(self, widget, message):
+        """
+        Make a modal dialog that activates whenever the widget is disabled.
+
+        A bit of a hack, but this attaches a modal message that freezes
+        the whole UI when a widget is disabled.  This is intended for long-running
+        operations.  So, what you do is you set `widget.disabled=True` in your
+        code and then use `do_later` to queue a long running bit of work.  When
+        that work is finished, it should also do a `widget.disabled=False`.
+
+        The reason the work has to be posted to the bokeh loop via `do_later`
+        is to allow this modal dialog to execute first.
+
+        Parameters
+        ----------
+        widget : `~Widget`
+            bokeh widget to watch for disable/enable
+        message : str
+            message to display in the popup modal
+        """
         callback = CustomJS(args=dict(source=widget), code="""
-            console.log("checking button state");
             if (source.disabled) {
                 openModal('%s');
             } else {
@@ -85,9 +118,20 @@ class PrimitiveVisualizer(ABC):
         widget.js_on_change('disabled', callback)
 
     def make_widgets_from_config(self, params):
-        """Makes appropriate widgets for all the parameters in params,
+        """
+        Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
-        to a dict so they can be accessed from the calling primitive"""
+        to a dict so they can be accessed from the calling primitive.
+
+        Parameters
+        ----------
+        params : list of str
+            which DRAGONS configuration fields to make a UI for
+
+        Returns
+        -------
+        list : Returns a list of widgets to display in the UI.
+        """
         widgets = []
         for pname, value in self.config.items():
             if pname not in params:
@@ -169,6 +213,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     text_input = text_input
 
     def _float_check(val):
+        # TODO make this helper type aware and just set it at creation
         if isinstance(val, int) or isinstance(val, float):
             return True
         try:
@@ -232,6 +277,24 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
 
 
 def connect_figure_extras(fig, aperture_model, band_model):
+    """
+    Connect a figure to an aperture and band model for rendering.
+
+    This call will add extra visualizations to the bokeh figure to
+    show the bands and apertures in the given models.  Either may
+    be passed as None if not relevant.
+
+    This call also does a fix to bokeh to work around a rendering bug.
+
+    Parameters
+    ----------
+    fig : :class:`~Figure`
+        bokeh Figure to add visualizations too
+    aperture_model : :class:`~GIApertureModel`
+        Aperture model to add view for
+    band_model : :class:`~GIBandModel`
+        Band model to add view for
+    """
     # If we have bands or apertures to show, show them
     if band_model:
         bands = GIBandView(fig, band_model)
@@ -244,6 +307,49 @@ def connect_figure_extras(fig, aperture_model, band_model):
                                         code="plot.properties.renderers.change.emit()"))
 
 
+def hamburger_helper(title, widget):
+    """
+    Create a bokeh layout with a top title and hamburger button
+    to show/hide the given widget.
+
+    This will make a wrapper column around whatever you pass in
+    and give a control for showing and hiding it.  It is useful
+    for potentially larger sets of controls such as a list of
+    aperture controls.
+
+    Parameters
+    ----------
+    title : str
+        Text to put in the top area
+    widget : :class:`~LayoutDOM`
+        Component to show/hide with the hamburger action
+
+    Returns
+    -------
+    :class:`~Column` : bokeh column to add into your document
+    """
+    label = Div(text=title)
+    # TODO Hamburger icon
+    button = Button(label="[X]")
+    top = row(children=[button, label])
+
+    def burger_action():
+        if widget.visible:
+            # button.label = "HamburgerHamburgerHamburger"
+            widget.visible = False
+        else:
+            # button.label = "CheeseburgerCheeseburgerCheeseburger"
+            widget.visible = True
+            # try to force resizing, bokeh bug workaround
+            if hasattr(widget, "children") and widget.children:
+                last_child = widget.children[len(widget.children) - 1]
+                widget.children.remove(last_child)
+                widget.children.append(last_child)
+
+    button.on_click(burger_action)
+    return column(top, widget)
+
+
 class GIBandListener(ABC):
     """
     interface for classes that want to listen for updates to a set of bands.
@@ -251,14 +357,38 @@ class GIBandListener(ABC):
 
     @abstractmethod
     def adjust_band(self, band_id, start, stop):
+        """
+        Called when the model adjusted a band's range.
+
+        Parameters
+        ----------
+        band_id : int
+            ID of the band that was adjusted
+        start : float
+            New start of the range
+        stop : float
+            New end of the range
+        """
         pass
 
     @abstractmethod
     def delete_band(self, band_id):
+        """
+        Called when the model deletes a band.
+
+        Parameters
+        ----------
+        band_id : int
+            ID of the band that was deleted
+        """
         pass
 
     @abstractmethod
     def finish_bands(self):
+        """
+        Called by the model when a band update completes and any resulting
+        band merges have already been done.
+        """
         pass
 
 
@@ -288,7 +418,7 @@ class GIBandModel(object):
 
         Parameters
         ----------
-        listener : :class:`GIBandListener` or function
+        listener : :class:`~GIBandListener`
 
         """
         if not isinstance(listener, GIBandListener):
@@ -320,11 +450,30 @@ class GIBandModel(object):
             listener.adjust_band(band_id, start, stop)
 
     def delete_band(self, band_id):
+        """
+        Delete a band by id
+
+        Parameters
+        ----------
+        band_id : int
+            ID of the band to delete
+
+        """
         del self.bands[band_id]
         for listener in self.listeners:
             listener.delete_band(band_id)
 
     def finish_bands(self):
+        """
+        Finish operating on the bands.
+
+        This call is for when a band update is completed.  During normal
+        mouse movement, we update the view to be interactive.  We do not
+        do more expensive stuff like merging intersecting bands together
+        or updating the mask and redoing the fit.  That is done here
+        instead once the band is set.
+
+        """
         # first we do a little consolidation, in case we have overlaps
         band_dump = list()
         for key, value in self.bands.items():
@@ -351,12 +500,36 @@ class GIBandModel(object):
             listener.finish_bands()
 
     def find_band(self, x):
+        """
+        Find the first band that contains x in it's range, or return a tuple of None
+
+        Parameters
+        ----------
+        x : float
+            Find the first band that contains x, if any
+
+        Returns
+        -------
+            tuple : (band id, start, stop) or (None, None, None) if there are no matches
+        """
         for band_id, band in self.bands.items():
             if band[0] <= x <= band[1]:
                 return band_id, band[0], band[1]
         return None, None, None
 
     def contains(self, x):
+        """
+        Check if any of the bands contains point x
+
+        Parameters
+        ----------
+        x : float
+            point to check for band inclusion
+
+        Returns
+        -------
+        bool : True if there are no bands defined, or if any band contains x in it's range
+        """
         if len(self.bands.values()) == 0:
             return True
         for b in self.bands.values():
@@ -376,7 +549,7 @@ class GIBandView(GIBandListener):
 
         Parameters
         ----------
-        fig : :class:`GIFigure`
+        fig : :class:`~Figure`
             the figure to display the bands in
         model : :class:`GIBandModel`
             the model for the band information (may be shared by multiple :class:`GIBandView`s)
@@ -433,6 +606,9 @@ class GIBandView(GIBandListener):
                 band.left = 0
                 band.right = 0
                 # TODO remove it (impossible?)
+        # We have to defer this as the delete may come via the keypress URL
+        # But we aren't in the PrimitiveVisualizaer so we reference the
+        # document and queue it directly
         self.fig.document.add_next_tick_callback(lambda: fn())
 
     def finish_bands(self):
@@ -463,7 +639,7 @@ class GIApertureModel(object):
 
         Parameters
         ----------
-        listener : :class:`GIApertureListener` or function
+        listener : :class:`~GIApertureListener`
             The listener to notify if there are any updates
         """
         self.listeners.append(listener)
@@ -745,6 +921,11 @@ class GIApertureView(object):
 
         self.fig = fig
         self.controls = column()
+        self.controls.height_policy = "auto"
+        self.inner_controls = column()
+        self.inner_controls.height_policy = "auto"
+        self.controls = hamburger_helper("", self.inner_controls)
+
         self.model = model
         model.add_listener(self)
 
@@ -798,7 +979,7 @@ class GIApertureView(object):
             self.aps.append(ap)
             slider = GIApertureSliders(self, self.fig, self.model, aperture_id, start, end)
             self.ap_sliders.append(slider)
-            self.controls.children.append(slider.component)
+            self.inner_controls.children.append(slider.component)
 
     def delete_aperture(self, aperture_id):
         """
@@ -816,7 +997,7 @@ class GIApertureView(object):
         if aperture_id <= len(self.aps):
             ap = self.aps[aperture_id-1]
             ap.delete()
-            self.controls.children.remove(self.ap_sliders[aperture_id-1].component)
+            self.inner_controls.children.remove(self.ap_sliders[aperture_id-1].component)
             del self.aps[aperture_id-1]
             del self.ap_sliders[aperture_id-1]
         for ap in self.aps[aperture_id-1:]:
