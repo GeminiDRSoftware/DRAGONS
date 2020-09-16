@@ -13,14 +13,14 @@ from bokeh.palettes import Category10
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras
+from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras, GIBandListener
 from gempy.library import tracing, astrotools as at
 
 
 class InteractiveModel(ABC):
-    MASK_TYPE = ['user', 'good', 'fit']
-    MARKERS = ['circle', 'triangle', 'square']
-    PALETTE = Category10[3]
+    MASK_TYPE = ['band', 'user', 'good', 'fit']
+    MARKERS = ['circle', 'circle', 'triangle', 'square']
+    PALETTE = Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -36,8 +36,6 @@ class InteractiveModel(ABC):
         self.model = model
         self.listeners = []
         self.data = None
-        self.user_mask = None
-        self.fit_mask = None
 
     def add_listener(self, listener):
         if not callable(listener):
@@ -63,9 +61,11 @@ class InteractiveModel(ABC):
     def update_mask(self):
         # Update the "mask" column to change the glyphs
         new_mask = ['good'] * len(self.data.data['mask'])
-        for i, (um, fm) in enumerate(zip(self.user_mask, self.fit_mask)):
+        for i, (bm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
             if fm:
                 new_mask[i] = 'fit'
+            if bm:
+                new_mask[i] = 'band'
             if um:
                 new_mask[i] = 'user'
         self.data.data['mask'] = new_mask
@@ -99,7 +99,6 @@ class InteractiveModel1D(InteractiveModel):
         self.lsigma = self.hsigma = self.sigma  # placeholder
         self.grow = grow
         self.maxiter = maxiter
-        self.user_mask = None
         self.var = None
 
     def populate_bokeh_objects(self, x, y, mask=None, var=None):
@@ -128,6 +127,9 @@ class InteractiveModel1D(InteractiveModel):
             self.user_mask = np.ones_like(self.fit_mask)
             for slice_ in self.section:
                 self.user_mask[slice_.start < x < slice_.stop] = False
+
+        self.band_mask = np.zeros_like(self.fit_mask)
+
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
@@ -210,7 +212,7 @@ class InteractiveChebyshev1D:
         """
         Perform the fit, update self.model, parent.fit_mask
         """
-        goodpix = ~parent.user_mask
+        goodpix = ~(parent.user_mask | parent.band_mask)
         if parent.var is None:
             weights = None
         else:
@@ -252,9 +254,11 @@ class InteractiveSpline1D:
 
 
 class Fit1DPanel:
-    def __init__(self, model, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
+    def __init__(self, visualizer, model, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, grow_slider=True):
         """A class that handles a 1d model and its visualization (maybe in a tab)"""
+        # Just to get the doc later
+        self.visualizer = visualizer
 
         # Probably do something better here with factory function/class
         self.fit = InteractiveModel1D(model, x, y)
@@ -290,21 +294,37 @@ class Fit1DPanel:
 
         # Now the figures
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
-                            title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
-                            tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                            output_backend="webgl", x_range=None, y_range=None)
+                        title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
+                        tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                        output_backend="webgl", x_range=None, y_range=None)
         aperture_model = GIApertureModel()
-        band_model = GIBandModel()
-        connect_figure_extras(p_main, aperture_model, band_model)
-        controller = Controller(p_main, aperture_model, band_model, controller_div)
+        self.band_model = GIBandModel()
+
+        class Fit1DBandListener(GIBandListener):
+            def __init__(self, fn):
+                self.fn = fn
+
+            def adjust_band(self, band_id, start, stop):
+                pass
+
+            def delete_band(self, band_id):
+                pass
+
+            def finish_bands(self):
+                self.fn()
+
+        self.band_model.add_listener(Fit1DBandListener(self.band_model_handler))
+        connect_figure_extras(p_main, aperture_model, self.band_model)
+        Controller(p_main, aperture_model, self.band_model, controller_div)
         fig_column = [p_main]
 
         if plot_residuals:
             p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                                 title='Fit Residuals',
-                                 x_axis_label=xlabel, y_axis_label='delta'+ylabel,
-                                 tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                                 output_backend="webgl", x_range=None, y_range=None)
+                             title='Fit Residuals',
+                             x_axis_label=xlabel, y_axis_label='delta'+ylabel,
+                             tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                             output_backend="webgl", x_range=None, y_range=None)
+            connect_figure_extras(p_resid, aperture_model, self.band_model)
             fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
@@ -347,6 +367,16 @@ class Fit1DPanel:
         for i in indices:
             self.fit.user_mask[i] = 0
         self.fit.perform_fit()
+
+    def band_model_handler(self):
+        x_data = self.fit.data.data['x']
+        for i in np.arange(len(x_data)):
+            if self.band_model.contains(x_data[i]):
+                self.fit.band_mask[i] = 0
+            else:
+                self.fit.band_mask[i] = 1
+        self.visualizer.do_later(self.fit.perform_fit)
+        # self.fit.perform_fit()
 
 
 class Fit1DVisualizer(interactive.PrimitiveVisualizer):
@@ -425,7 +455,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.fits = []
         if self.nmodels > 1:
             for i, (model, x, y) in enumerate(zip(models, allx, ally), start=1):
-                tui = Fit1DPanel(model, x, y, **kwargs)
+                tui = Fit1DPanel(self, model, x, y, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
