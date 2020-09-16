@@ -62,10 +62,10 @@ class InteractiveModel(ABC):
         # Update the "mask" column to change the glyphs
         new_mask = ['good'] * len(self.data.data['mask'])
         for i, (bm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
-            if bm:
-                new_mask[i] = 'band'
             if fm:
                 new_mask[i] = 'fit'
+            if bm:
+                new_mask[i] = 'band'
             if um:
                 new_mask[i] = 'user'
         self.data.data['mask'] = new_mask
@@ -212,7 +212,7 @@ class InteractiveChebyshev1D:
         """
         Perform the fit, update self.model, parent.fit_mask
         """
-        goodpix = ~parent.user_mask
+        goodpix = ~(parent.user_mask | parent.band_mask)
         if parent.var is None:
             weights = None
         else:
@@ -254,9 +254,11 @@ class InteractiveSpline1D:
 
 
 class Fit1DPanel:
-    def __init__(self, model, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
+    def __init__(self, visualizer, model, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, grow_slider=True):
         """A class that handles a 1d model and its visualization (maybe in a tab)"""
+        # Just to get the doc later
+        self.visualizer = visualizer
 
         # Probably do something better here with factory function/class
         self.fit = InteractiveModel1D(model, x, y)
@@ -322,6 +324,7 @@ class Fit1DPanel:
                              x_axis_label=xlabel, y_axis_label='delta'+ylabel,
                              tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                              output_backend="webgl", x_range=None, y_range=None)
+            connect_figure_extras(p_resid, aperture_model, self.band_model)
             fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
@@ -366,11 +369,14 @@ class Fit1DPanel:
         self.fit.perform_fit()
 
     def band_model_handler(self):
-        for i, x in iter(self.fit.data['x']):
-            if self.band_model.contains(x):
-                self.fit.band_mask[i] = 1
-            else:
+        x_data = self.fit.data.data['x']
+        for i in np.arange(len(x_data)):
+            if self.band_model.contains(x_data[i]):
                 self.fit.band_mask[i] = 0
+            else:
+                self.fit.band_mask[i] = 1
+        self.visualizer.do_later(self.fit.perform_fit)
+        # self.fit.perform_fit()
 
 
 class Fit1DVisualizer(interactive.PrimitiveVisualizer):
@@ -449,7 +455,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.fits = []
         if self.nmodels > 1:
             for i, (model, x, y) in enumerate(zip(models, allx, ally), start=1):
-                tui = Fit1DPanel(model, x, y, **kwargs)
+                tui = Fit1DPanel(self, model, x, y, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)

@@ -315,18 +315,51 @@ class GIBandModel(object):
         """
         if start > stop:
             start, stop = stop, start
-        self.bands[band_id] = (start, stop)
+        self.bands[band_id] = [start, stop]
         for listener in self.listeners:
             listener.adjust_band(band_id, start, stop)
 
+    def delete_band(self, band_id):
+        del self.bands[band_id]
+        for listener in self.listeners:
+            listener.delete_band(band_id)
+
     def finish_bands(self):
+        # first we do a little consolidation, in case we have overlaps
+        band_dump = list()
+        for key, value in self.bands.items():
+            band_dump.append([key, value])
+        for i in range(len(band_dump)-1):
+            for j in range(i+1, len(band_dump)):
+                # check for overlap and delete/merge bands
+                akey, aband = band_dump[i]
+                bkey, bband = band_dump[j]
+                if aband[0] < bband[1] and aband[1] > bband[0]:
+                    # full overlap?
+                    if aband[0] <= bband[0] and aband[1] >= bband[1]:
+                        # remove bband
+                        self.delete_band(bkey)
+                    elif aband[0] >= bband[0] and aband[1] <= bband[1]:
+                        # remove aband
+                        self.delete_band(akey)
+                    else:
+                        aband[0] = min(aband[0], bband[0])
+                        aband[1] = max(aband[1], bband[1])
+                        self.adjust_band(akey, aband[0], aband[1])
+                        self.delete_band(bkey)
         for listener in self.listeners:
             listener.finish_bands()
 
-    def in_range(self, x):
-        if len(self.bands.values() == 0):
+    def find_band(self, x):
+        for band_id, band in self.bands.items():
+            if band[0] <= x <= band[1]:
+                return band_id, band[0], band[1]
+        return None, None, None
+
+    def contains(self, x):
+        if len(self.bands.values()) == 0:
             return True
-        for b in self.bands:
+        for b in self.bands.values():
             if b[0] < x < b[1]:
                 return True
         return False
@@ -370,14 +403,16 @@ class GIBandView(GIBandListener):
         stop : float
             end of the x range of the band
         """
-        if band_id in self.bands:
-            band = self.bands[band_id]
-            band.left = start
-            band.right = stop
-        else:
-            band = BoxAnnotation(left=start, right=stop, fill_alpha=0.1, fill_color='navy')
-            self.fig.add_layout(band)
-            self.bands[band_id] = band
+        def fn():
+            if band_id in self.bands:
+                band = self.bands[band_id]
+                band.left = start
+                band.right = stop
+            else:
+                band = BoxAnnotation(left=start, right=stop, fill_alpha=0.1, fill_color='navy')
+                self.fig.add_layout(band)
+                self.bands[band_id] = band
+        self.fig.document.add_next_tick_callback(lambda: fn())
 
     def delete_band(self, band_id):
         """
@@ -392,9 +427,13 @@ class GIBandView(GIBandListener):
             ID of band to remove
 
         """
-        if band_id in self.bands:
-            band = self.bands[band_id]
-            # TODO remove it
+        def fn():
+            if band_id in self.bands:
+                band = self.bands[band_id]
+                band.left = 0
+                band.right = 0
+                # TODO remove it (impossible?)
+        self.fig.document.add_next_tick_callback(lambda: fn())
 
     def finish_bands(self):
         pass

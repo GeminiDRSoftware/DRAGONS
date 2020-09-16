@@ -77,7 +77,7 @@ class Controller(object):
         fig.on_event('mouseenter', self.on_mouse_enter)
         fig.on_event('mouseleave', self.on_mouse_leave)
 
-        self.set_help_text()
+        self.set_help_text("")
 
     def set_help_text(self, text=None):
         """
@@ -92,7 +92,7 @@ class Controller(object):
         text : str
             html to display in the div
         """
-        if text:
+        if text is not None:
             ht = text
         else:
             ht = """While the mouse is over the plot, choose from the following commands:<br/>\n"""
@@ -121,6 +121,7 @@ class Controller(object):
         """
         global controller
         controller = self
+        self.set_help_text(None)
 
     def on_mouse_leave(self, event):
         """
@@ -138,6 +139,7 @@ class Controller(object):
         """
         global controller
         if self == controller:
+            self.set_help_text("")
             if self.task:
                 self.task.stop()
                 self.task = None
@@ -381,9 +383,18 @@ class BandTask(Task):
             y coordinate of the mouse, unused
 
         """
-        self.band_edge = x
-        self.band_id = self.band_model.band_id
-        self.band_model.band_id += 1
+        (band_id, start, end) = self.band_model.find_band(x)
+        if band_id is not None:
+            self.band_id = band_id
+            if (x-start) < (end-x):
+                self.band_edge = end
+            else:
+                self.band_edge = start
+            self.band_model.adjust_band(self.band_id, x, self.band_edge)
+        else:
+            self.band_edge = x
+            self.band_id = self.band_model.band_id
+            self.band_model.band_id += 1
 
     def stop(self):
         """
@@ -392,6 +403,7 @@ class BandTask(Task):
         """
         self.band_edge = None
         self.band_id = None
+        self.band_model.finish_bands()
 
     def handle_key(self, key):
         """
@@ -407,6 +419,10 @@ class BandTask(Task):
 
         """
         if key == 'b':
+            self.stop()
+            return True
+        if key == 'd':
+            self.band_model.delete_band(self.band_id)
             self.stop()
             return True
         return False
@@ -451,4 +467,4 @@ class BandTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Drag to desired band width.<br/>\n<b>[b]</b> to set the band"""
+        return """Drag to desired band width.<br/>\n<b>[b]</b> to set the band<bt/>\n<b>[d]</b> to delete/cancel the band"""
