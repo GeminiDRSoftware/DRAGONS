@@ -17,7 +17,7 @@ __all__ = ["interactive_chebyshev", "ChebyshevModel"]
 
 
 class ChebyshevModel(GIModelSource):
-    def __init__(self, order, location, dispaxis, sigma_clip, coords, spectral_coords, ext):
+    def __init__(self, order, location, dispaxis, sigma_clip, coords, spectral_coords, ext, m_init, fit_it):
         super().__init__()
         GIModelSource.__init__(self)
         self.order = order
@@ -33,6 +33,8 @@ class ChebyshevModel(GIModelSource):
         self.model_dict = None
         self.x = []
         self.y = []
+        self.m_init = m_init
+        self.fit_it = fit_it
 
         # do this last since it will trigger an update, which triggers a recalc
         self.coords.add_mask_listener(self.update_coords)
@@ -65,10 +67,11 @@ class ChebyshevModel(GIModelSource):
         sigma_clip = self.sigma_clip
         ext = self.ext
 
-        m_init = models.Chebyshev1D(degree=order, c0=location,
-                                    domain=[0, ext.shape[dispaxis] - 1])
-        fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                   sigma_clip, sigma=self.sigma)
+        m_init = self.m_init # models.Chebyshev1D(degree=order, c0=location,
+                             #       domain=[0, ext.shape[dispaxis] - 1])
+        self.fit_it.outlier_kwargs["sigma"] = self.sigma  # ugh
+        fit_it = self.fit_it # fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                             #                      sigma_clip, sigma=self.sigma)
         try:
             x = self.x
             y = self.y
