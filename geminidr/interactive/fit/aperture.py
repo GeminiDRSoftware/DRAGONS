@@ -77,7 +77,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.recalc_apertures()
 
     def add_aperture(self):
-        x = (self.fig.x_range.start + self.fig.figure.x_range.end) / 2
+        x = (self.fig.x_range.start + self.fig.x_range.end) / 2
         self.aperture_model.add_aperture(x, x)
         self.update_details()
 
@@ -99,7 +99,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         max_apertures_slider = build_text_slider("Max Apertures", self.model.max_apertures, 1, 1, 20,
                                                  self.model, "max_apertures", self.clear_and_recalc,
                                                  throttled=True)
-        threshold_slider = build_text_slider("Threshold", self.model.threshold, 1, 0, 1,
+        threshold_slider = build_text_slider("Threshold", self.model.threshold, 0.01, 0, 1,
                                              self.model, "threshold", self.clear_and_recalc,
                                              throttled=True)
 

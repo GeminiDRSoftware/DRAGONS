@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, \
-    Dropdown
+    Dropdown, RangeSlider
 
 from geminidr.interactive import server
 
@@ -199,6 +199,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     -------
         :class:`~Row` bokeh Row component with the interface inside
     """
+    is_float = True
+    if isinstance(value, int):
+        is_float = False
+
     start = min(value, min_value) if min_value else min(value, 0)
     end = max(value, max_value) if max_value else max(10, value*2)
     slider = Slider(start=start, end=end, value=value, step=step, title=title)
@@ -214,10 +218,13 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
 
     def _float_check(val):
         # TODO make this helper type aware and just set it at creation
-        if isinstance(val, int) or isinstance(val, float):
+        if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
             return True
         try:
-            chk = float(val)
+            if is_float:
+                float(val)
+            else:
+                int(val)
             return True
         except ValueError:
             return False
@@ -228,11 +235,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
                 text_input.value = str(old)
             return
         if old != new:
-            ival = None
-            try:
-                ival = int(new)
-            except ValueError:
+            if is_float:
                 ival = float(new)
+            else:
+                ival = int(new)
             if ival > slider.end and not max_value:
                 slider.end = ival
             if 0 <= ival < slider.start and min_value is None:
@@ -246,12 +252,12 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
 
     def handle_value(attrib, old, new):
         if obj and attr:
+            if is_float:
+                numeric_value = float(new)
+            else:
+                numeric_value = int(new)
             try:
-                value = int(new)
-            except ValueError:
-                value = float(new)
-            try:
-                obj.__setattr__(attr, value)
+                obj.__setattr__(attr, numeric_value)
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
@@ -273,6 +279,146 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
         # since slider is listening to value, this next line will cause the slider
         # to call the handle_value method and we don't need to do so explicitly
         text_input.on_change("value", handle_value)
+    return component
+
+
+def build_range_slider(title, start, end, step, min_value, max_value, obj=None, start_attr=None, end_attr=None,
+                       handler=None, throttled=False):
+    """
+    Make a slider widget to use in the bokeh interface.
+
+    This method handles some extra boilerplate logic for inspecting
+    our primitive field configurations and determining sensible values
+    for minimum, maximum, etc.
+
+    Parameters
+    ----------
+    title : str
+        Title for the slider
+    start : int or float
+        Value to initially set for start
+    end : int or float
+        Value to initially set for end
+    step : int or float
+        Step size
+    min_value : int or float
+        Minimum slider value, or None defaults to min(start,0)
+    max_value : int or float
+        Maximum slider value, or None defaults to end*2
+    obj : object
+        Instance to modify the attribute of when slider changes
+    start_attr : str
+        Name of attribute in obj to be set with the new start value
+    end_attr : str
+        Name of the attribute on obj to be set with the new end value
+    handler : method
+        Function to call after setting the attribute
+    throttled : bool
+        Set to `True` to limit handler calls to when the slider is released (default False)
+
+    Returns
+    -------
+        :class:`~Row` bokeh Row component with the interface inside
+    """
+    is_float = True
+    if isinstance(start, int) and isinstance(end, int):
+        is_float = False
+
+    slider_start = min(start, min_value) if min_value else min(start, 0)
+    slider_end = max(end, max_value) if max_value else max(10, end*2)
+    slider = RangeSlider(start=slider_start, end=slider_end, value=(start, end), step=step, title=title)
+    slider.width = 256
+
+    start_text_input = TextInput()
+    start_text_input.width = 64
+    start_text_input.value = str(start)
+    end_text_input = TextInput()
+    end_text_input.width = 64
+    end_text_input.value = str(start)
+    component = row(slider, start_text_input, end_text_input)
+
+    def _float_check(val):
+        # TODO make this helper type aware and just set it at creation
+        if ((not is_float) and isinstance(val[0], int) and isinstance(val[1], int)) \
+                or (is_float and isinstance(val[0], float) and isinstance(val[1], float)):
+            return True
+        try:
+            if is_float:
+                float(val[0])
+                float(val[1])
+            else:
+                int(val[0])
+                int(val[1])
+            return True
+        except ValueError:
+            return False
+
+    def update_slider(attrib, old, new):
+        if not _float_check(new):
+            if _float_check(old):
+                start_text_input.value = str(old[0])
+                end_text_input.value = str(old[1])
+            return
+        if old != new:
+            if is_float:
+                start_val = float(new[0])
+                end_val = float(new[1])
+            else:
+                start_val = int(new[0])
+                end_val = int(new[1])
+            if end_val > slider.end and not max_value:
+                slider.end = end_val
+            if 0 <= start_val < slider.start and min_value is None:
+                slider.start = start_val
+            if slider.start <= start_val <= end_val <= slider.end:
+                slider.value = (start_val, end_val)
+
+    def update_text_input(attrib, old, new):
+        if new != old:
+            start_text_input.value = str(new[0])
+            end_text_input.value = str(new[1])
+
+    def handle_start_value(attrib, old, new):
+        handle_value(attrib, (old, end_text_input.value), (new, end_text_input.value))
+
+    def handle_end_value(attrib, old, new):
+        handle_value(attrib, (start_text_input.value, old), (start_text_input.value, new))
+
+    def handle_value(attrib, old, new):
+        if obj and start_attr and end_attr:
+            if is_float:
+                start_numeric_value = float(new[0])
+                end_numeric_value = float(new[1])
+            else:
+                start_numeric_value = int(new[0])
+                end_numeric_value = int(new[1])
+            try:
+                obj.__setattr__(start_attr, start_numeric_value)
+                obj.__setattr__(start_attr, end_numeric_value)
+            except FieldValidationError:
+                # reset textbox
+                start_text_input.remove_on_change("value", handle_start_value)
+                start_text_input.value = str(old[0])
+                start_text_input.on_change("value", handle_start_value)
+                end_text_input.remove_on_change("value", handle_end_value)
+                end_text_input.value = str(old[1])
+                end_text_input.on_change("value", handle_end_value)
+            else:
+                update_slider(attrib, old, new)
+        if handler:
+            handler()
+
+    if throttled:
+        # Since here the text_input calls handle_value, we don't
+        # have to call it from the slider as it will happen as
+        # a side-effect of update_text_input
+        slider.on_change("value_throttled", update_text_input)
+        start_text_input.on_change("value", handle_start_value)
+    else:
+        slider.on_change("value", update_text_input)
+        # since slider is listening to value, this next line will cause the slider
+        # to call the handle_value method and we don't need to do so explicitly
+        end_text_input.on_change("value", handle_end_value)
     return component
 
 
