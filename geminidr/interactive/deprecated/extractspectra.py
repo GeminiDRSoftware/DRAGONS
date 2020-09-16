@@ -1,12 +1,17 @@
+#
+# DEPRECATED
+#
+# This needs to be redone with an approach more like trace_apertures
+#
+
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Column, Div, Button
+from bokeh.models import Div
 
 from geminidr.interactive import server, interactive
-from geminidr.interactive.interactive import GICoordsSource, GILine, GIScatter, GIFigure, GISlider, _dequantity, \
-    GIMaskedSigmadCoords, GIPatch
-from gempy.library import astromodels
-
+from geminidr.interactive.interactive import \
+    build_text_slider
+from geminidr.interactive.deprecated.deprecated_interactive import build_cds, connect_update_coords, build_figure
 
 __all__ = ["interactive_extract_spectra", ]
 
@@ -31,8 +36,8 @@ class ExtractSpectraModel:
         # register to listen to these two coordinate sets to get updates.
         # Whenever there is a call to recalc_spline, these coordinate
         # sets will update and will notify all registered listeners.
-        self.points1 = GICoordsSource()
-        self.points2 = GICoordsSource()
+        self.points1_listeners = list()
+        self.points2_listeners = list()
 
     def recalc_extract(self):
         """
@@ -69,10 +74,12 @@ class ExtractSpectraModel:
         # Display extraction edges on viewer, every 10 pixels (for speed)
         pixels = np.arange(npix)
         # edge_coords = np.array([pixels, all_x1]).T
-        self.points1.notify_coord_listeners(pixels, all_x1)
+        for fn in self.points1_listeners:
+            fn(pixels, all_x1)
         # viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis == 1), origin=0)
         # edge_coords = np.array([pixels, all_x2]).T
-        self.points2.notify_coord_listeners(pixels, all_x2)
+        for fn in self.points2_listeners:
+            fn(pixels, all_x2)
         # viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis == 1), origin=0)
 
 
@@ -127,31 +134,33 @@ class ExtractSpectraVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        width_slider = GISlider("Width", self.model.width, 1, 0, self.model.width * 2,
-                                self.model, "width", self.model.recalc_extract, throttled=True)
+        width_slider = build_text_slider("Width", self.model.width, 1, 0, self.model.width * 2,
+                                         self.model, "width", self.model.recalc_extract, throttled=True)
 
         # Create a blank figure with labels
-        self.p = GIFigure(plot_width=600, plot_height=500,
-                          title='Spectra 1D',
-                          tools="pan,wheel_zoom,box_zoom,reset",
-                          x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label,
-                          x_range=(0, self.model.ext.shape[0]), y_range=(0, self.model.ext.shape[1]))
+        self.p = build_figure(plot_width=600, plot_height=500,
+                              title='Spectra 1D',
+                              tools="pan,wheel_zoom,box_zoom,reset",
+                              x_axis_label=self.x_axis_label, y_axis_label=self.y_axis_label,
+                              x_range=(0, self.model.ext.shape[0]), y_range=(0, self.model.ext.shape[1]))
 
         # We can plot this here because it never changes
         # the overlay we plot later since it does change, giving
         # the illusion of "coloring" these points
-        self.poly1 = GIPatch(self.p)
-        self.model.points1.add_coord_listener(self.poly1.update_coords)
-        self.poly2 = GIPatch(self.p)
-        self.model.points2.add_coord_listener(self.poly2.update_coords)
+        coords = build_cds()
+        self.poly1 = self.p.patch(x='x', y='y', source=coords, color="blue")
+        self.model.points1_listeners.append(connect_update_coords(coords))
+        coords = build_cds()
+        self.poly2 = self.p.patch(x='x', y='y', source=coords, color="blue")
+        self.model.points2_listeners.append(connect_update_coords(coords))
 
-        controls = Column(width_slider.component, self.submit_button)
+        controls = column(width_slider, self.submit_button)
 
         self.details = Div(text="")
-        self.model.points1.add_coord_listener(self.update_details)
+        self.model.points1_listeners.append(self.update_details)
         self.model.recalc_extract()
 
-        col = column(self.p.figure, self.details)
+        col = column(self.p, self.details)
         layout = row(controls, col)
 
         doc.add_root(layout)

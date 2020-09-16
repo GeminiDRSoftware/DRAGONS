@@ -15,4 +15,3 @@ scipy
 specutils
 sqlalchemy
 bokeh
--e git+https://github.com/spacetelescope/gwcs.git#egg=gwcs

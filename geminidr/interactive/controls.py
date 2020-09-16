@@ -18,8 +18,14 @@ from abc import ABC, abstractmethod
 
 from bokeh.events import PointEvent
 
+__all__ = ["controller", "Controller"]
 
-""" This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.  """
+
+""" This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
+
+Controller instances will set this to listen to key presses.  The bokeh server will use this to send keys
+it recieves from the clients.  Everyone else should leave it alone!
+"""
 controller = None
 
 
@@ -41,22 +47,21 @@ class Controller(object):
     control to the `Controller`.  The `Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, gifig, aperture_model, band_model, helptext):
+    def __init__(self, fig, aperture_model, band_model, helptext):
         """
         Create a controller to manage the given aperture and band models on the given GIFigure
 
         Parameters
         ----------
-        gifig : :class:`GIFigure`
+        fig : :class:`~Figure`
             plot to attach controls to
-        aperture_model : :ckass:`GIApertureModel`
+        aperture_model : :class:`GIApertureModel`
             model for apertures for this plot/dataset, or None
         band_model : :class:`GIBandModel`
             model for bands for this plot/dataset, or None
         helptext : :class:`Div`
             div to update text in to provide help to the user
         """
-        self.gifig = gifig
         self.helptext = helptext
         self.tasks = dict()
         if aperture_model:
@@ -68,13 +73,13 @@ class Controller(object):
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        gifig.figure.on_event('mousemove', self.on_mouse_move)
-        gifig.figure.on_event('mouseenter', self.on_mouse_enter)
-        gifig.figure.on_event('mouseleave', self.on_mouse_leave)
+        fig.on_event('mousemove', self.on_mouse_move)
+        fig.on_event('mouseenter', self.on_mouse_enter)
+        fig.on_event('mouseleave', self.on_mouse_leave)
 
-        self.sethelptext()
+        self.set_help_text("")
 
-    def sethelptext(self, text=None):
+    def set_help_text(self, text=None):
         """
         Set the text in the help area.
 
@@ -87,7 +92,7 @@ class Controller(object):
         text : str
             html to display in the div
         """
-        if text:
+        if text is not None:
             ht = text
         else:
             ht = """While the mouse is over the plot, choose from the following commands:<br/>\n"""
@@ -116,6 +121,7 @@ class Controller(object):
         """
         global controller
         controller = self
+        self.set_help_text(None)
 
     def on_mouse_leave(self, event):
         """
@@ -133,6 +139,7 @@ class Controller(object):
         """
         global controller
         if self == controller:
+            self.set_help_text("")
             if self.task:
                 self.task.stop()
                 self.task = None
@@ -174,11 +181,11 @@ class Controller(object):
         if self.task:
             if self.task.handle_key(key):
                 self.task = None
-                self.sethelptext()
+                self.set_help_text()
         else:
             if key in self.tasks:
                 self.task = self.tasks[key]
-                self.sethelptext(self.task.helptext())
+                self.set_help_text(self.task.helptext())
                 self.task.start(self.x, self.y)
 
     def handle_mouse(self, x, y):
@@ -204,7 +211,7 @@ class Controller(object):
         if self.task:
             if self.task.handle_mouse(x, y):
                 self.task = None
-                self.sethelptext()
+                self.set_help_text()
 
 
 class Task(ABC):
@@ -376,9 +383,18 @@ class BandTask(Task):
             y coordinate of the mouse, unused
 
         """
-        self.band_edge = x
-        self.band_id = self.band_model.band_id
-        self.band_model.band_id += 1
+        (band_id, start, end) = self.band_model.find_band(x)
+        if band_id is not None:
+            self.band_id = band_id
+            if (x-start) < (end-x):
+                self.band_edge = end
+            else:
+                self.band_edge = start
+            self.band_model.adjust_band(self.band_id, x, self.band_edge)
+        else:
+            self.band_edge = x
+            self.band_id = self.band_model.band_id
+            self.band_model.band_id += 1
 
     def stop(self):
         """
@@ -387,6 +403,7 @@ class BandTask(Task):
         """
         self.band_edge = None
         self.band_id = None
+        self.band_model.finish_bands()
 
     def handle_key(self, key):
         """
@@ -402,6 +419,10 @@ class BandTask(Task):
 
         """
         if key == 'b':
+            self.stop()
+            return True
+        if key == 'd':
+            self.band_model.delete_band(self.band_id)
             self.stop()
             return True
         return False
@@ -446,4 +467,4 @@ class BandTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Drag to desired band width.<br/>\n<b>[b]</b> to set the band"""
+        return """Drag to desired band width.<br/>\n<b>[b]</b> to set the band<bt/>\n<b>[d]</b> to delete/cancel the band"""

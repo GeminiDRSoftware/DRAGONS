@@ -1,20 +1,27 @@
-import numpy as np
+#
+# DEPRECATED
+#
+# This needs to be redone with an approach more like Chris did with traceApertures
+# and with a generic concept of a 2-D fit.
+#
+
 from astropy.modeling import models, fitting
 from bokeh.layouts import row
-from bokeh.models import Button, Column, Panel, Tabs, Div
+from bokeh.models import Button, Column, Panel, Tabs
 
+import geminidr.interactive.deprecated.deprecated_interactive
 from geminidr.interactive import server, interactive
-from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GILine, GICoordsSource, \
-    GIBandModel, GIApertureModel, GIFigure, GISlider, GIMaskedSigmadCoords, \
-    GIModelSource, GIDifferencingModel, GIMaskedSigmadScatter, GIScatter
+from geminidr.interactive.interactive import \
+    build_text_slider
+from geminidr.interactive.deprecated.deprecated_interactive import GIMaskedSigmadScatter, build_cds, \
+    connect_update_coords, GIMaskedSigmadCoords, GIModelSource, build_figure
 from gempy.library import astromodels
 
 
 __all__ = ["interactive_chebyshev2d", ]
 
 
-class Chebyshev2DModel(GICoordsSource, GIModelSource):
+class Chebyshev2DModel(GIModelSource):
     def __init__(self, spectral_order, spatial_order, dispaxis, sigma_clip, coords, in_coords, ref_coords, ext):
         super().__init__()
         GIModelSource.__init__(self)
@@ -24,6 +31,7 @@ class Chebyshev2DModel(GICoordsSource, GIModelSource):
         self.sigma_clip = sigma_clip
         self.sigma=3
         self.coords = coords
+        self.coord_listeners = list()
         self.in_coords = in_coords
         self.ref_coords = ref_coords
         self.ext = ext
@@ -75,7 +83,8 @@ class Chebyshev2DModel(GICoordsSource, GIModelSource):
 
         residuals = self.m_final(*self.in_coords) - self.ref_coords[1-dispaxis]
         # notify listeners of new x/y plot data based on our model function
-        self.notify_coord_listeners(self.in_coords[1], residuals) # self.m_final(self.in_coords[0], self.in_coords[1]))
+        for fn in self.coord_listeners:
+            fn(self.in_coords[1], residuals) # self.m_final(self.in_coords[0], self.in_coords[1]))
         # notify model listeners that our model function has changed
         # self.notify_model_listeners()
 
@@ -112,7 +121,6 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
         # Note that self._fields in the base class is setup with a dictionary mapping conveniently
         # from field name to the underlying config.Field entry, even though fields just comes in as
         # an iterable
-        self.p = None
         self.spline = None
         self.scatter = None
         self.spectral_coords = None
@@ -129,18 +137,15 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
 
     def mask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
+        geminidr.interactive.deprecated.deprecated_interactive.clear_selection()
         self.model.coords.addmask(indices)
 
     def unmask_button_handler(self, stuff):
         indices = self.scatter.source.selected.indices
-        self.scatter.clear_selection()
+        geminidr.interactive.deprecated.deprecated_interactive.clear_selection()
         self.model.coords.unmask(indices)
 
     def recalc_button_handler(self, stuff):
-        self.model.spectral_order = self.spectral_order_slider.value
-        self.model.spatial_order = self.spatial_order_slider.value
-        self.model.sigma = self.sigma_slider.value
         self.model.recalc_chebyshev()
 
     def visualize(self, doc):
@@ -159,9 +164,11 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
 
         super().visualize(doc)
 
-        self.spectral_order_slider = GISlider("Spectral Order", self.model.spectral_order, 1, self.min_order, self.max_order)
-        self.spatial_order_slider = GISlider("Spatial Order", self.model.spectral_order, 1, self.min_order, self.max_order)
-        self.sigma_slider = GISlider("Sigma", self.model.sigma, 0.1, 2, 10)
+        self.spectral_order_slider = build_text_slider("Spectral Order", self.model.spectral_order, 1,
+                                              self.min_order, self.max_order, self.model, "spectral_order")
+        self.spatial_order_slider = build_text_slider("Spatial Order", self.model.spatial_order, 1,
+                                             self.min_order, self.max_order, self.model, "spatial_order")
+        self.sigma_slider = build_text_slider("Sigma", self.model.sigma, 0.1, 2, 10, self.model, "sigma")
 
         mask_button = Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
@@ -173,27 +180,26 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
         recalculate_button.on_click(self.recalc_button_handler)
 
         # Create a blank figure with labels
-        p = GIFigure(plot_width=600, plot_height=500,
-                     title='Interactive Chebyshev',
-                     x_axis_label='X', y_axis_label='Y',
-                     tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
+        fig = build_figure(plot_width=600, plot_height=500,
+                           title='Interactive Chebyshev',
+                           x_axis_label='X', y_axis_label='Y',
+                           tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap")
 
-        self.p = p
-
-        self.scatter = GIMaskedSigmadScatter(p, self.model.coords)
+        self.scatter = GIMaskedSigmadScatter(fig, self.model.coords)
 
         # p2 goes in tab 2 and shows the difference between the data y values and the model calculated values
-        p2 = GIFigure(plot_width=600, plot_height=500,
-                      title='Model Differential',
-                      x_axis_label='X', y_axis_label='Y')
-        self.scatter_residuals = GIScatter(p2)
-        self.model.add_coord_listener(self.scatter_residuals.update_coords)
+        fig2 = build_figure(plot_width=600, plot_height=500,
+                            title='Model Differential',
+                            x_axis_label='X', y_axis_label='Y')
+        scatter_residuals_source = build_cds()
+        self.scatter_residuals = fig2.scatter(x='x', y='y', source=scatter_residuals_source, color="blue", radius=5)
+        self.model.coord_listeners.append(connect_update_coords(scatter_residuals_source))
         # differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
         # differencing_model.add_coord_listener(self.line2.update_coords)
 
-        self.controls = Column(self.spectral_order_slider.component,
-                               self.spatial_order_slider.component,
-                               self.sigma_slider.component,
+        self.controls = Column(self.spectral_order_slider,
+                               self.spatial_order_slider,
+                               self.sigma_slider,
                                recalculate_button,
                                self.submit_button,
                                mask_button,
@@ -203,8 +209,8 @@ class Chebyshev2DVisualizer(interactive.PrimitiveVisualizer):
         self.model.recalc_chebyshev()
 
         # add the two plots as tabs and place them with controls to the left
-        tab1 = Panel(child=p.figure, title="Input Data")
-        tab2 = Panel(child=p2.figure, title="Chebyshev 2D Differential")
+        tab1 = Panel(child=fig, title="Input Data")
+        tab2 = Panel(child=fig2, title="Chebyshev 2D Differential")
         tabs = Tabs(tabs=[tab1, tab2], name="tabs")
         layout = row(self.controls, tabs)
 

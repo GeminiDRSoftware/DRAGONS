@@ -1,7 +1,7 @@
 from astropy.units import Quantity
 from numpy.core.multiarray import ndarray
 
-from geminidr.interactive.interactive import _dequantity
+from geminidr.interactive.deprecated.deprecated_interactive import _dequantity
 
 
 def test_dequantity():
