@@ -332,7 +332,7 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
     start_text_input.value = str(start)
     end_text_input = TextInput()
     end_text_input.width = 64
-    end_text_input.value = str(start)
+    end_text_input.value = str(end)
     component = row(slider, start_text_input, end_text_input)
 
     def _input_check(val):
@@ -341,11 +341,14 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
             return True
         try:
             if is_float:
-                float(val[0])
-                float(val[1])
+                if float(val[0]) > float(val[1]):
+                    return False
             else:
-                int(val[0])
-                int(val[1])
+                if int(val[0]) > int(val[1]):
+                    return False
+            if (slider.start > float(val[0]) > slider.end) or (slider.start > float(val[1]) > slider.end):
+                # out of view
+                return False
             return True
         except ValueError:
             return False
@@ -364,6 +367,8 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
             else:
                 start_val = int(new[0])
                 end_val = int(new[1])
+            if start_val > end_val:
+                start_val, end_val = end_val, start_val
             if end_val > slider.end and not max_value:
                 slider.end = end_val
             if 0 <= start_val < slider.start and min_value is None:
@@ -379,11 +384,23 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
 
     def handle_start_value(attrib, old, new):
         # called by the start text input.  We pull the end value and delegate to handle_value
-        handle_value(attrib, (old, end_text_input.value), (new, end_text_input.value))
+        try:
+            if slider.start <= float(new) <= slider.end:
+                handle_value(attrib, (old, end_text_input.value), [new, end_text_input.value])
+                return
+        except ValueError:
+            pass
+        start_text_input.value = old
 
     def handle_end_value(attrib, old, new):
         # called by the end text input.  We pull the start value and delegate to handle_value
-        handle_value(attrib, (start_text_input.value, old), (start_text_input.value, new))
+        try:
+            if slider.start <= float(new) <= slider.end:
+                handle_value(attrib, (start_text_input.value, old), [start_text_input.value, new])
+                return
+        except ValueError:
+            pass
+        end_text_input.value = old
 
     def handle_value(attrib, old, new):
         # Handle a change in value.  Since this has a value that is
@@ -398,6 +415,9 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
                 start_numeric_value = int(new[0])
                 end_numeric_value = int(new[1])
             try:
+                if start_numeric_value > end_numeric_value:
+                    start_numeric_value, end_numeric_value = end_numeric_value, start_numeric_value
+                    new[1], new[0] = new[0], new[1]
                 obj.__setattr__(start_attr, start_numeric_value)
                 obj.__setattr__(end_attr, end_numeric_value)
             except FieldValidationError:
