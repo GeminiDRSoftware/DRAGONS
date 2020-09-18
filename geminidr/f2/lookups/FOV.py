@@ -1,8 +1,10 @@
 # This code is looked up by gempy as part of the configuration for the
 # appropriate instrument and evaled by the infrastructure. It has initially
 # been written to support gemini_tools.ExposureGroup and is semi-optimized. 
+#
+# All calculations are now done in PIXELS
 
-def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
+def pointing_in_field(ad, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     """
     See gemini_tools.pointing_in_field() for the API. This is an
@@ -19,41 +21,19 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     # Since this function gets looked up & evaled, we have to do any
     # essential imports in-line (but Python caches them):
-    import math, re
-
-    # Use the first argument for looking up instrument & configuration
-    # properties, since the second position doesn't always correspond to a
-    # single exposure, ie. AstroData instance.
-    ad = pos
+    import re
 
     # Extract pointing info. (currently p/q but this will be replaced with
     # RA/Dec/PA) from the AstroData instance.
-    position = (ad.phu['POFFSET'], ad.phu['QOFFSET'])
+    position = (ad.detector_x_offset(), ad.detector_y_offset())
 
-    # TO DO: References to the field size will need changing to decimal
-    # degrees once we pass absolute co-ordinates?
-
-    # TO DO: The following is used because as of r4619, the pixel_scale()
-    # descriptor slows us down by 50x for some reason (and prepare has
-    # already updated the header from the descriptor anyway so it doesn't
-    # need recalculating here). The first branch of this condition can be
-    # removed once pixel_scale() is improved or has the same check has
-    # been added to it:
-    if 'PREPARED' in ad.tags:
-        scale = ad.phu['PIXSCALE']
-    else:
-        scale = ad.pixel_scale()
-
-    # GeMS truncates the FOV to 2' and since there are currently no AO
-    # type classifications, use the pixel scale that we just looked up to
-    # figure out whether the AO field applies or not:
-    with_gems = (scale < 0.1)
+    # GeMS truncates the FOV to 2' with 0.09" pixels
+    is_ao = ad.is_ao()
 
     # Imaging:
     if 'IMAGE' in ad.tags:
-        dist = 60. if with_gems else 183.
-        return math.sqrt(sum([(x-r)**2 for x, r in zip(position,refpos)])) \
-             < frac_FOV * dist
+        diameter = 1300 if is_ao else 2048
+        return sum([(x-r)**2 for x, r in zip(position,refpos)]) < (frac_FOV * diameter)**2
     # Long slit:
     elif 'LS' in ad.tags:
         # Parse slit width in pixels from mask name:
@@ -65,14 +45,14 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
         # TO DO: This first number should be correct but the Web page doesn't
         # confirm it, so check with the instrument team:
-        dist = 60. if with_gems else 131.5
+        dist = 1300 if is_ao else 1460
 
-        # Tuple of (adjusted) field extent in each direction (assumes p,q):
+        # Tuple of (adjusted) field extent in each direction (X, Y)
         # The slit length is from the Web page, under long-slit spectroscopy.
-        dist = (frac_slit*0.5*width*scale, frac_FOV*dist)
+        dist = (frac_FOV * dist, frac_slit * 0.5 * width)
 
         # Is the position within the field boundaries along both/all axes?
-        return all([abs(x-r) < d for x, r, d in zip(position,refpos,dist)])
+        return all([abs(x-r) < d for x, r, d in zip(position, refpos, dist)])
 
     # MOS:
     elif 'MOS' in ad.tags:

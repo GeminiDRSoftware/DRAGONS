@@ -516,10 +516,7 @@ class AstroDataF2(AstroDataGemini):
             pixel scale
         """
         # Try to use the Gemini-level helper method
-        try:
-            return self._get_wcs_pixel_scale()
-        except KeyError:
-            return self.phu.get('PIXSCALE')
+        return self._get_wcs_pixel_scale() or self.phu.get('PIXSCALE')
 
     @astro_data_descriptor
     def read_mode(self):

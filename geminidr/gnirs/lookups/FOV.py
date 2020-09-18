@@ -5,13 +5,19 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
 
+from scipy.ndimage import shift
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
 from . import maskdb
 
 # ------------------------------------------------------------------------------
 # This code is looked up by gempy as part of the configuration for the
 # appropriate instrument and evaled by the infrastructure. It has initially
-# been written to support gemini_tools.ExposureGroup. 
-def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
+# been written to support gemini_tools.ExposureGroup.
+#
+# All calculations are now done in PIXELS
+
+def pointing_in_field(ad, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     """
     See gemini_tools.pointing_in_field() for the API. This is an
@@ -37,39 +43,33 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     :param frac_slit: For use with spectroscopy data
     :type frac_slit: float
     """
-    # Since this function gets looked up and evaluated, we have to do any
-    # essential imports in-line (but Python caches them)
-    import math
-    
-    # Extract pointing info in terms of the x and y offsets
-    xshift = refpos[1] - pos.phu['QOFFSET']
-    yshift = refpos[0] - pos.phu['POFFSET']
-    ad = pos
+    # Object location in AD = refpos + shift
+    xshift = ad.detector_x_offset() - refpos[0]
+    yshift = ad.detector_y_offset() - refpos[1]
 
+    # We inverse-scale by frac_FOV
+    fov_xshift = -int(xshift / frac_FOV)
+    fov_yshift = -int(yshift / frac_FOV)
     # Imaging:
-    if 'IMAGE' in pos.tags:
+    if 'IMAGE' in ad.tags:
+        if (abs(fov_yshift) >= ad[0].shape[1] or
+                abs(fov_xshift) >= ad[0].shape[1]):
+            return False
+
         illum = get_illum_mask_filename(ad)
         if illum:
-            illum_ad = gt.clip_auxiliary_data(adinput=pos,
+            illum_ad = gt.clip_auxiliary_data(adinput=ad,
                             aux=astrodata.open(illum), aux_type="bpm")
             illum_data = illum_ad[0].data
         else:
             raise IOError("Cannot find illumination mask for {}".
                           format(ad.filename))
 
-        # Finding the center of the illumination mask
-        center_illum = (illum_ad.phu['CENMASSX'], illum_ad.phu['CENMASSY'])
-        checkpos = (int(center_illum[0] + xshift),
-                    int(center_illum[1] + yshift))
-        
-        # If the position to check is going to fall outside the illumination
-        # mask, return straight away to avoid an error
-        if ((abs(xshift) >= abs(center_illum[0])) or 
-            (abs(yshift) >= abs(center_illum[1]))):
-            return False
-
-        # Note that numpy data arrays are reversed in x and y    
-        return illum_data[checkpos[1], checkpos[0]] == 0 
+        # Shift the illumination mask and see if the shifted keyhole
+        # overlaps with the original keyhole
+        shifted_data = shift(illum_data, (fov_yshift, fov_xshift),
+                             order=0, cval=DQ.unilluminated)
+        return (illum_data | shifted_data == 0).any()
 
     # Spectroscopy:
     elif 'SPECT' in ad.tags:

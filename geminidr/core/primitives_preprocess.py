@@ -931,7 +931,7 @@ class Preprocess(PrimitivesBASE):
                 objects = set(adinputs)
                 skies = set(adinputs)
             else:
-                distsq = [sum([x * x for x in g.group_cen]) for g in groups]
+                distsq = [sum([x * x for x in g.group_center]) for g in groups]
                 if ngroups == 2:
                     log.fullinfo("Treating 1 group as object and 1 as sky, "
                                  "based on target proximity")
