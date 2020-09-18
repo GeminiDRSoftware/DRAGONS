@@ -845,25 +845,29 @@ class Preprocess(PrimitivesBASE):
             return s[:-5] if s.endswith('.fits') else s
 
         missing = []
-        for ad in adinputs:
-            for obj_filename in ref_obj:
+        for obj_filename in ref_obj:
+            for ad in adinputs:
                 if strip_fits(obj_filename) in ad.filename:
                     objects.add(ad)
                     if 'SKYFRAME' in ad.phu and 'OBJFRAME' not in ad.phu:
                         log.warning("{} previously classified as SKY; added "
                                 "OBJECT as requested".format(ad.filename))
                     break
+            else:
                 missing.append(obj_filename)
 
-            for sky_filename in ref_sky:
+        for sky_filename in ref_sky:
+            for ad in adinputs:
                 if strip_fits(sky_filename) in ad.filename:
                     objects.add(ad)
                     if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
                         log.warning("{} previously classified as OBJECT; "
                                 "added SKY as requested".format(ad.filename))
                     break
+            else:
                 missing.append(sky_filename)
 
+        for ad in adinputs:
             # Mark unguided exposures as skies
             if ad.wavefront_sensor() is None:
                 # Old Gemini data are missing the guiding keywords and the
