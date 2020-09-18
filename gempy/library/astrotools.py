@@ -93,6 +93,47 @@ def divide0(numerator, denominator):
         dtype = np.float32 if is_int else denominator.dtype
         return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype), where=denominator!=0)
 
+
+def section_contains(section1, section2):
+    """
+    Determine whether a rectangle lies completely within another rectangle
+    from their vertices.
+
+    Parameters
+    ----------
+    section1: 4-tuple (x1, x2, y1, y2)
+    section2: 4-tuple (x1, x2, y1, y2)
+
+    Returns
+    -------
+    bool: True if section1 fully contains section2
+    """
+    return (section2[0] >= section1[0] and section2[1] <= section1[1] and
+            section2[2] >= section1[2] and section2[3] <= section1[3])
+
+
+def section_overlaps(section1, section2):
+    """
+    Determine whether a rectangle overlaps with another rectangle
+    from their vertices.
+
+    Parameters
+    ----------
+    section1: 4-tuple (x1, x2, y1, y2)
+    section2: 4-tuple (x1, x2, y1, y2)
+
+    Returns
+    -------
+    4-tuple/None:
+        coordinates of overlap rectangle (or None if no overlap)
+    """
+    mins = [min(v1, v2) for v1, v2 in zip(section1, section2)]
+    maxs = [max(v1, v2) for v1, v2 in zip(section1, section2)]
+    if mins[1] > maxs[0] and mins[3] > maxs[2]:
+        return maxs[0], mins[1], maxs[2], mins[3]
+    return None
+
+
 def rasextodec(string):
     """
     Convert hh:mm:ss.sss to decimal degrees
