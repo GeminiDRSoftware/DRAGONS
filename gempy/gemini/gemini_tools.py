@@ -354,6 +354,134 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     aux_output_list = []
 
     for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
+        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+
+        if this_aux.detector_x_bin() != xbin or this_aux.detector_y_bin() != ybin:
+            raise OSError("Auxiliary data {} has different binning to {}".
+                          format(os.path.basename(this_aux.filename), ad.filename))
+
+        # Make a new auxiliary file for appending to, starting with PHU
+        new_aux = astrodata.create(this_aux.phu)
+        new_aux.filename = this_aux.filename
+        new_aux.update_filename(suffix="_clipped", strip=False)
+
+        sci_detsec = ad.detector_section()
+        sci_datasec = ad.data_section()
+        sci_arraysec = ad.array_section()
+        clipped_this_ad = False
+
+        for num_ext, (ext, detsec, datasec, arrsec) in enumerate(zip(ad,
+                      sci_detsec, sci_datasec, sci_arraysec), start=1):
+            datasec, new_datasec = map_data_sections_to_trimmed_data(datasec)
+            new_datasec = new_datasec.view((int, 4))
+            sci_trimmed = np.array_equal(new_datasec, [[0, ext.shape[1], 0, ext.shape[0]]])
+
+            for auxext in this_aux:
+                aux_detsec = auxext.detector_section()
+                if not at.section_contains(aux_detsec, detsec):
+                    continue
+
+                # If this is a perfect match, just do it and carry on
+                if auxext.shape == ext.shape:
+                    new_aux.append(auxext.nddata, reset_ver=True)
+                    continue
+
+                aux_arrsec = auxext.array_section()
+                aux_datasec, aux_new_datasec = map_data_sections_to_trimmed_data(auxext.data_section())
+                aux_trimmed = np.array_equal(aux_new_datasec, [[0, auxext.shape[1], 0, auxext.shape[0]]])
+
+                xshift = (arrsec.x1 - aux_arrsec.x1) // xbin
+                yshift = (arrsec.y1 - aux_arrsec.y1) // ybin
+                aux_new_datasec = (aux_new_datasec.view((int, 4)) -
+                                   np.array([xshift, xshift, yshift, yshift]))
+
+                shifts = [(ads[0]-ds[0]-ands[0]+nds[0], ads[2]-ds[2]-ands[2]+nds[2])
+                          for ds, nds in zip(datasec, new_datasec)
+                          for ads, ands in zip(aux_datasec, aux_new_datasec)
+                          if at.section_contains(ands, nds)]
+
+                # This means we can cut a single section from the aux data
+                if len(set(shifts)) == 1:
+                    x1, y1 = shifts[0]
+                    x2, y2 = x1 + ext.shape[1], y1 + ext.shape[0]
+                    if at.section_contains((0, auxext.shape[1], 0, auxext.shape[0]),
+                                           (x1, x2, y1, y2)):
+                        new_aux.append(auxext.nddata[y1:y2, x1:x2], reset_ver=True)
+                        clipped_this_ad = True
+                else:  # have to glue things together
+                    # Science decision that may need revisiting
+                    if aux_trimmed and not sci_trimmed and aux_type != 'bpm':
+                        raise OSError(f"Auxiliary data {auxext.filename} is trimmed, but "
+                                      f"science data {ext.filename} is untrimmed.")
+                    nd = astrodata.NDAstroData(np.zeros(ext.shape, dtype=auxext.data.dtype if return_dtype is None else return_dtype),
+                                               mask=None if auxext.mask is None else np.zeros(ext.shape, dtype=auxext.mask.dtype),
+                                               meta=auxext.nddata.meta)
+                    if auxext.variance is not None:
+                        nd.variance = np.zeros_like(nd.data)
+                    # Find all overlaps between the "new" data_sections
+                    for ds, nds in zip(datasec, new_datasec):
+                        for ads, ands in zip(aux_datasec, aux_new_datasec):
+                            overlap = at.section_overlaps(ands, nds)
+                            if overlap:
+                                in_vertices = [a+b-c for a, b, c in zip(overlap, ads, ands)]
+                                input_section = (slice(*in_vertices[2:]), slice(*in_vertices[:2]))
+                                out_vertices = [a+b-c for a, b, c in zip(overlap, ds, nds)]
+                                output_section = (slice(*out_vertices[2:]), slice(*out_vertices[:2]))
+                                log.debug("Copying aux section [{}:{},{}:{}] to [{}:{},{}:{}]".
+                                          format(in_vertices[0]+1, in_vertices[1], in_vertices[2]+1, in_vertices[3],
+                                                 out_vertices[0]+1, out_vertices[1], out_vertices[2]+1, out_vertices[3]))
+                                nd.set_section(output_section, auxext.nddata[input_section])
+                                new_aux.append(nd, reset_ver=True)
+
+            if len(new_aux) < num_ext:
+                raise OSError("No auxiliary data in {} matches the detector "
+                              "section {} in {}:{}".format(this_aux.filename,
+                                detsec, ad.filename, ext.hdr['EXTVER']))
+
+        # Coerce the return datatype if required
+        if return_dtype:
+            for auxext in new_aux:
+                if auxext.data.dtype != return_dtype:
+                    auxext.data = auxext.data.astype(return_dtype)
+                if auxext.variance is not None and auxext.variance.dtype != return_dtype:
+                    auxext.variance = auxext.variance.astype(return_dtype)
+
+        if clipped_this_ad:
+            log.stdinfo("Clipping {} to match science data.".
+                        format(os.path.basename(this_aux.filename)))
+        aux_output_list.append(new_aux)
+
+    return aux_output_list
+
+@handle_single_adinput
+def clip_auxiliary_data_old(adinput=None, aux=None, aux_type=None,
+                            return_dtype=None):
+    """
+    This function clips auxiliary data like calibration files or BPMs
+    to the size of the data section in the science. It will pad auxiliary
+    data if required to match un-overscan-trimmed data, but otherwise
+    requires that the auxiliary data contain the science data.
+
+    Parameters
+    ----------
+    adinput: list/AstroData
+        input science image(s)
+    aux: list/AstroData
+        auxiliary file(s) (e.g., BPM, flat) to be clipped
+    aux_type: str
+        type of auxiliary file
+    return_dtype: dtype
+        datatype of returned objects
+
+    Returns
+    -------
+    list/AD:
+        auxiliary file(s), appropriately clipped
+    """
+    log = logutils.get_logger(__name__)
+    aux_output_list = []
+
+    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
         clipped_this_ad = False
 
         # Make a new auxiliary file for appending to, starting with PHU
@@ -1265,6 +1393,42 @@ def make_lists(*args, **kwargs):
 
     return ret_value
 
+def map_data_sections_to_trimmed_data(datasec):
+    """
+
+    Parameters
+    ----------
+    datasec: list of Section tuples
+        regions in the pixel plane containing data
+
+    Returns
+    -------
+    sections: array
+        array of data sections in datasec
+    new_sections: array
+        contiguous locations in pixel plane after trimming
+    """
+    if not isinstance(datasec, list):
+        datasec = [datasec]
+    sections = np.array(datasec, dtype=[('x1', int), ('x2', int),
+                                        ('y1', int), ('y2', int)])
+    args = np.argsort(sections, order=('y1', 'x1'))
+    new_sections = np.zeros_like(sections)
+
+    for arg in args:
+        x1, y1 = sections[arg]['x1'], sections[arg]['y1']
+        new_x1 = max(filter(lambda x: x <= x1, new_sections['x2']))
+        xshift = x1 - new_x1
+        new_y1 = max(filter(lambda y: y <= y1, new_sections['y2']))
+        yshift = y1 - new_y1
+        new_sections[arg]['x1'] = x1 - xshift
+        new_sections[arg]['x2'] = sections[arg]['x2'] - xshift
+        new_sections[arg]['y1'] = y1 - yshift
+        new_sections[arg]['y2'] = sections[arg]['y2'] - yshift
+
+    return sections, new_sections
+
+
 @handle_single_adinput
 def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     """
@@ -1684,21 +1848,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 # Starting with the bottom-leftmost sections, we shift all
                 # the sections as far as they can do down and to the left
                 # which should end up producing a contiguous region
-                sections = np.array(datasec, dtype=[('x1', int), ('x2', int),
-                                                    ('y1', int), ('y2', int)])
-                args = np.argsort(sections, order=('y1', 'x1'))
-                new_sections = np.zeros_like(sections)
-
-                for arg in args:
-                    x1, y1 = sections[arg]['x1'], sections[arg]['y1']
-                    new_x1 = max(filter(lambda x: x <= x1, new_sections['x2']))
-                    xshift = x1 - new_x1
-                    new_y1 = max(filter(lambda y: y <= y1, new_sections['y2']))
-                    yshift = y1 - new_y1
-                    new_sections[arg]['x1'] = x1 - xshift
-                    new_sections[arg]['x2'] = sections[arg]['x2'] - xshift
-                    new_sections[arg]['y1'] = y1 - yshift
-                    new_sections[arg]['y2'] = sections[arg]['y2'] - yshift
+                sections, new_sections = map_data_sections_to_trimmed_data(datasec)
 
                 x1, y1 = sections['x1'].min(), sections['y1'].min()
                 nxpix = new_sections['x2'].max() - new_sections['x1'].min()
