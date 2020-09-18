@@ -83,7 +83,7 @@ datasets = [
 
 
 @pytest.mark.skip(reason='Test needs refactoring')
-@pytest.mark.integtest
+@pytest.mark.integration_test
 def test_reduce_image(change_working_dir):
     with change_working_dir():
         calib_files = []

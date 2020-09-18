@@ -152,6 +152,7 @@ def test_extver_remap(tmpdir):
         assert hdr['EXTVER'] == i + 1
 
     assert ad.extver_map() == {1: 0, 2: 1, 3: 2, 4: 3}
+    os.remove(testfile)
 
 
 @pytest.mark.dragons_remote_data
@@ -352,6 +353,7 @@ def test_paths(path_to_outputs, NIFS_DARK):
     assert ad.orig_filename == 'N20160727S0077.fits'
     ad.write()
     assert os.path.exists(testfile)
+    os.remove(testfile)
 
     testfile = os.path.join(path_to_outputs, 'temp2.fits')
     ad.write(testfile)
@@ -363,6 +365,7 @@ def test_paths(path_to_outputs, NIFS_DARK):
 
     ad.write(testfile, overwrite=True)
     assert os.path.exists(testfile)
+    os.remove(testfile)
 
     ad.path = None
     assert ad.filename is None
@@ -408,6 +411,7 @@ def test_can_make_and_write_ad_object(tmpdir):
     # Opens file again and tests data is same as above
     adnew = astrodata.open(testfile)
     assert np.array_equal(adnew[0].data, np.arange(10))
+    os.remove(testfile)
 
 
 def test_can_append_table_and_access_data(capsys, tmpdir):
@@ -431,6 +435,7 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     adnew = astrodata.open(testfile)
     assert adnew.exposed == {'BOB'}
     assert len(adnew.BOB) == 10
+    os.remove(testfile)
 
     del ad.BOB
     assert ad.tables == set()
@@ -583,6 +588,7 @@ def test_read_empty_file(tmpdir):
     assert len(ad) == 0
     assert ad.object() == 'M42'
     assert ad.instrument() == 'darkimager'
+    os.remove(testfile)
 
 
 def test_read_file(tmpdir):
@@ -593,6 +599,7 @@ def test_read_file(tmpdir):
     assert len(ad) == 0
     assert ad.object() == 'M42'
     assert ad.instrument() == 'darkimager'
+    os.remove(testfile)
 
 
 @pytest.mark.dragons_remote_data
@@ -916,6 +923,8 @@ def test_round_trip_gwcs(tmpdir):
     np.testing.assert_allclose(wcs1.invert(w, y), wcs2.invert(w, y),
                                rtol=1e-7, atol=0.)
 
+    os.remove(testfile)
+
 
 @pytest.mark.parametrize('dtype', ['int8', 'uint8', 'int16', 'uint16',
                                    'int32', 'uint32', 'int64', 'uint64'])
@@ -927,6 +936,7 @@ def test_uint_data(dtype, tmp_path):
     ad = astrodata.open(str(testfile))
     assert ad[0].data.dtype == data.dtype
     assert_array_equal(ad[0].data, data)
+    os.remove(testfile)
 
 
 if __name__ == '__main__':
