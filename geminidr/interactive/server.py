@@ -88,12 +88,26 @@ def stop_server():
     Stop the bokeh server.
 
     This will end the IO look and unblock the `start_server()` call.
+    This normally gets called when the user hits the submit button
+    or closes the UI browser tab.
     """
     global _bokeh_server
     _bokeh_server.io_loop.stop()
 
 
 def interactive_fitter(visualizer):
+    """
+    Start the interactive fitter with the given visualizer.
+
+    This will spin up the bokeh server using the provided
+    visualizer to build a UI.  It returns when the user
+    submits the result.
+
+    Parameters
+    ----------
+    visualizer : `~PrimitiveVisualizer`
+        The visualizer UI to display
+    """
     set_visualizer(visualizer)
     start_server()
     set_visualizer(None)
