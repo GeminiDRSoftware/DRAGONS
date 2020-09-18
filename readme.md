@@ -11,7 +11,7 @@
 </table>
 
 # Current Status
-**The stable version is v2.1.1.**  DRAGONS is distributed as a conda package, *dragons*, and it is 
+**The stable version is v2.1.1.**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4025480.svg)](https://doi.org/10.5281/zenodo.4025480) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
 Version 2.1.1 is recommend of the reduction of **imaging** data from Gemini's
