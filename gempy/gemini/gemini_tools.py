@@ -408,30 +408,32 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                                            (x1, x2, y1, y2)):
                         new_aux.append(auxext.nddata[y1:y2, x1:x2], reset_ver=True)
                         clipped_this_ad = True
-                else:  # have to glue things together
-                    # Science decision that may need revisiting
-                    if aux_trimmed and not sci_trimmed and aux_type != 'bpm':
-                        raise OSError(f"Auxiliary data {auxext.filename} is trimmed, but "
-                                      f"science data {ext.filename} is untrimmed.")
-                    nd = astrodata.NDAstroData(np.zeros(ext.shape, dtype=auxext.data.dtype if return_dtype is None else return_dtype),
-                                               mask=None if auxext.mask is None else np.zeros(ext.shape, dtype=auxext.mask.dtype),
-                                               meta=auxext.nddata.meta)
-                    if auxext.variance is not None:
-                        nd.variance = np.zeros_like(nd.data)
-                    # Find all overlaps between the "new" data_sections
-                    for ds, nds in zip(datasec, new_datasec):
-                        for ads, ands in zip(aux_datasec, aux_new_datasec):
-                            overlap = at.section_overlaps(ands, nds)
-                            if overlap:
-                                in_vertices = [a+b-c for a, b, c in zip(overlap, ads, ands)]
-                                input_section = (slice(*in_vertices[2:]), slice(*in_vertices[:2]))
-                                out_vertices = [a+b-c for a, b, c in zip(overlap, ds, nds)]
-                                output_section = (slice(*out_vertices[2:]), slice(*out_vertices[:2]))
-                                log.debug("Copying aux section [{}:{},{}:{}] to [{}:{},{}:{}]".
-                                          format(in_vertices[0]+1, in_vertices[1], in_vertices[2]+1, in_vertices[3],
-                                                 out_vertices[0]+1, out_vertices[1], out_vertices[2]+1, out_vertices[3]))
-                                nd.set_section(output_section, auxext.nddata[input_section])
-                                new_aux.append(nd, reset_ver=True)
+                        continue
+
+                # So either we need to glue some stuff together, or pad the aux
+                # Science decision that may need revisiting
+                if aux_trimmed and not sci_trimmed and aux_type != 'bpm':
+                    raise OSError(f"Auxiliary data {auxext.filename} is trimmed, but "
+                                  f"science data {ext.filename} is untrimmed.")
+                nd = astrodata.NDAstroData(np.zeros(ext.shape, dtype=auxext.data.dtype if return_dtype is None else return_dtype),
+                                           mask=None if auxext.mask is None else np.zeros(ext.shape, dtype=auxext.mask.dtype),
+                                           meta=auxext.nddata.meta)
+                if auxext.variance is not None:
+                    nd.variance = np.zeros_like(nd.data)
+                # Find all overlaps between the "new" data_sections
+                for ds, nds in zip(datasec, new_datasec):
+                    for ads, ands in zip(aux_datasec, aux_new_datasec):
+                        overlap = at.section_overlaps(ands, nds)
+                        if overlap:
+                            in_vertices = [a+b-c for a, b, c in zip(overlap, ads, ands)]
+                            input_section = (slice(*in_vertices[2:]), slice(*in_vertices[:2]))
+                            out_vertices = [a+b-c for a, b, c in zip(overlap, ds, nds)]
+                            output_section = (slice(*out_vertices[2:]), slice(*out_vertices[:2]))
+                            log.debug("Copying aux section [{}:{},{}:{}] to [{}:{},{}:{}]".
+                                      format(in_vertices[0]+1, in_vertices[1], in_vertices[2]+1, in_vertices[3],
+                                             out_vertices[0]+1, out_vertices[1], out_vertices[2]+1, out_vertices[3]))
+                            nd.set_section(output_section, auxext.nddata[input_section])
+                            new_aux.append(nd, reset_ver=True)
 
             if len(new_aux) < num_ext:
                 raise OSError("No auxiliary data in {} matches the detector "
