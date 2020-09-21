@@ -59,9 +59,10 @@ class PrimitiveVisualizer(ABC):
         UI needs, but also should call super().visualize(doc) to
         listen for session terminations.
 
-        Returns
-        -------
-        none
+        Parameters
+        ----------
+        doc : :class:`~bokeh.document.document.Document`
+            Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
         """
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
@@ -79,7 +80,7 @@ class PrimitiveVisualizer(ABC):
         Parameters
         ----------
         fn : function
-            Function to execute in the bokeh loop
+            Function to execute in the bokeh loop (should not take required arguments)
         """
         if self.doc is None:
             if self.log is not None:
@@ -103,7 +104,7 @@ class PrimitiveVisualizer(ABC):
 
         Parameters
         ----------
-        widget : `~Widget`
+        widget : :class:`~bokeh.models.widgets.widget.Widget`
             bokeh widget to watch for disable/enable
         message : str
             message to display in the popup modal
@@ -193,7 +194,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
 
     Returns
     -------
-        :class:`~Row` bokeh Row component with the interface inside
+        :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
     """
     is_float = True
     if isinstance(value, int):
@@ -314,7 +315,7 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
 
     Returns
     -------
-        :class:`~Row` bokeh Row component with the interface inside
+        :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
     """
     # We track of this entry is working on int values or float.  This affects the
     # behavior and type conversion throughout the rest of the slider logic
@@ -336,6 +337,18 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
     component = row(slider, start_text_input, end_text_input)
 
     def _input_check(val):
+        """
+        Check the validity of the input value, or reject
+
+        Parameters
+        ----------
+        val : float or int
+
+        Returns
+        -------
+            bool : True of the input is valid, False if not.  This may also be the case if a float is passed
+            where int is expected
+        """
         if ((not is_float) and isinstance(val[0], int) and isinstance(val[1], int)) \
                 or (is_float and isinstance(val[0], float) and isinstance(val[1], float)):
             return True
@@ -354,6 +367,19 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
             return False
 
     def update_slider(attrib, old, new):
+        """
+        This performs an :meth:`~geminidr.interactive.interactive.build_range_slider._input_check`
+        on the new value.  If it passes, it is converted and accepted into the slider.  If it
+        is a bad value, the change is rolled back and we use the `old` value.
+
+        Parameters
+        ----------
+        attrib : ignored
+        old : tuple of int or float
+            old value pair from the range slider
+        new : tuple of int or float or str
+            new value pair from the range slider/text fields.  This may be passes as a tuple of str from the text inputs
+        """
         # Update the slider with a new (start, end) value
         if not _input_check(new):
             if _input_check(old):
@@ -461,11 +487,11 @@ def connect_figure_extras(fig, aperture_model, band_model):
 
     Parameters
     ----------
-    fig : :class:`~Figure`
+    fig : :class:`~bokeh.plotting.Figure`
         bokeh Figure to add visualizations too
-    aperture_model : :class:`~GIApertureModel`
+    aperture_model : :class:`~geminidr.interactive.interactive.GIApertureModel`
         Aperture model to add view for
-    band_model : :class:`~GIBandModel`
+    band_model : :class:`~geminidr.interactive.interactive.GIBandModel`
         Band model to add view for
     """
     # If we have bands or apertures to show, show them
@@ -494,12 +520,12 @@ def hamburger_helper(title, widget):
     ----------
     title : str
         Text to put in the top area
-    widget : :class:`~LayoutDOM`
+    widget : :class:`~bokeh.models.layouts.LayoutDOM`
         Component to show/hide with the hamburger action
 
     Returns
     -------
-    :class:`~Column` : bokeh column to add into your document
+    :class:`~bokeh.models.layouts.Column` : bokeh column to add into your document
     """
     label = Div(text=title)
     # TODO Hamburger icon
@@ -591,8 +617,7 @@ class GIBandModel(object):
 
         Parameters
         ----------
-        listener : :class:`~GIBandListener`
-
+        listener : :class:`~geminidr.interactive.interactive.GIBandListener`
         """
         if not isinstance(listener, GIBandListener):
             raise ValueError("must be a BandListener")
@@ -645,7 +670,6 @@ class GIBandModel(object):
         do more expensive stuff like merging intersecting bands together
         or updating the mask and redoing the fit.  That is done here
         instead once the band is set.
-
         """
         # first we do a little consolidation, in case we have overlaps
         band_dump = list()
@@ -722,10 +746,11 @@ class GIBandView(GIBandListener):
 
         Parameters
         ----------
-        fig : :class:`~Figure`
+        fig : :class:`~bokeh.plotting.Figure`
             the figure to display the bands in
-        model : :class:`GIBandModel`
-            the model for the band information (may be shared by multiple :class:`GIBandView`s)
+        model : :class:`~geminidr.interactive.interactive.GIBandModel`
+            the model for the band information (may be shared by multiple
+            :class:`~geminidr.interactive.interactive.GIBandView` instances)
         """
         self.model = model
         model.add_listener(self)
@@ -796,9 +821,6 @@ class GIApertureModel(object):
     to notify when there are any changes.
     """
     def __init__(self):
-        """
-        Create the apertures model
-        """
         self.aperture_id = 1
         self.listeners = list()
         # spare_ids holds any IDs that were returned to
@@ -812,7 +834,7 @@ class GIApertureModel(object):
 
         Parameters
         ----------
-        listener : :class:`~GIApertureListener`
+        listener : :class:`~geminidr.interactive.interactive.GIApertureView`
             The listener to notify if there are any updates
         """
         self.listeners.append(listener)
@@ -877,6 +899,9 @@ class GIApertureModel(object):
         self.aperture_id = self.aperture_id-1
 
     def clear_apertures(self):
+        """
+        Remove all apertures, calling delete on the listeners for each.
+        """
         while self.aperture_id > 1:
             self.delete_aperture(self.aperture_id-1)
 
@@ -890,8 +915,8 @@ class GISingleApertureView(object):
 
         Parameters
         ----------
-        gifig : :class:`GIFigure`
-            Figure to attach to
+        gifig : :class:`~bokeh.plotting.Figure`
+            Bokeh Figure to attach to
         aperture_id : int
             ID of the aperture (for displaying)
         start : float
@@ -924,7 +949,7 @@ class GISingleApertureView(object):
 
         Parameters
         ----------
-        fig : :class:`Figure`
+        fig : :class:`~bokeh.plotting.Figure`
             bokeh figure to attach glyphs to
         aperture_id : int
             ID of this aperture, displayed
@@ -1031,11 +1056,9 @@ class GIApertureSliders(object):
 
         Parameters
         ----------
-        view : :class:`~GIApertureView`
-            The view this aperture is in
-        fig : :class:`~Figure`
+        fig : :class:`~bokeh.plotting.Figure`
             The bokeh figure being plotted in, for handling zoom in/out
-        model : :class:`~GIApertureModel`
+        model : :class:`~geminidr.interactive.interactive.GIApertureModel`
             The model that tracks the apertures and their ranges
         aperture_id : int
             The ID of the aperture
@@ -1116,9 +1139,9 @@ class GIApertureView(object):
 
         Parameters
         ----------
-        model : :class:`GIApertureModel`
+        model : :class:`~geminidr.interactive.interactive.GIApertureModel`
             Model for tracking the apertures, may be shared across multiple views
-        fig : :class:`~Figure`
+        fig : :class:`~bokeh.plotting.Figure`
             bokeh plot for displaying the bands
         """
         self.aps = list()
@@ -1154,6 +1177,8 @@ class GIApertureView(object):
         start
         end
         """
+        # Bokeh docs provide no indication of the datatype or orientation of the start/end
+        # tuples, so I have left the doc blank for now
         self.view_start = start
         self.view_end = end
         for ap_slider in self.ap_sliders:
@@ -1194,10 +1219,6 @@ class GIApertureView(object):
         ----------
         aperture_id : int
             ID of the aperture to remove
-
-        Returns
-        -------
-
         """
         if aperture_id <= len(self.aps):
             ap = self.aps[aperture_id-1]

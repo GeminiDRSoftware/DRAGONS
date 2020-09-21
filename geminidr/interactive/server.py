@@ -27,7 +27,7 @@ def _bkapp(doc):
 
     Parameters
     ----------
-    doc
+    doc : :class:`~bokeh.document.Document`
         Document reference for the user's browser tab to hold the user interface.
 
     Returns
@@ -47,12 +47,12 @@ def set_visualizer(visualizer):
     Set the visualizer for the UI.
 
     This sets the visualizer that will control the user interface when we start
-    the bokeh server.  This is generally defined in the same file with the
-    fit model and helper method.  For instance, see the `chebyshev1d` example.
+    the bokeh server.  This is generally defined under `fit` in the same file with the
+    fit model and helper method.  For instance, see the `~geminidr.interactive.fit.fit1d.Fit1DVisualizer`.
 
     Parameters
     ----------
-    visualizer : :class:`PrimitiveVisualizer`
+    visualizer : :class:`~geminidr.interactive.interactive.PrimitiveVisualizer`
     """
     global _visualizer
     _visualizer = visualizer
@@ -65,10 +65,6 @@ def start_server():
     This will begin an IO loop to handle user interaction via
     bokeh.  Until the server is explicitly stopped, the method
     will block and this call will not return.
-
-    Returns
-    -------
-    none
     """
     global _bokeh_server
 
@@ -87,7 +83,7 @@ def stop_server():
     """
     Stop the bokeh server.
 
-    This will end the IO look and unblock the `start_server()` call.
+    This will end the IO look and unblock the :meth:`~geminidr.interactive.server.start_server()` call.
     This normally gets called when the user hits the submit button
     or closes the UI browser tab.
     """
@@ -105,7 +101,7 @@ def interactive_fitter(visualizer):
 
     Parameters
     ----------
-    visualizer : `~PrimitiveVisualizer`
+    visualizer : :class:`~geminidr.interactive.interactive.PrimitiveVisualizer`
         The visualizer UI to display
     """
     set_visualizer(visualizer)

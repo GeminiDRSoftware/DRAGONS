@@ -42,9 +42,9 @@ class Controller(object):
     `add_next_tick_callback`.  That is because our key press is coming in via
     a different path than the normal bokeh interactivity.
 
-    The controler maintains a set of `Task`s.  One `Task` is operating at a time.
+    The controler maintains a set of :class:`~Task` instances.  One :class:`~Task` is operating at a time.
     An active task receives all the key presses and when it is done, it returns
-    control to the `Controller`.  The `Tasks` are also able to update the help
+    control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
     def __init__(self, fig, aperture_model, band_model, helptext):
@@ -114,6 +114,7 @@ class Controller(object):
         Parameters
         ----------
         event
+            the mouse event from bokeh, unused
 
         Returns
         -------
@@ -135,7 +136,6 @@ class Controller(object):
         ----------
         event
             the mouse event from bokeh, unused
-
         """
         global controller
         if self == controller:

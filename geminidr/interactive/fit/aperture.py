@@ -1,6 +1,6 @@
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Column, Div, Button
+from bokeh.models import Div, Button
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
@@ -14,7 +14,26 @@ __all__ = ["interactive_find_source_apertures", ]
 
 class FindSourceAperturesModel:
     def __init__(self, ext, profile, prof_mask, threshold, sizing_method, max_apertures):
+        """
+        Create an aperture model with the given initial set of inputs.
 
+        This creates an aperture model that we can use to do the aperture fitting.
+        This model allows us to tweak the various inputs using the UI and then
+        recalculate the fit as often as desired.
+
+        Parameters
+        ----------
+        ext : :class:`~astrodata.core.AstroData`
+            extension this model should fit against
+        profile : :class:`~numpy.ndarray`
+        prof_mask : :class:`~numpy.ndarray`
+        threshold : float
+            threshold for detection
+        sizing_method : str
+            for example, 'peak'
+        max_apertures : int
+            maximum number of apertures to detect
+        """
         self.ext = ext
         self.profile = profile
         self.prof_mask = prof_mask
@@ -28,10 +47,24 @@ class FindSourceAperturesModel:
         self.listeners = list()
 
     def add_listener(self, listener):
+        """
+        Add a listener function to call when the apertures get recalculated
+
+        Parameters
+        ----------
+        listener : function
+            Function taling two arguments - a list of locations and a list of tuple ranges
+        """
         # listener should be fn(locations, all_limits)
         self.listeners.append(listener)
 
     def recalc_apertures(self):
+        """
+        Recalculate the apertures based on the current set of fitter inputs.
+
+        This will redo the aperture detection.  Then it calls to each registered
+        listener function and calls it with a list of N locations and N limits.
+        """
         max_apertures = self.max_apertures
         if not isinstance(max_apertures, int):
             max_apertures = int(max_apertures)
@@ -56,12 +89,29 @@ class FindSourceAperturesModel:
             listener(self.locations, self.all_limits)
 
     def delete_aperture(self, aperture_id):
+        """
+        Delete an aperture by ID.
+
+        Parameters
+        ----------
+        aperture_id : int
+            Aperture id to delete
+        """
         del self.locations[aperture_id-1]
         del self.all_limits[aperture_id-1]
 
 
 class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
     def __init__(self, model):
+        """
+        Create a view for finding apertures with the given
+        :class:`geminidr.interactive.fit.aperture.FindSourceAperturesModel`
+
+        Parameters
+        ----------
+        model : :class:`geminidr.interactive.fit.aperture.FindSourceAperturesModel`
+            Model to use for tracking the input parameters and recalculating fresh sets as needed
+        """
         super().__init__()
         # Note that self._fields in the base class is setup with a dictionary mapping conveniently
         # from field name to the underlying config.Field entry, even though fields just comes in as
@@ -73,10 +123,20 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.fig = None
 
     def clear_and_recalc(self):
+        """
+        Clear apertures and recalculate a new set.
+        """
         self.aperture_model.clear_apertures()
         self.model.recalc_apertures()
 
     def add_aperture(self):
+        """
+        Add a new aperture in the middle of the current display area.
+
+        This is used when the user adds an aperture.  We don't know where
+        they want it yet so we just place one in the screen center.
+
+        """
         x = (self.fig.x_range.start + self.fig.x_range.end) / 2
         self.aperture_model.add_aperture(x, x)
         self.update_details()
@@ -87,12 +147,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         Parameters
         ----------
-        doc
+        doc : :class:`~bokeh.document.Document`
             Bokeh provided document to add visual elements to
-
-        Returns
-        -------
-        none
         """
         super().visualize(doc)
 
@@ -114,6 +170,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.aperture_model.add_listener(self)
 
         def apl(locations, all_limits):
+            # when the model updates, we just reset all our
+            # apertures this way
             self.aperture_model.clear_apertures()
             for loc, limits in zip(locations, all_limits):
                 self.aperture_model.add_aperture(limits[0], limits[1])
@@ -138,6 +196,23 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         doc.add_root(layout)
 
     def handle_aperture(self, aperture_id, start, end):
+        """
+        Handle updated aperture information.
+
+        This is called when a given aperture has a change
+        to it's start and end location.  The model is
+        updated and then the text describing the apertures
+        is updated
+
+        Parameters
+        ----------
+        aperture_id : int
+            ID of the aperture to add/update
+        start : float
+            new start of aperture
+        end : float
+            new end of aperture
+        """
         location = (start+end)/2
         if aperture_id == len(self.model.locations)+1:
             self.model.locations = np.append(self.model.locations, location)
@@ -148,12 +223,23 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.update_details()
 
     def delete_aperture(self, aperture_id):
-        # ruh-roh raggy
+        """
+        Delete an aperture by ID
+
+        Parameters
+        ----------
+        aperture_id : int
+            `int` id of the aperture to delete
+        """
         self.model.locations = np.delete(self.model.locations, aperture_id-1)
         del self.model.all_limits[aperture_id-1]
         self.update_details()
 
     def update_details(self):
+        """
+        Update the details text area with the latest aperture data.
+
+        """
         text = ""
         for loc, limits in zip(self.model.locations, self.model.all_limits):
             text = text + """
@@ -165,10 +251,39 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.details.text = text
 
     def result(self):
+        """
+        Get the result of the find.
+
+        Returns
+        -------
+            list of float, list of tuple : list of locations and list of the limits as tuples
+
+        """
         return self.model.locations, self.model.all_limits
 
 
 def interactive_find_source_apertures(ext, profile, prof_mask, threshold, sizing_method, max_apertures):
+    """
+    Perform an interactive find of source apertures with the given initial parameters.
+
+    This will do all the bokeh initialization and display a UI for interactively modifying
+    parameters from their initial values.  The user can also interact directly with the
+    found aperutres as desired.  When the user hits the `Submit` button, this method will
+    return the results of the find to the caller.
+
+    Parameters
+    ----------
+    ext : :class:`~astrodata.core.AstroData`
+        extension this model should fit against
+    profile : :class:`~numpy.ndarray`
+    prof_mask : :class:`~numpy.ndarray`
+    threshold : float
+        threshold for detection
+    sizing_method : str
+        for example, 'peak'
+    max_apertures : int
+        maximum number of apertures to detect
+    """
     if max_apertures is None:
         max_apertures = 50
     model = FindSourceAperturesModel(ext, profile, prof_mask, threshold, sizing_method,

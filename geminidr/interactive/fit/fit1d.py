@@ -28,9 +28,10 @@ class InteractiveModel(ABC):
         (c) the way the fitting is performed
         (d) the input and output coordinates, mask, and weights
 
-    There will be 2 masks defined (all booleans):
+    There will be 3 masks defined (all booleans):
         user_mask: points masked by the user
         fit_mask:  points rejected by the fit
+        band_mask: points rejected by not being in a selection band (only if bands exist)
     """
     def __init__(self, model):
         self.model = model
@@ -38,33 +39,75 @@ class InteractiveModel(ABC):
         self.data = None
 
     def add_listener(self, listener):
+        """
+        Add a function to call when the model is updated
+
+        Parameters
+        ----------
+        listener : function
+            This should be a no-arg function and it will get called when the model is updated
+        """
         if not callable(listener):
             raise ValueError("Listeners must be callables")
         self.listeners.append(listener)
 
     def notify_listeners(self):
+        """
+        Notify all the registered listeners of a change.
+
+        This calls all our registered listener functions to let them know we have changed.
+        """
         for listener in self.listeners:
             listener()
 
     @abstractmethod
     def perform_fit(self):
+        """
+        Perform the fit (Base method, override)
+        """
         pass
 
     @abstractmethod
     def evaluate(self, x):
+        """
+        Evaluate X
+
+        Parameters
+        ----------
+        x
+
+        Returns
+        -------
+
+        """
         pass
 
     def mask_rendering_kwargs(self):
+        """
+        Get the marks and colors to use for the various point masks
+
+        Returns
+        -------
+        dict : Returns a dict for bokeh that describes the markers and pallete
+        """
         return {'marker': bt.factor_mark('mask', self.MARKERS, self.MASK_TYPE),
                 'color': bt.factor_cmap('mask', self.PALETTE, self.MASK_TYPE)}
 
     def update_mask(self):
+        """
+        Update the internal mask on the data using the various boolean masks.
+
+        This will consolidate the `~geminidr.interactive.fit.fit1d.InteractiveModel.band_mask`,
+        `~geminidr.interactive.fit.fit1d.InteractiveModel.user_mask`, and
+        `~geminidr.interactive.fit.fit1d.InteractiveModel.fit_mask` into a unified data mask.
+        Order of preference is `user`, `band`, `fit`
+        """
         # Update the "mask" column to change the glyphs
         new_mask = ['good'] * len(self.data.data['mask'])
-        for i, (bm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
+        for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
             if fm:
                 new_mask[i] = 'fit'
-            if bm:
+            if bdm:
                 new_mask[i] = 'band'
             if um:
                 new_mask[i] = 'user'
@@ -72,10 +115,38 @@ class InteractiveModel(ABC):
 
 
 class InteractiveModel1D(InteractiveModel):
-    """Subclass for 1D models"""
+    """
+    Subclass for 1D models
+    """
     def __init__(self, model, x=None, y=None, mask=None, var=None,
                  grow=0, sigma=3, lsigma=None, hsigma=None, maxiter=3,
                  section=None):
+        """
+        Create base class with given parameters as initial model inputs.
+
+        Parameters
+        ----------
+        model : `astropy.modeling.models.Chebyshev1D` or ?
+            Model behind the 1-D fit.  Chebyshev or Spline.  This gets wrapped
+            in a helper model like :class:`~geminidr.interactive.fit1d.InteractiveChebyshev1D`
+            or :class:`~geminidr.interactive.fit1d.InteractiveSpline1D`
+        x : :class:`~numpy.ndarray`
+            list of x coordinate values
+        y : :class:`~numpy.ndarray`
+            list of y coordinate values
+        mask : array of str
+            array of mask names for each point
+        var
+        grow
+            grow for fit
+        sigma
+            sigma clip for fit
+        lsigma
+        hsigma
+        maxiter
+            max iterations to do on fit
+        section
+        """
         if isinstance(model, models.Chebyshev1D):
             model = InteractiveChebyshev1D(model)
         else:
@@ -102,6 +173,20 @@ class InteractiveModel1D(InteractiveModel):
         self.var = None
 
     def populate_bokeh_objects(self, x, y, mask=None, var=None):
+        """
+        Initializes bokeh objects like a coord structure with extra
+        columns for ratios and residuals and setting up masking
+
+        Parameters
+        ----------
+        x : array of double
+            x coordinate values
+        y : array of double
+            y coordinate values
+        mask : array of str
+            named mask for coordinates
+        var
+        """
         if mask is None:
             try:  # Handle y as masked array
                 init_mask = y.mask or np.zeros_like(x, dtype=bool)
@@ -130,7 +215,6 @@ class InteractiveModel1D(InteractiveModel):
 
         self.band_mask = np.zeros_like(self.fit_mask)
 
-
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
         bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x)}
@@ -142,35 +226,96 @@ class InteractiveModel1D(InteractiveModel):
 
     @property
     def x(self):
+        """
+        maps x attribute internally to bokeh structures
+
+        Returns
+        -------
+        array of double : x coordinates
+        """
         return self.data.data['x']
 
     @property
     def y(self):
+        """
+        maps y attribute internally to bokeh structures
+
+        Returns
+        -------
+        array of double : y coordinates
+        """
         return self.data.data['y']
 
     @property
     def sigma(self):
+        """
+        Maps sigma attribute to :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma`
+        and :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.hsigma`
+
+        Returns
+        -------
+        double : average of the two sigmae
+        """
         if self.lsigma == self.hsigma:
             return self.lsigma
         return 0.5 * (self.lsigma + self.hsigma)  # do something better?
 
     @sigma.setter
     def sigma(self, value):
+        """
+        Set sigma attr, effectively setting both :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma`
+        and :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.hsigma`
+
+        Parameters
+        ----------
+        value : float
+            new value for sigma rejection
+        """
         self.lsigma = self.hsigma = float(value)
 
     @property
     def order(self):
+        """
+        Maps the order attribute to the underlying model
+
+        Returns
+        -------
+        int : order value from model
+        """
         return self.model.order
 
     @order.setter
     def order(self, value):
+        """
+        Maps sets to the order attribute to the contained model
+
+        Parameters
+        ----------
+        value : int
+            new vlaue for order
+        """
         self.model.order = value
 
     @property
     def domain(self):
+        """
+        Maps requests for the domain to the contained model
+
+        Returns
+        -------
+
+        """
         return self.model.domain
 
     def perform_fit(self):
+        """
+        Perform the fit.
+
+        This performs the fit in the contained model, updates the mask,
+        and recalculates the plots for residuals and ratio, if present.
+        It then notifies all listeners that the data and model have
+        changed so they can respond.
+        """
         self.model.perform_fit(self)
         self.update_mask()
         if 'residuals' in self.data.data:
@@ -256,7 +401,36 @@ class InteractiveSpline1D:
 class Fit1DPanel:
     def __init__(self, visualizer, model, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, grow_slider=True):
-        """A class that handles a 1d model and its visualization (maybe in a tab)"""
+        """
+        Panel for visualizing a 1-D fit, perhaps in a tab
+
+        Parameters
+        ----------
+        visualizer : :class:`~geminidr.interactive.fit.Fit1DVisualizer`
+            visualizer to associate with
+        model : :class:`~geminidr.interactive.fit.Fit1DModel`
+            model for this UI to present
+        x : :class:`~numpy.ndarray`
+            X coordinate values
+        y : :class:`~numpy.ndarray`
+            Y coordinate values
+        min_order : int
+            minimum order in UI
+        max_order : int
+            maximum order in UI
+        xlabel : str
+            label for X axis
+        ylabel : str
+            label for Y axis
+        plot_width : int
+            width of plot area in pixels
+        plot_height : int
+            height of plot area in pixels
+        plot_residuals : bool
+            True if we want the lower plot showing the differential between the fit and the data
+        grow_slider : bool
+            True if we want the slider for modifying growth radius
+        """
         # Just to get the doc later
         self.visualizer = visualizer
 
@@ -301,7 +475,20 @@ class Fit1DPanel:
         self.band_model = GIBandModel()
 
         class Fit1DBandListener(GIBandListener):
+            """
+            Wrapper class so we can just detect when a bands are finished.
+
+            We don't want to do an expensive recalc as a user is dragging
+            a band around.
+            """
             def __init__(self, fn):
+                """
+                Create a band listener that just updates on `finished`
+                Parameters
+                ----------
+                fn : function
+                    function to call when band is finished.
+                """
                 self.fn = fn
 
             def adjust_band(self, band_id, start, stop):
@@ -375,8 +562,9 @@ class Fit1DPanel:
                 self.fit.band_mask[i] = 0
             else:
                 self.fit.band_mask[i] = 1
+        # Band operations can come in through the keypress URL
+        # so we defer the fit back onto the Bokeh IO event loop
         self.visualizer.do_later(self.fit.perform_fit)
-        # self.fit.perform_fit()
 
 
 class Fit1DVisualizer(interactive.PrimitiveVisualizer):
