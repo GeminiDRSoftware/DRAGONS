@@ -330,6 +330,19 @@ class InteractiveModel1D(InteractiveModel):
 
 class InteractiveChebyshev1D:
     def __init__(self, model):
+        """
+        Create `~InteractiveChebyshev1D` wrapper around a basic model.
+
+        The models don't like being modified, so this wrapper class handles
+        that for us.  We can just keep a reference to this and, when needed,
+        it will build a new `~models.Chebyshev1D` instance and replace it's
+        previous copy.
+
+        Parameters
+        ----------
+        model : :class:`~models.Chebyshev1D`
+            :class:`~models.Chebyshev1D` instance to wrap
+        """
         assert isinstance(model, models.Chebyshev1D)
         self.model = model
 
@@ -338,10 +351,28 @@ class InteractiveChebyshev1D:
 
     @property
     def order(self):
+        """
+        Get the order of the fitter.
+
+        Returns
+        -------
+        int : `degree` of the model we are wrapping
+        """
         return self.model.degree
 
     @order.setter
     def order(self, order):
+        """
+        Set the order in this fitter.
+
+        This sets the order, cleaning it if necessary into an `int`.  It also
+        recreates the model in the same type as it currently is.
+
+        Parameters
+        ----------
+        order : int
+            order to use in the fit
+        """
         degree = int(order)  # because of TextInput issues
         new_model = self.model.__class__(degree=degree, domain=self.model.domain)
         for i in range(degree + 1):
@@ -356,6 +387,16 @@ class InteractiveChebyshev1D:
     def perform_fit(self, parent):
         """
         Perform the fit, update self.model, parent.fit_mask
+
+        The upper layer is a :class:`~InteractiveModel1D` that calls into
+        this method. It passes itself down as `parent` to give access to
+        various fields and allow this fit to be saved back up to it.
+
+        Parameters
+        ----------
+        parent : :class:`~InteractiveModel1D`
+            wrapper model passes itself when it calls into this method
+
         """
         goodpix = ~(parent.user_mask | parent.band_mask)
         if parent.var is None:
@@ -527,14 +568,38 @@ class Fit1DPanel:
         self.component = row(controls, column(*fig_column))
 
     def model_change_handler(self):
+        """
+        If the `~fit` changes, this gets called to evaluate the fit and save the results.
+        """
         self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
 
     def sigma_slider_handler(self):
+        """
+        Handle the sigma clipping being adjusted.
+
+        This will trigger a fit since the result may
+        change.
+        """
         # If we're not sigma-clipping, we don't need to refit the model if sigma changes
         if self.fit.sigma_clip:
             self.fit.perform_fit()
 
     def sigma_button_handler(self, attr, old, new):
+        """
+        Handle the sigma clipping being turned on or off.
+
+        This will also trigger a fit since the result may
+        change.
+
+        Parameters
+        ----------
+        attr : Any
+            unused
+        old : str
+            old value of the toggle button
+        new : str
+            new value of the toggle button
+        """
         self.fit.sigma_clip = bool(new)
         self.fit.perform_fit()
 
@@ -542,6 +607,18 @@ class Fit1DPanel:
         return
 
     def mask_button_handler(self, stuff):
+        """
+        Handler for the mask button.
+
+        When the mask button is clicked, this method
+        will find the selected data points and set the
+        user mask for them.
+
+        Parameters
+        ----------
+        stuff : any
+            This is ignored, but the button passes it
+        """
         indices = self.fit.data.selected.indices
         self.fit.data.selected.update(indices=[])
         for i in indices:
@@ -549,6 +626,18 @@ class Fit1DPanel:
         self.fit.perform_fit()
 
     def unmask_button_handler(self, stuff):
+        """
+        Handler for the unmask button.
+
+        When the unmask button is clicked, this method
+        will find the selected data points and unset the
+        user mask for them.
+
+        Parameters
+        ----------
+        stuff : any
+            This is ignored, but the button passes it
+        """
         indices = self.fit.data.selected.indices
         self.fit.data.selected.update(indices=[])
         for i in indices:
@@ -556,6 +645,16 @@ class Fit1DPanel:
         self.fit.perform_fit()
 
     def band_model_handler(self):
+        """
+        Respond when the band model changes.
+
+        When the band model has changed, we
+        brute force a new band mask by checking
+        each x coordinate against the band model
+        for inclusion.  The band model handles
+        the case where there are no bands by
+        marking all points as included.
+        """
         x_data = self.fit.data.data['x']
         for i in np.arange(len(x_data)):
             if self.band_model.contains(x_data[i]):
@@ -654,11 +753,34 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.fits.append(tui.fit)
 
     def visualize(self, doc):
+        """
+        Start the bokeh document using this visualizer.
+
+        This call is responsible for filling in the bokeh document with
+        the user interface.
+
+        Parameters
+        ----------
+        doc : :class:`~bokeh.document.Document`
+            bokeh document to draw the UI in
+        """
         super().visualize(doc)
         layout = row(self.reinit_panel, column(self.tabs, self.submit_button))
         doc.add_root(layout)
 
     def reconstruct_points(self):
+        """
+        Reconstruct the initial points to work with.
+
+        This is expected to be expensive.  The core inputs
+        are separated out in the UI as they are too slow to
+        be interactive.  When a user is ready and submits
+        updated core config parameters, this is what gets
+        executed.  The configuration is updated with the
+        new values form the user.  The UI is disabled and the
+        expensive function is wrapped in the bokeh Tornado
+        event look so the modal dialog can display.
+        """
         self.reinit_button.disabled = True
 
         def fn():
@@ -673,11 +795,39 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 class TraceApertures1DVisualizer(Fit1DVisualizer):
     def __init__(self, allx, ally, models, config, ext=None, locations=None,
                  **kwargs):
+        """
+        Create a visualizer specifically for `geminidr.core.parameters_spect.traceApertures`.
+
+        This mostly leans on `~Fit1DVisualizer` to do the work, but this subclass
+        encapsulates the logic to regenerate our initial set of points if any of
+        the core config parameters change.
+
+        Parameters
+        ----------
+        allx : array of array of float
+            array of arrays of x coordinate float values
+        ally : array of array of float
+            array of arrays of y coordinate float values
+        models
+        config : :class:`gempy.library.config.config.Config`
+            config for the primitive
+        ext : :class:`~astrodata.core.AstroData`
+            FITS extension to work on
+        locations : list of float
+            Aperture locations
+        kwargs
+        """
         self.ext = ext
         self.locations = locations
         super().__init__(allx, ally, models, config, **kwargs)
 
     def reconstruct_points(self):
+        """
+        Reconstruct the initial data points because the configuration has
+        changed and needs it.
+
+        This is expected to be slow.
+        """
         # super() to update the Config with the widget values
         # In this primitive, init_mask is always empty
         super().reconstruct_points()
@@ -692,6 +842,33 @@ class TraceApertures1DVisualizer(Fit1DVisualizer):
 
 
 def trace_apertures_reconstruct_points(ext, locations, config):
+    """
+    Reconstruct the initial points from the given configuration.
+
+    This is a helper method used both by the UI and by the
+    relevant primitive in non-interactive mode.  It does the
+    initial, very expensive, initialization of the dataset
+    with some of the core config parameters.
+
+    These core inputs are visibly separated in the UI and
+    kick off a modal dialog message and the slow reprocess.
+    Once that is done, the plots are re-seeded with the
+    updated points and the other parameters may be worked with
+    more real-time again.
+
+    Parameters
+    ----------
+    ext : :class:`~astrodata.core.AstroData`
+        extension to work on
+    locations : list of double
+        aperture locations
+    config : :class:`~gempy.library.config.config.Config`
+        instance of a primitive configuration
+
+    Returns
+    -------
+    array of arrays of float : two array elements for x and y, each as an array of x/y coordinate arrays to be fit
+    """
     dispaxis = 2 - ext.dispersion_axis()
     all_coords = []
     for loc in locations:
