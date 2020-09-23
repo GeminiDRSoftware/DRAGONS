@@ -421,7 +421,8 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
             if slider.start <= float(new) <= slider.end:
                 if float(new) > float(location_text_input.value):
                     location_text_input.value = new
-                handle_value(attrib, (old, end_text_input.value), [new, end_text_input.value])
+                handle_value(attrib, (old, location_text_input.value, end_text_input.value),
+                             [new, location_text_input.value, end_text_input.value])
                 return
         except ValueError as ve:
             pass
@@ -433,10 +434,8 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
         # called by the location text input.  We pull the end value and delegate to handle_value
         try:
             if slider.start <= float(new) <= slider.end:
-                if float(new) < slider.value[0]:
-                    handle_value(attrib, (str(slider.value[0]), end_text_input.value), [new, end_text_input.value])
-                if float(new) > slider.value[1]:
-                    handle_value(attrib, slider.value, [new, str(slider.value[1])])
+                handle_value(attrib, (slider.value[0], old, slider.value[1]),
+                             [slider.value[0], new, str(slider.value[1])])
                 return
         except ValueError:
             pass
@@ -450,7 +449,8 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
             if slider.start <= float(new) <= slider.end:
                 if float(new) < float(location_text_input.value):
                     location_text_input.value = new
-                handle_value(attrib, (start_text_input.value, old), [start_text_input.value, new])
+                handle_value(attrib, (start_text_input.value, location_text_input.value, old),
+                             [start_text_input.value, location_text_input.value, new])
                 return
         except ValueError:
             pass
@@ -466,15 +466,28 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
         if obj and start_attr and end_attr:
             if is_float:
                 start_numeric_value = float(new[0])
-                end_numeric_value = float(new[1])
+                location_numeric_value = float(new[1])
+                end_numeric_value = float(new[2])
             else:
                 start_numeric_value = int(new[0])
-                end_numeric_value = int(new[1])
+                location_numeric_value = int(new[1])
+                end_numeric_value = int(new[2])
             try:
                 if start_numeric_value > end_numeric_value:
                     start_numeric_value, end_numeric_value = end_numeric_value, start_numeric_value
-                    new[1], new[0] = new[0], new[1]
+                    new[2], new[0] = new[0], new[2]
+                if location_numeric_value > end_numeric_value:
+                    location_numeric_value = end_numeric_value
+                    location_text_input.remove_on_change("value", handle_location_value)
+                    location_text_input.value = str(location_numeric_value)
+                    location_text_input.on_change("value", handle_location_value)
+                if location_numeric_value < start_numeric_value:
+                    location_numeric_value = start_numeric_value
+                    location_text_input.remove_on_change("value", handle_location_value)
+                    location_text_input.value = str(location_numeric_value)
+                    location_text_input.on_change("value", handle_location_value)
                 obj.__setattr__(start_attr, start_numeric_value)
+                obj.__setattr__(location_attr, location_numeric_value)
                 obj.__setattr__(end_attr, end_numeric_value)
             except FieldValidationError:
                 # reset textbox
@@ -482,10 +495,13 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
                 start_text_input.value = str(old[0])
                 start_text_input.on_change("value", handle_start_value)
                 end_text_input.remove_on_change("value", handle_end_value)
-                end_text_input.value = str(old[1])
+                end_text_input.value = str(old[2])
                 end_text_input.on_change("value", handle_end_value)
+                location_text_input.remove_on_change("value", handle_location_value)
+                location_text_input.value = str(old[1])
+                location_text_input.on_change("value", handle_location_value)
             else:
-                update_slider(attrib, old, new)
+                update_slider(attrib, (old[0], old[2]), (new[0], new[2]))
         if handler:
             handler()
 
