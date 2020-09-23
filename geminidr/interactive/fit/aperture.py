@@ -4,6 +4,7 @@ from bokeh.models import Div, Button
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
+from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_text_slider
 from gempy.library import tracing
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -53,7 +54,7 @@ class FindSourceAperturesModel:
         Parameters
         ----------
         listener : function
-            Function taling two arguments - a list of locations and a list of tuple ranges
+            Function taking two arguments - a list of locations and a list of tuple ranges
         """
         # listener should be fn(locations, all_limits)
         self.listeners.append(listener)
@@ -183,8 +184,9 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
+        helptext = Div()
         controls = column(children=[max_apertures_slider, threshold_slider,
-                          aperture_view.controls, add_button, self.submit_button])
+                          aperture_view.controls, add_button, self.submit_button, helptext])
 
         self.details = Div(text="")
         self.model.recalc_apertures()
@@ -192,6 +194,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         col = column(self.fig, self.details)
         layout = row(controls, col)
+
+        Controller(self.fig, self.aperture_model, None, helptext, find_aperture_model=self.model)
 
         doc.add_root(layout)
 

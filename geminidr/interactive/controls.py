@@ -20,6 +20,7 @@ from bokeh.events import PointEvent
 
 __all__ = ["controller", "Controller"]
 
+from gempy.library.tracing import pinpoint_peaks
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -47,7 +48,7 @@ class Controller(object):
     control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, band_model, helptext):
+    def __init__(self, fig, aperture_model, band_model, helptext, *, find_aperture_model=None):
         """
         Create a controller to manage the given aperture and band models on the given GIFigure
 
@@ -61,11 +62,14 @@ class Controller(object):
             model for bands for this plot/dataset, or None
         helptext : :class:`Div`
             div to update text in to provide help to the user
+        find_aperture_model : object
+            optional aperture model, will pull `profile` out of this if we want to do peak finding for an aperture
         """
+        self.aperture_model = aperture_model
         self.helptext = helptext
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model)
+            self.tasks['a'] = ApertureTask(aperture_model, find_aperture_model)
         if band_model:
             self.tasks['b'] = BandTask(band_model)
         self.task = None
@@ -178,15 +182,19 @@ class Controller(object):
             Key that was pressed, such as 'a'
 
         """
-        if self.task:
-            if self.task.handle_key(key):
-                self.task = None
-                self.set_help_text()
-        else:
-            if key in self.tasks:
-                self.task = self.tasks[key]
-                self.set_help_text(self.task.helptext())
-                self.task.start(self.x, self.y)
+        def _ui_loop_handle_key(key):
+            if self.task:
+                if self.task.handle_key(key):
+                    self.task = None
+                    self.set_help_text()
+            else:
+                if key in self.tasks:
+                    self.task = self.tasks[key]
+                    self.set_help_text(self.task.helptext())
+                    self.task.start(self.x, self.y)
+        if self.helptext.document:
+            # we now have an associated document, need to do this inside that context
+            self.helptext.document.add_next_tick_callback(lambda: _ui_loop_handle_key(key=key))
 
     def handle_mouse(self, x, y):
         """
@@ -260,7 +268,7 @@ class ApertureTask(Task):
     """
     Task for controlling apertures.
     """
-    def __init__(self, aperture_model):
+    def __init__(self, aperture_model, find_aperture_model):
         """
         Create aperture task for the given model.
 
@@ -270,10 +278,28 @@ class ApertureTask(Task):
             The aperture model to operate on
         """
         self.aperture_model = aperture_model
+        self.find_aperture_model = find_aperture_model
+        self.aperture_center = None
+        self.aperture_id = None
+        self.last_x = None
+        self.last_y = None
+
+    def start(self, x, y):
+        self.last_x = x
+        self.last_y = y
         self.aperture_center = None
         self.aperture_id = None
 
-    def start(self, x, y):
+    def stop(self):
+        """
+        Stop updating the current aperture.
+
+        This causes the interactivity to end.
+
+        """
+        self.stop_aperture()
+
+    def start_aperture(self, x, y):
         """
         Create a new aperture at this x coordinate.
 
@@ -290,7 +316,7 @@ class ApertureTask(Task):
         self.aperture_center = x
         self.aperture_id = self.aperture_model.add_aperture(x, x)
 
-    def stop(self):
+    def stop_aperture(self):
         """
         Stop updating the current aperture.
 
@@ -316,11 +342,23 @@ class ApertureTask(Task):
             True if the task is finished and the controller should take over, False if we are not done with the Task
         """
         if key == 'a':
-            self.stop()
-            return True
+            if self.aperture_center is None:
+                self.start_aperture(self.last_x, self.last_y)
+                return False
+            else:
+                self.stop_aperture()
+                return True
+        if key == 'f' and self.find_aperture_model:
+            if self.aperture_center is None:
+                peaks = pinpoint_peaks(self.find_aperture_model.profile, None, [self.last_x, ], halfwidth=20,
+                                       threshold=0)
+                if len(peaks) > 0:
+                    self.start_aperture(peaks[0], self.last_y)
+                else:
+                    self.start_aperture(self.last_x, self.last_y)
         if key == 'd':
             self.aperture_model.delete_aperture(self.aperture_id)
-            self.stop()
+            self.stop_aperture()
             return True
         return False
 
@@ -339,15 +377,22 @@ class ApertureTask(Task):
             mouse y coordinate in data space
         """
         # we are in aperture mode
-        start = x
-        end = self.aperture_center + (self.aperture_center-x)
-        self.aperture_model.adjust_aperture(self.aperture_id, start, end)
+        if self.aperture_center:
+            start = x
+            end = self.aperture_center + (self.aperture_center-x)
+            self.aperture_model.adjust_aperture(self.aperture_id, start, end)
+        self.last_x = x
+        self.last_y = y
         return False
 
     def description(self):
-        return "create an <b>aperture</b> centered at cursor"
+        return "Edit <b>apertures</b> interactively"
 
     def helptext(self):
+        if self.find_aperture_model:
+            return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture<br/>
+                      <b>[f]</b> to find a nearby peak to the cursor
+                      <b>[d]</b> to delete the aperture"""
         return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture<br/>
                   <b>[d]</b> to delete the aperture"""
 
