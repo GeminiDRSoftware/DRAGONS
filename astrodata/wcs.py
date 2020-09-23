@@ -515,7 +515,9 @@ def fitswcs_image(header):
         cd[sky_axes[1], -1] = cd[sky_axes[0], pixel_axes[0]]
         sky_cd = cd[np.ix_(sky_axes, pixel_axes + [-1])]
         affine = models.AffineTransformation2D(matrix=sky_cd, name='cd_matrix')
-        rotation = models.fix_inputs(affine, {'y': 0})
+        # TODO: replace when PR#10362 is in astropy
+        #rotation = models.fix_inputs(affine, {'y': 0})
+        rotation = models.Mapping((0, 0)) | models.Identity(1) & models.Const1D(0) | affine
         rotation.inverse = affine.inverse | models.Mapping((0,), n_inputs=2)
     else:
         sky_cd = cd[np.ix_(sky_axes, pixel_axes)]
