@@ -91,18 +91,20 @@ class FindSourceAperturesModel(GIApertureModel):
         for listener in self.recalc_listeners:
             listener(self.locations, self.all_limits)
         for l in self.listeners:
-            for i, lim in enumerate(self.all_limits):
-                l.handle_aperture(i+1, lim[0], lim[1])
+            for i, loclim in enumerate(zip(self.locations, self.all_limits)):
+                loc = loclim[0]
+                lim = loclim[1]
+                l.handle_aperture(i+1, loc, lim[0], lim[1])
 
-    def add_aperture(self, start, end):
+    def add_aperture(self, location, start, end):
         aperture_id = len(self.locations)+1
-        np.append(self.locations, ((start+end)/2))
+        np.append(self.locations, location)
         np.append(self.all_limits, (start, end))
         for l in self.listeners:
-            l.handle_aperture(aperture_id, start, end)
+            l.handle_aperture(aperture_id, location, start, end)
         return aperture_id
 
-    def adjust_aperture(self, aperture_id, start, end):
+    def adjust_aperture(self, aperture_id, location, start, end):
         """
         Adjust an existing aperture by ID to a new range.
         This will alert all subscribed listeners.
@@ -111,15 +113,20 @@ class FindSourceAperturesModel(GIApertureModel):
         ----------
         aperture_id : int
             ID of the aperture to adjust
+        location : float
+            X coodinate of the new aperture location
         start : float
             X coordinate of the new start of range
         end : float
             X coordiante of the new end of range
 
         """
+        if location < start or location > end:
+            raise ValueError("Location of aperture must be between start and end")
+        self.locations[aperture_id-1] = location
         self.all_limits[aperture_id-1] = [start, end]
         for l in self.listeners:
-            l.handle_aperture(aperture_id, start, end)
+            l.handle_aperture(aperture_id, location, start, end)
 
     def delete_aperture(self, aperture_id):
         """
@@ -215,15 +222,6 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         aperture_view = GIApertureView(self.model, self.fig)
         self.model.add_listener(self)
 
-        # def apl(locations, all_limits):
-        #     # when the model updates, we just reset all our
-        #     # apertures this way
-        #     self.model.clear_apertures()
-        #     for loc, limits in zip(locations, all_limits):
-        #         self.model.add_aperture(limits[0], limits[1])
-        # self.model.add_recalc_listener(apl)
-        # self.model.recalc_apertures()
-
         self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
 
         add_button = Button(label="Add Aperture")
@@ -244,7 +242,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         doc.add_root(layout)
 
-    def handle_aperture(self, aperture_id, start, end):
+    def handle_aperture(self, aperture_id, location, start, end):
         """
         Handle updated aperture information.
 
@@ -257,12 +255,13 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         ----------
         aperture_id : int
             ID of the aperture to add/update
+        location : float
+            new location of aperture
         start : float
             new start of aperture
         end : float
             new end of aperture
         """
-        location = (start+end)/2
         if aperture_id == len(self.model.locations)+1:
             self.model.locations = np.append(self.model.locations, location)
             self.model.all_limits.append((start, end))

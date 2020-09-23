@@ -283,8 +283,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     return component
 
 
-def build_range_slider(title, start, end, step, min_value, max_value, obj=None, start_attr=None, end_attr=None,
-                       handler=None, throttled=False):
+def build_range_slider(title, location, start, end, step, min_value, max_value, obj=None, location_attr=None,
+                       start_attr=None, end_attr=None, handler=None, throttled=False):
     """
     Make a range slider widget to use in the bokeh interface.
 
@@ -292,6 +292,8 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
     ----------
     title : str
         Title for the slider
+    location : int or float
+        Value for the location
     start : int or float
         Value to initially set for start
     end : int or float
@@ -331,10 +333,13 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
     start_text_input = TextInput()
     start_text_input.width = 64
     start_text_input.value = str(start)
+    location_text_input = TextInput()
+    location_text_input.width = 64
+    location_text_input.value = str(location)
     end_text_input = TextInput()
     end_text_input.width = 64
     end_text_input.value = str(end)
-    component = row(slider, start_text_input, end_text_input)
+    component = row(slider, start_text_input, location_text_input, end_text_input)
 
     def _input_check(val):
         """
@@ -409,19 +414,42 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
             end_text_input.value = str(new[1])
 
     def handle_start_value(attrib, old, new):
+        if new == old:
+            return
         # called by the start text input.  We pull the end value and delegate to handle_value
         try:
             if slider.start <= float(new) <= slider.end:
+                if float(new) > float(location_text_input.value):
+                    location_text_input.value = new
                 handle_value(attrib, (old, end_text_input.value), [new, end_text_input.value])
                 return
-        except ValueError:
+        except ValueError as ve:
             pass
         start_text_input.value = old
 
+    def handle_location_value(attrib, old, new):
+        if new == old:
+            return
+        # called by the location text input.  We pull the end value and delegate to handle_value
+        try:
+            if slider.start <= float(new) <= slider.end:
+                if float(new) < slider.value[0]:
+                    handle_value(attrib, (str(slider.value[0]), end_text_input.value), [new, end_text_input.value])
+                if float(new) > slider.value[1]:
+                    handle_value(attrib, slider.value, [new, str(slider.value[1])])
+                return
+        except ValueError:
+            pass
+        location_text_input.value = old
+
     def handle_end_value(attrib, old, new):
+        if new == old:
+            return
         # called by the end text input.  We pull the start value and delegate to handle_value
         try:
             if slider.start <= float(new) <= slider.end:
+                if float(new) < float(location_text_input.value):
+                    location_text_input.value = new
                 handle_value(attrib, (start_text_input.value, old), [start_text_input.value, new])
                 return
         except ValueError:
@@ -429,6 +457,8 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
         end_text_input.value = old
 
     def handle_value(attrib, old, new):
+        if new == old:
+            return
         # Handle a change in value.  Since this has a value that is
         # (start, end) we always end up working on both values.  This
         # is even though typically the user will only be changing one
@@ -464,14 +494,14 @@ def build_range_slider(title, start, end, step, min_value, max_value, obj=None, 
         # have to call it from the slider as it will happen as
         # a side-effect of update_text_input
         slider.on_change("value_throttled", update_text_input)
-        start_text_input.on_change("value", handle_start_value)
-        end_text_input.on_change("value", handle_end_value)
     else:
         slider.on_change("value", update_text_input)
         # since slider is listening to value, this next line will cause the slider
         # to call the handle_value method and we don't need to do so explicitly
-        start_text_input.on_change("value", handle_start_value)
-        end_text_input.on_change("value", handle_end_value)
+    start_text_input.on_change("value", handle_start_value)
+    location_text_input.on_change("value", handle_location_value)
+    end_text_input.on_change("value", handle_end_value)
+
     return component
 
 
@@ -858,7 +888,7 @@ class GIApertureModel(ABC):
         pass
 
     @abstractmethod
-    def adjust_aperture(self, aperture_id, start, end):
+    def adjust_aperture(self, aperture_id, location, start, end):
         """
         Adjust an existing aperture by ID to a new range.
         This will alert all subscribed listeners.
@@ -867,11 +897,12 @@ class GIApertureModel(ABC):
         ----------
         aperture_id : int
             ID of the aperture to adjust
+        location : float
+            X coordinate of the location of the aperture
         start : float
             X coordinate of the new start of range
         end : float
-            X coordiante of the new end of range
-
+            X coordinate of the new end of range
         """
         pass
 
@@ -908,7 +939,7 @@ class GIApertureModel(ABC):
 
 
 class GISingleApertureView(object):
-    def __init__(self, fig, aperture_id, start, end):
+    def __init__(self, fig, aperture_id, location, start, end):
         """
         Create a visible glyph-set to show the existance
         of an aperture on the given figure.  This display
@@ -938,9 +969,9 @@ class GISingleApertureView(object):
         if fig.document:
             fig.document.add_next_tick_callback(lambda: self.build_ui(fig, aperture_id, start, end))
         else:
-            self.build_ui(fig, aperture_id, start, end)
+            self.build_ui(fig, aperture_id, location, start, end)
 
-    def build_ui(self, fig, aperture_id, start, end):
+    def build_ui(self, fig, aperture_id, location, start, end):
         """
         Build the view in the figure.
 
@@ -954,6 +985,8 @@ class GISingleApertureView(object):
             bokeh figure to attach glyphs to
         aperture_id : int
             ID of this aperture, displayed
+        location : float
+            Location of the aperture
         start : float
             Start of x-range of aperture
         end : float
@@ -1048,7 +1081,7 @@ class GISingleApertureView(object):
 
 
 class GIApertureSliders(object):
-    def __init__(self, fig, model, aperture_id, start, end):
+    def __init__(self, fig, model, aperture_id, location, start, end):
         """
         Create range sliders for an aperture.
 
@@ -1071,14 +1104,16 @@ class GIApertureSliders(object):
         # self.view = view
         self.model = model
         self.aperture_id = aperture_id
+        self.location = location
         self.start = start
         self.end = end
 
         slider_start = fig.x_range.start
         slider_end = fig.x_range.end
 
-        self.slider = build_range_slider("%s" % aperture_id, start, end, 0.01, slider_start, slider_end,
-                                         obj=self, start_attr="start", end_attr="end", handler=self.do_update)
+        self.slider = build_range_slider("%s" % aperture_id, location, start, end, 0.01, slider_start, slider_end,
+                                         obj=self, location_attr="location", start_attr="start", end_attr="end",
+                                         handler=self.do_update)
         button = Button(label="Del")
         button.on_click(self.delete_from_model)
         button.width = 48
@@ -1116,18 +1151,20 @@ class GIApertureSliders(object):
             self.slider.children[0].disabled = True
             self.slider.children[1].disabled = True
             self.slider.children[2].disabled = True
+            self.slider.children[3].disabled = True
         else:
             self.slider.children[0].disabled = False
             self.slider.children[1].disabled = False
             self.slider.children[2].disabled = False
+            self.slider.children[3].disabled = False
             self.slider.children[0].start = start
             self.slider.children[0].end = end
 
     def do_update(self):
         if self.start > self.end:
-            self.model.adjust_aperture(self.aperture_id, self.end, self.start)
+            self.model.adjust_aperture(self.aperture_id, self.location, self.end, self.start)
         else:
-            self.model.adjust_aperture(self.aperture_id, self.start, self.end)
+            self.model.adjust_aperture(self.aperture_id, self.location, self.start, self.end)
 
 
 class GIApertureView(object):
@@ -1188,7 +1225,7 @@ class GIApertureView(object):
         for ap_slider in self.ap_sliders:
             ap_slider.update_viewport(start, end)
 
-    def handle_aperture(self, aperture_id, start, end):
+    def handle_aperture(self, aperture_id, location, start, end):
         """
         Handle an updated or added aperture.
 
@@ -1209,9 +1246,9 @@ class GIApertureView(object):
             ap = self.aps[aperture_id-1]
             ap.update(start, end)
         else:
-            ap = GISingleApertureView(self.fig, aperture_id, start, end)
+            ap = GISingleApertureView(self.fig, aperture_id, location, start, end)
             self.aps.append(ap)
-            slider = GIApertureSliders(self.fig, self.model, aperture_id, start, end)
+            slider = GIApertureSliders(self.fig, self.model, aperture_id, location, start, end)
             self.ap_sliders.append(slider)
             self.inner_controls.children.append(slider.component)
 
