@@ -895,12 +895,12 @@ class GIApertureModel(ABC):
         """
         pass
 
+    @abstractmethod
     def clear_apertures(self):
         """
         Remove all apertures, calling delete on the listeners for each.
         """
-        while self.aperture_id > 1:
-            self.delete_aperture(self.aperture_id-1)
+        pass
 
     @abstractmethod
     def get_profile(self):

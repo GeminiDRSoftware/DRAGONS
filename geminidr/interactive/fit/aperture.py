@@ -135,6 +135,16 @@ class FindSourceAperturesModel(GIApertureModel):
         for listener in self.listeners:
             listener.delete_aperture(aperture_id)
 
+    def clear_apertures(self):
+        """
+        Remove all apertures, calling delete on the listeners for each.
+        """
+        for iap in range(len(self.locations), 1, -1):
+            for listener in self.listeners:
+                listener.delete_aperture(iap)
+        self.locations = []
+        self.all_limits = []
+
     def get_profile(self):
         return self.profile
 
