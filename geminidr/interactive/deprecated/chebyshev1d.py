@@ -173,8 +173,6 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         # constructor, we'll see the interface in the UI/help text
         # Just sandboxing a basic band UI for the x ranges from Kathleen's demo
         band_model = GIBandModel()
-        # Just sandboxing a sample Aperture UI
-        aperture_model = GIApertureModel()
 
         order_slider = build_text_slider("Order", self.model.order, 1, self.min_order, self.max_order,
                                          self.model, "order", self.model.recalc_chebyshev)
@@ -192,7 +190,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
                          title='Interactive Chebyshev',
                          x_axis_label='X', y_axis_label='Y',
                          tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                         band_model=band_model, aperture_model=aperture_model)
+                         band_model=band_model, aperture_model=None)
 
         self.p = p
 
@@ -206,7 +204,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         p2 = build_figure(plot_width=600, plot_height=500,
                           title='Model Differential',
                           x_axis_label='X', y_axis_label='Y',
-                          band_model=band_model, aperture_model=aperture_model)
+                          band_model=band_model, aperture_model=None)
         line2_source = build_cds()
         self.line2 = p2.line(source=line2_source, color="red")
         differencing_model = GIDifferencingModel(self.model.coords, self.model, self.model.model_calculate)
@@ -230,7 +228,7 @@ class Chebyshev1DVisualizer(interactive.PrimitiveVisualizer):
         layout = row(self.controls, tabs)
 
         # setup controller for key commands
-        controller = Controller(self.p, aperture_model, band_model, helptext)
+        controller = Controller(self.p, None, band_model, helptext)
 
         doc.add_root(layout)
 

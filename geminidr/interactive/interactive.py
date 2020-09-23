@@ -813,7 +813,7 @@ class GIBandView(GIBandListener):
         pass
 
 
-class GIApertureModel(object):
+class GIApertureModel(ABC):
     """
     Model for tracking the Apertures.
 
@@ -839,6 +839,7 @@ class GIApertureModel(object):
         """
         self.listeners.append(listener)
 
+    @abstractmethod
     def add_aperture(self, start, end):
         """
         Add a new aperture, using the next available ID
@@ -854,11 +855,9 @@ class GIApertureModel(object):
         -------
             int id of the aperture
         """
-        aperture_id = self.aperture_id
-        self.aperture_id += 1
-        self.adjust_aperture(aperture_id, start, end)
-        return aperture_id
+        pass
 
+    @abstractmethod
     def adjust_aperture(self, aperture_id, start, end):
         """
         Adjust an existing aperture by ID to a new range.
@@ -874,9 +873,9 @@ class GIApertureModel(object):
             X coordiante of the new end of range
 
         """
-        for l in self.listeners:
-            l.handle_aperture(aperture_id, start, end)
+        pass
 
+    @abstractmethod
     def delete_aperture(self, aperture_id):
         """
         Delete an aperture by ID.
@@ -894,9 +893,7 @@ class GIApertureModel(object):
         -------
 
         """
-        for listener in self.listeners:
-            listener.delete_aperture(aperture_id)
-        self.aperture_id = self.aperture_id-1
+        pass
 
     def clear_apertures(self):
         """
@@ -904,6 +901,10 @@ class GIApertureModel(object):
         """
         while self.aperture_id > 1:
             self.delete_aperture(self.aperture_id-1)
+
+    @abstractmethod
+    def get_profile(self):
+        pass
 
 
 class GISingleApertureView(object):
@@ -1084,6 +1085,9 @@ class GIApertureSliders(object):
 
         self.component = row(self.slider, button)
 
+    def set_title(self, title):
+        self.slider.children[0].title = title
+
     def delete_from_model(self):
         """
         Delete this aperture from the model
@@ -1231,4 +1235,5 @@ class GIApertureView(object):
             ap.label.text = "%s" % ap.aperture_id
         for ap_slider in self.ap_sliders[aperture_id-1:]:
             ap_slider.aperture_id = ap_slider.aperture_id-1
-            ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id
+            ap_slider.set_title("%s" % ap_slider.aperture_id)
+            # ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id

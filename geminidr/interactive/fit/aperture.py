@@ -13,7 +13,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 __all__ = ["interactive_find_source_apertures", ]
 
 
-class FindSourceAperturesModel:
+class FindSourceAperturesModel(GIApertureModel):
     def __init__(self, ext, profile, prof_mask, threshold, sizing_method, max_apertures):
         """
         Create an aperture model with the given initial set of inputs.
@@ -35,6 +35,8 @@ class FindSourceAperturesModel:
         max_apertures : int
             maximum number of apertures to detect
         """
+        super().__init__()
+
         self.ext = ext
         self.profile = profile
         self.prof_mask = prof_mask
@@ -45,9 +47,9 @@ class FindSourceAperturesModel:
         self.locations = None
         self.all_limits = None
 
-        self.listeners = list()
+        self.recalc_listeners = list()
 
-    def add_listener(self, listener):
+    def add_recalc_listener(self, listener):
         """
         Add a listener function to call when the apertures get recalculated
 
@@ -57,7 +59,7 @@ class FindSourceAperturesModel:
             Function taking two arguments - a list of locations and a list of tuple ranges
         """
         # listener should be fn(locations, all_limits)
-        self.listeners.append(listener)
+        self.recalc_listeners.append(listener)
 
     def recalc_apertures(self):
         """
@@ -86,8 +88,38 @@ class FindSourceAperturesModel:
                                       reverse=True)[:max_apertures]).T[0]
             self.all_limits = tracing.get_limits(np.nan_to_num(self.profile), self.prof_mask, peaks=self.locations,
                                                  threshold=self.threshold, method=self.sizing_method)
-        for listener in self.listeners:
+        for listener in self.recalc_listeners:
             listener(self.locations, self.all_limits)
+        for l in self.listeners:
+            for i, lim in enumerate(self.all_limits):
+                l.handle_aperture(i+1, lim[0], lim[1])
+
+    def add_aperture(self, start, end):
+        aperture_id = len(self.locations)+1
+        np.append(self.locations, ((start+end)/2))
+        np.append(self.all_limits, (start, end))
+        for l in self.listeners:
+            l.handle_aperture(aperture_id, start, end)
+        return aperture_id
+
+    def adjust_aperture(self, aperture_id, start, end):
+        """
+        Adjust an existing aperture by ID to a new range.
+        This will alert all subscribed listeners.
+
+        Parameters
+        ----------
+        aperture_id : int
+            ID of the aperture to adjust
+        start : float
+            X coordinate of the new start of range
+        end : float
+            X coordiante of the new end of range
+
+        """
+        self.all_limits[aperture_id-1] = [start, end]
+        for l in self.listeners:
+            l.handle_aperture(aperture_id, start, end)
 
     def delete_aperture(self, aperture_id):
         """
@@ -98,8 +130,13 @@ class FindSourceAperturesModel:
         aperture_id : int
             Aperture id to delete
         """
-        del self.locations[aperture_id-1]
-        del self.all_limits[aperture_id-1]
+        np.delete(self.locations, aperture_id-1)
+        np.delete(self.all_limits, aperture_id-1)
+        for listener in self.listeners:
+            listener.delete_aperture(aperture_id)
+
+    def get_profile(self):
+        return self.profile
 
 
 class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
@@ -119,7 +156,6 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         # an iterable
         self.model = model
 
-        self.aperture_model = None
         self.details = None
         self.fig = None
 
@@ -127,7 +163,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         """
         Clear apertures and recalculate a new set.
         """
-        self.aperture_model.clear_apertures()
+        self.model.clear_apertures()
         self.model.recalc_apertures()
 
     def add_aperture(self):
@@ -139,7 +175,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         """
         x = (self.fig.x_range.start + self.fig.x_range.end) / 2
-        self.aperture_model.add_aperture(x, x)
+        self.model.add_aperture(x, x)
         self.update_details()
 
     def visualize(self, doc):
@@ -166,17 +202,16 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                           tools="pan,wheel_zoom,box_zoom,reset",
                           x_range=(0, self.model.profile.shape[0]))
 
-        self.aperture_model = GIApertureModel()
-        aperture_view = GIApertureView(self.aperture_model, self.fig)
-        self.aperture_model.add_listener(self)
+        aperture_view = GIApertureView(self.model, self.fig)
+        self.model.add_listener(self)
 
-        def apl(locations, all_limits):
-            # when the model updates, we just reset all our
-            # apertures this way
-            self.aperture_model.clear_apertures()
-            for loc, limits in zip(locations, all_limits):
-                self.aperture_model.add_aperture(limits[0], limits[1])
-        self.model.add_listener(apl)
+        # def apl(locations, all_limits):
+        #     # when the model updates, we just reset all our
+        #     # apertures this way
+        #     self.model.clear_apertures()
+        #     for loc, limits in zip(locations, all_limits):
+        #         self.model.add_aperture(limits[0], limits[1])
+        # self.model.add_recalc_listener(apl)
         # self.model.recalc_apertures()
 
         self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
@@ -195,7 +230,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         col = column(self.fig, self.details)
         layout = row(controls, col)
 
-        Controller(self.fig, self.aperture_model, None, helptext, find_aperture_model=self.model)
+        Controller(self.fig, self.model, None, helptext)
 
         doc.add_root(layout)
 

@@ -48,7 +48,7 @@ class Controller(object):
     control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, band_model, helptext, *, find_aperture_model=None):
+    def __init__(self, fig, aperture_model, band_model, helptext):
         """
         Create a controller to manage the given aperture and band models on the given GIFigure
 
@@ -62,14 +62,12 @@ class Controller(object):
             model for bands for this plot/dataset, or None
         helptext : :class:`Div`
             div to update text in to provide help to the user
-        find_aperture_model : object
-            optional aperture model, will pull `profile` out of this if we want to do peak finding for an aperture
         """
         self.aperture_model = aperture_model
         self.helptext = helptext
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model, find_aperture_model)
+            self.tasks['a'] = ApertureTask(aperture_model)
         if band_model:
             self.tasks['b'] = BandTask(band_model)
         self.task = None
@@ -268,7 +266,7 @@ class ApertureTask(Task):
     """
     Task for controlling apertures.
     """
-    def __init__(self, aperture_model, find_aperture_model):
+    def __init__(self, aperture_model):
         """
         Create aperture task for the given model.
 
@@ -278,7 +276,6 @@ class ApertureTask(Task):
             The aperture model to operate on
         """
         self.aperture_model = aperture_model
-        self.find_aperture_model = find_aperture_model
         self.aperture_center = None
         self.aperture_id = None
         self.last_x = None
@@ -348,9 +345,9 @@ class ApertureTask(Task):
             else:
                 self.stop_aperture()
                 return True
-        if key == 'f' and self.find_aperture_model:
+        if key == 'f':
             if self.aperture_center is None:
-                peaks = pinpoint_peaks(self.find_aperture_model.profile, None, [self.last_x, ], halfwidth=20,
+                peaks = pinpoint_peaks(self.aperture_model.get_profile(), None, [self.last_x, ], halfwidth=20,
                                        threshold=0)
                 if len(peaks) > 0:
                     self.start_aperture(peaks[0], self.last_y)
@@ -389,11 +386,8 @@ class ApertureTask(Task):
         return "Edit <b>apertures</b> interactively"
 
     def helptext(self):
-        if self.find_aperture_model:
-            return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture<br/>
-                      <b>[f]</b> to find a nearby peak to the cursor
-                      <b>[d]</b> to delete the aperture"""
         return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture<br/>
+                  <b>[f]</b> to find a nearby peak to the cursor
                   <b>[d]</b> to delete the aperture"""
 
 

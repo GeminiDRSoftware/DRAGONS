@@ -512,7 +512,6 @@ class Fit1DPanel:
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                         tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                         output_backend="webgl", x_range=None, y_range=None)
-        aperture_model = GIApertureModel()
         self.band_model = GIBandModel()
 
         class Fit1DBandListener(GIBandListener):
@@ -542,8 +541,8 @@ class Fit1DPanel:
                 self.fn()
 
         self.band_model.add_listener(Fit1DBandListener(self.band_model_handler))
-        connect_figure_extras(p_main, aperture_model, self.band_model)
-        Controller(p_main, aperture_model, self.band_model, controller_div)
+        connect_figure_extras(p_main, None, self.band_model)
+        Controller(p_main, None, self.band_model, controller_div)
         fig_column = [p_main]
 
         if plot_residuals:
@@ -552,12 +551,12 @@ class Fit1DPanel:
                              x_axis_label=xlabel, y_axis_label='delta'+ylabel,
                              tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                              output_backend="webgl", x_range=None, y_range=None)
-            connect_figure_extras(p_resid, aperture_model, self.band_model)
+            connect_figure_extras(p_resid, None, self.band_model)
             fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                                          size=5, **self.fit.mask_rendering_kwargs())
+                            size=5, **self.fit.mask_rendering_kwargs())
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
                                       size=5, **self.fit.mask_rendering_kwargs())
