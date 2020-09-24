@@ -512,6 +512,8 @@ class Fit1DPanel:
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                         tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                         output_backend="webgl", x_range=None, y_range=None)
+        p_main.height_policy = 'fixed'
+        p_main.width_policy = 'fit'
         self.band_model = GIBandModel()
 
         class Fit1DBandListener(GIBandListener):
@@ -551,6 +553,8 @@ class Fit1DPanel:
                              x_axis_label=xlabel, y_axis_label='delta'+ylabel,
                              tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
                              output_backend="webgl", x_range=None, y_range=None)
+            p_resid.height_policy = 'fixed'
+            p_resid.width_policy = 'fit'
             connect_figure_extras(p_resid, None, self.band_model)
             fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
@@ -564,7 +568,9 @@ class Fit1DPanel:
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=1, color='red')
 
-        self.component = row(controls, column(*fig_column))
+        col = column(*fig_column)
+        col.sizing_mode = 'scale_width'
+        self.component = row(controls, col)
 
     def model_change_handler(self):
         """
@@ -738,6 +744,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if field.max:
             kwargs['max_order'] = field.max
         self.tabs = bm.Tabs(tabs=[], name="tabs")
+        self.tabs.sizing_mode = 'scale_width'
         self.fits = []
         if self.nmodels > 1:
             for i, (model, x, y) in enumerate(zip(models, allx, ally), start=1):
@@ -764,7 +771,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             bokeh document to draw the UI in
         """
         super().visualize(doc)
-        layout = row(self.reinit_panel, column(self.tabs, self.submit_button))
+        col = column(self.tabs, self.submit_button)
+        col.sizing_mode = 'scale_width'
+        layout = row(self.reinit_panel, col)
         doc.add_root(layout)
 
     def reconstruct_points(self):

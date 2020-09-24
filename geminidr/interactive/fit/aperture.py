@@ -214,10 +214,13 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                              throttled=True)
 
         # Create a blank figure with labels
-        self.fig = figure(plot_width=600, plot_height=500,
+        self.fig = figure(# plot_width=600,
+                          plot_height=500,
                           title='Source Apertures',
                           tools="pan,wheel_zoom,box_zoom,reset",
                           x_range=(0, self.model.profile.shape[0]))
+        self.fig.height_policy = 'fixed'
+        self.fig.width_policy = 'fit'
 
         aperture_view = GIApertureView(self.model, self.fig)
         self.model.add_listener(self)
@@ -236,6 +239,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.update_details()
 
         col = column(self.fig, self.details)
+        col.sizing_mode = 'scale_width'
         layout = row(controls, col)
 
         Controller(self.fig, self.model, None, helptext)
