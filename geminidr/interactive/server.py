@@ -1,5 +1,7 @@
 import pathlib
 
+from bokeh.application import Application
+from bokeh.application.handlers import FunctionHandler
 from bokeh.server.server import Server
 from jinja2 import Template
 
@@ -58,6 +60,13 @@ def set_visualizer(visualizer):
     _visualizer = visualizer
 
 
+class StaticHackHandler(FunctionHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._static = '%s/static' % pathlib.Path(__file__).parent.absolute()
+        # self._static = '/Users/ooberdorf/DRAGONS/geminidr/interactive/static/'
+
+
 def start_server():
     """
     Start the bokeh server.
@@ -69,7 +78,8 @@ def start_server():
     global _bokeh_server
 
     if not _bokeh_server:
-        _bokeh_server = Server({'/': _bkapp, '/handle_key': _handle_key}, num_procs=1)
+        bkapp = Application(StaticHackHandler(_bkapp))
+        _bokeh_server = Server({'/': bkapp, '/handle_key': _handle_key}, num_procs=1)
         _bokeh_server.start()
 
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
