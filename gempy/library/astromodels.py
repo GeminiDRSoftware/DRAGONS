@@ -280,14 +280,16 @@ class UnivariateSplineWithOutlierRemoval:
             orig_mask |= (w == 0)
 
         if debug:
-            print(y)
-            print(orig_mask)
+            print('y=', y)
+            print('orig_mask=', orig_mask.astype(int))
 
         iteration = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
         while iteration < niter+1:
             last_mask = full_mask
             x_to_fit = x.astype(float)
+            if debug:
+                print('iter=', iter)
 
             if order is not None:
                 # Determine actual order to apply based on fraction of unmasked
@@ -322,7 +324,7 @@ class UnivariateSplineWithOutlierRemoval:
                          for xx in np.linspace(0, len(xunique)-1, this_order+1)[1:-1]]
                 spline_args = (knots,)
                 if debug:
-                    print ("KNOTS", knots)
+                    print("KNOTS", knots)
 
             sort_indices = np.argsort(xgood)
             # Create appropriate spline object using current mask
