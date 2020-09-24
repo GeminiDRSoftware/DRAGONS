@@ -14,6 +14,14 @@ from astropy.utils.data import download_file
 URL = 'https://archive.gemini.edu/file/'
 
 
+@pytest.fixture(scope="session")
+def astrofaker():
+    """
+    Wrapper fixture that prevents undesired behaviour when using astrofaker.
+    """
+    return pytest.importorskip("astrofaker")
+
+
 def assert_most_close(actual, desired, max_miss, rtol=1e-7, atol=0,
                       equal_nan=True, verbose=True):
     """

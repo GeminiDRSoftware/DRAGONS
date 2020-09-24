@@ -3,8 +3,7 @@ from geminidr.core.primitives_calibdb import _update_datalab
 
 
 @pytest.fixture()
-def ad():
-    astrofaker = pytest.importorskip("astrofaker")
+def ad(astrofaker):
     return astrofaker.create('NIRI', 'IMAGE')
 
 

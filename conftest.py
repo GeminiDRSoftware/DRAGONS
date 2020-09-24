@@ -7,6 +7,7 @@ import pytest
 
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
+    astrofaker,
     change_working_dir,
     path_to_inputs,
     path_to_outputs,

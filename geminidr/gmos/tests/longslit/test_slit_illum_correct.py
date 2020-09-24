@@ -18,7 +18,6 @@ from gempy.utils import logutils
 from matplotlib import pyplot as plt
 from recipe_system.reduction.coreReduce import Reduce
 
-astrofaker = pytest.importorskip("astrofaker")
 
 PLOT_PATH = "plots/geminidr/gmos/longslit/test_slit_illum_correct/"
 
@@ -44,7 +43,7 @@ different_roi_datasets = [
 
 
 @pytest.mark.gmosls
-def test_dont_do_slit_illum():
+def test_dont_do_slit_illum(astrofaker):
     in_ad = astrofaker.create("GMOS-S", mode="SPECT")
     p = GMOSLongslit([in_ad])
     out_ad = p.slitIllumCorrect(do_illum=False)[0]
@@ -53,7 +52,7 @@ def test_dont_do_slit_illum():
 
 
 @pytest.mark.gmosls
-def test_slit_illum_correct_without_slit_illumination():
+def test_slit_illum_correct_without_slit_illumination(astrofaker):
     in_ad = astrofaker.create("GMOS-S", mode="SPECT")
     p = GMOSLongslit([in_ad])
     with pytest.raises(NotImplementedError):

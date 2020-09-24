@@ -24,6 +24,7 @@ TEMPFILE = "wcs_test.fits"
 # Full Frame, Central Spectrum, Central Stamp
 GMOS_FILES = ["N20180119S0156.fits", "N20180113S0128.fits", "N20180115S0238.fits"]
 
+
 @pytest.fixture(scope="module", params=GMOS_FILES)
 def raw_ad_path(request):
     """
@@ -39,6 +40,7 @@ def raw_ad_path(request):
     """
     full_path = download_from_archive(request.param)
     return full_path
+
 
 @pytest.fixture(params=[False, True])
 def do_prepare(request):
