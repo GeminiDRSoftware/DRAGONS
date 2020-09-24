@@ -22,6 +22,20 @@ GNIRS_DESCRIPTORS_TYPES = [
 
 @pytest.fixture(params=test_files)
 def ad(request):
+    """
+    Fixture that will download a file from specified as a test parameter,
+    open it as an AstroData object and return it.
+
+    Parameters
+    ----------
+    request : fixture
+        Pytest built-in fixture containing information about the parent test.
+
+    Returns
+    -------
+    AstroData
+        Raw file downloaded from the archive and cached locally.
+    """
     filename = request.param
     path = astrodata.testing.download_from_archive(filename)
     return astrodata.open(path)
@@ -103,3 +117,45 @@ def test_descriptor_matches_type(ad, descriptor, expected_type):
     value = getattr(ad, descriptor)()
     assert isinstance(value, expected_type) or value is None, \
         "Assertion failed for file: {}".format(ad.filename)
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
+def test_ra_and_dec_always_returns_float(ad, monkeypatch):
+    """
+    Tests that the get the RA/DEC coordinates using descriptors.
+
+    Parameters
+    ----------
+    ad : fixture
+        Custom fixture that downloads and opens the input file.
+    """
+    if isinstance(ad.wcs_ra(), float) or ad.wcs_ra() is None:
+        assert isinstance(ad.ra(), float)
+
+    if isinstance(ad.wcs_dec(), float) or ad.wcs_dec() is None:
+        assert isinstance(ad.dec(), float)
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
+def test_ra_and_dec_wcs_fallback(ad, monkeypatch):
+    """
+    Tests that the get the RA/DEC coordinates using descriptors when the WCS coordinate mapping fails
+
+    Parameters
+    ----------
+    ad : fixture
+        Custom fixture that downloads and opens the input file.
+    """
+    def _fake_wcs_call():
+        return None
+
+    monkeypatch.setattr(ad, 'wcs_ra', _fake_wcs_call)
+    monkeypatch.setattr(ad, 'wcs_dec', _fake_wcs_call)
+    assert(ad.ra() == ad.phu.get('RA', None))
+    assert(ad.dec() == ad.phu.get('DEC', None))
+
+
+if __name__ == "__main__":
+    pytest.main()
