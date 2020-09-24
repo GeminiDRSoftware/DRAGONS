@@ -23,7 +23,7 @@ class PrimitiveVisualizer(ABC):
         self.log = log
         self.user_satisfied = False
 
-        self.submit_button = Button(label="Submit", sizing_mode='fixed')
+        self.submit_button = Button(label="Submit")
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
             window.close();
