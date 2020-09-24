@@ -349,16 +349,20 @@ class UnivariateSplineWithOutlierRemoval:
             d, mask, v = NDStacker.sigclip(spline_y-y, mask=full_mask,
                                            variance=None, **outlier_kwargs)
 
+            mask = mask.astype(bool)
+            if debug:
+                print('mask=', mask.astype(int))
+
             if grow > 0:
-                maskarray = np.zeros((grow * 2 + 1, len(y)), dtype=bool)
-                for i in range(-grow, grow + 1):
-                    mx1 = max(i, 0)
-                    mx2 = min(len(y), len(y) + i)
-                    maskarray[grow + i, mx1:mx2] = mask[:mx2 - mx1]
-                grow_mask = np.logical_or.reduce(maskarray, axis=0)
-                full_mask = np.logical_or(mask, grow_mask)
-            else:
-                full_mask = mask.astype(bool)
+                new_mask = mask ^ full_mask
+                for i in range(1, grow + 1):
+                    mask[i:] |= new_mask[:-i]
+                    mask[:-i] |= new_mask[i:]
+
+                if debug:
+                    print('mask after growth=', mask.astype(int))
+
+            full_mask = mask
 
             # Check if the mask is unchanged
             if not np.logical_or.reduce(last_mask ^ full_mask):
