@@ -159,6 +159,11 @@ class Resample(PrimitivesBASE):
         if not all(len(ad) == 1 for ad in adinputs):
             raise OSError("All input images must have only one extension.")
 
+        # Ill-defined behaviour for this situation so
+        if len(adinputs) == 1 and not params["trim_data"]:
+            log.warning("Setting trim_data=True since there is only one input frame")
+            params["trim_data"] = True
+
         # Check we can get some numerical shifts and that the number is
         # compatible with the number of images
         try:
