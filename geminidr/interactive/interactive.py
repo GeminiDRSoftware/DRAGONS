@@ -1109,6 +1109,7 @@ class GISingleApertureView(object):
         #  (if we have one to recycle)
         self.label.text = ""
         self.box.fill_alpha = 0.0
+        self.location.visible=False
 
 
 class GIApertureSliders(object):
