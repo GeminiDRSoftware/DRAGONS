@@ -345,9 +345,14 @@ class UnivariateSplineWithOutlierRemoval:
 
             # When sigma-clipping, only remove the originally-masked points.
             # Note that this differs from the astropy.modeling code because
-            # the sigma-clipping and spline-fitting are done independently here.
-            d, mask, v = NDStacker.sigclip(spline_y-y, mask=full_mask,
-                                           variance=None, **outlier_kwargs)
+            # the sigma-clipping and spline-fitting are done independently
+            # here.
+            d, mask, v = NDStacker.sigclip(
+                spline_y - y,
+                mask=full_mask.astype(np.uint16) * 32768,
+                variance=None,
+                **outlier_kwargs
+            )
 
             mask = mask.astype(bool)
             if debug:
