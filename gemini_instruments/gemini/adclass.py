@@ -1956,14 +1956,14 @@ class AstroDataGemini(AstroDataFits):
         """
         if self.is_single:
             try:
-                return 3600 * np.sqrt(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix))
+                return 3600 * np.sqrt(abs(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix)))
             except IndexError:
                 return None
 
         pixel_scale_list = []
         for ext in self:
             try:
-                pixel_scale_list.append(3600 * np.sqrt(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix)))
+                pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
             except IndexError:
                 pixel_scale_list.append(None)
         if mean:
