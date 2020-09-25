@@ -355,12 +355,12 @@ class UnivariateSplineWithOutlierRemoval:
 
             if grow > 0:
                 new_mask = mask ^ full_mask
-                for i in range(1, grow + 1):
-                    mask[i:] |= new_mask[:-i]
-                    mask[:-i] |= new_mask[i:]
-
-                if debug:
-                    print('mask after growth=', mask.astype(int))
+                if new_mask.any():
+                    for i in range(1, grow + 1):
+                        mask[i:] |= new_mask[:-i]
+                        mask[:-i] |= new_mask[i:]
+                    if debug:
+                        print('mask after growth=', mask.astype(int))
 
             full_mask = mask
 
