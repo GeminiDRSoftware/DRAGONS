@@ -192,7 +192,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         """
         x = (self.fig.x_range.start + self.fig.x_range.end) / 2
-        self.model.add_aperture(x, x)
+        self.model.add_aperture(x, x, x)
         self.update_details()
 
     def visualize(self, doc):
