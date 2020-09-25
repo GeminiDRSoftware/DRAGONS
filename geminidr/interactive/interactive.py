@@ -963,6 +963,10 @@ class GIApertureModel(ABC):
     def get_profile(self):
         pass
 
+    @abstractmethod
+    def find_closest(self, x):
+        pass
+
 
 class GISingleApertureView(object):
     def __init__(self, fig, aperture_id, location, start, end):

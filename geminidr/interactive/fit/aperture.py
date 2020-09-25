@@ -49,6 +49,18 @@ class FindSourceAperturesModel(GIApertureModel):
 
         self.recalc_listeners = list()
 
+    def find_closest(self, x):
+        aperture_id = None
+        location = None
+        delta = None
+        for i, loc in enumerate(self.locations):
+            new_delta = abs(loc-x)
+            if delta is None or new_delta < delta:
+                aperture_id = i+1
+                location = loc
+                delta = new_delta
+        return aperture_id, location, self.all_limits[aperture_id-1][0], self.all_limits[aperture_id-1][1]
+
     def add_recalc_listener(self, listener):
         """
         Add a listener function to call when the apertures get recalculated

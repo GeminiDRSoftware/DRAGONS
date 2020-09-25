@@ -67,9 +67,9 @@ class Controller(object):
         self.helptext = helptext
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model)
+            self.tasks['a'] = ApertureTask(aperture_model, helptext)
         if band_model:
-            self.tasks['b'] = BandTask(band_model)
+            self.tasks['b'] = BandTask(band_model, helptext)
         self.task = None
         self.x = None
         self.y = None
@@ -124,7 +124,15 @@ class Controller(object):
         """
         global controller
         controller = self
-        self.set_help_text(None)
+        if len(self.tasks) == 1:
+            for k, v in self.tasks.items():
+                self.task = v
+            # self.task = self.tasks.values()[0]
+            self.set_help_text(self.task.helptext())
+            self.task.start(self.x, self.y)
+        else:
+            # show selection of available tasks
+            self.set_help_text(None)
 
     def on_mouse_leave(self, event):
         """
@@ -183,8 +191,10 @@ class Controller(object):
         def _ui_loop_handle_key(key):
             if self.task:
                 if self.task.handle_key(key):
-                    self.task = None
-                    self.set_help_text()
+                    if len(self.tasks) > 1:
+                        # only if we have multiple tasks, otherwise no point in offering 1 task option
+                        self.task = None
+                        self.set_help_text()
             else:
                 if key in self.tasks:
                     self.task = self.tasks[key]
@@ -266,7 +276,7 @@ class ApertureTask(Task):
     """
     Task for controlling apertures.
     """
-    def __init__(self, aperture_model):
+    def __init__(self, aperture_model, helptext):
         """
         Create aperture task for the given model.
 
@@ -283,6 +293,7 @@ class ApertureTask(Task):
         self.aperture_id = None
         self.last_x = None
         self.last_y = None
+        self.helptext_area = helptext
 
     def start(self, x, y):
         self.last_x = x
@@ -321,6 +332,7 @@ class ApertureTask(Task):
         self.right = x
         self.aperture_id = self.aperture_model.add_aperture(x, x, x)
         self.mode = "width"
+        self.update_help(self.mode)
 
     def stop_aperture(self):
         """
@@ -332,6 +344,7 @@ class ApertureTask(Task):
         self.aperture_center = None
         self.aperture_id = None
         self.mode = "location"
+        self.update_help(self.mode)
 
     def handle_key(self, key):
         """
@@ -364,13 +377,28 @@ class ApertureTask(Task):
                 else:
                     self.start_aperture(self.last_x, self.last_y)
         if key == '[':
+            if self.aperture_center is None:
+                # get closest one
+                self.aperture_id, self.aperture_center, self.left, self.right \
+                    = self.aperture_model.find_closest(self.last_x)
+                if self.aperture_id is None:
+                    return False
             self.mode = 'left'
+            self.update_help(self.mode)
             return False
         if key == ']':
+            if self.aperture_center is None:
+                # get closest one
+                self.aperture_id, self.aperture_center, self.left, self.right \
+                    = self.aperture_model.find_closest(self.last_x)
+                if self.aperture_id is None:
+                    return False
             self.mode = 'right'
+            self.update_help(self.mode)
             return False
         if key == 'd':
-            self.aperture_model.delete_aperture(self.aperture_id)
+            if self.aperture_center is not None:
+                self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
             return True
         return False
@@ -408,6 +436,29 @@ class ApertureTask(Task):
     def description(self):
         return "Edit <b>apertures</b> interactively"
 
+    def update_help(self, mode):
+        if self.mode == 'width':
+            self.helptext_area.text = """
+              Drag to desired aperture width<br/>
+              <b>a</b> to set the aperture<br/>
+              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+              <b>d</b> to delete the aperture"""
+        elif self.mode == 'left':
+            self.helptext_area.text = """
+              Drag left side to desired aperture width<br/>
+              <b>a</b> to set the aperture<br/>
+              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+              <b>d</b> to delete the aperture"""
+        elif self.mode == 'right':
+            self.helptext_area.text = """
+                  Drag right side to desired aperture width<br/>
+                  <b>a</b> to set the aperture<br/>
+                  <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+                  <b>d</b> to delete the aperture"""
+        else:
+            self.helptext_area.text = self.helptext()
+
     def helptext(self):
         return """Drag to desired aperture width<br/>\n<b>a</b> to set the aperture<br/>
                   <b>f</b> to find a nearby peak to the cursor<br/>
@@ -420,7 +471,7 @@ class BandTask(Task):
     """
     Task for operating on the bands.
     """
-    def __init__(self, band_model):
+    def __init__(self, band_model, helptext):
         """
         Create a band task for the given :class:`GIBandModel`
 
@@ -432,6 +483,7 @@ class BandTask(Task):
         self.band_model = band_model
         self.band_edge = None
         self.band_id = None
+        self.helptext_area = helptext
 
     def start(self, x, y):
         """
