@@ -150,7 +150,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
 
     # Create an empty, full-sized mask within which the fitter will populate
     # only the user-specified region(s):
-    mask = np.zeros_like(image, dtype=np.bool)
+    mask = np.zeros_like(image, dtype=bool)
 
     # Initialize an array with same dtype as input to accumulate fit values
     # into when looping & because modelling always seems to return float64:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests applied to primitives_spect.py
 
@@ -26,25 +25,21 @@ Notes
     `model_to_dict()` and `dict_to_model()` functions that convert the Model
     instance to a dict create/require this.
 """
-from copy import copy
+
+import os
 
 import numpy as np
-import os
 import pytest
-
-import astrodata
-
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
-from matplotlib import pyplot as plt
-from matplotlib import gridspec
+from geminidr.core import primitives_spect
 from scipy import optimize
 
-from geminidr.core import primitives_spect
+
+# -- Tests --------------------------------------------------------------------
 
 
-# -- Tests ---------------------------------------------------------------------
 def test_extract_1d_spectra():
     # Input Parameters ----------------
     width = 200
@@ -170,8 +165,7 @@ def test_sky_correct_from_slit():
     # Input Parameters ----------------
     width = 200
     height = 100
-
-    n_sky_lines = 500
+    n_sky_lines = 50
 
     # Simulate Data -------------------
     np.random.seed(0)
@@ -188,18 +182,17 @@ def test_sky_correct_from_slit():
     ad[0].data += sky(ad[0].data, axis=1)
 
     # Running the test ----------------
-    _p = primitives_spect.Spect([])
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad])[0]
 
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+    np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
 def test_sky_correct_from_slit_with_aperture_table():
     # Input Parameters ----------------
     width = 200
     height = 100
+    n_sky_lines = 50
 
     # Simulate Data -------------------
     np.random.seed(0)
@@ -209,7 +202,7 @@ def test_sky_correct_from_slit_with_aperture_table():
     source = fake_point_source_spatial_profile(
         height, width, source_model_parameters, fwhm=0.08 * height)
 
-    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+    sky = SkyLines(n_sky_lines, width - 1)
 
     ad = create_zero_filled_fake_astrodata(height, width)
     ad[0].data += source
@@ -217,20 +210,16 @@ def test_sky_correct_from_slit_with_aperture_table():
     ad[0].APERTURE = get_aperture_table(height, width)
 
     # Running the test ----------------
-    _p = primitives_spect.Spect([])
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad])[0]
 
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
-
-
-# noinspection PyPep8Naming
+    np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
 def test_sky_correct_from_slit_with_multiple_sources():
     width = 200
     height = 100
+    n_sky_lines = 50
     np.random.seed(0)
 
     y0 = height // 2
@@ -238,11 +227,11 @@ def test_sky_correct_from_slit_with_multiple_sources():
     fwhm = 0.05 * height
 
     source = (
-            fake_point_source_spatial_profile(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
-            fake_point_source_spatial_profile(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
+        fake_point_source_spatial_profile(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
+        fake_point_source_spatial_profile(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
     )
 
-    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+    sky = SkyLines(n_sky_lines, width - 1)
 
     ad = create_zero_filled_fake_astrodata(height, width)
 
@@ -252,12 +241,10 @@ def test_sky_correct_from_slit_with_multiple_sources():
     ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, y1, -3, 3])
 
     # Running the test ----------------
-    _p = primitives_spect.Spect([])
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad])[0]
 
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+    np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
 def test_trace_apertures():
@@ -283,7 +270,9 @@ def test_trace_apertures():
     np.testing.assert_allclose(desired, actual, atol=0.18)
 
 
-# --- Fixtures and helper functions --------------------------------------------
+# --- Fixtures and helper functions -------------------------------------------
+
+
 def create_zero_filled_fake_astrodata(height, width):
     """
     Helper function to generate a fake astrodata object filled with zeros.

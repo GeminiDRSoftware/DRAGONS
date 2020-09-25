@@ -8,7 +8,6 @@
 import os
 import re
 from copy import deepcopy
-from datetime import datetime
 from importlib import import_module
 import warnings
 
@@ -2298,7 +2297,6 @@ class Spect(PrimitivesBASE):
                 log.warning("{} has not been distortion corrected. Sky "
                             "subtraction is likely to be poor.".format(ad.filename))
 
-            start = datetime.now()
             for ext in ad:
                 axis = ext.dispersion_axis() - 1  # python sense
 
