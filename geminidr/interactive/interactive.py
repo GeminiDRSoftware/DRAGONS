@@ -552,6 +552,9 @@ def connect_figure_extras(fig, aperture_model, band_model):
                                         code="plot.properties.renderers.change.emit()"))
 
 
+_hamburger_order_number = 1
+
+
 def hamburger_helper(title, widget):
     """
     Create a bokeh layout with a top title and hamburger button
@@ -573,10 +576,17 @@ def hamburger_helper(title, widget):
     -------
     :class:`~bokeh.models.layouts.Column` : bokeh column to add into your document
     """
-    label = Div(text=title)
+    global _hamburger_order_number
+    if widget.css_classes:
+        widget.css_classes.append('hamburger_helper_%s' % _hamburger_order_number)
+    else:
+        widget.css_classes = list('hamburger_helper_%s' % _hamburger_order_number)
+    _hamburger_order_number = _hamburger_order_number+1
+
     # TODO Hamburger icon
-    button = Button(label="[X]")
-    top = row(children=[button, label])
+    button = Button(label=title, css_classes=['hamburger_helper',])
+
+    top = button
 
     def burger_action():
         if widget.visible:
@@ -1214,7 +1224,7 @@ class GIApertureView(object):
         self.controls.height_policy = "auto"
         self.inner_controls = column()
         self.inner_controls.height_policy = "auto"
-        self.controls = hamburger_helper("", self.inner_controls)
+        self.controls = hamburger_helper("Apertures", self.inner_controls)
 
         self.model = model
         model.add_listener(self)

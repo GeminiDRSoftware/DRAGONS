@@ -28,6 +28,7 @@ body {
 #top {
     height: 128px;
 }
+
 .modal_overlay {
     visibility: hidden;
     position: fixed;
@@ -43,4 +44,19 @@ body {
     font-size: 32px;
     font-family: sans-serif;
     padding-top: 200px;
+}
+
+.hamburger_helper button.bk-btn {
+    background-image: url('hamburger.svg');
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    vertical-align: 5px;
+    padding-left: 20px;
+    appearance: none;
+    border: none;
+    text-align: left;
 }
