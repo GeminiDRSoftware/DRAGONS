@@ -396,6 +396,16 @@ class ApertureTask(Task):
             self.mode = 'right'
             self.update_help(self.mode)
             return False
+        if key == 'l':
+            if self.aperture_center is None:
+                # get closest one
+                self.aperture_id, self.aperture_center, self.left, self.right \
+                    = self.aperture_model.find_closest(self.last_x)
+                if self.aperture_id is None:
+                    return False
+            self.mode = 'location'
+            self.update_help(self.mode)
+            return False
         if key == 'd':
             if self.aperture_center is not None:
                 self.aperture_model.delete_aperture(self.aperture_id)
@@ -427,6 +437,10 @@ class ApertureTask(Task):
                 self.left = min(self.aperture_center, x)
             elif self.mode == 'right':
                 self.right = max(self.aperture_center, x)
+            elif self.mode == 'location':
+                self.aperture_center = x
+                self.right = max(self.right, x)
+                self.left = min(self.left, x)
             self.aperture_model.adjust_aperture(self.aperture_id, self.aperture_center, self.left, self.right)
 
         self.last_x = x
@@ -443,19 +457,29 @@ class ApertureTask(Task):
               <b>a</b> to set the aperture<br/>
               <b>[</b> to only edit the left edge (must remain left of the location)<br/>
               <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+              <b>l</b> to edit the location<br/>
               <b>d</b> to delete the aperture"""
         elif self.mode == 'left':
             self.helptext_area.text = """
               Drag left side to desired aperture width<br/>
               <b>a</b> to set the aperture<br/>
               <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+              <b>l</b> to edit the location<br/>
               <b>d</b> to delete the aperture"""
         elif self.mode == 'right':
             self.helptext_area.text = """
                   Drag right side to desired aperture width<br/>
                   <b>a</b> to set the aperture<br/>
                   <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+                  <b>l</b> to edit the location<br/>
                   <b>d</b> to delete the aperture"""
+        elif self.mode == 'location':
+            self.helptext_area.text = """
+                      Drag right side to desired aperture width<br/>
+                      <b>a</b> to set the aperture<br/>
+                      <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+                      <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+                      <b>d</b> to delete the aperture"""
         else:
             self.helptext_area.text = self.helptext()
 
@@ -464,6 +488,7 @@ class ApertureTask(Task):
                   <b>f</b> to find a nearby peak to the cursor<br/>
                   <b>[</b> to only edit the left edge (must remain left of the location)<br/>
                   <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+                  <b>l</b> to edit the location<br/>
                   <b>d</b> to delete the aperture"""
 
 
