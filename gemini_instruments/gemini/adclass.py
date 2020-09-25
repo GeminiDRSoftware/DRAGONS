@@ -1881,7 +1881,7 @@ class AstroDataGemini(AstroDataFits):
         # Return None if the WCS isn't sky coordinates
         try:
             return self._get_wcs_coords()['lon']
-        except KeyError:
+        except (KeyError, TypeError):
             return None
 
     @astro_data_descriptor
@@ -1898,7 +1898,7 @@ class AstroDataGemini(AstroDataFits):
         # Return None if the WCS isn't sky coordinates
         try:
             return self._get_wcs_coords()['lat']
-        except KeyError:
+        except (KeyError, TypeError):
             return None
 
     @astro_data_descriptor
@@ -1924,6 +1924,9 @@ class AstroDataGemini(AstroDataFits):
             (right ascension, declination)
         """
         wcs = self.wcs if self.is_single else self[0].wcs
+        if wcs is None:
+            return None
+
         coords = {name: None for name in wcs.output_frame.axes_names}
         for m in wcs.forward_transform:
             try:
@@ -1935,7 +1938,6 @@ class AstroDataGemini(AstroDataFits):
         # TODO: This isn't in old Gemini descriptors. Should it be?
         #if 'NON_SIDEREAL' in self.tags:
         #    ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
-
         return coords
 
     # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
@@ -1957,14 +1959,14 @@ class AstroDataGemini(AstroDataFits):
         if self.is_single:
             try:
                 return 3600 * np.sqrt(abs(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix)))
-            except IndexError:
+            except (IndexError, AttributeError):
                 return None
 
         pixel_scale_list = []
         for ext in self:
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
-            except IndexError:
+            except (IndexError, AttributeError):
                 pixel_scale_list.append(None)
         if mean:
             return np.mean([pixscale for pixscale in pixel_scale_list if pixscale is not None])
