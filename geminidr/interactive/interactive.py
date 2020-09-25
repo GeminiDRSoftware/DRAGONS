@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, \
-    Dropdown, RangeSlider
+    Dropdown, RangeSlider, Span
 
 from geminidr.interactive import server
 
@@ -981,9 +981,10 @@ class GISingleApertureView(object):
         self.right = None
         self.line_source = None
         self.line = None
+        self.location = None
         self.fig = None
         if fig.document:
-            fig.document.add_next_tick_callback(lambda: self.build_ui(fig, aperture_id, start, end))
+            fig.document.add_next_tick_callback(lambda: self.build_ui(fig, aperture_id, location, start, end))
         else:
             self.build_ui(fig, aperture_id, location, start, end)
 
@@ -1023,7 +1024,7 @@ class GISingleApertureView(object):
             ybottom=0
         self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
         fig.add_layout(self.box)
-        self.label = Label(x=(start+end)/2-5, y=ymid, text="%s" % aperture_id)
+        self.label = Label(x=location+2, y=ymid, text="%s" % aperture_id)
         fig.add_layout(self.label)
         self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
         self.left = fig.line(x='x', y='y', source=self.left_source, color="purple")
@@ -1031,6 +1032,9 @@ class GISingleApertureView(object):
         self.right = fig.line(x='x', y='y', source=self.right_source, color="purple")
         self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
         self.line = fig.line(x='x', y='y', source=self.line_source, color="purple")
+        self.location = Span(location=location, dimension='height', line_color='green', line_dash='dashed',
+                             line_width=1)
+        fig.add_layout(self.location)
 
         self.fig = fig
 
@@ -1061,7 +1065,7 @@ class GISingleApertureView(object):
             self.line_source.data = {'x':  self.line_source.data['x'], 'y': [ymid, ymid]}
             self.label.y = ymid
 
-    def update(self, start, end):
+    def update(self, location, start, end):
         """
         Alter the coordinate range for this aperture.
 
@@ -1080,7 +1084,8 @@ class GISingleApertureView(object):
         self.left_source.data = {'x': [start, start], 'y': self.left_source.data['y']}
         self.right_source.data = {'x': [end, end], 'y': self.right_source.data['y']}
         self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
-        self.label.x = (start+end)/2-5
+        self.location.location = location
+        self.label.x = location+2
 
     def delete(self):
         """
@@ -1260,7 +1265,7 @@ class GIApertureView(object):
         """
         if aperture_id <= len(self.aps):
             ap = self.aps[aperture_id-1]
-            ap.update(start, end)
+            ap.update(location, start, end)
         else:
             ap = GISingleApertureView(self.fig, aperture_id, location, start, end)
             self.aps.append(ap)

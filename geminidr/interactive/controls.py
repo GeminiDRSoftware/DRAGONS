@@ -99,7 +99,7 @@ class Controller(object):
         else:
             ht = """While the mouse is over the plot, choose from the following commands:<br/>\n"""
             for key, task in sorted(self.tasks.items()):
-                ht = ht + "<b>[%s]</b> - %s<br/>\n" % (key, task.description())
+                ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
 
         # This has to be done via a callback.  During the key press, we are outside the context of
         # the widget's bokeh document
@@ -275,8 +275,11 @@ class ApertureTask(Task):
         aperture_model : :class:`GIApertureModel`
             The aperture model to operate on
         """
+        self.mode = "location"  # location, width, left, right for placing location, width (both) or left/right side
         self.aperture_model = aperture_model
         self.aperture_center = None
+        self.left = None
+        self.right = None
         self.aperture_id = None
         self.last_x = None
         self.last_y = None
@@ -285,7 +288,10 @@ class ApertureTask(Task):
         self.last_x = x
         self.last_y = y
         self.aperture_center = None
+        self.left = None
+        self.right = None
         self.aperture_id = None
+        self.mode = "location"
 
     def stop(self):
         """
@@ -311,7 +317,10 @@ class ApertureTask(Task):
             y coordinate in data space (unused)
         """
         self.aperture_center = x
-        self.aperture_id = self.aperture_model.add_aperture(x, x)
+        self.left = x
+        self.right = x
+        self.aperture_id = self.aperture_model.add_aperture(x, x, x)
+        self.mode = "width"
 
     def stop_aperture(self):
         """
@@ -322,6 +331,7 @@ class ApertureTask(Task):
         """
         self.aperture_center = None
         self.aperture_id = None
+        self.mode = "location"
 
     def handle_key(self, key):
         """
@@ -353,6 +363,12 @@ class ApertureTask(Task):
                     self.start_aperture(peaks[0], self.last_y)
                 else:
                     self.start_aperture(self.last_x, self.last_y)
+        if key == '[':
+            self.mode = 'left'
+            return False
+        if key == ']':
+            self.mode = 'right'
+            return False
         if key == 'd':
             self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
@@ -375,9 +391,16 @@ class ApertureTask(Task):
         """
         # we are in aperture mode
         if self.aperture_center:
-            start = x
-            end = self.aperture_center + (self.aperture_center-x)
-            self.aperture_model.adjust_aperture(self.aperture_id, start, end)
+            width = abs(self.aperture_center - x)
+            if self.mode == 'width':
+                self.left = self.aperture_center-width
+                self.right = self.aperture_center+width
+            elif self.mode == 'left':
+                self.left = min(self.aperture_center, x)
+            elif self.mode == 'right':
+                self.right = max(self.aperture_center, x)
+            self.aperture_model.adjust_aperture(self.aperture_id, self.aperture_center, self.left, self.right)
+
         self.last_x = x
         self.last_y = y
         return False
@@ -386,9 +409,11 @@ class ApertureTask(Task):
         return "Edit <b>apertures</b> interactively"
 
     def helptext(self):
-        return """Drag to desired aperture width<br/>\n<b>[a]</b> to set the aperture<br/>
-                  <b>[f]</b> to find a nearby peak to the cursor
-                  <b>[d]</b> to delete the aperture"""
+        return """Drag to desired aperture width<br/>\n<b>a</b> to set the aperture<br/>
+                  <b>f</b> to find a nearby peak to the cursor<br/>
+                  <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+                  <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+                  <b>d</b> to delete the aperture"""
 
 
 class BandTask(Task):
@@ -506,4 +531,4 @@ class BandTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Drag to desired band width.<br/>\n<b>[b]</b> to set the band<bt/>\n<b>[d]</b> to delete/cancel the band"""
+        return """Drag to desired band width.<br/>\n<b>b</b> to set the band<bt/>\n<b>d</b> to delete/cancel the band"""
