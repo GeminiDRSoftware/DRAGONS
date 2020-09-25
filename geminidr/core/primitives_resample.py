@@ -176,7 +176,6 @@ class Resample(PrimitivesBASE):
                               for line in f.readlines()]
                 except (TypeError, ValueError):
                     raise ValueError(f"Cannot parse shifts from file {shifts_param}")
-        log.debug("Shifts are: "+repr(shifts))
 
         num_shifts, num_images = len(shifts), len(adinputs)
         if num_shifts == 1:
@@ -189,6 +188,7 @@ class Resample(PrimitivesBASE):
             if len(shift) != len(ad[0].shape):
                 raise ValueError(f"Shift {shift} incompatible with "
                                  f"dimensionality of {ad.filename}")
+            log.debug(f"Shift for {ad.filename} is {shift}")
             shift_model = reduce(Model.__and__,
                                  [models.Shift(offset) for offset in shift])
             wcs = ad[0].wcs
@@ -249,6 +249,7 @@ class Resample(PrimitivesBASE):
             output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
                                  for corners in all_corners)
 
+        print("ORIGIN", origin)
         log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
         adoutputs = []
         for ad in adinputs:
