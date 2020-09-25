@@ -16,7 +16,6 @@ _visualizer = None
 def _handle_key(doc):
     key = doc.session_context.request.arguments['key'][0].decode('utf-8')
     if controls.controller:
-        print("key: %s" % key)
         controls.controller.handle_key(key)
 
 
