@@ -537,7 +537,7 @@ class Fit1DPanel:
                 pass
 
             def delete_band(self, band_id):
-                pass
+                self.fn()
 
             def finish_bands(self):
                 self.fn()
