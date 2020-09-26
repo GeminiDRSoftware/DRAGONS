@@ -774,6 +774,35 @@ class GIBandModel(object):
                 return band_id, band[0], band[1]
         return None, None, None
 
+    def closest_band(self, x):
+        """
+        Fid the band with an edge closest to x.
+
+        Parameters
+        ----------
+        x : float
+            x position to find closest edge to
+
+        Returns
+        -------
+        int, float : int band id and float position of other edge or None, None if no bands exist
+        """
+        ret_band_id = None
+        ret_band = None
+        closest = None
+        for band_id, band in self.bands.items():
+            distance = abs(band[1]-x)
+            if closest is None or distance<closest:
+                ret_band_id = band_id
+                ret_band = band[0]
+                closest = distance
+            distance = abs(band[0] - x)
+            if closest is None or distance < closest:
+                ret_band_id = band_id
+                ret_band = band[1]
+                closest = distance
+        return ret_band_id, ret_band
+
     def contains(self, x):
         """
         Check if any of the bands contains point x

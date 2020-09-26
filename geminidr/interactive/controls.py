@@ -555,7 +555,6 @@ class BandTask(Task):
     def stop_band(self):
         """
         Stop modifying the current band.
-
         """
         self.band_edge = None
         self.band_id = None
@@ -577,14 +576,29 @@ class BandTask(Task):
         if key == 'b':
             if self.band_edge is None:
                 self.start_band()
+                self.update_help()
                 return False
             else:
                 self.stop_band()
+                self.update_help()
                 return True
+        if key == 'e':
+            if self.band_edge is None:
+                self.band_id, self.band_edge = self.band_model.closest_band(self.last_x)
+            self.update_help()
+            return False
         if key == 'd':
-            self.band_model.delete_band(self.band_id)
-            self.stop()
-            return True
+            if self.band_edge is not None:
+                self.band_model.delete_band(self.band_id)
+                self.stop()
+                self.update_help()
+                return True
+            else:
+                band_id, band_edge = self.band_model.closest_band(self.last_x)
+                if band_id is not None:
+                    self.band_model.delete_band(band_id)
+                self.update_help()
+                return True
         return False
 
     def handle_mouse(self, x, y):
@@ -622,6 +636,19 @@ class BandTask(Task):
         """
         return "create a <b>band</b> with edge at cursor"
 
+    def update_help(self):
+        if self.band_edge is not None:
+            self.helptext_area.text = """Drag to desired band width.<br/>\n
+                  <b>B</b> to set the band<br/>\n
+                  <b>D</b> to delete/cancel the current band
+                  """
+        else:
+            self.helptext_area.text = """Drag to desired band width.<br/>\n
+                  <b>B</b> to start a new band<br/>\n
+                  <b>E</b> to edit nearest band<br/>\n
+                  <b>D</b> to delete the nearest band
+                  """
+
     def helptext(self):
         """
         Returns the help for this task for when it is active
@@ -630,4 +657,8 @@ class BandTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Drag to desired band width.<br/>\n<b>b</b> to set the band<bt/>\n<b>d</b> to delete/cancel the band"""
+        return """Drag to desired band width.<br/>\n
+                  <b>B</b> to set the band<br/>\n
+                  <b>E</b> to edit nearest band<br/>\n
+                  <b>D</b> to delete/cancel the current/nearest band
+                  """
