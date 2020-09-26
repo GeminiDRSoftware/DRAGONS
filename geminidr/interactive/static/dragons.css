@@ -29,6 +29,25 @@ body {
     height: 128px;
 }
 
+#footer {
+    background-color: #5384a5;
+    font: helvetica;
+    font-style: italic;
+    font-size: 14px;
+    color: white;
+    text-align: right;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-right: 12px;
+}
+#footer a {
+    color: white;
+}
+
 .modal_overlay {
     visibility: hidden;
     position: fixed;

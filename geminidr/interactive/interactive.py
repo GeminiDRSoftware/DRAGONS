@@ -66,6 +66,10 @@ class PrimitiveVisualizer(ABC):
         """
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
+        # callback = CustomJS(code="""
+        #     setVersion('2.2.1');
+        # """)
+        # self.doc.add_next_tick_callback(callback)
 
     def do_later(self, fn):
         """

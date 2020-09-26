@@ -343,7 +343,7 @@ class ApertureTask(Task):
         """
         self.aperture_center = None
         self.aperture_id = None
-        self.mode = "location"
+        self.mode = ""
         self.update_help(self.mode)
 
     def handle_key(self, key):
@@ -454,42 +454,42 @@ class ApertureTask(Task):
         if self.mode == 'width':
             self.helptext_area.text = """
               Drag to desired aperture width<br/>
-              <b>a</b> to set the aperture<br/>
+              <b>A</b> to set the aperture<br/>
               <b>[</b> to only edit the left edge (must remain left of the location)<br/>
               <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>l</b> to edit the location<br/>
-              <b>d</b> to delete the aperture"""
+              <b>L</b> to edit the location<br/>
+              <b>D</b> to delete the aperture"""
         elif self.mode == 'left':
             self.helptext_area.text = """
               Drag left side to desired aperture width<br/>
-              <b>a</b> to set the aperture<br/>
+              <b>A</b> to set the aperture<br/>
               <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>l</b> to edit the location<br/>
-              <b>d</b> to delete the aperture"""
+              <b>L</b> to edit the location<br/>
+              <b>D</b> to delete the aperture"""
         elif self.mode == 'right':
             self.helptext_area.text = """
                   Drag right side to desired aperture width<br/>
-                  <b>a</b> to set the aperture<br/>
+                  <b>A</b> to set the aperture<br/>
                   <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-                  <b>l</b> to edit the location<br/>
-                  <b>d</b> to delete the aperture"""
+                  <b>L</b> to edit the location<br/>
+                  <b>D</b> to delete the aperture"""
         elif self.mode == 'location':
             self.helptext_area.text = """
-                      Drag right side to desired aperture width<br/>
-                      <b>a</b> to set the aperture<br/>
+                      Drag to desired aperture location<br/>
+                      <b>A</b> to set the aperture<br/>
                       <b>[</b> to only edit the left edge (must remain left of the location)<br/>
                       <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-                      <b>d</b> to delete the aperture"""
+                      <b>D</b> to delete the aperture"""
         else:
             self.helptext_area.text = self.helptext()
 
     def helptext(self):
-        return """Drag to desired aperture width<br/>\n<b>a</b> to set the aperture<br/>
-                  <b>f</b> to find a nearby peak to the cursor<br/>
+        return """<b>A</b> to start the aperture<br/>
+                  <b>F</b> to find a nearby peak to the cursor to start with<br/>
                   <b>[</b> to only edit the left edge (must remain left of the location)<br/>
                   <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-                  <b>l</b> to edit the location<br/>
-                  <b>d</b> to delete the aperture"""
+                  <b>L</b> to edit the location<br/>
+                  <b>D</b> to delete the aperture"""
 
 
 class BandTask(Task):

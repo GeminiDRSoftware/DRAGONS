@@ -1,7 +1,10 @@
+from astrodata import version
+
 import pathlib
 
+import tornado
 from bokeh.application import Application
-from bokeh.application.handlers import FunctionHandler, Handler
+from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
 from jinja2 import Template
 
@@ -11,6 +14,14 @@ __all__ = ["interactive_fitter", "stop_server"]
 
 _bokeh_server = None
 _visualizer = None
+
+
+__version__ = version()
+
+
+class VersionHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write(__version__)
 
 
 def _handle_key(doc):
@@ -77,8 +88,9 @@ def start_server():
     global _bokeh_server
 
     if not _bokeh_server:
-        static_app = Application(DRAGONSStaticHandler())  # Application(StaticHackHandler(dummy_fn))
-        _bokeh_server = Server({'/': _bkapp, '/dragons': static_app, '/handle_key': _handle_key}, num_procs=1)
+        static_app = Application(DRAGONSStaticHandler())
+        _bokeh_server = Server({'/': _bkapp, '/dragons': static_app, '/handle_key': _handle_key,
+                                }, num_procs=1, extra_patterns=[('/version', VersionHandler),])
         _bokeh_server.start()
 
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
