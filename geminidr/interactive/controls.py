@@ -509,21 +509,32 @@ class BandTask(Task):
         self.band_edge = None
         self.band_id = None
         self.helptext_area = helptext
+        self.last_x = None
+        self.last_y = None
 
     def start(self, x, y):
         """
-        Start a new band with the current mouse position.
-
-        This starts a band with one edge at the current x coordinate.
+        Start a band task with the current mouse position.
 
         Parameters
         ----------
         x : float
-            x coordinate in dataspace for one edge of the band
+            x coordinate of the mouse to start with
         y : float
             y coordinate of the mouse, unused
 
         """
+        self.last_x = x
+        self.last_y = y
+
+    def start_band(self):
+        """
+        Start a new band with the current mouse position.
+
+        This starts a band with one edge at the current x coordinate.
+        """
+        x = self.last_x
+        y = self.last_y
         (band_id, start, end) = self.band_model.find_band(x)
         if band_id is not None:
             self.band_id = band_id
@@ -538,6 +549,10 @@ class BandTask(Task):
             self.band_model.band_id += 1
 
     def stop(self):
+        if self.band_edge is not None:
+            self.stop_band()
+
+    def stop_band(self):
         """
         Stop modifying the current band.
 
@@ -560,8 +575,12 @@ class BandTask(Task):
 
         """
         if key == 'b':
-            self.stop()
-            return True
+            if self.band_edge is None:
+                self.start_band()
+                return False
+            else:
+                self.stop_band()
+                return True
         if key == 'd':
             self.band_model.delete_band(self.band_id)
             self.stop()
@@ -584,10 +603,13 @@ class BandTask(Task):
             y coordinate of mouse in data space
 
         """
+        self.last_x = x
+        self.last_y = y
         # we are in band mode
-        start = x
-        end = self.band_edge
-        self.band_model.adjust_band(self.band_id, start, end)
+        if self.band_edge is not None:
+            start = x
+            end = self.band_edge
+            self.band_model.adjust_band(self.band_id, start, end)
         return False
 
     def description(self):
