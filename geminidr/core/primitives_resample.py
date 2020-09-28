@@ -152,6 +152,8 @@ class Resample(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        # pop the params so we can pass the rest of the dict to helper method
         shifts_param = params.pop("shifts")
         sfx = params.pop("suffix")
 
