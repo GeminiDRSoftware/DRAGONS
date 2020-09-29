@@ -1593,6 +1593,9 @@ class FitsLoader:
                 if nd.wcs is None:
                     try:
                         nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+                        # In case WCS info is in the PHU
+                        if nd.wcs is None:
+                            nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
                     except TypeError as e:
                         raise e
                 provider.append(nd, name=def_ext, reset_ver=False)
