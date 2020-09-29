@@ -79,11 +79,13 @@ class Photometry(PrimitivesBASE):
 
         for ad in adinputs:
             try:
-                ra = ad.wcs_ra()
-                dec = ad.wcs_dec()
-                if type(ra) is not float:
+                try:
+                    ra = float(ad.wcs_ra())
+                except TypeError:
                     raise ValueError("wcs_ra descriptor did not return a float.")
-                if type(dec) is not float:
+                try:
+                    dec = float(ad.wcs_dec())
+                except TypeError:
                     raise ValueError("wcs_dec descriptor did not return a float.")
             except Exception:
                 if "qa" in self.mode:
