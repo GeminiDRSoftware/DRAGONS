@@ -6,7 +6,7 @@
 Change Logs
 ***********
 
-[KL: TO REMOVE BEFORE RELEASE.  Last update up to commit  Wed Aug 26 14:24:56 2020]
+[KL: TO REMOVE BEFORE RELEASE.  Last update up to commit  Thu Sep 17 16:57 HST 2020]
 
 2.1.2
 =====
@@ -17,6 +17,11 @@ Bug Fixes
 **gemini_instruments.gemini**
 
 * Fix the GCALLAMP tag for NIR data to include the QH lamp.
+
+**geminidr.core**
+
+* Remove incorrect logging in separateSky when object and/or sky files are specified.
+* Improve algorithm for separating on-source and on-sky frames.
 
 **geminidr.gemini**
 
