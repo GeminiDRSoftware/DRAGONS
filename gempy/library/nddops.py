@@ -314,11 +314,11 @@ class NDStacker:
                                  stage='immediately after rejection')
 
         # when mask is None rejector return a bool mask.
-        # convert dtype and set mask values to 36768
+        # convert dtype and set mask values to 32768
         rejmap = None
         if rejmask is not None:
             if rejmask.dtype.kind == 'b':
-                rejmask = rejmask.astype(DQ.datatype) * 36768
+                rejmask = rejmask.astype(DQ.datatype) * 32768
 
             # Unset the 32768 bit *only* if it's set in all input pixels
             rejmask &= ~(np.bitwise_and.reduce(rejmask, axis=0) & 32768)
