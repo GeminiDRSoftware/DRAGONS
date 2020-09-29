@@ -283,9 +283,9 @@ class UnivariateSplineWithOutlierRemoval:
             print(y)
             print(orig_mask)
 
-        iter = 0
+        iteration = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
-        while iter < niter+1:
+        while iteration < niter+1:
             last_mask = full_mask
             x_to_fit = x.astype(float)
 
@@ -303,6 +303,8 @@ class UnivariateSplineWithOutlierRemoval:
 
             xgood = x_to_fit[~full_mask]
             while True:
+                if debug:
+                    print(f"Iter {iteration}: epsf loop")
                 xunique, indices = np.unique(xgood, return_index=True)
                 if len(indices) == len(xgood):
                     # All unique x values so continue
@@ -311,7 +313,7 @@ class UnivariateSplineWithOutlierRemoval:
                     raise ValueError("Must specify spline order when there are "
                                      "duplicate x values")
                 for i in range(len(xgood)):
-                    if not (last_mask[i] or i in indices):
+                    if i not in indices:
                         xgood[i] *= (1.0 + epsf)
 
             # Space knots equally based on density of unique x values
@@ -357,8 +359,12 @@ class UnivariateSplineWithOutlierRemoval:
 
             # Check if the mask is unchanged
             if not np.logical_or.reduce(last_mask ^ full_mask):
+                if debug:
+                    print(f"Iter {iteration}: Breaking")
                 break
-            iter += 1
+            if debug:
+                print(f"Iter {iteration}: Starting new iteration")
+            iteration += 1
 
         # Create a standard BSpline object
         try:

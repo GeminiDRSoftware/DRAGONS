@@ -39,10 +39,8 @@ logfilename = 'test_preprocess.log'
 
 
 @pytest.fixture
-def niri_images():
+def niri_images(astrofaker):
     """Create two NIRI images, one all 1s, the other all 2s"""
-    astrofaker = pytest.importorskip("astrofaker")
-
     adinputs = []
     for i in (1, 2):
         ad = astrofaker.create('NIRI', 'IMAGE')
@@ -74,7 +72,7 @@ def test_scale_by_exposure_time(niri_images):
 
 
 @pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_add_object_mask_to_dq():
+def test_add_object_mask_to_dq(astrofaker):
     ad_orig = astrofaker.create('F2', 'IMAGE')
 
     # astrodata.open(os.path.join(TESTDATAPATH, 'GMOS', 'N20150624S0106_refcatAdded.fits'))
@@ -87,7 +85,7 @@ def test_add_object_mask_to_dq():
 
 
 @pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_adu_to_electrons():
+def test_adu_to_electrons(astrofaker):
     ad = astrofaker.create("NIRI", "IMAGE")
     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
     p = NIRIImage([ad])
@@ -97,7 +95,7 @@ def test_adu_to_electrons():
 
 
 @pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_apply_dq_plane():
+def test_apply_dq_plane(astrofaker):
     ad = astrofaker.create("NIRI", "IMAGE")
 
     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_nonlinearityCorrected.fits'))

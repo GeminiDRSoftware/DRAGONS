@@ -8,11 +8,9 @@ from geminidr.gmos.lookups import geometry_conf as geotable
 # Star locations: Use unique y values to enable sorting
 GMOS_STAR_LOCATIONS = ((200, 50), (204, 450), (4000, 50), (4004, 450))
 
-astrofaker = pytest.importorskip("astrofaker")
-
 
 @pytest.mark.parametrize('binning', (1, 2, 4))
-def test_inverse_transform_gmos(binning):
+def test_inverse_transform_gmos(astrofaker, binning):
     # Creates GMOS images with stars at predefined points
     ad = astrofaker.create('GMOS-N')
     ad.init_default_extensions(binning=binning, overscan=False)

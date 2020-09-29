@@ -1574,7 +1574,7 @@ class Spect(PrimitivesBASE):
         sec_regions = []
         if section:
             for x1, x2 in (s.split(':') for s in section.split(',')):
-                sec_regions.append(slice(None if x1 == '' else int(x1),
+                sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
                                          None if x2 == '' else int(x2)))
 
         for ad in adinputs:

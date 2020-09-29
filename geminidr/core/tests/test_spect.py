@@ -43,8 +43,6 @@ from scipy import optimize
 
 from geminidr.core import primitives_spect
 
-astrofaker = pytest.importorskip("astrofaker")
-
 
 # -- Tests ---------------------------------------------------------------------
 def test_extract_1d_spectra():
@@ -302,6 +300,8 @@ def create_zero_filled_fake_astrodata(height, width):
     AstroData
         Single-extension zero filled object.
     """
+    astrofaker = pytest.importorskip("astrofaker")
+    
     data = np.zeros((height, width))
 
     hdu = fits.ImageHDU()
