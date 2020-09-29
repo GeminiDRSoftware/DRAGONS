@@ -299,7 +299,12 @@ class ImageDisplay(object):
         s = self._read(self._SZ_IMCURVAL)
         self._inCursorMode = 0
         # only part up to newline is real data
-        return s.split("\n")[0]
+        try:
+            coo = s.split("\n")[0]  # works in Py2
+        except TypeError:
+            coo = s.decode("utf-8", "ignore").split("\n")[0]  # works in Py3
+        return coo
+        #return s.split("\n")[0]
 
     def getConfigno(self,stdname):
 
