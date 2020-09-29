@@ -1967,9 +1967,12 @@ class AstroDataGemini(AstroDataFits):
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
             except (IndexError, AttributeError):
-                pixel_scale_list.append(None)
+                if not mean:
+                    pixel_scale_list.append(None)
         if mean:
-            return np.mean([pixscale for pixscale in pixel_scale_list if pixscale is not None])
+            if pixel_scale_list:
+                return np.mean([pixscale for pixscale in pixel_scale_list])
+            return None
         return pixel_scale_list
 
     def _grating(self):
