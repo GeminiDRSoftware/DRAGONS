@@ -33,37 +33,10 @@ pipeline {
     }
 
     stages {
-        stage ("Prepare"){
-            steps{
-                sendNotifications 'STARTED'
-            }
-        }
 
-//         stage('Code Metrics') {
-//             when {
-//                 branch 'master'
-//             }
-//             environment {
-//                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-//             }
-//             steps {
-//                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-//                 checkout scm
-//                 sh '.jenkins/scripts/setup_agent.sh'
-//                 sh 'tox -e check'
-//             }
-//             post {
-//                 success {
-//                     recordIssues(
-//                         enabledForFailure: true,
-//                         tools: [
-//                             pyLint(pattern: '**/reports/pylint.log'),
-//                             pyDocStyle(pattern: '**/reports/pydocstyle.log')
-//                         ]
-//                     )
-//                 }
-//             }
-//         }
+        stage ("Prepare"){
+            steps{ sendNotifications 'STARTED' }
+        }
 
         stage('Unit tests') {
             parallel {
@@ -178,6 +151,28 @@ pipeline {
                 }
             } // end post
         } // end stage
+
+        stage('Code Metrics') {
+            when { branch 'master' }
+            environment { PATH = "$JENKINS_CONDA_HOME/bin:$PATH" }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                sh 'tox -e check'
+            }
+            post {
+                success {
+                    recordIssues(
+                        enabledForFailure: true,
+                        tools: [
+                            pyLint(pattern: '**//*  *//* reports/pylint.log'),
+                            pyDocStyle(pattern: '**//*  *//* reports/pydocstyle.log')
+                        ]
+                    )
+                }
+            }
+        }
 
     }
     post {
