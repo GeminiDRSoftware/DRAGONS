@@ -2514,7 +2514,7 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
                 reinit_params = ('step', 'nsum', 'max_missed', 'max_shift')
 
-                def trace_apertures_reconstruct_points(ext, locations, config):
+                def trace_apertures_reconstruct_points(config):
                     dispaxis = 2 - ext.dispersion_axis()
                     all_coords = []
                     for loc in locations:
@@ -2536,7 +2536,7 @@ class Spect(PrimitivesBASE):
                             all_coords.append(in_coords)
                     return all_coords
 
-                all_coords = trace_apertures_reconstruct_points(ext, locations, config)
+                all_coords = trace_apertures_reconstruct_points(config)
 
                 # Purely for drawing in the image display
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -2550,10 +2550,8 @@ class Spect(PrimitivesBASE):
                                                                   tab_name_fmt="Aperture {}",
                                                                   xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
                                                                   grow_slider=True,
-                                                                  reconstruct_points=lambda conf:
-                                                                  trace_apertures_reconstruct_points(ext,
-                                                                                                     locations,
-                                                                                                     conf))
+                                                                  reconstruct_points=
+                                                                      trace_apertures_reconstruct_points)
                     status = geminidr.interactive.server.interactive_fitter(visualizer)
                     all_m_final = [fit.model.model for fit in visualizer.fits]
                     for m in all_m_final:
