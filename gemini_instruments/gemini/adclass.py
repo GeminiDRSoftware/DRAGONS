@@ -1971,7 +1971,7 @@ class AstroDataGemini(AstroDataFits):
                     pixel_scale_list.append(None)
         if mean:
             if pixel_scale_list:
-                return np.mean([pixscale for pixscale in pixel_scale_list])
+                return np.mean(pixel_scale_list)
             return None
         return pixel_scale_list
 
