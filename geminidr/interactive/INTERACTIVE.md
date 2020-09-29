@@ -5,6 +5,24 @@ in the primitives in the recipe system.  These tools depend
 on bokeh and spin up an embedded webserver to provide the
 user interface.
 
+## Quick Start
+
+### Identify Coordinate inputs, Fit inputs
+
+Look over the primitive and see what inputs are used to
+generate the initial set of coordinates to be fit.  This 
+is typically an expensive operation and we want to 
+separate out these inputs accordingly in the UI.
+
+The logic to generate the coordinates from those
+inputs will also be placed in a method so it can be 
+used by the existing non-interactive code and by the new
+interactive UI.
+
+You'll also want to note the inputs that go into the fit.
+These will be dynamically adjustable as the recalcuation
+should be fairly quick.
+
 ## Standard Approach
 
 The standard approach in an interactive primitive is to
@@ -44,8 +62,6 @@ The core interactive/non-interactive piece in the primitive looks like this:
                                                       grow_slider=True)
         status = geminidr.interactive.server.interactive_fitter(visualizer)
         all_m_final = [fit.model.model for fit in visualizer.fits]
-        for m in all_m_final:
-            print(m)
     else:
         all_m_final = []
         fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
@@ -77,6 +93,52 @@ Either way, when the code proceeds from here, `all_m_final` has the fit results.
 The hope is that for most or all 1-D fits, the fairly short `TraceApertures1DVisualizer`
 and it's corresponding helper method `trace_apertures_reconstruct_points` are all that
 would be needed for additional primitives.
+
+### TraceApertures1DVisualizer
+
+It's worth taking a closer look at this visualizer that is used by `traceApertures`.
+This visualizer subclasses an abstract base class with most of the logic.  Here is 
+our constructor:
+
+```python
+class TraceApertures1DVisualizer(Fit1DVisualizer):
+    def __init__(self, allx, ally, models, config, ext=None, locations=None,
+                 **kwargs):
+        self.ext = ext
+        self.locations = locations
+        super().__init__(allx, ally, models, config, **kwargs)
+```
+
+This subclass enhances the base by holding onto the `AstroData` extension and the
+list of aperture locations.  All `Fit1DVisualizer`s also have a call to reconstruct
+the input coordinates.  This is the `reconstruct_points` method.  Here it depends
+on some logic custom to the aperture tracing.  Note the call to the super method
+and the inline function/`do_later` call.  This boilerplate approach should be used
+to allow the UI to pop up a modal message during the expensive calculation.  That is,
+while the code takes 20 second or so in `trace_apertures_reconstruct_points`, the
+base class will display a modal message to alert the user that work is being done.
+This happens due to the superclass call and the `do_later()` construct.
+
+```python
+def reconstruct_points(self):
+    """
+    Reconstruct the initial data points because the configuration has
+    changed and needs it.
+
+    This is expected to be slow.
+    """
+    # super() to update the Config with the widget values
+    # In this primitive, init_mask is always empty
+    super().reconstruct_points()
+
+    def fn():
+        all_coords = trace_apertures_reconstruct_points(self.ext, self.locations, self.config)
+        for fit, coords in zip(self.fits, all_coords):
+            fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
+            fit.perform_fit()
+        self.reinit_button.disabled = False
+    self.do_later(fn)
+```
 
 ## Modules
 
