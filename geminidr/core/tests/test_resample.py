@@ -15,7 +15,7 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 
 @pytest.mark.parametrize('trim_data', (False, True))
 @pytest.mark.parametrize('file_write', (False, True))
-def test_shift_images(trim_data, file_write, path_to_outputs):
+def test_shift_images(astrofaker, trim_data, file_write, path_to_outputs):
     """
     Creates several fake AD objects with a single source in different
     locations and then shifts them. Checks that the output image sizes are
@@ -24,8 +24,6 @@ def test_shift_images(trim_data, file_write, path_to_outputs):
     This tests trimming and not trimming images, and passing the shifts
     via a string and a file on disk.
     """
-    astrofaker = pytest.importorskip("astrofaker")
-
     offsets = ((-10, -10), (-10, 10), (10, 10), (10, -10), (0, 0))
     min_xoff = min(off[0] for off in offsets)
     min_yoff = min(off[1] for off in offsets)
