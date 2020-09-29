@@ -14,7 +14,7 @@ from bokeh.palettes import Category10
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras, GIBandListener
-from gempy.library import tracing, astrotools as at
+
 
 
 class InteractiveModel(ABC):
@@ -692,7 +692,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     def __init__(self, allx, ally, models, config, log=None,
                  reinit_params=None, order_param=None,
                  min_order=1, max_order=10, tab_name_fmt='{}',
-                 xlabel='x', ylabel='y', **kwargs):
+                 xlabel='x', ylabel='y', reconstruct_points=None, **kwargs):
         """
         Parameters
         ----------
@@ -703,6 +703,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         reinit_params: list of parameters related to reinitializing fit arrays
         """
         super().__init__(log=log)
+
+        self.reconstruct_points_fn = reconstruct_points
 
         self.config = copy(config)
         # Make the widgets accessible from external code so we can update
@@ -799,101 +801,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.config.update(**config_update)
         self.do_later(fn)
 
-
-class TraceApertures1DVisualizer(Fit1DVisualizer):
-    def __init__(self, allx, ally, models, config, ext=None, locations=None,
-                 **kwargs):
-        """
-        Create a visualizer specifically for `geminidr.core.parameters_spect.traceApertures`.
-
-        This mostly leans on `~Fit1DVisualizer` to do the work, but this subclass
-        encapsulates the logic to regenerate our initial set of points if any of
-        the core config parameters change.
-
-        Parameters
-        ----------
-        allx : array of array of float
-            array of arrays of x coordinate float values
-        ally : array of array of float
-            array of arrays of y coordinate float values
-        models
-        config : :class:`gempy.library.config.config.Config`
-            config for the primitive
-        ext : :class:`~astrodata.core.AstroData`
-            FITS extension to work on
-        locations : list of float
-            Aperture locations
-        kwargs
-        """
-        self.ext = ext
-        self.locations = locations
-        super().__init__(allx, ally, models, config, **kwargs)
-
-    def reconstruct_points(self):
-        """
-        Reconstruct the initial data points because the configuration has
-        changed and needs it.
-
-        This is expected to be slow.
-        """
-        # super() to update the Config with the widget values
-        # In this primitive, init_mask is always empty
-        super().reconstruct_points()
-
-        def fn():
-            all_coords = trace_apertures_reconstruct_points(self.ext, self.locations, self.config)
-            for fit, coords in zip(self.fits, all_coords):
-                fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
-                fit.perform_fit()
-            self.reinit_button.disabled = False
-        self.do_later(fn)
-
-
-def trace_apertures_reconstruct_points(ext, locations, config):
-    """
-    Reconstruct the initial points from the given configuration.
-
-    This is a helper method used both by the UI and by the
-    relevant primitive in non-interactive mode.  It does the
-    initial, very expensive, initialization of the dataset
-    with some of the core config parameters.
-
-    These core inputs are visibly separated in the UI and
-    kick off a modal dialog message and the slow reprocess.
-    Once that is done, the plots are re-seeded with the
-    updated points and the other parameters may be worked with
-    more real-time again.
-
-    Parameters
-    ----------
-    ext : :class:`~astrodata.core.AstroData`
-        extension to work on
-    locations : list of double
-        aperture locations
-    config : :class:`~gempy.library.config.config.Config`
-        instance of a primitive configuration
-
-    Returns
-    -------
-    array of arrays of float : two array elements for x and y, each as an array of x/y coordinate arrays to be fit
-    """
-    dispaxis = 2 - ext.dispersion_axis()
-    all_coords = []
-    for loc in locations:
-        c0 = int(loc + 0.5)
-        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-        start = np.argmax(at.boxcar(spectrum, size=3))
-
-        # The coordinates are always returned as (x-coords, y-coords)
-        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                    start=start, initial=[loc],
-                                                    rwidth=None, cwidth=5, step=config.step,
-                                                    nsum=config.nsum, max_missed=config.max_missed,
-                                                    initial_tolerance=None,
-                                                    max_shift=config.max_shift)
-        # Store as spectral coordinate first (i.e., x in the y(x) fit)
-        if dispaxis == 0:
-            all_coords.append(in_coords[::-1])
-        else:
-            all_coords.append(in_coords)
-    return all_coords
+        if self.reconstruct_points_fn is not None:
+            def rfn():
+                all_coords = self.reconstruct_points_fn(self.config)
+                for fit, coords in zip(self.fits, all_coords):
+                    fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
+                    fit.perform_fit()
+                self.reinit_button.disabled = False
+            self.do_later(rfn)

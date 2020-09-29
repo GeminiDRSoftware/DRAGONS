@@ -45,6 +45,7 @@ from gempy.library.astrotools import array_from_list
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
+from gempy.library import tracing, astrotools as at
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_spect
 
@@ -2513,7 +2514,29 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
                 reinit_params = ('step', 'nsum', 'max_missed', 'max_shift')
 
-                all_coords = fit1d.trace_apertures_reconstruct_points(ext, locations, config)
+                def trace_apertures_reconstruct_points(config):
+                    dispaxis = 2 - ext.dispersion_axis()
+                    all_coords = []
+                    for loc in locations:
+                        c0 = int(loc + 0.5)
+                        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+                        start = np.argmax(at.boxcar(spectrum, size=3))
+
+                        # The coordinates are always returned as (x-coords, y-coords)
+                        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                                    start=start, initial=[loc],
+                                                                    rwidth=None, cwidth=5, step=config.step,
+                                                                    nsum=config.nsum, max_missed=config.max_missed,
+                                                                    initial_tolerance=None,
+                                                                    max_shift=config.max_shift)
+                        # Store as spectral coordinate first (i.e., x in the y(x) fit)
+                        if dispaxis == 0:
+                            all_coords.append(in_coords[::-1])
+                        else:
+                            all_coords.append(in_coords)
+                    return all_coords
+
+                all_coords = trace_apertures_reconstruct_points(config)
 
                 # Purely for drawing in the image display
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -2521,13 +2544,14 @@ class Spect(PrimitivesBASE):
                 if interactive:
                     allx = [coords[0] for coords in all_coords]
                     ally = [coords[1] for coords in all_coords]
-                    visualizer = fit1d.TraceApertures1DVisualizer(allx, ally, all_m_init, config,
-                                                                  ext, locations,
+                    visualizer = fit1d.Fit1DVisualizer(allx, ally, all_m_init, config,
                                                                   reinit_params=reinit_params,
                                                                   order_param='trace_order',
                                                                   tab_name_fmt="Aperture {}",
                                                                   xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
-                                                                  grow_slider=True)
+                                                                  grow_slider=True,
+                                                                  reconstruct_points=
+                                                                      trace_apertures_reconstruct_points)
                     status = geminidr.interactive.server.interactive_fitter(visualizer)
                     all_m_final = [fit.model.model for fit in visualizer.fits]
                     for m in all_m_final:
