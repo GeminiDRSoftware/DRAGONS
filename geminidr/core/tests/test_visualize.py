@@ -28,14 +28,12 @@ CCD = ('EEV', 'e2v', 'Ham')
 
 
 @pytest.mark.parametrize('hemi, ccd', list(itertools.product(HEMI, CCD)))
-def test_mosaic_detectors_gmos_binning(hemi, ccd):
+def test_mosaic_detectors_gmos_binning(astrofaker, hemi, ccd):
     """
     Tests that the spacing between amplifier centres for NxN binned data
     is precisely N times smaller than for unbinned data when run through
     mosaicDetectors()
     """
-    astrofaker = pytest.importorskip("astrofaker")
-
     for binning in (1, 2, 4):
         try:
             ad = astrofaker.create('GMOS-{}'.format(hemi), ['IMAGE', ccd])

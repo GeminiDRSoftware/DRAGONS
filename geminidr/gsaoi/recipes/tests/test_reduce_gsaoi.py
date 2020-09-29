@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import pytest
 
 from astrodata.testing import download_from_archive
@@ -7,96 +8,132 @@ from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
-test_files = [
-    "S20170505S0095.fits",  # Science
-    "S20170505S0096.fits",  # Science
-    "S20170505S0030.fits",  # Flat On
-    "S20170505S0031.fits",  # Flat On
-    "S20170505S0073.fits",  # Flat Off
-    "S20170505S0074.fits",  # Flat Off
-    "S20171208S0053.fits",  # Flat On
-    "S20171208S0054.fits",  # Flat On
-    "S20171208S0055.fits",  # Flat On
-    "S20150609S0022.fits",  # Dark
-    "S20150609S0023.fits",  # Dark
-]
+datasets = {
+
+    "GS-2017A-Q-29-13": {
+        "science": [f"S20170505S{i:04d}.fits" for i in range(95, 98)],
+        "dflat_on": [f"S20170505S{i:04d}.fits" for i in range(30, 33)],
+        "dflat_off": [f"S20170505S{i:04d}.fits" for i in range(72, 75)],
+        "dark": [f"S20150609S{i:04d}.fits" for i in range(22, 25)],
+        "hflat": [f"S20171208S{i:04d}.fits" for i in range(53, 56)],
+        "user_pars": [],
+    }
+
+}
 
 
-# ToDo - @bquint - Perform clean up after running tests
-@pytest.mark.skip("Using too much space - enable clean up")
-@pytest.mark.integtest
-# @pytest.mark.gsaoi
+@pytest.mark.integration_test
+@pytest.mark.gsaoi
 @pytest.mark.dragons_remote_data
-def test_reduce_image(change_working_dir):
-    with change_working_dir():
-        calib_files = []
-        all_files = [download_from_archive(f) for f in test_files]
-        all_files.sort()
-        assert len(all_files) > 1
+@pytest.mark.parametrize("test_case", datasets.keys())
+def test_reduce_image(change_working_dir, test_case):
+    """
+    Test that DRAGONS can reduce GSAOI data.
 
-        list_of_darks = dataselect.select_data(
-            all_files, ['DARK'], [])
-        list_of_darks.sort()
+    Parameters
+    ----------
+    change_working_dir : fixture
+        Allows easy folder manipulation.
+    test_case : str
+        Group ID related to the input data.
+    """
+    with change_working_dir(test_case):
 
-        list_of_kshort_flats = dataselect.select_data(
-            all_files, ['FLAT'], [],
-            dataselect.expr_parser('filter_name=="Kshort"'))
-        list_of_kshort_flats.sort()
+        cals = []
 
-        list_of_h_flats = dataselect.select_data(
-            all_files, ['FLAT'], [],
-            dataselect.expr_parser('filter_name=="H"'))
-        list_of_h_flats.sort()
+        # Reducing dark -----
+        dark_filenames = datasets[test_case]["dark"]
+        dark_paths = [download_from_archive(f) for f in dark_filenames]
+        _, cals = reduce(dark_paths, f"dark_{test_case}", cals,
+                         save_to="processed_dark")
 
-        list_of_science_files = dataselect.select_data(
-            all_files, [], [],
-            dataselect.expr_parser(
-                'observation_class=="science" and exposure_time==60.'))
-        list_of_science_files.sort()
+        # Create BPM -----
+        hflat_filenames = datasets[test_case]["hflat"] + datasets[test_case]["dark"]
+        hflat_paths = [download_from_archive(f) for f in hflat_filenames]
+        bpm_filename, cals = reduce(hflat_paths, f"bpm_{test_case}", cals,
+                                    recipe_name='makeProcessedBPM')
 
-        for darks in [list_of_darks]:
-            reduce_darks = Reduce()
-            assert len(reduce_darks.files) == 0
+        # Reduce flats -----
+        flat_filenames = (datasets[test_case]["dflat_on"] +
+                          datasets[test_case]["dflat_on"])
+        flat_paths = [download_from_archive(f) for f in flat_filenames]
+        _, cals = reduce(flat_paths, f"flat_{test_case}", cals,
+                         save_to="processed_flat")
 
-            reduce_darks.files.extend(darks)
-            assert len(reduce_darks.files) == len(darks)
+        # Reduce Science ---
+        datasets[test_case]["user_pars"].append(('addDQ:user_bpm', bpm_filename))
+        sci_filenames = datasets[test_case]["science"]
+        sci_paths = [download_from_archive(f) for f in sci_filenames]
+        _, _ = reduce(sci_paths, f"sci_{test_case}", cals,
+                      user_pars=datasets[test_case]["user_pars"])
 
-            logutils.config(file_name='gsaoi_test_reduce_dark.log', mode='quiet')
-            reduce_darks.runr()
 
-            del reduce_darks
+# -- Helper functions ---------------------------------------------------------
+def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
+           user_pars=None):
+    """
+    Helper function used to prevent replication of code.
 
-        logutils.config(file_name='gsaoi_test_reduce_bpm.log', mode='quiet')
-        reduce_bpm = Reduce()
-        reduce_bpm.files.extend(list_of_h_flats)
-        reduce_bpm.files.extend(list_of_darks)
-        reduce_bpm.recipename = 'makeProcessedBPM'
-        reduce_bpm.runr()
+    Parameters
+    ----------
+    file_list : list
+        List of files that will be reduced.
+    label : str
+        Labed used on log files name.
+    calib_files : list
+        List of calibration files properly formatted for DRAGONS Reduce().
+    recipe_name : str, optional
+        Name of the recipe used to reduce the data.
+    save_to : str, optional
+        Stores the calibration files locally in a list.
+    user_pars : list, optional
+        List of user parameters
 
-        bpm_filename = reduce_bpm.output_filenames[0]
+    Returns
+    -------
+    str : Output reduced file.
+    list : An updated list of calibration files.
+    """
+    objgraph = pytest.importorskip("objgraph")
 
-        del reduce_bpm
+    logutils.get_logger().info("\n\n\n")
+    logutils.config(file_name=f"test_image_{label}.log")
+    r = Reduce()
+    r.files = file_list
+    r.ucals = normalize_ucals(r.files, calib_files)
+    r.uparms = user_pars
 
-        logutils.config(file_name='gsaoi_test_reduce_flats.log', mode='quiet')
-        reduce_flats = Reduce()
-        reduce_flats.files.extend(list_of_kshort_flats)
-        reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
-        reduce_flats.runr()
+    if recipe_name:
+        r.recipename = recipe_name
 
-        calib_files.append(
-            'processed_flat:{}'.format(reduce_flats.output_filenames[0])
-        )
+    r.runr()
+    output_file = r.output_filenames[0]
 
-        del reduce_flats
+    if save_to:
+        calib_files.append("{}:{}".format(
+            save_to, os.path.join("calibrations", save_to, r.output_filenames[0])))
+        [os.remove(f) for f in r.output_filenames]
 
-        logutils.config(file_name='gsaoi_test_reduce_science.log', mode='quiet')
-        reduce_target = Reduce()
-        reduce_target.files.extend(list_of_science_files)
-        reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
-        reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
-        reduce_target.runr()
+    # check that we are not leaking objects
+    assert len(objgraph.by_type('NDAstroData')) == 0
 
-        del reduce_target
+    return output_file, calib_files
+
+
+# -- Custom configuration -----------------------------------------------------
+@pytest.fixture(scope='module')
+def keep_data(request):
+    """
+    By default, the tests will delete pre-stack files to save disk space. If one
+    needs to keep them for debugging, one can pass --keep-data argument to the
+    command line call to force the tests to keep this data.
+
+    Parameters
+    ----------
+    request : fixture
+        Represents the test that calls this function.
+    """
+    return request.config.getoption("--keep-data")
 
 
 if __name__ == '__main__':

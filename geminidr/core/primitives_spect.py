@@ -516,8 +516,8 @@ class Spect(PrimitivesBASE):
                 # of the data, so it could be used as a gWCS object
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
-                                            x_domain=[0, ext.shape[1]],
-                                            y_domain=[0, ext.shape[0]])
+                                            x_domain=[0, ext.shape[1] - 1],
+                                            y_domain=[0, ext.shape[0] - 1])
                 # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
                 # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
                 # Find model to transform actual (x,y) locations to the
@@ -1510,7 +1510,7 @@ class Spect(PrimitivesBASE):
         sec_regions = []
         if section:
             for x1, x2 in (s.split(':') for s in section.split(',')):
-                sec_regions.append(slice(None if x1 == '' else int(x1),
+                sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
                                          None if x2 == '' else int(x2)))
 
         for ad in adinputs:

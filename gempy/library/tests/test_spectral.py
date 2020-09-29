@@ -27,9 +27,9 @@ def _create_fake_data():
 
     hdu = fits.ImageHDU()
     hdu.header['CCDSUM'] = "1 1"
-    hdu.data = np.zeros((1000, 1))
+    hdu.data = np.zeros((1000,))
 
-    _ad = astrofaker.create('GMOS-S')
+    _ad = astrofaker.create('GMOS-S', extra_keywords={'GRATING': 'R831'})
     _ad.add_extension(hdu, pixel_scale=1.0)
     _ad[0].wcs = None  # or else imaging WCS will be added
 
