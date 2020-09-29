@@ -8,7 +8,6 @@ from geminidr.gmos.lookups import geometry_conf as geotable
 # Star locations: Use unique y values to enable sorting
 GMOS_STAR_LOCATIONS = ((200, 50), (204, 450), (4000, 50), (4004, 450))
 
-astrofaker = pytest.importorskip("astrofaker")
 
 # This functionality (which isn't used in DRAGONS) is no longer available
 @pytest.mark.skip("Functionality lost in refactor")
