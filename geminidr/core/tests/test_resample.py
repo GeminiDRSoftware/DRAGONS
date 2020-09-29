@@ -40,7 +40,7 @@ def test_shift_images(trim_data, file_write, path_to_outputs):
         x, y = 512 - xoff, 512 - yoff
         ad[0].add_star(amplitude=1000, x=x, y=y)
         orig_adinputs.append(ad)
-        coords.append(SkyCoord(*ad[0].wcs(x, y)), unit=u.deg)
+        coords.append(SkyCoord(*ad[0].wcs(x, y), unit=u.deg))
 
     if file_write:
         shifts_par = os.path.join(path_to_outputs, 'shifts.lis')
