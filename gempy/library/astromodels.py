@@ -17,18 +17,14 @@
 # make_inverse_chebyshev1d:              make a Chebyshev1D model that provides
 #                                        the inverse of the given model
 
-import numpy as np
 import math
 from collections import OrderedDict
 
-import astropy
-from astropy.modeling import models, fitting, FittableModel, Parameter
+import numpy as np
+from astropy.modeling import FittableModel, Parameter, fitting, models
 from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip
-from astropy.utils import minversion
-from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, BSpline
-
-ASTROPY_LT_40 = not minversion(astropy, '4.0')
+from scipy.interpolate import BSpline, LSQUnivariateSpline, UnivariateSpline
 
 # -----------------------------------------------------------------------------
 # NEW MODEL CLASSES
@@ -55,12 +51,8 @@ class Pix2Sky(FittableModel):
         value for WCS origin parameter
     """
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     x_offset = Parameter()
     y_offset = Parameter()
@@ -107,12 +99,8 @@ class Pix2Sky(FittableModel):
 class Shift2D(FittableModel):
     """2D translation"""
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     x_offset = Parameter(default=0.0)
     y_offset = Parameter(default=0.0)
@@ -132,12 +120,8 @@ class Shift2D(FittableModel):
 class Scale2D(FittableModel):
     """2D scaling"""
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     factor = Parameter(default=1.0)
 
@@ -158,12 +142,8 @@ class Scale2D(FittableModel):
 class Rotate2D(FittableModel):
     """Rotation; Rotation2D isn't fittable"""
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     angle = Parameter(default=0.0, getter=np.rad2deg, setter=np.deg2rad)
 
