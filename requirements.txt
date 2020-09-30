@@ -1,5 +1,6 @@
 astropy>=4.1rc2
 astroquery
+bottleneck
 cython
 future
 ginga

@@ -28,8 +28,6 @@ from astropy.stats import sigma_clip
 from astropy.utils import minversion
 from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, BSpline
 
-from .nddops import NDStacker
-
 ASTROPY_LT_40 = not minversion(astropy, '4.0')
 
 # -----------------------------------------------------------------------------
@@ -337,16 +335,13 @@ class UnivariateSplineWithOutlierRemoval:
                     spline = lambda xx: avg_y
                 else:
                     raise e
+
             spline_y = spline(x)
-            #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
-            #mask = masked_residuals.mask
+            masked_residuals = outlier_func(np.ma.array(spline_y - y,
+                                                        mask=full_mask),
+                                            **outlier_kwargs)
+            mask = masked_residuals.mask
 
-            # sigclip does not exclude values where mask < 32768
-            mask = full_mask.astype(np.uint16) * 32768
-            d, mask, v = NDStacker.sigclip(spline_y - y, mask=mask,
-                                           **outlier_kwargs)
-
-            mask = mask.astype(bool)
             if debug:
                 print('mask=', mask.astype(int))
 
