@@ -16,14 +16,15 @@ this command again under the new environment.::
 """
 
 import numpy as np
-from libc.math cimport sqrt
 cimport cython
+from libc.math cimport sqrt
+from libc.stdlib cimport malloc, free
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef float median(float data[], unsigned short mask[], int has_mask,
-                  int data_size):
+                  int data_size) except? -1:
     """
     One-dimensional true median, with optional masking.
 
@@ -43,9 +44,12 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
     med : (add type)
         (add description)
     """
-    cdef float tmp[10000]
     cdef float x, y, med=0.
     cdef int i, j, k, l, m, ncycles, cycle, nused=0
+    cdef float *tmp = <float *> malloc(data_size * sizeof(float))
+
+    if not tmp:
+        raise MemoryError()
 
     if has_mask:
         for i in range(data_size):
@@ -87,6 +91,9 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
             med = tmp[k]
         else:
             med = 0.5 * (med + tmp[k])
+
+    free(tmp)
+
     return med
 
 
@@ -212,8 +219,14 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
     cdef double result[2]
     cdef double avg, var, std
     cdef float low_limit, high_limit
-    cdef float tmpdata[10000]
-    cdef unsigned short tmpmask[10000]
+
+    cdef float *tmpdata = <float *> malloc(num_img * sizeof(float))
+    if not tmpdata:
+        raise MemoryError()
+
+    cdef unsigned short *tmpmask = <unsigned short *> malloc(num_img * sizeof(unsigned short))
+    if not tmpmask:
+        raise MemoryError()
 
     if max_iters == 0:
         max_iters = 100
@@ -250,5 +263,8 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
             iter += 1
         for n in range(num_img):
             mask[n*data_size+i] = tmpmask[n]
+
+    free(tmpdata)
+    free(tmpmask)
 
     return np.asarray(data), np.asarray(mask), np.asarray(variance)
