@@ -238,6 +238,13 @@ class UnivariateSplineWithOutlierRemoval:
         else:
             raise ValueError("Both t and s have been specified")
 
+        # For compatibility with an older version which was using
+        # NDStacker.sigclip, rename parameters for sigma_clip
+        if 'lsigma' in outlier_kwargs:
+            outlier_kwargs['sigma_lower'] = outlier_kwargs.pop('lsigma')
+        if 'hsigma' in outlier_kwargs:
+            outlier_kwargs['sigma_upper'] = outlier_kwargs.pop('hsigma')
+
         # Both spline classes require sorted x, so do that here. We also
         # require unique x values, so we're going to deal with duplicates by
         # making duplicated values slightly larger. But we have to do this

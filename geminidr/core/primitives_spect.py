@@ -1900,15 +1900,11 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        spline_kwargs = params.copy()
         sfx = params.pop("suffix")
         spectral_order = params.pop("spectral_order")
         center = params.pop("center")
         nsum = params.pop("nsum")
-
-        spline_kwargs = params.copy()
-        # rename parameters for sigma_clip
-        spline_kwargs['sigma_lower'] = spline_kwargs.pop('lsigma')
-        spline_kwargs['sigma_upper'] = spline_kwargs.pop('hsigma')
 
         for ad in adinputs:
             # Don't mosaic if the multiple extensions are because the
