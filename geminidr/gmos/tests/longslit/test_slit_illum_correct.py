@@ -60,7 +60,7 @@ def test_slit_illum_correct_without_slit_illumination(astrofaker):
 
 
 @pytest.mark.gmosls
-@pytest.mark.preprocess
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_data", same_roi_datasets, indirect=True)
 def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
     ad, slit_illum_ad = input_data
@@ -100,7 +100,7 @@ def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
 
 
 @pytest.mark.gmosls
-@pytest.mark.preprocess
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_data", different_roi_datasets, indirect=True)
 def test_slit_illum_correct_different_roi(change_working_dir, input_data, request):
 
