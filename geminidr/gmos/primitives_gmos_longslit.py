@@ -535,6 +535,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         suffix = spline_kwargs.pop("suffix")
         spectral_order = spline_kwargs.pop("spectral_order")
         threshold = spline_kwargs.pop("threshold")
+        # rename parameters for sigma_clip
+        spline_kwargs['sigma_lower'] = spline_kwargs.pop('lsigma')
+        spline_kwargs['sigma_upper'] = spline_kwargs.pop('hsigma')
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
