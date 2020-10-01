@@ -154,12 +154,12 @@ def test_QESpline_optimization():
     boundaries = (data_length, 2 * data_length + gap)
 
     coeffs = np.ones((2,))
-    order = 10
+    order = 8
 
     result = optimize.minimize(
         QESpline, coeffs,
         args=(xpix, masked_data, weights, boundaries, order),
-        tol=1e-7,
+        tol=1e-8,
         method='Nelder-Mead'
     )
 
@@ -301,7 +301,7 @@ def create_zero_filled_fake_astrodata(height, width):
         Single-extension zero filled object.
     """
     astrofaker = pytest.importorskip("astrofaker")
-    
+
     data = np.zeros((height, width))
 
     hdu = fits.ImageHDU()

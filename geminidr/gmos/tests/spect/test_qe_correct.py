@@ -648,8 +648,11 @@ class MeasureGapSizeLocallyWithSpline(MeasureGapSizeLocally):
             yy.mask = np.logical_or(yy.mask, ww.mask)
 
             spl = astromodels.UnivariateSplineWithOutlierRemoval(
-                xx, yy, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
-                order=self.order)
+                xx, yy,
+                sigma_upper=self.sigma_upper,
+                sigma_lower=self.sigma_lower,
+                order=self.order
+            )
 
             splines.append(spl)
 
