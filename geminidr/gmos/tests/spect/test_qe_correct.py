@@ -192,6 +192,7 @@ def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
 def test_regression_on_qe_correct(ad, arc_ad, change_working_dir, ref_ad_factory):
 

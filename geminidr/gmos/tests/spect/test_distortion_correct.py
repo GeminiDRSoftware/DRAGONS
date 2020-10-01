@@ -118,6 +118,7 @@ fixed_test_parameters_for_determine_distortion = {
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory):
     """
