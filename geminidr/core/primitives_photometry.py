@@ -481,10 +481,13 @@ def _profile_sources(ad, seeing_estimate=None):
         catmaxflux = objcat["FLUX_MAX"]
         data = ext.data
 
-        if seeing_estimate is None:
-            stamp_size = max(10,int(0.5/ext.pixel_scale()))
+        pixscale = ext.pixel_scale()
+        if pixscale is None:
+            stamp_size = 10
+        elif seeing_estimate is None:
+            stamp_size = max(10, int(0.5 / pixscale))
         else:
-            stamp_size = max(10,int(1.2*seeing_estimate/ext.pixel_scale()))
+            stamp_size = max(10, int(1.2 * seeing_estimate / pixscale))
 
         # Make a default grid to use for distance measurements
         dist = np.mgrid[-stamp_size:stamp_size,-stamp_size:stamp_size]+0.5

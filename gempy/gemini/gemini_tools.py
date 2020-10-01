@@ -107,9 +107,15 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
                 else:
                     default = [-999] * nrows
                     dtype = np.float32
+                    if 'MAG' in name:
+                        unit = 'mag'
+                    elif 'PROFILE' in name:
+                        unit = 'pix'
+                    else:
+                        unit = None
                 # Use input table column if given, otherwise the placeholder
                 new_objcat.add_column(table[name] if name in table.columns else
-                                Column(data=default, name=name, dtype=dtype))
+                                Column(data=default, name=name, dtype=dtype, unit=unit))
 
             # Replace old version or append new table to AD object
             if objcat:
