@@ -199,9 +199,9 @@ class Register(PrimitivesBASE):
             log.fullinfo("\nMatched sources:")
             log.fullinfo("   Ref. x Ref. y  Img. x  Img. y\n  {}".
                          format("-"*31))
-            for ref, img in zip(*obj_list):
+            for img, ref in zip(*obj_list):
                 log.fullinfo("  {:7.2f} {:7.2f} {:7.2f} {:7.2f}".
-                            format(ref[0], ref[1], *img))
+                            format(*ref, *img))
             log.fullinfo("")
 
             # Check the fit geometry depending on the number of objects
