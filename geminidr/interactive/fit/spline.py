@@ -82,9 +82,14 @@ class SplineTab:
         self.spline_kwargs = spline_kwargs
         self.model = SplineModel(shape, pixels, masked_data, weights, self.order, 1, 1)  #order, niter, grow)
         # Create a blank figure with labels
+        if len(masked_data)>1:
+            # multiplot, no select tools
+            tools = "pan,wheel_zoom,box_zoom,reset"
+        else:
+            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
         self.p = figure(plot_width=600, plot_height=500,
                         title='Interactive Spline',
-                        tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                        tools=tools,
                         x_axis_label='x', y_axis_label='y')
 
         self.scatter_sources = []
