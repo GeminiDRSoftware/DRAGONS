@@ -14,11 +14,11 @@ function_map = {
     'chebyshev': (models.Chebyshev1D, {}),
     'legendre': (models.Legendre1D, {}),
     'polynomial': (models.Polynomial1D, {}),
-    'spline1' : (UnivariateSplineWithOutlierRemoval, {'k': 1}),
-    'spline2' : (UnivariateSplineWithOutlierRemoval, {'k': 2}),
-    'spline3' : (UnivariateSplineWithOutlierRemoval, {'k': 3}),
-    'spline4' : (UnivariateSplineWithOutlierRemoval, {'k': 4}),
-    'spline5' : (UnivariateSplineWithOutlierRemoval, {'k': 5}),
+    'spline1': (UnivariateSplineWithOutlierRemoval, {'k': 1}),
+    'spline2': (UnivariateSplineWithOutlierRemoval, {'k': 2}),
+    'spline3': (UnivariateSplineWithOutlierRemoval, {'k': 3}),
+    'spline4': (UnivariateSplineWithOutlierRemoval, {'k': 4}),
+    'spline5': (UnivariateSplineWithOutlierRemoval, {'k': 5}),
 }
 
 
@@ -211,7 +211,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
             # parameter names in function_map, eg. weights -> w?
             fitted_model = func(points[user_reg], imrow[user_reg], order=order,
                                 w=wrow, niter=iterations, grow=int(grow),
-                                lsigma=lsigma, hsigma=hsigma, max_iters=1,
+                                lsigma=lsigma, hsigma=hsigma, maxiters=1,
                                 **funcargs)
 
             # Determine model values to be returned. This is somewhat specific
