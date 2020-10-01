@@ -29,8 +29,7 @@ STAR_POSITIONS = [(200., 200.), (300.5, 800.5)]
 
 # --- Fixtures ---
 @pytest.fixture()
-def gemini_image():
-    astrofaker = pytest.importorskip('astrofaker')
+def gemini_image(astrofaker):
     af = astrofaker.create('NIRI', 'IMAGE')
     af.init_default_extensions()
     # SExtractor struggles if the background is noiseless

@@ -17,14 +17,15 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/6 * * * *')  // Polls Source Code Manager every six hours
+        // pollSCM('MIN HOUR DoM MONTH DoW')
+        pollSCM('H H/4 * * *')  // Polls Source Code Manager every three hours
     }
 
     options {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
-        timeout(time: 3, unit: 'HOURS')
+        timeout(time: 4, unit: 'HOURS')
     }
 
     environment {
@@ -100,13 +101,14 @@ pipeline {
                     environment {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                        DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
+                        sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -122,52 +124,19 @@ pipeline {
             }
         }
 
-        stage('Integration tests') {
-            // when {
-            //     branch 'master'
-            // }
-            agent {
-                label "centos7"
-            }
-            environment {
-                MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                echo "${env.PATH}"
-                sh '.jenkins/scripts/setup_agent.sh'
-                echo "Integration tests"
-                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F integration'
-            }
-            post {
-                always {
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/*_results.xml'
-                    )
-                }
-            }
-        }
-
         stage('GMOS LS Tests') {
-            agent {
-//                 label "centos7"
-                label "master"
-            }
+            agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
+                sh 'tox -e py36-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F gmosls'
             }  // end steps
@@ -182,6 +151,33 @@ pipeline {
                 }  // end always
             }  // end post
         }  // end stage
+
+        stage('Integration tests') {
+            agent { label "centos7" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                echo "${env.PATH}"
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Integration tests"
+                sh 'tox -e py36-integ -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F integration'
+            } // end steps
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }
+            } // end post
+        } // end stage
 
     }
     post {

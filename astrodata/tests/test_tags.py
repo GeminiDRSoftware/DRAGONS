@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pytest
 from astropy.io import fits
@@ -72,7 +73,7 @@ def setup_module():
     factory.addClass(AstroDataMyInstrument)
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def testfile(tmpdir):
     hdr = fits.Header({
         'INSTRUME': 'MYINSTRUMENT',
@@ -90,7 +91,8 @@ def testfile(tmpdir):
     ad.append(tbl, name='MYCAT')
     filename = str(tmpdir.join('fakebias.fits'))
     ad.write(filename)
-    return filename
+    yield filename
+    os.remove(filename)
 
 
 def test_tags(testfile):

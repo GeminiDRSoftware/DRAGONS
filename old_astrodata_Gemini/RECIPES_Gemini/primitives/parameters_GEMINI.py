@@ -853,6 +853,15 @@
         "uiLevel"       : "UIBASIC",
         },
     }, 
+ "storeProcessedSlitIllum":{
+    "suffix":{
+        "default"       : "_slitillum",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "subtractDark":{
     "suffix":{
         "default"       : "_darkCorrected",

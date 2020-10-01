@@ -7,6 +7,7 @@ import pytest
 
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
+    astrofaker,
     change_working_dir,
     path_to_inputs,
     path_to_outputs,
@@ -19,13 +20,19 @@ def pytest_addoption(parser):
             "--dragons-remote-data",
             action="store_true",
             default=False,
-            help="enable tests that use the cache_file_from_archive fixture"
+            help="Enable tests that use the download_from_archive function."
         )
         parser.addoption(
             "--do-plots",
             action="store_true",
             default=False,
             help="Plot results of each test after running them."
+        )
+        parser.addoption(
+            "--keep-data",
+            action="store_true",
+            default=False,
+            help="Keep intermediate data (e.g. pre-stack data)."
         )
     # This file is imported several times and might bring conflict
     except ValueError:

@@ -66,15 +66,15 @@ class Spek1D(Spectrum1D, NDAstroData):
         # If no wavelength information is included, get it from the input
         if spectral_axis is None and wcs is None:
             if isinstance(spectrum, AstroData):
-                if spectrum.nddata.wcs is not None:
-                    wcs = spectrum.nddata.wcs
+                if spectrum.wcs is not None:
+                    wcs = spectrum.wcs
                 else:
                     spec_unit = u.Unit(spectrum.hdr.get('CUNIT1', 'nm'))
                     try:
                         wavecal = dict(zip(spectrum.WAVECAL["name"],
                                            spectrum.WAVECAL["coefficients"]))
                     except (AttributeError, KeyError):  # make a Model from the FITS WCS info
-                        det2wave = (models.Shift(1-spectrum.hdr['CRPIX1']) |
+                        det2wave = (models.Shift(1 - spectrum.hdr['CRPIX1']) |
                                     models.Scale(spectrum.hdr['CD1_1']) |
                                     models.Shift(spectrum.hdr['CRVAL1']))
                     else:

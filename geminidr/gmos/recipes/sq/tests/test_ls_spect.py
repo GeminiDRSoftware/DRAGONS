@@ -1,66 +1,42 @@
-#!/usr/bin/env python
-
+#!/usr/bin/python
+"""
+Tests related to GMOS Long-slit Spectroscopy data reduction.
+"""
 import glob
-import pytest
 import os
+import pytest
 
 from astrodata.testing import download_from_archive
+from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
-from gempy.utils import logutils
-
 datasets = {
 
-    "GN_HAM_2x2_z-band": {
-        "bias": [f"N20170912S{n:04d}.fits" for n in range(295, 300)] +
-                [f"N20170914S{n:04d}.fits" for n in range(481, 486)] +
-                [f"N20170915S{n:04d}.fits" for n in range(337, 342)],
-        "flat": [f"N20170915S{n:04d}.fits" for n in range(274, 288)],
-        "sci": [f"N20170913S{n:04d}.fits" for n in range(153, 159)],
-        "ucals": [],
+    'GN-2017A-FT-19-15': {
+        "arcs": ["N20170601S0850.fits", "N20170601S0851.fits"],
+        "bias": [f"N20170602S{i:04d}.fits" for i in range(590, 595)],
+        "flat": ["N20170601S0459.fits"],
+        "sci": [f"N20170601S{i:04d}.fits" for i in range(456, 459)],
+        "std": ["N20170529S0168.fits"],
+        "user_pars": [],
     },
 
-    "GN_EEV_2x2_g-band": {
-        # Only three files to avoid memory errors or to speed up the test
-        "bias": [f"N20020214S{n:03d}.fits" for n in range(22, 27)][:3],
-        "flat": [f"N20020211S{n:03d}.fits" for n in range(156, 160)][:3],
-        "sci": [f"N20020214S{n:03d}.fits" for n in range(59, 64)][:3],
-        "ucals": [],
-    },
-
-    "GS_HAM_1x1_i-band": {
-        "bias": [f"S20171204S{n:04d}.fits" for n in range(22, 27)] +
-                [f"S20171206S{n:04d}.fits" for n in range(128, 133)],
-        "flat": [f"S20171206S{n:04d}.fits" for n in range(120, 128)],
-        "sci": [f"S20171205S{n:04d}.fits" for n in range(62, 77)],
-        "ucals": [
-            ('stackFrames:memory', 1),
-            # ('addDQ:user_bpm', 'fixed_bpm_1x1_FullFrame.fits'),
-            ('adjustWCSToReference:rotate', True),
-            ('adjustWCSToReference:scale', True),
-            ('resampleToCommonFrame:interpolator', 'spline3')]
-    },
-
-    "GS_HAM_2x2_i-band_std": {
-        "bias": [f"S20171204S{n:04d}.fits" for n in range(37, 42)],
-        "flat": [f"S20171120S{n:04d}.fits" for n in range(131, 140)],
-        "std": ["S20171205S0077.fits"],
-        "ucals": [
-            ('stackFrames:memory', 1),
-            # ('addDQ:user_bpm', 'fixed_bpm_2x2_FullFrame.fits'),
-            ('resampleToCommonFrame:interpolator', 'spline3')
-        ]
-    },
-
+    # 'GS-2016B-Q-54-32': {
+    #     "arcs": ["S20170103S0149.fits", "S20170103S0152.fits"],
+    #     "bias": [f"S20170103S{i:04d}.fits" for i in range(216, 221)],
+    #     "flat": ["S20170103S0153.fits"],
+    #     "sci": [f"S20170103S{i:04d}.fits" for i in (147, 148, 150, 151)],
+    #     "std": [],
+    #     "user_pars": [()],
+    # }
 }
 
 
-@pytest.mark.skip("Can't run in Jenkins - Need more investigation")
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("test_case", datasets.keys())
-def test_reduce_image(change_working_dir, keep_data, test_case):
+def test_reduce_ls_spect(change_working_dir, keep_data, test_case):
     """
     Tests that we can run all the data reduction steps on a complete dataset.
 
@@ -82,6 +58,11 @@ def test_reduce_image(change_working_dir, keep_data, test_case):
         bias_paths = [download_from_archive(f) for f in bias_filenames]
         cals = reduce(bias_paths, f"bias_{test_case}", cals, save_to="processed_bias")
 
+        # Reducing arcs
+        arcs_filenames = datasets[test_case]["arcs"]
+        arcs_paths = [download_from_archive(f) for f in arcs_filenames]
+        cals = reduce(arcs_paths, f"flat_{test_case}", cals, save_to="processed_arc")
+
         # Reducing flats
         flat_filenames = datasets[test_case]["flat"]
         flat_paths = [download_from_archive(f) for f in flat_filenames]
@@ -89,20 +70,20 @@ def test_reduce_image(change_working_dir, keep_data, test_case):
 
         # Reducing standard stars
         if "std" in datasets[test_case]:
-            std_filenames = datasets[test_case]["std"]
-            std_paths = [download_from_archive(f) for f in std_filenames]
-            cals = reduce(std_paths, f"std_{test_case}", cals)
+            if len(datasets[test_case]["std"]) > 0:
+                std_filenames = datasets[test_case]["std"]
+                std_paths = [download_from_archive(f) for f in std_filenames]
+                cals = reduce(std_paths, f"std_{test_case}", cals,
+                              save_to="processed_standard")
 
         # Reducing science
         if "sci" in datasets[test_case]:
+
             sci_filenames = datasets[test_case]["sci"]
             sci_paths = [download_from_archive(f) for f in sci_filenames]
-            cals = reduce(
-                sci_paths, f"fringe_{test_case}", cals,
-                recipe_name='makeProcessedFringe', save_to="processed_fringe")
-            _ = reduce(
-                sci_paths, f"sci_{test_case}", cals,
-                user_pars=datasets[test_case]["ucals"])
+            _ = reduce(sci_paths, f"sci_{test_case}", cals,
+                       user_pars=datasets[test_case]["user_pars"])
+
             if not keep_data:
                 print(' Deleting pre-stack files.')
                 [os.remove(f) for f in glob.glob("*_CRMasked.fits")]
@@ -149,8 +130,9 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     r.runr()
 
     if save_to:
-        calib_files.append("{}:{}".format(
-            save_to, os.path.join("calibrations", save_to, r.output_filenames[0])))
+        [calib_files.append(
+            "{}:{}".format(save_to, os.path.join("calibrations", save_to, f)))
+            for f in r.output_filenames]
         [os.remove(f) for f in r.output_filenames]
 
     # check that we are not leaking objects

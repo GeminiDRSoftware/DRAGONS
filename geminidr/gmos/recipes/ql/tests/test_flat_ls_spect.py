@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import pytest
+import shutil
 
 import astrodata
 # noinspection PyUnresolvedReferences
@@ -34,8 +35,10 @@ associated_calibrations = {
 
 
 # -- Tests --------------------------------------------------------------------
+@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+@pytest.mark.preprocessed_data
 def test_processed_flat_has_median_around_one(processed_flat):
     """
     Tests if the processed flat contains values around one.
@@ -50,8 +53,10 @@ def test_processed_flat_has_median_around_one(processed_flat):
         np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+@pytest.mark.preprocessed_data
 def test_processed_flat_has_small_std(processed_flat):
     """
     Tests if the processed flat has a small standard deviation.
@@ -66,8 +71,10 @@ def test_processed_flat_has_small_std(processed_flat):
         np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+@pytest.mark.preprocessed_data
 def test_regression_processed_flat(processed_flat, ref_ad_factory):
     """
     Tests if the processed flat contains values around one.
@@ -126,6 +133,9 @@ def processed_flat(change_working_dir, path_to_inputs, request):
         reduce.mode = 'ql'
         reduce.ucals = normalize_ucals(reduce.files, calibration_files)
         reduce.runr()
+
+        # Clean up duplicated files
+        shutil.rmtree('calibrations/')
 
         _processed_flat_filename = reduce.output_filenames.pop()
         _processed_flat = astrodata.open(_processed_flat_filename)
@@ -198,6 +208,8 @@ def create_master_bias_for_tests():
         bias_reduce = Reduce()
         bias_reduce.files.extend(bias_paths)
         bias_reduce.runr()
+        
+        shutil.rmtree("calibrations/")
 
 
 if __name__ == '__main__':

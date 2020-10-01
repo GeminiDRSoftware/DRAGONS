@@ -518,8 +518,8 @@ class Spect(PrimitivesBASE):
                 # of the data, so it could be used as a gWCS object
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
-                                            x_domain=[0, ext.shape[1]],
-                                            y_domain=[0, ext.shape[0]])
+                                            x_domain=[0, ext.shape[1] - 1],
+                                            y_domain=[0, ext.shape[0] - 1])
                 # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
                 # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
                 # Find model to transform actual (x,y) locations to the
@@ -1065,7 +1065,7 @@ class Spect(PrimitivesBASE):
                 # Compute all the different types of weightings so we can
                 # change between them as needs require
                 weights = {'none': np.ones((len(peaks),)),
-                           'natural': peak_snrs}
+                           'natural': np.sqrt(peak_snrs)}
                 # The "relative" weights compares each line strength to
                 # those of the lines close to it
                 tree = spatial.cKDTree(np.array([peaks]).T)
@@ -1111,7 +1111,9 @@ class Spect(PrimitivesBASE):
                                                     domain=[0, len(data) - 1])
                         fit_it = fitting.LinearLSQFitter()
                         matched = np.where(matches > -1)
-                        m_final = fit_it(m_init, peaks[matched], arc_lines[matches[matched]])
+                        matched_peaks = peaks[matched]
+                        matched_arc_lines = arc_lines[matches[matched]]
+                        m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
 
                         # We're close to the correct solution, perform a KDFit
                         m_init = m_final.copy()
@@ -1161,7 +1163,7 @@ class Spect(PrimitivesBASE):
 
                 if not acceptable_fit:
                     log.warning(f"No acceptable wavelength solution found for {ad.filename}")
-                    scores = [m.rms_output / (len(m) - order - 1) for m in all_fits]
+                    scores = [m.rms_output / max(len(m) - order - 1, np.finfo(float).eps) for m in all_fits]
                     m = all_fits[np.argmin(scores)]
 
                 if debug:
@@ -1510,7 +1512,7 @@ class Spect(PrimitivesBASE):
         sec_regions = []
         if section:
             for x1, x2 in (s.split(':') for s in section.split(',')):
-                sec_regions.append(slice(None if x1 == '' else int(x1),
+                sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
                                          None if x2 == '' else int(x2)))
 
         for ad in adinputs:
