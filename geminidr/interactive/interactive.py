@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from copy import copy
 
 from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, \
@@ -10,7 +11,7 @@ from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, log=None):
+    def __init__(self, log=None, config=None):
         """
         Initialize a visualizer.
 
@@ -21,6 +22,11 @@ class PrimitiveVisualizer(ABC):
         top level call you are visualizing from.
         """
         self.log = log
+        if config is None:
+            self.config = None
+        else:
+            self.config = copy(config)
+
         self.user_satisfied = False
 
         self.submit_button = Button(label="Submit")
@@ -138,6 +144,9 @@ class PrimitiveVisualizer(ABC):
         list : Returns a list of widgets to display in the UI.
         """
         widgets = []
+        if self.config is None:
+            self.log.warn("No config, unable to make widgets")
+            return widgets
         for pname, value in self.config.items():
             if pname not in params:
                 continue

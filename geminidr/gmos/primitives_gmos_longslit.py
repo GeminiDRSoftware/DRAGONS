@@ -38,6 +38,10 @@ from . import parameters_gmos_longslit
 
 
 # ------------------------------------------------------------------------------
+from ..interactive.fit import fit1d
+from ..interactive.fit.spline import SplineVisualizer
+
+
 @parameter_override
 class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
     """
@@ -550,38 +554,72 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
             ad_fitted = astrodata.create(ad.phu)
-            for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
-                # If the entire row is unilluminated, we want to fit
-                # the pixels but still keep the edges masked
-                try:
-                    ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
-                except TypeError:  # ext.mask is None
-                    pass
-                else:
-                    if is_hamamatsu:
-                        ext.mask[:, :21 // xbin] = 1
-                        ext.mask[:, -21 // xbin:] = 1
-                fitted_data = np.empty_like(ext.data)
-                pixels = np.arange(ext.shape[1])
 
-                for i, row in enumerate(ext.nddata):
-                    masked_data = np.ma.masked_array(row.data, mask=row.mask)
-                    weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
-                    if interactive_reduce:
-                        spline = geminidr.interactive.spline.interactive_spline(ext, pixels, masked_data, weights,
-                                                                                order,
-                                                                                niter=1, grow=1,
-                                                                                min_order=0, max_order=None,
-                                                                                min_niter=1, max_niter=None,
-                                                                                min_grow=1, max_grow=None,
-                                                                                x_axis_label="Pixels",
-                                                                                y_axis_label="Intensity (Smoots)")
+            if interactive_reduce:
+                all_shapes = []
+                all_pixels = []
+                all_masked_data = []
+                all_weights = []
+                all_orders = []
+                for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
+                    # If the entire row is unilluminated, we want to fit
+                    # the pixels but still keep the edges masked
+                    try:
+                        ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
+                    except TypeError:  # ext.mask is None
+                        pass
                     else:
+                        if is_hamamatsu:
+                            ext.mask[:, :21 // xbin] = 1
+                            ext.mask[:, -21 // xbin:] = 1
+                    pixels = np.arange(ext.shape[1])
+
+                    ext_masked_data = []
+                    ext_weights = []
+
+                    all_shapes.append(ext.shape[0])
+                    all_pixels.append(pixels)
+                    all_orders.append(order)
+
+                    all_masked_data.append(ext_masked_data)
+                    all_weights.append(ext_weights)
+
+                    for i, row in enumerate(ext.nddata):
+                        ext_masked_data.append(np.ma.masked_array(row.data, mask=row.mask))
+                        ext_weights.append(np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.)))
+
+                # It's unfortunate that we have to do this (taken from Chris' logic)
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                visualizer = SplineVisualizer(all_shapes, all_pixels, all_masked_data, all_orders, all_weights,
+                                              config=config, recalc_button=True, **spline_kwargs)
+                status = geminidr.interactive.server.interactive_fitter(visualizer)
+                for fitted_data, ext in zip(visualizer.fitted_data(), ad_tiled):
+                    ad_fitted.append(fitted_data, header=ext.hdr)
+            else:
+                for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
+                    # If the entire row is unilluminated, we want to fit
+                    # the pixels but still keep the edges masked
+                    try:
+                        ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
+                    except TypeError:  # ext.mask is None
+                        pass
+                    else:
+                        if is_hamamatsu:
+                            ext.mask[:, :21 // xbin] = 1
+                            ext.mask[:, -21 // xbin:] = 1
+                    fitted_data = np.empty_like(ext.data)
+                    pixels = np.arange(ext.shape[1])
+
+                    for i, row in enumerate(ext.nddata):
+                        masked_data = np.ma.masked_array(row.data, mask=row.mask)
+                        weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
                         spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
                                                                                 order=order, w=weights, **spline_kwargs)
-                    fitted_data[i] = spline(pixels)
-                # Copy header so we have the _section() descriptors
-                ad_fitted.append(fitted_data, header=ext.hdr)
+                        fitted_data[i] = spline(pixels)
+                    # Copy header so we have the _section() descriptors
+                    ad_fitted.append(fitted_data, header=ext.hdr)
 
             # Find the largest spline value for each row across all extensions
             # and mask pixels below the requested fraction of the peak

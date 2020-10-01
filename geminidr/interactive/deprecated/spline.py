@@ -144,7 +144,7 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         self.details = None
 
     def mask_button_handler(self):
-        indices = self.scatter_all.source.selected.indices
+        indices = self.scatter_all_source.selected.indices
         clear_selection(self.scatter_all_source.selection)
         clear_selection(self.scatter_masked_source)
         self.model.coords.addmask(indices)

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from copy import copy
+
 
 import numpy as np
 from astropy.modeling import models, fitting
@@ -702,11 +702,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         config: Config instance describing parameters and limitations
         reinit_params: list of parameters related to reinitializing fit arrays
         """
-        super().__init__(log=log)
+        super().__init__(log=log, config=config)
 
         self.reconstruct_points_fn = reconstruct_points
 
-        self.config = copy(config)
+
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
