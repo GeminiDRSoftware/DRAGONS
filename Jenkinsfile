@@ -18,7 +18,7 @@ pipeline {
 
     triggers {
         // pollSCM('MIN HOUR DoM MONTH DoW')
-        pollSCM('H H/4 * * *')  // Polls Source Code Manager every three hours
+        pollSCM('H H/4 * * *')  // Polls Source Code Manager every four hours
     }
 
     options {
@@ -33,6 +33,7 @@ pipeline {
     }
 
     stages {
+
         stage ("Prepare"){
             steps{
                 sendNotifications 'STARTED'
@@ -178,6 +179,33 @@ pipeline {
                 }
             } // end post
         } // end stage
+
+        stage('Regression Tests') {
+            agent { label "centos7" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                echo "${env.PATH}"
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Integration tests"
+                sh 'tox -e py36-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F integration'
+            } // end steps
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }
+            } // end post
+        }
 
     }
     post {

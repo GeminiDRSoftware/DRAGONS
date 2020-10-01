@@ -121,6 +121,7 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_on_calculate_sensitivity(ad, change_working_dir, ref_ad_factory):
 
