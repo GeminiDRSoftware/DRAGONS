@@ -166,6 +166,14 @@ class Register(PrimitivesBASE):
             log.stdinfo("Cross-correlating sources in {}, {}".
                          format(adref.filename, ad.filename))
 
+            pixscale = ad.pixel_scale()
+            if pixscale is None:
+                log.warning(f'Cannot determine pixel scale for {ad.filename}. '
+                            f'Using a search radius of {first_pass} pixels.')
+                firstpasspix = first_pass
+            else:
+                firstpasspix = first_pass / pixscale
+
             # GNIRS WCS is dubious, so update WCS by using the ref
             # image's WCS and the telescope offsets
             #if ad.instrument() == 'GNIRS':
@@ -173,7 +181,6 @@ class Register(PrimitivesBASE):
             #    ad = _create_wcs_from_offsets(ad, adref)
 
             # Calculate the offsets quickly using only a translation
-            firstpasspix = first_pass / ad.pixel_scale()
             obj_list, transform = align_images_from_wcs(ad, adref,
                     search_radius=firstpasspix, min_sources=min_sources,
                     cull_sources=cull_sources, full_wcs=True,
@@ -480,8 +487,11 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
 
     log.stdinfo(f"Updating WCS of {adinput.filename} from {adref.filename}")
     try:
-        xoff_in, yoff_in = adinput.detector_x_offset(), adinput.detector_y_offset()
-        xoff_ref, yoff_ref = adref.detector_x_offset(), adref.detector_y_offset()
+        # Coerce to float to raise TypeError if a descriptor returns None
+        xoff_in = float(adinput.detector_x_offset())
+        yoff_in = float(adinput.detector_y_offset())
+        xoff_ref = float(adref.detector_x_offset())
+        yoff_ref = float(adref.detector_y_offset())
         pa1 = adref.phu['PA']
         pa2 = adinput.phu['PA']
     except (KeyError, TypeError):  # TypeError if offset is None
@@ -499,7 +509,7 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
                         ra, dec = m.lon.value, m.lat.value
                         center_of_rotation = adref[0].wcs.backward_transform(ra, dec)
                         break
-            except (AttributeError, IndexError):
+            except (AttributeError, IndexError, TypeError):
                 if len(adref) == 1:
                     # Assume it's the center of the image
                     center_of_rotation = tuple(0.5 * (x - 1)
@@ -509,8 +519,12 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
                                 "change will be made")
                     return
 
-    t = ((models.Shift(-xoff_in - center_of_rotation[1]) & models.Shift(-yoff_in - center_of_rotation[0])) |
-         models.Rotation2D(pa1 - pa2) |
-         (models.Shift(xoff_ref + center_of_rotation[1]) & models.Shift(yoff_ref + center_of_rotation[0])))
+    try:
+        t = ((models.Shift(-xoff_in - center_of_rotation[1]) & models.Shift(-yoff_in - center_of_rotation[0])) |
+             models.Rotation2D(pa1 - pa2) |
+             (models.Shift(xoff_ref + center_of_rotation[1]) & models.Shift(yoff_ref + center_of_rotation[0])))
+    except TypeError:
+        log.warning("Problem creating offset transform so no change will be made")
+        return
     adinput[0].wcs = deepcopy(adref[0].wcs)
     adinput[0].wcs.insert_transform(adinput[0].wcs.input_frame, t, after=True)
