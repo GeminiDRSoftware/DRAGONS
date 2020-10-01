@@ -24,7 +24,7 @@ def test_shift_images(astrofaker, trim_data, file_write, path_to_outputs):
     This tests trimming and not trimming images, and passing the shifts
     via a string and a file on disk.
     """
-    offsets = ((-10, -10), (-10, 10), (10, 10), (10, -10), (0, 0))
+    offsets = ((-10, -10), (-10, 10), (5, 10), (10, -20), (0, 0))
     min_xoff = min(off[0] for off in offsets)
     min_yoff = min(off[1] for off in offsets)
     max_xoff = max(off[0] for off in offsets)
