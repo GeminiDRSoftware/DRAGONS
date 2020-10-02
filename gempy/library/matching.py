@@ -994,23 +994,28 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
     try:
         t = adref[0].wcs.forward_transform | adinput[0].wcs.backward_transform
     except AttributeError:  # for cases with no defined WCS
-        m_init = transform or (models.Shift(0) & models.Shift(0))
-    else:
+        t = None
         if full_wcs:
-            refcoords = t(*refcoords)
-            m_init = transform or (models.Shift(0) & models.Shift(0))
-        else:
-            # A good guess at the initial pixel transformation
-            if transform is None:
-                transform = adinput[0].wcs.forward_transform | adref[0].wcs.backward_transform
-            affine = adwcs.calculate_affine_matrices(transform, adinput[0].shape)
-            m_init = models.Shift(affine.offset[1]) & models.Shift(affine.offset[0])
+            log.warning("Cannot determine WCS information: setting full_wcs=False")
+            full_wcs = False
 
-            # This is approximate since the affine matrix might have differential
-            # scaling and a shear
-            magnification = np.sqrt(abs(np.linalg.det(affine.matrix)))
-            rotation = np.degrees(np.arctan2(affine.matrix[1,0] - affine.matrix[0,1],
-                                             affine.matrix[0,0] + affine.matrix[1,1]))
+    if full_wcs:
+        refcoords = t(*refcoords)
+    elif transform is None and t is not None:
+        transform = t.inverse
+    if transform is None:
+        transform = models.Identity(2)
+
+    # We always refactor the transform (if provided) in a prescribed way so
+    # as to ensure it's fittable and not overly weird
+    affine = adwcs.calculate_affine_matrices(transform, adinput[0].shape)
+    m_init = models.Shift(affine.offset[1]) & models.Shift(affine.offset[0])
+
+    # This is approximate since the affine matrix might have differential
+    # scaling and a shear
+    magnification = np.sqrt(abs(np.linalg.det(affine.matrix)))
+    rotation = np.degrees(np.arctan2(affine.matrix[1,0] - affine.matrix[0,1],
+                                     affine.matrix[0,0] + affine.matrix[1,1]))
     m_init.offset_0.bounds = (m_init.offset_0 - search_radius,
                               m_init.offset_0 + search_radius)
     m_init.offset_1.bounds = (m_init.offset_1 - search_radius,
@@ -1040,8 +1045,6 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
     m_final = fit_model(m_init, incoords, refcoords, sigma=10, tolerance=1e-6,
                         brute=True)
     if return_matches:
-        print(refcoords)
-        print(m_final(*incoords))
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
         ind1 = matched[ind2]
