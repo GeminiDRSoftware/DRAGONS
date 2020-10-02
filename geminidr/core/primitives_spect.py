@@ -1083,7 +1083,6 @@ class Spect(PrimitivesBASE):
                             log.warning("Alternative central wavelength(s) found "+str(centers))
                     else:
                         centers = [c0]
-                        centers = [c0]
                 else:
                     centers = [cenwave]
 
