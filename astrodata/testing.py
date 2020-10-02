@@ -333,6 +333,34 @@ def get_associated_calibrations(filename, nbias=5):
     return cals
 
 
+def get_active_git_branch():
+    """
+    Returns the name of the active GIT branch to be used in Continuous
+    Integration tasks and organize input/reference files.
+
+    Returns
+    -------
+    str : Name of the input active git branch.
+    """
+    from pathlib import Path
+
+    try:
+        from pygit2 import Repository
+    except ImportError:
+        print("\nCould not retrieve active git branch. Please install pygit2 "
+              "using one of the options below:\n"
+              "  $ pip install pygit2\n"
+              "        or \n"
+              "  $ conda install -c conda-forge pygit2\n")
+        return ""
+    else:
+        path = Path(__file__).parent.parent.absolute()
+        branch_name = Repository(path).head.shorthand
+        print(f"\nRetrieved active branch name: "
+              f"  {branch_name:s}")
+        return branch_name
+
+
 @pytest.fixture(scope='module')
 def path_to_inputs(request, env_var='DRAGONS_TEST'):
     """
@@ -370,6 +398,10 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
     if not os.access(path, os.R_OK):
         pytest.fail('\n  Path to input test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
+
+    branch_name = get_active_git_branch()
+    path_with_branch = os.path.join(path, branch_name)
+    path = path_with_branch if os.path.exists(path_with_branch) else path
 
     return path
 
@@ -411,6 +443,10 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
     if not os.access(path, os.R_OK):
         pytest.fail('\n Path to reference test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
+
+    branch_name = get_active_git_branch()
+    path_with_branch = os.path.join(path, branch_name)
+    path = path_with_branch if os.path.exists(path_with_branch) else path
 
     return path
 

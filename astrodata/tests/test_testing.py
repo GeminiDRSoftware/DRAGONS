@@ -12,6 +12,18 @@ import astrodata
 from astrodata.testing import assert_same_class, download_from_archive
 
 
+def test_get_active_branch_name(capsys):
+    """
+    Just execute and prints out the active branch name.
+    """
+    from astrodata.testing import get_active_git_branch
+
+    assert isinstance(get_active_git_branch(), str)
+
+    captured = capsys.readouterr()
+    assert "Retrieved active branch name" in captured.out
+
+
 def test_change_working_dir(change_working_dir):
     """
     Test the change_working_dir fixture.
