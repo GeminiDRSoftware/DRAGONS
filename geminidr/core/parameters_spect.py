@@ -226,6 +226,7 @@ class skyCorrectFromSlitConfig(config.Config):
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0.)
     max_iters = config.RangeField("Maximum number of clipping iterations", int, 3, min=0)
     grow = config.RangeField("Aperture growth distance (pixels)", float, 2, min=0)
+    debug = config.Field("Show diagnostic plots?", bool, False)
 
 
 class traceAperturesConfig(config.Config):

@@ -2268,6 +2268,8 @@ class Spect(PrimitivesBASE):
         grow : float or False, optional
             Masking growth radius (in pixels) for each source aperture and
             each statistically-rejected pixel. Default: 2.
+        debug : bool
+            Show diagnostic plots?
 
         Returns
         -------
@@ -2291,6 +2293,7 @@ class Spect(PrimitivesBASE):
         hsigma = params["hsigma"]
         max_iters = params["max_iters"]
         grow = params["grow"]
+        debug = params["debug"]
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -2337,7 +2340,7 @@ class Spect(PrimitivesBASE):
                 sky_model = fit_1D(sky, weights=sky_weights, function=function,
                                    order=order, axis=axis, lsigma=lsigma,
                                    hsigma=hsigma, iterations=max_iters,
-                                   grow=grow, regions=regions, plot=True)
+                                   grow=grow, regions=regions, plot=debug)
 
                 ext.data -= sky_model
 
