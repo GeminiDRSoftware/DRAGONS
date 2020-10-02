@@ -910,7 +910,7 @@ def match_sources(incoords, refcoords, radius=2.0):
 def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
                           min_sources=1, search_radius=10, match_radius=2,
                           rotate=False, scale=False, full_wcs=False,
-                          return_matches=False):
+                          brute=True, return_matches=False):
     """
     This function takes two images (an input image, and a reference image) and
     works out the modifications needed to the WCS of the input images so that
@@ -947,6 +947,8 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         use the two images' WCSs to reproject the reference image's coordinates
         onto the input image's pixel plane, rather than just align the OBJCAT
         coordinates?
+    brute: bool
+        perform brute (landscape) search first?
     return_matches: bool
         return a list of matched objects as well as the Transform?
 
@@ -1043,7 +1045,7 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
                     "magnification is fixed".format(magnification))
 
     # Perform the fit
-    m_final = fit_model(m_init, incoords, refcoords, sigma=10, brute=True)
+    m_final = fit_model(m_init, incoords, refcoords, sigma=10, brute=brute)
     if return_matches:
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
