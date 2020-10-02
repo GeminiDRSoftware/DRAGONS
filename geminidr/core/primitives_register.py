@@ -188,14 +188,6 @@ class Register(PrimitivesBASE):
 
             n_corr = len(obj_list[0])
             log.fullinfo("Number of correlated sources: {}".format(n_corr))
-            if n_corr < min_sources:
-                log.warning("Too few correlated sources found. "
-                            "{}".format(warnings[fallback]))
-                if fallback == 'offsets':
-                    _create_wcs_from_offsets(ad, adref)
-                adoutputs.append(ad)
-                continue
-
             log.fullinfo("\nMatched sources:")
             log.fullinfo("   Ref. x Ref. y  Img. x  Img. y\n  {}".
                          format("-"*31))
@@ -203,6 +195,13 @@ class Register(PrimitivesBASE):
                 log.fullinfo("  {:7.2f} {:7.2f} {:7.2f} {:7.2f}".
                             format(*ref, *img))
             log.fullinfo("")
+            if n_corr < min_sources:
+                log.warning("Too few correlated sources found. "
+                            "{}".format(warnings[fallback]))
+                if fallback == 'offsets':
+                    _create_wcs_from_offsets(ad, adref)
+                adoutputs.append(ad)
+                continue
 
             # Check the fit geometry depending on the number of objects
             if n_corr < min_sources + 2 and (rotate or scale):
