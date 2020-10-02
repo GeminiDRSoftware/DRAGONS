@@ -80,7 +80,7 @@ class SplineTab:
         self.grow=grow
         self.weights = weights
         self.spline_kwargs = spline_kwargs
-        self.model = SplineModel(shape, pixels, masked_data, weights, self.order, 1, 1)  #order, niter, grow)
+        # self.model = SplineModel(shape, pixels, masked_data, weights, self.order, 1, 1)  #order, niter, grow)
         # Create a blank figure with labels
         if len(masked_data)>1:
             # multiplot, no select tools

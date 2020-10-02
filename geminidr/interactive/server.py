@@ -89,8 +89,15 @@ def start_server():
 
     if not _bokeh_server:
         static_app = Application(DRAGONSStaticHandler())
-        _bokeh_server = Server({'/': _bkapp, '/dragons': static_app, '/handle_key': _handle_key,
-                                }, num_procs=1, extra_patterns=[('/version', VersionHandler),])
+        port = 5006
+        while port < 5701 and _bokeh_server is None:
+            try:
+                _bokeh_server = Server({'/': _bkapp, '/dragons': static_app, '/handle_key': _handle_key,
+                                        }, num_procs=1, extra_patterns=[('/version', VersionHandler),], port=port)
+            except OSError:
+                port = port+1
+                if port >= 5701:
+                    raise
         _bokeh_server.start()
 
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
