@@ -810,35 +810,36 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
 
         # Brute-force grid search using an image landscape
         fit_it = BruteLandscapeFitter()
-        m = fit_it(model, xin, xout, sigma=sigma)
+        m_init = fit_it(model, xin, xout, sigma=sigma)
         if verbose:
-            log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
+            log.stdinfo(_show_model(m_init, "Coarse model in {:.2f} seconds".
                                     format((datetime.now() - start).total_seconds())))
 
         # Re-fix parameters in the intermediate model, if they were fixed
         # in the original model
-        for p in m.param_names:
+        for p in m_init.param_names:
             try:
                 if np.diff(getattr(model, p).bounds)[0] == 0:
-                    getattr(m, p).fixed = True
+                    getattr(m_init, p).fixed = True
                     continue
             except TypeError:
                 pass
             if release:
-                getattr(m, p).bounds = (None, None)
+                getattr(m_init, p).bounds = (None, None)
     else:
-        m = model.copy()
+        m_init = model.copy()
 
     # More precise minimization using pairwise calculations
     fit_it = KDTreeFitter()  # TODO: set parameters?
     # We don't care about how much the function value changes (fatol), only
     # that the position is robust (xatol)
-    final_model = fit_it(m, xin, xout, method='Nelder-Mead',
-                         options={'xatol': tolerance})
+    m_final = fit_it(m_init, xin, xout, method='Nelder-Mead',
+                     options={'xatol': tolerance})
+    #final_model = fit_it(m, xin, xout, method='shgo')
     if verbose:
-        log.stdinfo(_show_model(final_model, "Final model in {:.2f} seconds".
+        log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
                                 format((datetime.now() - start).total_seconds())))
-    return final_model
+    return m_final
 
 
 def _show_model(model, intro=""):
@@ -1042,8 +1043,7 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
                     "magnification is fixed".format(magnification))
 
     # Perform the fit
-    m_final = fit_model(m_init, incoords, refcoords, sigma=10, tolerance=1e-6,
-                        brute=True)
+    m_final = fit_model(m_init, incoords, refcoords, sigma=10, brute=True)
     if return_matches:
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
