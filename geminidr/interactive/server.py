@@ -111,7 +111,7 @@ def stop_server():
     """
     Stop the bokeh server.
 
-    This will end the IO look and unblock the :meth:`~geminidr.interactive.server.start_server()` call.
+    This will end the IO loop and unblock the :meth:`~geminidr.interactive.server.start_server()` call.
     This normally gets called when the user hits the submit button
     or closes the UI browser tab.
     """
