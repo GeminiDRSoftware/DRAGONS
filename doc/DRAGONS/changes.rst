@@ -32,6 +32,10 @@ Bug Fixes
 
 * Ensure NIRI skyflats satisfy calibration association requirements
 
+**gempy.numdisplay**
+
+* Fix a Python 3 compatibility issue.
+
 New Features
 ------------
 
