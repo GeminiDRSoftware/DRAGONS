@@ -992,7 +992,7 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
     try:
         t = adref[0].wcs.forward_transform | adinput[0].wcs.backward_transform
     except AttributeError:  # for cases with no defined WCS
-        m_init = models.Shift(0) & models.Shift(0)
+        m_init = transform or (models.Shift(0) & models.Shift(0))
     else:
         if full_wcs:
             refcoords = t(*refcoords)
