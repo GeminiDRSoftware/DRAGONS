@@ -907,8 +907,9 @@ def match_sources(incoords, refcoords, radius=2.0):
 
 
 def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
-                          min_sources=1, search_radius=10, rotate=False,
-                          scale=False, full_wcs=False, return_matches=False):
+                          min_sources=1, search_radius=10, match_radius=2,
+                          rotate=False, scale=False, full_wcs=False,
+                          return_matches=False):
     """
     This function takes two images (an input image, and a reference image) and
     works out the modifications needed to the WCS of the input images so that
@@ -934,7 +935,9 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
     min_sources: int
         minimum number of sources to use for cross-correlation
     search_radius: float
-        size of search box (in arcseconds)
+        size of search box (in pixels)
+    match_radius: float
+        matching radius for objects (in pixels)
     rotate: bool
         add a rotation to the alignment transform?
     scale: bool
@@ -986,9 +989,8 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
             incoords = (good_src1["x"]-1, good_src1["y"]-1)
             refcoords = (good_src2["x"]-1, good_src2["y"]-1)
 
-    # May be overridden later
-    magnification = 1
-    rotation = 0
+    # Set up the initial model
+    magnification, rotation = 1, 0  # May be overridden later
     try:
         t = adref[0].wcs.forward_transform | adinput[0].wcs.backward_transform
     except AttributeError:  # for cases with no defined WCS
@@ -1009,7 +1011,6 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
             magnification = np.sqrt(abs(np.linalg.det(affine.matrix)))
             rotation = np.degrees(np.arctan2(affine.matrix[1,0] - affine.matrix[0,1],
                                              affine.matrix[0,0] + affine.matrix[1,1]))
-
     m_init.offset_0.bounds = (m_init.offset_0 - search_radius,
                               m_init.offset_0 + search_radius)
     m_init.offset_1.bounds = (m_init.offset_1 - search_radius,
@@ -1035,11 +1036,13 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         log.warning("A magnification of {:.4f} is expected but the "
                     "magnification is fixed".format(magnification))
 
+    # Perform the fit
     m_final = fit_model(m_init, incoords, refcoords, sigma=10, tolerance=1e-6,
                         brute=True)
-
     if return_matches:
-        matched = match_sources(m_final(*incoords), refcoords, radius=1.0)
+        print(refcoords)
+        print(m_final(*incoords))
+        matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
         ind1 = matched[ind2]
         obj_list = [[], []] if len(ind1) < 1 else [np.array(list(zip(*incoords)))[ind2],
