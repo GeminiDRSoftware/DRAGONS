@@ -53,9 +53,11 @@ import matplotlib
 
 from ..interactive.fit import fit1d
 
+from ..interactive.server import interactive_fitter
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.deprecated.chebyshev2d import interactive_chebyshev2d
 from geminidr.interactive.deprecated.extractspectra import interactive_extract_spectra
+from ..interactive.fit.spline import SplineVisualizer
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -265,7 +267,7 @@ class Spect(PrimitivesBASE):
         order = params["order"]
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
-        interactive_spline = params["interactive_spline"]
+        interactive = params["interactive_spline"]
         niter = params["niter"]
         grow = params["grow"]
 
@@ -315,91 +317,131 @@ class Spect(PrimitivesBASE):
             # We can only calculate the sensitivity for one extension in
             # non-XD data, so keep track of this in case it's not the first one
             calculated = False
-            for ext in ad:
-                if len(ext.shape) != 1:
-                    log.warning("{}:{} is not a 1D spectrum".
-                                format(ad.filename, ext.hdr['EXTVER']))
-                    continue
 
-                if calculated and 'XD' not in ad.tags:
-                    log.warning("Found additional 1D extensions in non-XD data."
-                                " Ignoring.")
-                    break
+            if interactive:
+                all_exts = list()
+                all_shapes = list()
+                all_pixels = list()
+                all_masked_data = list()
+                all_orders = list()
+                all_weights = list()
 
-                spectrum = Spek1D(ext) / (exptime * u.s)
-                wave, zpt, zpt_err = [], [], []
+                for ext in ad:
+                    if len(ext.shape) != 1:
+                        log.warning("{}:{} is not a 1D spectrum".
+                                    format(ad.filename, ext.hdr['EXTVER']))
+                        continue
 
-                # Compute values that are counts / (exptime * flux_density * bandpass)
-                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                    data, mask, variance = spectrum.signal(region)
-                    if mask == 0 and fluxdens > 0:
-                        # Regardless of whether FLUX column is f_nu or f_lambda
-                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                        if data > 0:
-                            wave.append(w0)
-                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                            zpt.append(u.Magnitude(data / flux))
-                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                    if calculated and 'XD' not in ad.tags:
+                        log.warning("Found additional 1D extensions in non-XD data."
+                                    " Ignoring.")
+                        break
 
-                # TODO: Abstract to interactive fitting
-                wave = array_from_list(wave, unit=u.nm)
-                zpt = array_from_list(zpt)
-                zpt_err = array_from_list(zpt_err)
-                if interactive_spline:
-                    # param_order = self.params["calculateSensitivity"]["order"]
-                    min_order = None
-                    max_order = None
-                    min_niter = None
-                    max_niter = None
-                    min_grow = None
-                    max_grow = None
-                    for field in self.params["calculateSensitivity"].iterfields():
-                        if field.name == 'order':
-                            if hasattr(field, 'min'):
-                                min_order = field.min
-                            if hasattr(field, 'max'):
-                                max_order = field.max
-                        if field.name == 'niter':
-                            if hasattr(field, 'min'):
-                                min_niter = field.min
-                            if hasattr(field, 'max'):
-                                max_niter = field.max
-                        if field.name == 'grow':
-                            if hasattr(field, 'min'):
-                                min_grow = field.min
-                            if hasattr(field, 'max'):
-                                max_grow = field.max
-                    spline = geminidr.interactive.deprecated.spline.interactive_spline(ext, wave, zpt, zpt_err, order,
-                                                                                       niter, grow,
-                                                                                       min_order, max_order,
-                                                                                       min_niter, max_niter,
-                                                                                       min_grow, max_grow)
-                else:
+                    spectrum = Spek1D(ext) / (exptime * u.s)
+                    wave, zpt, zpt_err = [], [], []
+
+                    # Compute values that are counts / (exptime * flux_density * bandpass)
+                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                        data, mask, variance = spectrum.signal(region)
+                        if mask == 0 and fluxdens > 0:
+                            # Regardless of whether FLUX column is f_nu or f_lambda
+                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                            if data > 0:
+                                wave.append(w0)
+                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                                zpt.append(u.Magnitude(data / flux))
+                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+
+                    # TODO: Abstract to interactive fitting
+                    wave = array_from_list(wave, unit=u.nm)
+
+
+                    zpt = array_from_list(zpt)
+                    zpt_err = array_from_list(zpt_err)
+
+                    all_exts.append(ext)
+                    all_shapes.append(ext.shape[0])
+                    all_pixels.append(wave.value)
+                    all_masked_data.append(zpt.value)
+                    all_orders.append(order)
+                    all_weights.append(None)
+
+                    calculated = True
+
+                # ******************************************************************************************
+                config = self.params[self.myself()]
+                config.update(**params)
+                vis = SplineVisualizer(all_shapes, all_pixels, all_masked_data, all_orders, all_weights, config)
+                vis.config = config
+                interactive_fitter(vis)
+
+                for ext, spline in zip(all_exts, vis.get_splines()):
+                    knots, coeffs, degree = spline.tck
+                    sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
+                                     names=('knots', 'coefficients'),
+                                     meta={'header': Header()})
+                    sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
+                    ext.SENSFUNC = sensfunc
+            else:
+                for ext in ad:
+                    if len(ext.shape) != 1:
+                        log.warning("{}:{} is not a 1D spectrum".
+                                    format(ad.filename, ext.hdr['EXTVER']))
+                        continue
+
+                    if calculated and 'XD' not in ad.tags:
+                        log.warning("Found additional 1D extensions in non-XD data."
+                                    " Ignoring.")
+                        break
+
+                    spectrum = Spek1D(ext) / (exptime * u.s)
+                    wave, zpt, zpt_err = [], [], []
+
+                    # Compute values that are counts / (exptime * flux_density * bandpass)
+                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                        data, mask, variance = spectrum.signal(region)
+                        if mask == 0 and fluxdens > 0:
+                            # Regardless of whether FLUX column is f_nu or f_lambda
+                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                            if data > 0:
+                                wave.append(w0)
+                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                                zpt.append(u.Magnitude(data / flux))
+                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+
+                    # TODO: Abstract to interactive fitting
+                    wave = array_from_list(wave, unit=u.nm)
+                    zpt = array_from_list(zpt)
+                    zpt_err = array_from_list(zpt_err)
+
                     # we now return you to your regularly scheduled non-interactive spline
                     spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
                                                                             w=1./zpt_err.value,
                                                                             order=order,
                                                                             niter=niter,
                                                                             grow=grow)
-                knots, coeffs, degree = spline.tck
-                sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                 names=('knots', 'coefficients'),
-                                 meta={'header': Header()})
-                sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
-                ext.SENSFUNC = sensfunc
-                calculated = True
+                    knots, coeffs, degree = spline.tck
+                    sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
+                                     names=('knots', 'coefficients'),
+                                     meta={'header': Header()})
+                    sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
+                    ext.SENSFUNC = sensfunc
+                    calculated = True
 
-                if debug_plot:
-                    plt.ioff()
-                    fig, ax = plt.subplots()
-                    ax.plot(wave, zpt, 'bo')
-                    ax.plot(wave[spline.mask], zpt[spline.mask], 'ko')
-                    x = np.linspace(min(wave), max(wave), ext.shape[0])
-                    ax.plot(x, spline(x), 'r-')
-                    plt.show()
+                    if debug_plot:
+                        plt.ioff()
+                        fig, ax = plt.subplots()
+                        ax.plot(wave, zpt, 'bo')
+                        ax.plot(wave[spline.mask], zpt[spline.mask], 'ko')
+                        x = np.linspace(min(wave), max(wave), ext.shape[0])
+                        ax.plot(x, spline(x), 'r-')
+                        plt.show()
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

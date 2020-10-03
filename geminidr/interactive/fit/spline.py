@@ -72,6 +72,13 @@ class SplineModel:
 class SplineTab:
     def __init__(self, view, shape, pixels, masked_data, order, weights, grow=0, recalc_button=False,
                  **spline_kwargs):
+        if len(masked_data.shape)>1:
+            # multiplot, no select tools
+            tools = "pan,wheel_zoom,box_zoom,reset"
+        else:
+            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
+            masked_data = [masked_data]
+
         self.view = view
         self.recalc_button = recalc_button
         self.pixels = pixels
@@ -82,11 +89,6 @@ class SplineTab:
         self.spline_kwargs = spline_kwargs
         # self.model = SplineModel(shape, pixels, masked_data, weights, self.order, 1, 1)  #order, niter, grow)
         # Create a blank figure with labels
-        if len(masked_data)>1:
-            # multiplot, no select tools
-            tools = "pan,wheel_zoom,box_zoom,reset"
-        else:
-            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
         self.p = figure(plot_width=600, plot_height=500,
                         title='Interactive Spline',
                         tools=tools,
@@ -175,13 +177,14 @@ class SplineTab:
             i = i+1
 
     def fitted_data(self):
-        fd = []
-        self.spline_kwargs['grow'] = self.grow
+        for spline in self.splines():
+            yield spline(self.pixels)
+
+    def get_splines(self):
         for md in self.masked_data:
             spline = astromodels.UnivariateSplineWithOutlierRemoval(self.pixels, md, order=self.order, w=None, #self.weights
                                                                     **self.spline_kwargs)
-            fd.append(spline(self.pixels))
-        return fd
+            yield spline
 
 
 class SplineVisualizer(interactive.PrimitiveVisualizer):
@@ -232,3 +235,8 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         for st in self.spline_tabs:
             fd.append(st.fitted_data())
         return fd
+
+    def get_splines(self):
+        for st in self.spline_tabs:
+            for spline in st.get_splines():
+                yield spline
