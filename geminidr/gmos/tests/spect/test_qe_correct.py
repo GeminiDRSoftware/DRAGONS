@@ -236,6 +236,7 @@ def ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
+        print(f"Reading input file: {path}")
         ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
@@ -265,6 +266,7 @@ def arc_ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
+        print(f"Reading input arc: {path}")
         arc_ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
@@ -692,7 +694,7 @@ class WSolution:
 
 
 # -- Recipe to create pre-processed data ---------------------------------------
-def create_inputs_recipe():
+def create_inputs_recipe(use_branch_name=False):
     """
     Creates input data for tests using pre-processed standard star and its
     calibration files.
@@ -703,14 +705,15 @@ def create_inputs_recipe():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
-    from astrodata.testing import download_from_archive
+    from astrodata.testing import download_from_archive, get_active_git_branch
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}/".format(__file__.strip(".py"))
+    module_path = f"geminidr/gmos/spect/{os.path.basename(__file__).strip('.py')}/"
     path = os.path.join(root_path, module_path)
+    path = os.path.join(path, get_active_git_branch()) if use_branch_name else path
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("./inputs/", exist_ok=True)
@@ -772,8 +775,9 @@ def create_inputs_recipe():
 
 
 if __name__ == '__main__':
-    import sys
-    if "--create-inputs" in sys.argv[1:]:
-        create_inputs_recipe()
+    from sys import argv
+
+    if "--create-inputs" in argv[1:]:
+        create_inputs_recipe(use_branch_name="--branch" in argv[1:])
     else:
         pytest.main()
