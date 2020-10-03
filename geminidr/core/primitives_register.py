@@ -180,13 +180,25 @@ class Register(PrimitivesBASE):
             #    log.stdinfo("Recomputing WCS for GNIRS from offsets")
             #    ad = _create_wcs_from_offsets(ad, adref)
 
-            # Calculate the offsets quickly using only a translation
+            # The code used to start with a translation-only model, but this
+            # isn't helpful if there's a sizeable rotation or scaling, so
+            # let's just try to do the whole thing and see what happens.
             obj_list, transform = align_images_from_wcs(ad, adref,
                     search_radius=firstpasspix, min_sources=min_sources,
                     cull_sources=cull_sources, full_wcs=True,
-                    rotate=False, scale=False, return_matches=True)
+                    rotate=rotate, scale=scale, return_matches=True)
 
             n_corr = len(obj_list[0])
+            if n_corr < min_sources + rotate + scale:
+                log.warning(f"Too few correlated objects ({n_corr}). "
+                            "Setting rotate=False, scale=False")
+                obj_list, transform = align_images_from_wcs(ad, adref,
+                                                  search_radius=firstpasspix,
+                                                  cull_sources=cull_sources,
+                                                  full_wcs=True, rotate=False,
+                                                  scale=False, return_matches=True)
+                n_corr = len(obj_list[0])
+
             log.fullinfo("Number of correlated sources: {}".format(n_corr))
             log.fullinfo("\nMatched sources:")
             log.fullinfo("   Ref. x Ref. y  Img. x  Img. y\n  {}".
@@ -195,6 +207,7 @@ class Register(PrimitivesBASE):
                 log.fullinfo("  {:7.2f} {:7.2f} {:7.2f} {:7.2f}".
                             format(*ref, *img))
             log.fullinfo("")
+
             if n_corr < min_sources:
                 log.warning("Too few correlated sources found. "
                             "{}".format(warnings[fallback]))
@@ -202,21 +215,6 @@ class Register(PrimitivesBASE):
                     _create_wcs_from_offsets(ad, adref)
                 adoutputs.append(ad)
                 continue
-
-            # Check the fit geometry depending on the number of objects
-            if n_corr < min_sources + 2 and (rotate or scale):
-                log.warning("Too few objects. Setting rotate=False, scale=False")
-                rotate = False
-                scale = False
-
-            # Determine a more accurate fit
-            if rotate or scale:
-                transform = align_images_from_wcs(ad, adref, transform=transform,
-                                                  search_radius=0.2*firstpasspix,
-                                                  cull_sources=cull_sources,
-                                                  full_wcs=True,
-                                                  rotate=rotate, scale=scale,
-                                                  return_matches=False)
 
             try:
                 ad[0].wcs.insert_transform(ad[0].wcs.input_frame, transform, after=True)
