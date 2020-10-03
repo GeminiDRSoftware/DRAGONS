@@ -87,7 +87,7 @@ illumMask_dict = {
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
     "GMOS-S_EEV_11_3amp_v1": "gmos-s_illum_EEV_11_3amp_v1.fits",
-    "GMOS-S_EEV_22_3amp_v1": "gmos-s_illum_EEV_11_3amp_v1.fits",
+    "GMOS-S_EEV_22_3amp_v1": "gmos-s_illum_EEV_22_3amp_v1.fits",
 
     # GMOS South Hamamatsu
     # - From old imaging BPMs.  Cleaned illumination window and removed
