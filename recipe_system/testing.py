@@ -167,6 +167,7 @@ def ref_ad_factory(path_to_refs):
     """
 
     def _reference_ad(filename):
+        print(f"Loading reference file: {filename}")
         path = os.path.join(path_to_refs, filename)
         return astrodata.open(path)
 
