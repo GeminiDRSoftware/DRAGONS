@@ -33,9 +33,38 @@ pipeline {
     }
 
     stages {
-        stage ("Prepare"){
+
+        stage ("Setup") {
             steps{
+
                 sendNotifications 'STARTED'
+
+                script {
+                    properties([
+                        parameters([
+                            booleanParam(
+                                defaultValue: false,
+                                description: 'Create/update input files for test',
+                                name: 'CREATE_INPUTS'
+                            ),
+                            booleanParam(
+                                defaultValue: false,
+                                description: 'Create/update references for test',
+                                name: 'CREATE_REFS'
+                            ),
+                            booleanParam(
+                                defaultValue: false,
+                                description: 'Use branch name in inputs/refs path',
+                                name: 'branch_name_in_path'
+                            ),
+                            string(
+                                defaultValue: '',
+                                name: 'TEST_MODULE',
+                                trim: true
+                            )
+                        ])
+                    ])
+                }
             }
         }
 
@@ -121,6 +150,28 @@ pipeline {
                         }
                     }
                 }
+            }
+        }
+
+        stage('Recreate Input Data') {
+            when {
+                expression {
+                    return params.CREATE_INPUTS == true
+                }
+            }
+            steps {
+                echo "Creating/updating input data for ${params.TEST_MODULE}"
+            }
+        }
+
+        stage('Recreate Reference Data') {
+            when {
+                expression {
+                    return params.CREATE_REFS == true
+                }
+            }
+            steps {
+                echo "Creating/updating reference data for ${params.TEST_MODULE}"
             }
         }
 
