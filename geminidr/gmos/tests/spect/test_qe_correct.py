@@ -710,13 +710,14 @@ def create_inputs_recipe(use_branch_name=False):
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = f"geminidr/gmos/spect/{os.path.basename(__file__).strip('.py')}/"
-    path = os.path.join(root_path, module_path)
-    path = os.path.join(path, get_active_git_branch()) if use_branch_name else path
+    root_path = "./dragons_test_inputs/geminidr/gmos/spect/"
+    module_name = os.path.basename(__file__).strip(".py")
+    path = os.path.abspath(os.path.join(root_path, module_name))
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
-    os.makedirs("./inputs/", exist_ok=True)
+
+    input_path = os.path.join(path, "inputs/", get_active_git_branch())
+    os.makedirs(input_path, exist_ok=True)
 
     for filename, cals in associated_calibrations.items():
         print(filename)
@@ -753,10 +754,10 @@ def create_inputs_recipe(use_branch_name=False):
         arc_reduce.files.extend(arc_paths)
         arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
 
-        os.chdir("inputs/")
+        os.chdir(input_path)
         arc_reduce.runr()
         _ = arc_reduce.output_filenames.pop()
-        os.chdir("../")
+        os.chdir(path)
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
@@ -769,15 +770,16 @@ def create_inputs_recipe(use_branch_name=False):
         p.addVAR(poisson_noise=True)
         p.flatCorrect(flat=flat_master)
 
-        os.chdir("inputs/")
+        os.chdir(input_path)
         _ = p.writeOutputs().pop()
-        os.chdir("../")
+        os.chdir(path)
 
 
 if __name__ == '__main__':
     from sys import argv
 
     if "--create-inputs" in argv[1:]:
-        create_inputs_recipe(use_branch_name="--branch" in argv[1:])
+        use_branch_name = "--branch" in argv[1:]
+        create_inputs_recipe(use_branch_name=use_branch_name)
     else:
         pytest.main()
