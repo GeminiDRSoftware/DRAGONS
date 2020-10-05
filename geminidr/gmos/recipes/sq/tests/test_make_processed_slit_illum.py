@@ -27,8 +27,8 @@ associated_calibrations = {
 
 
 @pytest.mark.gmosls
-@pytest.mark.integration
-@pytest.mark.preprocessed
+@pytest.mark.integration_test
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("processed_slit_illum", datasets, indirect=True)
 def test_make_processed_slit_illum(processed_slit_illum, ref_ad_factory):
 

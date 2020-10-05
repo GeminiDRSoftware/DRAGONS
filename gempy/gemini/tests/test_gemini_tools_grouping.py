@@ -6,7 +6,6 @@ from gempy.gemini import gemini_tools as gt
 
 PKG = 'geminidr.f2.lookups'
 
-
 # Support functions specific to these tests:
 def dummy_ad():
     """Create a dummy single-extension AD object"""
@@ -86,10 +85,9 @@ def test_a_dith():
            'S20140104S0100', 'S20140104S0101']
 
     adpatt = offdict_to_adlist(patt)
-    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj))
+    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj), pkg=PKG)
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG), (objgroup,))
-
 
 def test_abba():
     # Simple 7' nod to sky without dithering (probably overly simple):
@@ -106,11 +104,10 @@ def test_abba():
     sky = ['test02', 'test03', 'test06', 'test07']
 
     adpatt = offdict_to_adlist(patt)
-    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj))
-    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky))
+    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj), pkg=PKG)
+    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky), pkg=PKG)
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG), (objgroup, skygroup))
-
 
 def test_abbaacca():
     # Simple 7' nod to sky in opposite directions:
@@ -128,23 +125,22 @@ def test_abbaacca():
     sky2 = ['test06', 'test07']
 
     adpatt = offdict_to_adlist(patt)
-    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj))
-    skygroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, sky1))
-    skygroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, sky2))
+    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj), pkg=PKG)
+    skygroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, sky1), pkg=PKG)
+    skygroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, sky2), pkg=PKG)
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG),
                       (objgroup, skygroup1, skygroup2))
 
-
 def test_abba_dith_1():
-    # Dither 2x2 on source and on sky, with ~50% overlap between A&B fields
+    # Dither 2x2 on source and on sky, with ~90% overlap between A&B fields
     # (borderline case for grouping):
     patt = {'test01': (-5., -5.),
             'test02': (5., 5.),
-            'test03': (-5., 175.),
-            'test04': (5., 185.),
-            'test05': (-5., 185.),
-            'test06': (5., 175.),
+            'test03': (-5., 355.),
+            'test04': (5., 365.),
+            'test05': (-5., 365.),
+            'test06': (5., 355.),
             'test07': (5., -5.),
             'test08': (-5., 5.)}
 
@@ -152,12 +148,14 @@ def test_abba_dith_1():
     sky = ['test03', 'test04', 'test05', 'test06']
 
     adpatt = offdict_to_adlist(patt)
-    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj))
-    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky))
+    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj), pkg=PKG)
+    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky), pkg=PKG)
+    allgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj+sky), pkg=PKG)
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG, frac_FOV=0.9),
                       (objgroup, skygroup))
-
+    assert same_lists(gt.group_exposures(adpatt, pkg=PKG, frac_FOV=1.0),
+                      (allgroup,))
 
 def test_abba_dith_2():
     # Dither on source and on sky, from GS-F2-RECOM13-RUN-1-124:
@@ -172,11 +170,10 @@ def test_abba_dith_2():
     sky = ['S20130427S0202', 'S20130427S0203', 'S20130427S0204']
 
     adpatt = offdict_to_adlist(patt)
-    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj))
-    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky))
+    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj), pkg=PKG)
+    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky), pkg=PKG)
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG), (objgroup, skygroup))
-
 
 def test_abcde_dith():
     # A more exotic nod pattern between 3 sky & 2 off-centre object fields
@@ -203,12 +200,12 @@ def test_abcde_dith():
     sky3 = ['test09', 'test10']
 
     adpatt = offdict_to_adlist(patt)
-    skygroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, sky1))
-    objgroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, obj1))
-    skygroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, sky2))
-    objgroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, obj2))
-    skygroup3 = gt.ExposureGroup(get_ad_sublist(adpatt, sky3))
+    skygroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, sky1), pkg=PKG)
+    objgroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, obj1), pkg=PKG)
+    skygroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, sky2), pkg=PKG)
+    objgroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, obj2), pkg=PKG)
+    skygroup3 = gt.ExposureGroup(get_ad_sublist(adpatt, sky3), pkg=PKG)
 
-    assert same_lists(gt.group_exposures(adpatt, pkg=PKG),
+    assert same_lists(gt.group_exposures(adpatt, pkg=PKG, frac_FOV=0.5),
                       (skygroup1, objgroup1,
                        skygroup2, objgroup2, skygroup3))
