@@ -63,6 +63,8 @@ def plot(adin, adout, cmap='coolwarm'):
     plt.show()
 
 
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 def test_sky_correct(path_to_inputs):
     ad = astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
     ad.crop(2350, 0, 2700, 512)
@@ -88,6 +90,8 @@ def test_sky_correct(path_to_inputs):
     assert bkg.std() < 4
 
 
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 def test_sky_correct_with_region(path_to_inputs):
     ad = astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
     ad.crop(2350, 0, 2700, 512)
