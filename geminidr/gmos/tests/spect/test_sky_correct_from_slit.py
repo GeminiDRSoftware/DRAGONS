@@ -1,26 +1,24 @@
-#!/usr/bin/env python
 """
 Regression tests for GMOS LS `skyCorrectFromSlit`. These tests run on real data
-to ensure that the output is always the same. Further investigation is needed to
-check if these outputs are scientifically relevant.
+to ensure that the output is always the same. Further investigation is needed
+to check if these outputs are scientifically relevant.
 """
 
+import copy
 import os
-import pytest
-import numpy as np
-
-from astropy import table
 
 import astrodata
-import gemini_instruments
+import gemini_instruments  # noqa
 import geminidr
-
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+from astropy import table
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
-from recipe_system.testing import ref_ad_factory
+from recipe_system.testing import ref_ad_factory  # noqa
 
-
-# Test parameters --------------------------------------------------------------
+# Test parameters -------------------------------------------------------------
 # Each test input filename contains the original input filename with
 # "_aperturesTraced" suffix
 test_datasets = [
@@ -35,13 +33,89 @@ test_datasets = [
     "N20190427S0141_aperturesTraced.fits",  # R150 660
 ]
 
+PLOT = os.getenv('PLOT')
 
-# Tests Definitions ------------------------------------------------------------
+
+# Tests Definitions -----------------------------------------------------------
+
+
+def plot(adin, adout, cmap='coolwarm'):
+    fig, axes = plt.subplots(2, 4)
+
+    ax1, ax2, ax3, ax4 = axes[0]
+    ax1.imshow(adin[0].data, vmin=-50, vmax=50, cmap=cmap)
+    ax1.set_title('Input')
+    ax2.imshow(adout[0].data, vmin=-30, vmax=30, cmap=cmap)
+    ax2.set_title('Output')
+    ax3.imshow(adin[0].data - adout[0].data, vmin=-20, vmax=20, cmap=cmap)
+    ax3.set_title('Diff')
+
+    bkg = np.vstack([adout[0].data[:200], adout[0].data[-200:]])
+    ax4.hist(bkg.ravel(), bins=np.linspace(-25, 25, 101))
+    ax4.set_title('Histogram output')
+
+    for i, col in enumerate((35, 96, 200, 275)):
+        ax = axes[1, i]
+        ax.plot(adin[0].data[:, col])
+        ax.plot(adout[0].data[:, col])
+        ax.set_title(f'x={col}')
+
+    plt.show()
+
+
+def test_sky_correct(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
+    ad.crop(2350, 0, 2700, 512)
+    del ad[0].APERTURE
+
+    if PLOT:
+        adin = copy.deepcopy(ad)
+
+    p = primitives_gmos_spect.GMOSSpect([ad])
+    p.viewer = geminidr.dormantViewer(p, None)
+    p.skyCorrectFromSlit(order=5, grow=2)
+
+    if PLOT:
+        plot(adin, ad)
+
+    bkg = np.ma.array(np.vstack([ad[0].data[:200], ad[0].data[310:]]))
+    # mask some cosmic rays
+    bkg[15:25, 25:40] = np.ma.masked
+    bkg[365:375, 255:270] = np.ma.masked
+
+    print(f'mean={bkg.mean():.2f}, std={bkg.std():.2f}')
+    assert bkg.mean() < 0.2
+    assert bkg.std() < 4
+
+
+def test_sky_correct_with_region(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
+    ad.crop(2350, 0, 2700, 512)
+    if PLOT:
+        adin = copy.deepcopy(ad)
+
+    p = primitives_gmos_spect.GMOSSpect([ad])
+    p.viewer = geminidr.dormantViewer(p, None)
+    p.skyCorrectFromSlit(order=5, grow=2, regions=':200,310:')
+
+    if PLOT:
+        plot(adin, ad)
+
+    bkg = np.ma.array(np.vstack([ad[0].data[:200], ad[0].data[310:]]))
+    # mask some cosmic rays
+    bkg[15:25, 25:40] = np.ma.masked
+    bkg[365:375, 255:270] = np.ma.masked
+
+    print(f'mean={bkg.mean():.2f}, std={bkg.std():.2f}')
+    assert bkg.mean() < 0.5
+    assert bkg.std() < 4
+
+
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_extract_1d_spectra(ad, change_working_dir,
-                                       ref_ad_factory):
+                                       ref_ad_factory):  # noqa
 
     with change_working_dir():
 
@@ -50,7 +124,7 @@ def test_regression_extract_1d_spectra(ad, change_working_dir,
 
         p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        p.skyCorrectFromSlit(order=5, grow=0)
+        p.skyCorrectFromSlit(order=5, grow=2)
         sky_subtracted_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(sky_subtracted_ad.filename)
@@ -59,7 +133,7 @@ def test_regression_extract_1d_spectra(ad, change_working_dir,
         np.testing.assert_allclose(ext.data, ref_ext.data, atol=0.01)
 
 
-# Local Fixtures and Helper Functions ------------------------------------------
+# Local Fixtures and Helper Functions -----------------------------------------
 @pytest.fixture(scope='function')
 def ad(path_to_inputs, request):
     """
@@ -130,7 +204,7 @@ def _add_aperture_table(ad, center):
     return ad
 
 
-# -- Recipe to create pre-processed data ---------------------------------------
+# -- Recipe to create pre-processed data --------------------------------------
 def create_inputs_recipe():
     """
     Creates input data for tests using pre-processed standard star and its
@@ -142,6 +216,7 @@ def create_inputs_recipe():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
+
     from astrodata.testing import download_from_archive
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
@@ -197,7 +272,8 @@ def create_inputs_recipe():
         _ad = _add_aperture_table(_ad, pars['center'])
 
         p = primitives_gmos_spect.GMOSSpect([_ad])
-        p.traceApertures(trace_order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
+        p.traceApertures(trace_order=2, nsum=20, step=10, max_shift=0.09,
+                         max_missed=5)
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
