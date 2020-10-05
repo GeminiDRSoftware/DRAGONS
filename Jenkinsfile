@@ -125,34 +125,6 @@ pipeline {
             }
         }
 
-        stage('GMOS LS Tests') {
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
-                echo "Running tests"
-                sh 'tox -e py36-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F gmosls'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside GmosArcTests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/*_results.xml'
-                    )
-                }  // end always
-            }  // end post
-        }  // end stage
-
         stage('Integration tests') {
             agent { label "centos7" }
             environment {
@@ -206,6 +178,34 @@ pipeline {
                 }
             } // end post
         }
+
+                stage('GMOS LS Tests') {
+            agent { label "master" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Running tests"
+                sh 'tox -e py36-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F gmosls'
+            }  // end steps
+            post {
+                always {
+                    echo "Running 'archivePlots' from inside GmosArcTests"
+                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }  // end always
+            }  // end post
+        }  // end stage
 
     }
     post {
