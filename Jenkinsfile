@@ -181,7 +181,7 @@ pipeline {
         } // end stage
 
         stage('Regression Tests') {
-            agent { label "centos7" }
+            agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
