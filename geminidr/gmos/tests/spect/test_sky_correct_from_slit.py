@@ -4,13 +4,11 @@ to ensure that the output is always the same. Further investigation is needed
 to check if these outputs are scientifically relevant.
 """
 
-import copy
 import os
 
 import astrodata
 import gemini_instruments  # noqa
 import geminidr
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
@@ -51,85 +49,7 @@ test_datasets = [
 # ("N20190427S0127_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 725
 # ("N20190427S0141_aperturesTraced.fits", dict(order=5, grow=2)),  # R150 660
 
-PLOT = os.getenv('PLOT')
-
 # Tests Definitions -----------------------------------------------------------
-
-
-def plot(adin, adout, cmap='coolwarm'):
-    fig, axes = plt.subplots(2, 4)
-
-    ax1, ax2, ax3, ax4 = axes[0]
-    ax1.imshow(adin[0].data, vmin=-50, vmax=50, cmap=cmap)
-    ax1.set_title('Input')
-    ax2.imshow(adout[0].data, vmin=-30, vmax=30, cmap=cmap)
-    ax2.set_title('Output')
-    ax3.imshow(adin[0].data - adout[0].data, vmin=-20, vmax=20, cmap=cmap)
-    ax3.set_title('Diff')
-
-    bkg = np.vstack([adout[0].data[:200], adout[0].data[-200:]])
-    ax4.hist(bkg.ravel(), bins=np.linspace(-25, 25, 101))
-    ax4.set_title('Histogram output')
-
-    for i, col in enumerate((35, 96, 200, 275)):
-        ax = axes[1, i]
-        ax.plot(adin[0].data[:, col])
-        ax.plot(adout[0].data[:, col])
-        ax.set_title(f'x={col}')
-
-    plt.show()
-
-
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-def test_sky_correct(path_to_inputs):
-    ad = astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
-    ad.crop(2350, 0, 2700, 512)
-    del ad[0].APERTURE
-
-    if PLOT:
-        adin = copy.deepcopy(ad)
-
-    p = primitives_gmos_spect.GMOSSpect([ad])
-    p.viewer = geminidr.dormantViewer(p, None)
-    p.skyCorrectFromSlit(order=5, grow=2)
-
-    if PLOT:
-        plot(adin, ad)
-
-    bkg = np.ma.array(np.vstack([ad[0].data[:200], ad[0].data[310:]]))
-    # mask some cosmic rays
-    bkg[15:25, 25:40] = np.ma.masked
-    bkg[365:375, 255:270] = np.ma.masked
-
-    print(f'mean={bkg.mean():.2f}, std={bkg.std():.2f}')
-    assert bkg.mean() < 0.2
-    assert bkg.std() < 4
-
-
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-def test_sky_correct_with_region(path_to_inputs):
-    ad = astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
-    ad.crop(2350, 0, 2700, 512)
-    if PLOT:
-        adin = copy.deepcopy(ad)
-
-    p = primitives_gmos_spect.GMOSSpect([ad])
-    p.viewer = geminidr.dormantViewer(p, None)
-    p.skyCorrectFromSlit(order=5, grow=2, regions=':200,310:')
-
-    if PLOT:
-        plot(adin, ad)
-
-    bkg = np.ma.array(np.vstack([ad[0].data[:200], ad[0].data[310:]]))
-    # mask some cosmic rays
-    bkg[15:25, 25:40] = np.ma.masked
-    bkg[365:375, 255:270] = np.ma.masked
-
-    print(f'mean={bkg.mean():.2f}, std={bkg.std():.2f}')
-    assert bkg.mean() < 0.5
-    assert bkg.std() < 4
 
 
 @pytest.mark.gmosls
