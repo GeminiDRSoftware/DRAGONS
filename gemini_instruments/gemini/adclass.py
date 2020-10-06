@@ -1920,8 +1920,8 @@ class AstroDataGemini(AstroDataFits):
 
         Returns
         -------
-        tuple
-            (right ascension, declination)
+        dict
+            {'lon': right ascension, 'lat': declination} plus other coords
         """
         wcs = self.wcs if self.is_single else self[0].wcs
         if wcs is None:
