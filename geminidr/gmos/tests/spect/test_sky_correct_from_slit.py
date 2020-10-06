@@ -18,19 +18,38 @@ from astropy import table
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
-from recipe_system.testing import ref_ad_factory  # noqa
 
 # Test parameters -------------------------------------------------------------
 # Each test input filename contains the original input filename with
 # "_aperturesTraced" suffix
 test_datasets = [
-    ("N20180508S0021_aperturesTraced.fits", dict(order=5, grow=2)),  # B600 720
-    ("N20180509S0010_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 900
-    ("N20180516S0081_aperturesTraced.fits", dict(order=5, grow=2)),  # R600 860
-    ("N20190427S0126_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 625
-    ("N20190427S0127_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 725
-    ("N20190427S0141_aperturesTraced.fits", dict(order=5, grow=2)),  # R150 660
+    (
+        "N20180508S0021_aperturesTraced.fits",  # B600 720
+        dict(order=5, grow=0),
+        'N20180508S0021_ref_1.fits',
+    ),
+    (
+        "N20180508S0021_aperturesTraced.fits",  # B600 720
+        dict(order=8, grow=2, regions=':200,310:'),
+        'N20180508S0021_ref_2.fits',
+    ),
+    (
+        "N20180508S0021_aperturesTraced.fits",  # B600 720
+        dict(order=5, grow=2, function='chebyshev', regions=':200,310:'),
+        'N20180508S0021_ref_3.fits',
+    ),
+    (
+        "N20180508S0021_aperturesTraced.fits",  # B600 720
+        dict(order=5, function='legendre', lsigma=2, hsigma=2, max_iters=2),
+        'N20180508S0021_ref_4.fits',
+    ),
 ]
+
+# ("N20180509S0010_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 900
+# ("N20180516S0081_aperturesTraced.fits", dict(order=5, grow=2)),  # R600 860
+# ("N20190427S0126_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 625
+# ("N20190427S0127_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 725
+# ("N20190427S0141_aperturesTraced.fits", dict(order=5, grow=2)),  # R150 660
 
 PLOT = os.getenv('PLOT')
 
@@ -115,9 +134,10 @@ def test_sky_correct_with_region(path_to_inputs):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("filename, params", test_datasets)
-def test_regression_extract_1d_spectra(filename, params, change_working_dir,
-                                       path_to_inputs, ref_ad_factory):  # noqa
+@pytest.mark.parametrize("filename, params, refname", test_datasets)
+def test_regression_extract_1d_spectra(filename, params, refname,
+                                       change_working_dir, path_to_inputs,
+                                       path_to_refs):
 
     path = os.path.join(path_to_inputs, filename)
     ad = astrodata.open(path)
@@ -127,9 +147,9 @@ def test_regression_extract_1d_spectra(filename, params, change_working_dir,
         p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.skyCorrectFromSlit(**params)
-        sky_subtracted_ad = p.writeOutputs().pop()
+        sky_subtracted_ad = p.writeOutputs(outfilename=refname).pop()
 
-    ref_ad = ref_ad_factory(sky_subtracted_ad.filename)
+    ref_ad = astrodata.open(os.path.join(path_to_refs, refname))
 
     for ext, ref_ext in zip(sky_subtracted_ad, ref_ad):
         np.testing.assert_allclose(ext.data, ref_ext.data, atol=0.01)
@@ -260,8 +280,7 @@ def create_inputs_recipe():
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
         os.chdir("../")
-        print('Wrote pre-processed file to:\n'
-              '    {:s}'.format(processed_ad.filename))
+        print(f'Wrote pre-processed file to:\n    {processed_ad.filename}')
 
 
 if __name__ == '__main__':
