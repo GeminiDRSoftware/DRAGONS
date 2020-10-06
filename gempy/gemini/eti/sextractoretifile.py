@@ -32,10 +32,10 @@ class SExtractorETIFile(ETIFile):
             name=strip_fits(input.filename)+'_{}'.format(input.hdr['EXTVER']))
         # Replace bad pixels with median value of good data, so need to
         # copy the data plane in case we edit it
-        if mask_dq_bits and self.mask is not None:
+        if mask_dq_bits and input.mask is not None:
             self.data = input.data.copy()
-            self.data[(self.mask & mask_dq_bits) > 0] = np.median(
-                self.data[(self.mask & mask_dq_bits) == 0])
+            self.data[(input.mask & mask_dq_bits) > 0] = np.median(
+                self.data[(input.mask & mask_dq_bits) == 0])
         else:
             self.data = input.data
         self.ext = input
