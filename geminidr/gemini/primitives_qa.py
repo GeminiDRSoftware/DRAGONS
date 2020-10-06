@@ -74,8 +74,7 @@ class QA(PrimitivesBASE):
                 if not {'BIASIM', 'DARKIM',
                    self.timestamp_keys['subtractOverscan']}.intersection(ad.phu):
                     try:
-                        bias_level = get_bias_level(adinput=ad,
-                                                        estimate=False)
+                        bias_level = get_bias_level(adinput=ad, estimate=False)
                     except NotImplementedError:
                         bias_level = None
 
@@ -83,6 +82,7 @@ class QA(PrimitivesBASE):
                         log.warning("Bias level not found for {}; "
                                     "approximate bias will not be removed "
                                     "from the sky level".format(ad.filename))
+                        bias_level = [None] * len(ad)
 
             # Get the filter name and the corresponding BG band definition
             # and the requested band
@@ -94,106 +94,47 @@ class QA(PrimitivesBASE):
             except KeyError:
                 bg_band_limits = None
 
-            pixscale = ad.pixel_scale()
-            exptime = ad.exposure_time()
+            report = qap.BGReport(ad, log=self.log, limit_dict=bg_band_limits)
 
-            # Get background level from all extensions quick'n'dirty
-            bg_list = gt.measure_bg_from_image(ad, sampling=100, gaussfit=False)
-
-            info_list = []
-            bg_mag_list = []
-            in_adu = ad.is_in_adu()
-            bunit = 'ADU' if in_adu else 'electron'
-            for i, (ext, npz) in enumerate(
-                    zip(ad, ad.nominal_photometric_zeropoint())):
-                extver = ext.hdr['EXTVER']
-                ext_info = {}
-
-                bg_count = Measurement(*bg_list[i])
-                if bg_count.value:
-                    log.fullinfo("EXTVER {}: Raw BG level = {:.3f}".
-                                 format(extver, bg_count.value))
-                    if bias_level is not None:
-                        if bias_level[i] is not None:
-                            bg_count = _arith(bg_count, 'sub', bias_level[i])
-                            log.fullinfo("          Bias-subtracted BG level "
-                                     "= {:.3f}".format(bg_count.value))
-
-                # Put Measurement into the list in place of 3 values
-                bg_list[i] = bg_count
+            for ext, bias in zip(ad, bias_level):
+                report.add_measurement(ext, bias_level=bias)
 
                 # Write sky background to science header
-                ext.hdr.set("SKYLEVEL", bg_count.value, comment="{} [{}]".
-                            format(self.keyword_comments["SKYLEVEL"], bunit))
+                bg = report.measurements[-1]['bg']
+                if bg is not None:
+                    bunit = report.measurements[-1]['bunit']
+                    ext.hdr.set("SKYLEVEL", bg,
+                            comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
 
-                bg_mag = Measurement(None, None, 0)
-                # We need a nominal photometric zeropoint to do anything useful
-                if bg_count.value is None:
-                    continue
-                if npz is not None:
-                    if bg_count.value > 0:
-                        # convert background to counts/arcsec^2/second, but
-                        # want to preserve values of sci_bg and sci_std
-                        fak = 1.0 / (exptime * pixscale * pixscale)
-                        bg_mag = Measurement(npz - 2.5*math.log10(bg_count.value*fak),
-                            2.5*math.log10(1 + bg_count.std/bg_count.value),
-                                             bg_count.samples)
-                        # Need to report to FITSstore in electrons
-                        bg_e = _arith(bg_count, 'mul', fak * (ext.gain() if
-                                            in_adu else 1))
-                        ext_info.update({"mag": bg_mag.value, "mag_std": bg_mag.std,
-                                "electrons": bg_e.value, "electrons_std":
-                                bg_e.std, "nsamples": bg_e.samples})
-                        bg_mag_list.append(bg_mag)
-                        qastatus = _get_qa_band('bg', ad, bg_mag, bg_band_limits)
-                        ext_info.update({"percentile_band": qastatus.band,
-                                         "comment": [qastatus.warning]})
-                    else:
-                        log.warning("Background is less than or equal to 0 "
-                                    "for {}:{}".format(ad.filename,extver))
-                else:
-                    log.stdinfo("No nominal photometric zeropoint available "
-                                "for {}:{}, filter {}".format(ad.filename,
-                                        extver, ad.filter_name(pretty=True)))
-
-                info_list.append(ext_info)
                 if separate_ext:
-                    comments = _bg_report(ext, bg_count, bunit, bg_mag, qastatus)
+                    comments = report.report(report_type='last')
 
             # Collapse extension-by-extension numbers if multiple extensions
-            bg_count = _stats(bg_list)
-            bg_mag = _stats(bg_mag_list)
+            results = report.average_measurements()
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
-            if (len(ad)==1 or not separate_ext) and bg_count is not None:
-                ad.phu.set("SKYLEVEL", bg_count.value, comment="{} [{}]".
-                            format(self.keyword_comments["SKYLEVEL"], bunit))
+            if (len(ad) == 1 or not separate_ext) and results.get('bg') is not None:
+                ad.phu.set("SKYLEVEL", results.get('bg'), comment="{} [{}]".
+                            format(self.keyword_comments['SKYLEVEL'], bunit))
 
-                qastatus = _get_qa_band('bg', ad, bg_mag, bg_band_limits)
-
-                # Compute overall numbers if requested
-                if not separate_ext:
-                    comments = _bg_report(ad, bg_count, bunit, bg_mag, qastatus)
+                report.calculate_qa_band(results["mag"], results["mag_std"])
+                if len(ad) > 1:  # ensure ADCC report is based on average
+                    comments = report.report(results=results)
 
                 # Report measurement to the adcc
-                if bg_mag.value:
-                    try:
-                        req_bg = ad.requested_bg()
-                    except KeyError:
-                        req_bg = None
-                    qad =  {"band": qastatus.band,
-                            "brightness": float(bg_mag.value),
-                            "brightness_error": float(bg_mag.std),
-                            "requested": req_bg,
-                            "comment": comments}
+                if results.get('mag'):
+                    qad = {"band": report.band,
+                           "brightness": float(results["mag"]),
+                           "brightness_error": float(results["mag_std"]),
+                           "requested": report.reqband,
+                           "comment": comments}
                     qap.adcc_report(ad, "bg", qad)
 
             # Report measurement to fitsstore
             if self.upload and "metrics" in self.upload:
-                fitsdict = qap.fitsstore_report(ad, "sb", info_list,
-                                                self.calurl_dict,
-                                                self.mode, upload=True)
+                qap.fitsstore_report(ad, "sb", report.info_list(),
+                                     self.calurl_dict, self.mode, upload=True)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
