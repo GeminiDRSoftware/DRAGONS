@@ -33,7 +33,6 @@ from itertools import product as cart_product
 from bisect import bisect
 
 import astrodata
-import geminidr.interactive.deprecated.spline
 import geminidr.interactive.server
 from astrodata import NDAstroData
 from geminidr import PrimitivesBASE

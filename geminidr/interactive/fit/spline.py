@@ -1,4 +1,3 @@
-import numpy as np
 
 from bokeh.layouts import column, row
 from bokeh.models import Tabs, Panel, ColumnDataSource, Button
@@ -9,70 +8,10 @@ from gempy.library import astromodels
 from geminidr.interactive import interactive
 
 
-class SplineModel:
-    # shape is ext.shape[0]
-    def __init__(self, shape, pixels, masked_data, weights, order, niter, grow):
-        self.shape = shape
-        self.pixels = pixels
-        self.masked_data = masked_data
-        self.weights = weights
-        self.order = order
-        self.niter = niter
-        self.grow = grow
-
-        # These are the heart of the model.  The users of the model
-        # register to listen to these two coordinate sets to get updates.
-        # Whenever there is a call to recalc_spline, these coordinate
-        # sets will update and will notify all registered listeners.
-        self.mask_points_listeners = list()
-        self.fit_line_listeners = list()
-
-        self.spline = None
-
-        # self.coords.add_mask_listener(self.update_coords)
-
-    def update_coords(self, x, y):
-        self.recalc_spline()
-
-    def recalc_spline(self):
-        """
-        Recalculate the spline based on the currently set parameters.
-
-        Whenever one of the parameters that goes into the spline function is
-        changed, we come back in here to do the recalculation.  Additionally,
-        the resulting spline is used to update the line and the masked underlying
-        scatter plot.
-
-        Returns
-        -------
-        none
-        """
-        x, y = self.coords.x_coords[self.coords.mask], self.coords.y_coords[self.coords.mask]
-
-        # zpt_err = self.zpt_err
-        weights = self.weights
-        order = self.order
-        niter = self.niter
-        grow = self.grow
-
-        self.spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y,
-                                                                     w=weights[self.coords.mask],  # w=1. / zpt_err.value,
-                                                                     order=order,
-                                                                     niter=niter,
-                                                                     grow=grow)
-
-        splinex = np.linspace(min(x), max(x), self.shape)
-
-        for fn in self.mask_points_listeners:
-            fn(x[self.spline.mask], y[self.spline.mask])
-        for fn in self.fit_line_listeners:
-            fn(splinex, self.spline(splinex))
-
-
 class SplineTab:
     def __init__(self, view, shape, pixels, masked_data, order, weights, grow=0, recalc_button=False,
                  **spline_kwargs):
-        if len(masked_data.shape)>1:
+        if isinstance(masked_data, list) and len(masked_data[0]) > 1:
             # multiplot, no select tools
             tools = "pan,wheel_zoom,box_zoom,reset"
         else:
@@ -162,7 +101,7 @@ class SplineTab:
         idx = 0
         i = 0
         self.spline_kwargs['grow'] = self.grow
-        for md in self.masked_data:
+        for md, w in zip(self.masked_data, self.weights):
             if (i % self.mod) == 0:
                 scatter_source = ColumnDataSource({'x': self.pixels, 'y': md})
                 scatter = self.p.scatter(x='x', y='y', source=scatter_source, color="black", radius=5)
@@ -170,19 +109,19 @@ class SplineTab:
                 self.scatters.append(scatter)
 
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(self.pixels, md,
-                                                                        order=self.order, w=None, #self.weights,
+                                                                        order=self.order, w=w,
                                                                         **self.spline_kwargs)
                 self.line_sources[idx].data = {'x': self.pixels, 'y': spline(self.pixels)}
                 idx = idx+1
             i = i+1
 
     def fitted_data(self):
-        for spline in self.splines():
+        for spline in self.get_splines():
             yield spline(self.pixels)
 
     def get_splines(self):
-        for md in self.masked_data:
-            spline = astromodels.UnivariateSplineWithOutlierRemoval(self.pixels, md, order=self.order, w=None, #self.weights
+        for md, w in zip(self.masked_data, self.weights):
+            spline = astromodels.UnivariateSplineWithOutlierRemoval(self.pixels, md, order=self.order, w=w,
                                                                     **self.spline_kwargs)
             yield spline
 
@@ -217,23 +156,25 @@ class SplineVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         tabs = Tabs()
 
+        idx = 1
         for shape, pixels, masked_data, order, weights in zip(self.all_shapes, self.all_pixels, self.all_masked_data,
                                                               self.all_orders, self.all_weights):
             tab = SplineTab(self, shape, pixels, masked_data, order, weights, recalc_button=self.recalc_button,
                             **self.spline_kwargs)
             self.spline_tabs.append(tab)
-            panel = Panel(child=tab.component, title='tabbymctabface')
+            panel = Panel(child=tab.component, title='Spline %s' % idx)
+            idx = idx+1
             tabs.tabs.append(panel)
 
         col = column(tabs, self.submit_button)
         col.sizing_mode = 'scale_width'
-        layout = col # row(self.reinit_panel, col)
+        layout = col
         doc.add_root(layout)
 
     def fitted_data(self):
         fd = []
         for st in self.spline_tabs:
-            fd.append(st.fitted_data())
+            fd.append([fdi for fdi in st.fitted_data()])
         return fd
 
     def get_splines(self):
