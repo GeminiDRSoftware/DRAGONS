@@ -29,11 +29,6 @@ def fitswcs_to_gwcs(hdr):
     frame_mapping = {'WAVE': cf.SpectralFrame}
     # coordinate names for CelestialFrame
     coordinate_outputs = {'alpha_C', 'delta_C'}
-    naxes = hdr['NAXIS']
-    axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
-    in_frame = cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
-                                  axes_order=tuple(range(naxes)), name="pixels",
-                                  axes_names=axes_names, unit=[u.pix] * naxes)
 
     # transform = gw.make_fitswcs_transform(hdr)
     try:
@@ -41,6 +36,12 @@ def fitswcs_to_gwcs(hdr):
     except Exception as e:
         return None
     outputs = transform.outputs
+
+    naxes = transform.n_inputs
+    axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
+    in_frame = cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
+                                  axes_order=tuple(range(naxes)), name="pixels",
+                                  axes_names=axes_names, unit=[u.pix] * naxes)
 
     out_frames = []
     for i, output in enumerate(outputs):
@@ -55,7 +56,7 @@ def fitswcs_to_gwcs(hdr):
         except KeyError:
             if output in coordinate_outputs:
                 continue
-            frame = cf.CoordinateFrame(naxes=1, axes_type=None,
+            frame = cf.CoordinateFrame(naxes=1, axes_type=("SPATIAL",),
                                        axes_order=(i,), unit=unit,
                                        axes_names=(output,), name=output)
         out_frames.append(frame)
@@ -300,7 +301,8 @@ def read_wcs_from_header(header):
     # if not present call get_csystem
     wcs_info['RADESYS'] = header.get('RADESYS', 'ICRS')
     wcs_info['VAFACTOR'] = header.get('VAFACTOR', 1)
-    wcs_info['NAXIS'] = header.get('NAXIS', max(int(k[5:]) for k in header['CRPIX*'].keys()))
+    # NAXIS=0 if we're reading from a PHU
+    wcs_info['NAXIS'] = header.get('NAXIS') or max(int(k[5:]) for k in header['CRPIX*'].keys())
     # date keyword?
     # wcs_info['DATEOBS'] = header.get('DATE-OBS', 'DATEOBS')
     wcs_info['EQUINOX'] = header.get("EQUINOX", None)

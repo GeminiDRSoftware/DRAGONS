@@ -733,8 +733,7 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
                          "Found {:d}".format(len(mos_ad[0].shape)))
 
     # Get original relative shift
-    origin_shift_x, origin_shift_y = \
-        [int(s) for s in mos_ad.phu["origtran"][1:-1].split(',')]
+    origin_shift_y, origin_shift_x = mos_ad[0].nddata.meta['transform']['origin']
 
     # Create shift transformation
     shift_x = models.Shift(origin_shift_x - border_size)

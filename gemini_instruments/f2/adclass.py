@@ -4,8 +4,6 @@ import math
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini
 from .lookup import array_properties, nominal_zeropoints
-from astropy.wcs import WCS, FITSFixedWarning
-import warnings
 
 from ..common import section_to_tuple, build_group_id
 from .. import gmu
@@ -651,19 +649,18 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        tuple
-            (right ascension, declination)
+        dict
+            {'lon': right ascension, 'lat': declination}
         """
-        # Cass rotator centre (according to Andy Stephens from gacq)
-        x, y = 1034, 1054
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=FITSFixedWarning)
-            wcs = WCS(self[0].hdr)
-            result = wcs.wcs_pix2world(x, y, 1, 1) if wcs.naxis == 3 \
-                else wcs.wcs_pix2world(x, y, 1)
+        wcs = self.wcs if self.is_single else self[0].wcs
+        if wcs is None:
+            return None
+
+        # (x, y) Cass rotator centre (according to Andy Stephens from gacq)
+        result = wcs(1034, 1054)
         ra, dec = float(result[0]), float(result[1])
 
         if 'NON_SIDEREAL' in self.tags:
             ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
 
-        return (ra, dec)
+        return {'lon': ra, 'lat': dec}
