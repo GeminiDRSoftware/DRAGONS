@@ -1689,11 +1689,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                 cat_table["Y_WORLD"][:] = dec
                 tables.append(cat_table)
 
-        if tables:
-            log.stdinfo("Processing {}s".format(table_name))
-            objcat = table.vstack(tables, metadata_conflicts='silent')
-            objcat['NUMBER'] = np.arange(len(objcat)) + 1
-            setattr(ad_out[0], table_name, cat_table)
+            if tables:
+                log.stdinfo("Processing {}s".format(table_name))
+                objcat = table.vstack(tables, metadata_conflicts='silent')
+                objcat['NUMBER'] = np.arange(len(objcat)) + 1
+                setattr(ad_out[0], table_name, objcat)
 
     # We may need to remake the gWCS object. The issue here is with 2D spectra,
     # where the resetting of the dispersion direction is done before the
