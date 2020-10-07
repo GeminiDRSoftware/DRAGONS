@@ -31,6 +31,7 @@ def _create_fake_data():
 
     _ad = astrofaker.create('GMOS-S', extra_keywords={'GRATING': 'R831'})
     _ad.add_extension(hdu, pixel_scale=1.0)
+    _ad[0].wcs = None  # or else imaging WCS will be added
 
     _ad[0].data = _ad[0].data.ravel() + 1.
     _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask

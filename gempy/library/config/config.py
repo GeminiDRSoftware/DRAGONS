@@ -22,7 +22,6 @@
 oldStringType = str  # Need to keep hold of original str type
 from builtins import str
 from builtins import object
-from past.builtins import long
 from past.builtins import basestring
 from past.builtins import unicode
 from collections import OrderedDict
@@ -67,12 +66,20 @@ def _autocast(x, dtype):
     If appropriate perform type casting of value x to type dtype,
     otherwise return the original value x
     """
-    if isinstance(x, int) and (dtype == float or (isinstance(dtype, tuple)
-                               and float in dtype and int not in dtype)):
-        return float(x)
-    if isinstance(x, long) and (dtype == int or (isinstance(dtype, tuple)
-                                                 and int in dtype)):
-        return int(x)
+    if (dtype == float or (isinstance(dtype, tuple)
+                           and float in dtype and int not in dtype)):
+        try:
+            if x == float(x):
+                x = float(x)
+        except ValueError:
+            pass
+    if (dtype == int or (isinstance(dtype, tuple)
+                         and int in dtype)):
+        try:
+            if x == int(x):
+                x = int(x)
+        except ValueError:
+            pass
     if isinstance(x, str) or isinstance(x, oldStringType):
         for type in (int, float, bool, oldStringType):
             if dtype == type or (isinstance(dtype, tuple) and type in dtype):

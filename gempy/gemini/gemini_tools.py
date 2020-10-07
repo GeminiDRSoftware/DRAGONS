@@ -8,20 +8,18 @@ import os
 import re
 import numbers
 import itertools
-import numpy as np
-
 from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
-
 from functools import wraps
+from collections import namedtuple
+
+import numpy as np
+from scipy.special import erf
 
 from astropy.stats import sigma_clip
-from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
-
-from scipy.special import erf
 
 from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
@@ -31,10 +29,8 @@ from datetime import datetime
 
 import astrodata
 
-from collections import namedtuple
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
-
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
@@ -113,9 +109,15 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
                 else:
                     default = [-999] * nrows
                     dtype = np.float32
+                    if 'MAG' in name:
+                        unit = 'mag'
+                    elif 'PROFILE' in name:
+                        unit = 'pix'
+                    else:
+                        unit = None
                 # Use input table column if given, otherwise the placeholder
                 new_objcat.add_column(table[name] if name in table.columns else
-                                Column(data=default, name=name, dtype=dtype))
+                                Column(data=default, name=name, dtype=dtype, unit=unit))
 
             # Replace old version or append new table to AD object
             if objcat:
@@ -1626,7 +1628,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
     for ext in adoutput:
         outextver = ext.hdr['EXTVER']
-        output_wcs = WCS(ext.hdr)
+        output_wcs = ext.wcs
         indices = [i for i in range(len(ext_mapping))
                    if ext_mapping[i] == outextver]
         inp_objcats = [adinput[i].OBJCAT for i in indices if
@@ -1638,9 +1640,9 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             # Get new pixel coords for objects from RA/Dec and the output WCS
             ra = out_objcat["X_WORLD"]
             dec = out_objcat["Y_WORLD"]
-            newx, newy = output_wcs.all_world2pix(ra, dec, 1)
-            out_objcat["X_IMAGE"] = newx
-            out_objcat["Y_IMAGE"] = newy
+            newx, newy = output_wcs(ra, dec)
+            out_objcat["X_IMAGE"] = newx + 1
+            out_objcat["Y_IMAGE"] = newy + 1
 
             # Remove the NUMBER column so add_objcat renumbers
             out_objcat.remove_column('NUMBER')
@@ -1674,8 +1676,6 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
     except AssertionError:
         log.error("TypeError: keyword comments dict was not received.")
         raise TypeError("keyword comments dict required")
-
-    adoutput_list = []
 
     for ad in adinput:
         # Get the keyword associated with the data_section descriptor
@@ -1711,28 +1711,12 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
             # Update header keys to match new dimensions
             newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
                                                  datasec.y2-datasec.y1)
-            ext.hdr.set('NAXIS1', datasec.x2-datasec.x1, keyword_comments['NAXIS1'])
-            ext.hdr.set('NAXIS2', datasec.y2-datasec.y1, keyword_comments['NAXIS2'])
             ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments[datasec_kw])
             ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
             if oversec_kw in ext.hdr:
                 del ext.hdr[oversec_kw]
 
-
-            # Update WCS reference pixel coordinate
-            try:
-                crpix1 = ext.hdr['CRPIX1'] - datasec.x1
-                crpix2 = ext.hdr['CRPIX2'] - datasec.y1
-            except:
-                log.warning("Could not access WCS keywords; using dummy "
-                            "CRPIX1 and CRPIX2")
-                crpix1 = 1
-                crpix2 = 1
-            ext.hdr.set('CRPIX1', crpix1, comment=keyword_comments["CRPIX1"])
-            ext.hdr.set('CRPIX2', crpix2, comment=keyword_comments["CRPIX2"])
-        adoutput_list.append(ad)
-
-    return adoutput_list
+    return adinput
 
 def write_database(ad, database_name=None, input_name=None):
     """

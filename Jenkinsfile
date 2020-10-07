@@ -179,7 +179,7 @@ pipeline {
             } // end post
         }
 
-                stage('GMOS LS Tests') {
+        stage('GMOS LS Tests') {
             agent { label "master" }
             environment {
                 MPLBACKEND = "agg"

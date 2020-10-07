@@ -85,20 +85,6 @@ def test_fit_model(make_catalog):
                 2 * SCATTER)
 
 
-def test_align_catalogs(make_catalog):
-    tol = 0.01
-    xshift, yshift = 5.0, 10.0
-    incoords = make_catalog
-    real_model = astromodels.Shift2D(xshift, yshift)
-    transform = Transform([astromodels.Shift2D()])
-    refcoords = transform_coords(incoords, real_model)
-    model = matching.align_catalogs(incoords, refcoords,
-                                    transform, tolerance=tol).asModel()
-    for p in model.param_names:
-        assert (abs(getattr(model, p) - getattr(real_model, p)) <
-                max(SCATTER, tol))
-
-
 def test_match_sources():
     yin, xin = np.mgrid[0:5, 0:5]
     xref = np.array([2.1, 3.1])

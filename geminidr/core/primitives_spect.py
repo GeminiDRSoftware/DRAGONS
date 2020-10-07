@@ -7,7 +7,6 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
 import warnings
@@ -1084,7 +1083,6 @@ class Spect(PrimitivesBASE):
                             log.warning("Alternative central wavelength(s) found "+str(centers))
                     else:
                         centers = [c0]
-                        centers = [c0]
                 else:
                     centers = [cenwave]
 
@@ -1900,19 +1898,22 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        spline_kwargs = params.copy()
         sfx = params.pop("suffix")
         spectral_order = params.pop("spectral_order")
         center = params.pop("center")
         nsum = params.pop("nsum")
+        spline_kwargs = params.copy()
 
         for ad in adinputs:
             # Don't mosaic if the multiple extensions are because the
             # data are MOS or cross-dispersed
             if len(ad) > 1 and not ({'MOS', 'XD'} & ad.tags):
+                # Store original gWCS because we're modifying it
+                orig_wcs = [ext.wcs for ext in ad]
                 geotable = import_module('.geometry_conf', self.inst_lookups)
-                adg = transform.create_mosaic_transform(ad, geotable)
-                admos = adg.transform(attributes=None, order=1)
+                transform.add_mosaic_wcs(ad, geotable)
+                admos = transform.resample_from_wcs(ad, "mosaic", attributes=None,
+                                                    order=3, process_objcat=False)
                 mosaicked = True
             else:
                 admos = ad
@@ -1941,8 +1942,8 @@ class Spect(PrimitivesBASE):
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
                     result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
-                                                                       weights, boundaries, spectral_order), tol=1e-7,
-                                               method='Nelder-Mead')
+                                                                       weights, boundaries, spectral_order),
+                                               tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning("Problem with spline fitting: {}".format(result.message))
 
@@ -1959,23 +1960,23 @@ class Spect(PrimitivesBASE):
                                                                         **spline_kwargs)
 
                 if not mosaicked:
-                    flat_data = np.tile(spline.data, (ext.shape[dispaxis - 1], 1))
-                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis == 2))[0])
+                    flat_data = np.tile(spline.data, (ext.shape[1-dispaxis], 1))
+                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
-                for block, trans in adg:
-                    trans.append(models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0]))
-                    for ext, corner in zip(block, block.corners):
-                        t = deepcopy(trans)
-                        # Shift so coordinates are correct in this Block
-                        t.prepend(models.Shift(corner[1]) & models.Shift(corner[0]))
-                        geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                        flat_data = spline(geomap.coords[dispaxis])
-                        ext.divide(flat_data)
+                origin = admos.nddata[0].meta.pop('transform')['origin']
+                origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
+                print(origin_shift)
+                for ext, wcs in zip(ad, orig_wcs):
+                    t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
+                    geomap = transform.GeoMap(t, ext.shape, inverse=True)
+                    flat_data = spline(geomap.coords[dispaxis])
+                    ext.divide(flat_data)
+                    ext.wcs = wcs
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
