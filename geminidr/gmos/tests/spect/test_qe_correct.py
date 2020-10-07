@@ -571,8 +571,7 @@ class MeasureGapSizeLocally(abc.ABC):
 
         plt.close(self.plot_name)
 
-        fig = plt.figure(
-            constrained_layout=True, dpi=DPI, figsize=(6, 6), num=self.plot_name)
+        fig = plt.figure(dpi=DPI, figsize=(6, 6), num=self.plot_name)
 
         gs = plt.GridSpec(2, 2, figure=fig, height_ratios=[4, 1])
 
