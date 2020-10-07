@@ -51,6 +51,7 @@ from . import parameters_spect
 import matplotlib
 
 from ..interactive.fit import fit1d
+from ..interactive.fit.multispline import MultiSplineVisualizer
 
 from ..interactive.server import interactive_fitter
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
