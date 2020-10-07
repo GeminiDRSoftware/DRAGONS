@@ -1671,7 +1671,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     if 'IMAGE' in ad.tags and process_objcat:
         for table_name, coord_columns in catalog_coordinate_columns.items():
             tables = []
-            for block in blocks:
+            for block, transform in zip(blocks, dg.transforms):
                 # This returns a single Table
                 cat_table = getattr(block, table_name, None)
                 if cat_table is None:
