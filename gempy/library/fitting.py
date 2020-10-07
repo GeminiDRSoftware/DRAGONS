@@ -150,7 +150,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
 
     # Create an empty, full-sized mask within which the fitter will populate
     # only the user-specified region(s):
-    mask = np.zeros_like(image, dtype=bool)
+    mask = np.zeros(image.shape, dtype=bool)
 
     # Initialize an array with same dtype as input to accumulate fit values
     # into when looping & because modelling always seems to return float64:
@@ -162,7 +162,17 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
 
         # A single model is treated specially because FittingWithOutlierRemoval
         # fails for "1-model sets" and it should be more efficient anyway:
-        n_models = 1 if image.ndim == 1 else image.shape[1]
+        image_to_fit = image
+        if image.ndim == 1:
+            n_models = 1
+        else:
+            # remove fully masked columns otherwise this will lead to
+            # Runtime warnings from Numpy because of divisions by zero.
+            masked_cols = image.mask.all(axis=0)
+            n_models = np.sum(~masked_cols)
+            if n_models < image.shape[1]:
+                image_to_fit = image[:, ~masked_cols]
+                weights = weights[:, ~masked_cols]
 
         model_set = func(degree=(order - 1), n_models=n_models,
                          model_set_axis=(None if n_models == 1 else 1),
@@ -182,22 +192,32 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
             grow=grow  # requires AstroPy 4.2 (#10613)
         )
 
-        # TO DO: the fitter seems to be failing with input weights?
-
         # Fit the pixel data with rejection of outlying points:
-        fitted_model, mask[user_reg] = fitter(
+        fitted_model, fitted_mask = fitter(
             model_set,
-            points[user_reg], image[user_reg],
+            points[user_reg], image_to_fit[user_reg],
             weights=None if weights is None else weights[user_reg]
         )
 
         # Determine the evaluated model values we want to return:
-        fitvals[:] = fitted_model(points, model_set_axis=False)
+        if image.ndim > 1 and n_models < image.shape[1]:
+            # If we removed bad columns, we now need to fill them properly
+            # in the output array
+            fitvals[:, masked_cols] = 0
+            fitvals[:, ~masked_cols] = fitted_model(points,
+                                                    model_set_axis=False)
+            # this is quite ugly, but seems the best way to assign to an
+            # array with a mask on both dimensions. This is equivalent to:
+            #   mask[user_reg, masked_cols] = fitted_mask
+            mask[user_reg[:, None] & (~masked_cols)] = fitted_mask.flat
+        else:
+            fitvals[:] = fitted_model(points, model_set_axis=False)
+            mask[user_reg] = fitted_mask
 
     else:
 
         # If there are no weights, produce a None for every row:
-        weights = iter(lambda:None, True) if weights is None else weights
+        weights = iter(lambda: None, True) if weights is None else weights
 
         user_masked = ~user_reg
 
