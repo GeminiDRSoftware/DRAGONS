@@ -37,7 +37,7 @@ multiext_datasets = [d.split('.')[0] + "_twilight.fits" for d in datasets]
 
 
 @pytest.mark.gmosls
-@pytest.mark.preprocessed
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", mosaicked_datasets, indirect=True)
 def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, request):
     """
@@ -107,7 +107,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
 
 
 @pytest.mark.gmosls
-@pytest.mark.preprocessed
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", multiext_datasets, indirect=True)
 def test_create_slit_illumination_with_multi_extension_data(ad, change_working_dir, request):
     """
@@ -277,7 +277,7 @@ def test_split_mosaic_into_extensions(request):
         np.testing.assert_almost_equal(data1, data2, decimal=1)
 
 
-@pytest.mark.preprocessed
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("filename", datasets)
 def test_split_mosaic_into_extensions_metadata(filename):
     """
