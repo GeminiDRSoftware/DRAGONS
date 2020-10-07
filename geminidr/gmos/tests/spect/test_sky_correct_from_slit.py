@@ -7,15 +7,19 @@ to check if these outputs are scientifically relevant.
 import os
 
 import astrodata
+import astropy
 import gemini_instruments  # noqa
 import geminidr
 import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
 from astropy import table
+from astropy.utils import minversion
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
+
+ASTROPY_LT_42 = not minversion(astropy, '4.2')
 
 # Test parameters -------------------------------------------------------------
 # Each test input filename contains the original input filename with
@@ -58,6 +62,11 @@ test_datasets = [
 def test_regression_extract_1d_spectra(filename, params, refname,
                                        change_working_dir, path_to_inputs,
                                        path_to_refs):
+
+    func = params.get('function', 'spline')
+    if not func.startswith('spline') and ASTROPY_LT_42:
+        pytest.skip('Astropy 4.2 is required to use the linear fitter '
+                    'with weights')
 
     path = os.path.join(path_to_inputs, filename)
     ad = astrodata.open(path)
