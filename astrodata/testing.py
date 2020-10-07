@@ -243,11 +243,11 @@ def change_working_dir(path_to_outputs):
         """
         oldpwd = os.getcwd()
         os.chdir(path)
-        
+
         if sub_path:
             os.makedirs(sub_path, exist_ok=True)
             os.chdir(sub_path)
-                        
+
         try:
             yield
         finally:
@@ -340,24 +340,33 @@ def get_active_git_branch():
 
     Returns
     -------
-    str : Name of the input active git branch.
+    str or None : Name of the input active git branch. It returns None if
+      pygit2 is not installed or if this function runs outside a git repository.
     """
     from pathlib import Path
+    path = Path(__file__).parent.parent.absolute()
 
     try:
-        from pygit2 import Repository
+        from pygit2 import Repository, GitError
+        branch_name = Repository(path).head.shorthand
+
     except ImportError:
         print("\nCould not retrieve active git branch. Please install pygit2 "
               "using one of the options below:\n"
               "  $ pip install pygit2\n"
               "        or \n"
               "  $ conda install -c conda-forge pygit2\n")
-        return ""
+        return None
+
+    except GitError:
+        print("\n"
+              "Could not retrieve active git branch. Make sure that the\n"
+              "following path is a valit Git repository: \n"
+              f"  {path}")
+        return None
+
     else:
-        path = Path(__file__).parent.parent.absolute()
-        branch_name = Repository(path).head.shorthand
-        print(f"\nRetrieved active branch name: "
-              f"  {branch_name:s}")
+        print(f"\nRetrieved active branch name:  {branch_name:s}")
         return branch_name
 
 
