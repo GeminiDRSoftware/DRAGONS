@@ -94,6 +94,7 @@ class extract1DSpectraConfig(config.Config):
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
+    subtract_sky = config.Field("Subtract sky spectra if the data have not been sky corrected?", bool, True)
     debug = config.Field("Draw extraction apertures on image display?", bool, False)
 
 

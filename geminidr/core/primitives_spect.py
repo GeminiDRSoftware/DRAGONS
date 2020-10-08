@@ -1265,7 +1265,10 @@ class Spect(PrimitivesBASE):
             Width of extraction aperture in pixels.
         grow : float
             Avoidance region around each source aperture if a sky aperture
-            is required. Default: 10.
+            is required.
+        subtract_sky : bool
+            Extract and subtract sky spectra from object spectra if the 2D
+            spectral image has not been sky subtracted?
         debug: bool
             draw apertures on image display window?
 
@@ -1281,6 +1284,7 @@ class Spect(PrimitivesBASE):
         method = params["method"]
         width = params["width"]
         grow = params["grow"]
+        subtract_sky = params["subtract_sky"]
         debug = params["debug"]
 
         colors = ("green", "blue", "red", "yellow", "cyan", "magenta")
@@ -1292,11 +1296,11 @@ class Spect(PrimitivesBASE):
             ad_spec = astrodata.create(ad.phu)
             ad_spec.filename = ad.filename
             ad_spec.orig_filename = ad.orig_filename
-            skysub_needed = self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu
+            skysub_needed = (subtract_sky and
+                             self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu)
             if skysub_needed:
-                log.stdinfo("Sky subtraction has not been performed on {} "
-                            "- extracting sky from separate apertures".
-                            format(ad.filename))
+                log.stdinfo(f"Sky subtraction has not been performed on {ad.filename}"
+                            " - extracting sky from separate apertures")
 
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
