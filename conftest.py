@@ -9,6 +9,7 @@ import pytest
 from astrodata.testing import (
     astrofaker,
     change_working_dir,
+    dragons_tmp_path,
     path_to_inputs,
     path_to_outputs,
     path_to_refs)

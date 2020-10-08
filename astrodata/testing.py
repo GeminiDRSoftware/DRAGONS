@@ -211,7 +211,7 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
                        check_inverse=False)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def change_working_dir(path_to_outputs):
     """
     Factory that returns the output path as a context manager object, allowing
@@ -233,12 +233,12 @@ def change_working_dir(path_to_outputs):
     @contextmanager
     def _change_working_dir(sub_path=""):
         """
-        Changed the current working directory temporarily easily using the 
+        Changed the current working directory temporarily easily using the
         `with` statement.
-         
+
         Parameters
         ----------
-        sub_path : str 
+        sub_path : str
             Sub-path inside the directory where we are working.
         """
         oldpwd = os.getcwd()
@@ -298,6 +298,25 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
         os.chmod(local_path, 0o664)
 
     return local_path
+
+
+@pytest.fixture(scope="session")
+def dragons_tmp_path(tmp_path_factory):
+    """
+    Session scoped fixture used to create a directory to store the tests
+    result.
+
+    Parameters
+    ----------
+    tmp_path_factory : pytest.fixture
+        Built-in Pytest session scoped fixture that create a temporary folder
+        per pytest session.
+
+    Returns
+    -------
+    str : path to the new temporary folder.
+    """
+    return str(tmp_path_factory.mktemp(basename="dragons-test-", numbered=True))
 
 
 def get_associated_calibrations(filename, nbias=5):
@@ -468,8 +487,8 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
     return path
 
 
-@pytest.fixture(scope='session')
-def path_to_outputs(request, tmp_path_factory):
+@pytest.fixture(scope='module')
+def path_to_outputs(request, dragons_tmp_path):
     """
     PyTest fixture that creates a temporary folder to save tests outputs. You can
     set the base directory by passing the ``--basetemp=mydir/`` argument to the
@@ -487,11 +506,9 @@ def path_to_outputs(request, tmp_path_factory):
     IOError
         If output path does not exits.
     """
-    path = tmp_path_factory.mktemp(basename="dragons-test-", numbered=True)
-
     module_path = request.module.__name__.split('.')
     module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(str(path), *module_path)
+    path = os.path.join(str(dragons_tmp_path), *module_path)
     os.makedirs(path, exist_ok=True)
 
     return path
