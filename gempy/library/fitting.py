@@ -154,7 +154,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
 
     # Initialize an array with same dtype as input to accumulate fit values
     # into when looping & because modelling always seems to return float64:
-    fitvals = np.empty_like(image.data)
+    fitvals = np.zeros_like(image.data)
 
     # Branch pending on whether we're using an AstroPy model or some other
     # supported fitting function (principally splines):
@@ -168,11 +168,11 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         else:
             # remove fully masked columns otherwise this will lead to
             # Runtime warnings from Numpy because of divisions by zero.
-            masked_cols = image.mask.all(axis=0)
-            n_models = np.sum(~masked_cols)
+            good_cols = (~image.mask).sum(axis=0) > order
+            n_models = np.sum(good_cols)
             if n_models < image.shape[1]:
-                image_to_fit = image[:, ~masked_cols]
-                weights = weights[:, ~masked_cols]
+                image_to_fit = image[:, good_cols]
+                weights = weights[:, good_cols]
 
         model_set = func(degree=(order - 1), n_models=n_models,
                          model_set_axis=(None if n_models == 1 else 1),
@@ -203,13 +203,11 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         if image.ndim > 1 and n_models < image.shape[1]:
             # If we removed bad columns, we now need to fill them properly
             # in the output array
-            fitvals[:, masked_cols] = 0
-            fitvals[:, ~masked_cols] = fitted_model(points,
-                                                    model_set_axis=False)
+            fitvals[:, good_cols] = fitted_model(points, model_set_axis=False)
             # this is quite ugly, but seems the best way to assign to an
             # array with a mask on both dimensions. This is equivalent to:
             #   mask[user_reg, masked_cols] = fitted_mask
-            mask[user_reg[:, None] & (~masked_cols)] = fitted_mask.flat
+            mask[user_reg[:, None] & good_cols] = fitted_mask.flat
         else:
             fitvals[:] = fitted_model(points, model_set_axis=False)
             mask[user_reg] = fitted_mask
