@@ -2048,13 +2048,13 @@ class Spect(PrimitivesBASE):
         # For the 2D case check that all ad objects have only 1 extension
         if ndim > 1:
             adjust_key = self.timestamp_keys['adjustWCSToReference']
-            for i, ad in enumerate(adinputs):
-                if len(ad) != 1:
-                    raise ValueError('inputs must have only 1 extension')
-                if adjust_key not in ad.phu:
-                    log.warning(
-                        "{} has not offset, adjustWCSToReference "
-                        "should be run first".format(ad.filename))
+            if len(adinputs) > 1 and not all(adjust_key in ad.phu
+                                             for ad in adinputs):
+                log.warning("2D spectral images should be processed by "
+                            "adjustWCSToReference if accurate spatial "
+                            "alignment is required.")
+            if not all(len(ad) == 1 for ad in adinputs):
+                raise ValueError('inputs must have only 1 extension')
             # Store these values for later!
             refad = adinputs[0]
             ref_coords = (refad.central_wavelength(asNanometers=True),
