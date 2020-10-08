@@ -211,7 +211,7 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
                        check_inverse=False)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def change_working_dir(path_to_outputs):
     """
     Factory that returns the output path as a context manager object, allowing
