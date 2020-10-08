@@ -468,7 +468,7 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
     return path
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def path_to_outputs(request, tmp_path_factory):
     """
     PyTest fixture that creates a temporary folder to save tests outputs. You can
