@@ -7,6 +7,7 @@ import numpy as np
 import math
 import operator
 from copy import deepcopy
+from functools import partial
 from collections import namedtuple
 
 from astropy.stats import sigma_clip
@@ -95,41 +96,43 @@ class QA(PrimitivesBASE):
                 bg_band_limits = None
 
             report = qap.BGReport(ad, log=self.log, limit_dict=bg_band_limits)
+            bunit = report.bunit
 
             for ext, bias in zip(ad, bias_level):
-                report.add_measurement(ext, bias_level=bias)
+                report.measure(ext, bias_level=bias)
+                results = report.calculate_metric()
 
                 # Write sky background to science header
-                bg = report.measurements[-1]['bg']
+                bg = results['bg']
                 if bg is not None:
-                    bunit = report.measurements[-1]['bunit']
                     ext.hdr.set("SKYLEVEL", bg,
                             comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
 
                 if separate_ext:
-                    comments = report.report(report_type='last')
+                    report.report(results,
+                                  header=f"{ad.filename}:{ext.hdr['EXTVER']}")
 
             # Collapse extension-by-extension numbers if multiple extensions
-            results = report.average_measurements()
+            if len(ad) > 1:
+                results = report.calculate_metric('all')
+
+            if not separate_ext:
+                report.report(results)
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
             if (len(ad) == 1 or not separate_ext) and results.get('bg') is not None:
-                ad.phu.set("SKYLEVEL", results.get('bg'), comment="{} [{}]".
+                ad.phu.set("SKYLEVEL", results['bg'], comment="{} [{}]".
                             format(self.keyword_comments['SKYLEVEL'], bunit))
 
-                report.calculate_qa_band(results["mag"], results["mag_std"])
-                if len(ad) > 1:  # ensure ADCC report is based on average
-                    comments = report.report(results=results)
-
-                # Report measurement to the adcc
-                if results.get('mag'):
-                    qad = {"band": report.band,
-                           "brightness": float(results["mag"]),
-                           "brightness_error": float(results["mag_std"]),
-                           "requested": report.reqband,
-                           "comment": comments}
-                    qap.adcc_report(ad, "bg", qad)
+            # Report measurement to the adcc
+            if results.get('mag'):
+                qad = {"band": report.band,
+                       "brightness": results["mag"],
+                       "brightness_error": results["mag_std"],
+                       "requested": report.reqband,
+                       "comment": report.comments}
+                qap.adcc_report(ad, "bg", qad)
 
             # Report measurement to fitsstore
             if self.upload and "metrics" in self.upload:
@@ -389,218 +392,126 @@ class QA(PrimitivesBASE):
         frame = 1
         for ad in adinputs:
             iq_overlays = []
-            measure_iq = True
-
-            # We may need to tile the image (and OBJCATs) so make an
-            # adiq object for such purposes
-            if not separate_ext and len(ad) > 1:
-                adiq = deepcopy(ad)
-                if remove_bias and display:
-                    # Set the remove_bias parameter to False so it doesn't
-                    # get removed again when display is run; leave it at
-                    # default if no tiling is being done at this point,
-                    # so the display will handle it later
-                    remove_bias = False
-
-                    if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
-                        any(v is not None for v in ad.hdr.get('OVERSCAN'))):
-                        log.fullinfo("Bias level has already been "
-                                     "removed from data; no approximate "
-                                     "correction will be performed")
-                    else:
-                        try:
-                            # Get the bias level
-                            bias_level = get_bias_level(adinput=ad,
-                                                        estimate=False)
-                        except NotImplementedError:
-                            bias_level = None
-
-                        if bias_level is None:
-                            log.warning("Bias level not found for {}; "
-                                    "approximate bias will not be removed "
-                                    "from the sky level".format(ad.filename))
-                        else:
-                            # Subtract the bias level from each extension
-                            log.stdinfo("Subtracting approximate bias level "
-                                    "from {} for display".format(ad.filename))
-                            log.stdinfo(" ")
-                            log.fullinfo("Bias levels used: {}".
-                                         format(bias_level))
-                            for ext, bias in zip(adiq, bias_level):
-                                ext.subtract(np.float32(bias))
-
-                log.fullinfo("Tiling extensions together in order to compile "
-                             "IQ data from all extensions")
-                adiq = self.tileArrays([adiq], tile_all=True)[0]
-            else:
-                # No further manipulation, so can use a reference to the
-                # original AD object instead of making a copy
-                adiq = ad
-
-            # Check that the data is not an image with non-square binning
-            if 'IMAGE' in ad.tags:
-                xbin = ad.detector_x_bin()
-                ybin = ad.detector_y_bin()
-                if xbin != ybin:
-                    log.warning("No IQ measurement possible, image {} is {} x "
-                                "{} binned data".format(ad.filename, xbin, ybin))
-                    measure_iq = False
-
-            # Get suitable FWHM-measurement sources; through-slit imaging
-            # uses the spectroscopic method in case the slit width < seeing
-            if {'IMAGE', 'SPECT'} & ad.tags:
-                image_like = 'IMAGE' in ad.tags and not hasattr(ad, 'MDF')
-                good_source = gt.clip_sources(adiq) if image_like else \
-                    gt.fit_continuum(adiq)
-            else:
-                log.warning("{} is not IMAGE or SPECT; no IQ measurement "
-                            "will be performed".format(ad.filename))
-                measure_iq = False
-
             is_ao = ad.is_ao()
-            # For AO observations, the AO-estimated seeing is used (the IQ
-            # is also calculated from the image if possible)
-            strehl = Measurement(None, None, 0)
-            ao_seeing = None
-            if is_ao:
-                try:
-                    ao_seeing = ad.ao_seeing()
-                except:
-                    log.warning("No AO-estimated seeing found for this AO "
-                                "observation")
-                else:
-                    log.warning("This is an AO observation, the AO-estimated "
-                                "seeing will be used for the IQ band "
-                                "calculation")
-                if image_like and ad.instrument() in ('GSAOI', 'NIRI', 'GNIRS'):
-                    if len(good_source) > 0:
-                        strehl = _strehl(ad, good_source)
+            try:
+                wvband = 'AO' if is_ao else ad.wavelength_band()
+                iq_band_limits = qa.iqBands[wvband]
+            except KeyError:
+                iq_band_limits = None
+            report = qap.IQReport(ad, log=self.log, limit_dict=iq_band_limits)
 
-            # Check for no sources found: good_source is a list of Tables
-            # ...but can continue if we have an AO seeing measurement
-            if all(len(t)==0 for t in good_source) and ao_seeing is None:
-                log.warning("No good sources found in {}".format(ad.filename))
-                measure_iq = False
+            if report.measure:
+                has_sources = False
+                for ext in ad:
+                    extid = f"{ad.filename}:{ext.hdr['EXTVER']}"
+                    nsources = report.add_measurement(ext, strehl_fn=partial(_strehl, ext))
+                    if nsources == 0:
+                        if separate_ext:
+                            self.log.warning(f"No good sources found in {extid}")
+                        continue
 
-            if measure_iq:
-                # Descriptors and other things will be the same for ad and adiq
-                try:
-                    zcorr = ad.airmass()**(-0.6)
-                except:
-                    zcorr = None
-
-                try:
-                    wvband = 'AO' if is_ao else ad.wavelength_band()
-                    iq_band_limits = qa.iqBands[wvband]
-                except KeyError:
-                    iq_band_limits = None
-
-                info_list = []
-                for src, ext in zip(good_source, adiq):
-                    extver = ext.hdr['EXTVER']
-                    ellip = Measurement(None, None, 0)
-                    if len(src) == 0:
-                        fwhm = Measurement(None, None, 0)
-                        log.warning("No good sources found in {}:{}".
-                                    format(ad.filename, extver))
-                        # If there is an AO-estimated seeing value, this can be
-                        # delivered as a metric, otherwise we can't do anything
-                        if not (is_ao and ao_seeing):
-                            iq_overlays.append(None)
-                            info_list.append({})
-                            continue
-                    else:
-                        # Weighted mean of clipped FWHM and ellipticity
-                        if "weight" in src.columns:
-                            mean_fwhm = np.average(src["fwhm_arcsec"],
-                                                      weights=src["weight"])
-                            std_fwhm = np.sqrt(np.average((src["fwhm_arcsec"] -
-                                        mean_fwhm)**2, weights=src["weight"]))
-                        else:
-                            mean_fwhm = np.mean(src["fwhm_arcsec"])
-                            std_fwhm = np.std(src["fwhm_arcsec"])
-                        fwhm = Measurement(float(mean_fwhm), float(std_fwhm),
-                                           len(src))
-                        if image_like:
-                            ellip = Measurement(float(np.mean(src['ellipticity'])),
-                            float(np.std(src['ellipticity'])), len(src))
-
-                    # Find the corrected FWHM. For AO observations, the IQ
-                    # constraint band is taken from the AO-estimated seeing
-                    # except for GSAOI, which has some magic formula that kind of works
-                    if not is_ao:
-                        iq = fwhm
-                    else:
-                        if strehl.value is not None and {'GSAOI', 'IMAGE'}.issubset(ad.tags):
-                            iq = _gsaoi_iq_estimate(ad, fwhm, strehl)
-                        else:
-                            iq = Measurement(ao_seeing, None, 0)
-
-                    if zcorr:
-                        zfwhm = _arith(iq, 'mul', zcorr)
-                        qastatus = _get_qa_band('iq', ad, zfwhm, iq_band_limits)
-                    else:
-                        log.warning('Airmass not found, not correcting to zenith')
-                        qastatus = _get_qa_band('iq', ad, iq, iq_band_limits)
-                        zfwhm = Measurement(None, None, 0)
-
-                    comments = _iq_report(ext if separate_ext else ad, fwhm,
-                                          ellip, zfwhm, strehl, qastatus)
-                    if is_ao:
-                        comments.append("AO observation. IQ band from estimated AO "
-                                       "seeing.")
-
-                    qad = {"band": qastatus.band, "requested": qastatus.req,
-                           "delivered": fwhm.value, "delivered_error": fwhm.std,
-                           "ellipticity": ellip.value, "ellip_error": ellip.std,
-                           "zenith": zfwhm.value, "zenith_error": zfwhm.std,
-                           "is_ao": is_ao, "ao_seeing": ao_seeing,
-                           "strehl": strehl.value, "comment": comments}
-                    qap.adcc_report(adiq, "iq", qad)
-
-                    # These exist for all data (ellip=None for spectra)
-                    ext_info = {"fwhm": fwhm.value, "fwhm_std": fwhm.std,
-                                "elip": ellip.value, "elip_std": ellip.std,
-                                "nsamples": fwhm.samples, "adaptive_optics": is_ao,
-                                "percentile_band": qastatus.band,
-                                "comment": comments}
-                    # These only exist for images
-                    # Coerce to float from np.float so JSONable
-                    if image_like and len(src)>0:
-                        ext_info.update({"isofwhm": float(np.mean(src["isofwhm_arcsec"])),
-                                         "isofwhm_std": float(np.std(src["isofwhm_arcsec"])),
-                                         "ee50d": float(np.mean(src["ee50d_arcsec"])),
-                                         "ee50d_std": float(np.std(src["ee50d_arcsec"])),
-                                         "pa": float(np.mean(src["pa"])),
-                                         "pa_std": float(np.std(src["pa"]))})
-                    if is_ao:
-                        ext_info.update({"ao_seeing": ao_seeing, "strehl": strehl.value})
-                    info_list.append(ext_info)
-
-                    # Store measurements in the extension header if desired
+                    has_sources = True
+                    results = report.calculate_metric()
                     if separate_ext:
-                        if fwhm.value:
-                            ext.hdr.set("MEANFWHM", fwhm.value,
-                                        comment=self.keyword_comments["MEANFWHM"])
-                        if ellip.value:
-                            ext.hdr.set("MEANELLP", ellip.value,
-                                        comment=self.keyword_comments["MEANELLP"])
-
-                    if info_list:
-                        if self.upload and "metrics" in self.upload:
-                            fitsdict = qap.fitsstore_report( adiq, "iq",
-                                                             info_list,
-                                                             self.calurl_dict,
-                                                             self.mode,
-                                                             upload=True)
+                        report.report(results, header=extid)
+                        if not is_ao:
+                            fwhm, ellip = results["fwhm"], results["elip"]
+                            if fwhm:
+                                ext.hdr.set("MEANFWHM", fwhm,
+                                            comment=self.keyword_comments["MEANFWHM"])
+                            if ellip:
+                                ext.hdr.set("MEANELLP", ellip,
+                                            comment=self.keyword_comments["MEANELLP"])
 
                     # If displaying, make a mask to display along with image
-                    # that marks which stars were used (a None was appended
-                    # earlier if len(src)==0
-                    if display and len(src) > 0:
+                    # that marks which stars were used
+                    if display:
                         iq_overlays.append(_iq_overlay(src, ext.data.shape))
 
+                # Need one of these in order to make a report
+                if has_sources or report.ao_seeing:
+                    if len(ad) > 1:
+                        results = report.calculate_metric('all')
+
+                    if not separate_ext:
+                        report.report(results)
+
+                    qad = {"band": report.band, "requested": report.reqband,
+                           "delivered": results["fwhm"],
+                           "delivered_error": results["fwhm_std"],
+                           "ellipticity": results["elip"],
+                           "ellip_error": results["elip_std"],
+                           "zenith": results["zfwhm"],
+                           "zenith_error": results["zfwhm_std"],
+                           "is_ao": is_ao, "ao_seeing": results["ao_seeing"],
+                           "strehl": results["strehl"],
+                           "comment": report.comments}
+                    qap.adcc_report(ad, "iq", qad)
+
+                    # Report measurement to fitsstore
+                    if self.upload and "metrics" in self.upload:
+                        qap.fitsstore_report(ad, "iq", report.info_list(),
+                                             self.calurl_dict, self.mode, upload=True)
+
+                    # Store measurements in the PHU if desired
+                    if (len(ad) == 1 or not separate_ext) and not is_ao:
+                        fwhm, ellip = results["fwhm"], results["elip"]
+                        if fwhm:
+                            ext.hdr.set("MEANFWHM", fwhm,
+                                        comment=self.keyword_comments["MEANFWHM"])
+                        if ellip:
+                            ext.hdr.set("MEANELLP", ellip,
+                                        comment=self.keyword_comments["MEANELLP"])
+
             if display:
+
+                # We may need to tile the image (and OBJCATs) so make an
+                # adiq object for such purposes
+                if not separate_ext and len(ad) > 1:
+                    adiq = deepcopy(ad)
+                    if remove_bias and display:
+                        # Set the remove_bias parameter to False so it doesn't
+                        # get removed again when display is run; leave it at
+                        # default if no tiling is being done at this point,
+                        # so the display will handle it later
+                        remove_bias = False
+
+                        if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
+                                any(v is not None for v in ad.hdr.get('OVERSCAN'))):
+                            log.fullinfo("Bias level has already been "
+                                         "removed from data; no approximate "
+                                         "correction will be performed")
+                        else:
+                            try:
+                                # Get the bias level
+                                bias_level = get_bias_level(adinput=ad,
+                                                            estimate=False)
+                            except NotImplementedError:
+                                bias_level = None
+
+                            if bias_level is None:
+                                log.warning("Bias level not found for {}; "
+                                            "approximate bias will not be removed "
+                                            "from the sky level".format(ad.filename))
+                            else:
+                                # Subtract the bias level from each extension
+                                log.stdinfo("Subtracting approximate bias level "
+                                            "from {} for display".format(ad.filename))
+                                log.stdinfo(" ")
+                                log.fullinfo("Bias levels used: {}".
+                                             format(bias_level))
+                                for ext, bias in zip(adiq, bias_level):
+                                    ext.subtract(np.float32(bias))
+
+                    log.fullinfo("Tiling extensions together in order to compile "
+                                 "IQ data from all extensions")
+                    adiq = self.tileArrays([adiq], tile_all=True)[0]
+                else:
+                    # No further manipulation, so can use a reference to the
+                    # original AD object instead of making a copy
+                    adiq = ad
+                adiq = ad
+
                 # If separate_ext is True, we want the tile parameter
                 # for the display primitive to be False
                 self.display([adiq], overlay=iq_overlays if iq_overlays else None,
@@ -610,15 +521,6 @@ class QA(PrimitivesBASE):
                     log.stdinfo("Sources used to measure IQ are marked "
                                 "with blue circles.")
                     log.stdinfo("")
-
-            # Store measurements in the PHU if desired
-            if measure_iq and (len(ad)==1 or not separate_ext):
-                if fwhm.value:
-                    ad.phu.set("MEANFWHM", fwhm.value,
-                               comment=self.keyword_comments["MEANFWHM"])
-                if ellip.value:
-                    ad.phu.set("MEANELLP", ellip.value,
-                               comment=self.keyword_comments["MEANELLP"])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -771,55 +673,6 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
 
     return QAstatus(qaband, reqband, warning, info)
 
-def _bg_report(ad, bg_count, bunit, bg_mag, qastatus):
-    """
-    Logs the formatted output of a measureBG report
-
-    Parameters
-    ----------
-    ad: AstroData
-        AD object or slice
-    bg_count: Measurement
-        background measurement, error, and number of samples
-    bunit: str
-        units of the background measurement
-    bg_mag: Measurement
-        background measurement and error in magnitudes (and number of samples)
-    qastatus: QAstatus namedtuple
-        information about the actual band
-
-    Returns
-    -------
-    list: list of comments to be passed to the FITSstore report
-    """
-    comments = []
-    headstr = 'Filename: {}'.format(ad.filename)
-    if ad.is_single:
-        headstr += ':{}'.format(ad.hdr['EXTVER'])
-
-    body = [('Sky level measurement:', '{:.0f} +/- {:.0f} {}'.
-             format(bg_count.value, bg_count.std, bunit))]
-    if bg_mag.value is not None:
-        body.append(('Mag / sq arcsec in {}:'.format(ad.filter_name(pretty=True)),
-                     '{:.2f} +/- {:.2f}'.format(bg_mag.value, bg_mag.std)))
-    if qastatus.band:
-        body.append(('BG band:', 'BG{} ({})'.format('Any' if qastatus.band==100
-                                        else qastatus.band, qastatus.info)))
-    else:
-        body.append(('(BG band could not be determined)', ''))
-
-    if qastatus.req:
-        body.append(('Requested BG:', 'BG{}'.format('Any' if qastatus.req==100
-                                                    else qastatus.req)))
-        if qastatus.warning:
-            body.append(('WARNING: {}'.format(qastatus.warning), ''))
-            comments.append(qastatus.warning)
-    else:
-        body.append(('(Requested BG could not be determined)', ''))
-
-    _qa_report([headstr], body, 32, 26)
-    return comments
-
 def _cc_report(ad, zpt, cloud, qastatus):
     """
     Logs the formatted output of a measureCC report. Single-extension
@@ -886,106 +739,6 @@ def _cc_report(ad, zpt, cloud, qastatus):
             body.append(('(Requested CC could not be determined)', ''))
 
     _qa_report(header, body, 32, 26, logtype)
-    return comments
-
-def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
-    """
-    Logs the formatted output of a measureIQ report
-
-    Parameters
-    ----------
-    ad: AstroData
-        AD objects or slice
-    fwhm: Measurement
-        measured FWHM
-    ellip: Measurement
-        measured ellipticity
-    zfwhm: Measurement
-        zenith-corrected FWHM
-    strehl: Measurement
-        measured Strehl ratio
-    qastatus: QAstatus namedtuple
-        information about the actual band
-
-    Returns
-    -------
-    list: list of comments to be passed to the FITSstore report
-    """
-    log = logutils.get_logger(__name__)
-    comments = []
-    headstr = 'Filename: {}'.format(ad.filename)
-    if ad.is_single:
-        headstr += ':{}'.format(ad.hdr['EXTVER'])
-    header = [headstr]
-    if fwhm.samples > 0:  # AO seeing has no sources
-        header.append('{} sources used to measure IQ'.format(fwhm.samples))
-
-    body = [('FWHM measurement:', '{:.3f} +/- {:.3f} arcsec'.
-             format(fwhm.value, fwhm.std))] if fwhm.value else []
-
-    if 'IMAGE' in ad.tags:
-        if 'NON_SIDEREAL' in ad.tags:
-            header.append('WARNING: NON SIDEREAL tracking. IQ measurements '
-                          'will be unreliable')
-        if ellip.value:
-            body.append(('Ellipticity:', '{:.3f} +/- {:.3f}'.
-                         format(ellip.value, ellip.std)))
-        if ad.is_ao():
-            if strehl.value:
-                body.append(('Strehl ratio:', '{:.3f} +/- {:.3f}'.
-                            format(strehl.value, strehl.std)))
-            else:
-                body.append(('(Strehl could not be determined)', ''))
-
-    if zfwhm.value:
-        stdmsg = '{:.3f} +/- {:.3f} arcsec'.format(zfwhm.value, zfwhm.std) if \
-            zfwhm.std is not None else '(AO) {:.3f} arcsec'.format(zfwhm.value)
-        body.append(('Zenith-corrected FWHM (AM {:.2f}):'.format(ad.airmass()),
-                     stdmsg))
-
-    if qastatus.band:
-        body.append(('IQ range for {}-band:'.
-                 format('AO' if ad.is_ao() else ad.filter_name(pretty=True)),
-                 'IQ{} ({} arcsec)'.format('Any' if qastatus.band==100 else
-                                           qastatus.band, qastatus.info)))
-    else:
-        body.append(('(IQ band could not be determined)', ''))
-
-    if qastatus.req:
-        body.append(('Requested IQ:', 'IQ{}'.format('Any' if qastatus.req==100
-                                                    else qastatus.req)))
-        if qastatus.warning:
-            body.append(('WARNING: {}'.format(qastatus.warning), ''))
-            comments.append(qastatus.warning)
-    else:
-        body.append(('(Requested IQ could not be determined)', ''))
-
-    if ellip.value and ellip.value > 0.1:
-        body.append(('', 'WARNING: high ellipticity'))
-        comments.append('High ellipticity')
-        if 'NON_SIDEREAL' in ad.tags:
-            body.append(('- this is likely due to non-sidereal tracking', ''))
-
-    if {'IMAGE', 'LS'}.issubset(ad.tags):
-        log.warning('Through-slit IQ may be overestimated due to '
-                    'atmospheric dispersion')
-        body.append(('', 'WARNING: through-slit IQ measurement - '
-                         'may be overestimated'))
-        comments.append('Through-slit IQ measurement')
-
-    if fwhm.samples == 1:
-        log.warning('Only one source found. IQ numbers may not be accurate')
-        body.append(('', 'WARNING: single source IQ measurement - '
-                         'no error available'))
-        comments.append('Single source IQ measurement, no error available')
-    _qa_report(header, body, 32, 24)
-
-    if fwhm.samples > 0:
-        if 'SPECT' in ad.tags:
-            comments.append('IQ measured from spectral cross-cut')
-        if 'NON_SIDEREAL' in ad.tags:
-            comments.append('Observation is NON SIDEREAL, IQ measurements '
-                            'will be unreliable')
     return comments
 
 def _qa_report(header, body, llen, rlen, logtype='stdinfo'):
@@ -1112,50 +865,30 @@ def _iq_overlay(stars, data_shape):
     iqmask = (np.array(yind),np.array(xind))
     return iqmask
 
-def _strehl(ad, sources):
+def _strehl(ext, sources):
     """
-    Calculate the mean Strehl ratio and its standard deviation.
-    Weights are used, with brighter sources being more heavily weighted.
-    This is not simply because they will have better measurements, but
-    because there is a bias in SExtractor's FLUX_AUTO measurement, which
-    underestimates the total flux for fainter sources (this is due to
-    its extrapolation of the source profile; the apparent profile varies
-    depending on how much of the uncorrected psf is detected).
+    Calculate the Strehl ratio for each source in a list.
 
     Parameters
     ----------
-    ad: AstroData
+    ext : AstroData slice
         image for which we're measuring the Strehl ratio
-    sources: list of Tables (one per extension)
+    sources: Table
         sources appropriate for measuring the Strehl ratio
     """
-    log = logutils.get_logger(__name__)
-    wavelength = ad.effective_wavelength()
+    wavelength = ext.effective_wavelength()
     # Leave if there's no wavelength information
     if wavelength == 0.0 or wavelength is None:
-        return Measurement(None, None, 0)
+        return
     strehl_list = []
-    strehl_weights = []
+    pixel_scale = ext.pixel_scale()
+    for star in sources:
+        psf = _quick_psf(star['x'], star['y'], pixel_scale, wavelength,
+                         8.1, 1.2)
+        strehl = float(star['flux_max'] / star['flux'] / psf)
+        strehl_list.append(strehl)
+    return strehl_list
 
-    for ext, src in zip(ad, sources):
-        pixel_scale = ext.pixel_scale()
-        for star in src:
-            psf = _quick_psf(star['x'], star['y'], pixel_scale, wavelength,
-                             8.1, 1.2)
-            strehl = float(star['flux_max'] / star['flux'] / psf)
-            if strehl < 0.6:
-                strehl_list.append(strehl)
-                strehl_weights.append(star['flux'])
-
-    # Compute statistics with sigma-clipping and weights
-    if len(strehl_list) > 0:
-        data = np.array(strehl_list)
-        weights = np.array(strehl_weights)
-        strehl_array = sigma_clip(data)
-        strehl = float(np.average(data, weights=weights))
-        strehl_std = float(np.sqrt(np.average((strehl_array-strehl)**2, weights=weights)))
-        return Measurement(strehl, strehl_std, len(strehl_list))
-    return Measurement(None, None, 0)
 
 def _quick_psf(xc, yc, pixscale, wavelength, diameter, obsc_diam=0.0):
     """
@@ -1187,9 +920,9 @@ def _quick_psf(xc, yc, pixscale, wavelength, diameter, obsc_diam=0.0):
     # appears to give within 0.5% (always underestimated)
     subdiv = 5
     obsc = obsc_diam / diameter
-    xgrid, ygrid = (np.mgrid[0:subdiv,0:subdiv]+0.5)/subdiv-0.5
+    xgrid, ygrid = (np.mgrid[0:subdiv,0:subdiv]+0.5) / subdiv-0.5
     dr = np.sqrt((xfrac-xgrid)**2 + (yfrac-ygrid)**2)
-    x = np.pi* diameter / wavelength * dr * pixscale / 206264.8
-    sum = np.sum(np.where(x==0, 1.0, 2*(j1(x)-obsc*j1(obsc*x))/x)**2)
-    sum *= (pixscale/(206264.8*subdiv) * (1-obsc*obsc))**2
-    return sum / (4*(wavelength/diameter)**2/np.pi)
+    x = np.pi * diameter / wavelength * dr * pixscale / 206264.8
+    sum = np.sum(np.where(x == 0, 1.0, 2*(j1(x) - obsc*j1(obsc*x))/x)**2)
+    sum *= (pixscale/(206264.8 * subdiv) * (1 - obsc*obsc))**2
+    return sum / (4 * (wavelength/diameter)**2 / np.pi)
