@@ -7,7 +7,6 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from copy import deepcopy
 from importlib import import_module
 import warnings
 
@@ -39,7 +38,6 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
 from gempy.library.astrotools import array_from_list, boxcar
-from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -1084,7 +1082,6 @@ class Spect(PrimitivesBASE):
                             log.warning("Alternative central wavelength(s) found "+str(centers))
                     else:
                         centers = [c0]
-                        centers = [c0]
                 else:
                     centers = [cenwave]
 
@@ -1267,7 +1264,10 @@ class Spect(PrimitivesBASE):
             Width of extraction aperture in pixels.
         grow : float
             Avoidance region around each source aperture if a sky aperture
-            is required. Default: 10.
+            is required.
+        subtract_sky : bool
+            Extract and subtract sky spectra from object spectra if the 2D
+            spectral image has not been sky subtracted?
         debug: bool
             draw apertures on image display window?
 
@@ -1283,6 +1283,7 @@ class Spect(PrimitivesBASE):
         method = params["method"]
         width = params["width"]
         grow = params["grow"]
+        subtract_sky = params["subtract_sky"]
         debug = params["debug"]
 
         colors = ("green", "blue", "red", "yellow", "cyan", "magenta")
@@ -1294,11 +1295,11 @@ class Spect(PrimitivesBASE):
             ad_spec = astrodata.create(ad.phu)
             ad_spec.filename = ad.filename
             ad_spec.orig_filename = ad.orig_filename
-            skysub_needed = self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu
+            skysub_needed = (subtract_sky and
+                             self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu)
             if skysub_needed:
-                log.stdinfo("Sky subtraction has not been performed on {} "
-                            "- extracting sky from separate apertures".
-                            format(ad.filename))
+                log.stdinfo(f"Sky subtraction has not been performed on {ad.filename}"
+                            " - extracting sky from separate apertures")
 
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
@@ -1900,19 +1901,22 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        spline_kwargs = params.copy()
         sfx = params.pop("suffix")
         spectral_order = params.pop("spectral_order")
         center = params.pop("center")
         nsum = params.pop("nsum")
+        spline_kwargs = params.copy()
 
         for ad in adinputs:
             # Don't mosaic if the multiple extensions are because the
             # data are MOS or cross-dispersed
             if len(ad) > 1 and not ({'MOS', 'XD'} & ad.tags):
+                # Store original gWCS because we're modifying it
+                orig_wcs = [ext.wcs for ext in ad]
                 geotable = import_module('.geometry_conf', self.inst_lookups)
-                adg = transform.create_mosaic_transform(ad, geotable)
-                admos = adg.transform(attributes=None, order=1)
+                transform.add_mosaic_wcs(ad, geotable)
+                admos = transform.resample_from_wcs(ad, "mosaic", attributes=None,
+                                                    order=3, process_objcat=False)
                 mosaicked = True
             else:
                 admos = ad
@@ -1941,8 +1945,8 @@ class Spect(PrimitivesBASE):
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
                     result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
-                                                                       weights, boundaries, spectral_order), tol=1e-7,
-                                               method='Nelder-Mead')
+                                                                       weights, boundaries, spectral_order),
+                                               tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning("Problem with spline fitting: {}".format(result.message))
 
@@ -1959,23 +1963,23 @@ class Spect(PrimitivesBASE):
                                                                         **spline_kwargs)
 
                 if not mosaicked:
-                    flat_data = np.tile(spline.data, (ext.shape[dispaxis - 1], 1))
-                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis == 2))[0])
+                    flat_data = np.tile(spline.data, (ext.shape[1-dispaxis], 1))
+                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
-                for block, trans in adg:
-                    trans.append(models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0]))
-                    for ext, corner in zip(block, block.corners):
-                        t = deepcopy(trans)
-                        # Shift so coordinates are correct in this Block
-                        t.prepend(models.Shift(corner[1]) & models.Shift(corner[0]))
-                        geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                        flat_data = spline(geomap.coords[dispaxis])
-                        ext.divide(flat_data)
+                origin = admos.nddata[0].meta.pop('transform')['origin']
+                origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
+                print(origin_shift)
+                for ext, wcs in zip(ad, orig_wcs):
+                    t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
+                    geomap = transform.GeoMap(t, ext.shape, inverse=True)
+                    flat_data = spline(geomap.coords[dispaxis])
+                    ext.divide(flat_data)
+                    ext.wcs = wcs
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2047,13 +2051,13 @@ class Spect(PrimitivesBASE):
         # For the 2D case check that all ad objects have only 1 extension
         if ndim > 1:
             adjust_key = self.timestamp_keys['adjustWCSToReference']
-            for i, ad in enumerate(adinputs):
-                if len(ad) != 1:
-                    raise ValueError('inputs must have only 1 extension')
-                if adjust_key not in ad.phu:
-                    log.warning(
-                        "{} has not offset, adjustWCSToReference "
-                        "should be run first".format(ad.filename))
+            if len(adinputs) > 1 and not all(adjust_key in ad.phu
+                                             for ad in adinputs):
+                log.warning("2D spectral images should be processed by "
+                            "adjustWCSToReference if accurate spatial "
+                            "alignment is required.")
+            if not all(len(ad) == 1 for ad in adinputs):
+                raise ValueError('inputs must have only 1 extension')
             # Store these values for later!
             refad = adinputs[0]
             ref_coords = (refad.central_wavelength(asNanometers=True),

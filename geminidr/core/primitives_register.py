@@ -5,16 +5,19 @@
 # ------------------------------------------------------------------------------
 import math
 import numpy as np
-from astropy.wcs import WCS
 from astropy.modeling import models
+
+from copy import deepcopy
+
+from gwcs.wcs import WCS as gWCS
+from gwcs import coordinate_frames as cf
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
+from gempy.library import astromodels as am
 from gempy.utils import logutils
 
-from gempy.library.matching import align_images_from_wcs, align_catalogs, match_sources
-from gempy.library.transform import Transform
-from gempy.library.astromodels import Pix2Sky
+from gempy.library.matching import align_images_from_wcs, fit_model, match_sources
 
 from geminidr import PrimitivesBASE
 from . import parameters_register
@@ -125,10 +128,14 @@ class Register(PrimitivesBASE):
         scale = params["scale"]
 
         # Use first image in list as reference
-        ref_ad = adinputs[0]
-        log.stdinfo("Reference image: {}".format(ref_ad.filename))
+        adref = adinputs[0]
+        log.stdinfo("Reference image: {}".format(adref.filename))
+        # Create a dummy WCS to facilitate future operations
+        if adref[0].wcs is None:
+            adref[0].wcs = gWCS([(cf.Frame2D(name="pixels"), models.Identity(len(adref[0].shape))),
+                                  (cf.Frame2D(name="world"), None)])
 
-        if (not hasattr(ref_ad[0], 'OBJCAT') or len(ref_ad[0].OBJCAT)
+        if (not hasattr(adref[0], 'OBJCAT') or len(adref[0].OBJCAT)
                                         < min_sources) and method == 'sources':
             log.warning("Too few objects found in reference image. "
                         "{}.".format(warnings[fallback]))
@@ -137,20 +144,13 @@ class Register(PrimitivesBASE):
             else:
                 method = fallback
 
-        adoutputs = [ref_ad]
-        if method == "offsets":
-            log.stdinfo("Using offsets specified in header for alignment.")
+        adoutputs = [adref]
 
         for ad in adinputs[1:]:
-            # If we're doing source alignment but fallback is "offsets",
-            # update the WCS to give us a better starting point
-            # TODO: Think about what we really really really want
-            if method == "offsets" or fallback == "offsets":
-                #_create_wcs_from_offsets(ad, ref_ad)
-                if method == "offsets":
-                    _create_wcs_from_offsets(ad, ref_ad)
-                    adoutputs.append(ad)
-                    continue
+            if method == "offsets":
+                log.stdinfo("Using offsets specified in header for alignment.")
+                _create_wcs_from_offsets(ad, adref)
+                continue
 
             try:
                 nobj = len(ad[0].OBJCAT)
@@ -164,50 +164,63 @@ class Register(PrimitivesBASE):
 
             log.fullinfo("Number of objects in {}: {}".format(ad.filename, nobj))
             log.stdinfo("Cross-correlating sources in {}, {}".
-                         format(ref_ad.filename, ad.filename))
+                         format(adref.filename, ad.filename))
+
+            pixscale = ad.pixel_scale()
+            if pixscale is None:
+                log.warning(f'Cannot determine pixel scale for {ad.filename}. '
+                            f'Using a search radius of {first_pass} pixels.')
+                firstpasspix = first_pass
+            else:
+                firstpasspix = first_pass / pixscale
 
             # GNIRS WCS is dubious, so update WCS by using the ref
             # image's WCS and the telescope offsets
             #if ad.instrument() == 'GNIRS':
             #    log.stdinfo("Recomputing WCS for GNIRS from offsets")
-            #    ad = _create_wcs_from_offsets(ad, ref_ad)
+            #    ad = _create_wcs_from_offsets(ad, adref)
 
-            # Calculate the offsets quickly using only a translation
-            firstpasspix = first_pass / ad.pixel_scale()
-            obj_list, transform = align_images_from_wcs(ad, ref_ad,
+            # The code used to start with a translation-only model, but this
+            # isn't helpful if there's a sizeable rotation or scaling, so
+            # let's just try to do the whole thing and see what happens.
+            obj_list, transform = align_images_from_wcs(ad, adref,
                     search_radius=firstpasspix, min_sources=min_sources,
-                    cull_sources=cull_sources, full_wcs=False,
-                    rotate=False, scale=False, return_matches=True)
+                    cull_sources=cull_sources, full_wcs=True,
+                    rotate=rotate, scale=scale, return_matches=True)
 
             n_corr = len(obj_list[0])
-            log.fullinfo("Number of correlated sources: {}".format(n_corr))
-            if n_corr < min_sources:
-                log.warning("Too few correlated sources found. "
-                            "{}".format(warnings[fallback]))
-                adoutputs.append(ad)
-                continue
+            if n_corr < min_sources + rotate + scale:
+                log.warning(f"Too few correlated objects ({n_corr}). "
+                            "Setting rotate=False, scale=False")
+                obj_list, transform = align_images_from_wcs(ad, adref,
+                                                  search_radius=firstpasspix,
+                                                  cull_sources=cull_sources,
+                                                  full_wcs=True, rotate=False,
+                                                  scale=False, return_matches=True)
+                n_corr = len(obj_list[0])
 
+            log.fullinfo("Number of correlated sources: {}".format(n_corr))
             log.fullinfo("\nMatched sources:")
             log.fullinfo("   Ref. x Ref. y  Img. x  Img. y\n  {}".
                          format("-"*31))
-            for ref, img in zip(*obj_list):
+            for img, ref in zip(*obj_list):
                 log.fullinfo("  {:7.2f} {:7.2f} {:7.2f} {:7.2f}".
-                            format(ref[0], ref[1], *img))
+                            format(*ref, *img))
             log.fullinfo("")
 
-            # Check the fit geometry depending on the number of objects
-            if n_corr < min_sources + 2 and (rotate or scale):
-                log.warning("Too few objects. Setting rotate=False, scale=False")
-                rotate=False
-                scale=False
+            if n_corr < min_sources:
+                log.warning("Too few correlated sources found. "
+                            "{}".format(warnings[fallback]))
+                if fallback == 'offsets':
+                    _create_wcs_from_offsets(ad, adref)
+                adoutputs.append(ad)
+                continue
 
-            # Determine a more accurate fit, and get the WCS
-            wcs = align_images_from_wcs(ad, ref_ad, transform=transform,
-                        search_radius=0.2*firstpasspix,
-                        cull_sources=cull_sources, full_wcs=True,
-                        rotate=rotate, scale=scale, return_matches=False).wcs
-            _write_wcs_keywords(ad, wcs, self.keyword_comments)
-            #_apply_model_to_wcs(ad, transform, keyword_comments=self.keyword_comments)
+            try:
+                ad[0].wcs.insert_transform(ad[0].wcs.input_frame, transform, after=True)
+            except AttributeError:  # no WCS
+                ad[0].wcs = gWCS([(cf.Frame2D(name="pixels"), transform),
+                                  (cf.Frame2D(name="world"), None)])
             adoutputs.append(ad)
 
         # Timestamp and update filenames
@@ -228,15 +241,16 @@ class Register(PrimitivesBASE):
             search radius for cross-correlation (arcsec)
         final: float
             search radius for object matching (arcsec)
-        full_wcs: bool (or None)
-            use an updated WCS for each matching iteration, rather than simply
-            applying pixel-based corrections to the initial mapping?
-            (None => not ('qa' in mode))
+        rotate: bool
+            allow image rotation to align to reference catalog?
+        scale: bool
+            allow image scaling to align to reference catalog?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        full_wcs = params["full_wcs"]
+        rotate = params["rotate"]
+        scale = params["scale"]
 
         for ad in adinputs:
             # Check we have a REFCAT and at least one OBJCAT to match
@@ -267,8 +281,6 @@ class Register(PrimitivesBASE):
             offset_range = params["initial"] / pixscale  # Search box size
             final = params["final"] / pixscale  # Matching radius
             max_ref_sources = 100 if 'qa' in self.mode else None  # No more than this
-            if full_wcs is None:
-                full_wcs = not ('qa' in self.mode)
 
             best_matches = 0
             best_model = None
@@ -276,37 +288,39 @@ class Register(PrimitivesBASE):
             for index in objcat_order:
                 ext = ad[index]
                 extver = ext.hdr['EXTVER']
+                if not isinstance(ext.wcs.output_frame, cf.CelestialFrame):
+                    log.warning(f"WCS of {ad.filename}:{extver} does not "
+                                "transform to a CelestialFrame -- cannot "
+                                "perform astrometry")
+                    info_list.append({})
+                    continue
                 try:
                     objcat = ad[index].OBJCAT
                 except AttributeError:
-                    log.stdinfo('No OBJCAT in {}:{} -- cannot perform '
-                                'astrometry'.format(ad.filename, extver))
+                    log.stdinfo(f'No OBJCAT in {ad.filename}:{extver} -- '
+                                'cannot perform astrometry')
                     info_list.append({})
                     continue
                 objcat_len = len(objcat)
 
                 # We always fit in pixel space of the image
-                wcs = WCS(ad[index].hdr)
-                xref, yref = refcat['RAJ2000'], refcat['DEJ2000']
-                if full_wcs:
-                    # Transform REFCAT RA,dec to OBJCAT x,y
-                    fit_transform = Transform(Pix2Sky(wcs).inverse.rename("WCS"))
-                    fit_transform.factor.fixed = True
-                    fit_transform.angle.fixed = True
-                    if best_model is not None:
-                        fit_transform.x_offset = best_model.x_offset
-                        fit_transform.y_offset = best_model.y_offset
-                else:
-                    # Transform REFCAT x,y (via image WCS) to OBJCAT x,y
-                    xref, yref = wcs.all_world2pix(xref, yref, 1)
-                    fit_transform = (Transform.create2d(shape=ext.shape)
-                                     if best_model is None else best_model.copy())
-
-                fit_transform.add_bounds('x_offset', offset_range)
-                fit_transform.add_bounds('y_offset', offset_range)
+                xref, yref = ext.wcs.backward_transform(refcat['RAJ2000'],
+                                                        refcat['DEJ2000'])
+                try:
+                    m_init = best_model.copy()
+                except AttributeError:
+                    m_init = (models.Shift(0) & models.Shift(0))
+                    m_init.offset_0.bounds = (m_init.offset_0 - offset_range,
+                                              m_init.offset_0 + offset_range)
+                    m_init.offset_1.bounds = (m_init.offset_1 - offset_range,
+                                              m_init.offset_1 + offset_range)
+                    if rotate:
+                        m_init = am.Rotate2D(0, bounds={'angle': (-5, 5)}) | m_init
+                    if scale:
+                        m_init = am.Scale2D(1, bounds={'factor': (0.95, 1.05)}) | m_init
 
                 # First: estimate number of reference sources in field
-                xx, yy = fit_transform(xref, yref)
+                xx, yy = m_init.inverse(xref, yref)
                 # Could tweak y1, y2 here for GNIRS
                 x1 = y1 = 0
                 y2, x2 = ext.shape
@@ -335,9 +349,7 @@ class Register(PrimitivesBASE):
                             else:
                                 if not np.all(np.where(np.isnan(ref_mags), -999,
                                                        ref_mags) < -99):
-                                    log.stdinfo('Using {} magnitude instead'.
-                                                format(filt))
-                                    break
+                                    log.stdinfo(f'Using {filt} magnitude instead')
 
                     if ref_mags is not None:
                         in_field &= (ref_mags > -99)
@@ -362,15 +374,15 @@ class Register(PrimitivesBASE):
                 if num_ref_sources > 0:
                     log.stdinfo('Aligning {}:{} with {} REFCAT and {} OBJCAT sources'.
                                 format(ad.filename, extver, num_ref_sources, keep_num))
-                    transform = align_catalogs((xref[in_field], yref[in_field]),
-                                               (objcat['X_IMAGE'][sorted_idx],
-                                                objcat['Y_IMAGE'][sorted_idx]),
-                                               transform=fit_transform, tolerance=0.05)
-                    matched = match_sources(transform(xref, yref),
-                                            (objcat['X_IMAGE'], objcat['Y_IMAGE']),
+                    transform = fit_model(m_init, (objcat['X_IMAGE'][sorted_idx]-1,
+                                                   objcat['Y_IMAGE'][sorted_idx]-1),
+                                           (xref[in_field], yref[in_field]),
+                                          sigma=10.0, tolerance=0.0001, brute=True)
+                    matched = match_sources(transform.inverse(xref, yref),
+                                            (objcat['X_IMAGE']-1, objcat['Y_IMAGE']-1),
                                             radius=final)
                 else:
-                    log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
+                    log.stdinfo(f'No REFCAT sources in field of extver {extver}')
                     continue
 
                 num_matched = np.sum(matched >= 0)
@@ -384,19 +396,16 @@ class Register(PrimitivesBASE):
                     offset_range = 2.5 / pixscale
 
                 if num_matched > 0:
-                    # Update WCS in the header and OBJCAT (X_WORLD, Y_WORLD)
-                    if full_wcs:
-                        _write_wcs_keywords(ext, transform.wcs, self.keyword_comments)
-                    else:
-                        _apply_model_to_wcs(ext, fit_transform, keyword_comments=self.keyword_comments)
-                    new_wcs = WCS(ext.hdr)
-                    objcat['X_WORLD'], objcat['Y_WORLD'] = new_wcs.all_pix2world(
-                        objcat['X_IMAGE'], objcat['Y_IMAGE'], 1)
+                    # Update OBJCAT (X_WORLD, Y_WORLD)
+                    crpix = (0, 0)  # doesn't matter since we're only doing a shift
+                    ra0, dec0 = ext.wcs(*crpix)
+                    ext.wcs.insert_transform(ext.wcs.input_frame, transform, after=True)
+                    objcat['X_WORLD'], objcat['Y_WORLD'] = ext.wcs(objcat['X_IMAGE']-1,
+                                                                   objcat['Y_IMAGE']-1)
 
                     # Sky coordinates of original CRPIX location with old
                     # and new WCS (easier than using the transform)
-                    ra0, dec0 = wcs.all_pix2world([wcs.wcs.crpix], 1)[0]
-                    ra1, dec1 = new_wcs.all_pix2world([wcs.wcs.crpix], 1)[0]
+                    ra1, dec1 = ext.wcs(*crpix)
                     cosdec = math.cos(math.radians(dec0))
                     delta_ra = 3600 * (ra1-ra0) * cosdec
                     delta_dec = 3600 * (dec1-dec0)
@@ -452,9 +461,11 @@ class Register(PrimitivesBASE):
 def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     """
     This function uses the POFFSET, QOFFSET, and PA header keywords to create
-    a new WCS for an image. Its primary role is for GNIRS. For ease, it works
-    out the (RA,DEC) of the centre of rotation in the reference image and
-    determines where in the input image this is.
+    a transform between pixel coordinates. Its primary role is for GNIRS.
+    For ease, it works out the (RA,DEC) of the centre of rotation in the
+    reference image and determines where in the input image this is. The
+    AstroData object's WCS is updated with a new WCS based on the WCS of the
+    reference AD and the relative offsets/rotation from the headers.
 
     Parameters
     ----------
@@ -469,106 +480,48 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     if len(adinput) != len(adref):
         log.warning("Number of extensions in input files are different. "
                     "Cannot correct WCS.")
-        return adinput
+        return
 
-    log.stdinfo("Updating WCS of {} based on {}".format(adinput.filename,
-                                                        adref.filename))
+    log.stdinfo(f"Updating WCS of {adinput.filename} from {adref.filename}")
     try:
-        xdiff = adref.detector_x_offset() - adinput.detector_x_offset()
-        ydiff = adref.detector_y_offset() - adinput.detector_y_offset()
+        # Coerce to float to raise TypeError if a descriptor returns None
+        xoff_in = float(adinput.detector_x_offset())
+        yoff_in = float(adinput.detector_y_offset())
+        xoff_ref = float(adref.detector_x_offset())
+        yoff_ref = float(adref.detector_y_offset())
         pa1 = adref.phu['PA']
         pa2 = adinput.phu['PA']
     except (KeyError, TypeError):  # TypeError if offset is None
         log.warning("Cannot obtain necessary offsets from headers "
                     "so no change will be made")
-        return adinput
+        return
 
-    # We expect mosaicked inputs but there's no reason why this couldn't
-    # work for all extensions in an image
-    for extin, extref in zip(adinput, adref):
-        # Will need to have some sort of LUT here eventually. But for now...
-        if center_of_rotation is None:
-            center_of_rotation = (630.0, 520.0) if 'GNIRS' in adref.tags \
-                else tuple(0.5*(x-1) for x in extref.data.shape[::-1])
+    if center_of_rotation is None:
+        if 'GNIRS' in adref.tags:
+            center_of_rotation = (629.0, 519.0)  # (x, y; 0-indexed)
+        else:
+            try:
+                for m in adref[0].wcs.forward_transform:
+                    if isinstance(m, models.RotateNative2Celestial):
+                        ra, dec = m.lon.value, m.lat.value
+                        center_of_rotation = adref[0].wcs.backward_transform(ra, dec)
+                        break
+            except (AttributeError, IndexError, TypeError):
+                if len(adref) == 1:
+                    # Assume it's the center of the image
+                    center_of_rotation = tuple(0.5 * (x - 1)
+                                               for x in adref[0].shape[::-1])
+                else:
+                    log.warning("Cannot determine center of rotation so no "
+                                "change will be made")
+                    return
 
-        wcsref = WCS(extref.hdr)
-        ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
-                                         center_of_rotation[1], 1)
-        extin.hdr['CRVAL1'] = float(ra0)
-        extin.hdr['CRVAL2'] = float(dec0)
-        extin.hdr['CRPIX1'] = center_of_rotation[0] - xdiff
-        extin.hdr['CRPIX2'] = center_of_rotation[1] - ydiff
-        cd = models.Rotation2D(angle=pa1-pa2)(*wcsref.wcs.cd)
-        extin.hdr['CD1_1'] = cd[0][0]
-        extin.hdr['CD1_2'] = cd[0][1]
-        extin.hdr['CD2_1'] = cd[1][0]
-        extin.hdr['CD2_2'] = cd[1][1]
-    return adinput
-
-def _apply_model_to_wcs(ad, transform=None, fix_crpix=False,
-                        keyword_comments=None):
-    """
-    This function modifies the WCS of an input image according to a
-    Transform that describes how to map the input image pixels to their
-    correct location, i.e., an input pixel (x,y) should have the world
-    coordinates WCS(m(x,y)), where m is the transformation model.
-
-    Parameters
-    ----------
-    ad: AstroData
-        input image for WCS to be modified
-    transform: Transform
-        transformation (in pixel space)
-    fix_crpix: bool
-        if True, keep CRPIXi values fixed; otherwise keep CRVALi fixed
-    keyword_comments: dict
-        the comment for each FITS keyword
-
-    Returns
-    -------
-    AstroData: modified AD instance
-    """
-    if ad.is_single:
-        ext = ad
-    else:
-        if len(ad) > 1:
-            raise ValueError("Cannot modify WCS of multi-extension AstroData object")
-        ext = ad[0]
-    wcs = WCS(ext.hdr)
-    affine = transform.affine_matrices(ext.shape)
-
-    # Affine matrix and offset are in python order!
-    if fix_crpix:
-        wcs.wcs.crval = wcs.all_pix2world(*transform(*wcs.wcs.crpix), 1)
-    else:
-        wcs.wcs.crpix = np.dot(np.linalg.inv(affine.matrix),
-                               wcs.wcs.crpix[::-1] - affine.offset)[::-1]
-    # np.flip(axis=None) available in v1.15
-    wcs.wcs.cd = np.dot(affine.matrix[::-1,::-1], wcs.wcs.cd)
-
-    _write_wcs_keywords(ext, wcs, keyword_comments)
-    return ad
-
-def _write_wcs_keywords(ad, wcs, keyword_comments):
-    """
-    Updates the FITS header WCS keywords, with comments. Will at some point
-    probably be superseded by the WCS.to_header() method
-
-    Parameters
-    ----------
-    ad: AstroData
-        the AD object (or slice) to have its WCS keywords modified in place
-    wcs: WCS
-        WCS object with the information
-    keyword_comments:
-        list of comments for the keywords
-    """
-    for ax in (1, 2):
-        ad.hdr.set('CRPIX{}'.format(ax), wcs.wcs.crpix[ax-1],
-                   comment=keyword_comments["CRPIX{}".format(ax)])
-        ad.hdr.set('CRVAL{}'.format(ax), wcs.wcs.crval[ax-1],
-                   comment=keyword_comments["CRVAL{}".format(ax)])
-        for ax2 in 1, 2:
-            ad.hdr.set('CD{}_{}'.format(ax, ax2), wcs.wcs.cd[ax-1, ax2-1],
-                       comment=keyword_comments["CD{}_{}".format(ax, ax2)])
-    return
+    try:
+        t = ((models.Shift(-xoff_in - center_of_rotation[1]) & models.Shift(-yoff_in - center_of_rotation[0])) |
+             models.Rotation2D(pa1 - pa2) |
+             (models.Shift(xoff_ref + center_of_rotation[1]) & models.Shift(yoff_ref + center_of_rotation[0])))
+    except TypeError:
+        log.warning("Problem creating offset transform so no change will be made")
+        return
+    adinput[0].wcs = deepcopy(adref[0].wcs)
+    adinput[0].wcs.insert_transform(adinput[0].wcs.input_frame, t, after=True)

@@ -5,6 +5,7 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
 
+from time import sleep
 
 def reduceScience(p):
     """
@@ -38,6 +39,10 @@ def reduceScience(p):
     p.extrac1DSpectra(stream='prestack')
     p.fluxCalibrate(stream='prestack')
     p.plotSpectraForQA(stream='prestack')
+    # The GUI polls for new data every 3 seconds.  The next steps can be
+    # quicker than that leading to the second plotSpectra to hijack this one.
+    # Hijacking issues were highlighted in integration tests.
+    sleep(3)
 
     # continuing with main stream of 2D pre-stack.
     p.addToList(purpose='forStack')
@@ -82,6 +87,11 @@ def reduceStandard(p):
     p.traceApertures()
     p.extract1DSpectra()
     p.plotSpectraForQA()
+    # The GUI polls for new data every 3 seconds.  The next steps can be
+    # quicker than that leading to the second plotSpectra to hijack this one.
+    # Hijacking issues were highlighted in integration tests.
+    sleep(3)
+
     p.addToList(purpose='forStack')
     p.getList(purpose='forStack')
     p.resampleToCommonFrame()

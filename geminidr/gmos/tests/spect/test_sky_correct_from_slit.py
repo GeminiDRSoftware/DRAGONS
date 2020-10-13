@@ -56,6 +56,7 @@ test_datasets = [
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("filename, params, refname", test_datasets)
 def test_regression_extract_1d_spectra(filename, params, refname,
                                        change_working_dir, path_to_inputs,

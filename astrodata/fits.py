@@ -1079,24 +1079,22 @@ class FitsProvider(DataProvider):
                 except (ValueError, NotImplementedError) as e:
                     LOGGER.warning(e)
                 else:
-                    # HACK! Don't update the FITS WCS for an image
                     # Must delete keywords if image WCS has been downscaled
                     # from a higher number of dimensions
-                    if not isinstance(wcs.output_frame, cf.CelestialFrame):
-                        for i in range(1, 5):
-                            for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}', f'CTYPE{i}'):
+                    for i in range(1, 5):
+                        for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}', f'CTYPE{i}'):
+                            if kw in header:
+                                del header[kw]
+                        for j in range(1, 5):
+                            for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
                                 if kw in header:
                                     del header[kw]
-                            for j in range(1, 5):
-                                for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
-                                    if kw in header:
-                                        del header[kw]
-                        header.update(wcs_dict)
+                    header.update(wcs_dict)
                     # Use "in" here as the dict entry may be (value, comment)
                     if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
                         wcs = None  # There's no need to create a WCS extension
 
-            hlst.append(new_imagehdu(ext.data, header))
+            hlst.append(new_imagehdu(ext.data, header, 'SCI'))
             if ext.uncertainty is not None:
                 hlst.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
             if ext.mask is not None:
@@ -1595,6 +1593,9 @@ class FitsLoader:
                 if nd.wcs is None:
                     try:
                         nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+                        # In case WCS info is in the PHU
+                        if nd.wcs is None:
+                            nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
                     except TypeError as e:
                         raise e
                 provider.append(nd, name=def_ext, reset_ver=False)

@@ -120,6 +120,7 @@ def test_flux_calibration_with_fake_data():
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_on_flux_calibration(ad, ref_ad_factory, change_working_dir):
     """

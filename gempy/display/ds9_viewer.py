@@ -5,7 +5,9 @@ import warnings
 from subprocess import Popen
 from imexam import imexamxpa as xpa
 
-from astropy.wcs import WCS
+from astropy.io import fits
+
+from astrodata import wcs as adwcs
 
 class ds9Viewer(imexam.connect):
     def __init__(self, *args, **kwargs):
@@ -50,10 +52,11 @@ class ds9Viewer(imexam.connect):
             frame = 1
         self.view(data_to_display)
         if title is None:
-            title = "{}:{}[{}] {}".format(ext.filename, ext.hdr['EXTVER'],
+            title = "{}:[{}]{} {}".format(ext.filename, ext.hdr['EXTVER'],
                                           attribute, ext.phu['OBJECT'])
         if wcs:
-            header = WCS(ext.hdr).to_header()
+            header = fits.Header()
+            header.update(adwcs.gwcs_to_fits(ext.nddata, hdr=ext.phu))
             header['OBJECT'] = title
             fname = "temp{}.wcs".format(time.time())
             with open(fname, "w") as f:

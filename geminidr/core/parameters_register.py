@@ -23,6 +23,5 @@ class determineAstrometricSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_astrometryCorrected", optional=True)
     initial = config.RangeField("Search radius for cross-correlation (arcseconds)", float, 5., min=1)
     final = config.RangeField("Search radius for object matching (arcseconds)", float, 1., min=0)
-    # None => False if 'qa' in mode else True
-    full_wcs = config.Field("Recompute positions using full WCS rather than offsets?",
-                            bool, None, optional=True)
+    rotate = config.Field("Allow rotation for alignment?", bool, False)
+    scale = config.Field("Allow magnification for alignment?", bool, False)

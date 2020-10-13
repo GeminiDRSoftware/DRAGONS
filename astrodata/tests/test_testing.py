@@ -12,6 +12,18 @@ import astrodata
 from astrodata.testing import assert_same_class, download_from_archive
 
 
+def test_get_active_branch_name(capsys):
+    """
+    Just execute and prints out the active branch name.
+    """
+    from astrodata.testing import get_active_git_branch
+
+    assert isinstance(get_active_git_branch(), str)
+
+    captured = capsys.readouterr()
+    assert "Retrieved active branch name" in captured.out
+
+
 def test_change_working_dir(change_working_dir):
     """
     Test the change_working_dir fixture.
@@ -110,3 +122,15 @@ def test_assert_same_class():
 
     with pytest.raises(AssertionError):
         assert_same_class(ad, np.array([1]))
+
+
+@pytest.mark.skip("Test fixtures might require some extra-work")
+def test_path_to_inputs(path_to_inputs):
+    assert isinstance(path_to_inputs, str)
+    assert "astrodata/test_testing/inputs" in path_to_inputs
+
+
+@pytest.mark.skip("Test fixtures might require some extra-work")
+def test_path_to_refs(path_to_refs):
+    assert isinstance(path_to_refs, str)
+    assert "astrodata/test_testing/refs" in path_to_refs

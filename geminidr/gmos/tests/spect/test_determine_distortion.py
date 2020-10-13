@@ -126,6 +126,7 @@ datasets = [
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_for_determine_distortion_using_models_coefficients(
         ad, change_working_dir, ref_ad_factory, request):
@@ -165,6 +166,7 @@ def test_regression_for_determine_distortion_using_models_coefficients(
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_for_determine_distortion_using_fitcoord_table(
         ad, change_working_dir, ref_ad_factory):

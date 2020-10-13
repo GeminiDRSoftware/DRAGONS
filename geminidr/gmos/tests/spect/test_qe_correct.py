@@ -192,6 +192,7 @@ def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
 def test_regression_on_qe_correct(ad, arc_ad, change_working_dir, ref_ad_factory):
 
@@ -235,6 +236,7 @@ def ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
+        print(f"Reading input file: {path}")
         ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
@@ -264,6 +266,7 @@ def arc_ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
+        print(f"Reading input arc: {path}")
         arc_ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
@@ -571,8 +574,7 @@ class MeasureGapSizeLocally(abc.ABC):
 
         plt.close(self.plot_name)
 
-        fig = plt.figure(
-            constrained_layout=True, dpi=DPI, figsize=(6, 6), num=self.plot_name)
+        fig = plt.figure(dpi=DPI, figsize=(6, 6), num=self.plot_name)
 
         gs = plt.GridSpec(2, 2, figure=fig, height_ratios=[4, 1])
 
@@ -694,7 +696,7 @@ class WSolution:
 
 
 # -- Recipe to create pre-processed data ---------------------------------------
-def create_inputs_recipe():
+def create_inputs_recipe(use_branch_name=False):
     """
     Creates input data for tests using pre-processed standard star and its
     calibration files.
@@ -705,17 +707,19 @@ def create_inputs_recipe():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
-    from astrodata.testing import download_from_archive
+    from astrodata.testing import download_from_archive, get_active_git_branch
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}/".format(__file__.strip(".py"))
-    path = os.path.join(root_path, module_path)
+    root_path = "./dragons_test_inputs/geminidr/gmos/spect/"
+    module_name = os.path.basename(__file__).strip(".py")
+    path = os.path.abspath(os.path.join(root_path, module_name))
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
-    os.makedirs("./inputs/", exist_ok=True)
+
+    input_path = os.path.join(path, "inputs/", get_active_git_branch())
+    os.makedirs(input_path, exist_ok=True)
 
     for filename, cals in associated_calibrations.items():
         print(filename)
@@ -752,10 +756,10 @@ def create_inputs_recipe():
         arc_reduce.files.extend(arc_paths)
         arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
 
-        os.chdir("inputs/")
+        os.chdir(input_path)
         arc_reduce.runr()
         _ = arc_reduce.output_filenames.pop()
-        os.chdir("../")
+        os.chdir(path)
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
@@ -768,14 +772,16 @@ def create_inputs_recipe():
         p.addVAR(poisson_noise=True)
         p.flatCorrect(flat=flat_master)
 
-        os.chdir("inputs/")
+        os.chdir(input_path)
         _ = p.writeOutputs().pop()
-        os.chdir("../")
+        os.chdir(path)
 
 
 if __name__ == '__main__':
-    import sys
-    if "--create-inputs" in sys.argv[1:]:
-        create_inputs_recipe()
+    from sys import argv
+
+    if "--create-inputs" in argv[1:]:
+        use_branch_name = "--branch" in argv[1:]
+        create_inputs_recipe(use_branch_name=use_branch_name)
     else:
         pytest.main()
