@@ -10,7 +10,6 @@ from copy import deepcopy
 from functools import partial
 from collections import namedtuple
 
-from astropy.stats import sigma_clip
 from scipy.special import j1
 
 from gemini_instruments.gmos.pixel_functions import get_bias_level
@@ -380,14 +379,12 @@ class QA(PrimitivesBASE):
         separate_ext = params["separate_ext"]
         display = params["display"]
 
-        # remove_bias doesn't always exist in display() (only for GMOS)
+        # If separate_ext is True, we want the tile parameter
+        # for the display primitive to be False
         display_params = {"tile": not separate_ext}
-        try:
-            remove_bias = params["remove_bias"]
-        except KeyError:
-            remove_bias = False
-        else:
-            display_params["remove_bias"] = remove_bias
+        # remove_bias doesn't always exist in display() (only for GMOS)
+        if "remove_bias" in params:
+            display_params["remove_bias"] = params["remove_bias"]
 
         frame = 1
         for ad in adinputs:
@@ -400,6 +397,11 @@ class QA(PrimitivesBASE):
                 iq_band_limits = None
             report = qap.IQReport(ad, log=self.log, limit_dict=iq_band_limits)
 
+            if {'GSAOI', 'IMAGE'}.issubset(ad.tags):
+                ao_seeing_fn = partial(_gsaoi_iq_estimate(ad))
+            else:
+                ao_seeing_fn = None
+
             if report.measure:
                 has_sources = False
                 for ext in ad:
@@ -411,7 +413,8 @@ class QA(PrimitivesBASE):
                         continue
 
                     has_sources = True
-                    results = report.calculate_metric()
+                    results = report.calculate_metric(ao_seeing_fn=ao_seeing_fn)
+
                     if separate_ext:
                         report.report(results, header=extid)
                         if not is_ao:
@@ -423,15 +426,10 @@ class QA(PrimitivesBASE):
                                 ext.hdr.set("MEANELLP", ellip,
                                             comment=self.keyword_comments["MEANELLP"])
 
-                    # If displaying, make a mask to display along with image
-                    # that marks which stars were used
-                    if display:
-                        iq_overlays.append(_iq_overlay(src, ext.data.shape))
-
                 # Need one of these in order to make a report
                 if has_sources or report.ao_seeing:
                     if len(ad) > 1:
-                        results = report.calculate_metric('all')
+                        results = report.calculate_metric('all', ao_seeing_fn=ao_seeing_fn)
 
                     if not separate_ext:
                         report.report(results)
@@ -464,59 +462,15 @@ class QA(PrimitivesBASE):
                                         comment=self.keyword_comments["MEANELLP"])
 
             if display:
+                # If displaying, make a mask to display along with image
+                # that marks which stars were used
+                for ext, measurement in zip(ad, report.measurements):
+                    circles = [(x, y, 16) for x, y in zip(measurement["x"], measurement["y"])]
+                    iq_overlays.append(circles)
 
-                # We may need to tile the image (and OBJCATs) so make an
-                # adiq object for such purposes
-                if not separate_ext and len(ad) > 1:
-                    adiq = deepcopy(ad)
-                    if remove_bias and display:
-                        # Set the remove_bias parameter to False so it doesn't
-                        # get removed again when display is run; leave it at
-                        # default if no tiling is being done at this point,
-                        # so the display will handle it later
-                        remove_bias = False
-
-                        if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
-                                any(v is not None for v in ad.hdr.get('OVERSCAN'))):
-                            log.fullinfo("Bias level has already been "
-                                         "removed from data; no approximate "
-                                         "correction will be performed")
-                        else:
-                            try:
-                                # Get the bias level
-                                bias_level = get_bias_level(adinput=ad,
-                                                            estimate=False)
-                            except NotImplementedError:
-                                bias_level = None
-
-                            if bias_level is None:
-                                log.warning("Bias level not found for {}; "
-                                            "approximate bias will not be removed "
-                                            "from the sky level".format(ad.filename))
-                            else:
-                                # Subtract the bias level from each extension
-                                log.stdinfo("Subtracting approximate bias level "
-                                            "from {} for display".format(ad.filename))
-                                log.stdinfo(" ")
-                                log.fullinfo("Bias levels used: {}".
-                                             format(bias_level))
-                                for ext, bias in zip(adiq, bias_level):
-                                    ext.subtract(np.float32(bias))
-
-                    log.fullinfo("Tiling extensions together in order to compile "
-                                 "IQ data from all extensions")
-                    adiq = self.tileArrays([adiq], tile_all=True)[0]
-                else:
-                    # No further manipulation, so can use a reference to the
-                    # original AD object instead of making a copy
-                    adiq = ad
-                adiq = ad
-
-                # If separate_ext is True, we want the tile parameter
-                # for the display primitive to be False
-                self.display([adiq], overlay=iq_overlays if iq_overlays else None,
+                self.display([ad], overlay=tuple(iq_overlays) if iq_overlays else None,
                              frame=frame, **display_params)
-                frame += len(adiq)
+                frame += 1 if display_params["tile"] else len(ad)
                 if any(ov is not None for ov in iq_overlays):
                     log.stdinfo("Sources used to measure IQ are marked "
                                 "with blue circles.")
@@ -774,7 +728,7 @@ def _qa_report(header, body, llen, rlen, logtype='stdinfo'):
     logit('')
     return
 
-def _gsaoi_iq_estimate(ad, fwhm, strehl):
+def _gsaoi_iq_estimate(ad, results):
     """
     Attempts to estimate the natural seeing for a GSAOI image from
     the observed FWHMs of objects.
@@ -793,77 +747,20 @@ def _gsaoi_iq_estimate(ad, fwhm, strehl):
     """
     log = logutils.get_logger(__name__)
     wavelength = ad.central_wavelength(asMicrometers=True)
-    magic_number = np.log10(strehl.value * fwhm.value ** 1.5 /
-                            wavelength ** 2.285)
+    strehl, fwhm = results["strehl"], results["fwhm"]
+    magic_number = np.log10(strehl * fwhm ** 1.5 / wavelength ** 2.285)
     # Final constant is ln(10)
-    magic_number_std = np.sqrt((strehl.std / strehl.value) ** 2 +
-            (1.5 * fwhm.std / fwhm.value) ** 2 + 0.15 ** 2) / 2.3026
+    magic_number_std = np.sqrt((results["strehl_std"] / strehl) ** 2 +
+            (1.5 * results["fwhm_std"] / fwhm) ** 2 + 0.15 ** 2) / 2.3026
     if magic_number_std == 0.0:
         magic_number_std = 0.1
-    if fwhm.value > 0.2:
+    if fwhm > 0.2:
         log.warning("Very poor image quality")
     elif abs((magic_number + 3.00) / magic_number_std) > 3:
         log.warning("Strehl and FWHM estimates are inconsistent")
     # More investigation required here
-    return _arith(fwhm, 'mul', 7.0)
+    return fwhm * 7, results["fwhm_std"] * 7
 
-def _iq_overlay(stars, data_shape):
-    """
-    Generates a tuple of numpy arrays that can be used to mask a display with
-    circles centered on the stars' positions and radii that reflect the
-    measured FWHM.
-    Eg. data[iqmask] = some_value
-
-    The circle definition is based on numdisplay.overlay.circle, but circles
-    are two pixels wide to make them easier to see.
-
-    Parameters
-    ----------
-    stars: Table
-        information (from OBJCAT) of the sources used for IQ measurement
-    data_shape: 2-tuple
-        shape of the data being displayed
-
-    Returns
-    -------
-    tuple: arrays of x and y coordinates for overlay
-    """
-    xind = []
-    yind = []
-    width = data_shape[1]
-    height = data_shape[0]
-    for x0, y0 in zip(stars['x'], stars['y']):
-        #radius = star["fwhm"]
-        radius = 16
-        r2 = radius*radius
-        quarter = int(math.ceil(radius * math.sqrt (0.5)))
-
-        for dy in range(-quarter,quarter+1):
-            dx = math.sqrt(r2 - dy**2) if r2>dy*dy else 0
-            j = int(round(dy+y0))
-            i = int(round(x0-dx))           # left arc
-            if i>=0 and j>=0 and i<width and j<height:
-                xind.extend([i-1,i-2])
-                yind.extend([j-1,j-1])
-            i = int(round(x0+dx))           # right arc
-            if i>=0 and j>=0 and i<width and j<height:
-                xind.extend([i-1,i])
-                yind.extend([j-1,j-1])
-
-        for dx in range(-quarter, quarter+1):
-            dy = math.sqrt(r2 - dx**2) if r2>dx*dx else 0
-            i = int(round(dx + x0))
-            j = int(round(y0 - dy))           # bottom arc
-            if i>=0 and j>=0 and i<width and j<height:
-                xind.extend([i-1,i-1])
-                yind.extend([j-1,j-2])
-            j = int (round (y0 + dy))           # top arc
-            if i>=0 and j>=0 and i<width and j<height:
-                xind.extend([i-1,i-1])
-                yind.extend([j-1,j])
-
-    iqmask = (np.array(yind),np.array(xind))
-    return iqmask
 
 def _strehl(ext, sources):
     """

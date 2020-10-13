@@ -508,6 +508,8 @@ class BGReport(QAReport):
         ----------
         results : dict
             output from calculate_metrics
+        header : str
+            header indentification for report
         """
         if header is None:
             header = f"Filename: {self.filename}"
@@ -548,7 +550,6 @@ class IQReport(QAReport):
         self.instrument = ad.instrument()
         self.is_ao = ad.is_ao()
         self.image_like = 'IMAGE' in ad.tags and not hasattr(ad, 'MDF')
-        self.iq_overlays = []
         self.fitsdict_items.extend(["fwhm", "fwhm_std", "elip", "elip_std",
                                     "nsamples", "adaptive_optics", "ao_seeing",
                                     "strehl", "isofwhm", "isofwhm_std",
@@ -590,6 +591,13 @@ class IQReport(QAReport):
         """
         Perform a measurement on this extension and add the results to the
         measurements list of the IQReport object
+
+        Parameters
+        ----------
+        ext : single-slice AD object
+            extension upon which measurement is being made
+        strehl_fn : None/callable
+            function to calculate Strehl ratio from "sources" catalog
         """
         sources = (gt.clip_sources(ext) if self.image_like
                    else gt.fit_continuum(ext))
@@ -603,7 +611,7 @@ class IQReport(QAReport):
         self.measurements.append(sources)
         return len(sources)
 
-    def calculate_metric(self, extensions='last'):
+    def calculate_metric(self, extensions='last', ao_seeing_fn=None):
         """
         Produces an average result from measurements made on one or more
         extensions and uses these results to calculate the actual QA band.
@@ -612,6 +620,9 @@ class IQReport(QAReport):
         ----------
         extensions : str/slice
             list of extensions to average together in this calculation
+        ao_seeing_fn : None/callable
+            function to estimate natural seeing from "sources" catalog for
+            AO images
 
         Returns
         -------
@@ -657,10 +668,6 @@ class IQReport(QAReport):
         results["strehl"] = None
         results["strehl_std"] = None
         if self.is_ao:
-            self.comments.append("AO observation. IQ band from estimated AO "
-                                 "seeing.")
-            fwhm = self.ao_seeing
-            fwhm_std = None
             if "strehl" in t.colnames:
                 data = sigma_clip(t["strehl"])
                 # Weights are used, with brighter sources being more heavily
@@ -677,6 +684,17 @@ class IQReport(QAReport):
                     strehl_std = np.sqrt(np.ma.average((data - strehl) ** 2,
                                                        weights=weights))
                     results["strehl_std"] = float(strehl_std)
+            try:
+                fwhm_and_std = ao_seeing_fn(results)
+            except TypeError:
+                fwhm_and_std = None
+            if fwhm_and_std:
+                fwhm, fwhm_std = fwhm_and_std
+            else:
+                fwhm = self.ao_seeing
+                fwhm_std = None
+                self.comments.append("AO observation. IQ band from estimated "
+                                     "AO seeing.")
 
         if self.airmass:
             zcorr = self.airmass ** (-0.6)
@@ -684,7 +702,7 @@ class IQReport(QAReport):
             zfwhm_std = None if fwhm_std is None else fwhm_std * zcorr
             self.calculate_qa_band(zfwhm, zfwhm_std)
         else:
-            self.log.warning('Airmass not found, not correcting to zenith')
+            self.log.warning("Airmass not found, not correcting to zenith")
             self.calculate_qa_band(fwhm, fwhm_std)
             zfwhm = zfwhm_std = None
         results.update({"zfwhm": zfwhm, "zfwhm_std": zfwhm_std})
@@ -699,8 +717,10 @@ class IQReport(QAReport):
 
         Parameters
         ----------
-        results: dict
+        results : dict
             output from calculate_metrics
+        header : str
+            header indentification for report
 
         Returns
         -------
