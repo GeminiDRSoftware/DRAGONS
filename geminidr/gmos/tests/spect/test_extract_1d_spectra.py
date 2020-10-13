@@ -40,6 +40,7 @@ test_datasets = [
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir):
     """

@@ -45,6 +45,7 @@ fixed_test_parameters_for_determine_distortion = {
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
 

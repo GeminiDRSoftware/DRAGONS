@@ -198,6 +198,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
 def test_regression_determine_wavelength_solution(
         ad, fwidth, order, min_snr, caplog, change_working_dir, ref_ad_factory):
