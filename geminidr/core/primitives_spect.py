@@ -2326,6 +2326,15 @@ class Spect(PrimitivesBASE):
                         )
                         sky_mask |= aperture.aperture_mask(ext, grow=grow)
 
+                if debug:
+                    from astropy.visualization import simple_norm
+                    fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
+                                                   sharey=True)
+                    ax1.imshow(ext.data, cmap='gray',
+                               norm=simple_norm(ext.data, max_percent=99))
+                    ax2.imshow(sky_mask, cmap='gray', vmax=4)
+                    plt.show()
+
                 if ext.variance is None:
                     sky_weights = None
                 else:

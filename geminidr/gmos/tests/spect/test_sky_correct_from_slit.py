@@ -13,7 +13,6 @@ import geminidr
 import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
-from astropy import table
 from astropy.utils import minversion
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
@@ -45,13 +44,12 @@ test_datasets = [
         dict(order=5, function='legendre', lsigma=2, hsigma=2, max_iters=2),
         'N20180508S0021_ref_4.fits',
     ),
+    (
+        "S20190204S0079_aperturesTraced.fits",  # R400 : 0.750
+        dict(order=8, lsigma=5, hsigma=5, grow=2),
+        'S20190204S0079_ref_1.fits',
+    ),
 ]
-
-# ("N20180509S0010_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 900
-# ("N20180516S0081_aperturesTraced.fits", dict(order=5, grow=2)),  # R600 860
-# ("N20190427S0126_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 625
-# ("N20190427S0127_aperturesTraced.fits", dict(order=5, grow=2)),  # R400 725
-# ("N20190427S0141_aperturesTraced.fits", dict(order=5, grow=2)),  # R150 660
 
 # Tests Definitions -----------------------------------------------------------
 
@@ -84,44 +82,6 @@ def test_regression_extract_1d_spectra(filename, params, refname,
         np.testing.assert_allclose(ext.data, ref_ext.data, atol=0.01)
 
 
-# Local Fixtures and Helper Functions -----------------------------------------
-
-
-def _add_aperture_table(ad, center):
-    """
-    Adds a fake aperture table to the `AstroData` object.
-
-    Parameters
-    ----------
-    ad : AstroData
-    center : int
-
-    Returns
-    -------
-    AstroData : the input data with an `.APERTURE` table attached to it.
-    """
-    width = ad[0].shape[1]
-
-    aperture = table.Table(
-        [
-            [1],  # Number
-            [1],  # ndim
-            [0],  # degree
-            [0],  # domain_start
-            [width - 1],  # domain_end
-            [center],  # c0
-            [-5],  # aper_lower
-            [5],  # aper_upper
-        ],
-        names=[
-            'number', 'ndim', 'degree', 'domain_start', 'domain_end', 'c0',
-            'aper_lower', 'aper_upper'
-        ])
-
-    ad[0].APERTURE = aperture
-    return ad
-
-
 # -- Recipe to create pre-processed data --------------------------------------
 def create_inputs_recipe():
     """
@@ -137,27 +97,9 @@ def create_inputs_recipe():
     input_data = {
         "N20180508S0021.fits": {
             "arc": "N20180615S0409.fits",
-            "center": 244
         },
-        "N20180509S0010.fits": {
-            "arc": "N20180509S0080.fits",
-            "center": 259
-        },
-        "N20180516S0081.fits": {
-            "arc": "N20180516S0214.fits",
-            "center": 255
-        },
-        "N20190427S0126.fits": {
-            "arc": "N20190427S0267.fits",
-            "center": 259
-        },
-        "N20190427S0127.fits": {
-            "arc": "N20190427S0268.fits",
-            "center": 258
-        },
-        "N20190427S0141.fits": {
-            "arc": "N20190427S0270.fits",
-            "center": 264
+        "S20190204S0079.fits": {
+            "arc": "S20190206S0030.fits",
         },
     }
 
@@ -196,10 +138,7 @@ def create_inputs_recipe():
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
         p.distortionCorrect(arc=arc)
-        _ad = p.makeIRAFCompatible().pop()
-        _ad = _add_aperture_table(_ad, pars['center'])
-
-        p = primitives_gmos_spect.GMOSSpect([_ad])
+        p.findSourceApertures(max_apertures=1)
         p.traceApertures(trace_order=2,
                          nsum=20,
                          step=10,
