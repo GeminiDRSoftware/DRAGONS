@@ -229,6 +229,7 @@ def change_working_dir(path_to_outputs):
     """
     path = os.path.join(path_to_outputs, "outputs")
     os.makedirs(path, exist_ok=True)
+    print(f"Using working dir:\n  {path}")
 
     @contextmanager
     def _change_working_dir(sub_path=""):
@@ -298,25 +299,6 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
         os.chmod(local_path, 0o664)
 
     return local_path
-
-
-@pytest.fixture(scope="session")
-def dragons_tmp_path(tmp_path_factory):
-    """
-    Session scoped fixture used to create a directory to store the tests
-    result.
-
-    Parameters
-    ----------
-    tmp_path_factory : pytest.fixture
-        Built-in Pytest session scoped fixture that create a temporary folder
-        per pytest session.
-
-    Returns
-    -------
-    str : path to the new temporary folder.
-    """
-    return str(tmp_path_factory.mktemp(basename="dragons-test-", numbered=True))
 
 
 def get_associated_calibrations(filename, nbias=5):
@@ -488,7 +470,7 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
 
 
 @pytest.fixture(scope='module')
-def path_to_outputs(request, dragons_tmp_path):
+def path_to_outputs(request, tmp_path_factory):
     """
     PyTest fixture that creates a temporary folder to save tests outputs. You can
     set the base directory by passing the ``--basetemp=mydir/`` argument to the
@@ -508,7 +490,7 @@ def path_to_outputs(request, dragons_tmp_path):
     """
     module_path = request.module.__name__.split('.')
     module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(str(dragons_tmp_path), *module_path)
+    path = os.path.join(str(tmp_path_factory.getbasetemp()), *module_path)
     os.makedirs(path, exist_ok=True)
 
     return path
