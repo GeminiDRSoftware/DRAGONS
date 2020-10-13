@@ -1580,7 +1580,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # Store this information so the calling primitive can access it
     ad_out[0].nddata.meta['transform'] = {'origin': dg.origin,
                                           'corners': dg.corners,
-                                          'jfactors': dg.jfactors}
+                                          'jfactors': dg.jfactors,
+                                          'block_corners': [b.corners for b in dg.arrays]}
 
     # Create a new gWCS object describing the remaining transformation.
     # Not all gWCS objects have to have the same steps, so we need to
