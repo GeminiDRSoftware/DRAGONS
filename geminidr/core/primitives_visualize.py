@@ -203,6 +203,7 @@ class Visualize(PrimitivesBASE):
                             overlay = overlays[0]
                     masks.append(overlay)
                     mask_colors.append(206)
+                    overlay_index += 1
 
                 # Define the display name
                 if tile and extname=='SCI':
