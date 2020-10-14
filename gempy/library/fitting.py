@@ -165,6 +165,8 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
         image_to_fit = image
         if image.ndim == 1:
             n_models = 1
+        elif image.mask is np.ma.nomask:
+            n_models = image.shape[1]
         else:
             # remove fully masked columns otherwise this will lead to
             # Runtime warnings from Numpy because of divisions by zero.
