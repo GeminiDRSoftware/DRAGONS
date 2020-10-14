@@ -282,7 +282,7 @@ def fit_1D(image, weights=None, function='legendre', order=1, axis=-1,
     # Restore the ordering & shape of the input array:
     fitvals = fitvals.reshape(tmpshape)
     if astropy_model:
-        fitvals = np.rollaxis(fitvals, 0, axis + 1)
+        fitvals = np.rollaxis(fitvals, 0, (axis + 1) or fitvals.ndim)
     else:
         fitvals = np.rollaxis(fitvals, -1, axis)
 
