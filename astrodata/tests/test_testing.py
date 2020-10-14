@@ -19,14 +19,14 @@ def test_get_active_branch_name(capsys, monkeypatch):
 
     # With tracking branch
     monkeypatch.setattr(subprocess, 'check_output',
-                        lambda *a, **k: '(HEAD -> master, origin/master)')
+                        lambda *a, **k: b'(HEAD -> master, origin/master)')
     assert get_active_git_branch() == 'master'
     captured = capsys.readouterr()
     assert captured.out == '\nRetrieved active branch name:  master\n'
 
     # Only remote branch
     monkeypatch.setattr(subprocess, 'check_output',
-                        lambda *a, **k: '(HEAD, origin/foo)')
+                        lambda *a, **k: b'(HEAD, origin/foo)')
     assert get_active_git_branch() == 'foo'
 
     # Raise error
