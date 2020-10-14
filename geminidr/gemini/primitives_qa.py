@@ -75,11 +75,12 @@ class QA(PrimitivesBASE):
                     except NotImplementedError:
                         bias_level = None
 
-                    if bias_level is None:
-                        log.warning("Bias level not found for {}; "
-                                    "approximate bias will not be removed "
-                                    "from the sky level".format(ad.filename))
-                        bias_level = [None] * len(ad)
+            if bias_level is None:
+                bias_level = [None] * len(ad)
+                if remove_bias:
+                    log.warning("Bias level not found for {}; "
+                                "approximate bias will not be removed "
+                                "from the sky level".format(ad.filename))
 
             # Get the filter name and the corresponding BG band definition
             # and the requested band
@@ -577,6 +578,7 @@ class QAReport:
                                              key=lambda k_v: k_v[0], reverse=True)))
             sign = cmp(limits[1], limits[0])
             inequality = '<' if sign > 0 else '>'
+            self.band = 100
             self.band_info = f'{inequality}{limits[0]}'
             for i in range(len(bands)):
                 if cmp(float(value), limits[i]) == sign:
