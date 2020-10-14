@@ -3,25 +3,37 @@ Tests for the `astrodata.testing` module.
 """
 
 import os
-
-import numpy as np
-import pytest
+import subprocess
 
 import astrodata
+import numpy as np
+import pytest
+from astrodata.testing import (assert_same_class, download_from_archive,
+                               get_active_git_branch)
 
-from astrodata.testing import assert_same_class, download_from_archive
 
-
-def test_get_active_branch_name(capsys):
+def test_get_active_branch_name(capsys, monkeypatch):
     """
     Just execute and prints out the active branch name.
     """
-    from astrodata.testing import get_active_git_branch
 
-    assert isinstance(get_active_git_branch(), str)
-
+    # With tracking branch
+    monkeypatch.setattr(subprocess, 'check_output',
+                        lambda *a, **k: '(HEAD -> master, origin/master)')
+    assert get_active_git_branch() == 'master'
     captured = capsys.readouterr()
-    assert "Retrieved active branch name" in captured.out
+    assert captured.out == '\nRetrieved active branch name:  master\n'
+
+    # Only remote branch
+    monkeypatch.setattr(subprocess, 'check_output',
+                        lambda *a, **k: '(HEAD, origin/foo)')
+    assert get_active_git_branch() == 'foo'
+
+    # Raise error
+    def mock_check_output(*args, **kwargs):
+        raise subprocess.CalledProcessError
+    monkeypatch.setattr(subprocess, 'check_output', mock_check_output)
+    assert get_active_git_branch() is None
 
 
 def test_change_working_dir(change_working_dir):
