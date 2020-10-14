@@ -352,8 +352,8 @@ def get_active_git_branch():
     """
     try:
         out = subprocess.check_output(
-            ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD'], text=True
-        )
+            ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD']
+        ).decode('utf8')
         branch_name = re.search(r'\(HEAD.*, origin/(\w*)\)', out).groups()[0]
     except Exception:
         print("\nCould not retrieve active git branch. Make sure that the\n"
