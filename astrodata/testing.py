@@ -341,6 +341,9 @@ def get_active_git_branch():
     Returns the name of the active GIT branch to be used in Continuous
     Integration tasks and organize input/reference files.
 
+    Note: This works currently only if the remote name is "origin", though it
+    would be easy to adapt for other cases if needed.
+
     Returns
     -------
     str or None : Name of the input active git branch. It returns None if
