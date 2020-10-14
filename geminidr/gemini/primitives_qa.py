@@ -5,12 +5,11 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 import math
-import operator
-from copy import deepcopy
 from functools import partial
-from collections import namedtuple
 
 from scipy.special import j1
+from astropy.table import Table, vstack
+from astropy.stats import sigma_clip
 
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
@@ -18,16 +17,14 @@ from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
-from .lookups import DQ_definitions as DQ
 from .lookups import qa_constraints as qa
 
 from geminidr import PrimitivesBASE
 from . import parameters_qa
+from .lookups import DQ_definitions as DQ
 
 from recipe_system.utils.decorators import parameter_override
 
-QAstatus = namedtuple('QAstatus', 'band req warning info')
-Measurement = namedtuple('Measurement', 'value std samples')
 # ------------------------------------------------------------------------------
 @parameter_override
 class QA(PrimitivesBASE):
@@ -52,11 +49,11 @@ class QA(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
-        remove_bias: bool
+        remove_bias : bool
             remove the bias level (if present) before measuring background?
-        separate_ext: bool
+        separate_ext : bool
             report one value per extension, instead of a global value?
         """
         log = self.log
@@ -94,15 +91,15 @@ class QA(PrimitivesBASE):
             except KeyError:
                 bg_band_limits = None
 
-            report = qap.BGReport(ad, log=self.log, limit_dict=bg_band_limits)
+            report = BGReport(ad, log=self.log, limit_dict=bg_band_limits)
             bunit = report.bunit
 
             for ext, bias in zip(ad, bias_level):
-                report.measure(ext, bias_level=bias)
+                report.add_measurement(ext, bias_level=bias)
                 results = report.calculate_metric()
 
                 # Write sky background to science header
-                bg = results['bg']
+                bg = results.get("bg")
                 if bg is not None:
                     ext.hdr.set("SKYLEVEL", bg,
                             comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
@@ -143,7 +140,7 @@ class QA(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def measureCC(self, adinputs=None, suffix=None):
+    def measureCC(self, adinputs=None, **params):
         """
         This primitive will determine the zeropoint by looking at sources in
         the OBJCAT for which a reference catalog magnitude has been determined
@@ -180,12 +177,15 @@ class QA(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        suffix = params["suffix"]
+        separate_ext = params["separate_ext"]
 
         for ad in adinputs:
             nom_phot_zpt = ad.nominal_photometric_zeropoint()
@@ -195,7 +195,6 @@ class QA(PrimitivesBASE):
                              ad.filter_name(pretty=True)))
                 continue
 
-            qad = {'zeropoint': {}}
             if not any(hasattr(ext, 'OBJCAT') for ext in ad):
                 log.warning("No OBJCATs found in {}".format(ad.filename))
                 continue
@@ -210,142 +209,63 @@ class QA(PrimitivesBASE):
                             " to measure photometric zeropoints")
                 continue
 
-            nom_at_ext = ad.nominal_atmospheric_extinction()
-            if nom_at_ext is None:
-                log.warning("Cannot get atmospheric extinction. Assuming zero.")
-                nom_at_ext = 0.0
-            exptime = ad.exposure_time()
+            report = CCReport(ad, log=self.log, limit_dict=qa.ccBands)
 
-            # If it's a funky nod-and-shuffle imaging acquistion,
-            # then need to scale exposure time
-            if "NODANDSHUFFLE" in ad.tags:
-                log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
-                # AFAIK the number of nod_cycles isn't actually relevant -
-                # there's always 2 nod positions, thus the exposure
-                # time for any given star is half the total
-                exptime /= 2.0
-
-            all_zp = []
-            all_cloud = []
-            info_list = []
-
-            for ext, npz in zip(ad, nom_phot_zpt):
+            qad = {'zeropoint': {}}
+            all_results = []
+            for ext, nom_zpt in zip(ad, nom_phot_zpt):
                 extver = ext.hdr['EXTVER']
-                ext_info = {}
-                try:
-                    objcat = ext.OBJCAT
-                except AttributeError:
-                    log.warning("No OBJCAT in {}:{}".format(ad.filename,extver))
-                    all_zp.append(Measurement(None, None, 0))
+                extid = f"{ad.filename}:{extver}"
+                nsources = report.add_measurement(ext)
+                results = report.calculate_metric(nominal_photometric_zeropoint=nom_phot_zpt)
+                if separate_ext and nsources == 0:
+                    if hasattr(ext, 'OBJCAT'):
+                        log.warning("No suitable object and/or reference "
+                                    f"magnitudes found in {extid}")
+                    else:
+                        log.warning(f"No OBJCAT in {extid}")
                     continue
 
-                # Incrementally cull the catalog: remove sources without mags
-                good_obj = objcat[~np.logical_or(objcat['MAG_AUTO'] == -999,
-                                                 objcat['MAG_AUTO'] > 90)]
-                if len(good_obj) == 0:
-                    log.warning("No magnitudes found in {}[OBJCAT,{}]".format(
-                                ad.filename,extver))
-                    all_zp.append(Measurement(None, None, 0))
+                all_results.append(results)
+                if not results:
+                    if separate_ext:
+                        log.warning(f"No good photometric sources found in {extid}")
                     continue
 
-                # Remove sources without reference mags
-                good_obj = good_obj[~np.logical_or.reduce(
-                    [good_obj['REF_MAG'] == -999, np.isnan(good_obj['REF_MAG']),
-                     np.isnan(good_obj['REF_MAG_ERR'])])]
-                if len(good_obj) == 0:
-                    log.warning("No reference magnitudes found in {}[OBJCAT,{}]".
-                        format(ad.filename,extver))
-                    all_zp.append(Measurement(None, None, 0))
-                    continue
+                # Write the zeropoint to the extension header
+                zpt = results.get("mag")
+                if zpt is not None:
+                    ext.hdr.set("MEANZP", zpt, self.keyword_comments["MEANZP"])
 
-                # Sources must be free of SExtractor flags and unsaturated, and
-                # <2% of pixels be otherwise flagged (typically bad/non-linear)
-                good_obj = good_obj[np.logical_and.reduce([good_obj['FLAGS'] == 0,
-                        good_obj['NIMAFLAGS_ISO'] < 0.02*good_obj['ISOAREA_IMAGE'],
-                        good_obj['IMAFLAGS_ISO'] & DQ.saturated == 0])]
+                if separate_ext:
+                    report.report(results,
+                                  header=f"{ad.filename}:{extver}")
 
-                zps = good_obj['REF_MAG'] - nom_at_ext - (good_obj['MAG_AUTO'] +
-                                                         2.5*math.log10(exptime))
-                zperrs = np.sqrt(good_obj['REF_MAG_ERR']**2 +
-                                 good_obj['MAGERR_AUTO']**2)
+                # Store the number in the QA dictionary to report to the ADCC
+                ampname = ext.hdr.get("AMPNAME", f"amp{extver}")
+                qad['zeropoint'].update({ampname: {'value': results["mag"],
+                                                   'error': results["mag_std"]}})
 
-                # There shouldn't be any NaN left
-                assert sum(np.logical_or(np.isnan(zps), np.isnan(zperrs))) == 0
+            # Collapse extension-by-extension numbers if multiple extensions
+            if len(ad) > 1:
+                results = report.calculate_metric('all')
 
-                # TODO: weight instead?
-                # Trim out where zeropoint error > err_threshold
-                if len([z for z in zps if z is not None]) <= 5:
-                    # 5 sources or less. Beggars are not choosers.
-                    ok = zperrs<0.2
-                else:
-                    ok = zperrs<0.1
+            if not separate_ext:
+                report.report(results, all_results=all_results)
 
-                # Ensure these are regular floats for JSON (thanks to PH)
-                zps = [Measurement(float(zp), float(zperr), 1) for zp, zperr
-                       in zip(zps[ok], zperrs[ok])]
-
-                if len(zps) == 0:
-                    log.warning("No good photometric sources found in "
-                                "{}[OBJCAT,{}]".format(ad.filename,extver))
-                    all_zp.append(Measurement(None, None, 0))
-                    continue
-
-                # Collapse all the Measurements to a single value + error
-                if len(zps) > 2:
-                    # TODO: 1-sigma clip is crap!
-                    stats = _stats(zps)
-                    m, s = stats.value, stats.std
-                    zps = [z for z in zps if abs(z.value - m) < s]
-
-                ext_zp = _stats(zps, weights='variance') if len(zps)>1 else zps[0]
-
-                # Write the zeropoint to the SCI extension header
-                ext.hdr.set("MEANZP", ext_zp.value, self.keyword_comments["MEANZP"])
-
-                # Report average extinction measurement
-                ext_cloud = _arith(_arith(ext_zp, 'sub', npz), 'mul', -1)
-                comments = _cc_report(ext, ext_zp, ext_cloud, None)
-
-                # Individual extinction measurements for all sources
-                all_cloud.extend([_arith(_arith(zp, 'sub', npz), 'mul', -1)
-                                   for zp in zps])
-                all_zp.append(ext_zp)
-
-                # Store the number in the QA dictionary to report to the RC
-                ampname = ext.hdr.get("AMPNAME", 'amp{}'.format(extver))
-                qad['zeropoint'].update({ampname: {'value': ext_zp.value,
-                                                   'error': ext_zp.std}})
-
-                # Compose a dictionary in the format the fitsstore record wants
-                ext_info.update({"mag": ext_zp.value, "mag_std": ext_zp.std,
-                        "cloud": ext_cloud.value, "cloud_std": ext_cloud.std,
-                        "nsamples": ext_zp.samples})
-                info_list.append(ext_info)
-
-            # Only if we've managed to measure at least one zeropoint
-            if any(zp.value for zp in all_zp):
-                avg_cloud = _stats(all_cloud, weights='variance')
-                qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=False)
-
-                comments = _cc_report(ad, all_zp, avg_cloud, qastatus)
-
+            if results:
                 # For QA dictionary
-                qad.update({'band': qastatus.band, 'comment': comments,
-                            'extinction': float(avg_cloud.value),
-                            'extinction_error': float(avg_cloud.std)})
+                qad.update({'band': report.band, 'comment': report.comments,
+                            'extinction': results["cloud"],
+                            'extinction_error': results["cloud_std"]})
                 qap.adcc_report(ad, "cc", qad)
-
-                # Add band and comment to the info_list
-                [info.update({"percentile_band": qad["band"],
-                              "comment": qad["comment"]}) for info in info_list]
 
                 # Also report to fitsstore
                 if self.upload and "metrics" in self.upload:
-                    fitsdict = qap.fitsstore_report(ad, "zp", info_list,
-                                                    self.calurl_dict, self.mode,
-                                                    upload=True)
+                    qap.fitsstore_report(ad, "zp", report.info_list(),
+                                         self.calurl_dict, self.mode, upload=True)
             else:
-                log.stdinfo("    Filename: {}".format(ad.filename))
+                log.stdinfo(f"    Filename: {ad.filename}")
                 log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
 
             # Timestamp and update filename
@@ -362,13 +282,13 @@ class QA(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
-        remove_bias: bool [only for some instruments]
+        remove_bias : bool [only for some instruments]
             remove the bias level (if present) before displaying?
-        separate_ext: bool
+        separate_ext : bool
             report one value per extension, instead of a global value?
-        display: bool
+        display : bool
             display the images?
         """
         log = self.log
@@ -390,31 +310,46 @@ class QA(PrimitivesBASE):
         for ad in adinputs:
             iq_overlays = []
             is_ao = ad.is_ao()
-            try:
-                wvband = 'AO' if is_ao else ad.wavelength_band()
-                iq_band_limits = qa.iqBands[wvband]
-            except KeyError:
-                iq_band_limits = None
-            report = qap.IQReport(ad, log=self.log, limit_dict=iq_band_limits)
 
-            if {'GSAOI', 'IMAGE'}.issubset(ad.tags):
-                ao_seeing_fn = partial(_gsaoi_iq_estimate(ad))
-            else:
-                ao_seeing_fn = None
+            if not {'IMAGE', 'SPECT'} & ad.tags:
+                log.warning(f"{ad.filename} is not IMAGE or SPECT; "
+                            "no IQ measurement will be performed")
+                measure_iq = False
 
-            if report.measure:
+            # Check that the data is not an image with non-square binning
+            if 'IMAGE' in ad.tags:
+                xbin = ad.detector_x_bin()
+                ybin = ad.detector_y_bin()
+                if xbin != ybin:
+                    log.warning("No IQ measurement possible, image {} is {} x "
+                                "{} binned data".format(ad.filename, xbin, ybin))
+                    measure_iq = False
+
+            # We may still display the image
+            if measure_iq:
+                try:
+                    wvband = 'AO' if is_ao else ad.wavelength_band()
+                    iq_band_limits = qa.iqBands[wvband]
+                except KeyError:
+                    iq_band_limits = None
+                report = IQReport(ad, log=self.log, limit_dict=iq_band_limits)
+
+                if {'GSAOI', 'IMAGE'}.issubset(ad.tags):
+                    ao_seeing_fn = partial(_gsaoi_iq_estimate(ad))
+                else:
+                    ao_seeing_fn = None
+
                 has_sources = False
                 for ext in ad:
                     extid = f"{ad.filename}:{ext.hdr['EXTVER']}"
                     nsources = report.add_measurement(ext, strehl_fn=partial(_strehl, ext))
+                    results = report.calculate_metric(ao_seeing_fn=ao_seeing_fn)
                     if nsources == 0:
                         if separate_ext:
                             self.log.warning(f"No good sources found in {extid}")
                         continue
 
                     has_sources = True
-                    results = report.calculate_metric(ao_seeing_fn=ao_seeing_fn)
-
                     if separate_ext:
                         report.report(results, header=extid)
                         if not is_ao:
@@ -484,250 +419,6 @@ class QA(PrimitivesBASE):
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-def _arith(m, op, operand):
-    """Performs an arithmetic operation on a value and its uncertainty"""
-    if op in ['mul', 'div', 'truediv']:
-        return Measurement(getattr(operator, op)(m.value, operand),
-                getattr(operator, op)(m.std, abs(operand)) if m.std else m.std,
-                m.samples)
-    else:
-        return Measurement(getattr(operator, op)(m.value, operand),
-                           m.std, m.samples)
-
-def _stats(stats_list, weights='sample'):
-    """
-    Estimates overall mean and standard deviation from measurements that have
-    already been compressed, so the original data don't exist
-
-    Parameters
-    ----------
-    stats_list: list of Measurements
-        The input statistics
-    weights: 'variance'/'sample'/None
-        how to weight the measurements
-
-    Returns
-    -------
-    Measurement: mean, standard deviation, total number of measurements
-    """
-    try:
-        use_list = [m for m in stats_list if m.value is not None]
-        if weights == 'variance':
-            wt = [1.0 / (m.std * m.std) for m in use_list]
-        elif weights == 'sample':
-            wt = [m.samples for m in use_list]
-        else:
-            wt = [1.0] * len(use_list)
-        total_samples = sum(m.samples for m in use_list)
-        mean = np.average([m.value for m in use_list], weights=wt)
-        var1 = np.average([(m.value - mean)**2 for m in use_list],
-                                   weights = wt)
-        var2 = sum(w*m.std*m.std for w, m in zip(wt, use_list))/sum(wt)
-        sigma = np.sqrt(var1 + var2)
-    except:
-        return Measurement(None, None, 0)
-    return Measurement(mean, sigma, total_samples)
-
-def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
-    """
-    Calculates the QA band by comparing a measurement and its uncertainty with
-    a dict of {value: limit} entries. This uses the dict to work out whether
-    low numbers or high numbers are "good".
-
-    Parameters
-    ----------
-    metric: str
-        name of the metric
-    ad: AstroData
-        the AD object being investigated
-    quant: Measurement
-        value and uncertainty in the quantity measured
-    limit_dict: dict
-        dict of QA boundaries and values
-    simple: bool
-        do a simple test (ignoring uncertainty)? (otherwise hypothesis test)
-
-    Returns
-    -------
-    QAstatus: band (int/list), reqband, warning (list), info (str)
-        actual band(s), requested, warning comment/[], useful string for later
-        presentation.
-
-    """
-    log = logutils.get_logger(__name__)
-
-    # In cmp lambda fn, "-" is deprecated for in numpy objects. Because the
-    # lambda needs to work on other types, and because we need a numerical
-    # value returned, the bitwise-or recommendation does not apply.
-
-    # We coerce the numpy.float64 object to native type @L785:: float(quant.value)
-    cmp = lambda x, y: (x > y) - (x < y)
-    try:
-        reqband = getattr(ad, 'requested_{}'.format(metric.lower()))()
-    except:
-        reqband = None
-
-    fmt1 = '95% confidence test indicates worse than CC{}'
-    fmt2 = '95% confidence test indicates borderline CC{} or one band worse'
-    fmt3 = '95% confidence test indicates CC{} or better'
-    info = ''
-    warning = ''
-
-    if limit_dict is None:
-        return QAstatus(None, reqband, warning, info)
-
-    if quant is None or quant.value is None:
-        qaband = None
-    else:
-        if simple:
-            # Straightfoward determination of which band the measured value
-            # lies in. The uncertainty on the measurement is ignored.
-            bands, limits = list(zip(*sorted(limit_dict.items(),
-                                             key=lambda k_v: k_v[0], reverse=True)))
-            sign = cmp(limits[1], limits[0])
-            inequality = '<' if sign > 0 else '>'
-            qaband = 100
-            info = '{}{}'.format(inequality, limits[0])
-            for i in range(len(bands)):
-                if cmp(float(quant.value), limits[i]) == sign:
-                    qaband = bands[i]
-                    info = '{}-{}'.format(*sorted(limits[i:i+2])) if \
-                        i<len(bands)-1 else '{}{}'.format(
-                        '<>'.replace(inequality,''), limits[i])
-            if reqband is not None and qaband > reqband:
-                warning = '{} requirement not met'.format(metric.upper())
-        else:
-            # Assumes the measured value and uncertainty represent a Normal
-            # distribution, and works out the probability that the true value
-            # lies in each band
-            bands, limits = list(zip(*sorted(limit_dict.items(), key=lambda k_v: k_v[1])))
-            bands = (100,)+bands if bands[0]>bands[1] else bands+(100,)
-            # To Bayesian this, prepend (0,) to limits and not to probs
-            # and renormalize (divide all by 1-probs[0]) and add prior
-            norm_limits = [(l - float(quant.value))/quant.std for l in limits]
-            cum_probs = [0] + [0.5*(1+math.erf(s/math.sqrt(2))) for
-                           s in norm_limits] + [1]
-            probs = np.diff(cum_probs)
-            if bands[0] > bands[1]:
-                bands = bands[::-1]
-                probs = probs[::-1]
-            qaband = [b for b, p in zip(bands, probs) if p>0.05]
-
-            cum_prob = 0.0
-            for b, p in zip(bands[:-1], probs[:-1]):
-                cum_prob += p
-                if cum_prob < 0.05:
-                    log.fullinfo(fmt1.format(b))
-                    if b == reqband:
-                        warning = 'CC requirement not met at the 95% confidence level'
-                elif cum_prob < 0.95:
-                    log.fullinfo(fmt2.format(b))
-                else:
-                    log.fullinfo(fmt3.format(b))
-
-    return QAstatus(qaband, reqband, warning, info)
-
-def _cc_report(ad, zpt, cloud, qastatus):
-    """
-    Logs the formatted output of a measureCC report. Single-extension
-    reports go to fullinfo, reports for an entire image to stdinfo.
-
-    Parameters
-    ----------
-    ad: AstroData
-        AD objects or slice
-    zpt: Measurement/list
-        zeropoint measurement(s) and uncertainty(ies)
-    cloud: Measurement/list
-        extinction measurement(s) and uncertainty(ies)
-    qastatus: QAstatus namedtuple
-        information about the actual band
-
-    Returns
-    -------
-    list: list of comments to be passed to the FITSstore report
-    """
-    single_ext = ad.is_single
-    comments = []
-    headstr = 'Filename: {}'.format(ad.filename)
-    if single_ext:
-        headstr += ':{}'.format(ad.hdr['EXTVER'])
-    header = [headstr]
-    header.append('{} sources used to measure zeropoint'.format(cloud.samples))
-
-    filt = ad.filter_name(pretty=True)
-    if single_ext:
-        # Never called on a single extension unless there's a measurement
-        logtype = 'fullinfo'
-        body = [('Zeropoint measurement ({}-band):'.format(filt),
-                 '{:.2f} +/- {:.2f}'.format(zpt.value, zpt.std))]
-        npz = cloud.value + zpt.value  # Rather than call descriptor again
-        body.append(('Nominal zeropoint:', '{:.2f}'.format(npz)))
-    else:
-        logtype = 'stdinfo'
-        for zp in zpt:
-            rstr = '{:.2f} +/- {:.2f}'.format(zp.value, zp.std) if zp.value \
-                else 'not measured'
-            try:
-                body.append(('', rstr))
-            except NameError:
-                body = [('Zeropoints by detector ({}-band):'.format(filt), rstr)]
-
-    body.append(('Estimated cloud extinction:',
-                 '{:.2f} +/- {:.2f} mag'.format(cloud.value, cloud.std)))
-
-    if qastatus and not single_ext:
-        if isinstance(qastatus.band, int):
-            bands = [qastatus.band]
-        else:
-            bands = qastatus.band
-        body.append(('CC bands consistent with this:', ', '.join(['CC{}'.
-               format(x if x < 100 else 'Any') for x in bands])))
-        if qastatus.req:
-            body.append(('Requested CC:', 'CC{}'.format('Any' if
-                                    qastatus.req==100 else qastatus.req)))
-            if qastatus.warning:
-                body.append(('WARNING: {}'.format(qastatus.warning), ''))
-                comments.append(qastatus.warning)
-        else:
-            body.append(('(Requested CC could not be determined)', ''))
-
-    _qa_report(header, body, 32, 26, logtype)
-    return comments
-
-def _qa_report(header, body, llen, rlen, logtype='stdinfo'):
-    """
-    Outputs a formatted QA report to the log.
-
-    Parameters
-    ----------
-    header: list of str
-        things to print in the header
-    body: list of (str, str)
-        things to print in the body
-    llen: int
-        width of left-justified part of body
-    rlen: int
-        width of right-justified part of body
-    logtype: str
-        how to log the report
-    """
-    log = logutils.get_logger(__name__)
-    logit = getattr(log, logtype)
-    indent = ' ' * logutils.SW
-    logit('')
-    for line in header:
-        logit(indent + line)
-    logit(indent + '-'*(llen+rlen))
-    for lstr, rstr in body:
-        if len(rstr) > rlen and not lstr:
-            logit(indent + rstr.rjust(llen+rlen))
-        else:
-            logit(indent + lstr.ljust(llen) + rstr.rjust(rlen))
-    logit(indent + '-'*(llen+rlen))
-    logit('')
-    return
-
 def _gsaoi_iq_estimate(ad, results):
     """
     Attempts to estimate the natural seeing for a GSAOI image from
@@ -805,7 +496,6 @@ def _quick_psf(xc, yc, pixscale, wavelength, diameter, obsc_diam=0.0):
         Diameter of aperture in metres
     obsc_diam:
         Diameter of central obscuration in metres
-
     """
     xfrac = np.modf(float(xc))[0]
     yfrac = np.modf(float(yc))[0]
@@ -823,3 +513,712 @@ def _quick_psf(xc, yc, pixscale, wavelength, diameter, obsc_diam=0.0):
     sum = np.sum(np.where(x == 0, 1.0, 2*(j1(x) - obsc*j1(obsc*x))/x)**2)
     sum *= (pixscale/(206264.8 * subdiv) * (1 - obsc*obsc))**2
     return sum / (4 * (wavelength/diameter)**2 / np.pi)
+
+
+class QAReport:
+    result1 = '95% confidence test indicates worse than {}{}'
+    result2 = '95% confidence test indicates borderline {}{} or one band worse'
+    result3 = '95% confidence test indicates {}{} or better'
+
+    def __init__(self, ad, log=None, limit_dict=None):
+        self.log = log or logutils.get_logger(__name__)
+        self.filename = ad.filename
+        self.filter_name = ad.filter_name(pretty=True)
+        self.ad_tags = ad.tags
+        self.num_ext = len(ad)  # for info_list validation
+        self.metric = self.__class__.__name__[:2]
+        self.limit_dict = limit_dict
+        self.band = None
+        self.measurements = []
+        self.results = []
+        self.comments = []
+        self.fitsdict_items = ["percentile_band", "comment"]
+
+    @staticmethod
+    def bandstr(band):
+        return 'Any' if band == 100 else str(band)
+
+    def calculate_qa_band(self, value, unc=None, simple=True):
+        """
+        Calculates the QA band(s) corresponding to the measured value (and its
+        uncertainty, if simple=False) and populates various attributes of the
+        QAReport object with information.
+
+        Parameters
+        ----------
+        value : float
+            measured value for the metric
+        unc : float
+            uncertainty on the measurement (used only if simple=True)
+        simple : bool
+            use the value only? (else perform a Bayesian analysis)
+
+        Updates
+        -------
+        self.band : int
+            QA band achieved by this observation
+        self.band_info: str
+            information about the limit(s) of the achieved QA band
+        self.warning : str
+            if the requested QA band requirements have not been met
+        """
+        cmp = lambda x, y: (x > y) - (x < y)
+
+        log = self.log
+        self.warning = ''
+        if self.limit_dict is None or value is None:
+            return
+        simple &= unc is not None
+
+        if simple:
+            # Straightfoward determination of which band the measured value
+            # lies in. The uncertainty on the measurement is ignored.
+            bands, limits = list(zip(*sorted(self.limit_dict.items(),
+                                             key=lambda k_v: k_v[0], reverse=True)))
+            sign = cmp(limits[1], limits[0])
+            inequality = '<' if sign > 0 else '>'
+            self.band_info = f'{inequality}{limits[0]}'
+            for i in range(len(bands)):
+                if cmp(float(value), limits[i]) == sign:
+                    self.band = bands[i]
+                    self.band_info = ('{}-{}'.format(*sorted(limits[i:i+2])) if
+                                 i < len(bands)-1 else '{}{}'.format(
+                                 '<>'.replace(inequality,''), limits[i]))
+            if self.reqband is not None and self.band > self.reqband:
+                self.warning = f'{self.metric} requirement not met'
+        else:
+            # Assumes the measured value and uncertainty represent a Normal
+            # distribution, and works out the probability that the true value
+            # lies in each band
+            bands, limits = list(zip(*sorted(self.limit_dict.items(),
+                                             key=lambda k_v: k_v[1])))
+            bands = (100,) + bands if bands[0] > bands[1] else bands + (100,)
+            # To Bayesian this, prepend (0,) to limits and not to probs
+            # and renormalize (divide all by 1-probs[0]) and add prior
+            norm_limits = [(l - float(value))/unc for l in limits]
+            cum_probs = [0.] + [0.5 * (1 + math.erf(s / math.sqrt(2))) for
+                                s in norm_limits] + [1.]
+            probs = np.diff(cum_probs)
+            if bands[0] > bands[1]:
+                bands = bands[::-1]
+                probs = probs[::-1]
+            self.band = [b for b, p in zip(bands, probs) if p > 0.05]
+
+            cum_prob = 0.0
+            for b, p in zip(bands[:-1], probs[:-1]):
+                cum_prob += p
+                if cum_prob < 0.05:
+                    log.fullinfo(self.result1.format(self.metric, b))
+                    if b == self.reqband:
+                        self.warning = (f'{self.metric} requirement not met '
+                                        'at the 95% confidence level')
+                elif cum_prob < 0.95:
+                    log.fullinfo(self.result2.format(self.metric, b))
+                else:
+                    log.fullinfo(self.result3.format(self.metric, b))
+
+    def get_measurements(self, extensions):
+        if extensions == 'last':
+            extensions = slice(-1, None)
+        elif extensions == 'all':
+            extensions = slice(None, None)
+        return vstack([m for m in self.measurements[extensions] if m])
+
+    def info_list(self, update_band_info=True):
+        """
+        Creates a list suitable for sending as a fitsstore_report from the
+        measurements associated with this QAReport object.
+
+        Parameters
+        ----------
+        update_band_info: bool
+            update the "percentile_band" and "comment" items of all extensions
+            with the new band and warning information.
+
+        Returns
+        -------
+        info_list: list of dicts
+        """
+        info_list = []
+        for result in self.results:
+            info_list.append({k: result[k] for k in self.fitsdict_items
+                              if k in result})
+        if update_band_info:
+            for item in info_list:
+                if item:  # Don't add to an empty item
+                    item.update({"percentile_band": self.band,
+                                 "comment": self.comments})
+        assert len(info_list) == self.num_ext, "Info List length does not match number of extensions"
+        return info_list
+
+    def output_log_report(self, header, body, llen=32, rlen=26, logtype='stdinfo'):
+        """Formats the QA report for the log"""
+        logit = getattr(self.log, logtype)
+        indent = ' ' * logutils.SW
+        logit('')
+        for line in header:
+            logit(indent + line)
+        logit(indent + '-' * (llen + rlen))
+        for lstr, rstr in body:
+            if len(rstr) > rlen and not lstr:
+                logit(indent + rstr.rjust(llen + rlen))
+            else:
+                logit(indent + lstr.ljust(llen) + rstr.rjust(rlen))
+        logit(indent + '-' * (llen + rlen))
+        logit('')
+
+
+class BGReport(QAReport):
+    def __init__(self, ad, log=None, limit_dict=None):
+        super().__init__(ad, log=log, limit_dict=limit_dict)
+        self.reqband = ad.requested_bg()
+        self.bunit = 'ADU' if ad.is_in_adu() else 'electron'
+        self.fitsdict_items.extend(["mag", "mag_std", "electrons",
+                                    "electrons_std", "nsamples"])
+
+    def add_measurement(self, ext, sampling=100, bias_level=None):
+        """
+        Get the data from this extension and add them to the
+        data list of the BGReport object
+        """
+        log = self.log
+        bg, bgerr, nsamples = gt.measure_bg_from_image(ext, sampling=sampling,
+                                                       gaussfit=False)
+        extid = f"{self.filename}:{ext.hdr['EXTVER']}"
+
+        if bg is not None:
+            log.fullinfo("{}: Raw BG level = {:.3f}".format(extid, bg))
+            if bias_level is not None:
+                bg -= bias_level
+                log.fullinfo(" " * len(extid)+"  Bias-subtracted BG level = "
+                                              "{:.3f}".format(bg))
+        measurement = Table([[bg], [bgerr], [nsamples]],
+                            names=('bg', 'bgerr', 'nsamples'))
+
+        zpt = ext.nominal_photometric_zeropoint()
+        if zpt is not None:
+            if bg > 0:
+                exptime = ext.exposure_time()
+                pixscale = ext.pixel_scale()
+                try:
+                    fak = 1.0 / (exptime * pixscale * pixscale)
+                except TypeError:  # exptime or pixscale is None
+                    pass
+                else:
+                    bgmag = zpt - 2.5 * math.log10(bg * fak)
+                    bgmagerr = 2.5 * math.log10(1 + bgerr / bg)
+
+                    # Need to report to FITSstore in electrons
+                    if self.bunit == 'ADU':
+                        gain = ext.gain()
+                        bg *= gain
+                        bgerr *= gain
+
+                    measurement['mag'] = [bgmag]
+                    measurement['mag_std'] = [bgmagerr]
+                    measurement['electrons'] = [bg]
+                    measurement['electrons_std'] = [bgerr]
+            else:
+                log.warning(f"Background is less than or equal to 0 for {extid}")
+        else:
+            log.stdinfo("No nominal photometric zeropoint available for "
+                        f"{extid}, filter {self.filter_name}")
+        self.measurements.append(measurement)
+        return nsamples
+
+    def calculate_metric(self, extensions='last'):
+        """
+        Produces an average result from measurements made on one or more
+        extensions and uses these results to calculate the actual QA band.
+        The BG version of this method is unusual because each individual
+        measurement is actually an average of many sampled pixel values.
+
+        Parameters
+        ----------
+        extensions : str/slice
+            list of extensions to average together in this calculation
+
+        Returns
+        -------
+        results : dict
+            list of average results (also appended to self.results if the
+            calculation is being performed on the last extension)
+
+        Updates
+        -------
+        self.comments : list
+            All relevant comments for the ADCC and/or FITSstore reports
+        """
+        self.comments = []
+        t = self.get_measurements(extensions)
+        results = {}
+        if t:
+            weights = t['nsamples']
+            results = {'nsamples': weights.sum()}
+            for value_key, std_key in (('bg', 'bgerr'), ('mag', 'mag_std'),
+                                       ('electrons', 'electrons_std')):
+                mean = np.ma.average(t[value_key], weights=weights)
+                if mean is not np.ma.masked:
+                    var1 = np.average((t[value_key] - mean)**2, weights=weights)
+                    var2 = (weights * t[std_key] ** 2).sum() / weights.sum()
+                    sigma = np.sqrt(var1 + var2)
+                    # Coercion to float to ensure JSONable
+                    results.update({value_key: float(mean), std_key: float(sigma)})
+            self.calculate_qa_band(results.get('mag'), results.get('mag_std'))
+            if self.warning:
+                self.comments.append(self.warning)
+
+        if extensions == 'last':
+            self.results.append(results)
+        return results
+
+    def report(self, results, header=None):
+        """
+        Logs the formatted output of a measureBG report
+
+        Parameters
+        ----------
+        results : dict
+            output from calculate_metrics
+        header : str
+            header indentification for report
+        """
+        if header is None:
+            header = f"Filename: {self.filename}"
+
+        body = [('Sky level measurement:', '{:.0f} +/- {:.0f} {}'.
+                 format(results['bg'], results['bgerr'], self.bunit))]
+        if results['mag'] is not None:
+            body.append(('Mag / sq arcsec in {}:'.format(self.filter_name),
+                         '{:.2f} +/- {:.2f}'.format(results['mag'], results['mag_std'])))
+        if self.band:
+            body.append(('BG band:', f'BG{self.bandstr(self.band)} ({self.band_info})'))
+        else:
+            body.append(('(BG band could not be determined)', ''))
+
+        if self.reqband:
+            body.append(('Requested BG:', f'BG{self.bandstr(self.reqband)}'))
+            if self.warning:
+                body.append((f'WARNING: {self.warning}', ''))
+        else:
+            body.append(('(Requested BG could not be determined)', ''))
+
+        self.output_log_report([header], body)
+
+
+class CCReport(QAReport):
+    def __init__(self, ad, log=None, limit_dict=None):
+        super().__init__(ad, log=log, limit_dict=limit_dict)
+        self.reqband = ad.requested_cc()
+        self.exptime = ad.exposure_time()
+        if 'NODANDSHUFFLE' in ad.tags:
+            log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious.")
+            # AFAIK the number of nod_cycles isn't actually relevant -
+            # there's always 2 nod positions, thus the exposure
+            # time for any given star is half the total
+            self.exptime *= 0.5
+        self.atm_ext = ad.nominal_atmospheric_extinction()
+        if self.atm_ext is None:
+            log.warning("Cannot get atmospheric extinction: assuming zero.")
+            self.atm_ext = 0.0
+        self.fitsdict_items.extend(["mag", "mag_std", "cloud", "cloud_std",
+                                    "nsamples"])
+
+    def add_measurement(self, ext):
+        """
+
+        Parameters
+        ----------
+        ext : single-slice AD object
+            extension upon which measurement is being made
+        """
+        try:
+            objcat = ext.OBJCAT
+        except AttributeError:
+            good_obj = Table()
+        else:
+            good_obj = objcat[np.logical_and.reduce([objcat['MAG_AUTO'] > -999,
+                            objcat['MAG_AUTO'] < 90, objcat['REF_MAG'] > -999,
+                            ~np.isnan(objcat['REF_MAG']),
+                            ~np.isnan(objcat['REF_MAG_ERR'])])]
+            good_obj['ZEROPOINT'] = (good_obj['REF_MAG'] - good_obj['MAG_AUTO'] -
+                                     self.atm_ext - 2.5 * math.log10(self.exptime))
+            good_obj['ZEROPOINT_ERR'] = np.sqrt(good_obj['REF_MAG_ERR'] ** 2 +
+                                                good_obj['MAGERR_AUTO'] ** 2)
+        self.measurements.append(good_obj)
+        return len(good_obj)
+
+    def calculate_metric(self, extensions='last', nominal_photometric_zeropoint=None):
+        """
+        Produces an average result from measurements made on one or more
+        extensions and uses these results to calculate the actual QA band.
+
+        Parameters
+        ----------
+        extensions : str/slice
+            list of extensions to average together in this calculation
+
+        Returns
+        -------
+        results : dict
+            list of average results (also appended to self.results if the
+            calculation is being performed on the last extension)
+
+        Updates
+        -------
+        self.comments : list
+            All relevant comments for the ADCC and/or FITSstore reports
+        """
+        self.comments = []
+        t = self.get_measurements(extensions)
+        results = {}
+
+        if t:
+            # Sources must be free of SExtractor flags and unsaturated, and
+            # <2% of pixels be otherwise flagged (typically bad/non-linear)
+            good_obj = t[np.logical_and.reduce([t['FLAGS'] == 0,
+                                t['NIMAFLAGS_ISO'] < 0.02 * t['ISOAREA_IMAGE'],
+                                t['IMAFLAGS_ISO'] & DQ.saturated == 0])]
+
+            # TODO: weight instead?
+            # Trim out where zeropoint error > err_limit
+            err_limit = 0.1 if len(good_obj) > 5 else 0.2
+            good_obj = good_obj[good_obj["ZEROPOINT_ERR"] < err_limit]
+
+            # TODO: 1-sigma clip is crap for this pre-clipping
+            if len(good_obj) > 2:
+                zpt_data = good_obj["ZEROPOINT"]
+                mean = zpt_data.mean()
+                sigma = math.sqrt(zpt_data.std() ** 2 +
+                                  (good_obj["ZEROPOINT_ERR"] ** 2).mean())
+                good_obj = good_obj[abs(zpt_data - mean) < sigma]
+
+            if good_obj:
+                zpt_data = good_obj["ZEROPOINT"]
+                weights = 1. / (good_obj["ZEROPOINT_ERR"] ** 2)
+                zpt = np.average(zpt_data, weights=weights)
+                zpt_std = math.sqrt(np.average((zpt_data - zpt) ** 2, weights=weights) +
+                                    1. / weights.mean())
+                ext_cloud = nominal_photometric_zeropoint - zpt
+                results = {"mag": float(zpt), "mag_std": float(zpt_std),
+                           "cloud": float(ext_cloud), "cloud_std": float(zpt_std),
+                           "nsamples": len(good_obj)}
+                self.calculate_qa_band(results.get("cloud"), results.get("cloud_std"),
+                                       simple=False)
+                if self.warning:
+                    self.comments.append(self.warning)
+
+        if extensions == 'last':
+            self.results.append(results)
+        return results
+
+    def report(self, results, all_results=None, header=None):
+        """
+        Logs the formatted output of a measureCC report. This is unusual in
+        that it can be sent a list of results dicts and will report on the
+        zeropoints for each.
+
+        Parameters
+        ----------
+        results : dict
+            output from calculate_metrics
+        all_results : list/None
+            list of outputs from individual extensions
+        header : str
+            header indentification for report
+
+        Returns
+        -------
+        list: list of comments to be passed to the FITSstore report
+        """
+        if header is None:
+            header = f"Filename: {self.filename}"
+
+        header = [header]
+        single_ext = all_results is None
+
+        if single_ext:
+            nsamples = results["nsamples"]
+            body = [(f"Zeropoint measurement ({self.filter_name}-band):",
+                     '{:.2f} +/- {:.2f}'.format(results["mag"], results["mag_std"]))]
+            npz = results["cloud"] + results["mag"]  # Rather than call descriptor again
+            body.append(('Nominal zeropoint:', '{:.2f}'.format(npz)))
+        else:
+            nsamples = 0
+            for result in all_results:
+                nsamples += result.get("nsamples", 0)
+                rstr = ('{:.2f} +/- {:.2f}'.format(result["mag"], result["mag_std"])
+                        if result.get("mag") else 'not measured')
+                try:
+                    body.append(('', rstr))
+                except NameError:
+                    body = [(f"Zeropoints by detector ({self.filter_name}-band):", rstr)]
+
+        body.append(('Estimated cloud extinction:', '{:.2f} +/- {:.2f} mag'.
+                     format(results["cloud"], results["cloud_std"])))
+
+        if self.reqband:
+            if isinstance(self.band, int):
+                bands = [self.band]
+            else:
+                bands = self.band
+            body.append(('CC bands consistent with this:', ', '.join(['CC{}'.
+                   format(self.bandstr(x)) for x in bands])))
+            if self.reqband:
+                body.append(('Requested CC:', f'CC{self.bandstr(self.reqband)}'))
+                if self.warning:
+                    body.append((f'WARNING: {self.warning}', ''))
+                    self.comments.append(self.warning)
+            else:
+                body.append(('(Requested CC could not be determined)', ''))
+
+        header.append(f'{nsamples} sources used to measure zeropoint')
+        self.output_log_report(header, body)
+
+
+class IQReport(QAReport):
+    def __init__(self, ad, log=None, limit_dict=None):
+        super().__init__(ad, log=log, limit_dict=limit_dict)
+        self.reqband = ad.requested_iq()
+        self.instrument = ad.instrument()
+        self.is_ao = ad.is_ao()
+        self.image_like = 'IMAGE' in ad.tags and not hasattr(ad, 'MDF')
+        self.fitsdict_items.extend(["fwhm", "fwhm_std", "elip", "elip_std",
+                                    "nsamples", "adaptive_optics", "ao_seeing",
+                                    "strehl", "isofwhm", "isofwhm_std",
+                                    "ee50d", "ee50d_std", "pa", "pa_std",
+                                    "ao_seeing", "strehl"])
+        try:
+            self.airmass = ad.airmass()
+        except:
+            self.airmass = None
+
+        # For AO observations, the AO-estimated seeing is used (the IQ
+        # is also calculated from the image if possible)
+        self.ao_seeing = None
+        if self.is_ao:
+            try:
+                self.ao_seeing = ad.ao_seeing()
+            except:
+                log.warning("No AO-estimated seeing found for this AO "
+                            "observation")
+            else:
+                log.warning("This is an AO observation, the AO-estimated "
+                            "seeing will be used for the IQ band calculation")
+
+    def add_measurement(self, ext, strehl_fn=None):
+        """
+        Perform a measurement on this extension and add the results to the
+        measurements list of the IQReport object
+
+        Parameters
+        ----------
+        ext : single-slice AD object
+            extension upon which measurement is being made
+        strehl_fn : None/callable
+            function to calculate Strehl ratio from "sources" catalog
+        """
+        sources = (gt.clip_sources(ext) if self.image_like
+                   else gt.fit_continuum(ext))
+        if (len(sources) > 0 and self.is_ao and self.image_like and
+                self.instrument in ('GSAOI', 'NIRI', 'GNIRS') and
+                strehl_fn is not None):
+            strehl_list = np.array(strehl_fn(sources))
+            if strehl_list:
+                sources["strehl"] = np.ma.masked_where(strehl_list > 0.6,
+                                                       strehl_list)
+        self.measurements.append(sources)
+        return len(sources)
+
+    def calculate_metric(self, extensions='last', ao_seeing_fn=None):
+        """
+        Produces an average result from measurements made on one or more
+        extensions and uses these results to calculate the actual QA band.
+
+        Parameters
+        ----------
+        extensions : str/slice
+            list of extensions to average together in this calculation
+        ao_seeing_fn : None/callable
+            function to estimate natural seeing from "sources" catalog for
+            AO images
+
+        Returns
+        -------
+        results : dict
+            list of average results (also appended to self.results if the
+            calculation is being performed on the last extension). All
+            floats are coerced to standard python float type since np.float64
+            is not JSONable
+
+        Updates
+        -------
+        self.comments : list
+            All relevant comments for the ADCC and/or FITSstore reports
+        """
+        self.comments = []
+        t = self.get_measurements(extensions)
+        results = {}
+        if t:
+            fwhm_data = t["fwhm_arcsec"]
+            try:
+                weights = t["weight"]
+            except KeyError:
+                fwhm, fwhm_std = float(fwhm_data.mean()), float(fwhm_data.std())
+            else:
+                fwhm = float(np.average(fwhm_data, weights=weights))
+                fwhm_std = float(np.sqrt(np.average((fwhm_data - fwhm) ** 2),
+                                         weights=weights))
+            results = {"fwhm": fwhm, "fwhm_std": fwhm_std, "nsamples": len(t)}
+
+            if self.image_like:
+                ellip = t["ellipticity"]
+                isofwhm = t["isofwhm_arcsec"]
+                ee50d = t["ee50d"]
+                pa = t["pa"]
+                results.update({"elip": float(ellip.mean()), "elip_std": float(ellip.std()),
+                                "isofwhm": float(isofwhm.mean()), "isofwhm_std": float(isofwhm.std()),
+                                "ee50d": float(ee50d.mean()), "ee50d_std": float(ee50d.std()),
+                                "pa": float(pa.mean()), "pa_std": float(pa.std())})
+            else:
+                results.update({"elip": None, "elip_std": None})
+            results["adaptive_optics"] = self.is_ao
+
+            # TODO: Handle GSAOI
+            results["ao_seeing"] = self.ao_seeing
+            results["strehl"] = None
+            results["strehl_std"] = None
+            if self.is_ao:
+                if "strehl" in t.colnames:
+                    data = sigma_clip(t["strehl"])
+                    # Weights are used, with brighter sources being more heavily
+                    # weighted. This is not simply because they will have better
+                    # measurements, but because there is a bias in SExtractor's
+                    # FLUX_AUTO measurement, which underestimates the total flux
+                    # for fainter sources (this is due to its extrapolation of
+                    # the source profile; the apparent profile varies depending
+                    # on how much of the uncorrected psf is detected).
+                    weights = t["flux"]
+                    strehl = np.ma.average(data, weights=weights)
+                    if strehl is not np.ma.masked:
+                        results["strehl"] = float(strehl)
+                        strehl_std = np.sqrt(np.ma.average((data - strehl) ** 2,
+                                                           weights=weights))
+                        results["strehl_std"] = float(strehl_std)
+                try:
+                    fwhm_and_std = ao_seeing_fn(results)
+                except TypeError:
+                    fwhm_and_std = None
+                if fwhm_and_std:
+                    fwhm, fwhm_std = fwhm_and_std
+                else:
+                    fwhm = self.ao_seeing
+                    fwhm_std = None
+                    self.comments.append("AO observation. IQ band from estimated "
+                                         "AO seeing.")
+
+            if self.airmass:
+                zcorr = self.airmass ** (-0.6)
+                zfwhm = fwhm * zcorr
+                zfwhm_std = None if fwhm_std is None else fwhm_std * zcorr
+                self.calculate_qa_band(zfwhm, zfwhm_std)
+            else:
+                self.log.warning("Airmass not found, not correcting to zenith")
+                self.calculate_qa_band(fwhm, fwhm_std)
+                zfwhm = zfwhm_std = None
+            results.update({"zfwhm": zfwhm, "zfwhm_std": zfwhm_std})
+
+        if extensions == 'last':
+            self.results.append(results)
+        return results
+
+    def report(self, results, header=None):
+        """
+        Logs the formatted output of a measureIQ report
+
+        Parameters
+        ----------
+        results : dict
+            output from calculate_metrics
+        header : str
+            header indentification for report
+
+        Returns
+        -------
+        list: list of comments to be passed to the FITSstore report
+        """
+        log = self.log
+        if header is None:
+            header = f"Filename: {self.filename}"
+
+        header = [header]
+        nsamples = results.get("nsamples", 0)
+        if nsamples > 0:  # AO seeing has no sources
+            header.append(f'{nsamples} source(s) used to measure IQ')
+
+        body = [('FWHM measurement:', '{:.3f} +/- {:.3f} arcsec'.
+                 format(results["fwhm"], results["fwhm_std"]))] if results.get("fwhm") else []
+
+        if self.image_like:
+            if 'NON_SIDEREAL' in self.ad_tags:
+                header.append('WARNING: NON SIDEREAL tracking. IQ measurements '
+                              'will be unreliable')
+            if results.get("elip"):
+                body.append(('Ellipticity:', '{:.3f} +/- {:.3f}'.
+                             format(results["elip"], results["elip_std"])))
+            if self.is_ao:
+                if results["strehl"]:
+                    body.append(('Strehl ratio:', '{:.3f} +/- {:.3f}'.
+                                 format(results["strehl"], results["strehl_std"])))
+                else:
+                    body.append(('(Strehl could not be determined)', ''))
+
+        zfwhm, zfwhm_std = results.get("zfwhm"), results.get("zfwhm_std")
+        if zfwhm:
+            # zfwhm_std=0.0 if there's only one measurement
+            stdmsg = ('{:.3f} +/- {:.3f} arcsec'.format(zfwhm, zfwhm_std)
+                      if zfwhm_std is not None else '(AO) {:.3f} arcsec'.format(zfwhm))
+            body.append(('Zenith-corrected FWHM (AM {:.2f}):'.format(self.airmass),
+                         stdmsg))
+
+        if self.band:
+            body.append(('IQ range for {}-band:'.format('AO' if self.is_ao
+                                                        else self.filter_name),
+                         'IQ{} ({} arcsec)'.format(self.bandstr(self.band), self.band_info)))
+        else:
+            body.append(('(IQ band could not be determined)', ''))
+
+        if self.reqband:
+            body.append(('Requested IQ:', f'IQ{self.bandstr(self.reqband)}'))
+            if self.warning:
+                body.append((f'WARNING: {self.warning}', ''))
+                self.comments.append(self.warning)
+        else:
+            body.append(('(Requested IQ could not be determined)', ''))
+
+        if results.get("elip", 0) > 0.1:
+            body.append(('', 'WARNING: high ellipticity'))
+            self.comments.append('High ellipticity')
+            if 'NON_SIDEREAL' in self.ad_tags:
+                body.append(('- this is likely due to non-sidereal tracking', ''))
+
+        if {'IMAGE', 'LS'}.issubset(self.ad_tags):
+            log.warning('Through-slit IQ may be overestimated due to '
+                        'atmospheric dispersion')
+            body.append(('', 'WARNING: through-slit IQ measurement - '
+                             'may be overestimated'))
+            self.comments.append('Through-slit IQ measurement')
+
+        if nsamples == 1:
+            log.warning('Only one source found. IQ numbers may not be accurate')
+            body.append(('', 'WARNING: single source IQ measurement - '
+                             'no error available'))
+            self.comments.append('Single source IQ measurement, no error available')
+        self.output_log_report(header, body)
+
+        if nsamples > 0:
+            if not self.image_like:
+                self.comments.append('IQ measured from profile cross-cut')
+            if 'NON_SIDEREAL' in self.ad_tags:
+                self.comments.append('Observation is NON SIDEREAL, IQ measurements '
+                                     'will be unreliable')
