@@ -3,7 +3,9 @@ Fixtures to be used in tests in DRAGONS
 """
 
 import os
+import re
 import shutil
+import subprocess
 import urllib
 import xml.etree.ElementTree as et
 from contextlib import contextmanager
@@ -152,8 +154,8 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
     models involving orthonormal polynomials etc.
     """
 
-    from numpy.testing import assert_allclose
     from astropy.modeling import Model
+    from numpy.testing import assert_allclose
 
     if not (isinstance(model1, Model) and isinstance(model2, Model)):
         raise TypeError('Inputs must be Model instances')
@@ -339,33 +341,24 @@ def get_active_git_branch():
     Returns the name of the active GIT branch to be used in Continuous
     Integration tasks and organize input/reference files.
 
+    Note: This works currently only if the remote name is "origin", though it
+    would be easy to adapt for other cases if needed.
+
     Returns
     -------
     str or None : Name of the input active git branch. It returns None if
-      pygit2 is not installed or if this function runs outside a git repository.
+        the branch name could not be retrieved.
+
     """
-    from pathlib import Path
-    path = Path(__file__).parent.parent.absolute()
-
     try:
-        from pygit2 import Repository, GitError
-        branch_name = Repository(path).head.shorthand
-
-    except ImportError:
-        print("\nCould not retrieve active git branch. Please install pygit2 "
-              "using one of the options below:\n"
-              "  $ pip install pygit2\n"
-              "        or \n"
-              "  $ conda install -c conda-forge pygit2\n")
-        return None
-
-    except GitError:
-        print("\n"
-              "Could not retrieve active git branch. Make sure that the\n"
-              "following path is a valit Git repository: \n"
-              f"  {path}")
-        return None
-
+        out = subprocess.check_output(
+            ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD']
+        ).decode('utf8')
+        branch_name = re.search(r'\(HEAD.*, origin/(\w*)\)', out).groups()[0]
+    except Exception:
+        print("\nCould not retrieve active git branch. Make sure that the\n"
+              "following path is a valid Git repository: {}\n"
+              .format(os.path.dirname(__file__)))
     else:
         print(f"\nRetrieved active branch name:  {branch_name:s}")
         return branch_name
