@@ -214,11 +214,11 @@ class QA(PrimitivesBASE):
 
             qad = {'zeropoint': {}}
             all_results = []
-            for ext, nom_zpt in zip(ad, nom_phot_zpt):
+            for ext in ad:
                 extver = ext.hdr['EXTVER']
                 extid = f"{ad.filename}:{extver}"
                 nsources = report.add_measurement(ext)
-                results = report.calculate_metric(nominal_photometric_zeropoint=nom_phot_zpt)
+                results = report.calculate_metric()
                 if separate_ext and nsources == 0:
                     if hasattr(ext, 'OBJCAT'):
                         log.warning("No suitable object and/or reference "
@@ -624,7 +624,8 @@ class QAReport:
             extensions = slice(-1, None)
         elif extensions == 'all':
             extensions = slice(None, None)
-        return vstack([m for m in self.measurements[extensions] if m])
+        return vstack([m for m in self.measurements[extensions] if m],
+                      metadata_conflicts='silent')
 
     def info_list(self, update_band_info=True):
         """
@@ -847,6 +848,9 @@ class CCReport(QAReport):
                                      self.atm_ext - 2.5 * math.log10(self.exptime))
             good_obj['ZEROPOINT_ERR'] = np.sqrt(good_obj['REF_MAG_ERR'] ** 2 +
                                                 good_obj['MAGERR_AUTO'] ** 2)
+            nom_phot_zpt = ext.nominal_photometric_zeropoint()
+            if nom_phot_zpt is not None:
+                good_obj['CLOUD'] = nom_phot_zpt - good_obj['ZEROPOINT']
         self.measurements.append(good_obj)
         return len(good_obj)
 
@@ -901,9 +905,13 @@ class CCReport(QAReport):
                 zpt = np.average(zpt_data, weights=weights)
                 zpt_std = math.sqrt(np.average((zpt_data - zpt) ** 2, weights=weights) +
                                     1. / weights.mean())
-                ext_cloud = nominal_photometric_zeropoint - zpt
+                try:
+                    cloud = np.average(good_obj["CLOUD"], weights=weights)
+                    cloud_std = zpt_std
+                except KeyError:
+                    cloud = cloud_std = None
                 results = {"mag": float(zpt), "mag_std": float(zpt_std),
-                           "cloud": float(ext_cloud), "cloud_std": float(zpt_std),
+                           "cloud": float(cloud), "cloud_std": float(cloud_std),
                            "nsamples": len(good_obj)}
                 self.calculate_qa_band(results.get("cloud"), results.get("cloud_std"),
                                        simple=False)
