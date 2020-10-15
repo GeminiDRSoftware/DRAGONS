@@ -1123,6 +1123,8 @@ class IQReport(QAReport):
                     fwhm_and_std = None
                 if fwhm_and_std:
                     fwhm, fwhm_std = fwhm_and_std
+                    self.comments.append("AO observation. IQ band from estimated "
+                                         "natural seeing.")
                 else:
                     fwhm = self.ao_seeing
                     fwhm_std = None
