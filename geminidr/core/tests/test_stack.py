@@ -30,12 +30,6 @@ def adinputs():
     return adinputs
 
 
-def test_not_prepared(adinputs):
-    p = NIRIImage(adinputs)
-    with pytest.raises(IOError):
-        p.stackFrames()
-
-
 @pytest.mark.skip("bquint - Investigate this test")
 def test_error_only_one_file(adinputs, caplog):
     # With only one file
