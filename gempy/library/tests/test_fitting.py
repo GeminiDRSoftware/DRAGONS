@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_less
 
 from astropy.io import fits
-from astropy.modeling.models import BlackBody, Gaussian1D
+from astropy.modeling.models import BlackBody, Gaussian1D, Gaussian2D
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
 
@@ -11,6 +11,19 @@ from gempy.library.fitting import fit_1D
 
 _RANDOM_SEED = 42
 debug = False
+
+
+# Simulate an object spectrum. This black body spectrum is not particularly
+# meaningful physically; it's just a way to produce a credible continuum-like
+# curve using something other than the functions being fitted:
+cont_model = BlackBody(temperature=9500.*u.K, scale=5.e6)
+
+# Some sky-line-like features to be rejected / fitted:
+sky_model = (Gaussian1D(amplitude=2000., mean=5577., stddev=50.) +
+             Gaussian1D(amplitude=1000., mean=6300., stddev=50.) +
+             Gaussian1D(amplitude=300., mean=7914., stddev=50.) +
+             Gaussian1D(amplitude=280., mean=8345., stddev=50.) +
+             Gaussian1D(amplitude=310., mean=8827., stddev=50.))
 
 
 class TestFit1D:
@@ -24,21 +37,11 @@ class TestFit1D:
         slit = np.arange(30)
         wav, slit = np.meshgrid(wav, slit)
 
-        # Simulate an object spectrum. This black body spectrum is not
-        # particularly meaningful physically; it's just a way to produce a
-        # credible continuum-like curve using something other than the
-        # functions being fitted:
-        obj = (BlackBody(temperature=9500.*u.K, scale=5.e6)(wav).value *
+        obj = (cont_model(wav).value *
                Gaussian1D(amplitude=1., mean=15.8, stddev=2.)(slit))
 
-        # Some sky-line-like features to be rejected / fitted:
-        sky = (Gaussian1D(amplitude=2000., mean=5577., stddev=50.) +
-               Gaussian1D(amplitude=1000., mean=6300., stddev=50.) +
-               Gaussian1D(amplitude=300., mean=7914., stddev=50.) +
-               Gaussian1D(amplitude=280., mean=8345., stddev=50.) +
-               Gaussian1D(amplitude=310., mean=8827., stddev=50.))(wav.value)
         # A continuum level makes for a more stable comparison of fit vs data:
-        sky += 30.
+        sky = sky_model(wav.value) + 30.
 
         data = obj + sky
 
@@ -241,4 +244,106 @@ class TestFit1D:
                           plot=debug)
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+
+
+class TestFit1DCube:
+    """
+    Some tests for gempy.library.fitting.fit_1D with 3D data.
+    """
+    def setup_class(self):
+
+        # Co-ordinate grid in x, y & wavelength:
+        wav = np.arange(3000, 10000, 50)
+        x = np.arange(10)
+        wav, y, x = np.meshgrid(wav, x, x, indexing='ij')
+
+        obj = (cont_model(wav * u.AA).value *
+               Gaussian2D(amplitude=1., x_mean=4.7, y_mean=5.2,
+                          x_stddev=2.1, y_stddev=1.9)(x, y))
+
+        # A continuum level makes for a more stable comparison of fit vs data:
+        sky = sky_model(wav) + 30.
+
+        data = obj + sky
+
+        # Add some noise:
+        std = np.sqrt(36. + data)
+        with NumpyRNGContext(_RANDOM_SEED):
+            data += np.random.normal(0., 1., size=data.shape) * std
+
+        self.obj, self.sky, self.data = obj, sky, data
+        self.weights = 1. / std
+        # fits.writeto('testsim3.fits', data)
+
+    def test_chebyshev_ax0_quintic(self):
+        """
+        Fit object spectrum in x-y-lambda cube with Chebyshev polynomial,
+        rejecting the sky.
+        """
+
+        fit_vals = fit_1D(self.data, weights=self.weights,
+                          function='chebyshev', order=5, axis=0,
+                          lsigma=2.5, hsigma=2.5, iterations=5,
+                          plot=debug)
+
+        assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
+
+    def test_chebyshev_def_ax_quintic(self):
+        """
+        Fit object spectrum in transposed lambda-y-x cube with Chebyshev
+        polynomial, rejecting the sky.
+        """
+
+        # Here we transpose the input cube before fitting object spectra along
+        # the default last axis, just because that makes more sense than trying
+        # to fit the background with rejection along one spatial axis that is
+        # too short to have clean sky regions.
+
+        fit_vals = fit_1D(self.data.T, weights=self.weights.T,
+                          function='chebyshev', order=5,
+                          lsigma=2.5, hsigma=2.5, iterations=5,
+                          plot=debug)
+
+        assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
+
+    def test_cubic_spline_ax0_ord3(self):
+        """
+        Fit object spectrum in x-y-lambda cube with cubic spline,
+        rejecting the sky.
+        """
+
+        fit_vals = fit_1D(self.data, weights=self.weights,
+                          function='spline3', order=3, axis=0,
+                          lsigma=2.5, hsigma=2.5, iterations=5,
+                          plot=debug)
+
+        assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
+
+    def test_cubic_spline_def_ax_ord3(self):
+        """
+        Fit object spectrum in transposed lambda-y-x cube with cubic spline,
+        rejecting the sky.
+        """
+
+        fit_vals = fit_1D(self.data.T, weights=self.weights.T,
+                          function='spline3', order=3,
+                          lsigma=2.5, hsigma=2.5, iterations=5,
+                          plot=debug)
+
+        assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
+
+    def test_cubic_spline_ax1_ord3_grow1(self):
+        """
+        Fit object spectrum in transposed x-lambda-y cube with cubic
+        spline, rejecting the sky with grow=1.
+        """
+
+        fit_vals = fit_1D(np.rollaxis(self.data, 0, 2),
+                          weights=np.rollaxis(self.weights, 0, 2),
+                          function='spline3', order=3, axis=1,
+                          lsigma=3.5, hsigma=3.5, iterations=5, grow=1,
+                          plot=debug)
+
+        assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2),
+                        atol=45., rtol=0.015)
 
