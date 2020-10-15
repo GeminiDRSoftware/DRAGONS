@@ -714,9 +714,9 @@ class BGReport(QAReport):
 
                     # Need to report to FITSstore in electrons
                     if self.bunit == 'ADU':
-                        gain = ext.gain()
-                        bg *= gain
-                        bgerr *= gain
+                        fak *= ext.gain()
+                    bg *= fak
+                    bgerr *= fak
 
                     measurement['mag'] = [bgmag]
                     measurement['mag_std'] = [bgmagerr]
