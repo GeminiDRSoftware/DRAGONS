@@ -146,11 +146,6 @@ class Stack(PrimitivesBASE):
             params["nlow"] = 0
             params["nhigh"] = 0
 
-        # Perform various checks on inputs
-        for ad in adinputs:
-            if "PREPARED" not in ad.tags:
-                raise OSError("{} must be prepared" .format(ad.filename))
-
         if len({len(ad) for ad in adinputs}) > 1:
             raise OSError("Not all inputs have the same number of extensions")
         if len({ext.nddata.shape for ad in adinputs for ext in ad}) > 1:
