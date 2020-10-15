@@ -92,7 +92,6 @@ def test_stacking_without_gain_or_readnoise(adinputs):
     for ad in adinputs:
         ad.phu['INSTRUME'] = 'F2'
     p = F2Image(adinputs)
-    p.prepare()
     assert adinputs[0].gain() == [None]
     assert adinputs[0].read_noise() == [None]
     ad = p.stackFrames(operation='mean', reject_method='none')[0]
