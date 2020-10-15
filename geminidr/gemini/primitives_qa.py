@@ -309,6 +309,7 @@ class QA(PrimitivesBASE):
 
         frame = 1
         for ad in adinputs:
+            measure_iq = True
             iq_overlays = []
             is_ao = ad.is_ao()
 
@@ -336,7 +337,7 @@ class QA(PrimitivesBASE):
                 report = IQReport(ad, log=self.log, limit_dict=iq_band_limits)
 
                 if {'GSAOI', 'IMAGE'}.issubset(ad.tags):
-                    ao_seeing_fn = partial(_gsaoi_iq_estimate(ad))
+                    ao_seeing_fn = partial(_gsaoi_iq_estimate, ad)
                 else:
                     ao_seeing_fn = None
 
@@ -829,6 +830,8 @@ class CCReport(QAReport):
 
     def add_measurement(self, ext):
         """
+        Get the data from this extension and add them to the
+        data list of the BGReport object
 
         Parameters
         ----------
@@ -854,7 +857,7 @@ class CCReport(QAReport):
         self.measurements.append(good_obj)
         return len(good_obj)
 
-    def calculate_metric(self, extensions='last', nominal_photometric_zeropoint=None):
+    def calculate_metric(self, extensions='last'):
         """
         Produces an average result from measurements made on one or more
         extensions and uses these results to calculate the actual QA band.
@@ -1033,9 +1036,9 @@ class IQReport(QAReport):
         if (len(sources) > 0 and self.is_ao and self.image_like and
                 self.instrument in ('GSAOI', 'NIRI', 'GNIRS') and
                 strehl_fn is not None):
-            strehl_list = np.array(strehl_fn(sources))
+            strehl_list = strehl_fn(sources)
             if strehl_list:
-                sources["strehl"] = np.ma.masked_where(strehl_list > 0.6,
+                sources["strehl"] = np.ma.masked_where(np.array(strehl_list) > 0.6,
                                                        strehl_list)
         self.measurements.append(sources)
         return len(sources)
@@ -1094,13 +1097,13 @@ class IQReport(QAReport):
                 results.update({"elip": None, "elip_std": None})
             results["adaptive_optics"] = self.is_ao
 
-            # TODO: Handle GSAOI
             results["ao_seeing"] = self.ao_seeing
             results["strehl"] = None
             results["strehl_std"] = None
             if self.is_ao:
                 if "strehl" in t.colnames:
-                    data = sigma_clip(t["strehl"])
+                    # .data here avoids a np.partition warning
+                    data = sigma_clip(t["strehl"].data)
                     # Weights are used, with brighter sources being more heavily
                     # weighted. This is not simply because they will have better
                     # measurements, but because there is a bias in SExtractor's
@@ -1112,8 +1115,8 @@ class IQReport(QAReport):
                     strehl = np.ma.average(data, weights=weights)
                     if strehl is not np.ma.masked:
                         results["strehl"] = float(strehl)
-                        strehl_std = np.sqrt(np.ma.average((data - strehl) ** 2,
-                                                           weights=weights))
+                        strehl_std = np.sqrt(np.average((data - strehl) ** 2,
+                                                         weights=weights))
                         results["strehl_std"] = float(strehl_std)
                 try:
                     fwhm_and_std = ao_seeing_fn(results)
