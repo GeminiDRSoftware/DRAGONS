@@ -981,7 +981,6 @@ class CCReport(QAReport):
                 body.append(('Requested CC:', f'CC{self.bandstr(self.reqband)}'))
                 if self.warning:
                     body.append((f'WARNING: {self.warning}', ''))
-                    self.comments.append(self.warning)
             else:
                 body.append(('(Requested CC could not be determined)', ''))
 
@@ -1205,7 +1204,6 @@ class IQReport(QAReport):
             body.append(('Requested IQ:', f'IQ{self.bandstr(self.reqband)}'))
             if self.warning:
                 body.append((f'WARNING: {self.warning}', ''))
-                self.comments.append(self.warning)
         else:
             body.append(('(Requested IQ could not be determined)', ''))
 
