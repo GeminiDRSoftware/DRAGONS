@@ -354,11 +354,11 @@ def get_active_git_branch():
         out = subprocess.check_output(
             ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD']
         ).decode('utf8')
-        branch_name = re.search(r'\(HEAD.*, origin/(\w*)\)', out).groups()[0]
-    except Exception:
+        branch_name = re.search(r'\(HEAD.*, origin\/(.*)\)', out).groups()[0]
+    except AttributeError:
         print("\nCould not retrieve active git branch. Make sure that the\n"
               "following path is a valid Git repository: {}\n"
-              .format(os.path.dirname(__file__)))
+              .format(os.getcwd()))
     else:
         print(f"\nRetrieved active branch name:  {branch_name:s}")
         return branch_name
