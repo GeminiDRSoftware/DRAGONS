@@ -11,6 +11,7 @@ from numpy.testing import assert_array_equal
 import astrodata
 import gemini_instruments
 from geminidr.niri.primitives_niri_image import NIRIImage
+from geminidr.f2.primitives_f2_image import F2Image
 
 
 @pytest.fixture
@@ -89,3 +90,17 @@ def test_rejmap(adinputs):
     adout = p.stackFrames(reject_method='minmax', nlow=1, nhigh=1,
                           save_rejection_map=True)[0]
     assert_array_equal(adout[0].REJMAP, 2)  # rejected 2 values for each pixel
+
+
+def test_stacking_without_gain_or_readnoise(adinputs):
+    """We use F2 since it doesn't use a LUT to return values for the
+    gain() and read_noise() descriptors"""
+    for ad in adinputs:
+        ad.phu['INSTRUME'] = 'F2'
+    p = F2Image(adinputs)
+    p.prepare()
+    assert adinputs[0].gain() == [None]
+    assert adinputs[0].read_noise() == [None]
+    ad = p.stackFrames(operation='mean', reject_method='none')[0]
+    assert ad[0].data.mean() == 1.5
+    assert ad[0].data.std() == 0
