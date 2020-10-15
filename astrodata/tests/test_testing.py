@@ -31,7 +31,7 @@ def test_get_active_branch_name(capsys, monkeypatch):
 
     # Raise error
     def mock_check_output(*args, **kwargs):
-        raise subprocess.CalledProcessError
+        raise subprocess.CalledProcessError(0, 'git')
     monkeypatch.setattr(subprocess, 'check_output', mock_check_output)
     assert get_active_git_branch() is None
 

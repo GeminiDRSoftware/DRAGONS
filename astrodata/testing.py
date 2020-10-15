@@ -355,7 +355,7 @@ def get_active_git_branch():
             ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD']
         ).decode('utf8')
         branch_name = re.search(r'\(HEAD.*, origin\/(.*)\)', out).groups()[0]
-    except AttributeError:
+    except subprocess.CalledProcessError as e:
         print("\nCould not retrieve active git branch. Make sure that the\n"
               "following path is a valid Git repository: {}\n"
               .format(os.getcwd()))
