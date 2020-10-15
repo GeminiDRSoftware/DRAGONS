@@ -150,22 +150,27 @@ class Visualize(PrimitivesBASE):
             num_ext = len(ad)
             if tile and num_ext > 1:
                 log.fullinfo("Tiling extensions together before displaying")
+                # post-transform metadata is arranged in order of blocks, not
+                # slices, so we need to ensure the correct offsets are applied
+                # to each slice
+                array_info = gt.array_information(ad)
                 ad = self.tileArrays([ad], tile_all=True)[0]
                 # Logic here in case num_ext overlays sent to be applied to all ADs
-                if overlays and len(overlays) >= num_ext:
-                    i = 0
+                if overlays and len(overlays) + overlay_index >= num_ext:
                     new_overlay = []
                     trans_data = ad.nddata[0].meta.pop("transform")
-                    for corner, block in zip(trans_data["corners"],
-                                             trans_data["block_corners"]):
+                    for ext_indices, corner, block in zip(array_info.extensions,
+                                                          trans_data["corners"],
+                                                          trans_data["block_corners"]):
                         xshift = int(round(corner[1][0]))
                         yshift = int(round(corner[0][0]))
-                        for b in block:
+                        for ext_index, b in zip(ext_indices, block):
                             dx, dy = xshift + b[1], yshift + b[0]
+                            i = overlay_index + ext_index
                             if overlays[i]:
                                 new_overlay.extend([(x+dx, y+dy, r) for x, y, r in overlays[i]])
-                            i += 1
-                    overlays = (new_overlay,) + overlays[num_ext:]
+                    overlays = (overlays[:overlay_index] + (new_overlay,) +
+                                overlays[overlay_index+num_ext:])
 
             # Each extension is an individual display item (if the data have been
             # tiled, then there'll only be one extension per AD, of course)
