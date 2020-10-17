@@ -116,7 +116,7 @@ class Register(PrimitivesBASE):
                         "input images are required for matchWCSToReference")
             return adinputs
 
-        if not all(len(ad)==1 for ad in adinputs):
+        if not all(len(ad) == 1 for ad in adinputs):
             raise OSError("All input images must have only one extension.")
 
         method = params["method"]
@@ -144,8 +144,6 @@ class Register(PrimitivesBASE):
             else:
                 method = fallback
 
-        adoutputs = [adref]
-
         for ad in adinputs[1:]:
             if method == "offsets":
                 log.stdinfo("Using offsets specified in header for alignment.")
@@ -159,7 +157,6 @@ class Register(PrimitivesBASE):
             if nobj < min_sources:
                 log.warning("Too few objects found in {}. "
                             "{}.".format(ad.filename, warnings[fallback]))
-                adoutputs.append(ad)
                 continue
 
             log.fullinfo("Number of objects in {}: {}".format(ad.filename, nobj))
@@ -213,7 +210,6 @@ class Register(PrimitivesBASE):
                             "{}".format(warnings[fallback]))
                 if fallback == 'offsets':
                     _create_wcs_from_offsets(ad, adref)
-                adoutputs.append(ad)
                 continue
 
             try:
@@ -221,13 +217,12 @@ class Register(PrimitivesBASE):
             except AttributeError:  # no WCS
                 ad[0].wcs = gWCS([(cf.Frame2D(name="pixels"), transform),
                                   (cf.Frame2D(name="world"), None)])
-            adoutputs.append(ad)
 
         # Timestamp and update filenames
-        for ad in adoutputs:
+        for ad in adinputs:
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-        return adoutputs
+        return adinputs
 
     def determineAstrometricSolution(self, adinputs=None, **params):
         """
