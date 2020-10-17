@@ -798,9 +798,18 @@ class AstroDataGemini(AstroDataFits):
         if 'PREPARED' not in self.tags:
             return None
 
-        # TODO: We may need to sort out Nones here...
-        kw = self._keyword_for('dispersion_axis')
-        return map(int, self.hdr.get(kw))
+        val = self.hdr.get(self._keyword_for('dispersion_axis'))
+
+        def int_or_none(x):
+            # cast to an int, but preserve None
+            return None if x is None else int(x)
+
+        try:
+            # assume we have a list, but handle scalars below
+            return [int_or_none(x) for x in val]
+        except TypeError:
+            # scalar
+            return int_or_none(val)
 
     @astro_data_descriptor
     def effective_wavelength(self, output_units=None):
