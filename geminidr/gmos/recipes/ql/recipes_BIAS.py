@@ -4,7 +4,7 @@ Default is "makeProcessedBias".
 """
 recipe_tags = {'GMOS', 'CAL', 'BIAS'}
 
-from geminidr.gmos.recipes.qa.recipes_BIAS import makeProcessedBias
+from geminidr.gmos.recipes.sq.recipes_BIAS import makeProcessedBias
 
 
 _default = makeProcessedBias
