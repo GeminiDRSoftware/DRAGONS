@@ -703,19 +703,23 @@ def create_inputs_recipe():
     import os
     from astrodata.testing import download_from_archive
     from gempy.utils import logutils
+    from glob import glob
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
+    from shutil import rmtree
 
+    # Retrieve root directory
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}/".format(__file__.strip(".py"))
-    path = os.path.join(root_path, module_path)
+    module_path = "geminidr/gmos/spect/"
+    path = os.path.join(root_path, module_path,
+                        os.path.basename(__file__).strip(".py"))
+
+    # Create directories for input
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("./inputs/", exist_ok=True)
 
     for filename, cals in associated_calibrations.items():
-        print(filename)
-        print(cals)
 
         sci_path = download_from_archive(filename)
         cals = associated_calibrations[filename]
@@ -729,6 +733,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_bias_{}.txt'.format(data_label))
         bias_reduce = Reduce()
         bias_reduce.files.extend(bias_paths)
+        bias_reduce.mode = "ql"
         bias_reduce.runr()
         bias_master = bias_reduce.output_filenames.pop()
         calibration_files = ['processed_bias:{}'.format(bias_master)]
@@ -737,6 +742,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_flat_{}.txt'.format(data_label))
         flat_reduce = Reduce()
         flat_reduce.files.extend(flat_paths)
+        flat_reduce.mode = "ql"
         flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
         flat_reduce.runr()
         flat_master = flat_reduce.output_filenames.pop()
@@ -746,6 +752,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
         arc_reduce = Reduce()
         arc_reduce.files.extend(arc_paths)
+        arc_reduce.mode = "ql"
         arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
 
         os.chdir("inputs/")
@@ -767,6 +774,13 @@ def create_inputs_recipe():
         os.chdir("inputs/")
         _ = p.writeOutputs().pop()
         os.chdir("../")
+
+    # Cleaning-up
+    [os.remove(f) for f in glob("*.fits")]
+    [os.remove(f) for f in glob("inputs/*.pdf")]
+    [os.rename(f, f"inputs/{f}") for f in glob("log_*.txt")]
+    rmtree("calibrations/", ignore_errors=True)
+    rmtree("inputs/calibrations/", ignore_errors=True)
 
 
 if __name__ == '__main__':
