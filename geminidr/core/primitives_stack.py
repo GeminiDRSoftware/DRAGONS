@@ -161,16 +161,15 @@ class Stack(PrimitivesBASE):
         process_rn = all(rn is not None for read_noise in read_noises for rn in read_noise)
 
         # Compute gain and read noise of final stacked images
-        nexts = len(gains[0])
-        if process_gain:
-            gain_list = [np.mean([gain[i] for gain in gains])
-                         for i in range(nexts)]
-        if process_rn:
-            read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
-                                         for i in range(nexts)]
-
         num_img = len(adinputs)
         num_ext = len(adinputs[0])
+        if process_gain:
+            gain_list = [np.mean([gain[i] for gain in gains])
+                         for i in range(num_ext)]
+        if process_rn:
+            read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i]for rn in read_noises])) / num_img
+                                         for i in range(num_ext)]
+
         zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
         scale_factors = np.ones_like(zero_offsets)
 
