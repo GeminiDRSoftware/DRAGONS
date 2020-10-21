@@ -115,10 +115,11 @@ class MultiSplineTab:
         surface_z = []
         for md, w in zip(self.masked_data, self.weights):
             if (i % self.mod) == 0:
-                scatter_source = ColumnDataSource({'x': self.pixels, 'y': md})
-                scatter = self.p.scatter(x='x', y='y', source=scatter_source, color="black", radius=5)
-                self.scatter_sources.append(scatter_source)
-                self.scatters.append(scatter)
+                # self.scatter_sources[idx].data = {'x': self.pixels, 'y': md}
+                # scatter_source = ColumnDataSource({'x': self.pixels, 'y': md})
+                # scatter = self.p.scatter(x='x', y='y', source=scatter_source, color="black", radius=5)
+                # self.scatter_sources.append(scatter_source)
+                # self.scatters.append(scatter)
 
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(self.pixels, md,
                                                                         order=self.order, w=w,
