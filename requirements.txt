@@ -1,4 +1,4 @@
-astropy>=4.1rc2
+astropy>=4.1
 astroquery
 cython
 future
