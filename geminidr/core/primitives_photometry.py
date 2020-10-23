@@ -3,11 +3,12 @@
 #
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
+import os
 import numpy as np
 import warnings
 
 from astropy.stats import sigma_clip
-from astropy.table import Column
+from astropy.table import Table, Column
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -76,6 +77,20 @@ class Photometry(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         source = params["source"]
         radius = params["radius"]
+        format = params["format"]
+
+        if source is None:
+            log.stdinfo("No source provided for reference catalog.")
+            return adinputs
+
+        if os.path.isfile(source):
+            try:
+                user_refcat = Table.read(source, format=format)
+            except:
+                log.warning(f"File {source} exists but cannot be read - continuing")
+                return adinputs
+        else:
+            user_refcat = None
 
         for ad in adinputs:
             try:
@@ -95,11 +110,14 @@ class Photometry(PrimitivesBASE):
                 else:
                     raise
 
-            log.fullinfo(f"Querying {source} for reference catalog, "
-                         f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                refcat = get_fits_table(source, ra, dec, radius)
+            if user_refcat:
+                refcat = user_refcat
+            else:
+                log.fullinfo(f"Querying {source} for reference catalog, "
+                             f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    refcat = get_fits_table(source, ra, dec, radius)
 
             if refcat is None:
                 log.stdinfo("No reference catalog sources found for {}".
