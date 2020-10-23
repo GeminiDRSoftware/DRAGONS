@@ -4,6 +4,7 @@ Default is "reduce_nostack".
 """
 recipe_tags = {'GSAOI', 'IMAGE'}
 
+
 def reduce_nostack(p):
     """
     This recipe reduce GSAOI up to but NOT including alignment and stacking.
@@ -14,7 +15,6 @@ def reduce_nostack(p):
     p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
-
     p.prepare()
     p.addDQ()
     p.nonlinearityCorrect()
@@ -33,6 +33,7 @@ def reduce_nostack(p):
     p.writeOutputs()
     p.storeProcessedScience()
     return
+
 
 # The nostack version is used because stacking of GSAOI is time consuming.
 _default = reduce_nostack
