@@ -265,6 +265,11 @@ class Register(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
+            if not ('RAJ2000' in refcat.colnames and 'DEJ2000' in refcat.colnames):
+                log.warning(f'REFCAT in {ad.filename} is missing RAJ2000 '
+                            'and/or DEJ2000 columns - cannot calculate astrometry')
+                continue
+
             # List of values to report to FITSstore
             info_list = []
 
@@ -306,6 +311,7 @@ class Register(PrimitivesBASE):
                 # We always fit in pixel space of the image
                 xref, yref = ext.wcs.backward_transform(refcat['RAJ2000'],
                                                         refcat['DEJ2000'])
+
                 try:
                     m_init = best_model.copy()
                 except AttributeError:
