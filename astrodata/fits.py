@@ -588,7 +588,6 @@ def ad_to_hdulist(ad):
             except (ValueError, NotImplementedError) as e:
                 LOGGER.warning(e)
             else:
-                # HACK! Don't update the FITS WCS for an image
                 # Must delete keywords if image WCS has been downscaled
                 # from a higher number of dimensions
                 for i in range(1, 5):
@@ -604,7 +603,7 @@ def ad_to_hdulist(ad):
                 if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
                     wcs = None  # There's no need to create a WCS extension
 
-        hdul.append(new_imagehdu(ext.data, header))
+        hdul.append(new_imagehdu(ext.data, header, 'SCI'))
         if ext.uncertainty is not None:
             hdul.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
         if ext.mask is not None:
