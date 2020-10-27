@@ -40,7 +40,7 @@ class Resample(PrimitivesBASE):
         This primitive applies the transformation encoded in the input images
         WCSs to align them with a reference image, in reference image pixel
         coordinates. The reference image is taken to be the first image in
-        the input list.
+        the input list if not explicitly provided as a parameter.
 
         By default, the transformation into the reference frame is done via
         interpolation. The variance plane, if present, is transformed in
@@ -56,27 +56,51 @@ class Resample(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
-        order: int (0-5)
+        order : int (0-5)
             order of interpolation (0=nearest, 1=linear, etc.)
-        trim_data: bool
+        trim_data : bool
             trim image to size of reference image?
-        clean_data: bool
+        clean_data : bool
             replace bad pixels with a ring median of their values to avoid
             ringing if using a high-order interpolation?
+        reference : str/AstroData/None
+            reference image for resampling (if not provided, the first image
+            in the list will be used)
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params.pop("suffix")
+        reference = params.pop("reference")
+        trim_data = params.pop("trim_data")
         force_affine = True
 
-        if len(adinputs) < 2:
-            log.warning("No alignment will be performed, since at least two "
-                        "input AstroData objects are required for "
-                        "resampleToCommonFrame")
-            return adinputs
+        if reference is None:
+            if len(adinputs) < 2:
+                log.warning("No alignment will be performed, since at least "
+                            "two input AstroData objects are required for "
+                            "resampleToCommonFrame")
+                return adinputs
+        elif not isinstance(reference, astrodata.AstroData):
+            reference = astrodata.open(reference)
+
+        if reference is not None:
+            log.stdinfo(f"Using {reference.filename} as reference image")
+            if len(reference) != 1:
+                raise OSError("Reference image must have only one extension.")
+            if not trim_data:
+                log.warning("The trim_data parameter must be True when a "
+                            "reference image is provided.")
+                trim_data = True
+        else:
+            reference = adinputs[0]
+
+        ref_wcs = reference[0].wcs
+        if trim_data:
+            params.update({'origin': (0,) * len(reference[0].shape),
+                           'output_shape': reference[0].shape})
 
         # TODO: Can we make it so that we don't need to mosaic detectors
         # before doing this? That would mean we only do one interpolation,
@@ -88,9 +112,8 @@ class Resample(PrimitivesBASE):
         ndim = len(ad_ref[0].shape)
 
         # No transform for the reference AD
-        for i_ad, ad in enumerate(adinputs):
-            if i_ad == 0:
-                ref_wcs = ad[0].wcs
+        for ad in adinputs:
+            if reference is ad:
                 t_align = models.Identity(ndim)
             else:
                 t_align = ad[0].wcs.forward_transform | ref_wcs.backward_transform
@@ -216,8 +239,8 @@ class Resample(PrimitivesBASE):
         return adoutputs
 
     def _resample_to_new_frame(self, adinputs=None, frame=None, order=3,
-                               trim_data=False, clean_data=False,
-                               process_objcat=False):
+                               output_shape=None, origin=None,
+                               clean_data=False, process_objcat=False):
         """
         This private method resamples a number of AstroData objects to a
         CoordinateFrame they share. It is basically just a wrapper for the
@@ -231,12 +254,16 @@ class Resample(PrimitivesBASE):
             name of CoordinateFrame to be resampled to
         order: int (0-5)
             order of interpolation (0=nearest, 1=linear, etc.)
-        trim_data: bool
-            trim image to size of reference image?
-        clean_data: bool
+        output_shape : tuple/None
+            shape of output image (if None, calculate and use shape that
+            contains all resampled inputs)
+        origin: tuple/None
+            location of origin in reampled output (i.e., data to the left of
+            or below this will be cut)
+        clean_data : bool
             replace bad pixels with a ring median of their values to avoid
             ringing if using a high-order interpolation?
-        process_objcat: bool
+        process_objcat : bool
             update (rather than delete) the OBJCAT?
         """
         log = self.log
@@ -245,18 +272,16 @@ class Resample(PrimitivesBASE):
             self.applyDQPlane(adinputs, replace_flags=DQ.not_signal ^ DQ.no_data,
                               replace_value="median", inner=3, outer=5)
 
-        if trim_data:
-            output_shape = adinputs[0][0].shape
-            origin = (0,) * len(output_shape)
-        else:
+        if output_shape is None or origin is None:
             all_corners = np.concatenate([transform.get_output_corners(
                 ad[0].wcs.get_transform(ad[0].wcs.input_frame, frame),
                 input_shape=ad[0].shape) for ad in adinputs], axis=1)
-            origin = tuple(np.ceil(min(corners)) for corners in all_corners)
-            output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
-                                 for corners in all_corners)
+            if origin is None:
+                origin = tuple(np.ceil(min(corners)) for corners in all_corners)
+            if output_shape is None:
+                output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
+                                     for corners in all_corners)
 
-        print("ORIGIN", origin)
         log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
         adoutputs = []
         for ad in adinputs:
