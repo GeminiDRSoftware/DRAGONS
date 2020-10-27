@@ -49,7 +49,7 @@ from importlib import import_module
 import astrodata
 import gemini_instruments
 
-from astrodata.core import AstroDataError
+from astrodata import AstroDataError
 
 # ------------------------------------------------------------------------------
 batchno = 100
@@ -176,7 +176,7 @@ class DataSpider:
 
     """
     def typewalk(self, directory=os.getcwd(), only=None, filemask=None,
-                 or_logic=False, outfile=None, stayTop=False, batchnum=100, 
+                 or_logic=False, outfile=None, stayTop=False, batchnum=100,
                  xtypes=None, adpkg=None):
         """
         Recursively walk <directory> and put type information to stdout

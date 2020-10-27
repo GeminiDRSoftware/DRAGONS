@@ -89,7 +89,7 @@ today = 'April 2020'
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
-#default_role = None
+default_role = 'obj'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #add_function_parentheses = True
@@ -276,10 +276,10 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
     'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
     'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
     'python': ('https://docs.python.org/3', None),
 }
 

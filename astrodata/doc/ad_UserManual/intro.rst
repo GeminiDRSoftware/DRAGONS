@@ -18,8 +18,8 @@ how multi-extension (MEF) FITS files are represented. :ref:`Chapter 4 <tags>`
 provides information regarding the |TagSet| class, its usage and a few advanced
 topics. In :ref:`Chapter 5 <headers>` you will find information about the FITS
 headers and how to access/modify the metadata. The last two chapters,
-:ref:`Chapter 6 <data>` and :ref:`Chapter 7 <tables>` cover more details about
-how to read, manipulate and write pixel data and tables, respectively.
+:ref:`Chapter 6 <pixel-data>` and :ref:`Chapter 7 <tables>` cover more details
+about how to read, manipulate and write pixel data and tables, respectively.
 
 
 If you are looking for a quick reference, please, have a look on the

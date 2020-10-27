@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 import astrodata
-from astrodata.fits import AstroDataFitsDeprecationWarning
+from astrodata.utils import AstroDataFitsDeprecationWarning
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 from astrodata.testing import download_from_archive, compare_models
 import astropy
@@ -462,7 +462,7 @@ def test_attributes(GSAOI_DARK):
     assert all(isinstance(nd, NDAstroData) for nd in ad.nddata)
     assert [nd.shape for nd in ad.nddata] == [(2048, 2048)] * 4
 
-    match = 'Trying to assign to a non-sliced AstroData object'
+    match = "Trying to assign to an AstroData object that is not a single slice"
     with pytest.raises(ValueError, match=match):
         ad.data = 1
     with pytest.raises(ValueError, match=match):
@@ -882,7 +882,7 @@ def test_round_trip_gwcs(tmpdir):
     ad1[0].nddata.wcs = WCS([(det_frame, distrans),
                              (dref_frame, wavtrans),
                              (rss_frame, None)
-                            ])
+                             ])
 
     # Save & re-load the AstroData instance with its new WCS attribute:
     testfile = str(tmpdir.join('round_trip_gwcs.fits'))

@@ -76,7 +76,6 @@ def test_can_append_an_image_hdu_object_to_an_astrodata_object():
     assert ad[1].data is hdu.data
 
 
-@pytest.mark.dragons_remote_data
 def test_attributes(ad1):
     assert ad1[0].shape == SHAPE
 
@@ -90,7 +89,6 @@ def test_attributes(ad1):
     assert ad1.object() == 'M42'
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize('op, res, res2', [
     (operator.add, 3, 3),
     (operator.sub, -1, 1),
@@ -122,7 +120,6 @@ def test_arithmetic(op, res, res2, ad1, ad2):
     assert_array_equal(result.data, res2)
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize('op, res, res2', [
     (operator.iadd, 3, 3),
     (operator.isub, -1, 1),
@@ -203,7 +200,6 @@ def test_arithmetic_inplace_multiple_ext(op, res, ad1):
         assert_array_equal(result.data, res[i])
 
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize('op, arg, res', [('add', 100, 101),
                                           ('subtract', 100, -99),
                                           ('multiply', 3, 3),
@@ -276,7 +272,6 @@ def test_write_and_read(tmpdir, capsys):
     assert_array_equal(ad[0].nddata.mask[0], nd.mask[0])
 
 
-@pytest.mark.dragons_remote_data
 def test_reset(ad1):
     data = np.ones(SHAPE) + 3
     with pytest.raises(ValueError):
