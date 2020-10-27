@@ -65,6 +65,8 @@ class Resample(PrimitivesBASE):
         clean_data : bool
             replace bad pixels with a ring median of their values to avoid
             ringing if using a high-order interpolation?
+        conserve : bool
+            conserve flux when resampling to a different pixel scale?
         reference : str/AstroData/None
             reference image for resampling (if not provided, the first image
             in the list will be used)
@@ -239,7 +241,7 @@ class Resample(PrimitivesBASE):
         return adoutputs
 
     def _resample_to_new_frame(self, adinputs=None, frame=None, order=3,
-                               output_shape=None, origin=None,
+                               conserve=True, output_shape=None, origin=None,
                                clean_data=False, process_objcat=False):
         """
         This private method resamples a number of AstroData objects to a
@@ -286,7 +288,7 @@ class Resample(PrimitivesBASE):
         adoutputs = []
         for ad in adinputs:
             log.stdinfo(f"Resampling {ad.filename}")
-            ad_out = transform.resample_from_wcs(ad, frame, order=order,
+            ad_out = transform.resample_from_wcs(ad, frame, order=order, conserve=conserve,
                                                  output_shape=output_shape, origin=origin,
                                                  process_objcat=process_objcat)
             adoutputs.append(ad_out)

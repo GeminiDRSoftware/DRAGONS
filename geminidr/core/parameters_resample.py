@@ -8,6 +8,7 @@ class resampleToCommonFrameConfig(config.Config):
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
+    conserve = config.Field("Conserve image flux?", bool, True)
     reference = config.Field("Name of reference image (optional)", (str, AstroData), None, optional=True)
 
 class shiftImagesConfig(config.Config):
