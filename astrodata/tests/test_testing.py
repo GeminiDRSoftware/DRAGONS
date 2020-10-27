@@ -29,6 +29,19 @@ def test_get_active_branch_name(capsys, monkeypatch):
                         lambda *a, **k: b'(HEAD, origin/foo)')
     assert get_active_git_branch() == 'foo'
 
+    monkeypatch.setattr(subprocess, 'check_output',
+                        lambda *a, **k: b'(HEAD, origin/sky_sub, sky_sub)')
+    assert get_active_git_branch() == 'sky_sub'
+
+    # With other remote name
+    monkeypatch.setattr(subprocess, 'check_output',
+                        lambda *a, **k: b'(HEAD, myremote/foo)')
+    assert get_active_git_branch() == 'foo'
+
+    monkeypatch.setattr(subprocess, 'check_output',
+                        lambda *a, **k: b'(HEAD -> master, upstream/master)')
+    assert get_active_git_branch() == 'master'
+
     # Raise error
     def mock_check_output(*args, **kwargs):
         raise subprocess.CalledProcessError(0, 'git')

@@ -350,12 +350,12 @@ def get_active_git_branch():
         the branch name could not be retrieved.
 
     """
+    branch_re = r'\(HEAD.*, \w+\/(\w*)(?:,\s\w+)?\)'
+    git_cmd = ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD']
     try:
-        out = subprocess.check_output(
-            ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD']
-        ).decode('utf8')
-        branch_name = re.search(r'\(HEAD.*, origin\/(.*)\)', out).groups()[0]
-    except subprocess.CalledProcessError as e:
+        out = subprocess.check_output(git_cmd).decode('utf8')
+        branch_name = re.search(branch_re, out).groups()[0]
+    except Exception:
         print("\nCould not retrieve active git branch. Make sure that the\n"
               "following path is a valid Git repository: {}\n"
               .format(os.getcwd()))
