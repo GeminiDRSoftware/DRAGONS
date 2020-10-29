@@ -5,16 +5,8 @@
 #                                                             gemini_instruments
 #                                                              skycam.adclass.py
 # ------------------------------------------------------------------------------
-import datetime
-import dateutil.parser
 
-from astrodata import astro_data_tag
-from astrodata import astro_data_descriptor
-from astrodata import returns_list
-from astrodata import TagSet
-
-from astrodata.fits import FitsLoader
-from astrodata.fits import FitsProvider
+from astrodata import astro_data_tag, astro_data_descriptor, TagSet
 
 from ..gemini import AstroDataGemini
 

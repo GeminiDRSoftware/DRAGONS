@@ -13,6 +13,8 @@ import numpy as np
 from datetime import date
 from gemini_instruments.gmos import lookup
 # ------------------------------------------------------------------------------
+
+
 def get_bias_level(adinput=None, estimate=True):
     # Temporarily only do this for GMOS data. It would be better if we could do
     # checks on oberving band / type (e.g., OPTICAL / IR) and have this
@@ -22,14 +24,15 @@ def get_bias_level(adinput=None, estimate=True):
     __ALLOWED_TYPES__ = ["GMOS"]
     if not set(__ALLOWED_TYPES__).issubset(adinput.tags):
         msg = "{}.{} only works for {} data".format(__name__,
-                                                       "get_bias_level",
-                                                       __ALLOWED_TYPES__)
+                                                    "get_bias_level",
+                                                    __ALLOWED_TYPES__)
         raise NotImplementedError(msg)
     elif estimate:
         bias_level = _get_bias_level_estimate(adinput=adinput)
     else:
         bias_level = _get_bias_level(adinput=adinput)
     return bias_level
+
 
 def _get_bias_level(adinput=None):
     """
@@ -89,12 +92,13 @@ def _get_bias_level(adinput=None):
             bias_level.append(np.median(overscan_data))
 
         # Turn single-element list into a value if sent a single-extension slice
-        if adinput._single:
+        if adinput.is_single:
             bias_level = bias_level[0]
     else:
         bias_level = _get_bias_level_estimate(adinput=adinput)
 
     return bias_level
+
 
 def _get_bias_level_estimate(adinput=None):
     """

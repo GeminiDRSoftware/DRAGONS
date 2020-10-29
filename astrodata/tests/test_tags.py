@@ -130,7 +130,7 @@ def test_info(testfile, capsys):
     out = captured.out.splitlines()
     assert out[0].endswith('fakebias.fits')
     assert out[1:] == [
-        'Tags: DARK MYINSTRUMENT ',
+        'Tags: DARK MYINSTRUMENT',
         '',
         'Pixels Extensions',
         'Index  Content                  Type              Dimensions     Format',
@@ -147,7 +147,7 @@ def test_info(testfile, capsys):
     out = captured.out.splitlines()
     assert out[0].endswith('fakebias.fits')
     assert out[1:] == [
-        'Tags: DARK MYINSTRUMENT ',
+        'Tags: DARK MYINSTRUMENT',
         '',
         'Pixels Extensions',
         'Index  Content                  Type              Dimensions     Format',

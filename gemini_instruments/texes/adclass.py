@@ -7,24 +7,22 @@
 # ------------------------------------------------------------------------------
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
-from astrodata import returns_list
 from astrodata import TagSet
-
-from astrodata.fits import FitsLoader
-from astrodata.fits import FitsProvider
 
 from ..gemini import AstroDataGemini
 
 # ------------------------------------------------------------------------------
+
+
 class AstroDataTexes(AstroDataGemini):
     __keyword_dict = dict(
-        ra = 'RA',
-        dec = 'DEC',
-        target_ra = 'TARGRA',
-        target_dec = 'TARGDEC',
-        exposure_time = 'OBSTIME',
-        observation_type = 'OBSTYPE',
-        )
+        ra='RA',
+        dec='DEC',
+        target_ra='TARGRA',
+        target_dec='TARGDEC',
+        exposure_time='OBSTIME',
+        observation_type='OBSTYPE',
+    )
 
     @classmethod
     def load(cls, source):
@@ -32,17 +30,17 @@ class AstroDataTexes(AstroDataGemini):
             xnam, xver = hdu.header.get('EXTNAME'), hdu.header.get('EXTVER')
             if 'RAWFRAME' in [xnam] and xver:
                 hdu.header.set('EXTNAME0', xnam,
-                               'EXTNAME Orig (AstroData)',before='EXTNAME')
+                               'EXTNAME Orig (AstroData)', before='EXTNAME')
                 hdu.header.set('EXTNAME', 'SCI', 'Renamed by AstroData')
             elif 'SCAN-FRAME' in [xnam] and xver:
                 hdu.header.set('EXTNAME0', xnam,
-                               'EXTNAME Orig (AstroData)',before='EXTNAME')
+                               'EXTNAME Orig (AstroData)', before='EXTNAME')
                 hdu.header.set('EXTNAME', 'SCI', 'Renamed by AstroData')
             elif xnam and not xver:
                 hdu.header.set('EXTVER', 1, 'Versioned by AstroData',
                                after='EXTNAME')
 
-        return cls(FitsLoader(FitsProvider).load(source, extname_parser=texes_parser))
+        return super().read(source, extname_parser=texes_parser)
 
     @staticmethod
     def _matches_data(source):
@@ -85,7 +83,7 @@ class AstroDataTexes(AstroDataGemini):
     @astro_data_descriptor
     def observation_type(self):
         return self.phu.get('OBSTYPE').upper()
-    
+
     @astro_data_descriptor
     def ra(self):
         return self.phu.get(self._keyword_for('ra'))
@@ -93,5 +91,3 @@ class AstroDataTexes(AstroDataGemini):
     @astro_data_descriptor
     def dec(self):
         return self.phu.get(self._keyword_for('dec'))
-
-    

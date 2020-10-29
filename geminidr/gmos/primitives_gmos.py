@@ -6,23 +6,18 @@
 import os
 from importlib import import_module
 
-import astrodata
-import gemini_instruments
-
+from gemini_instruments.gmos.pixel_functions import get_bias_level
+from geminidr.core import CCD
+# from gempy.scripts.gmoss_fix_headers import correct_headers
 # from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
-# from gempy.scripts.gmoss_fix_headers import correct_headers
-# from gempy.gemini import hdr_fixing as hdrfix
+from recipe_system.utils.decorators import parameter_override
 
-from geminidr.core import CCD
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_gmos
 from .lookups import maskdb
 
-from gemini_instruments.gmos.pixel_functions import get_bias_level
 
-from recipe_system.utils.decorators import parameter_override
-# ------------------------------------------------------------------------------
 @parameter_override
 class GMOS(Gemini, CCD):
     """
@@ -70,7 +65,7 @@ class GMOS(Gemini, CCD):
             #     #     correct_image_extensions=Flase
             #     # As does the DATE-OBS but as this seemed to break even after
             #     # apparently being fixed, still perform this check. - MS
-            #     hdulist = ad.to_hdulist()
+            #     hdulist = ad_to_hdulist(ad)
             #     # correct_headers(hdulist, logger=log,
             #     #                 correct_image_extensions=False)
             #     # When we create the new AD object, it needs to retain the

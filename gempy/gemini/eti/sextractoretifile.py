@@ -3,6 +3,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 
+from astrodata.fits import ad_to_hdulist
 from gempy.eti_core.etifile import ETIFile
 
 # Move this to a more central place
@@ -49,12 +50,12 @@ class SExtractorETIFile(ETIFile):
         filename = os.path.join(self.directory, PREFIX + self.name + SUFFIX)
         hdulist = fits.HDUList()
 
-        # By using the to_hdulist() method, we write the current gWCS
-        # TODO: to_hdulist() method writes entire parent AD object, not just
-        # the single slice we want
+        # By using ad_to_hdulist(), we write the current gWCS
+        # TODO: ad_to_hdulist() also writes a PrimaryHDU and the WCS table so
+        # we need to find the data hdu in the list
         extver = self.ext.hdr['EXTVER']
-        for hdu in self.ext.to_hdulist():
-            if hdu.header.get('EXTNAME') in ('SCI', 'DQ') and hdu.header['EXTVER'] == extver:
+        for hdu in ad_to_hdulist(self.ext):
+            if hdu.name in ('SCI', 'DQ') and hdu.header['EXTVER'] == extver:
                 hdulist.append(hdu)
 
         # Replace SCI with bitmasked data, and DQ as int16

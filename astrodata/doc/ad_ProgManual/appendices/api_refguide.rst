@@ -39,17 +39,10 @@ covering the usage of Gemini-style FITS files.
 
       Alias for ``__itruediv__``
 
-``DataProvider``
-----------------
-
-.. autoclass:: astrodata.core.DataProvider
-   :members:
-   :special-members:
-
 ``TagSet``
 ==========
 
-.. autoclass:: astrodata.core.TagSet
+.. autoclass:: astrodata.TagSet
 
 ``NDAstroData``
 ===============
@@ -62,8 +55,8 @@ covering the usage of Gemini-style FITS files.
 Decorators and other helper functions
 =====================================
 
-.. autofunction:: astrodata.core.astro_data_descriptor
+.. autofunction:: astrodata.astro_data_descriptor
 
-.. autofunction:: astrodata.core.astro_data_tag
+.. autofunction:: astrodata.astro_data_tag
 
-.. autofunction:: astrodata.core.returns_list
+.. autofunction:: astrodata.returns_list

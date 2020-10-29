@@ -1,4 +1,5 @@
-astropy>=4.1rc2
+asdf
+astropy>=4.1
 astroquery
 bottleneck
 cython
