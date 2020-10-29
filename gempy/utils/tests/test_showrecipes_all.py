@@ -3,7 +3,7 @@ import pytest
 from astrodata.testing import download_from_archive
 from gempy.utils.showrecipes import showrecipes
 
-GNIRS = "S20171208S0054.fits"
+GNIRS = "N20180101S0028.fits"
 GNIRS_SPECT = "N20190206S0279.fits"
 GMOS = 'S20180223S0229.fits'
 GMOS_NS = 'S20171116S0078.fits'
@@ -24,10 +24,12 @@ def test_showrecipes_on_gnirs():
     expected_answers = [
         "Input file: {}".format(file_location),
         "Input tags: ",
-        "Recipes available for the input file: ",
-        "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM",
-        "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat",
-        "   geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat"
+        "Recipes available for the input file:",
+        "geminidr.gnirs.recipes.sq.recipes_IMAGE::alignAndStack",
+        "geminidr.gnirs.recipes.sq.recipes_IMAGE::reduce",
+        "geminidr.gnirs.recipes.qa.recipes_IMAGE::reduce",
+        "geminidr.gnirs.recipes.sq.recipes_IMAGE::alignAndStack",
+        "geminidr.gnirs.recipes.sq.recipes_IMAGE::reduce",
     ]
 
     answer = showrecipes(file_location)
