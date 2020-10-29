@@ -71,7 +71,7 @@ class CalibDB(PrimitivesBASE):
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)  # from cache
-            if not calurl and "qa" not in self.mode:
+            if not calurl and "sq" in self.mode:
                 raise OSError(self._not_found.format(ad.filename))
         return adinputs
 

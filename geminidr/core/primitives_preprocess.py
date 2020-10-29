@@ -456,7 +456,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if dark is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "dark was specified".format(ad.filename))
                     continue
@@ -580,7 +580,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if flat is None:
-                if 'qa' in self.mode:
+                if 'sq' in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "flatfield has been specified".
                                 format(ad.filename))
