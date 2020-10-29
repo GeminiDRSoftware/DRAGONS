@@ -105,6 +105,7 @@ setup(name='dragons',
           'sqlalchemy',
       ],
       extras_require={
+          'docs': ['sphinx', 'sphinx_rtd_theme'],
           'test': ['pytest', 'pytest-remotedata', 'coverage', 'objgraph'],
       },
       project_urls={
