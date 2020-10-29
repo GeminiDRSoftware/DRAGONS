@@ -12,8 +12,8 @@ def remove_single_length_dimension(adinput):
 
     Parameters
     ----------
-    adinput
-        AstroDataFits: input AD object
+    adinput : AstroData
+        input AD object
 
     Returns
     -------

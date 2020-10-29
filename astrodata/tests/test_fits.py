@@ -191,7 +191,7 @@ def test_slice(GMOSN_SPECT):
     assert ext.data[0, 0] == 387
 
     # when astrofaker is imported this will be recognized as AstroFakerGmos
-    # instead of AstroDataFits
+    # instead of AstroData
     match = r"'Astro.*' object has no attribute 'FOO'"
     with pytest.raises(AttributeError, match=match):
         ext.FOO

@@ -323,7 +323,7 @@ Deleting a global table, not attached to a specific extension ::
 
 Writing back to disk
 ====================
-The :class:`~astrodata.fits.AstroDataFits` layer takes care of converting
+The :class:`~astrodata.AstroData` layer takes care of converting
 the |AstroData| object back to a MEF file on disk. When writing to disk,
 one should be aware of the path and filename information associated
 with the |AstroData| object.
@@ -505,6 +505,3 @@ and attach it to a new |AstroData| object. (Again, we have not created
 
 As before, once the |AstroData| object is constructed, the ``ad.write()``
 method can be used to write it to disk as a MEF file.
-
-
-
