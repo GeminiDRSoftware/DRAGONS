@@ -16,7 +16,6 @@ Usage:
 """
 
 import os
-import re
 
 from setuptools import setup, find_packages, Extension
 
@@ -34,77 +33,14 @@ PACKAGENAME = 'dragons'
 PACKAGES = find_packages('.', exclude=['*tests'])
 
 # PACKAGE_DATA
-PACKAGE_DATA = {}
-
-# sextractor files in geminidr/gemini/lookups/source_detection
-gemdrdir = re.compile('geminidr/')
-PACKAGE_DATA['geminidr'] = []
-instruments = ['gemini', 'f2', 'gmos', 'gnirs', 'gsaoi', 'niri']
-for inst in instruments:
-    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
-                                                  'lookups', 'source_detection')):
-        files = [f for f in files if not f.endswith('.pyc')]
-        # remove the 'geminidr/' part of the file paths, then add to the DATA
-        PACKAGE_DATA['geminidr'].extend(
-            map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
-        )
-
-# files for spec stds in geminidr/gemini/lookups/spectrophotometric_standards
-for inst in instruments:
-    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
-                                                  'lookups', 'spectrophotometric_standards')):
-        files = [f for f in files if not f.endswith('.pyc')]
-        # remove the 'geminidr/' part of the file paths, then add to the DATA
-        PACKAGE_DATA['geminidr'].extend(
-            map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
-        )
-
-# BPMs and MDFs throughout the geminidr package
-for inst in instruments:
-    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
-                                                  'lookups', 'BPM')):
-        files = [f for f in files if not f.endswith('.pyc')]
-        if len(files) > 0:
-            # remove the 'geminidr/' part, add to DATA
-            PACKAGE_DATA['geminidr'].extend(
-                map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
-            )
-    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
-                                                  'lookups', 'MDF')):
-        files = [f for f in files if not f.endswith('.pyc')]
-        if len(files) > 0:
-            # remove the 'geminidr/' part, add to DATA
-            PACKAGE_DATA['geminidr'].extend(
-                map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
-            )
-
-# Some .dat files are found in the lookup directories
-for inst in instruments:
-    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
-                                                  'lookups')):
-        files = [f for f in files if not (f.endswith('.pyc') or f.endswith('.py'))]
-        if len(files) > 0:
-            # remove the 'geminidr/' part, add to DATA
-            PACKAGE_DATA['geminidr'].extend(
-                map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
-            )
-
-
-# GUI
-rsdir = re.compile('recipe_system/')
-PACKAGE_DATA['recipe_system'] = []
-for root, dirs, files in os.walk(os.path.join('recipe_system', 'adcc',
-                                              'client')):
-    # remove the 'recipe_system/' part, add to DATA
-    PACKAGE_DATA['recipe_system'].extend(
-        map((lambda f: os.path.join(rsdir.sub('', root), f)), files)
-    )
-
-# Numdisplay support files
-PACKAGE_DATA['gempy'] = []
-for f in ('ichar.dat', 'imtoolrc', 'README'):
-    PACKAGE_DATA['gempy'].append(os.path.join('numdisplay', f))
-PACKAGE_DATA['gempy'].append(os.path.join('library', 'config', 'README'))
+PACKAGE_DATA = {
+    'geminidr': ['geminidr/*/lookups/source_detection/*',
+                 'geminidr/*/lookups/BPM/*',
+                 'geminidr/*/lookups/MDF/*'],
+    'gempy': ['gempy/numdisplay/*',
+              'gempy/library/config/README'],
+    'recipe_system': ['recipe_system/adcc/client/*'],
+}
 
 # SCRIPTS
 RS_SCRIPTS = [os.path.join('recipe_system', 'scripts', 'adcc'),
