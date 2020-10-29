@@ -29,7 +29,6 @@ else:
     use_cython = True
 
 PACKAGENAME = 'dragons'
-
 PACKAGES = find_packages('.', exclude=['*tests'])
 
 # PACKAGE_DATA
@@ -43,49 +42,26 @@ PACKAGE_DATA = {
 }
 
 # SCRIPTS
-RS_SCRIPTS = [os.path.join('recipe_system', 'scripts', 'adcc'),
-              os.path.join('recipe_system', 'scripts', 'caldb'),
-              os.path.join('recipe_system', 'scripts', 'reduce'),
-              os.path.join('recipe_system', 'scripts', 'superclean'),
-              ]
-
-GEMPY_SCRIPTS = [
-    os.path.join('gempy', 'scripts', 'dataselect'),
-    os.path.join('gempy', 'scripts', 'fwhm_histogram'),
-    os.path.join('gempy', 'scripts', 'gmosn_fix_headers'),
-    os.path.join('gempy', 'scripts', 'gmoss_fix_HAM_BPMs.py'),
-    os.path.join('gempy', 'scripts', 'gmoss_fix_headers.py'),
-    os.path.join('gempy', 'scripts', 'pipeline2iraf'),
-    os.path.join('gempy', 'scripts', 'profile_all_obj'),
-    os.path.join('gempy', 'scripts', 'psf_plot'),
-    os.path.join('gempy', 'scripts', 'showrecipes'),
-    os.path.join('gempy', 'scripts', 'showd'),
-    os.path.join('gempy', 'scripts', 'showpars'),
-    os.path.join('gempy', 'scripts', 'swapper'),
-    os.path.join('gempy', 'scripts', 'typewalk'),
-    os.path.join('gempy', 'scripts', 'zp_histogram'),
+SCRIPTS = [
+    os.path.join('recipe_system', 'scripts', name)
+    for name in ('adcc', 'caldb', 'reduce', 'superclean')
 ]
-SCRIPTS = []
-SCRIPTS.extend(RS_SCRIPTS)
-SCRIPTS.extend(GEMPY_SCRIPTS)
+SCRIPTS += [
+    os.path.join('gempy', 'scripts', name)
+    for name in ('dataselect', 'fwhm_histogram', 'gmosn_fix_headers',
+                 'gmoss_fix_HAM_BPMs.py', 'gmoss_fix_headers.py',
+                 'pipeline2iraf', 'profile_all_obj', 'psf_plot', 'showrecipes',
+                 'showd', 'showpars', 'swapper', 'typewalk', 'zp_histogram')
+]
 
-EXTENSIONS = []
-
-if use_cython:
-    suffix = 'pyx'
-else:
-    suffix = 'c'
-cyextensions = [Extension(
-    "gempy.library.cython_utils",
-    [os.path.join('gempy', 'library', 'cython_utils.' + suffix)],
-),
+# EXTENSIONS
+suffix = 'pyx' if use_cython else 'c'
+EXTENSIONS = [
+    Extension("gempy.library.cython_utils",
+              [os.path.join('gempy', 'library', 'cython_utils.' + suffix)])
 ]
 if use_cython:
-    CYTHON_EXTENSIONS = cythonize(cyextensions)
-else:
-    CYTHON_EXTENSIONS = cyextensions
-
-EXTENSIONS.extend(CYTHON_EXTENSIONS)
+    EXTENSIONS = cythonize(EXTENSIONS)
 
 setup(name='dragons',
       version=version(),
