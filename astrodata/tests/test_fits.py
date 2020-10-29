@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 import astrodata
-from astrodata.utils import AstroDataFitsDeprecationWarning
+from astrodata.utils import AstroDataDeprecationWarning
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 from astrodata.testing import download_from_archive, compare_models
 import astropy
@@ -655,15 +655,15 @@ def test_header_collection(GMOSN_SPECT):
 @pytest.mark.dragons_remote_data
 def test_header_deprecated(GMOSN_SPECT):
     ad = astrodata.open(GMOSN_SPECT)
-    with pytest.warns(AstroDataFitsDeprecationWarning):
-        warnings.simplefilter('always', AstroDataFitsDeprecationWarning)
+    with pytest.warns(AstroDataDeprecationWarning):
+        warnings.simplefilter('always', AstroDataDeprecationWarning)
         header = ad.header
     assert header[0]['ORIGNAME'] == 'N20170529S0168.fits'
     assert header[1]['EXTNAME'] == 'SCI'
     assert header[1]['EXTVER'] == 1
 
-    with pytest.warns(AstroDataFitsDeprecationWarning):
-        warnings.simplefilter('always', AstroDataFitsDeprecationWarning)
+    with pytest.warns(AstroDataDeprecationWarning):
+        warnings.simplefilter('always', AstroDataDeprecationWarning)
         header = ad[0].header
     assert header[0]['ORIGNAME'] == 'N20170529S0168.fits'
 
