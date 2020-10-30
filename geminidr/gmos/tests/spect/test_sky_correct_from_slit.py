@@ -160,7 +160,7 @@ def create_inputs_recipe():
         "N20190427S0141.fits": {"arc": "N20190427S0270.fits", "center": 264},
     }
 
-    module_name = os.path.basename(__file__).strip(".py")
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
     path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
