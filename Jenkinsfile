@@ -121,9 +121,7 @@ pipeline {
                             )
                         }
                         failure {
-                            echo "Archiving tests results for Unit Tests"
                             sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
-//                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
                         }
                     }
                 }
@@ -154,6 +152,9 @@ pipeline {
                         testResults: 'reports/*_results.xml'
                     )
                 }
+                failure {
+                    sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+                }
             } // end post
         } // end stage
 
@@ -180,6 +181,9 @@ pipeline {
                         allowEmptyResults: true,
                         testResults: 'reports/*_results.xml'
                     )
+                }
+                failure {
+                    sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
                 }
             } // end post
         }
@@ -208,8 +212,11 @@ pipeline {
                         allowEmptyResults: true,
                         testResults: 'reports/*_results.xml'
                     )
-                }  // end always
-            }  // end post
+                }
+                failure {
+                    sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+                }
+            }
         }  // end stage
 
     }
