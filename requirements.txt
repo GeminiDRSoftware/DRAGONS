@@ -1,5 +1,6 @@
 asdf
-astropy>=4.1
+# astropy>=4.1
+-e git+https://github.com/astropy/astropy.git#egg=astropy
 astroquery
 bottleneck
 cython
