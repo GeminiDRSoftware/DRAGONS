@@ -126,11 +126,11 @@ Create your derivative class
 This is an excerpt of a typical derivative module::
 
     from astrodata import astro_data_tag, astro_data_descriptor, TagSet
-    from astrodata import AstroDataFits
+    from astrodata import AstroData
 
     from . import lookup
 
-    class AstroDataInstrument(AstroDataFits):
+    class AstroDataInstrument(AstroData):
         __keyword_dict = dict(
                 array_name = 'AMPNAME',
                 array_section = 'CCDSECT'

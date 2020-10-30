@@ -709,12 +709,12 @@ def create_inputs_recipe(use_branch_name=False):
     import os
     from astrodata.testing import download_from_archive, get_active_git_branch
     from gempy.utils import logutils
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
 
-    root_path = "./dragons_test_inputs/geminidr/gmos/spect/"
-    module_name = os.path.basename(__file__).strip(".py")
-    path = os.path.abspath(os.path.join(root_path, module_name))
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
 

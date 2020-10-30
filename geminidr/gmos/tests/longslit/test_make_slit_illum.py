@@ -342,6 +342,8 @@ def create_inputs_recipe():
     a new folder called "dragons_test_inputs". The sub-directory structure
     should reflect the one returned by the `path_to_inputs` fixture.
     """
+    from geminidr.gmos.tests.longslit import INPUTS_ROOT_PATH
+
     associated_calibrations = {
         "S20190204S0006.fits": {
             "bias": ["S20190203S0110.fits",
@@ -370,11 +372,9 @@ def create_inputs_recipe():
         }
     }
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/longslit/test_make_slit_illum/inputs"
-    path = os.path.join(root_path, module_path)
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(INPUTS_ROOT_PATH, module_name)
     os.makedirs(path, exist_ok=True)
-
     os.chdir(path)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
