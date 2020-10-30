@@ -9,6 +9,7 @@ class resampleToCommonFrameConfig(config.Config):
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
     conserve = config.Field("Conserve image flux?", bool, True)
+    force_affine = config.Field("Force affine transformation for speed?", bool, True)
     reference = config.Field("Name of reference image (optional)", (str, AstroData), None, optional=True)
 
 class shiftImagesConfig(config.Config):
