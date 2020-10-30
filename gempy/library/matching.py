@@ -6,11 +6,10 @@ from functools import partial
 import inspect
 
 from scipy import optimize, spatial
-from astropy.modeling import fitting, models, Model, FittableModel
+from astropy.modeling import fitting, models, FittableModel
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
-                                      _model_to_fit_params, Fitter,
-                                      _convert_input)
+                                      _model_to_fit_params, Fitter)
 
 from astrodata import wcs as adwcs
 
@@ -484,7 +483,7 @@ class BruteLandscapeFitter(Fitter):
                               for inco, refco in zip(in_coords, ref_coords))[::-1]
             landscape = self.mklandscape(ref_coords, sigma, maxsig, landshape)
 
-        farg = (model_copy,) + _convert_input(in_coords, landscape)
+        farg = (model_copy, np.asanyarray(in_coords, dtype=float), landscape)
         p0, _ = _model_to_fit_params(model_copy)
 
         # TODO: Use the name of the parameter to infer the step size
