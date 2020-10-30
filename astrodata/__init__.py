@@ -11,7 +11,6 @@ __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
 
 
 from .core import AstroData
-# TODO: Remove 'write' when there's nothing else using it
 from .fits import KeywordCallableWrapper, add_header_to_table
 from .factory import AstroDataFactory, AstroDataError
 from .nddata import NDAstroData
