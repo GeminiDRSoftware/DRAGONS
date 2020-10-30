@@ -67,9 +67,9 @@ def assert_most_close(actual, desired, max_miss, rtol=1e-7, atol=0,
 
         if n_miss > max_miss:
             error_message = (
-                "%g mismatching elements are more than the " % n_miss +
-                "expected %g." % max_miss +
-                '\n'.join(e.args[0].split('\n')[3:]))
+                    "%g mismatching elements are more than the " % n_miss +
+                    "expected %g." % max_miss +
+                    '\n'.join(e.args[0].split('\n')[3:]))
 
             raise AssertionError(error_message)
 
@@ -106,9 +106,9 @@ def assert_most_equal(actual, desired, max_miss, verbose=True):
 
         if n_miss > max_miss:
             error_message = (
-                "%g mismatching elements are more than the " % n_miss +
-                "expected %g." % max_miss +
-                '\n'.join(e.args[0].split('\n')[3:]))
+                    "%g mismatching elements are more than the " % n_miss +
+                    "expected %g." % max_miss +
+                    '\n'.join(e.args[0].split('\n')[3:]))
 
             raise AssertionError(error_message)
 
@@ -130,6 +130,24 @@ def assert_same_class(ad, ad_ref):
     assert isinstance(ad, AstroData)
     assert isinstance(ad_ref, AstroData)
     assert isinstance(ad, type(ad_ref))
+
+
+@pytest.fixture(scope="session")
+def base_temp(tmp_path_factory):
+    """
+    Created a place to store the tests outputs. Can be set using the command line
+    --basetemp (WARNING: WILL DELETE ALL OF ITS CURRENT CONTENT)
+
+    Parameters
+    ----------
+    tmp_path_factory : fixture
+        PyTest's build-in fixture.
+
+    Returns
+    -------
+    str : Path for the tests results for the current session
+    """
+    return tmp_path_factory.mktemp("dragons-tests-")
 
 
 def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
@@ -463,7 +481,7 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
 
 
 @pytest.fixture(scope='module')
-def path_to_outputs(request, tmp_path_factory):
+def path_to_outputs(request, base_temp):
     """
     PyTest fixture that creates a temporary folder to save tests outputs. You can
     set the base directory by passing the ``--basetemp=mydir/`` argument to the
@@ -483,7 +501,7 @@ def path_to_outputs(request, tmp_path_factory):
     """
     module_path = request.module.__name__.split('.')
     module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(str(tmp_path_factory.getbasetemp()), *module_path)
+    path = os.path.join(base_temp, *module_path)
     os.makedirs(path, exist_ok=True)
 
     return path
