@@ -214,17 +214,9 @@ pipeline {
 
     }
     post {
-//         always {
-//           junit (
-//             allowEmptyResults: true,
-//             testResults: 'reports/*_results.xml'
-//             )
-//         }
         success {
-//             sh  '.jenkins/scripts/build_sdist_file.sh'
-//             sh  'pwd'
-//             echo 'Make tarball available'
             sendNotifications 'SUCCESSFUL'
+            deleteDir() /* clean up our workspace */
         }
         failure {
             sendNotifications 'FAILED'
