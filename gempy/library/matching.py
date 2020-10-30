@@ -850,7 +850,7 @@ def _show_model(model, intro=""):
         iterator = [model]
     # Only display parameters of those models that have names
     for m in iterator:
-        if m.name is not 'xx':
+        if m.name != 'xx':
             for param in [getattr(m, name) for name in m.param_names]:
                 if not (param.fixed or (param.bounds[0] == param.bounds[1]
                                         and param.bounds[0] is not None)):
