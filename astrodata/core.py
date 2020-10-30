@@ -1416,7 +1416,3 @@ class AstroData:
     def telescope(self):
         """Returns the name of the telescope."""
         return self.phu.get(self._keyword_for('telescope'))
-
-
-class AstroDataFits(AstroData):
-    """Keep this for now as other classes inherit from it."""

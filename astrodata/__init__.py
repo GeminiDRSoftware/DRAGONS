@@ -10,7 +10,7 @@ __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'open', 'create', '__version__', 'version', 'add_header_to_table']
 
 
-from .core import AstroData, AstroDataFits
+from .core import AstroData
 # TODO: Remove 'write' when there's nothing else using it
 from .fits import KeywordCallableWrapper, add_header_to_table
 from .factory import AstroDataFactory, AstroDataError
@@ -25,7 +25,7 @@ keyword = KeywordCallableWrapper
 factory = AstroDataFactory()
 # Let's make sure that there's at least one class that matches the data
 # (if we're dealing with a FITS file)
-factory.addClass(AstroDataFits)
+factory.addClass(AstroData)
 
 open = factory.getAstroData
 create = factory.createFromScratch

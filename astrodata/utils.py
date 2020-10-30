@@ -9,16 +9,15 @@ import numpy as np
 INTEGER_TYPES = (int, np.integer)
 
 __all__ = ('assign_only_single_slice', 'astro_data_descriptor',
-           'AstroDataFitsDeprecationWarning', 'astro_data_tag', 'deprecated',
+           'AstroDataDeprecationWarning', 'astro_data_tag', 'deprecated',
            'normalize_indices', 'returns_list', 'TagSet')
 
 
-# FIXME: Should be AstroDataDeprecationWarning ?
-class AstroDataFitsDeprecationWarning(DeprecationWarning):
+class AstroDataDeprecationWarning(DeprecationWarning):
     pass
 
 
-warnings.simplefilter("always", AstroDataFitsDeprecationWarning)
+warnings.simplefilter("always", AstroDataDeprecationWarning)
 
 
 def deprecated(reason):
@@ -28,7 +27,7 @@ def deprecated(reason):
             current_source = '|'.join(format_stack(inspect.currentframe()))
             if current_source not in wrapper.seen:
                 wrapper.seen.add(current_source)
-                warnings.warn(reason, AstroDataFitsDeprecationWarning)
+                warnings.warn(reason, AstroDataDeprecationWarning)
             return fn(*args, **kw)
         wrapper.seen = set()
         return wrapper
