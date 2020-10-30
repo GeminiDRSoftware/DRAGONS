@@ -121,20 +121,17 @@ def create_inputs_recipe():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
-
     from astrodata.testing import download_from_archive
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
-    from recipe_system.utils.reduce_utils import normalize_ucals
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/test_find_source_apertures/"
-    path = os.path.join(root_path, module_path)
-    cwd = os.getcwd()
-
+    module_name = os.path.basename(__file__).strip(".py")
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("inputs", exist_ok=True)
+    cwd = os.getcwd()
 
     associated_arcs = {
         "N20180109S0287.fits": "N20180109S0315.fits",  # GN-2017B-FT-20-13-001 B600 0.505um

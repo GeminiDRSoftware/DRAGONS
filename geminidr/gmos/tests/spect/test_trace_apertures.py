@@ -115,6 +115,7 @@ def create_inputs_recipe():
     """
     import os
     from astrodata.testing import download_from_archive
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from gempy.utils import logutils
 
     input_data = [
@@ -129,9 +130,8 @@ def create_inputs_recipe():
         ("N20190427S0141.fits", 264),  # R150 660
     ]
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/test_trace_apertures/"
-    path = os.path.join(root_path, module_path)
+    module_name = os.path.basename(__file__).strip(".py")
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("inputs/", exist_ok=True)

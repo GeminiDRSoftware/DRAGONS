@@ -153,6 +153,7 @@ def create_inputs_recipe():
     import os
     from astrodata.testing import download_from_archive
     from recipe_system.reduction.coreReduce import Reduce
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from gempy.utils import logutils
 
     associated_calibrations = {
@@ -162,9 +163,8 @@ def create_inputs_recipe():
         "S20190808S0053.fits": {"arcs": ["S20190808S0169.fits"]},
     }
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}".format(__file__.split('.')[0])
-    path = os.path.join(root_path, module_path)
+    module_name = os.path.basename(__file__).strip(".py")
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("./inputs", exist_ok=True)
