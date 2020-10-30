@@ -275,7 +275,7 @@ class Register(PrimitivesBASE):
             pixscale = ad.pixel_scale()
             offset_range = params["initial"] / pixscale  # Search box size
             final = params["final"] / pixscale  # Matching radius
-            max_ref_sources = 100 if 'qa' in self.mode else None  # No more than this
+            max_ref_sources = 100 if 'sq' not in self.mode else None  # No more than this
 
             best_matches = 0
             best_model = None

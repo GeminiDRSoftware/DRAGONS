@@ -72,7 +72,7 @@ class CCD(PrimitivesBASE):
                 continue
 
             if bias is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "bias was specified".format(ad.filename))
                     continue
