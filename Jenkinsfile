@@ -17,13 +17,13 @@ pipeline {
     agent any
 
     triggers {
-        // pollSCM('MIN HOUR DoM MONTH DoW')
-        pollSCM('H H/4 * * *')  // Polls Source Code Manager every four hours
+        // Polls Source Code Manager every four hours
+        pollSCM('H H/4 * * *')
     }
 
     options {
         skipDefaultCheckout(true)
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+        buildDiscarder(logRotator(numToKeepStr: '5'))
         timestamps()
         timeout(time: 4, unit: 'HOURS')
     }
@@ -102,7 +102,7 @@ pipeline {
                     environment {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                        DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+                        DRAGONS_TEST_OUT = "unit_tests_outputs/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -120,6 +120,11 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                         }
+                        failure {
+                            echo "Archiving tests results for Unit Tests"
+                            sh "find ${DRAGONS_TEST_OUT} -not -name \*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+                            archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
+                        }
                     }
                 }
             }
@@ -130,7 +135,7 @@ pipeline {
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+                DRAGONS_TEST_OUT = "./integ_tests_outputs/"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -157,7 +162,7 @@ pipeline {
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+                DRAGONS_TEST_OUT = "regression_tests_outputs"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -184,7 +189,7 @@ pipeline {
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+                DRAGONS_TEST_OUT = "gmosls_tests_outputs"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
