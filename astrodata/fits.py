@@ -22,7 +22,6 @@ from astropy.nddata import NDData
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
 from astropy.table import Table
-from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 
 from . import wcs as adwcs
@@ -32,24 +31,6 @@ from .nddata import NDAstroData as NDDataObject
 DEFAULT_EXTENSION = 'SCI'
 NO_DEFAULT = object()
 LOGGER = logging.getLogger(__name__)
-
-
-class KeywordCallableWrapper:
-    def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
-        self.kw = keyword
-        self.on_ext = on_ext
-        self.default = default
-        self.coercion_fn = coerce_with if coerce_with is not None else (lambda x: x)
-
-    def __call__(self, adobj):
-        def wrapper():
-            manip = adobj.phu if not self.on_ext else adobj.hdr
-            if self.default is NO_DEFAULT:
-                ret = getattr(manip, self.kw)
-            else:
-                ret = manip.get(self.kw, self.default)
-            return self.coercion_fn(ret)
-        return wrapper
 
 
 class FitsHeaderCollection:
