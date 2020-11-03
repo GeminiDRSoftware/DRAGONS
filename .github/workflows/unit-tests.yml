@@ -15,7 +15,7 @@ jobs:
       matrix:
         python-version: [3.7]
     env:
-      - DRAGONS_TEST="$HOME/dragons_tests/"
+      DRAGONS_TEST: $HOME/dragons_tests/
 
     steps:
       - uses: actions/checkout@v2
