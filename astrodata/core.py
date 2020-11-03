@@ -266,6 +266,15 @@ class AstroData:
         return tuple(mname for (mname, method) in members)
 
     @property
+    def index(self):
+        """Returns the extensions indices for sliced objects."""
+        if self.is_single:
+            return self._indices[0]
+        else:
+            raise ValueError("Cannot return index for an AstroData object "
+                             "that is not a single slice")
+
+    @property
     def indices(self):
         """Returns the extensions indices for sliced objects."""
         return self._indices if self._indices else list(range(len(self)))
