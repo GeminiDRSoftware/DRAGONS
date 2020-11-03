@@ -15,7 +15,7 @@ jobs:
       matrix:
         python-version: [3.7]
     env:
-      DRAGONS_TEST: $HOME/dragons_tests/
+      DRAGONS_TEST: ~/dragons_tests/
 
     steps:
       - uses: actions/checkout@v2
@@ -23,7 +23,6 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v1
         with:
           auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
           channels: http://ssb.stsci.edu/astroconda
           channel-priority: disabled
 
