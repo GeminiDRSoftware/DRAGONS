@@ -50,23 +50,23 @@ def handle_single_adinput(fn):
     return wrapper
 # ------------------------------------------------------------------------------
 @handle_single_adinput
-def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
+def add_objcat(adinput=None, index=0, replace=False, table=None, sx_dict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
 
     Parameters
     ----------
-    adinput: AstroData
+    adinput : AstroData
         AD object(s) to add table to
 
-    extver: int
-        Extension number for the table (should match the science extension)
+    index : int
+        Extension index for the table
 
-    replace: bool
+    replace : bool
         replace (overwrite) with new OBJCAT? If False, the new table must
         have the same length as the existing OBJCAT
 
-    table: Table
+    table : Table
         new OBJCAT Table or new columns. For a new table, X_IMAGE, Y_IMAGE,
         X_WORLD, and Y_WORLD are required columns
     """
@@ -83,11 +83,11 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
     # Parse sextractor parameters for the list of expected columns
     expected_columns = parse_sextractor_param(sx_dict['dq', 'param'])
     # Append a few more that don't come from directly from sextractor
-    expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR",
-                             "PROFILE_FWHM","PROFILE_EE50"])
+    expected_columns.extend(["REF_NUMBER", "REF_MAG", "REF_MAG_ERR",
+                             "PROFILE_FWHM", "PROFILE_EE50"])
 
     for ad in adinput:
-        ext = ad.extver(extver)
+        ext = ad[index]
         # Check if OBJCAT already exists and just update if desired
         objcat = getattr(ext, 'OBJCAT', None)
         if objcat and not replace:
@@ -116,8 +116,9 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
                     else:
                         unit = None
                 # Use input table column if given, otherwise the placeholder
-                new_objcat.add_column(table[name] if name in table.columns else
-                                Column(data=default, name=name, dtype=dtype, unit=unit))
+                new_objcat.add_column(
+                    table[name] if name in table.columns else
+                    Column(data=default, name=name, dtype=dtype, unit=unit))
 
             # Replace old version or append new table to AD object
             if objcat:
@@ -1615,6 +1616,7 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         ext.WAVECAL = table
     return ad
 
+# FIXME: seems unused
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
@@ -1653,7 +1655,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             out_objcat.remove_column('NUMBER')
 
             adoutput = add_objcat(adinput=adoutput, extver=outextver,
-                            replace=True, table=out_objcat, sx_dict=sx_dict)
+                                  replace=True, table=out_objcat, sx_dict=sx_dict)
     return adoutput
 
 @handle_single_adinput

@@ -238,10 +238,10 @@ class Photometry(PrimitivesBASE):
                 clean_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
-                ad = gt.add_objcat(ad, extver=ext.hdr['EXTVER'], replace=False,
+                ad = gt.add_objcat(ad, index=ext.index, replace=False,
                                    table=objcat, sx_dict=self.sx_dict)
-                log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
-                                            ad.filename, ext.hdr['EXTVER']))
+                log.stdinfo("Found {} sources in {}:{}".format(
+                    len(ext.OBJCAT), ad.filename, ext.hdr['EXTVER']))
                 # The presence of an OBJCAT demands objects (philosophical)
                 if len(ext.OBJCAT) == 0:
                     del ext.OBJCAT
