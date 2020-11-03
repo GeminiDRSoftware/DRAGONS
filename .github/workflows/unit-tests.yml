@@ -1,0 +1,63 @@
+name: Run unit tests
+
+on:
+  # pull_request:
+  push:
+  workflow_dispatch:
+  schedule:
+    # Run every Sunday at 03:53 UTC
+    - cron: 53 3 * * 0
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache conda packages and test files
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache
+          CACHE_NUMBER: 0
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/dragons_tests
+          key: ${{ runner.os }}-${{ env.CACHE_NUMBER }}
+
+      - uses: conda-incubator/setup-miniconda@v1
+        with:
+          auto-update-conda: true
+          channels: http://ssb.stsci.edu/astroconda
+          channel-priority: disabled
+          python-version: ${{ matrix.python-version }}
+          use-only-tar-bz2: true
+
+      - name: Conda info
+        shell: bash -l {0}
+        run: |
+          conda info
+          conda list
+
+      - name: Install packages
+        shell: bash -l {0}
+        run: python -m pip install tox tox-conda coverage
+
+      - name: Setup DRAGONS_TEST
+        shell: bash -l {0}
+        run: echo "DRAGONS_TEST=~/dragons_tests" >> $GITHUB_ENV
+
+      - name: Run Tox
+        shell: bash -l {0}
+        run: |
+          tox -e py37-unit -v
+          python -m coverage xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true

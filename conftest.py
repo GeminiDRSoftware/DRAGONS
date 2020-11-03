@@ -1,8 +1,8 @@
-#!/usr/bin/env python
 """
 Configuration for tests that will propagate inside DRAGONS.
 """
 
+import os
 import pytest
 
 # noinspection PyUnresolvedReferences
@@ -54,3 +54,7 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if 'cache_file_from_archive' in item.fixturenames or "dragons_remote_data" in item.keywords:
                 item.add_marker(skip_dragons_remote_data)
+
+
+def pytest_report_header(config):
+    return f"DRAGONS_TEST directory: {os.getenv('DRAGONS_TEST')}"
