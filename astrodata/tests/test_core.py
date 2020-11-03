@@ -28,54 +28,6 @@ def ad2():
     return astrodata.create(phu, [hdu])
 
 
-def test_create_with_no_data():
-    for phu in (fits.PrimaryHDU(), fits.Header(), {}):
-        ad = astrodata.create(phu)
-        assert isinstance(ad, astrodata.AstroData)
-        assert len(ad) == 0
-        assert ad.instrument() is None
-        assert ad.object() is None
-
-
-def test_create_with_header():
-    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
-    for phu in (hdr, fits.PrimaryHDU(header=hdr), dict(hdr), list(hdr.cards)):
-        ad = astrodata.create(phu)
-        assert isinstance(ad, astrodata.AstroData)
-        assert len(ad) == 0
-        assert ad.instrument() == 'darkimager'
-        assert ad.object() == 'M42'
-
-
-def test_create_from_hdu():
-    phu = fits.PrimaryHDU()
-    hdu = fits.ImageHDU(data=np.zeros(SHAPE), name='SCI')
-    ad = astrodata.create(phu, [hdu])
-
-    assert isinstance(ad, astrodata.AstroData)
-    assert len(ad) == 1
-    assert isinstance(ad[0].data, np.ndarray)
-    assert ad[0].data is hdu.data
-
-
-def test_create_invalid():
-    with pytest.raises(ValueError):
-        astrodata.create('FOOBAR')
-    with pytest.raises(ValueError):
-        astrodata.create(42)
-
-
-def test_can_append_an_image_hdu_object_to_an_astrodata_object():
-    ad = astrodata.create(fits.PrimaryHDU())
-    hdu = fits.ImageHDU(data=np.zeros(SHAPE))
-    ad.append(hdu, name='SCI')
-    ad.append(hdu, name='SCI2')
-
-    assert len(ad) == 2
-    assert ad[0].data is hdu.data
-    assert ad[1].data is hdu.data
-
-
 def test_attributes(ad1):
     assert ad1[0].shape == SHAPE
 
