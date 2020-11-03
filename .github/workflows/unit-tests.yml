@@ -35,6 +35,7 @@ jobs:
           channels: http://ssb.stsci.edu/astroconda
           channel-priority: disabled
           python-version: ${{ matrix.python-version }}
+          use-only-tar-bz2: true
 
       - name: Conda info
         shell: bash -l {0}
