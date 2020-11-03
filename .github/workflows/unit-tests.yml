@@ -18,6 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Cache conda packages and test files
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache
+          CACHE_NUMBER: 0
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/dragons_tests
+          key: ${{ runner.os }}-${{ env.CACHE_NUMBER }}
+
       - uses: conda-incubator/setup-miniconda@v1
         with:
           auto-update-conda: true
