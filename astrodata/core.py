@@ -806,20 +806,8 @@ class AstroData:
         obj._oper(obj._rdiv, oper)
         return obj
 
-    def _reset_ver(self, nd):
-        try:
-            ver = max(nd.meta['ver'] for nd in self._all_nddatas) + 1
-        except ValueError:
-            # This seems to be the first extension!
-            ver = 1
-
-        nd.meta['header']['EXTVER'] = ver
-        nd.meta['ver'] = ver
-
-        return ver
-
     def _process_pixel_plane(self, pixim, name=None, top_level=False,
-                             reset_ver=True, custom_header=None):
+                             custom_header=None):
         # Assume that we get an ImageHDU or something that can be
         # turned into one
         if isinstance(pixim, fits.ImageHDU):
@@ -834,7 +822,6 @@ class AstroData:
 
         header = nd.meta.setdefault('header', {})
         currname = header.get('EXTNAME')
-        ver = header.get('EXTVER', -1)
 
         if currname is None:
             header['EXTNAME'] = name if name is not None else DEFAULT_EXTENSION
@@ -842,18 +829,7 @@ class AstroData:
         if top_level:
             nd.meta.setdefault('other', OrderedDict())
 
-            if reset_ver or ver == -1:
-                self._reset_ver(nd)
-            else:
-                nd.meta['ver'] = ver
-
         return nd
-
-    def _add_to_other(self, add_to, name, data, header=None):
-        meta = add_to.meta
-        meta['other'][name] = data
-        if header:
-            header['EXTVER'] = meta.get('ver', -1)
 
     def _append_array(self, data, name=None, header=None, add_to=None):
         if name in {'DQ', 'VAR'}:
@@ -874,22 +850,20 @@ class AstroData:
             ret = self._append_imagehdu(hdu, name=hname, header=None,
                                         add_to=None)
         else:
-            self._add_to_other(add_to, name, data, header=header)
+            add_to.meta['other'][name] = data
             ret = data
 
         return ret
 
-    def _append_imagehdu(self, hdu, name, header, add_to, reset_ver=True):
+    def _append_imagehdu(self, hdu, name, header, add_to):
         if name in {'DQ', 'VAR'} or add_to is not None:
             return self._append_array(hdu.data, name=name, add_to=add_to)
         else:
             nd = self._process_pixel_plane(hdu, name=name, top_level=True,
-                                           reset_ver=reset_ver,
                                            custom_header=header)
             return self._append_nddata(nd, name, add_to=None)
 
-    def _append_raw_nddata(self, raw_nddata, name, header, add_to,
-                           reset_ver=True):
+    def _append_raw_nddata(self, raw_nddata, name, header, add_to):
         # We want to make sure that the instance we add is whatever we specify
         # as NDDataObject, instead of the random one that the user may pass
         top_level = add_to is None
@@ -897,11 +871,10 @@ class AstroData:
             raw_nddata = NDDataObject(raw_nddata)
         processed_nddata = self._process_pixel_plane(raw_nddata,
                                                      top_level=top_level,
-                                                     custom_header=header,
-                                                     reset_ver=reset_ver)
+                                                     custom_header=header)
         return self._append_nddata(processed_nddata, name=name, add_to=add_to)
 
-    def _append_nddata(self, new_nddata, name, add_to, reset_ver=True):
+    def _append_nddata(self, new_nddata, name, add_to):
         # NOTE: This method is only used by others that have constructed NDData
         # according to our internal format. We don't accept new headers at this
         # point, and that's why it's missing from the signature.  'name' is
@@ -913,8 +886,6 @@ class AstroData:
         hd = new_nddata.meta['header']
         hname = hd.get('EXTNAME', DEFAULT_EXTENSION)
         if hname == DEFAULT_EXTENSION:
-            if reset_ver:
-                self._reset_ver(new_nddata)
             self._all_nddatas.append(new_nddata)
         else:
             raise ValueError("Arbitrary image extensions can only be added "
@@ -922,7 +893,7 @@ class AstroData:
 
         return new_nddata
 
-    def _append_table(self, new_table, name, header, add_to, reset_ver=True):
+    def _append_table(self, new_table, name, header, add_to):
         tb = _process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME')
 
@@ -951,11 +922,10 @@ class AstroData:
                 raise ValueError(f"Cannot append table '{hname}' because it "
                                  "would hide a top-level table")
 
-            self._add_to_other(add_to, hname, tb, tb.meta['header'])
             add_to.meta['other'][hname] = tb
         return tb
 
-    def _append_astrodata(self, ad, name, header, add_to, reset_ver=True):
+    def _append_astrodata(self, ad, name, header, add_to):
         if not ad.is_single:
             raise ValueError("Cannot append AstroData instances that are "
                              "not single slices")
@@ -967,11 +937,9 @@ class AstroData:
         if header is not None:
             new_nddata.meta['header'] = deepcopy(header)
 
-        return self._append_nddata(new_nddata, name=None, add_to=None,
-                                   reset_ver=True)
+        return self._append_nddata(new_nddata, name=None, add_to=None)
 
-    def _append(self, ext, name=None, header=None, reset_ver=True,
-                add_to=None):
+    def _append(self, ext, name=None, header=None, add_to=None):
         """
         Internal method to dispatch to the type specific methods. This is
         called either by ``.append`` to append on top-level objects only or
@@ -987,13 +955,12 @@ class AstroData:
 
         for bases, method in dispatcher:
             if isinstance(ext, bases):
-                return method(ext, name=name, header=header, add_to=add_to,
-                              reset_ver=reset_ver)
+                return method(ext, name=name, header=header, add_to=add_to)
 
         # Assume that this is an array for a pixel plane
         return self._append_array(ext, name=name, header=header, add_to=add_to)
 
-    def append(self, ext, name=None, header=None, reset_ver=True):
+    def append(self, ext, name=None, header=None):
         """
         Adds a new top-level extension.
 
@@ -1048,7 +1015,7 @@ class AstroData:
                           UserWarning)
             name = name.upper()
 
-        return self._append(ext, name=name, header=header, reset_ver=reset_ver)
+        return self._append(ext, name=name, header=header)
 
     @classmethod
     def read(cls, source, extname_parser=None):

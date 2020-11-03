@@ -496,7 +496,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         pass
 
                 # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
+                new_aux.append(ext_to_clip[0].nddata)
 
             if not found:
                 raise OSError(
@@ -671,7 +671,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                         pass
 
                 # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
+                new_aux.append(ext_to_clip[0].nddata)
 
             if not found:
                 raise OSError(
