@@ -1,7 +1,7 @@
 name: Run unit tests
 
 on:
-  pull_request:
+  # pull_request:
   push:
   workflow_dispatch:
   schedule:
