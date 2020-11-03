@@ -86,6 +86,20 @@ def test_append_image_hdu():
 def test_can_read_data(testfile1):
     ad = astrodata.open(testfile1)
     assert len(ad) == 3
+    assert ad.shape == [(2304, 1056), (2304, 1056), (2304, 1056)]
+
+
+@pytest.mark.dragons_remote_data
+def test_can_read_write_pathlib(tmp_path):
+    testfile = tmp_path / 'test.fits'
+
+    ad = astrodata.create({})
+    ad.append(np.zeros((4, 5)))
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
+    assert len(ad) == 1
+    assert ad.shape == [(4, 5)]
 
 
 @pytest.mark.dragons_remote_data

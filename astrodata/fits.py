@@ -445,7 +445,7 @@ def read_fits(cls, source, extname_parser=None):
 
     ad = cls()
 
-    if isinstance(source, str):
+    if isinstance(source, (str, os.PathLike)):
         hdulist = fits.open(source, memmap=True,
                             do_not_scale_image_data=True, mode='readonly')
         ad.path = source
