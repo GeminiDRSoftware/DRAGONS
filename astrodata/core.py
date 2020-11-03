@@ -892,9 +892,8 @@ class AstroData:
             header['EXTNAME'] = name if name is not None else DEFAULT_EXTENSION
 
         if top_level:
-            if 'other' not in nd.meta:
-                nd.meta['other'] = OrderedDict()
-                nd.meta['other_header'] = {}
+            nd.meta.setdefault('other', OrderedDict())
+            nd.meta.setdefault('other_header', {})
 
             if reset_ver or ver == -1:
                 self._reset_ver(nd)
@@ -1004,8 +1003,7 @@ class AstroData:
             self._all_nddatas.append(new_nddata)
         else:
             raise ValueError("Arbitrary image extensions can only be added "
-                             "in association to a '{}'"
-                             .format(DEFAULT_EXTENSION))
+                             f"in association to a '{DEFAULT_EXTENSION}'")
 
         return new_nddata
 
