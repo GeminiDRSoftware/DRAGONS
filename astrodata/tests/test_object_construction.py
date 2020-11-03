@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
 from astropy.io import fits
-from astropy.nddata import NDData
+from astropy.nddata import NDData, VarianceUncertainty
 from astropy.table import Table
 from numpy.testing import assert_array_equal
 
@@ -349,3 +349,30 @@ def test_delete_arbitrary_attribute_from_ad(testfile2):
 
     with pytest.raises(AttributeError):
         ad.arbitrary
+
+
+def test_build_ad_multiple_extensions(tmp_path):
+    """Build an AD object with multiple extensions and check that we retrieve
+    everything in the correct order after writing.
+    """
+    shape = (4, 5)
+    testfile = tmp_path / 'test.fits'
+
+    ad = astrodata.create({})
+    for i in range(1, 4):
+        nd = NDData(np.zeros(shape) + i,
+                    uncertainty=VarianceUncertainty(np.ones(shape)),
+                    mask=np.zeros(shape, dtype='uint16'))
+        ad.append(nd)
+        ad.append(Table([[i]]), name='OBJCAT', add_to=nd)
+        ad.append(np.zeros(10) + i, name='MYARR', add_to=nd)
+
+    ad.append(Table([['ref']]), name='REFCAT')
+    ad.write(testfile)
+
+    ad2 = astrodata.open(testfile)
+
+    for ext, ext2 in zip(ad, ad2):
+        assert_array_equal(ext.data, ext2.data)
+        assert_array_equal(ext.MYARR, ext2.MYARR)
+        assert_array_equal(ext.OBJCAT['col0'], ext2.OBJCAT['col0'])

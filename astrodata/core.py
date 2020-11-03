@@ -574,9 +574,6 @@ class AstroData:
             other = self.nddata.meta['other']
             if attribute in other:
                 del other[attribute]
-                otherh = self.nddata.meta['other_header']
-                if attribute in otherh:
-                    del otherh[attribute]
             else:
                 raise AttributeError(f"{self.__class__.__name__!r} sliced "
                                      "object has no attribute {attribute!r}")
@@ -819,21 +816,6 @@ class AstroData:
         nd.meta['header']['EXTVER'] = ver
         nd.meta['ver'] = ver
 
-        try:
-            oheaders = nd.meta['other_header']
-            for extname, ext in nd.meta['other'].items():
-                try:
-                    oheaders[extname]['EXTVER'] = ver
-                except KeyError:
-                    pass
-                try:
-                    # The object may keep the header on its own structure
-                    ext.meta['header']['EXTVER'] = ver
-                except AttributeError:
-                    pass
-        except KeyError:
-            pass
-
         return ver
 
     def _process_pixel_plane(self, pixim, name=None, top_level=False,
@@ -859,7 +841,6 @@ class AstroData:
 
         if top_level:
             nd.meta.setdefault('other', OrderedDict())
-            nd.meta.setdefault('other_header', {})
 
             if reset_ver or ver == -1:
                 self._reset_ver(nd)
@@ -873,7 +854,6 @@ class AstroData:
         meta['other'][name] = data
         if header:
             header['EXTVER'] = meta.get('ver', -1)
-            meta['other_header'][name] = header
 
     def _append_array(self, data, name=None, header=None, add_to=None):
         if name in {'DQ', 'VAR'}:

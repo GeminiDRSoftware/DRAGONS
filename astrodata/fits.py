@@ -565,9 +565,9 @@ def ad_to_hdulist(ad):
     hdul = HDUList()
     hdul.append(PrimaryHDU(header=ad.phu, data=DELAYED))
 
-    for ext in ad._nddata:
-        meta = ext.meta
-        header, ver = meta['header'], meta['ver']
+    for ver, ext in enumerate(ad._nddata, start=1):
+        header = ext.meta['header']
+        header['EXTVER'] = ver
         wcs = ext.wcs
 
         if isinstance(wcs, gWCS):
@@ -602,17 +602,19 @@ def ad_to_hdulist(ad):
         if isinstance(wcs, gWCS):
             hdul.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
 
-        for name, other in meta.get('other', {}).items():
+        for name, other in ext.meta.get('other', {}).items():
             if isinstance(other, Table):
-                hdul.append(table_to_bintablehdu(other))
+                hdu = table_to_bintablehdu(other)
             elif isinstance(other, np.ndarray):
-                header = meta['other_header'].get(name, meta['header'])
-                hdul.append(new_imagehdu(other, header, name=name))
+                hdu = new_imagehdu(other, header, name=name)
             elif isinstance(other, NDDataObject):
-                hdul.append(new_imagehdu(other.data, meta['header']))
+                hdu = new_imagehdu(other.data, ext.meta['header'])
             else:
                 raise ValueError("I don't know how to write back an object "
-                                 "of type {}".format(type(other)))
+                                 f"of type {type(other)}")
+
+            hdu.ver = ver
+            hdul.append(hdu)
 
     if ad._tables is not None:
         for name, table in sorted(ad._tables.items()):
@@ -680,7 +682,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
     )
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
-    result.meta['other_header'] = {}
 
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
@@ -727,7 +728,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
             # otherwise for a NDData one AstroData would use the name of the
             # AstroData object.
             other[name] = other[name].data
-            result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
 
     return result
 
