@@ -152,7 +152,6 @@ def test_append_array_to_root_no_name(testfile2):
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
     assert ad[-1].hdr['EXTNAME'] == 'SCI'
-    assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
 @pytest.mark.dragons_remote_data
@@ -165,7 +164,6 @@ def test_append_array_to_root_with_name_sci(testfile2):
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
     assert ad[-1].hdr['EXTNAME'] == 'SCI'
-    assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
 @pytest.mark.dragons_remote_data
@@ -281,12 +279,10 @@ def test_append_single_slice(testfile1, testfile2):
     ad2 = astrodata.open(testfile1)
 
     lbefore = len(ad2)
-    last_ever = ad2[-1].nddata.meta['header'].get('EXTVER', -1)
     ad2.append(ad[1])
 
     assert len(ad2) == (lbefore + 1)
     assert np.all(ad2[-1].data == ad[1].data)
-    assert last_ever < ad2[-1].nddata.meta['header'].get('EXTVER', -1)
 
     # With a custom header
     ad2.append(ad[1], header=fits.Header({'FOO': 'BAR'}))
