@@ -2,7 +2,7 @@
 
 import numpy as np
 from datetime import datetime
-from functools import partial
+from functools import partial, reduce
 import inspect
 
 from scipy import optimize, spatial
@@ -353,51 +353,6 @@ class Chebyshev1DMatchBox(MatchBox):
 
 ##############################################################################
 
-def _landstat(landscape, updated_model, in_coords):
-    """
-    Compute the statistic for transforming coordinates onto an existing
-    "landscape" of "mountains" representing source positions. Since the
-    landscape is an array and therefore pixellated, the precision is limited.
-
-    Parameters
-    ----------
-    landscape: nD array
-        synthetic image representing locations of sources in reference plane
-    updated_model: Model
-        transformation (input -> reference) being investigated
-    in_coords: nD array
-        input coordinates
-
-    Returns
-    -------
-    float:
-        statistic representing quality of fit to be minimized
-    """
-
-    def _element_if_in_bounds(arr, index):
-        try:
-            return arr[index]
-        except IndexError:
-            return 0
-
-    out_coords = updated_model(*in_coords)
-    if len(in_coords) == 1:
-        out_coords = (out_coords,)
-    out_coords2 = tuple((coords - 0.5).astype(int) for coords in out_coords)
-    result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
-    ################################################################################
-    # This stuff replaces the above 3 lines if speed doesn't hold up
-    #    sum = np.sum(landscape[i] for i in out_coords if i>=0 and i<len(landscape))
-    # elif len(in_coords) == 2:
-    #    xt, yt = out_coords
-    #    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
-    #                                                   (yt-0.5).astype(int))
-    #                  if ix>=0 and iy>=0 and ix<landscape.shape[1]
-    #                                     and iy<landscape.shape[0])
-    ################################################################################
-    return -result  # to minimize
-
-
 class BruteLandscapeFitter(Fitter):
     """
     Fitter class that employs brute-force optimization to map a set of input
@@ -406,10 +361,54 @@ class BruteLandscapeFitter(Fitter):
     """
 
     def __init__(self):
-        super().__init__(optimize.brute, statistic=_landstat)
+        super().__init__(optimize.brute, statistic=self._landstat)
 
-    @staticmethod
-    def mklandscape(coords, sigma, maxsig, landshape):
+    def _landstat(self, landscape, updated_model, in_coords):
+        """
+        Compute the statistic for transforming coordinates onto an existing
+        "landscape" of "mountains" representing source positions. Since the
+        landscape is an array and therefore pixellated, the precision is limited.
+
+        Parameters
+        ----------
+        landscape: nD array
+            synthetic image representing locations of sources in reference plane
+        updated_model: Model
+            transformation (input -> reference) being investigated
+        in_coords: nD array
+            input coordinates
+
+        Returns
+        -------
+        float:
+            statistic representing quality of fit to be minimized
+        """
+
+        def _element_if_in_bounds(arr, index):
+            try:
+                return arr[index]
+            except IndexError:
+                return 0
+
+        out_coords = self.grid_model(*updated_model(*in_coords))
+        if len(in_coords) == 1:
+            out_coords = (out_coords,)
+        out_coords2 = tuple((coords - 0.5).astype(int)
+                            for coords in out_coords)
+        result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
+        ################################################################################
+        # This stuff replaces the above 3 lines if speed doesn't hold up
+        #    sum = np.sum(landscape[i] for i in out_coords if i>=0 and i<len(landscape))
+        # elif len(in_coords) == 2:
+        #    xt, yt = out_coords
+        #    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
+        #                                                   (yt-0.5).astype(int))
+        #                  if ix>=0 and iy>=0 and ix<landscape.shape[1]
+        #                                     and iy<landscape.shape[0])
+        ################################################################################
+        return -result  # to minimize
+
+    def mklandscape(self, coords, sigma, maxsig, landshape):
         """
         Populates an array with Gaussian mountains at specified coordinates.
         Used to allow rapid goodness-of-fit calculations for cross-correlation.
@@ -444,7 +443,7 @@ class BruteLandscapeFitter(Fitter):
 
         # Place a mountain onto the landscape for each coord in coords
         # Need to crop at edges if mountain extends beyond landscape
-        for coord in zip(*coords):
+        for coord in zip(*self.grid_model(*coords)):
             lslice = []
             mslice = []
             for pos, length in zip(coord[::-1], landshape):
@@ -465,7 +464,7 @@ class BruteLandscapeFitter(Fitter):
         return landscape
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
-                 landscape=None, **kwargs):
+                 landscape=None, scale=None, **kwargs):
         model_copy = _validate_model(model, ['bounds', 'fixed'])
 
         # Turn 1D arrays into tuples to allow iteration over axes
@@ -479,10 +478,19 @@ class BruteLandscapeFitter(Fitter):
             ref_coords = (ref_coords,)
 
         # Remember, coords are x-first (reversed python order)
+        self.grid_model = models.Identity(len(in_coords))
         if landscape is None:
-            landshape = tuple(int(max(np.max(inco), np.max(refco)) + 10)
-                              for inco, refco in zip(in_coords, ref_coords))[::-1]
-            landscape = self.mklandscape(ref_coords, sigma, maxsig, landshape)
+            mins = [min(refco) for refco in ref_coords]
+            maxs = [max(refco) for refco in ref_coords]
+            if scale:
+                self.grid_model = reduce(Model.__and__, [models.Shift(-_min) |
+                                                         models.Scale(scale) for _min in mins])
+                landshape = tuple(int((_max - _min) * scale)
+                                  for _min, _max in zip(mins, maxs))[::-1]
+            else:
+                scale = 1
+                landshape = tuple(int(_max) for _max in maxs)[::-1]
+            landscape = self.mklandscape(ref_coords, sigma*scale, maxsig, landshape)
 
         farg = (model_copy,) + _convert_input(in_coords, landscape)
         p0, _ = _model_to_fit_params(model_copy)
@@ -498,7 +506,7 @@ class BruteLandscapeFitter(Fitter):
             else:
                 # We don't check that the value of a fixed param is within bounds
                 if diff > 0 and not model_copy.fixed[p]:
-                    ranges.append(slice(*(bounds + (min(0.5 * sigma, 0.1 * diff),))))
+                    ranges.append(slice(*(bounds + (min(0.5 * sigma * scale, 0.1 * diff),))))
                     continue
             ranges.append((getattr(model_copy, p).value,) * 2)
 
@@ -765,8 +773,8 @@ class KDTreeFitter(Fitter):
         return -result  # to minimize
 
 
-def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
-              release=False, verbose=True):
+def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, scale=None,
+              brute=True, release=False, verbose=True):
     """
     Finds the best-fitting mapping to convert from xin to xout, using a
     two-step approach by first doing a brute-force scan of parameter space,
@@ -785,6 +793,9 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
         size of the mountains for the BruteLandscapeFitter
     tolerance: float
         accuracy of parameters in final answer
+    scale: float/None
+        scaling to use for coordinates if performing a brute-force fit,
+        to ensure that the peaks in the "landscape" are separated
     brute: bool
         perform brute-force fit first?
     release: boolean
@@ -810,7 +821,7 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
 
         # Brute-force grid search using an image landscape
         fit_it = BruteLandscapeFitter()
-        m_init = fit_it(model, xin, xout, sigma=sigma)
+        m_init = fit_it(model, xin, xout, scale=scale, sigma=sigma)
         if verbose:
             log.stdinfo(_show_model(m_init, "Coarse model in {:.2f} seconds".
                                     format((datetime.now() - start).total_seconds())))
