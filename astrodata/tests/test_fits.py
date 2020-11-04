@@ -173,6 +173,7 @@ def test_slice(GMOSN_SPECT):
     # single
     metadata = ('SCI', 2)
     ext = ad[1]
+    assert ext.id == 1
     assert ext.is_single is True
     assert ext.is_sliced is True
     assert ext.hdr['EXTNAME'] == metadata[0]
@@ -225,6 +226,12 @@ def test_slice_multiple(GMOSN_SPECT):
 
     for ext, md in zip(slc, metadata):
         assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
+
+    with pytest.raises(ValueError, match="Cannot return id"):
+        slc.id
+
+    assert slc[0].id == 1
+    assert slc[1].id == 2
 
     match = "Can't remove items from a sliced object"
     with pytest.raises(TypeError, match=match):

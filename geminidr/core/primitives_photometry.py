@@ -238,7 +238,7 @@ class Photometry(PrimitivesBASE):
                 clean_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
-                ad = gt.add_objcat(ad, index=ext.index, replace=False,
+                ad = gt.add_objcat(ad, index=ext.id, replace=False,
                                    table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(
                     len(ext.OBJCAT), ad.filename, ext.hdr['EXTVER']))
