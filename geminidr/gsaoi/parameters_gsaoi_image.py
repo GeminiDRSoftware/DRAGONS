@@ -18,5 +18,6 @@ class resampleToCommonFrameConfig(parameters_resample.resampleToCommonFrameConfi
                                     float, 0.02, min=0.01, max=1.0)
     pa = config.RangeField("Output position angle (E of N) if no reference provided",
                            float, 0.0, min=-180, max=360)
+
     def setDefaults(self):
         self.force_affine = False
