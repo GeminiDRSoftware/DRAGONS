@@ -232,7 +232,7 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
 
         # Now check each extension
         for ext1, ext2 in zip(ad1, ad2):
-            log.fullinfo('Checking EXTVER {}'.format(ext1.hdr['EXTVER']))
+            log.fullinfo(f'Checking extension {ext1.id}')
 
             # Check shape/size
             if check_shape and ext1.data.shape != ext2.data.shape :
@@ -501,9 +501,9 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
             if not found:
                 raise OSError(
-                  "No auxiliary data in {} matches the detector section "
-                  "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                       ad.filename, ext.hdr['EXTVER']))
+                    "No auxiliary data in {} matches the detector section "
+                    "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
+                                              ad.filename, ext.id))
 
         if clipped_this_ad:
             log.stdinfo("Clipping {} to match science data.".
@@ -678,7 +678,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                 raise OSError(
                     "No auxiliary data in {} matches the detector section "
                     "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                              ad.filename, ext.EXTVER))
+                                              ad.filename, ext.id))
 
         log.stdinfo("Clipping {} to match science data.".
                     format(os.path.basename(this_aux.filename)))
@@ -1569,6 +1569,8 @@ def parse_sextractor_param(param_file):
         columns.append(name)
     return columns
 
+
+# FIXME: unused ?
 def read_database(ad, database_name=None, input_name=None, output_name=None):
     """
     Reads IRAF wavelength calibration files from a database and attaches
@@ -1602,21 +1604,22 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         output_name = ad.filename
 
     basename = os.path.basename(input_name)
-    basename,filetype = os.path.splitext(basename)
+    basename, filetype = os.path.splitext(basename)
     out_basename = os.path.basename(output_name)
-    out_basename,filetype = os.path.splitext(out_basename)
+    out_basename, filetype = os.path.splitext(out_basename)
 
     for ext in ad:
         extver = ext.hdr['EXTVER']
         record_name = '{}_{:0.3d}'.format(basename, extver)
-        db = at.SpectralDatabase(database_name,record_name)
+        db = at.SpectralDatabase(database_name, record_name)
         out_record_name = '{}_{:0.3d}'.format(out_basename, extver)
         table = db.as_binary_table(record_name=out_record_name)
 
         ext.WAVECAL = table
     return ad
 
-# FIXME: seems unused
+
+# FIXME: unused ?
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
@@ -1654,9 +1657,10 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             # Remove the NUMBER column so add_objcat renumbers
             out_objcat.remove_column('NUMBER')
 
-            adoutput = add_objcat(adinput=adoutput, extver=outextver,
+            adoutput = add_objcat(adinput=adoutput, index=ext.id,
                                   replace=True, table=out_objcat, sx_dict=sx_dict)
     return adoutput
+
 
 @handle_single_adinput
 def trim_to_data_section(adinput=None, keyword_comments=None):
@@ -1696,24 +1700,24 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
             # Check whether data need to be trimmed
             sci_shape = ext.data.shape
-            if (sci_shape[0]==datasec.y2 and sci_shape[1]==datasec.x2 and
-                datasec.x1==0 and datasec.y1==0):
+            if (sci_shape[0] == datasec.y2 and sci_shape[1] == datasec.x2 and
+                    datasec.x1 == 0 and datasec.y1 == 0):
                 log.fullinfo('No changes will be made to {}[*,{}], since '
-                             'the data section matches the data shape'.format(
-                             ad.filename,ext.hdr['EXTVER']))
+                             'the data section matches the data shape'
+                             .format(ad.filename, ext.id))
                 continue
 
             # Update logger with the section being kept
             log.fullinfo('For {}:{}, keeping the data from the section {}'.
-                         format(ad.filename, ext.hdr['EXTVER'], datasecStr))
+                         format(ad.filename, ext.id, datasecStr))
 
             # Trim SCI, VAR, DQ to new section
-            ext.reset(ext.nddata[datasec.y1:datasec.y2,datasec.x1:datasec.x2])
+            ext.reset(ext.nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])
             # And OBJMASK (if it exists)
             # TODO: should check more generally for any image extensions
             if hasattr(ext, 'OBJMASK'):
                 ext.OBJMASK = ext.OBJMASK[datasec.y1:datasec.y2,
-                              datasec.x1:datasec.x2]
+                                          datasec.x1:datasec.x2]
 
             # Update header keys to match new dimensions
             newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
@@ -1725,6 +1729,8 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
     return adinput
 
+
+# FIXME: unused ?
 def write_database(ad, database_name=None, input_name=None):
     """
     Write out IRAF database files containing a wavelength calibration
@@ -1743,7 +1749,7 @@ def write_database(ad, database_name=None, input_name=None):
         input_name = ad.filename
 
     basename = os.path.basename(input_name)
-    basename,filetype = os.path.splitext(basename)
+    basename, filetype = os.path.splitext(basename)
 
     for ext in ad:
         record_name = '{}_{:0.3d}'.format(basename, ext.EXTVER)
