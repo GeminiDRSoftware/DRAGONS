@@ -1,9 +1,8 @@
+import astrodata
 import numpy as np
 import pytest
-
-import astrodata
 from astrodata.testing import download_from_archive
-from astropy.io.fits import ImageHDU
+from astropy.io import fits
 from astropy.nddata import NDData
 from astropy.table import Table
 
@@ -35,10 +34,72 @@ def testfile2():
     return download_from_archive("N20160524S0119.fits")
 
 
+def test_create_with_no_data():
+    for phu in (fits.PrimaryHDU(), fits.Header(), {}):
+        ad = astrodata.create(phu)
+        assert isinstance(ad, astrodata.AstroData)
+        assert len(ad) == 0
+        assert ad.instrument() is None
+        assert ad.object() is None
+
+
+def test_create_with_header():
+    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
+    for phu in (hdr, fits.PrimaryHDU(header=hdr), dict(hdr), list(hdr.cards)):
+        ad = astrodata.create(phu)
+        assert isinstance(ad, astrodata.AstroData)
+        assert len(ad) == 0
+        assert ad.instrument() == 'darkimager'
+        assert ad.object() == 'M42'
+
+
+def test_create_from_hdu():
+    phu = fits.PrimaryHDU()
+    hdu = fits.ImageHDU(data=np.zeros((4, 5)), name='SCI')
+    ad = astrodata.create(phu, [hdu])
+
+    assert isinstance(ad, astrodata.AstroData)
+    assert len(ad) == 1
+    assert isinstance(ad[0].data, np.ndarray)
+    assert ad[0].data is hdu.data
+
+
+def test_create_invalid():
+    with pytest.raises(ValueError):
+        astrodata.create('FOOBAR')
+    with pytest.raises(ValueError):
+        astrodata.create(42)
+
+
+def test_append_image_hdu():
+    ad = astrodata.create(fits.PrimaryHDU())
+    hdu = fits.ImageHDU(data=np.zeros((4, 5)))
+    ad.append(hdu, name='SCI')
+    ad.append(hdu, name='SCI2')
+
+    assert len(ad) == 2
+    assert ad[0].data is hdu.data
+    assert ad[1].data is hdu.data
+
+
 @pytest.mark.dragons_remote_data
 def test_can_read_data(testfile1):
     ad = astrodata.open(testfile1)
     assert len(ad) == 3
+    assert ad.shape == [(2304, 1056), (2304, 1056), (2304, 1056)]
+
+
+@pytest.mark.dragons_remote_data
+def test_can_read_write_pathlib(tmp_path):
+    testfile = tmp_path / 'test.fits'
+
+    ad = astrodata.create({})
+    ad.append(np.zeros((4, 5)))
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
+    assert len(ad) == 1
+    assert ad.shape == [(4, 5)]
 
 
 @pytest.mark.dragons_remote_data
@@ -105,7 +166,7 @@ def test_append_nddata_to_root_no_name(testfile2):
 
     lbefore = len(ad)
     ones = np.ones((10, 10))
-    hdu = ImageHDU(ones)
+    hdu = fits.ImageHDU(ones)
     nd = NDData(hdu.data)
     nd.meta['header'] = hdu.header
     ad.append(nd)
@@ -118,7 +179,7 @@ def test_append_nddata_to_root_with_arbitrary_name(testfile2):
     assert len(ad) == 6
 
     ones = np.ones((10, 10))
-    hdu = ImageHDU(ones)
+    hdu = fits.ImageHDU(ones)
     nd = NDData(hdu.data)
     nd.meta['header'] = hdu.header
     hdu.header['EXTNAME'] = 'ARBITRARY'

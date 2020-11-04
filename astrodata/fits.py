@@ -391,6 +391,7 @@ def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
 
     if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
         # MEF file
+        # First get HDUs for which EXTVER is defined
         for n, hdu in enumerate(hdulist):
             if extname_parser:
                 extname_parser(hdu)
@@ -403,6 +404,7 @@ def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
             new_list.append(hdu)
             recognized.add(hdu)
 
+        # Then HDUs that miss EXTVER
         for hdu in hdulist:
             if hdu in recognized:
                 continue
@@ -445,7 +447,7 @@ def read_fits(cls, source, extname_parser=None):
 
     ad = cls()
 
-    if isinstance(source, str):
+    if isinstance(source, (str, os.PathLike)):
         hdulist = fits.open(source, memmap=True,
                             do_not_scale_image_data=True, mode='readonly')
         ad.path = source
@@ -476,6 +478,7 @@ def read_fits(cls, source, extname_parser=None):
             if hdu.header.get('EXTVER') == ver and hdu.name not in skip_names:
                 yield hdu
 
+    # Only SCI HDUs
     sci_units = [hdu for hdu in hdulist[1:] if hdu.name == DEFAULT_EXTENSION]
 
     for idx, hdu in enumerate(sci_units):
@@ -489,6 +492,7 @@ def read_fits(cls, source, extname_parser=None):
             'other': [],
         }
 
+        # For each SCI HDU find if it has an associated variance, mask, wcs
         for extra_unit in associated_extensions(ver):
             seen.add(extra_unit)
             name = extra_unit.name
@@ -502,6 +506,8 @@ def read_fits(cls, source, extname_parser=None):
                 parts['other'].append(extra_unit)
 
         if hdulist._file is not None and hdulist._file.memmap:
+            # Create the NDData object, using FitsLazyLoadable to delay
+            # loading of the data
             nd = NDDataObject(
                     data=FitsLazyLoadable(parts['data']),
                     uncertainty=(None if parts['uncertainty'] is None
@@ -512,13 +518,10 @@ def read_fits(cls, source, extname_parser=None):
                          else asdftablehdu_to_wcs(parts['wcs'])),
                     )
             if nd.wcs is None:
-                try:
-                    nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
-                    # In case WCS info is in the PHU
-                    if nd.wcs is None:
-                        nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
-                except TypeError as e:
-                    raise e
+                nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+                # In case WCS info is in the PHU
+                if nd.wcs is None:
+                    nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
             ad.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
         else:
             nd = ad.append(parts['data'], name=DEFAULT_EXTENSION,
@@ -527,6 +530,7 @@ def read_fits(cls, source, extname_parser=None):
                 item = parts[item_name]
                 if item is not None:
                     ad.append(item, name=item.header['EXTNAME'], add_to=nd)
+
             if isinstance(nd, NDData):
                 if parts['wcs'] is not None:
                     nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
@@ -546,7 +550,7 @@ def read_fits(cls, source, extname_parser=None):
         try:
             ad.append(other, name=name, reset_ver=False)
         except ValueError as e:
-            print(str(e)+". Discarding "+name)
+            print(f"{e}. Discarding {name}")
 
     return ad
 
