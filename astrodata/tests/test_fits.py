@@ -86,6 +86,9 @@ def GRACES_SPECT():
 
 
 def test_extver(tmp_path):
+    """Test that EXTVER is written sequentially for new extensions,
+    and preserved with slicing.
+    """
     testfile = tmp_path / 'test.fits'
 
     ad = astrodata.create({})
@@ -108,6 +111,7 @@ def test_extver(tmp_path):
 
 
 def test_extver2(tmp_path):
+    """Test renumbering of EXTVER."""
     testfile = tmp_path / 'test.fits'
 
     ad = astrodata.create(fits.PrimaryHDU())
@@ -119,8 +123,26 @@ def test_extver2(tmp_path):
     ad.write(testfile)
 
     ad = astrodata.open(testfile)
-    for i, hdr in enumerate(ad.hdr):
-        assert hdr['EXTVER'] == i + 1
+    assert [hdr['EXTVER'] for hdr in ad.hdr] == [1, 2, 3, 4]
+
+
+def test_extver3(tmp_path, GSAOI_DARK):
+    """Test that original EXTVER are preserved and extensions added
+    from another object are renumbered.
+    """
+    testfile = tmp_path / 'test.fits'
+
+    ad1 = astrodata.open(GSAOI_DARK)
+    ad2 = astrodata.open(GSAOI_DARK)
+
+    del ad1[2]
+    ad1.append(ad2[2])
+    ad1.append(np.zeros(10))
+
+    ad1.write(testfile)
+
+    ad = astrodata.open(testfile)
+    assert [hdr['EXTVER'] for hdr in ad.hdr] == [1, 2, 4, 5, 6]
 
 
 @pytest.mark.dragons_remote_data

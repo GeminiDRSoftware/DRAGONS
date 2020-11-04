@@ -542,6 +542,10 @@ def read_fits(cls, source, extname_parser=None):
 
         ad.append(nd, name=DEFAULT_EXTENSION)
 
+        # This is used in the writer to keep track of the extensions that
+        # were read from the current object.
+        nd.meta['parent_ad'] = id(ad)
+
         for other in parts['other']:
             if not other.name:
                 warnings.warn(f"Skip HDU {other} because it has no EXTNAME")
@@ -565,9 +569,24 @@ def ad_to_hdulist(ad):
     hdul = HDUList()
     hdul.append(PrimaryHDU(header=ad.phu, data=DELAYED))
 
-    for ver, ext in enumerate(ad._nddata, start=1):
+    # Find the maximum EXTVER for extensions that belonged with this
+    # object if it was read from a FITS file
+    maxver = max((nd.meta['header'].get('EXTVER', 0) for nd in ad._nddata
+                  if nd.meta.get('parent_ad') == id(ad)),
+                 default=0)
+
+    for ext in ad._nddata:
         header = ext.meta['header']
-        header['EXTVER'] = ver
+
+        if ext.meta.get('parent_ad') == id(ad):
+            # If the extension belonged with this object, use its
+            # original EXTVER
+            ver = header['EXTVER']
+        else:
+            # Otherwise renumber the extension
+            ver = header['EXTVER'] = maxver + 1
+            maxver += 1
+
         wcs = ext.wcs
 
         if isinstance(wcs, gWCS):

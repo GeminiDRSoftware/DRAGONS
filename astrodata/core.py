@@ -267,7 +267,7 @@ class AstroData:
 
     @property
     def index(self):
-        """Returns the extensions indices for sliced objects."""
+        """Returns the extension identifier for sliced objects."""
         if self.is_single:
             return self._indices[0]
         else:
