@@ -94,6 +94,21 @@ def test_append_tables():
     assert ad[0].TABLE1['col0'][0] == 2
 
 
+def test_append_tables2():
+    """Check that slices do not report extension tables."""
+    ad = astrodata.create({})
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(Table([[1]]), name='TABLE1', add_to=ad[0].nddata)
+    ad.append(Table([[1]]), name='TABLE2', add_to=ad[1].nddata)
+    ad.append(Table([[1]]), name='TABLE3', add_to=ad[2].nddata)
+
+    assert ad.exposed == set()
+    assert ad[1].exposed == {'TABLE2'}
+    assert ad[1:].exposed == set()
+
+
 @pytest.mark.dragons_remote_data
 def test_can_read_data(testfile1):
     ad = astrodata.open(testfile1)

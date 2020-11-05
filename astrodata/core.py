@@ -624,7 +624,7 @@ class AstroData:
 
         """
         exposed = set(self._tables)
-        if self.is_sliced:
+        if self.is_single:
             nd = self.nddata if self.is_single else self.nddata[0]
             exposed |= set(nd.meta['other'])
         return exposed
