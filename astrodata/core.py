@@ -509,16 +509,14 @@ class AstroData:
             If the attribute could not be found/computed.
 
         """
-        if attribute in self._tables:
-            return self._tables[attribute]
-
         # I we're working with single slices, let's look some things up
         # in the ND object
         if self.is_single and attribute.isupper():
-            try:
+            with suppress(KeyError):
                 return self.nddata.meta['other'][attribute]
-            except KeyError:
-                pass
+
+        if attribute in self._tables:
+            return self._tables[attribute]
 
         raise AttributeError(f"{self.__class__.__name__!r} object has no "
                              f"attribute {attribute!r}")
@@ -980,22 +978,20 @@ class AstroData:
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
         tb = _process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME') if name is None else name
-        # if hname is None:
-        #     raise ValueError("Can't attach a table without a name!")
+
+        def find_next_num(tables):
+            table_num = 1
+            while f'TABLE{table_num}' in tables:
+                table_num += 1
+            return f'TABLE{table_num}'
+
         if add_to is None:
             if hname is None:
-                table_num = 1
-                while f'TABLE{table_num}' in self._tables:
-                    table_num += 1
-                hname = f'TABLE{table_num}'
+                hname = find_next_num(self._tables)
             self._tables[hname] = tb
         else:
             if hname is None:
-                table_num = 1
-                while getattr(add_to, f'TABLE{table_num}', None):
-                    table_num += 1
-                hname = f'TABLE{table_num}'
-            setattr(add_to, hname, tb)
+                hname = find_next_num(add_to.meta['other'])
             self._add_to_other(add_to, hname, tb, tb.meta['header'])
             add_to.meta['other'][hname] = tb
         return tb

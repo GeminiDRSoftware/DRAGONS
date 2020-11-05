@@ -82,6 +82,18 @@ def test_append_image_hdu():
     assert ad[1].data is hdu.data
 
 
+def test_append_tables():
+    """If both ad and ad[0] have a TABLE1, check that ad[0].TABLE1 return the
+    extension table.
+    """
+    nd = NDData(np.zeros((4, 5)), meta={'header': {}})
+    ad = astrodata.create({})
+    ad.append(nd)
+    ad.append(Table([[1]]))
+    ad.append(Table([[2]]), add_to=ad[0].nddata)
+    assert ad[0].TABLE1['col0'][0] == 2
+
+
 @pytest.mark.dragons_remote_data
 def test_can_read_data(testfile1):
     ad = astrodata.open(testfile1)

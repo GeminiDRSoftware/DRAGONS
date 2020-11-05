@@ -748,13 +748,13 @@ def test_add_table():
     assert ad[0].tables == {'TABLE1', 'MYTABLE', 'TABLE2'}
     assert ad[0].exposed == {'TABLE1', 'TABLE2', 'MYTABLE', 'OTHERTABLE'}
 
-    assert ad[0].nddata.TABLE1.meta['header']['INSTRUME'] == 'darkimager'
+    assert ad[0].TABLE1.meta['header']['INSTRUME'] == 'darkimager'
     assert (set(ad[0].nddata.meta['other'].keys()) == {
         'TABLE2', 'OTHERTABLE', 'TABLE1'
     })
-    assert_array_equal(ad[0].nddata.TABLE1['col0'], ['aa', 'bb', 'cc'])
-    assert_array_equal(ad[0].nddata.TABLE2['col0'], ['aa', 'bb', 'cc'])
-    assert_array_equal(ad[0].nddata.OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].TABLE1['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].TABLE2['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
 
 
 @pytest.mark.dragons_remote_data
