@@ -86,7 +86,6 @@ class AstroData:
         self._tables = tables or {}
 
         self._phu = phu or fits.Header()
-        self._exposed = set()
         self._fixed_settable = {'data', 'uncertainty', 'mask', 'variance',
                                 'wcs', 'path', 'filename'}
         self._logger = logging.getLogger(__name__)
@@ -110,20 +109,10 @@ class AstroData:
 
         obj = self.__class__()
 
-        for attr in ('_phu', '_path', '_orig_filename', '_tables', '_exposed'):
+        for attr in ('_phu', '_path', '_orig_filename', '_tables'):
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
         obj.__dict__['_all_nddatas'] = [deepcopy(nd) for nd in self._nddata]
-
-        # Top-level tables
-        for key in set(self.__dict__) - set(obj.__dict__):
-            obj.__dict__[key] = obj.__dict__['_tables'][key]
-
-        # FIXME: this was used by FitsProviderProxy, not sure which way is best
-        # for nd in self.nddata:
-        #     obj.append(deepcopy(nd))
-        # for t in self._tables.values():
-        #     obj.append(deepcopy(t))
 
         return obj
 
@@ -485,11 +474,6 @@ class AstroData:
                              phu=self.phu, indices=indices)
         obj._path = self.path
         obj._orig_filename = self.orig_filename
-        obj._exposed = self._exposed
-        # FIXME: tables are stored both in _tables and __dict__, not sure why,
-        # we could probably get rid of this (and exposed as well?)
-        for k in self._exposed:
-            obj.__dict__[k] = self.__dict__[k]
         return obj
 
     def __delitem__(self, idx):
@@ -530,10 +514,8 @@ class AstroData:
             If the attribute could not be found/computed.
 
         """
-        # Exposed objects are part of the normal object interface. We may have
-        # just lazy-loaded them, and that's why we get here...
-        if attribute in self._exposed:
-            return self.__dict__[attribute]
+        if attribute in self._tables:
+            return self._tables[attribute]
 
         # Check if it's an aliased object
         for nd in self._nddata:
@@ -548,8 +530,8 @@ class AstroData:
             except KeyError:
                 pass
 
-        raise AttributeError("{!r} object has no attribute {!r}"
-                             .format(self.__class__.__name__, attribute))
+        raise AttributeError(f"{self.__class__.__name__!r} object has no "
+                             f"attribute {attribute!r}")
 
     def __setattr__(self, attribute, value):
         """
@@ -568,22 +550,20 @@ class AstroData:
         def _my_attribute(attr):
             return attr in self.__dict__ or attr in self.__class__.__dict__
 
-        if attribute.isupper() and not _my_attribute(attribute):
+        if (attribute.isupper() and self.is_settable(attribute) and
+                not _my_attribute(attribute)):
             # This method is meant to let the user set certain attributes of
             # the NDData objects. First we check if the attribute belongs to
             # this object's dictionary.  Otherwise, see if we can pass it down.
             #
             # CJS 20200131: if the attribute is "exposed" then we should set
             # it via the append method I think (it's a Table or something)
-            if (self.is_settable(attribute) and
-                    (not _my_attribute(attribute) or
-                     attribute in self._exposed)):
-                if self.is_sliced and not self.is_single:
-                    raise TypeError("This attribute can only be "
-                                    "assigned to a single-slice object")
-                add_to = self.nddata[0] if self.is_sliced else None
-                self.append(value, name=attribute, add_to=add_to)
-                return
+            if self.is_sliced and not self.is_single:
+                raise TypeError("This attribute can only be "
+                                "assigned to a single-slice object")
+            add_to = self.nddata[0] if self.is_sliced else None
+            self.append(value, name=attribute, add_to=add_to)
+            return
 
         super().__setattr__(attribute, value)
 
@@ -655,7 +635,7 @@ class AstroData:
         set(['OBJMASK', 'OBJCAT'])
 
         """
-        exposed = self._exposed.copy()
+        exposed = set(self._tables)
         if self.is_sliced:
             nd = self.nddata if self.is_single else self.nddata[0]
             exposed |= set(nd.meta['other'])
@@ -1015,19 +995,16 @@ class AstroData:
         if add_to is None:
             if hname is None:
                 table_num = 1
-                while 'TABLE{}'.format(table_num) in self._tables:
+                while f'TABLE{table_num}' in self._tables:
                     table_num += 1
-                hname = 'TABLE{}'.format(table_num)
-            # Don't use setattr, which is overloaded and may case problems
-            self.__dict__[hname] = tb
+                hname = f'TABLE{table_num}'
             self._tables[hname] = tb
-            self._exposed.add(hname)
         else:
             if hname is None:
                 table_num = 1
-                while getattr(add_to, 'TABLE{}'.format(table_num), None):
+                while getattr(add_to, f'TABLE{table_num}', None):
                     table_num += 1
-                hname = 'TABLE{}'.format(table_num)
+                hname = f'TABLE{table_num}'
             setattr(add_to, hname, tb)
             self._add_to_other(add_to, hname, tb, tb.meta['header'])
             add_to.meta['other'][hname] = tb
