@@ -319,18 +319,19 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedScience(self, adinputs=None):
+    def storeProcessedScience(self, adinputs=None, suffix=None):
         if self.mode not in ['sq', 'ql', 'qa']:
             self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
-        elif self.mode != 'qa' and self.upload and 'science' in self.upload:
-            # save filenames so we can restore them after
-            filenames = [ad.filename for ad in adinputs]
+            return adinputs
 
-            for ad in adinputs:
-                ad.phu.set('PROCSCI', self.mode)
-                ad.update_filename(suffix="_%s" % self.mode)
+        for ad in adinputs:
+            ad.phu.set('PROCSCI', self.mode)
+            ad.update_filename(suffix=suffix, strip=True)
+
+            if self.mode != 'qa' and self.upload and 'science' in self.upload:
+                old_filename = ad.filename
+                ad.update_filename(suffix=f"_{self.mode}", strip=False)
                 ad.write(overwrite=True)
-
                 try:
                     upload_calibration(ad.filename, is_science=True)
                 except:
@@ -338,13 +339,11 @@ class CalibDB(PrimitivesBASE):
                 else:
                     msg = "File {} uploaded to fitsstore."
                     self.log.stdinfo(msg.format(os.path.basename(ad.filename)))
-
-            # restore filenames, we don't want the _sq or _ql on the local filesystem copy
-            for filename, ad in zip(filenames, adinputs):
-                oldfilename = ad.filename
-                ad.filename = filename
-                if oldfilename != filename:
-                    os.unlink(oldfilename)
+                # Rename file on disk to avoid writing twice
+                os.replace(ad.filename, old_filename)
+                ad.filename = old_filename
+            else:
+                ad.write(overwrite=True)
 
         return adinputs
 
