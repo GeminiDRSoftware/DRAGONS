@@ -9,6 +9,7 @@ from importlib import import_module
 
 import astrodata
 import numpy as np
+from scipy.signal import correlate
 
 from astrodata.provenance import add_provenance
 from astropy import visualization as vis
@@ -50,7 +51,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
 
-    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
+                         max_shift=None):
         """
         Adds an illumination mask to each AD object
 
@@ -90,33 +92,55 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                         0).astype(DQ.datatype)
                         ext.mask = iext if ext.mask is None else ext.mask | iext
             elif not no_bridges:   # i.e. there are bridges.
+                try:
+                    mdf = ad.MDF
+                except AttributeError:
+                    log.warning(f"MDF not found for {ad.filename} - cannot "
+                                "add illumination mask.")
+                    continue
                 # Default operation for GMOS full-frame LS
                 # The 95% cut should ensure that we're sampling something
                 # bright (even for an arc)
                 # The max is intended to handle R150 data, where many of
                 # the extensions are unilluminated
-
                 row_medians = np.max(np.array([np.percentile(ext.data, 95, axis=1)
                                                       for ext in ad]), axis=0)
-                rows = np.arange(len(row_medians))
-                m_init = models.Polynomial1D(degree=3)
-                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                           outlier_func=sigma_clip,
-                                                           sigma_upper=1, sigma_lower=3)
-                m_final, _ = fit_it(m_init, rows, row_medians)
-                model_fit = m_final(rows)
-                # Find points which are significantly below the smooth illumination fit
-                # First ensure we don't worry about single rows
-                row_mask = at.boxcar(model_fit - row_medians > 0.1 * model_fit,
-                                     operation=np.logical_and, size=1)
-                row_mask = at.boxcar(row_mask, operation=np.logical_or, size=3)
+
+                # Construct a model of the slit illumination from the MDF
+                # coefficients are from G-IRAF except c0, approx. from data
+                model = np.zeros_like(row_medians, dtype=int)
+                for ypos, ysize in mdf['slitpos_my', 'slitsize_my']:
+                    y = ypos + np.array([-0.5, 0.5]) * ysize
+                    if ad.instrument() == "GMOS-S":
+                        c0, c1, c2, c3 = (6, 0.99911, -1.7465e-5, 3.0494e-7)
+                    else:
+                        c0, c1, c2, c3 = (1.5, 0.99591859227,
+                                          5.3042211333437e-8, 1.7447902551997e-7)
+                    yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
+                            1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
+                    model[yccd[0]:yccd[1]+1] = 1
+
+                if max_shift and max_shift > 0:
+                    xcorr = correlate(row_medians, model, mode='same')
+                    mshift = model.size // 2 if max_shift is None else max_shift
+                    yshift = xcorr[model.size // 2 - mshift:model.size // 2 + mshift].argmax() - mshift
+                else:
+                    yshift = 0
+                log.debug(f"{ad.filename}: Shifting mask by {yshift} pixels")
+                row_mask = np.ones_like(model, dtype=int)
+                if yshift < 0:
+                    row_mask[:yshift] = 1 - model[-yshift:]
+                elif yshift > 0:
+                    row_mask[yshift:] = 1 - model[:-yshift]
+                else:
+                    row_mask[:] = 1 - model
                 for ext in ad:
                     ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
 
-                if has_48rows:
-                    actual_rows = 48 // ad.detector_y_bin()
-                    for ext in ad:
-                        ext.mask[:actual_rows] |= DQ.unilluminated
+            if has_48rows:
+                actual_rows = 48 // ad.detector_y_bin()
+                for ext in ad:
+                    ext.mask[:actual_rows] |= DQ.unilluminated
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
