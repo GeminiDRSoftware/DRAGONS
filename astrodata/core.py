@@ -976,9 +976,6 @@ class AstroData:
         return new_nddata
 
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
-        if name is not None:
-            name = name.upper()
-
         tb = _process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME')
 
@@ -1060,16 +1057,15 @@ class AstroData:
             # the moment
             raise TypeError("Can't append objects to non-single slices")
 
-        # FIXME: this was used on FitsProviderProxy:
-        # elif name is None:
-        #     raise TypeError("Can't append objects to a slice without an "
-        #                     "extension name")
-
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, fits.PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed. "
                              "Use .phu if you really need to set one")
+
+        if name is not None:
+            # TODO: warn if not uppercase ?
+            name = name.upper()
 
         if self.is_sliced:
             add_to = self.nddata

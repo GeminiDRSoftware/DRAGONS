@@ -109,18 +109,19 @@ def test_append_tables2():
     assert ad[1:].exposed == set()
 
 
-def test_append_tables_lowercase_name():
+def test_append_lowercase_name():
     nd = NDData(np.zeros((4, 5)), meta={'header': {}})
     ad = astrodata.create({})
     ad.append(nd)
     ad.append(Table([[1]]), name='foo')
     ad.append(Table([[1], [2]]), name='bar', add_to=ad[0].nddata)
+    ad.append(np.zeros(3), name='arr', add_to=ad[0].nddata)
 
     assert ad.tables == {'FOO'}
     assert ad.exposed == {'FOO'}
 
     assert ad[0].tables == {'FOO'}
-    assert ad[0].exposed == {'FOO', 'BAR'}
+    assert ad[0].exposed == {'FOO', 'BAR', 'ARR'}
 
 
 @pytest.mark.dragons_remote_data
