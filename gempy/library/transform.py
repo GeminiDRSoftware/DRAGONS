@@ -1606,9 +1606,6 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
     # Update and delete keywords from extension (_update_headers)
     ndim = len(ref_ext.shape)
-    if ndim != 2:
-        log.warning("The updating of header keywords has only been "
-                    "fully tested for 2D data.")
     header = ad_out[0].hdr
     keywords = {sec: ad._keyword_for('{}_section'.format(sec))
                 for sec in ('array', 'data', 'detector')}
