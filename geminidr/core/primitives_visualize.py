@@ -332,7 +332,7 @@ class Visualize(PrimitivesBASE):
             # we can catch that, trim, and try again. Don't catch anything else
             try:
                 ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
-                                                          order=order, process_objcat=False)
+                                                     order=order, process_objcat=False)
             except ValueError as e:
                 if 'data sections' in repr(e):
                     ad = gt.trim_to_data_section(ad, self.keyword_comments)
