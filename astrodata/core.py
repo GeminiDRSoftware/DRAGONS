@@ -976,8 +976,11 @@ class AstroData:
         return new_nddata
 
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
+        if name is not None:
+            name = name.upper()
+
         tb = _process_table(new_table, name, header)
-        hname = tb.meta['header'].get('EXTNAME') if name is None else name
+        hname = tb.meta['header'].get('EXTNAME')
 
         def find_next_num(tables):
             table_num = 1
