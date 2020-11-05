@@ -103,17 +103,12 @@ class AstroData:
             this works.
 
         """
-        # Force the data provider to load data, if needed.
-        # FIXME: probably no more needed
-        len(self)
-
         obj = self.__class__()
 
         for attr in ('_phu', '_path', '_orig_filename', '_tables'):
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
         obj.__dict__['_all_nddatas'] = [deepcopy(nd) for nd in self._nddata]
-
         return obj
 
     def _keyword_for(self, name):
@@ -516,11 +511,6 @@ class AstroData:
         """
         if attribute in self._tables:
             return self._tables[attribute]
-
-        # Check if it's an aliased object
-        for nd in self._nddata:
-            if nd.meta.get('name') == attribute:
-                return nd
 
         # I we're working with single slices, let's look some things up
         # in the ND object
