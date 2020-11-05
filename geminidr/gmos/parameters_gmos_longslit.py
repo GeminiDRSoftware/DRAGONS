@@ -22,8 +22,8 @@ class addDQConfig(parameters_standardize.addDQConfig):
 
 
 class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
-    max_shift = config.RangeField("Maximum pixel shift for illumination mask",
-                                  int, 5, min=0, max=20, inclusiveMax=True)
+    max_shift = config.RangeField("Maximum (unbinned) pixel shift for illumination mask",
+                                  int, 20, min=0, max=100, inclusiveMax=True)
 
 
 class makeSlitIllumConfig(config.Config):

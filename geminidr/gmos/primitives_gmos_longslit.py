@@ -63,6 +63,12 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         illum_mask: str/None
             name of illumination mask mask (None -> use default)
         """
+        offset_dict = {("GMOS-N", "Hamamatsu-N"): 1.5,
+                       ("GMOS-N", "e2vDD"): -0.2,
+                       ("GMOS-N", "EEV"): 0.7,
+                       ("GMOS-S", "Hamamatsu-S"): 6.0,
+                       ("GMOS-S", "EEV"): 3.8}
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -111,22 +117,23 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 model = np.zeros_like(row_medians, dtype=int)
                 for ypos, ysize in mdf['slitpos_my', 'slitsize_my']:
                     y = ypos + np.array([-0.5, 0.5]) * ysize
+                    c0 = offset_dict[ad.instrument(), ad.detector_name(pretty=True)]
                     if ad.instrument() == "GMOS-S":
-                        c0, c1, c2, c3 = (6, 0.99911, -1.7465e-5, 3.0494e-7)
+                        c1, c2, c3 = (0.99911, -1.7465e-5, 3.0494e-7)
                     else:
-                        c0, c1, c2, c3 = (1.5, 0.99591859227,
-                                          5.3042211333437e-8, 1.7447902551997e-7)
+                        c1, c2, c3 = (0.99591859227, 5.3042211333437e-8,
+                                      1.7447902551997e-7)
                     yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
                             1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
                     model[yccd[0]:yccd[1]+1] = 1
 
                 if max_shift and max_shift > 0:
                     xcorr = correlate(row_medians, model, mode='same')
-                    mshift = model.size // 2 if max_shift is None else max_shift
+                    mshift = (model.size // 2 if max_shift is None else max_shift) // ad.detector_y_bin()
                     yshift = xcorr[model.size // 2 - mshift:model.size // 2 + mshift].argmax() - mshift
                 else:
                     yshift = 0
-                log.debug(f"{ad.filename}: Shifting mask by {yshift} pixels")
+                log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
                 row_mask = np.ones_like(model, dtype=int)
                 if yshift < 0:
                     row_mask[:yshift] = 1 - model[-yshift:]
