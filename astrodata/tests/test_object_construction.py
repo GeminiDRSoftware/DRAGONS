@@ -120,7 +120,7 @@ def test_append_lowercase_name():
     assert ad.tables == {'FOO'}
     assert ad.exposed == {'FOO'}
 
-    assert ad[0].tables == {'FOO'}
+    assert ad[0].tables == {'FOO', 'BAR'}
     assert ad[0].exposed == {'FOO', 'BAR', 'ARR'}
 
 

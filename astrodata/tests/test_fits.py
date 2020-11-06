@@ -745,7 +745,7 @@ def test_add_table():
     ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
 
     assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
-    assert ad[0].tables == {'TABLE1', 'MYTABLE', 'TABLE2'}
+    assert ad[0].tables == {'TABLE1', 'MYTABLE', 'TABLE2', 'OTHERTABLE'}
     assert ad[0].exposed == {'TABLE1', 'TABLE2', 'MYTABLE', 'OTHERTABLE'}
 
     assert ad[0].TABLE1.meta['header']['INSTRUME'] == 'darkimager'

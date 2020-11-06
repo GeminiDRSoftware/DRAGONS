@@ -318,8 +318,14 @@ class AstroData:
 
     @property
     def tables(self):
-        """Return the names of the `astropy.table.Table` objects."""
-        return set(self._tables.keys())
+        """Return the names of the `astropy.table.Table` objects associated to
+        the object or its extensions.
+        """
+        keys = set(self._tables)
+        if self.is_single:
+            keys |= set(key for key, obj in self.nddata.meta['other'].items()
+                        if isinstance(obj, Table))
+        return keys
 
     @property
     @returns_list
@@ -614,8 +620,7 @@ class AstroData:
         """
         exposed = set(self._tables)
         if self.is_single:
-            nd = self.nddata if self.is_single else self.nddata[0]
-            exposed |= set(nd.meta['other'])
+            exposed |= set(self.nddata.meta['other'])
         return exposed
 
     def _pixel_info(self):
