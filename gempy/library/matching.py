@@ -506,7 +506,7 @@ class BruteLandscapeFitter(Fitter):
             else:
                 # We don't check that the value of a fixed param is within bounds
                 if diff > 0 and not model_copy.fixed[p]:
-                    ranges.append(slice(*(bounds + (min(0.5 * sigma * scale, 0.1 * diff),))))
+                    ranges.append(slice(*(bounds + (min(0.5 * sigma, 0.1 * diff),))))
                     continue
             ranges.append((getattr(model_copy, p).value,) * 2)
 
@@ -841,12 +841,12 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, scale=None,
         m_init = model.copy()
 
     # More precise minimization using pairwise calculations
-    fit_it = KDTreeFitter()  # TODO: set parameters?
+    fit_it = KDTreeFitter(sigma=sigma)  # TODO: set parameters?
     # We don't care about how much the function value changes (fatol), only
     # that the position is robust (xatol)
     m_final = fit_it(m_init, xin, xout, method='Nelder-Mead',
                      options={'xatol': tolerance})
-    #final_model = fit_it(m, xin, xout, method='shgo')
+    #m_final = fit_it(m_init, xin, xout, method='shgo')
     if verbose:
         log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
                                 format((datetime.now() - start).total_seconds())))
