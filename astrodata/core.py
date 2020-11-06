@@ -915,9 +915,9 @@ class AstroData:
                 else:
                     raise ValueError("Can't append pixel planes to other "
                                      "objects without a name")
-            elif name is DEFAULT_EXTENSION:
-                raise ValueError("Can't attach '{}' arrays to other objects"
-                                 .format(DEFAULT_EXTENSION))
+            elif name == DEFAULT_EXTENSION:
+                raise ValueError(f"Can't attach '{DEFAULT_EXTENSION}' arrays "
+                                 "to other objects")
             elif name == 'DQ':
                 add_to.mask = data
                 ret = data
