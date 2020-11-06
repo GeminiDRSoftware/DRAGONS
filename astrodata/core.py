@@ -980,12 +980,27 @@ class AstroData:
             return f'TABLE{table_num}'
 
         if add_to is None:
+            # Find table names for all extensions
+            ext_tables = set()
+            for nd in self._nddata:
+                ext_tables |= set(key for key, obj in nd.meta['other'].items()
+                                  if isinstance(obj, Table))
+
             if hname is None:
-                hname = find_next_num(self._tables)
+                hname = find_next_num(set(self._tables) | ext_tables)
+            elif hname in ext_tables:
+                raise ValueError(f"Cannot append table '{hname}' because it "
+                                 "would hide an extension table")
+
             self._tables[hname] = tb
         else:
             if hname is None:
-                hname = find_next_num(add_to.meta['other'])
+                hname = find_next_num(set(self._tables) |
+                                      set(add_to.meta['other']))
+            elif hname in self._tables:
+                raise ValueError(f"Cannot append table '{hname}' because it "
+                                 "would hide a top-level table")
+
             self._add_to_other(add_to, hname, tb, tb.meta['header'])
             add_to.meta['other'][hname] = tb
         return tb

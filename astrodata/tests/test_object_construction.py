@@ -91,7 +91,7 @@ def test_append_tables():
     ad.append(nd)
     ad.append(Table([[1]]))
     ad.append(Table([[2]]), add_to=ad[0].nddata)
-    assert ad[0].TABLE1['col0'][0] == 2
+    assert ad[0].TABLE2['col0'][0] == 2
 
 
 def test_append_tables2():
