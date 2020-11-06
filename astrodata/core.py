@@ -134,20 +134,13 @@ class AstroData:
         """
         for cls in self.__class__.mro():
             with suppress(AttributeError, KeyError):
-                mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
-                return getattr(self, mangled_dict_name)[name]
+                # __keyword_dict is a mangled variable
+                return getattr(self, f'_{cls.__name__}__keyword_dict')[name]
         else:
-            raise AttributeError("No match for '{}'".format(name))
+            raise AttributeError(f"No match for '{name}'")
 
     def _process_tags(self):
-        """
-        Determines the tag set for the current instance.
-
-        Returns
-        -------
-        set of str
-
-        """
+        """Return the tag set (as a set of str) for the current instance."""
         results = []
         # Calling inspect.getmembers on `self` would trigger all the
         # properties (tags, phu, hdr, etc.), and that's undesirable. To
@@ -572,18 +565,14 @@ class AstroData:
                 if attribute in otherh:
                     del otherh[attribute]
             else:
-                raise AttributeError(
-                    "{!r} sliced object has no attribute {!r}"
-                    .format(self.__class__.__name__, attribute))
+                raise AttributeError(f"{self.__class__.__name__!r} sliced "
+                                     "object has no attribute {attribute!r}")
         else:
-            # TODO: So far we're only deleting tables by name.
-            #       Figure out what to do with aliases
             if attribute in self._tables:
                 del self._tables[attribute]
             else:
-                raise AttributeError(
-                    "'{}' is not a global table for this instance"
-                    .format(attribute))
+                raise AttributeError(f"'{attribute}' is not a global table "
+                                     "for this instance")
 
     def __contains__(self, attribute):
         """
@@ -886,8 +875,8 @@ class AstroData:
                 name = DEFAULT_EXTENSION
 
             if name in {'DQ', 'VAR'}:
-                raise ValueError("'{}' need to be associated to a '{}' one"
-                                 .format(name, DEFAULT_EXTENSION))
+                raise ValueError(f"'{name}' need to be associated to a "
+                                 f"'{DEFAULT_EXTENSION}' one")
             else:
                 # FIXME: the logic here is broken since name is
                 # always set to somehing above with DEFAULT_EXTENSION
@@ -906,7 +895,7 @@ class AstroData:
             # Attaching to another extension
             if header is not None and name in {'DQ', 'VAR'}:
                 self._logger.warning(
-                    "The header is ignored for '{}' extensions".format(name))
+                    f"The header is ignored for '{name}' extensions")
             if name is None:
                 # FIXME: both should raise the same exception
                 if self.is_sliced:
