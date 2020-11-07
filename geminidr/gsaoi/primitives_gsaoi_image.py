@@ -7,12 +7,15 @@ import math
 from functools import reduce
 import numpy as np
 
-from astropy.modeling import models, Model
+from astropy.modeling import models, fitting, Model
+from astropy.stats import sigma_clip
 from astropy import table
 from astropy import units as u
 
 from gwcs.wcs import WCS as gWCS
 from gwcs import coordinate_frames as cf
+
+from astrodata import wcs as adwcs
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am, astrotools as at
@@ -45,21 +48,27 @@ class GSAOIImage(GSAOI, Image, Photometry):
         This primitive determines how to modify the WCS of each image to
         produce the best positional match between its sources (OBJCAT) and
         the REFCAT. This is a GSAOI-specific version that differs from the
-        core primitive in two ways: (a) it combines all the extensions to
+        core primitive in three ways: (a) it combines all the extensions to
         provide a single offset model for the entire AD object; (b) it
         inserts this model after the static distortion correction, instead
-        of at the start of the WCS forward_transform.
+        of at the start of the WCS forward_transform; (c) the model is two
+        separate Polynomial2D objects rather than a scale/shift/rotate
+        transform.
 
         Parameters
         ----------
-        initial: float
+        initial : float
             search radius for cross-correlation (arcsec)
-        final: float
+        final : float
             search radius for object matching (arcsec)
-        rotate: bool
-            allow image rotation to align to reference catalog?
-        scale: bool
-            allow image scaling to align to reference catalog?
+        rotate : bool
+            allow image rotation in initial alignment of reference catalog?
+        scale : bool
+            allow image scaling in initial alignment of reference catalog?
+        order : int
+            order of polynomial fit in each ordinate
+        max_iters : int
+            maximum number of iterations when performing polynomial fit
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -68,6 +77,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
         scale = params["scale"]
         initial = params["initial"]
         final = params["final"]
+        order = params["order"]
+        max_iters = params["max_iters"]
 
         self._attach_static_distortion(adinputs)
 
@@ -148,46 +159,62 @@ class GSAOIImage(GSAOI, Image, Photometry):
             in_coords = (objcat['X_STATIC'][sorted_idx],
                          objcat['Y_STATIC'][sorted_idx])
             ref_coords = (xref[in_field], yref[in_field])
-            transform = fit_model(m_init, in_coords, ref_coords,
-                                  sigma=0.1, tolerance=0.001, brute=True,
-                                  scale=1/0.02)
-            #matched = match_sources(transform.inverse(*ref_coords),
-            #                        *in_coords, radius=final/pixscale)
-            matched = match_sources(transform.inverse(xref, yref),
-                                    (objcat['X_STATIC'], objcat['Y_STATIC']),
-                                    radius=final)
 
+            transform = fit_model(m_init, in_coords, ref_coords,
+                                  sigma=0.2, tolerance=0.001,
+                                  brute=True, scale=1/0.02)
+            # This order will assign the closest OBJCAT to each REFCAT source
+            matched = match_sources((xref, yref),
+                                    transform(objcat['X_STATIC'], objcat['Y_STATIC']),
+                                    radius=final)
             num_matched = np.sum(matched >= 0)
             log.stdinfo(f"Matched {num_matched} objects")
 
             if num_matched > 0:
+                # Shape doesn't matter here since the transform is perfectly affine
+                # We use this function for ease of determining polynomial
+                # coefficients irrespective of whether we have a rotation/scaling
+                affine = adwcs.calculate_affine_matrices(transform, shape=(100, 100))
+                xmodel = models.Polynomial2D(degree=order, c0_0=affine.offset[1],
+                                             c1_0=affine.matrix[1,1],
+                                             c0_1=affine.matrix[1,0])
+                ymodel = models.Polynomial2D(degree=order, c0_0=affine.offset[0],
+                                             c1_0=affine.matrix[0,1],
+                                             c0_1=affine.matrix[0,0])
+
+                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                           sigma_clip, sigma=3)
+                niter = 0
+                while True:
+                    old_num_matched = num_matched
+                    xobj_matched, yobj_matched = [], []
+                    xref_matched, yref_matched = [], []
+                    for i, m in enumerate(matched):
+                        if m >= 0:
+                            xref_matched.append(xref[i])
+                            yref_matched.append(yref[i])
+                            xobj_matched.append(objcat['X_STATIC'][m])
+                            yobj_matched.append(objcat['Y_STATIC'][m])
+                    xmodel, _ = fit_it(xmodel, np.array(xobj_matched), np.array(yobj_matched), xref_matched)
+                    ymodel, _ = fit_it(ymodel, np.array(xobj_matched), np.array(yobj_matched), yref_matched)
+                    transform = models.Mapping((0,1,0,1)) | (xmodel & ymodel)
+                    matched = match_sources((xref, yref),
+                                            transform(objcat['X_STATIC'], objcat['Y_STATIC']),
+                                            radius=final)
+                    num_matched = np.sum(matched >= 0)
+                    log.stdinfo(f"Matched {num_matched} objects")
+                    if num_matched == old_num_matched or niter > max_iters:
+                        break
+                    niter += 1
+                xmodel_inv, _ = fit_it(xmodel, np.array(xref_matched), np.array(yref_matched), xobj_matched)
+                ymodel_inv, _ = fit_it(ymodel, np.array(xref_matched), np.array(yref_matched), yobj_matched)
+                transform.inverse = models.Mapping((0,1,0,1)) | (xmodel_inv & ymodel_inv)
+
                 # Associate REFCAT properties with their OBJCAT
                 # counterparts. Remember! matched is the reference
                 # (OBJCAT) source for the input (REFCAT) source
-                cosdec = math.cos(math.radians(ad.target_dec()))
-                # Update OBJCAT (X_WORLD, Y_WORLD)
-                crpix = (0, 0)  # doesn't matter since we're only doing a shift
-                for ext in ad:
-                    ra0, dec0 = ext.wcs(*crpix)
-                    # TODO: use insert_frame method
-                    var_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="variable")
-                    ext.wcs = gWCS(ext.wcs.pipeline[:1] +
-                                   [(ext.wcs.pipeline[1].frame, transform),
-                                    (var_frame, ext.wcs.pipeline[1].transform)] +
-                                    ext.wcs.pipeline[2:])
-                    ext.objcat = objcat[objcat['EXTVER'] == ext.hdr['EXTVER']]
-                    ext.objcat['X_WORLD'], ext.objcat['Y_WORLD'] = ext.wcs(ext.objcat['X_IMAGE']-1,
-                                                                           ext.objcat['Y_IMAGE']-1)
-                    ext.objcat.remove_columns(['EXTVER', 'X_STATIC', 'Y_STATIC'])
-
-                    # Sky coordinates of original CRPIX location with old
-                    # and new WCS (easier than using the transform)
-                    ra1, dec1 = ext.wcs(*crpix)
-                    delta_ra = 3600 * (ra1-ra0) * cosdec
-                    delta_dec = 3600 * (dec1-dec0)
-                    print("Offsets", delta_ra, delta_dec)
-
-                dra = ddec = []
+                dra, ddec = [], []
+                cospa, sinpa = math.cos(ad.phu['PA']), math.sin(ad.phu['PA'])
                 for i, m in enumerate(matched):
                     if m >= 0:
                         try:
@@ -199,10 +226,13 @@ class GSAOIImage(GSAOI, Image, Photometry):
                             objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
                         except KeyError:  # no such columns in REFCAT
                             pass
-                        dra.append(3600*(objcat['X_WORLD'][m] -
-                                         refcat['RAJ2000'][i]) * cosdec)
-                        ddec.append(2600*(objcat['Y_WORLD'][m] -
-                                          refcat['DEJ2000'][i]))
+                        dx = xref[i] - objcat['X_STATIC'][m]
+                        dy = yref[i] - objcat['Y_STATIC'][m]
+                        dra.append(dx * cospa - dy * sinpa)
+                        ddec.append(dx * sinpa + dy * cospa)
+
+                delta_ra = np.mean(dra)
+                delta_dec = np.mean(ddec)
                 dra_std = np.std(dra)
                 ddec_std = np.std(ddec)
                 log.fullinfo(f"WCS Updated for {ad.filename}. Astrometric "
@@ -219,6 +249,18 @@ class GSAOIImage(GSAOI, Image, Photometry):
                     qap.fitsstore_report(ad, "pe", info_list, self.calurl_dict,
                                          self.mode, upload=True)
 
+                # Update OBJCAT (X_WORLD, Y_WORLD)
+                for ext in ad:
+                    # TODO: use insert_frame method
+                    var_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="variable")
+                    ext.wcs = gWCS(ext.wcs.pipeline[:1] +
+                                   [(ext.wcs.pipeline[1].frame, transform),
+                                    (var_frame, ext.wcs.pipeline[1].transform)] +
+                                   ext.wcs.pipeline[2:])
+                    ext.objcat = objcat[objcat['EXTVER'] == ext.hdr['EXTVER']]
+                    ext.objcat['X_WORLD'], ext.objcat['Y_WORLD'] = ext.wcs(ext.objcat['X_IMAGE']-1,
+                                                                           ext.objcat['Y_IMAGE']-1)
+                    ext.objcat.remove_columns(['EXTVER', 'X_STATIC', 'Y_STATIC'])
             else:
                 log.stdinfo("Could not determine astrometric offset for "
                             f"{ad.filename}")
@@ -315,7 +357,6 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 # Include ROI shift
                 sdmodel = (models.Shift(arrsec.x1 + 1) &
                            models.Shift(arrsec.y1 + 1) | sdmodel)
-
                 static_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="static")
                 sky_model = models.Scale(1 / 3600) & models.Scale(1 / 3600)
                 pa = ad.phu['PA']

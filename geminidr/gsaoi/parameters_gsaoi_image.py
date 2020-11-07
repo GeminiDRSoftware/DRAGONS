@@ -1,7 +1,7 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gsaoi_image.py file, in alphabetical order.
 from gempy.library import config
-from geminidr.core import parameters_photometry, parameters_resample
+from geminidr.core import parameters_photometry, parameters_register, parameters_resample
 
 
 class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
@@ -12,6 +12,15 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
         self.phot_min_radius = 1.
         self.back_size = 256
         self.back_filtersize = 5
+
+
+class determineAstrometricSolutionConfig(parameters_register.determineAstrometricSolutionConfig):
+    order = config.RangeField("Order of fitting polynomial", int, 3, min=1, max=10, inclusiveMax=True)
+    max_iters = config.RangeField("Maximum number of iterations for polynomial fit",
+                                  int, 5, min=1, max=20, inclusiveMax=True)
+    def setDefaults(self):
+        self.final = 0.1
+
 
 class resampleToCommonFrameConfig(parameters_resample.resampleToCommonFrameConfig):
     pixel_scale = config.RangeField("Output pixel scale (arcseconds) if no reference provided",
