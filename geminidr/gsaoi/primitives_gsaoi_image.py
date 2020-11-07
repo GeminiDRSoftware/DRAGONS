@@ -171,44 +171,53 @@ class GSAOIImage(GSAOI, Image, Photometry):
             log.stdinfo(f"Matched {num_matched} objects")
 
             if num_matched > 0:
-                # Shape doesn't matter here since the transform is perfectly affine
-                # We use this function for ease of determining polynomial
-                # coefficients irrespective of whether we have a rotation/scaling
-                affine = adwcs.calculate_affine_matrices(transform, shape=(100, 100))
-                xmodel = models.Polynomial2D(degree=order, c0_0=affine.offset[1],
-                                             c1_0=affine.matrix[1,1],
-                                             c0_1=affine.matrix[1,0])
-                ymodel = models.Polynomial2D(degree=order, c0_0=affine.offset[0],
-                                             c1_0=affine.matrix[0,1],
-                                             c0_1=affine.matrix[0,0])
+                # No point trying to compute a more complex model if it will
+                # be insufficiently constrained
+                if num_matched > 2:
+                    if len(models.Polynomial2D(degree=order).parameters) > num_matched:
+                        while len(models.Polynomial2D(degree=order).parameters) > num_matched:
+                            order -= 1
+                        log.warning(f"Downgrading fit to order {order} due to "
+                                    "limited number of matches.")
 
-                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                           sigma_clip, sigma=3)
-                niter = 0
-                while True:
-                    old_num_matched = num_matched
-                    xobj_matched, yobj_matched = [], []
-                    xref_matched, yref_matched = [], []
-                    for i, m in enumerate(matched):
-                        if m >= 0:
-                            xref_matched.append(xref[i])
-                            yref_matched.append(yref[i])
-                            xobj_matched.append(objcat['X_STATIC'][m])
-                            yobj_matched.append(objcat['Y_STATIC'][m])
-                    xmodel, _ = fit_it(xmodel, np.array(xobj_matched), np.array(yobj_matched), xref_matched)
-                    ymodel, _ = fit_it(ymodel, np.array(xobj_matched), np.array(yobj_matched), yref_matched)
-                    transform = models.Mapping((0,1,0,1)) | (xmodel & ymodel)
-                    matched = match_sources((xref, yref),
-                                            transform(objcat['X_STATIC'], objcat['Y_STATIC']),
-                                            radius=final)
-                    num_matched = np.sum(matched >= 0)
-                    log.stdinfo(f"Matched {num_matched} objects")
-                    if num_matched == old_num_matched or niter > max_iters:
-                        break
-                    niter += 1
-                xmodel_inv, _ = fit_it(xmodel, np.array(xref_matched), np.array(yref_matched), xobj_matched)
-                ymodel_inv, _ = fit_it(ymodel, np.array(xref_matched), np.array(yref_matched), yobj_matched)
-                transform.inverse = models.Mapping((0,1,0,1)) | (xmodel_inv & ymodel_inv)
+                    # Shape doesn't matter here since the transform is perfectly affine
+                    # We use this function for ease of determining polynomial
+                    # coefficients irrespective of whether we have a rotation/scaling
+                    affine = adwcs.calculate_affine_matrices(transform, shape=(100, 100))
+                    xmodel = models.Polynomial2D(degree=order, c0_0=affine.offset[1],
+                                                 c1_0=affine.matrix[1,1],
+                                                 c0_1=affine.matrix[1,0])
+                    ymodel = models.Polynomial2D(degree=order, c0_0=affine.offset[0],
+                                                 c1_0=affine.matrix[0,1],
+                                                 c0_1=affine.matrix[0,0])
+
+                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                               sigma_clip, sigma=3)
+                    niter = 0
+                    while True:
+                        old_num_matched = num_matched
+                        xobj_matched, yobj_matched = [], []
+                        xref_matched, yref_matched = [], []
+                        for i, m in enumerate(matched):
+                            if m >= 0:
+                                xref_matched.append(xref[i])
+                                yref_matched.append(yref[i])
+                                xobj_matched.append(objcat['X_STATIC'][m])
+                                yobj_matched.append(objcat['Y_STATIC'][m])
+                        xmodel, _ = fit_it(xmodel, np.array(xobj_matched), np.array(yobj_matched), xref_matched)
+                        ymodel, _ = fit_it(ymodel, np.array(xobj_matched), np.array(yobj_matched), yref_matched)
+                        transform = models.Mapping((0,1,0,1)) | (xmodel & ymodel)
+                        matched = match_sources((xref, yref),
+                                                transform(objcat['X_STATIC'], objcat['Y_STATIC']),
+                                                radius=final)
+                        num_matched = np.sum(matched >= 0)
+                        log.stdinfo(f"Matched {num_matched} objects")
+                        if num_matched == old_num_matched or niter > max_iters:
+                            break
+                        niter += 1
+                    xmodel_inv, _ = fit_it(xmodel, np.array(xref_matched), np.array(yref_matched), xobj_matched)
+                    ymodel_inv, _ = fit_it(ymodel, np.array(xref_matched), np.array(yref_matched), yobj_matched)
+                    transform.inverse = models.Mapping((0,1,0,1)) | (xmodel_inv & ymodel_inv)
 
                 # Associate REFCAT properties with their OBJCAT
                 # counterparts. Remember! matched is the reference
@@ -268,9 +277,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-
         return adinputs
-
 
     def makeLampFlat(self, adinputs=None, **params):
         """
