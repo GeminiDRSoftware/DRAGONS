@@ -419,7 +419,7 @@ class Register(PrimitivesBASE):
                                 pass
                             dra.append(3600*(objcat['X_WORLD'][m] -
                                              refcat['RAJ2000'][i]) * cosdec)
-                            ddec.append(2600*(objcat['Y_WORLD'][m] -
+                            ddec.append(3600*(objcat['Y_WORLD'][m] -
                                               refcat['DEJ2000'][i]))
                     dra_std = np.std(dra)
                     ddec_std = np.std(ddec)
