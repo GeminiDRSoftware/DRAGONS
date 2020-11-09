@@ -41,12 +41,8 @@ class Register(PrimitivesBASE):
         the relative error in their world coordinate systems. The function
         uses points of reference common to the reference image and the
         input images to fit the input WCS to the reference one. The fit
-        is done by a least-squares minimization of the difference between
-        the reference points in the input image pixel coordinate system.
-        This function is intended to be followed by the
-        align_to_reference_image function, which applies the relative
-        transformation encoded in the WCS to transform input images into the
-        reference image pixel coordinate system.
+        is done via the KDTreeFitter, which does not require a direct
+        one-to-one mapping of sources between the images.
 
         The primary registration method is intended to be by direct mapping
         of sources in the image frame to correlated sources in the reference
@@ -63,12 +59,9 @@ class Register(PrimitivesBASE):
         detected in the frame and attached to the AstroData instance in an
         OBJCAT extension. This can be accomplished via the detectSources
         primitive. Running time is optimal, and sometimes the solution is
-        more robust, when there are not too many sources in the OBJCAT. Try
-        running detectSources with threshold=20. The solution may also be
-        more robust if sub-optimal sources are rejected from the set of
-        correlated sources (use option cull_sources=True). This option may
-        substantially increase the running time if there are many sources in
-        the OBJCAT.
+        more robust, when there are not too many sources in the OBJCAT. The
+        solution may also be more robust if sub-optimal sources are rejected
+        from the set of correlated sources (use option cull_sources=True).
 
         It is expected that the relative difference between the WCSs of
         images to be combined should be quite small, so it may not be necessary
