@@ -106,7 +106,7 @@ class Register(PrimitivesBASE):
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
-                        "input images are required for matchWCSToReference")
+                        "input images are required for adjustWCSToReference")
             return adinputs
 
         if not all(len(ad)==1 for ad in adinputs):
