@@ -6,7 +6,7 @@ class addReferenceCatalogConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_refcatAdded", optional=True)
     radius = config.RangeField("Search radius (degrees)", float, 0.067, min=0.)
     source = config.Field("Name of catalog to search", str, "gmos", optional=True)
-    format = config.Field("Format of catalog (if user-supplied", str, None, optional=True)
+    format = config.Field("Format of catalog (if user-supplied)", str, None, optional=True)
 
 class detectSourcesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sourcesDetected", optional=True)
