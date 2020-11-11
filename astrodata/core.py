@@ -549,7 +549,7 @@ class AstroData:
                 raise TypeError("This attribute can only be "
                                 "assigned to a single-slice object")
             add_to = self.nddata[0] if self.is_sliced else None
-            self.append(value, name=attribute, add_to=add_to)
+            self._append(value, name=attribute, add_to=add_to)
             return
 
         super().__setattr__(attribute, value)
@@ -1020,13 +1020,26 @@ class AstroData:
         return self._append_nddata(new_nddata, name=None, add_to=None,
                                    reset_ver=True)
 
-    def append(self, ext, name=None, header=None, reset_ver=True, add_to=None):
+    def _append(self, ext, name=None, header=None, reset_ver=True,
+                add_to=None):
+        dispatcher = (
+            (NDData, self._append_raw_nddata),
+            ((Table, fits.TableHDU, fits.BinTableHDU), self._append_table),
+            (fits.ImageHDU, self._append_imagehdu),
+            (AstroData, self._append_astrodata),
+        )
+
+        for bases, method in dispatcher:
+            if isinstance(ext, bases):
+                return method(ext, name=name, header=header, add_to=add_to,
+                              reset_ver=reset_ver)
+
+        # Assume that this is an array for a pixel plane
+        return self._append_array(ext, name=name, header=header, add_to=add_to)
+
+    def append(self, ext, name=None, header=None, reset_ver=True):
         """
-        Adds a new top-level extension. Objects appended to a single
-        slice will actually be made hierarchically dependent of the science
-        object represented by that slice. If appended to the provider as
-        a whole, the new member will be independent (eg. global table, new
-        science object).
+        Adds a new top-level extension.
 
         Parameters
         ----------
@@ -1061,10 +1074,9 @@ class AstroData:
             illegal somehow.
 
         """
-        if self.is_sliced and not self.is_single:
-            # TODO: We could rethink this one, but leave it like that at
-            # the moment
-            raise TypeError("Can't append objects to non-single slices")
+        if self.is_sliced:
+            raise TypeError(f"Can't append objects to slices, use "
+                            f"'ext.{name} = obj' instead")
 
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
@@ -1076,24 +1088,7 @@ class AstroData:
             # TODO: warn if not uppercase ?
             name = name.upper()
 
-        if self.is_sliced:
-            add_to = self.nddata
-
-        dispatcher = (
-            (NDData, self._append_raw_nddata),
-            ((Table, fits.TableHDU, fits.BinTableHDU), self._append_table),
-            (fits.ImageHDU, self._append_imagehdu),
-            (AstroData, self._append_astrodata),
-        )
-
-        for bases, method in dispatcher:
-            if isinstance(ext, bases):
-                return method(ext, name=name, header=header, add_to=add_to,
-                              reset_ver=reset_ver)
-        else:
-            # Assume that this is an array for a pixel plane
-            return self._append_array(ext, name=name, header=header,
-                                      add_to=add_to)
+        return self._append(ext, name=name, header=header, reset_ver=reset_ver)
 
     @classmethod
     def read(cls, source, extname_parser=None):
