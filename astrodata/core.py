@@ -86,7 +86,6 @@ class AstroData:
         self._tables = tables or {}
 
         self._phu = phu or fits.Header()
-        self._exposed = set()
         self._fixed_settable = {'data', 'uncertainty', 'mask', 'variance',
                                 'wcs', 'path', 'filename'}
         self._logger = logging.getLogger(__name__)
@@ -104,27 +103,12 @@ class AstroData:
             this works.
 
         """
-        # Force the data provider to load data, if needed.
-        # FIXME: probably no more needed
-        len(self)
-
         obj = self.__class__()
 
-        for attr in ('_phu', '_path', '_orig_filename', '_tables', '_exposed'):
+        for attr in ('_phu', '_path', '_orig_filename', '_tables'):
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
         obj.__dict__['_all_nddatas'] = [deepcopy(nd) for nd in self._nddata]
-
-        # Top-level tables
-        for key in set(self.__dict__) - set(obj.__dict__):
-            obj.__dict__[key] = obj.__dict__['_tables'][key]
-
-        # FIXME: this was used by FitsProviderProxy, not sure which way is best
-        # for nd in self.nddata:
-        #     obj.append(deepcopy(nd))
-        # for t in self._tables.values():
-        #     obj.append(deepcopy(t))
-
         return obj
 
     def _keyword_for(self, name):
@@ -150,20 +134,13 @@ class AstroData:
         """
         for cls in self.__class__.mro():
             with suppress(AttributeError, KeyError):
-                mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
-                return getattr(self, mangled_dict_name)[name]
+                # __keyword_dict is a mangled variable
+                return getattr(self, f'_{cls.__name__}__keyword_dict')[name]
         else:
-            raise AttributeError("No match for '{}'".format(name))
+            raise AttributeError(f"No match for '{name}'")
 
     def _process_tags(self):
-        """
-        Determines the tag set for the current instance.
-
-        Returns
-        -------
-        set of str
-
-        """
+        """Return the tag set (as a set of str) for the current instance."""
         results = []
         # Calling inspect.getmembers on `self` would trigger all the
         # properties (tags, phu, hdr, etc.), and that's undesirable. To
@@ -341,8 +318,14 @@ class AstroData:
 
     @property
     def tables(self):
-        """Return the names of the `astropy.table.Table` objects."""
-        return set(self._tables.keys())
+        """Return the names of the `astropy.table.Table` objects associated to
+        the object or its extensions.
+        """
+        keys = set(self._tables)
+        if self.is_single:
+            keys |= set(key for key, obj in self.nddata.meta['other'].items()
+                        if isinstance(obj, Table))
+        return keys
 
     @property
     @returns_list
@@ -485,11 +468,6 @@ class AstroData:
                              phu=self.phu, indices=indices)
         obj._path = self.path
         obj._orig_filename = self.orig_filename
-        obj._exposed = self._exposed
-        # FIXME: tables are stored both in _tables and __dict__, not sure why,
-        # we could probably get rid of this (and exposed as well?)
-        for k in self._exposed:
-            obj.__dict__[k] = self.__dict__[k]
         return obj
 
     def __delitem__(self, idx):
@@ -530,26 +508,17 @@ class AstroData:
             If the attribute could not be found/computed.
 
         """
-        # Exposed objects are part of the normal object interface. We may have
-        # just lazy-loaded them, and that's why we get here...
-        if attribute in self._exposed:
-            return self.__dict__[attribute]
-
-        # Check if it's an aliased object
-        for nd in self._nddata:
-            if nd.meta.get('name') == attribute:
-                return nd
-
         # I we're working with single slices, let's look some things up
         # in the ND object
         if self.is_single and attribute.isupper():
-            try:
+            with suppress(KeyError):
                 return self.nddata.meta['other'][attribute]
-            except KeyError:
-                pass
 
-        raise AttributeError("{!r} object has no attribute {!r}"
-                             .format(self.__class__.__name__, attribute))
+        if attribute in self._tables:
+            return self._tables[attribute]
+
+        raise AttributeError(f"{self.__class__.__name__!r} object has no "
+                             f"attribute {attribute!r}")
 
     def __setattr__(self, attribute, value):
         """
@@ -568,22 +537,20 @@ class AstroData:
         def _my_attribute(attr):
             return attr in self.__dict__ or attr in self.__class__.__dict__
 
-        if attribute.isupper() and not _my_attribute(attribute):
+        if (attribute.isupper() and self.is_settable(attribute) and
+                not _my_attribute(attribute)):
             # This method is meant to let the user set certain attributes of
             # the NDData objects. First we check if the attribute belongs to
             # this object's dictionary.  Otherwise, see if we can pass it down.
             #
             # CJS 20200131: if the attribute is "exposed" then we should set
             # it via the append method I think (it's a Table or something)
-            if (self.is_settable(attribute) and
-                    (not _my_attribute(attribute) or
-                     attribute in self._exposed)):
-                if self.is_sliced and not self.is_single:
-                    raise TypeError("This attribute can only be "
-                                    "assigned to a single-slice object")
-                add_to = self.nddata[0] if self.is_sliced else None
-                self.append(value, name=attribute, add_to=add_to)
-                return
+            if self.is_sliced and not self.is_single:
+                raise TypeError("This attribute can only be "
+                                "assigned to a single-slice object")
+            add_to = self.nddata[0] if self.is_sliced else None
+            self.append(value, name=attribute, add_to=add_to)
+            return
 
         super().__setattr__(attribute, value)
 
@@ -604,18 +571,14 @@ class AstroData:
                 if attribute in otherh:
                     del otherh[attribute]
             else:
-                raise AttributeError(
-                    "{!r} sliced object has no attribute {!r}"
-                    .format(self.__class__.__name__, attribute))
+                raise AttributeError(f"{self.__class__.__name__!r} sliced "
+                                     "object has no attribute {attribute!r}")
         else:
-            # TODO: So far we're only deleting tables by name.
-            #       Figure out what to do with aliases
             if attribute in self._tables:
                 del self._tables[attribute]
             else:
-                raise AttributeError(
-                    "'{}' is not a global table for this instance"
-                    .format(attribute))
+                raise AttributeError(f"'{attribute}' is not a global table "
+                                     "for this instance")
 
     def __contains__(self, attribute):
         """
@@ -655,10 +618,9 @@ class AstroData:
         set(['OBJMASK', 'OBJCAT'])
 
         """
-        exposed = self._exposed.copy()
-        if self.is_sliced:
-            nd = self.nddata if self.is_single else self.nddata[0]
-            exposed |= set(nd.meta['other'])
+        exposed = set(self._tables)
+        if self.is_single:
+            exposed |= set(self.nddata.meta['other'])
         return exposed
 
     def _pixel_info(self):
@@ -918,8 +880,8 @@ class AstroData:
                 name = DEFAULT_EXTENSION
 
             if name in {'DQ', 'VAR'}:
-                raise ValueError("'{}' need to be associated to a '{}' one"
-                                 .format(name, DEFAULT_EXTENSION))
+                raise ValueError(f"'{name}' need to be associated to a "
+                                 f"'{DEFAULT_EXTENSION}' one")
             else:
                 # FIXME: the logic here is broken since name is
                 # always set to somehing above with DEFAULT_EXTENSION
@@ -938,7 +900,7 @@ class AstroData:
             # Attaching to another extension
             if header is not None and name in {'DQ', 'VAR'}:
                 self._logger.warning(
-                    "The header is ignored for '{}' extensions".format(name))
+                    f"The header is ignored for '{name}' extensions")
             if name is None:
                 # FIXME: both should raise the same exception
                 if self.is_sliced:
@@ -947,9 +909,9 @@ class AstroData:
                 else:
                     raise ValueError("Can't append pixel planes to other "
                                      "objects without a name")
-            elif name is DEFAULT_EXTENSION:
-                raise ValueError("Can't attach '{}' arrays to other objects"
-                                 .format(DEFAULT_EXTENSION))
+            elif name == DEFAULT_EXTENSION:
+                raise ValueError(f"Can't attach '{DEFAULT_EXTENSION}' arrays "
+                                 "to other objects")
             elif name == 'DQ':
                 add_to.mask = data
                 ret = data
@@ -1009,26 +971,36 @@ class AstroData:
 
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
         tb = _process_table(new_table, name, header)
-        hname = tb.meta['header'].get('EXTNAME') if name is None else name
-        # if hname is None:
-        #     raise ValueError("Can't attach a table without a name!")
+        hname = tb.meta['header'].get('EXTNAME')
+
+        def find_next_num(tables):
+            table_num = 1
+            while f'TABLE{table_num}' in tables:
+                table_num += 1
+            return f'TABLE{table_num}'
+
         if add_to is None:
+            # Find table names for all extensions
+            ext_tables = set()
+            for nd in self._nddata:
+                ext_tables |= set(key for key, obj in nd.meta['other'].items()
+                                  if isinstance(obj, Table))
+
             if hname is None:
-                table_num = 1
-                while 'TABLE{}'.format(table_num) in self._tables:
-                    table_num += 1
-                hname = 'TABLE{}'.format(table_num)
-            # Don't use setattr, which is overloaded and may case problems
-            self.__dict__[hname] = tb
+                hname = find_next_num(set(self._tables) | ext_tables)
+            elif hname in ext_tables:
+                raise ValueError(f"Cannot append table '{hname}' because it "
+                                 "would hide an extension table")
+
             self._tables[hname] = tb
-            self._exposed.add(hname)
         else:
             if hname is None:
-                table_num = 1
-                while getattr(add_to, 'TABLE{}'.format(table_num), None):
-                    table_num += 1
-                hname = 'TABLE{}'.format(table_num)
-            setattr(add_to, hname, tb)
+                hname = find_next_num(set(self._tables) |
+                                      set(add_to.meta['other']))
+            elif hname in self._tables:
+                raise ValueError(f"Cannot append table '{hname}' because it "
+                                 "would hide a top-level table")
+
             self._add_to_other(add_to, hname, tb, tb.meta['header'])
             add_to.meta['other'][hname] = tb
         return tb
@@ -1094,16 +1066,15 @@ class AstroData:
             # the moment
             raise TypeError("Can't append objects to non-single slices")
 
-        # FIXME: this was used on FitsProviderProxy:
-        # elif name is None:
-        #     raise TypeError("Can't append objects to a slice without an "
-        #                     "extension name")
-
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, fits.PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed. "
                              "Use .phu if you really need to set one")
+
+        if name is not None:
+            # TODO: warn if not uppercase ?
+            name = name.upper()
 
         if self.is_sliced:
             add_to = self.nddata

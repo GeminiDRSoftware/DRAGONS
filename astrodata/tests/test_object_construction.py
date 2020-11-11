@@ -82,6 +82,48 @@ def test_append_image_hdu():
     assert ad[1].data is hdu.data
 
 
+def test_append_tables():
+    """If both ad and ad[0] have a TABLE1, check that ad[0].TABLE1 return the
+    extension table.
+    """
+    nd = NDData(np.zeros((4, 5)), meta={'header': {}})
+    ad = astrodata.create({})
+    ad.append(nd)
+    ad.append(Table([[1]]))
+    ad.append(Table([[2]]), add_to=ad[0].nddata)
+    assert ad[0].TABLE2['col0'][0] == 2
+
+
+def test_append_tables2():
+    """Check that slices do not report extension tables."""
+    ad = astrodata.create({})
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(Table([[1]]), name='TABLE1', add_to=ad[0].nddata)
+    ad.append(Table([[1]]), name='TABLE2', add_to=ad[1].nddata)
+    ad.append(Table([[1]]), name='TABLE3', add_to=ad[2].nddata)
+
+    assert ad.exposed == set()
+    assert ad[1].exposed == {'TABLE2'}
+    assert ad[1:].exposed == set()
+
+
+def test_append_lowercase_name():
+    nd = NDData(np.zeros((4, 5)), meta={'header': {}})
+    ad = astrodata.create({})
+    ad.append(nd)
+    ad.append(Table([[1]]), name='foo')
+    ad.append(Table([[1], [2]]), name='bar', add_to=ad[0].nddata)
+    ad.append(np.zeros(3), name='arr', add_to=ad[0].nddata)
+
+    assert ad.tables == {'FOO'}
+    assert ad.exposed == {'FOO'}
+
+    assert ad[0].tables == {'FOO', 'BAR'}
+    assert ad[0].exposed == {'FOO', 'BAR', 'ARR'}
+
+
 @pytest.mark.dragons_remote_data
 def test_can_read_data(testfile1):
     ad = astrodata.open(testfile1)

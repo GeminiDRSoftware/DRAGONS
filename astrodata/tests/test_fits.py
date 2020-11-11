@@ -745,16 +745,18 @@ def test_add_table():
     ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
 
     assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
-    assert ad[0].tables == {'TABLE1', 'MYTABLE', 'TABLE2'}
-    assert ad[0].exposed == {'TABLE1', 'TABLE2', 'MYTABLE', 'OTHERTABLE'}
 
-    assert ad[0].nddata.TABLE1.meta['header']['INSTRUME'] == 'darkimager'
-    assert (set(ad[0].nddata.meta['other'].keys()) == {
-        'TABLE2', 'OTHERTABLE', 'TABLE1'
-    })
-    assert_array_equal(ad[0].nddata.TABLE1['col0'], ['aa', 'bb', 'cc'])
-    assert_array_equal(ad[0].nddata.TABLE2['col0'], ['aa', 'bb', 'cc'])
-    assert_array_equal(ad[0].nddata.OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
+    expected_tables = {'MYTABLE', 'OTHERTABLE', 'TABLE1', 'TABLE2',
+                       'TABLE3', 'TABLE4'}
+    assert ad[0].tables == expected_tables
+    assert ad[0].exposed == expected_tables
+
+    assert ad[0].TABLE3.meta['header']['INSTRUME'] == 'darkimager'
+    assert set(ad[0].nddata.meta['other'].keys()) == {'OTHERTABLE',
+                                                      'TABLE3', 'TABLE4'}
+    assert_array_equal(ad[0].TABLE3['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].TABLE4['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
 
 
 @pytest.mark.dragons_remote_data

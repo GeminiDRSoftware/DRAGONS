@@ -191,7 +191,10 @@ def test_write_and_read(tmpdir, capsys):
     ad.append(tbl, name='BOB')
 
     tbl = Table([np.zeros(5) + 2, np.zeros(5) + 3], names=('c', 'd'))
-    ad.append(tbl, name='BOB', add_to=nd)
+    with pytest.raises(ValueError, match="Cannot append table 'BOB'"):
+        ad.append(tbl, name='BOB', add_to=nd)
+
+    ad.append(tbl, name='BOB2', add_to=nd)
 
     ad.append(np.arange(10), name='MYVAL_WITH_A_VERY_LONG_NAME', add_to=nd)
 
@@ -212,7 +215,7 @@ def test_write_and_read(tmpdir, capsys):
         '[ 0]   science                  NDAstroData       (2, 2)         int64',
         '          .variance             ADVarianceUncerta (2, 2)         float64',
         '          .mask                 ndarray           (2, 2)         uint16',
-        '          .BOB                  Table             (5, 2)         n/a',
+        '          .BOB2                 Table             (5, 2)         n/a',
         '          .MYVAL_WITH_A_VERY_LO ndarray           (10,)          int64',
         '',
         'Other Extensions',
