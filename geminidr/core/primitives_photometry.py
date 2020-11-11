@@ -111,7 +111,7 @@ class Photometry(PrimitivesBASE):
                     raise
 
             if user_refcat:
-                refcat = user_refcat
+                refcat = user_refcat.copy()
             else:
                 log.fullinfo(f"Querying {source} for reference catalog, "
                              f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
