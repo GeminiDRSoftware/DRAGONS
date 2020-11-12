@@ -303,6 +303,10 @@ def test_append_single_slice(testfile1, testfile2):
     assert np.all(ad2[-1].data == ad[1].data)
     assert last_ever < ad2[-1].nddata.meta['header'].get('EXTVER', -1)
 
+    # With a custom header
+    ad2.append(ad[1], header=fits.Header({'FOO': 'BAR'}))
+    assert ad2[-1].nddata.meta['header']['FOO'] == 'BAR'
+
 
 @pytest.mark.dragons_remote_data
 def test_append_non_single_slice(testfile1, testfile2):
@@ -329,6 +333,10 @@ def test_append_slice_to_extension(testfile1, testfile2):
 
     with pytest.raises(TypeError):
         ad2[0].append(ad[0], name="FOOBAR")
+
+    match = "Cannot append an AstroData slice to another slice"
+    with pytest.raises(ValueError, match=match):
+        ad[2].FOO = ad2[1]
 
 
 @pytest.mark.dragons_remote_data

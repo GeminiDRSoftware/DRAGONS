@@ -992,6 +992,12 @@ class AstroData:
 
     def _append(self, ext, name=None, header=None, reset_ver=True,
                 add_to=None):
+        """
+        Internal method to dispatch to the type specific methods. This is
+        called either by ``.append`` to append on top-level objects only or
+        by ``__setattr__``. In the second case ``name`` cannot be None, so
+        this is always the case when appending to extensions (add_to != None).
+        """
         dispatcher = (
             (NDData, self._append_raw_nddata),
             ((Table, fits.TableHDU, fits.BinTableHDU), self._append_table),
