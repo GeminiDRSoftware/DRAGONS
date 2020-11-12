@@ -73,30 +73,72 @@ class fit_1D:
         Distance within which to extend rejection to the neighbours of
         statistically-rejected pixels (eg. 1 for the nearest neighbours).
 
-    regions : `str`, optional
+    regions : `str` or list of `slice`, optional
         One or more comma-separated pixel ranges to be used in fitting each
-        1D model. Each range is 1-indexed, inclusive of the upper limit and
-        may use a colon or hyphen separator. An upper or lower limit may be
-        omitted, to use the remainder of the axis. The default of `None` (or
-        '*' or '') causes the entire axis to be used. Any data outside the
-        specified range(s) are ignored in fitting (even if those ranges are
-        completely masked in the input `image`).
+        1D model. If this is a string, each range is 1-indexed, inclusive of
+        the upper limit and may use a colon or hyphen separator. An upper or
+        lower limit may be omitted, to use the remainder of the axis. The
+        default of `None` (or '*' or '') causes the entire axis to be used.
+        Any data outside the specified range(s) are ignored in fitting (even
+        if those ranges are completely masked in the input `image`). If the
+        argument is a list of slice objects, they follow the usual Python
+        indexing conventions.
 
     plot : bool
         Plot the images if True, default is False.
 
-    Returns
-    -------
+    Attributes
+    ----------
 
-    `ndarray`
+    fitvals : `ndarray`
         An array of the same shape as the input, whose values are evaluated
         from the polynomial fits to each 1D vector.
 
     """
 
-    def __new__(cls, image, weights=None, function='legendre', order=1,
-                axis=-1, lsigma=3.0, hsigma=3.0, iterations=0, grow=False,
-                regions=None, plot=False):
+    def __init__(self, image, weights=None, function='legendre', order=1,
+                 axis=-1, lsigma=3.0, hsigma=3.0, iterations=0, grow=False,
+                 regions=None, plot=False):
+
+        # Save the fitting parameter values:
+        self.function = function
+        self.order = order
+        self.axis = axis
+        self.lsigma = lsigma
+        self.hsigma = hsigma
+        self.iterations = iterations
+        self.grow = grow
+        self.regions = regions  # or slices?
+        self.plot = plot
+
+        # Map the specified fitting function to a model:
+        self.model_class, self.model_args = function_map[self.function]
+
+        # The spline fitting uses an adaptive criterion when order=None, but
+        # AstroPy polynomials require an integer degree so map None to default:
+        if (self.order is None and
+            self.model_class is not UnivariateSplineWithOutlierRemoval):
+            self.order = 1
+
+        # Parse the sample regions or check that they're already slices:
+        if not regions or isinstance(regions, str):
+            self.slices = cartesian_regions_to_slices(regions)
+        else:
+            self.slices = None
+            try:
+                if all(isinstance(item, slice) for item in regions):
+                    self.slices = regions
+            except TypeError:
+                pass
+            if self.slices is None:
+                raise TypeError('regions must be a string or a list of slices')
+
+        # Perform the fit and (for now) save fitted values on the input grid:
+        # self.fitvals, self.mask = self._fit(image, weights=None)
+        self.fitvals = self._fit(image, weights=weights)
+
+
+    def _fit(self, image, weights=None):
 
         # Convert array-like input to a MaskedArray internally, to ensure it's
         # an `ndarray` instance and that any mask gets passed through to the
@@ -105,32 +147,23 @@ class fit_1D:
 
         # Determine how many pixels we're fitting each vector over:
         try:
-            npix = image.shape[axis]
+            npix = image.shape[self.axis]
         except IndexError:
             raise ValueError('axis={0} out of range for input shape {1}'
-                             .format(axis, image.shape))
+                             .format(self.axis, image.shape))
 
         # Define pixel grid to fit on:
         points = np.arange(npix, dtype=np.int16)
 
-        # Define the model to be fitted:
-        func, funcargs = function_map[function]
+        # Classify the model to be fitted:
         try:
-            astropy_model = issubclass(func, Model)
+            astropy_model = issubclass(self.model_class, Model)
         except TypeError:
             astropy_model = False
 
-        # The spline fitting uses an adaptive criterion when order=None, but
-        # AstroPy polynomials require an integer degree so map None to default:
-        if order is None and func is not UnivariateSplineWithOutlierRemoval:
-            order = 1
-
-        # Parse the sample regions:
-        slices = cartesian_regions_to_slices(regions)
-
         # Convert user regions to a Boolean mask for slicing:
         user_reg = np.zeros(npix, dtype=np.bool)
-        for _slice in slices:
+        for _slice in self.slices:
             user_reg[_slice] = True
 
         # To support fitting any axis of an N-dimensional array, we must
@@ -145,11 +178,12 @@ class fit_1D:
         else:
             ax_before = image.ndim
             stack_shape = (-1, npix)
-        image = np.rollaxis(image, axis, ax_before)
+        image = np.rollaxis(image, self.axis, ax_before)
         tmpshape = image.shape
         image = image.reshape(stack_shape)
         if weights is not None:
-            weights = np.rollaxis(weights, axis, ax_before).reshape(stack_shape)
+            weights = np.rollaxis(weights, self.axis,
+                                  ax_before).reshape(stack_shape)
 
         # Create an empty, full-sized mask within which the fitter will
         # populate only the user-specified region(s):
@@ -173,28 +207,30 @@ class fit_1D:
             else:
                 # remove fully masked columns otherwise this will lead to
                 # Runtime warnings from Numpy because of divisions by zero.
-                good_cols = (~image.mask).sum(axis=0) > order
+                good_cols = (~image.mask).sum(axis=0) > self.order
                 n_models = np.sum(good_cols)
                 if n_models < image.shape[1]:
                     image_to_fit = image[:, good_cols]
                     weights = weights[:, good_cols]
 
-            model_set = func(degree=(order - 1), n_models=n_models,
-                             model_set_axis=(None if n_models == 1 else 1),
-                             **funcargs)
+            model_set = self.model_class(
+                degree=(self.order - 1), n_models=n_models,
+                model_set_axis=(None if n_models == 1 else 1),
+                **self.model_args
+            )
 
             # Configure iterative linear fitter with rejection:
             fitter = fitting.FittingWithOutlierRemoval(
                 fitting.LinearLSQFitter(),
                 sigma_clip,
-                niter=iterations,
+                niter=self.iterations,
                 # additional args are passed to outlier_func, i.e. sigma_clip
-                sigma_lower=lsigma,
-                sigma_upper=hsigma,
+                sigma_lower=self.lsigma,
+                sigma_upper=self.hsigma,
                 maxiters=1,
                 cenfunc='mean',
                 stdfunc='std',
-                grow=grow  # requires AstroPy 4.2 (#10613)
+                grow=self.grow  # requires AstroPy 4.2 (#10613)
             )
 
             # Fit the pixel data with rejection of outlying points:
@@ -234,10 +270,12 @@ class fit_1D:
 
                 # Could generalize this a bit further using another dict to map
                 # parameter names in function_map, eg. weights -> w?
-                fitted_model = func(points[user_reg], imrow[user_reg],
-                                    order=order, w=wrow, niter=iterations,
-                                    grow=int(grow), lsigma=lsigma,
-                                    hsigma=hsigma, maxiters=1, **funcargs)
+                fitted_model = self.model_class(
+                    points[user_reg], imrow[user_reg], order=self.order,
+                    w=wrow, niter=self.iterations, grow=int(self.grow),
+                    lsigma=self.lsigma, hsigma=self.hsigma, maxiters=1,
+                    **self.model_args
+                )
 
                 # Determine model values to be returned. This is somewhat
                 # specific to the spline fitter and using fitted_model.data
@@ -249,7 +287,7 @@ class fit_1D:
                 # fitvals[n] = fitted_model(points)
 
         # TEST: Plot the fit:
-        if plot:
+        if self.plot:
             import matplotlib.pyplot as plt
             fig, ax = plt.subplots()
             points1 = points+1
@@ -291,8 +329,8 @@ class fit_1D:
         # Restore the ordering & shape of the input array:
         fitvals = fitvals.reshape(tmpshape)
         if astropy_model:
-            fitvals = np.rollaxis(fitvals, 0, (axis + 1) or fitvals.ndim)
+            fitvals = np.rollaxis(fitvals, 0, (self.axis + 1) or fitvals.ndim)
         else:
-            fitvals = np.rollaxis(fitvals, -1, axis)
+            fitvals = np.rollaxis(fitvals, -1, self.axis)
 
         return fitvals
