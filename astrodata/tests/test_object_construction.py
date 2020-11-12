@@ -5,6 +5,7 @@ from astrodata.testing import download_from_archive
 from astropy.io import fits
 from astropy.nddata import NDData
 from astropy.table import Table
+from numpy.testing import assert_array_equal
 
 
 @pytest.fixture()
@@ -73,28 +74,15 @@ def test_create_invalid():
 
 def test_append_image_hdu():
     ad = astrodata.create(fits.PrimaryHDU())
-    hdu = fits.ImageHDU(data=np.zeros((4, 5)))
-    ad.append(hdu, name='SCI')
-    ad.append(hdu, name='SCI2')
+    ad.append(fits.ImageHDU(data=np.zeros((4, 5))))
+    ad.append(fits.ImageHDU(data=np.zeros((4, 5))), name='SCI')
+
+    with pytest.raises(ValueError,
+                       match="Arbitrary image extensions can only be added "
+                       "in association to a 'SCI'"):
+        ad.append(fits.ImageHDU(data=np.zeros((4, 5))), name='SCI2')
 
     assert len(ad) == 2
-    assert ad[0].data is hdu.data
-    assert ad[1].data is hdu.data
-
-
-def test_append_tables():
-    """Check that slices do not report extension tables."""
-    ad = astrodata.create({})
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad[0].TABLE1 = Table([[1]])
-    ad[1].TABLE2 = Table([[2]])
-    ad[2].TABLE3 = Table([[3]])
-
-    assert ad.exposed == set()
-    assert ad[1].exposed == {'TABLE2'}
-    assert ad[1:].exposed == set()
 
 
 def test_append_lowercase_name():
@@ -110,6 +98,29 @@ def test_append_lowercase_name():
 
     assert ad[0].tables == {'FOO', 'BAR'}
     assert ad[0].exposed == {'FOO', 'BAR', 'ARR'}
+
+
+def test_append_arrays(tmp_path):
+    testfile = tmp_path / 'test.fits'
+
+    ad = astrodata.create({})
+    ad.append(np.zeros(10))
+    ad[0].ARR = np.arange(5)
+
+    match = ("Arbitrary image extensions can only be added in association "
+             "to a 'SCI'")
+    with pytest.raises(ValueError, match=match):
+        ad.append(np.zeros(10), name='FOO')
+
+    with pytest.raises(ValueError, match=match):
+        ad.append(np.zeros(10), header=fits.Header({'EXTNAME': 'FOO'}))
+
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
+    assert len(ad) == 1
+    assert ad[0].nddata.meta['header']['EXTNAME'] == 'SCI'
+    assert_array_equal(ad[0].ARR, np.arange(5))
 
 
 @pytest.mark.dragons_remote_data
@@ -217,39 +228,41 @@ def test_append_nddata_to_root_with_arbitrary_name(testfile2):
         ad.append(nd)
 
 
-@pytest.mark.dragons_remote_data
-def test_append_table_to_root(testfile2):
-    ad = astrodata.open(testfile2)
-    with pytest.raises(AttributeError):
-        ad.MYTABLE
+def test_append_table():
+    ad = astrodata.create({})
 
-    assert len(ad) == 6
+    # With name
     table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
     ad.append(table, 'MYTABLE')
     assert (ad.MYTABLE == table).all()
 
-
-@pytest.mark.dragons_remote_data
-def test_append_table_to_root_without_name(testfile2):
-    ad = astrodata.open(testfile2)
-    assert len(ad) == 6
-    with pytest.raises(AttributeError):
-        ad.TABLE1
-
+    # Without name
     table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
     ad.append(table)
-    assert len(ad) == 6
     assert isinstance(ad.TABLE1, Table)
 
 
-@pytest.mark.dragons_remote_data
-def test_append_table_to_extension(testfile2):
-    ad = astrodata.open(testfile2)
-    assert len(ad) == 6
+def test_append_table_to_extensions():
+    ad = astrodata.create({})
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad[0].TABLE1 = Table([[1]])
+    ad[0].TABLE2 = Table([[22]])
+    ad[1].TABLE2 = Table([[2]])  # extensions can have the same table name
+    ad[2].TABLE3 = Table([[3]])
 
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad[0].MYTABLE = table
-    assert (ad[0].MYTABLE == table).all()
+    # Check that slices do not report extension tables
+    assert ad.exposed == set()
+    assert ad[0].exposed == {'TABLE1', 'TABLE2'}
+    assert ad[1].exposed == {'TABLE2'}
+    assert ad[2].exposed == {'TABLE3'}
+    assert ad[1:].exposed == set()
+
+    match = ("Cannot append table 'TABLE1' because it would hide an "
+             "extension table")
+    with pytest.raises(ValueError, match=match):
+        ad.append(Table([[1]]), name='TABLE1')
 
 
 # Append / assign Gemini specific

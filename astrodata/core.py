@@ -878,13 +878,6 @@ class AstroData:
 
         if add_to is None:
             # Top level extension
-
-            # Special cases for Gemini
-            if name is None:
-                name = DEFAULT_EXTENSION
-
-            # FIXME: the logic here is broken since name is
-            # always set to somehing above with DEFAULT_EXTENSION
             if name is not None:
                 hname = name
             elif header is not None:
@@ -897,15 +890,7 @@ class AstroData:
             ret = self._append_imagehdu(hdu, name=hname, header=None,
                                         add_to=None)
         else:
-            if name is None:
-                # FIXME: both should raise the same exception
-                if self.is_sliced:
-                    raise TypeError("Can't append objects to a slice "
-                                    "without an extension name")
-                else:
-                    raise ValueError("Can't append pixel planes to other "
-                                     "objects without a name")
-            elif name == DEFAULT_EXTENSION:
+            if name == DEFAULT_EXTENSION:
                 raise ValueError(f"Can't attach '{DEFAULT_EXTENSION}' arrays "
                                  "to other objects")
             else:
@@ -982,10 +967,7 @@ class AstroData:
 
             self._tables[hname] = tb
         else:
-            if hname is None:
-                hname = find_next_num(set(self._tables) |
-                                      set(add_to.meta['other']))
-            elif hname in self._tables:
+            if hname in self._tables:
                 raise ValueError(f"Cannot append table '{hname}' because it "
                                  "would hide a top-level table")
 
