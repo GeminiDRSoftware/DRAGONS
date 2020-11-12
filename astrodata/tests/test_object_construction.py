@@ -83,26 +83,14 @@ def test_append_image_hdu():
 
 
 def test_append_tables():
-    """If both ad and ad[0] have a TABLE1, check that ad[0].TABLE1 return the
-    extension table.
-    """
-    nd = NDData(np.zeros((4, 5)), meta={'header': {}})
-    ad = astrodata.create({})
-    ad.append(nd)
-    ad.append(Table([[1]]))
-    ad.append(Table([[2]]), add_to=ad[0].nddata)
-    assert ad[0].TABLE2['col0'][0] == 2
-
-
-def test_append_tables2():
     """Check that slices do not report extension tables."""
     ad = astrodata.create({})
     ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
     ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
     ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(Table([[1]]), name='TABLE1', add_to=ad[0].nddata)
-    ad.append(Table([[1]]), name='TABLE2', add_to=ad[1].nddata)
-    ad.append(Table([[1]]), name='TABLE3', add_to=ad[2].nddata)
+    ad[0].TABLE1 = Table([[1]])
+    ad[1].TABLE2 = Table([[2]])
+    ad[2].TABLE3 = Table([[3]])
 
     assert ad.exposed == set()
     assert ad[1].exposed == {'TABLE2'}
@@ -114,8 +102,8 @@ def test_append_lowercase_name():
     ad = astrodata.create({})
     ad.append(nd)
     ad.append(Table([[1]]), name='foo')
-    ad.append(Table([[1], [2]]), name='bar', add_to=ad[0].nddata)
-    ad.append(np.zeros(3), name='arr', add_to=ad[0].nddata)
+    ad[0].BAR = Table([[1], [2]])
+    ad[0].ARR = np.zeros(3)
 
     assert ad.tables == {'FOO'}
     assert ad.exposed == {'FOO'}
@@ -186,7 +174,7 @@ def test_append_array_to_extension_with_name_sci(testfile2):
     assert len(ad) == 6
 
     ones = np.ones((10, 10))
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         ad[0].append(ones, name='SCI')
 
 
@@ -196,7 +184,7 @@ def test_append_array_to_extension_with_arbitrary_name(testfile2):
 
     lbefore = len(ad)
     ones = np.ones((10, 10))
-    ad[0].append(ones, name='ARBITRARY')
+    ad[0].ARBITRARY = ones
 
     assert len(ad) == lbefore
     assert ad[0].ARBITRARY is ones
@@ -260,46 +248,31 @@ def test_append_table_to_extension(testfile2):
     assert len(ad) == 6
 
     table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad[0].append(table, 'MYTABLE')
+    ad[0].MYTABLE = table
     assert (ad[0].MYTABLE == table).all()
 
 
 # Append / assign Gemini specific
 
 @pytest.mark.dragons_remote_data
-def test_append_dq_to_root(testfile2):
+def test_append_dq_var(testfile2):
     ad = astrodata.open(testfile2)
 
     dq = np.zeros(ad[0].data.shape)
     with pytest.raises(ValueError):
         ad.append(dq, 'DQ')
+    with pytest.raises(ValueError):
+        ad.DQ = dq
+    with pytest.raises(ValueError):
+        ad[0].DQ = dq
 
-
-@pytest.mark.dragons_remote_data
-def test_append_dq_to_ext(testfile2):
-    ad = astrodata.open(testfile2)
-
-    dq = np.zeros(ad[0].data.shape)
-    ad[0].append(dq, 'DQ')
-    assert dq is ad[0].mask
-
-
-@pytest.mark.dragons_remote_data
-def test_append_var_to_root(testfile2):
-    ad = astrodata.open(testfile2)
-
-    var = np.random.random(ad[0].data.shape)
+    var = np.ones(ad[0].data.shape)
     with pytest.raises(ValueError):
         ad.append(var, 'VAR')
-
-
-@pytest.mark.dragons_remote_data
-def test_append_var_to_ext(testfile2):
-    ad = astrodata.open(testfile2)
-
-    var = np.random.random(ad[0].data.shape)
-    ad[0].append(var, 'VAR')
-    assert np.abs(var - ad[0].variance).mean() < 0.00000001
+    with pytest.raises(ValueError):
+        ad.VAR = var
+    with pytest.raises(ValueError):
+        ad[0].VAR = var
 
 
 # Append AstroData slices
@@ -341,15 +314,15 @@ def test_append_slice_to_extension(testfile1, testfile2):
     ad = astrodata.open(testfile2)
     ad2 = astrodata.open(testfile1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         ad2[0].append(ad[0], name="FOOBAR")
 
 
 @pytest.mark.dragons_remote_data
 def test_delete_named_associated_extension(testfile2):
     ad = astrodata.open(testfile2)
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad[0].append(table, 'MYTABLE')
+    ad[0].MYTABLE = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
+                          names=('a', 'b', 'c'))
     assert 'MYTABLE' in ad[0]
     del ad[0].MYTABLE
     assert 'MYTABLE' not in ad[0]

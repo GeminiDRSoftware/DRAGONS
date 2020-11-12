@@ -548,7 +548,7 @@ class AstroData:
             if self.is_sliced and not self.is_single:
                 raise TypeError("This attribute can only be "
                                 "assigned to a single-slice object")
-            add_to = self.nddata[0] if self.is_sliced else None
+            add_to = self.nddata if self.is_single else None
             self._append(value, name=attribute, add_to=add_to)
             return
 
@@ -872,6 +872,10 @@ class AstroData:
             meta['other_header'][name] = header
 
     def _append_array(self, data, name=None, header=None, add_to=None):
+        if name in {'DQ', 'VAR'}:
+            raise ValueError(f"'{name}' need to be associated to a "
+                             f"'{DEFAULT_EXTENSION}' one")
+
         if add_to is None:
             # Top level extension
 
@@ -879,28 +883,20 @@ class AstroData:
             if name is None:
                 name = DEFAULT_EXTENSION
 
-            if name in {'DQ', 'VAR'}:
-                raise ValueError(f"'{name}' need to be associated to a "
-                                 f"'{DEFAULT_EXTENSION}' one")
+            # FIXME: the logic here is broken since name is
+            # always set to somehing above with DEFAULT_EXTENSION
+            if name is not None:
+                hname = name
+            elif header is not None:
+                hname = header.get('EXTNAME', DEFAULT_EXTENSION)
             else:
-                # FIXME: the logic here is broken since name is
-                # always set to somehing above with DEFAULT_EXTENSION
-                if name is not None:
-                    hname = name
-                elif header is not None:
-                    hname = header.get('EXTNAME', DEFAULT_EXTENSION)
-                else:
-                    hname = DEFAULT_EXTENSION
+                hname = DEFAULT_EXTENSION
 
-                hdu = fits.ImageHDU(data, header=header)
-                hdu.header['EXTNAME'] = hname
-                ret = self._append_imagehdu(hdu, name=hname, header=None,
-                                            add_to=None)
+            hdu = fits.ImageHDU(data, header=header)
+            hdu.header['EXTNAME'] = hname
+            ret = self._append_imagehdu(hdu, name=hname, header=None,
+                                        add_to=None)
         else:
-            # Attaching to another extension
-            if header is not None and name in {'DQ', 'VAR'}:
-                self._logger.warning(
-                    f"The header is ignored for '{name}' extensions")
             if name is None:
                 # FIXME: both should raise the same exception
                 if self.is_sliced:
@@ -912,14 +908,6 @@ class AstroData:
             elif name == DEFAULT_EXTENSION:
                 raise ValueError(f"Can't attach '{DEFAULT_EXTENSION}' arrays "
                                  "to other objects")
-            elif name == 'DQ':
-                add_to.mask = data
-                ret = data
-            elif name == 'VAR':
-                std_un = ADVarianceUncertainty(data)
-                std_un.parent_nddata = add_to
-                add_to.uncertainty = std_un
-                ret = std_un
             else:
                 self._add_to_other(add_to, name, data, header=header)
                 ret = data
@@ -1075,8 +1063,8 @@ class AstroData:
 
         """
         if self.is_sliced:
-            raise TypeError(f"Can't append objects to slices, use "
-                            f"'ext.{name} = obj' instead")
+            raise TypeError("Can't append objects to slices, use "
+                            "'ext.NAME = obj' instead")
 
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...

@@ -206,7 +206,7 @@ def test_slice(GMOSN_SPECT):
     with pytest.raises(AttributeError):
         del ext.BAR
 
-    match = "Can't append objects to a slice without an extension name"
+    match = "Can't append objects to slices, use 'ext.NAME = obj' instead"
     with pytest.raises(TypeError, match=match):
         ext.append(np.zeros(5))
 
@@ -240,9 +240,13 @@ def test_slice_multiple(GMOSN_SPECT):
     with pytest.raises(TypeError, match=match):
         del slc[0]
 
-    match = "Can't append objects to non-single slices"
+    match = "Can't append objects to slices, use 'ext.NAME = obj' instead"
     with pytest.raises(TypeError, match=match):
         slc.append(np.zeros(5), name='ARR')
+
+    match = "This attribute can only be assigned to a single-slice object"
+    with pytest.raises(TypeError, match=match):
+        slc.ARR = np.zeros(5)
 
     # iterate over single slice
     metadata = ('SCI', 1)
@@ -679,7 +683,7 @@ def test_read_no_extensions(GRACES_SPECT):
     assert ad[0].hdr['EXTVER'] == 1
 
 
-def test_add_var_and_dq(caplog):
+def test_add_var_and_dq():
     shape = (3, 4)
     fakedata = np.arange(np.prod(shape)).reshape(shape)
 
@@ -700,27 +704,8 @@ def test_add_var_and_dq(caplog):
         ad.append(np.ones(shape), name='VAR')
 
     with pytest.raises(ValueError,
-                       match="Can't append pixel planes to "
-                       "other objects without a name"):
-        ad.append(np.ones(shape), add_to=ad[0].nddata)
-
-    with pytest.raises(ValueError,
                        match="Can't attach 'SCI' arrays to other objects"):
-        ad.append(np.ones(shape), name='SCI', add_to=ad[0].nddata)
-
-    ad.append(fits.ImageHDU(data=np.ones(shape)),
-              name='VAR',
-              add_to=ad[0].nddata)
-
-    ad.append(np.zeros(shape), name='DQ', add_to=ad[0].nddata, header='fake')
-    assert (caplog.records[0].message ==
-            "The header is ignored for 'DQ' extensions")
-
-    ad.append(np.ones(shape), name='FOO', add_to=ad[0].nddata)
-
-    assert_array_equal(ad[0].nddata.data, fakedata)
-    assert_array_equal(ad[0].nddata.variance, 1)
-    assert_array_equal(ad[0].nddata.mask, 0)
+        ad[0].SCI = np.ones(shape)
 
 
 def test_add_table():
@@ -733,16 +718,17 @@ def test_add_table():
     tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
     ad.append(tbl)
     assert ad.tables == {'TABLE1'}
+
     ad.append(tbl)
     assert ad.tables == {'TABLE1', 'TABLE2'}
+
     ad.append(tbl, name='MYTABLE')
     assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
 
-    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
     tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad.append(tbl, add_to=ad[0].nddata, header=hdr)
-    ad.append(tbl, add_to=ad[0].nddata)
-    ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
+    ad[0].TABLE3 = tbl
+    ad[0].TABLE4 = tbl
+    ad[0].OTHERTABLE = tbl
 
     assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
 
@@ -751,7 +737,6 @@ def test_add_table():
     assert ad[0].tables == expected_tables
     assert ad[0].exposed == expected_tables
 
-    assert ad[0].TABLE3.meta['header']['INSTRUME'] == 'darkimager'
     assert set(ad[0].nddata.meta['other'].keys()) == {'OTHERTABLE',
                                                       'TABLE3', 'TABLE4'}
     assert_array_equal(ad[0].TABLE3['col0'], ['aa', 'bb', 'cc'])
@@ -764,8 +749,7 @@ def test_copy(GSAOI_DARK, capsys):
     ad = astrodata.open(GSAOI_DARK)
     tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
     ad.append(tbl)
-    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad.append(tbl, add_to=ad[0].nddata)
+    ad[0].MYTABLE = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
 
     ad.info()
     captured = capsys.readouterr()

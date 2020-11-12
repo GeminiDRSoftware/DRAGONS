@@ -541,7 +541,8 @@ def read_fits(cls, source, extname_parser=None):
                         pass
 
         for other in parts['other']:
-            ad.append(other, name=other.header['EXTNAME'], add_to=nd)
+            # FIXME: handle case where EXTNAME is missing or None
+            setattr(ad[-1], other.header['EXTNAME'], other)
 
     for other in hdulist:
         if other in seen:
