@@ -89,7 +89,9 @@ def test_append_lowercase_name():
     nd = NDData(np.zeros((4, 5)), meta={'header': {}})
     ad = astrodata.create({})
     ad.append(nd)
-    ad.append(Table([[1]]), name='foo')
+    with pytest.warns(UserWarning,
+                      match="extension name '.*' should be uppercase"):
+        ad.append(Table([[1]]), name='foo')
     ad[0].BAR = Table([[1], [2]])
     ad[0].ARR = np.zeros(3)
 

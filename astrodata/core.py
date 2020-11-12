@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import textwrap
+import warnings
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
@@ -1060,8 +1061,9 @@ class AstroData:
             raise ValueError("Only one Primary HDU allowed. "
                              "Use .phu if you really need to set one")
 
-        if name is not None:
-            # TODO: warn if not uppercase ?
+        if name is not None and not name.isupper():
+            warnings.warn(f"extension name '{name}' should be uppercase",
+                          UserWarning)
             name = name.upper()
 
         return self._append(ext, name=name, header=header, reset_ver=reset_ver)
