@@ -396,6 +396,26 @@ def test_from_hdulist(NIFS_DARK):
         assert ad.path == 'N20160727S0077.fits'
 
 
+def test_from_hdulist2():
+    tablehdu = fits.table_to_hdu(Table([[1]]))
+    tablehdu.name = 'REFCAT'
+
+    hdul = fits.HDUList([
+        fits.PrimaryHDU(header=fits.Header({'INSTRUME': 'FISH'})),
+        fits.ImageHDU(data=np.zeros(10), name='SCI', ver=1),
+        fits.ImageHDU(data=np.ones(10), name='VAR', ver=1),
+        fits.ImageHDU(data=np.zeros(10, dtype='uint16'), name='DQ', ver=1),
+        tablehdu,
+    ])
+
+    ad = astrodata.open(hdul)
+    assert len(ad) == 1
+    assert_array_equal(ad[0].data, 0)
+    assert_array_equal(ad[0].variance, 1)
+    assert_array_equal(ad[0].mask, 0)
+    assert len(ad.REFCAT) == 1
+
+
 def test_can_make_and_write_ad_object(tmpdir):
     # Creates data and ad object
     phu = fits.PrimaryHDU()
