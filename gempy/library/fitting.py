@@ -108,7 +108,7 @@ class fit_1D:
         self.hsigma = hsigma
         self.iterations = iterations
         self.grow = grow
-        self.regions = regions  # or slices?
+        self.regions = regions
         self.plot = plot
 
         # Map the specified fitting function to a model:
@@ -134,9 +134,7 @@ class fit_1D:
                 raise TypeError('regions must be a string or a list of slices')
 
         # Perform the fit and (for now) save fitted values on the input grid:
-        # self.fitvals, self.mask = self._fit(image, weights=None)
-        self.fitvals = self._fit(image, weights=weights)
-
+        self.fitvals, self.mask = self._fit(image, weights=weights)
 
     def _fit(self, image, weights=None):
 
@@ -328,9 +326,14 @@ class fit_1D:
 
         # Restore the ordering & shape of the input array:
         fitvals = fitvals.reshape(tmpshape)
+        mask = mask.reshape(tmpshape)
         if astropy_model:
             fitvals = np.rollaxis(fitvals, 0, (self.axis + 1) or fitvals.ndim)
+            mask = np.rollaxis(mask, 0, (self.axis + 1) or mask.ndim)
         else:
             fitvals = np.rollaxis(fitvals, -1, self.axis)
+            mask = np.rollaxis(mask, -1, self.axis)
 
-        return fitvals
+        # Return fitted values & mask of pixels rejected from the input data:
+        return fitvals, mask
+
