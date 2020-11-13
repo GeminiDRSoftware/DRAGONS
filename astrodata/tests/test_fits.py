@@ -450,8 +450,7 @@ def test_can_make_and_write_ad_object(tmpdir):
 
     hdr = fits.Header({'EXTNAME': 'SCI', 'EXTVER': 1, 'FOO': 'BAR'})
     ad.append(hdu, header=hdr)
-    # FIXME: custom header is ignored
-    # assert ad[1].hdr['FOO'] == 'BAR'
+    assert ad[1].hdr['FOO'] == 'BAR'
 
     # Write file and test it exists properly
     testfile = str(tmpdir.join('created_fits_file.fits'))
