@@ -848,8 +848,7 @@ class AstroData:
         currname = header.get('EXTNAME')
         ver = header.get('EXTVER', -1)
 
-        # TODO: Review the logic. This one seems bogus
-        if name and currname is None:
+        if currname is None:
             header['EXTNAME'] = name if name is not None else DEFAULT_EXTENSION
 
         if top_level:
