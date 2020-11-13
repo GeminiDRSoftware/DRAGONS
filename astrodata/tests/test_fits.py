@@ -467,7 +467,12 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     phu = fits.PrimaryHDU()
     ad = astrodata.create(phu)
     astrodata.add_header_to_table(tbl)
-    ad.append(tbl, name='BOB')
+
+    with pytest.raises(ValueError,
+                       match='Tables should be set directly as attribute'):
+        ad.append(tbl, name='BOB')
+
+    ad.BOB = tbl
     assert ad.exposed == {'BOB'}
 
     assert ad.tables == {'BOB'}
@@ -760,13 +765,13 @@ def test_add_table():
     ad.append(fakedata)
 
     tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.append(tbl)
+    ad.TABLE1 = tbl
     assert ad.tables == {'TABLE1'}
 
-    ad.append(tbl)
+    ad.TABLE2 = tbl
     assert ad.tables == {'TABLE1', 'TABLE2'}
 
-    ad.append(tbl, name='MYTABLE')
+    ad.MYTABLE = tbl
     assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
 
     tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
@@ -791,8 +796,7 @@ def test_add_table():
 @pytest.mark.dragons_remote_data
 def test_copy(GSAOI_DARK, capsys):
     ad = astrodata.open(GSAOI_DARK)
-    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.append(tbl)
+    ad.TABLE = Table([['a', 'b', 'c'], [1, 2, 3]])
     ad[0].MYTABLE = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
 
     ad.info()

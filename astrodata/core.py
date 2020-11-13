@@ -1057,6 +1057,9 @@ class AstroData:
         if isinstance(ext, fits.PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed. "
                              "Use .phu if you really need to set one")
+        elif isinstance(ext, Table):
+            raise ValueError("Tables should be set directly as attribute, "
+                             "i.e. 'ad.MYTABLE = table'")
 
         if name is not None and not name.isupper():
             warnings.warn(f"extension name '{name}' should be uppercase",

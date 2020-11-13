@@ -188,7 +188,12 @@ def test_write_and_read(tmpdir, capsys):
     ad.append(nd)
 
     tbl = Table([np.zeros(10), np.ones(10)], names=('a', 'b'))
-    ad.append(tbl, name='BOB')
+
+    with pytest.raises(ValueError,
+                       match='Tables should be set directly as attribute'):
+        ad.append(tbl, name='BOB')
+
+    ad.BOB = tbl
 
     tbl = Table([np.zeros(5) + 2, np.zeros(5) + 3], names=('c', 'd'))
 

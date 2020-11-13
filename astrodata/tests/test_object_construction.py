@@ -87,18 +87,9 @@ def test_append_image_hdu():
 
 def test_append_lowercase_name():
     ad = astrodata.create({})
-    ad.append(NDData(np.zeros((4, 5))))
     with pytest.warns(UserWarning,
-                      match="extension name '.*' should be uppercase"):
-        ad.append(Table([[1]]), name='foo')
-    ad[0].BAR = Table([[1], [2]])
-    ad[0].ARR = np.zeros(3)
-
-    assert ad.tables == {'FOO'}
-    assert ad.exposed == {'FOO'}
-
-    assert ad[0].tables == {'FOO', 'BAR'}
-    assert ad[0].exposed == {'FOO', 'BAR', 'ARR'}
+                      match="extension name 'sci' should be uppercase"):
+        ad.append(NDData(np.zeros((4, 5))), name='sci')
 
 
 def test_append_arrays(tmp_path):
@@ -229,20 +220,6 @@ def test_append_nddata_to_root_with_arbitrary_name(testfile2):
         ad.append(nd)
 
 
-def test_append_table():
-    ad = astrodata.create({})
-
-    # With name
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad.append(table, 'MYTABLE')
-    assert (ad.MYTABLE == table).all()
-
-    # Without name
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad.append(table)
-    assert isinstance(ad.TABLE1, Table)
-
-
 def test_append_table_to_extensions():
     ad = astrodata.create({})
     ad.append(NDData(np.zeros((4, 5))))
@@ -263,7 +240,7 @@ def test_append_table_to_extensions():
     match = ("Cannot append table 'TABLE1' because it would hide an "
              "extension table")
     with pytest.raises(ValueError, match=match):
-        ad.append(Table([[1]]), name='TABLE1')
+        ad.TABLE1 = Table([[1]])
 
 
 # Append / assign Gemini specific
