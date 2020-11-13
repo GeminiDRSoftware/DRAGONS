@@ -99,6 +99,13 @@ def test_append_arrays(tmp_path):
     ad.append(np.zeros(10))
     ad[0].ARR = np.arange(5)
 
+    with pytest.raises(AttributeError):
+        ad[0].SCI = np.arange(5)
+    with pytest.raises(AttributeError):
+        ad[0].VAR = np.arange(5)
+    with pytest.raises(AttributeError):
+        ad[0].DQ = np.arange(5)
+
     match = ("Arbitrary image extensions can only be added in association "
              "to a 'SCI'")
     with pytest.raises(ValueError, match=match):
@@ -251,18 +258,18 @@ def test_append_dq_var(testfile2):
 
     dq = np.zeros(ad[0].data.shape)
     with pytest.raises(ValueError):
-        ad.append(dq, 'DQ')
-    with pytest.raises(ValueError):
+        ad.append(dq, name='DQ')
+    with pytest.raises(AttributeError):
         ad.DQ = dq
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         ad[0].DQ = dq
 
     var = np.ones(ad[0].data.shape)
     with pytest.raises(ValueError):
-        ad.append(var, 'VAR')
-    with pytest.raises(ValueError):
+        ad.append(var, name='VAR')
+    with pytest.raises(AttributeError):
         ad.VAR = var
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         ad[0].VAR = var
 
 

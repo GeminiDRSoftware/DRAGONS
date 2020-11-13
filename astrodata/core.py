@@ -544,11 +544,17 @@ class AstroData:
             # the NDData objects. First we check if the attribute belongs to
             # this object's dictionary.  Otherwise, see if we can pass it down.
             #
-            # CJS 20200131: if the attribute is "exposed" then we should set
-            # it via the append method I think (it's a Table or something)
             if self.is_sliced and not self.is_single:
                 raise TypeError("This attribute can only be "
                                 "assigned to a single-slice object")
+
+            if attribute == DEFAULT_EXTENSION:
+                raise AttributeError(f"{attribute} extensions should be "
+                                     "appended with .append")
+            elif attribute in {'DQ', 'VAR'}:
+                raise AttributeError(f"{attribute} should be set on the "
+                                     "nddata object")
+
             add_to = self.nddata if self.is_single else None
             self._append(value, name=attribute, add_to=add_to)
             return
@@ -888,12 +894,8 @@ class AstroData:
             ret = self._append_imagehdu(hdu, name=hname, header=None,
                                         add_to=None)
         else:
-            if name == DEFAULT_EXTENSION:
-                raise ValueError(f"Can't attach '{DEFAULT_EXTENSION}' arrays "
-                                 "to other objects")
-            else:
-                self._add_to_other(add_to, name, data, header=header)
-                ret = data
+            self._add_to_other(add_to, name, data, header=header)
+            ret = data
 
         return ret
 

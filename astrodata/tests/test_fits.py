@@ -752,8 +752,8 @@ def test_add_var_and_dq():
                        match="'VAR' need to be associated to a 'SCI' one"):
         ad.append(np.ones(shape), name='VAR')
 
-    with pytest.raises(ValueError,
-                       match="Can't attach 'SCI' arrays to other objects"):
+    with pytest.raises(AttributeError,
+                       match="SCI extensions should be appended with .append"):
         ad[0].SCI = np.ones(shape)
 
 
