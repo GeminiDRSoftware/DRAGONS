@@ -86,9 +86,8 @@ def test_append_image_hdu():
 
 
 def test_append_lowercase_name():
-    nd = NDData(np.zeros((4, 5)), meta={'header': {}})
     ad = astrodata.create({})
-    ad.append(nd)
+    ad.append(NDData(np.zeros((4, 5))))
     with pytest.warns(UserWarning,
                       match="extension name '.*' should be uppercase"):
         ad.append(Table([[1]]), name='foo')
@@ -246,9 +245,9 @@ def test_append_table():
 
 def test_append_table_to_extensions():
     ad = astrodata.create({})
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
+    ad.append(NDData(np.zeros((4, 5))))
+    ad.append(NDData(np.zeros((4, 5))))
+    ad.append(NDData(np.zeros((4, 5))))
     ad[0].TABLE1 = Table([[1]])
     ad[0].TABLE2 = Table([[22]])
     ad[1].TABLE2 = Table([[2]])  # extensions can have the same table name

@@ -832,26 +832,24 @@ class AstroData:
 
     def _process_pixel_plane(self, pixim, name=None, top_level=False,
                              reset_ver=True, custom_header=None):
-        if not isinstance(pixim, NDDataObject):
-            # Assume that we get an ImageHDU or something that can be
-            # turned into one
-            if isinstance(pixim, fits.ImageHDU):
-                nd = NDDataObject(pixim.data, meta={'header': pixim.header})
-            elif custom_header is not None:
-                nd = NDDataObject(pixim, meta={'header': custom_header})
-            else:
-                nd = NDDataObject(pixim, meta={'header': {}})
-        else:
+        # Assume that we get an ImageHDU or something that can be
+        # turned into one
+        if isinstance(pixim, fits.ImageHDU):
+            nd = NDDataObject(pixim.data, meta={'header': pixim.header})
+        elif isinstance(pixim, NDDataObject):
             nd = pixim
-            if custom_header is not None:
-                nd.meta['header'] = custom_header
+        else:
+            nd = NDDataObject(pixim)
 
-        header = nd.meta['header']
+        if custom_header is not None:
+            nd.meta['header'] = custom_header
+
+        header = nd.meta.setdefault('header', {})
         currname = header.get('EXTNAME')
         ver = header.get('EXTVER', -1)
 
         # TODO: Review the logic. This one seems bogus
-        if name and (currname is None):
+        if name and currname is None:
             header['EXTNAME'] = name if name is not None else DEFAULT_EXTENSION
 
         if top_level:
