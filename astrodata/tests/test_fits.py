@@ -406,14 +406,39 @@ def test_from_hdulist2():
         fits.ImageHDU(data=np.ones(10), name='VAR', ver=1),
         fits.ImageHDU(data=np.zeros(10, dtype='uint16'), name='DQ', ver=1),
         tablehdu,
+        fits.BinTableHDU.from_columns(
+            [fits.Column(array=['a', 'b'], format='A', name='col')], ver=1,
+        ),  # This HDU will be skipped because it has no EXTNAME
     ])
 
-    ad = astrodata.open(hdul)
+    with pytest.warns(UserWarning,
+                      match='Skip HDU .* because it has no EXTNAME'):
+        ad = astrodata.open(hdul)
+
     assert len(ad) == 1
+    assert ad.phu['INSTRUME'] == 'FISH'
     assert_array_equal(ad[0].data, 0)
     assert_array_equal(ad[0].variance, 1)
     assert_array_equal(ad[0].mask, 0)
     assert len(ad.REFCAT) == 1
+    assert ad.exposed == {'REFCAT'}
+    assert ad[0].exposed == {'REFCAT'}
+
+
+def test_from_hdulist3():
+    hdul = fits.HDUList([
+        fits.PrimaryHDU(),
+        fits.ImageHDU(data=np.zeros(10), name='SCI', ver=1),
+        fits.TableHDU.from_columns(
+            [fits.Column(array=['a', 'b'], format='A', name='col')],
+            name='ASCIITAB',
+        ),
+    ])
+
+    with pytest.warns(UserWarning, match='Discarding ASCIITAB'):
+        ad = astrodata.open(hdul)
+
+    assert len(ad) == 1
 
 
 def test_can_make_and_write_ad_object(tmpdir):

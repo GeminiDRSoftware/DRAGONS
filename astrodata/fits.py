@@ -2,6 +2,7 @@ import gc
 import logging
 import os
 import traceback
+import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from io import BytesIO
@@ -9,10 +10,9 @@ from itertools import product as cart_product
 from itertools import zip_longest
 
 import asdf
+import astropy
 import jsonschema
 import numpy as np
-
-import astropy
 from astropy import units as u
 from astropy.io import fits
 from astropy.io.fits import (DELAYED, BinTableHDU, Column, FITS_rec, HDUList,
@@ -543,8 +543,10 @@ def read_fits(cls, source, extname_parser=None):
         ad.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
 
         for other in parts['other']:
-            # FIXME: handle case where EXTNAME is missing or None
-            setattr(ad[-1], other.header['EXTNAME'], other)
+            if not other.name:
+                warnings.warn(f"Skip HDU {other} because it has no EXTNAME")
+            else:
+                setattr(ad[-1], other.name, other)
 
     for other in hdulist:
         if other in seen:
@@ -553,7 +555,7 @@ def read_fits(cls, source, extname_parser=None):
         try:
             ad.append(other, name=name, reset_ver=False)
         except ValueError as e:
-            print(f"{e}. Discarding {name}")
+            warnings.warn(f"Discarding {name} :\n {e}")
 
     return ad
 
