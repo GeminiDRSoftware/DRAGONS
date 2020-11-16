@@ -235,13 +235,13 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
             log.fullinfo(f'Checking extension {ext1.id}')
 
             # Check shape/size
-            if check_shape and ext1.data.shape != ext2.data.shape :
+            if check_shape and ext1.data.shape != ext2.data.shape:
                 log.error('Extensions have different shapes')
                 raise ValueError('Extensions have different shape')
 
             # Check binning
             if (ext1.detector_x_bin() != ext2.detector_x_bin() or
-                        ext1.detector_y_bin() != ext2.detector_y_bin()):
+                    ext1.detector_y_bin() != ext2.detector_y_bin()):
                 log.error('Extensions have different binning')
                 raise ValueError('Extensions have different binning')
 
@@ -501,9 +501,10 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
             if not found:
                 raise OSError(
-                    "No auxiliary data in {} matches the detector section "
-                    "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                              ad.filename, ext.id))
+                    f"No auxiliary data in {this_aux.filename} matches the "
+                    f"detector section {detsec} in {ad.filename} extension "
+                    f"{ext.id}"
+                )
 
         if clipped_this_ad:
             log.stdinfo("Clipping {} to match science data.".
@@ -676,9 +677,10 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
             if not found:
                 raise OSError(
-                    "No auxiliary data in {} matches the detector section "
-                    "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                              ad.filename, ext.id))
+                    f"No auxiliary data in {this_aux.filename} matches the "
+                    f"detector section {detsec} in {ad.filename} extension "
+                    f"{ext.id}"
+                )
 
         log.stdinfo("Clipping {} to match science data.".
                     format(os.path.basename(this_aux.filename)))
@@ -1657,7 +1659,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             # Remove the NUMBER column so add_objcat renumbers
             out_objcat.remove_column('NUMBER')
 
-            adoutput = add_objcat(adinput=adoutput, index=ext.id,
+            adoutput = add_objcat(adinput=adoutput, index=ext.id - 1,
                                   replace=True, table=out_objcat, sx_dict=sx_dict)
     return adoutput
 
@@ -1702,14 +1704,14 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
             sci_shape = ext.data.shape
             if (sci_shape[0] == datasec.y2 and sci_shape[1] == datasec.x2 and
                     datasec.x1 == 0 and datasec.y1 == 0):
-                log.fullinfo('No changes will be made to {}[*,{}], since '
-                             'the data section matches the data shape'
-                             .format(ad.filename, ext.id))
+                log.fullinfo(f'No changes will be made to {ad.filename} '
+                             f'extension {ext.id}, since '
+                             'the data section matches the data shape')
                 continue
 
             # Update logger with the section being kept
-            log.fullinfo('For {}:{}, keeping the data from the section {}'.
-                         format(ad.filename, ext.id, datasecStr))
+            log.fullinfo(f'For {ad.filename} extension {ext.id}, '
+                         f'keeping the data from the section {datasecStr}')
 
             # Trim SCI, VAR, DQ to new section
             ext.reset(ext.nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])

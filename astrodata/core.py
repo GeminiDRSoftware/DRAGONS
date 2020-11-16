@@ -267,9 +267,11 @@ class AstroData:
 
     @property
     def id(self):
-        """Returns the extension identifier for sliced objects."""
+        """Returns the extension identifier (1-based extension number)
+        for sliced objects.
+        """
         if self.is_single:
-            return self._indices[0]
+            return self._indices[0] + 1
         else:
             raise ValueError("Cannot return id for an AstroData object "
                              "that is not a single slice")
@@ -859,8 +861,7 @@ class AstroData:
             ret = self._append_imagehdu(hdu, name=hname, header=None,
                                         add_to=None)
         else:
-            add_to.meta['other'][name] = data
-            ret = data
+            ret = add_to.meta['other'][name] = data
 
         return ret
 

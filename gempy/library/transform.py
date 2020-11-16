@@ -1423,7 +1423,7 @@ def add_longslit_wcs(ad):
     for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
         wcs = ext.wcs
         if not isinstance(wcs.output_frame, cf.CelestialFrame):
-            raise TypeError(f"Output frame of {ad.filename}:{ext.id}"
+            raise TypeError(f"Output frame of {ad.filename} extension {ext.id}"
                             " is not a CelestialFrame instance")
 
         # Need to change axes_order in CelestialFrame
