@@ -188,20 +188,25 @@ def test_write_and_read(tmpdir, capsys):
     ad.append(nd)
 
     tbl = Table([np.zeros(10), np.ones(10)], names=('a', 'b'))
-    ad.append(tbl, name='BOB')
+
+    with pytest.raises(ValueError,
+                       match='Tables should be set directly as attribute'):
+        ad.append(tbl, name='BOB')
+
+    ad.BOB = tbl
 
     tbl = Table([np.zeros(5) + 2, np.zeros(5) + 3], names=('c', 'd'))
-    with pytest.raises(ValueError, match="Cannot append table 'BOB'"):
-        ad.append(tbl, name='BOB', add_to=nd)
 
-    ad.append(tbl, name='BOB2', add_to=nd)
+    match = "Cannot append table 'BOB' because it would hide a top-level table"
+    with pytest.raises(ValueError, match=match):
+        ad[0].BOB = tbl
 
-    ad.append(np.arange(10), name='MYVAL_WITH_A_VERY_LONG_NAME', add_to=nd)
+    ad[0].BOB2 = tbl
+    ad[0].MYVAL_WITH_A_VERY_LONG_NAME = np.arange(10)
 
     match = "You can only append NDData derived instances at the top level"
     with pytest.raises(TypeError, match=match):
-        ad.append(NDData(data=np.ones(10), meta={'header': fits.Header()}),
-                  name='MYNDD', add_to=nd)
+        ad[0].MYNDD = NDData(data=np.ones(10), meta={'header': fits.Header()})
 
     testfile = str(tmpdir.join('testfile.fits'))
     ad.write(testfile)

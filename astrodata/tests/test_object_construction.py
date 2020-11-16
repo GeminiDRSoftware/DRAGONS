@@ -5,6 +5,7 @@ from astrodata.testing import download_from_archive
 from astropy.io import fits
 from astropy.nddata import NDData
 from astropy.table import Table
+from numpy.testing import assert_array_equal
 
 
 @pytest.fixture()
@@ -73,55 +74,52 @@ def test_create_invalid():
 
 def test_append_image_hdu():
     ad = astrodata.create(fits.PrimaryHDU())
-    hdu = fits.ImageHDU(data=np.zeros((4, 5)))
-    ad.append(hdu, name='SCI')
-    ad.append(hdu, name='SCI2')
+    ad.append(fits.ImageHDU(data=np.zeros((4, 5))))
+    ad.append(fits.ImageHDU(data=np.zeros((4, 5))), name='SCI')
+
+    with pytest.raises(ValueError,
+                       match="Arbitrary image extensions can only be added "
+                       "in association to a 'SCI'"):
+        ad.append(fits.ImageHDU(data=np.zeros((4, 5))), name='SCI2')
 
     assert len(ad) == 2
-    assert ad[0].data is hdu.data
-    assert ad[1].data is hdu.data
-
-
-def test_append_tables():
-    """If both ad and ad[0] have a TABLE1, check that ad[0].TABLE1 return the
-    extension table.
-    """
-    nd = NDData(np.zeros((4, 5)), meta={'header': {}})
-    ad = astrodata.create({})
-    ad.append(nd)
-    ad.append(Table([[1]]))
-    ad.append(Table([[2]]), add_to=ad[0].nddata)
-    assert ad[0].TABLE2['col0'][0] == 2
-
-
-def test_append_tables2():
-    """Check that slices do not report extension tables."""
-    ad = astrodata.create({})
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(NDData(np.zeros((4, 5)), meta={'header': {}}))
-    ad.append(Table([[1]]), name='TABLE1', add_to=ad[0].nddata)
-    ad.append(Table([[1]]), name='TABLE2', add_to=ad[1].nddata)
-    ad.append(Table([[1]]), name='TABLE3', add_to=ad[2].nddata)
-
-    assert ad.exposed == set()
-    assert ad[1].exposed == {'TABLE2'}
-    assert ad[1:].exposed == set()
 
 
 def test_append_lowercase_name():
-    nd = NDData(np.zeros((4, 5)), meta={'header': {}})
     ad = astrodata.create({})
-    ad.append(nd)
-    ad.append(Table([[1]]), name='foo')
-    ad.append(Table([[1], [2]]), name='bar', add_to=ad[0].nddata)
-    ad.append(np.zeros(3), name='arr', add_to=ad[0].nddata)
+    with pytest.warns(UserWarning,
+                      match="extension name 'sci' should be uppercase"):
+        ad.append(NDData(np.zeros((4, 5))), name='sci')
 
-    assert ad.tables == {'FOO'}
-    assert ad.exposed == {'FOO'}
 
-    assert ad[0].tables == {'FOO', 'BAR'}
-    assert ad[0].exposed == {'FOO', 'BAR', 'ARR'}
+def test_append_arrays(tmp_path):
+    testfile = tmp_path / 'test.fits'
+
+    ad = astrodata.create({})
+    ad.append(np.zeros(10))
+    ad[0].ARR = np.arange(5)
+
+    with pytest.raises(AttributeError):
+        ad[0].SCI = np.arange(5)
+    with pytest.raises(AttributeError):
+        ad[0].VAR = np.arange(5)
+    with pytest.raises(AttributeError):
+        ad[0].DQ = np.arange(5)
+
+    match = ("Arbitrary image extensions can only be added in association "
+             "to a 'SCI'")
+    with pytest.raises(ValueError, match=match):
+        ad.append(np.zeros(10), name='FOO')
+
+    with pytest.raises(ValueError, match=match):
+        ad.append(np.zeros(10), header=fits.Header({'EXTNAME': 'FOO'}))
+
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
+    assert len(ad) == 1
+    assert ad[0].nddata.meta['header']['EXTNAME'] == 'SCI'
+    assert_array_equal(ad[0].ARR, np.arange(5))
 
 
 @pytest.mark.dragons_remote_data
@@ -186,7 +184,7 @@ def test_append_array_to_extension_with_name_sci(testfile2):
     assert len(ad) == 6
 
     ones = np.ones((10, 10))
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         ad[0].append(ones, name='SCI')
 
 
@@ -196,7 +194,7 @@ def test_append_array_to_extension_with_arbitrary_name(testfile2):
 
     lbefore = len(ad)
     ones = np.ones((10, 10))
-    ad[0].append(ones, name='ARBITRARY')
+    ad[0].ARBITRARY = ones
 
     assert len(ad) == lbefore
     assert ad[0].ARBITRARY is ones
@@ -229,77 +227,50 @@ def test_append_nddata_to_root_with_arbitrary_name(testfile2):
         ad.append(nd)
 
 
-@pytest.mark.dragons_remote_data
-def test_append_table_to_root(testfile2):
-    ad = astrodata.open(testfile2)
-    with pytest.raises(AttributeError):
-        ad.MYTABLE
+def test_append_table_to_extensions():
+    ad = astrodata.create({})
+    ad.append(NDData(np.zeros((4, 5))))
+    ad.append(NDData(np.zeros((4, 5))))
+    ad.append(NDData(np.zeros((4, 5))))
+    ad[0].TABLE1 = Table([[1]])
+    ad[0].TABLE2 = Table([[22]])
+    ad[1].TABLE2 = Table([[2]])  # extensions can have the same table name
+    ad[2].TABLE3 = Table([[3]])
 
-    assert len(ad) == 6
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad.append(table, 'MYTABLE')
-    assert (ad.MYTABLE == table).all()
+    # Check that slices do not report extension tables
+    assert ad.exposed == set()
+    assert ad[0].exposed == {'TABLE1', 'TABLE2'}
+    assert ad[1].exposed == {'TABLE2'}
+    assert ad[2].exposed == {'TABLE3'}
+    assert ad[1:].exposed == set()
 
-
-@pytest.mark.dragons_remote_data
-def test_append_table_to_root_without_name(testfile2):
-    ad = astrodata.open(testfile2)
-    assert len(ad) == 6
-    with pytest.raises(AttributeError):
-        ad.TABLE1
-
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad.append(table)
-    assert len(ad) == 6
-    assert isinstance(ad.TABLE1, Table)
-
-
-@pytest.mark.dragons_remote_data
-def test_append_table_to_extension(testfile2):
-    ad = astrodata.open(testfile2)
-    assert len(ad) == 6
-
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad[0].append(table, 'MYTABLE')
-    assert (ad[0].MYTABLE == table).all()
+    match = ("Cannot append table 'TABLE1' because it would hide an "
+             "extension table")
+    with pytest.raises(ValueError, match=match):
+        ad.TABLE1 = Table([[1]])
 
 
 # Append / assign Gemini specific
 
 @pytest.mark.dragons_remote_data
-def test_append_dq_to_root(testfile2):
+def test_append_dq_var(testfile2):
     ad = astrodata.open(testfile2)
 
     dq = np.zeros(ad[0].data.shape)
     with pytest.raises(ValueError):
-        ad.append(dq, 'DQ')
+        ad.append(dq, name='DQ')
+    with pytest.raises(AttributeError):
+        ad.DQ = dq
+    with pytest.raises(AttributeError):
+        ad[0].DQ = dq
 
-
-@pytest.mark.dragons_remote_data
-def test_append_dq_to_ext(testfile2):
-    ad = astrodata.open(testfile2)
-
-    dq = np.zeros(ad[0].data.shape)
-    ad[0].append(dq, 'DQ')
-    assert dq is ad[0].mask
-
-
-@pytest.mark.dragons_remote_data
-def test_append_var_to_root(testfile2):
-    ad = astrodata.open(testfile2)
-
-    var = np.random.random(ad[0].data.shape)
+    var = np.ones(ad[0].data.shape)
     with pytest.raises(ValueError):
-        ad.append(var, 'VAR')
-
-
-@pytest.mark.dragons_remote_data
-def test_append_var_to_ext(testfile2):
-    ad = astrodata.open(testfile2)
-
-    var = np.random.random(ad[0].data.shape)
-    ad[0].append(var, 'VAR')
-    assert np.abs(var - ad[0].variance).mean() < 0.00000001
+        ad.append(var, name='VAR')
+    with pytest.raises(AttributeError):
+        ad.VAR = var
+    with pytest.raises(AttributeError):
+        ad[0].VAR = var
 
 
 # Append AstroData slices
@@ -316,6 +287,10 @@ def test_append_single_slice(testfile1, testfile2):
     assert len(ad2) == (lbefore + 1)
     assert np.all(ad2[-1].data == ad[1].data)
     assert last_ever < ad2[-1].nddata.meta['header'].get('EXTVER', -1)
+
+    # With a custom header
+    ad2.append(ad[1], header=fits.Header({'FOO': 'BAR'}))
+    assert ad2[-1].nddata.meta['header']['FOO'] == 'BAR'
 
 
 @pytest.mark.dragons_remote_data
@@ -341,15 +316,19 @@ def test_append_slice_to_extension(testfile1, testfile2):
     ad = astrodata.open(testfile2)
     ad2 = astrodata.open(testfile1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         ad2[0].append(ad[0], name="FOOBAR")
+
+    match = "Cannot append an AstroData slice to another slice"
+    with pytest.raises(ValueError, match=match):
+        ad[2].FOO = ad2[1]
 
 
 @pytest.mark.dragons_remote_data
 def test_delete_named_associated_extension(testfile2):
     ad = astrodata.open(testfile2)
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
-    ad[0].append(table, 'MYTABLE')
+    ad[0].MYTABLE = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
+                          names=('a', 'b', 'c'))
     assert 'MYTABLE' in ad[0]
     del ad[0].MYTABLE
     assert 'MYTABLE' not in ad[0]

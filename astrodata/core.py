@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import textwrap
+import warnings
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
@@ -543,13 +544,19 @@ class AstroData:
             # the NDData objects. First we check if the attribute belongs to
             # this object's dictionary.  Otherwise, see if we can pass it down.
             #
-            # CJS 20200131: if the attribute is "exposed" then we should set
-            # it via the append method I think (it's a Table or something)
             if self.is_sliced and not self.is_single:
                 raise TypeError("This attribute can only be "
                                 "assigned to a single-slice object")
-            add_to = self.nddata[0] if self.is_sliced else None
-            self.append(value, name=attribute, add_to=add_to)
+
+            if attribute == DEFAULT_EXTENSION:
+                raise AttributeError(f"{attribute} extensions should be "
+                                     "appended with .append")
+            elif attribute in {'DQ', 'VAR'}:
+                raise AttributeError(f"{attribute} should be set on the "
+                                     "nddata object")
+
+            add_to = self.nddata if self.is_single else None
+            self._append(value, name=attribute, add_to=add_to)
             return
 
         super().__setattr__(attribute, value)
@@ -831,26 +838,23 @@ class AstroData:
 
     def _process_pixel_plane(self, pixim, name=None, top_level=False,
                              reset_ver=True, custom_header=None):
-        if not isinstance(pixim, NDDataObject):
-            # Assume that we get an ImageHDU or something that can be
-            # turned into one
-            if isinstance(pixim, fits.ImageHDU):
-                nd = NDDataObject(pixim.data, meta={'header': pixim.header})
-            elif custom_header is not None:
-                nd = NDDataObject(pixim, meta={'header': custom_header})
-            else:
-                nd = NDDataObject(pixim, meta={'header': {}})
-        else:
+        # Assume that we get an ImageHDU or something that can be
+        # turned into one
+        if isinstance(pixim, fits.ImageHDU):
+            nd = NDDataObject(pixim.data, meta={'header': pixim.header})
+        elif isinstance(pixim, NDDataObject):
             nd = pixim
-            if custom_header is not None:
-                nd.meta['header'] = custom_header
+        else:
+            nd = NDDataObject(pixim)
 
-        header = nd.meta['header']
+        if custom_header is not None:
+            nd.meta['header'] = custom_header
+
+        header = nd.meta.setdefault('header', {})
         currname = header.get('EXTNAME')
         ver = header.get('EXTVER', -1)
 
-        # TODO: Review the logic. This one seems bogus
-        if name and (currname is None):
+        if currname is None:
             header['EXTNAME'] = name if name is not None else DEFAULT_EXTENSION
 
         if top_level:
@@ -872,57 +876,26 @@ class AstroData:
             meta['other_header'][name] = header
 
     def _append_array(self, data, name=None, header=None, add_to=None):
+        if name in {'DQ', 'VAR'}:
+            raise ValueError(f"'{name}' need to be associated to a "
+                             f"'{DEFAULT_EXTENSION}' one")
+
         if add_to is None:
             # Top level extension
-
-            # Special cases for Gemini
-            if name is None:
-                name = DEFAULT_EXTENSION
-
-            if name in {'DQ', 'VAR'}:
-                raise ValueError(f"'{name}' need to be associated to a "
-                                 f"'{DEFAULT_EXTENSION}' one")
+            if name is not None:
+                hname = name
+            elif header is not None:
+                hname = header.get('EXTNAME', DEFAULT_EXTENSION)
             else:
-                # FIXME: the logic here is broken since name is
-                # always set to somehing above with DEFAULT_EXTENSION
-                if name is not None:
-                    hname = name
-                elif header is not None:
-                    hname = header.get('EXTNAME', DEFAULT_EXTENSION)
-                else:
-                    hname = DEFAULT_EXTENSION
+                hname = DEFAULT_EXTENSION
 
-                hdu = fits.ImageHDU(data, header=header)
-                hdu.header['EXTNAME'] = hname
-                ret = self._append_imagehdu(hdu, name=hname, header=None,
-                                            add_to=None)
+            hdu = fits.ImageHDU(data, header=header)
+            hdu.header['EXTNAME'] = hname
+            ret = self._append_imagehdu(hdu, name=hname, header=None,
+                                        add_to=None)
         else:
-            # Attaching to another extension
-            if header is not None and name in {'DQ', 'VAR'}:
-                self._logger.warning(
-                    f"The header is ignored for '{name}' extensions")
-            if name is None:
-                # FIXME: both should raise the same exception
-                if self.is_sliced:
-                    raise TypeError("Can't append objects to a slice "
-                                    "without an extension name")
-                else:
-                    raise ValueError("Can't append pixel planes to other "
-                                     "objects without a name")
-            elif name == DEFAULT_EXTENSION:
-                raise ValueError(f"Can't attach '{DEFAULT_EXTENSION}' arrays "
-                                 "to other objects")
-            elif name == 'DQ':
-                add_to.mask = data
-                ret = data
-            elif name == 'VAR':
-                std_un = ADVarianceUncertainty(data)
-                std_un.parent_nddata = add_to
-                add_to.uncertainty = std_un
-                ret = std_un
-            else:
-                self._add_to_other(add_to, name, data, header=header)
-                ret = data
+            self._add_to_other(add_to, name, data, header=header)
+            ret = data
 
         return ret
 
@@ -994,10 +967,7 @@ class AstroData:
 
             self._tables[hname] = tb
         else:
-            if hname is None:
-                hname = find_next_num(set(self._tables) |
-                                      set(add_to.meta['other']))
-            elif hname in self._tables:
+            if hname in self._tables:
                 raise ValueError(f"Cannot append table '{hname}' because it "
                                  "would hide a top-level table")
 
@@ -1020,13 +990,32 @@ class AstroData:
         return self._append_nddata(new_nddata, name=None, add_to=None,
                                    reset_ver=True)
 
-    def append(self, ext, name=None, header=None, reset_ver=True, add_to=None):
+    def _append(self, ext, name=None, header=None, reset_ver=True,
+                add_to=None):
         """
-        Adds a new top-level extension. Objects appended to a single
-        slice will actually be made hierarchically dependent of the science
-        object represented by that slice. If appended to the provider as
-        a whole, the new member will be independent (eg. global table, new
-        science object).
+        Internal method to dispatch to the type specific methods. This is
+        called either by ``.append`` to append on top-level objects only or
+        by ``__setattr__``. In the second case ``name`` cannot be None, so
+        this is always the case when appending to extensions (add_to != None).
+        """
+        dispatcher = (
+            (NDData, self._append_raw_nddata),
+            ((Table, fits.TableHDU, fits.BinTableHDU), self._append_table),
+            (fits.ImageHDU, self._append_imagehdu),
+            (AstroData, self._append_astrodata),
+        )
+
+        for bases, method in dispatcher:
+            if isinstance(ext, bases):
+                return method(ext, name=name, header=header, add_to=add_to,
+                              reset_ver=reset_ver)
+
+        # Assume that this is an array for a pixel plane
+        return self._append_array(ext, name=name, header=header, add_to=add_to)
+
+    def append(self, ext, name=None, header=None, reset_ver=True):
+        """
+        Adds a new top-level extension.
 
         Parameters
         ----------
@@ -1061,39 +1050,25 @@ class AstroData:
             illegal somehow.
 
         """
-        if self.is_sliced and not self.is_single:
-            # TODO: We could rethink this one, but leave it like that at
-            # the moment
-            raise TypeError("Can't append objects to non-single slices")
+        if self.is_sliced:
+            raise TypeError("Can't append objects to slices, use "
+                            "'ext.NAME = obj' instead")
 
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, fits.PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed. "
                              "Use .phu if you really need to set one")
+        elif isinstance(ext, Table):
+            raise ValueError("Tables should be set directly as attribute, "
+                             "i.e. 'ad.MYTABLE = table'")
 
-        if name is not None:
-            # TODO: warn if not uppercase ?
+        if name is not None and not name.isupper():
+            warnings.warn(f"extension name '{name}' should be uppercase",
+                          UserWarning)
             name = name.upper()
 
-        if self.is_sliced:
-            add_to = self.nddata
-
-        dispatcher = (
-            (NDData, self._append_raw_nddata),
-            ((Table, fits.TableHDU, fits.BinTableHDU), self._append_table),
-            (fits.ImageHDU, self._append_imagehdu),
-            (AstroData, self._append_astrodata),
-        )
-
-        for bases, method in dispatcher:
-            if isinstance(ext, bases):
-                return method(ext, name=name, header=header, add_to=add_to,
-                              reset_ver=reset_ver)
-        else:
-            # Assume that this is an array for a pixel plane
-            return self._append_array(ext, name=name, header=header,
-                                      add_to=add_to)
+        return self._append(ext, name=name, header=header, reset_ver=reset_ver)
 
     @classmethod
     def read(cls, source, extname_parser=None):

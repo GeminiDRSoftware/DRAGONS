@@ -2,6 +2,7 @@ import gc
 import logging
 import os
 import traceback
+import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from io import BytesIO
@@ -9,10 +10,9 @@ from itertools import product as cart_product
 from itertools import zip_longest
 
 import asdf
+import astropy
 import jsonschema
 import numpy as np
-
-import astropy
 from astropy import units as u
 from astropy.io import fits
 from astropy.io.fits import (DELAYED, BinTableHDU, Column, FITS_rec, HDUList,
@@ -505,43 +505,48 @@ def read_fits(cls, source, extname_parser=None):
             else:
                 parts['other'].append(extra_unit)
 
-        if hdulist._file is not None and hdulist._file.memmap:
-            # Create the NDData object, using FitsLazyLoadable to delay
-            # loading of the data
-            nd = NDDataObject(
-                    data=FitsLazyLoadable(parts['data']),
-                    uncertainty=(None if parts['uncertainty'] is None
-                                 else FitsLazyLoadable(parts['uncertainty'])),
-                    mask=(None if parts['mask'] is None
-                          else FitsLazyLoadable(parts['mask'])),
-                    wcs=(None if parts['wcs'] is None
-                         else asdftablehdu_to_wcs(parts['wcs'])),
-                    )
-            if nd.wcs is None:
-                nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
-                # In case WCS info is in the PHU
-                if nd.wcs is None:
-                    nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
-            ad.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
-        else:
-            nd = ad.append(parts['data'], name=DEFAULT_EXTENSION,
-                           reset_ver=False)
-            for item_name in ('mask', 'uncertainty'):
-                item = parts[item_name]
-                if item is not None:
-                    ad.append(item, name=item.header['EXTNAME'], add_to=nd)
+        header = parts['data'].header
+        lazy = hdulist._file is not None and hdulist._file.memmap
 
-            if isinstance(nd, NDData):
-                if parts['wcs'] is not None:
-                    nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+        for part_name in ('data', 'mask', 'uncertainty'):
+            if parts[part_name] is not None:
+                if lazy:
+                    # Use FitsLazyLoadable to delay loading of the data
+                    parts[part_name] = FitsLazyLoadable(parts[part_name])
                 else:
-                    try:
-                        nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
-                    except TypeError:
-                        pass
+                    # Otherwise use the data array
+                    parts[part_name] = parts[part_name].data
+
+        # handle the variance if not lazy
+        if (parts['uncertainty'] is not None and
+                not isinstance(parts['uncertainty'], FitsLazyLoadable)):
+            parts['uncertainty'] = ADVarianceUncertainty(parts['uncertainty'])
+
+        # Create the NDData object
+        nd = NDDataObject(
+            data=parts['data'],
+            uncertainty=parts['uncertainty'],
+            mask=parts['mask'],
+            meta={'header': header},
+        )
+
+        if parts['wcs'] is not None:
+            # Load the gWCS object from the ASDF extension
+            nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+        if nd.wcs is None:
+            # Fallback to the data header
+            nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+            if nd.wcs is None:
+                # In case WCS info is in the PHU
+                nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
+
+        ad.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
 
         for other in parts['other']:
-            ad.append(other, name=other.header['EXTNAME'], add_to=nd)
+            if not other.name:
+                warnings.warn(f"Skip HDU {other} because it has no EXTNAME")
+            else:
+                setattr(ad[-1], other.name, other)
 
     for other in hdulist:
         if other in seen:
@@ -550,7 +555,7 @@ def read_fits(cls, source, extname_parser=None):
         try:
             ad.append(other, name=name, reset_ver=False)
         except ValueError as e:
-            print(f"{e}. Discarding {name}")
+            warnings.warn(f"Discarding {name} :\n {e}")
 
     return ad
 

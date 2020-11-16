@@ -206,7 +206,7 @@ def test_slice(GMOSN_SPECT):
     with pytest.raises(AttributeError):
         del ext.BAR
 
-    match = "Can't append objects to a slice without an extension name"
+    match = "Can't append objects to slices, use 'ext.NAME = obj' instead"
     with pytest.raises(TypeError, match=match):
         ext.append(np.zeros(5))
 
@@ -240,9 +240,13 @@ def test_slice_multiple(GMOSN_SPECT):
     with pytest.raises(TypeError, match=match):
         del slc[0]
 
-    match = "Can't append objects to non-single slices"
+    match = "Can't append objects to slices, use 'ext.NAME = obj' instead"
     with pytest.raises(TypeError, match=match):
         slc.append(np.zeros(5), name='ARR')
+
+    match = "This attribute can only be assigned to a single-slice object"
+    with pytest.raises(TypeError, match=match):
+        slc.ARR = np.zeros(5)
 
     # iterate over single slice
     metadata = ('SCI', 1)
@@ -392,6 +396,51 @@ def test_from_hdulist(NIFS_DARK):
         assert ad.path == 'N20160727S0077.fits'
 
 
+def test_from_hdulist2():
+    tablehdu = fits.table_to_hdu(Table([[1]]))
+    tablehdu.name = 'REFCAT'
+
+    hdul = fits.HDUList([
+        fits.PrimaryHDU(header=fits.Header({'INSTRUME': 'FISH'})),
+        fits.ImageHDU(data=np.zeros(10), name='SCI', ver=1),
+        fits.ImageHDU(data=np.ones(10), name='VAR', ver=1),
+        fits.ImageHDU(data=np.zeros(10, dtype='uint16'), name='DQ', ver=1),
+        tablehdu,
+        fits.BinTableHDU.from_columns(
+            [fits.Column(array=['a', 'b'], format='A', name='col')], ver=1,
+        ),  # This HDU will be skipped because it has no EXTNAME
+    ])
+
+    with pytest.warns(UserWarning,
+                      match='Skip HDU .* because it has no EXTNAME'):
+        ad = astrodata.open(hdul)
+
+    assert len(ad) == 1
+    assert ad.phu['INSTRUME'] == 'FISH'
+    assert_array_equal(ad[0].data, 0)
+    assert_array_equal(ad[0].variance, 1)
+    assert_array_equal(ad[0].mask, 0)
+    assert len(ad.REFCAT) == 1
+    assert ad.exposed == {'REFCAT'}
+    assert ad[0].exposed == {'REFCAT'}
+
+
+def test_from_hdulist3():
+    hdul = fits.HDUList([
+        fits.PrimaryHDU(),
+        fits.ImageHDU(data=np.zeros(10), name='SCI', ver=1),
+        fits.TableHDU.from_columns(
+            [fits.Column(array=['a', 'b'], format='A', name='col')],
+            name='ASCIITAB',
+        ),
+    ])
+
+    with pytest.warns(UserWarning, match='Discarding ASCIITAB'):
+        ad = astrodata.open(hdul)
+
+    assert len(ad) == 1
+
+
 def test_can_make_and_write_ad_object(tmpdir):
     # Creates data and ad object
     phu = fits.PrimaryHDU()
@@ -401,8 +450,7 @@ def test_can_make_and_write_ad_object(tmpdir):
 
     hdr = fits.Header({'EXTNAME': 'SCI', 'EXTVER': 1, 'FOO': 'BAR'})
     ad.append(hdu, header=hdr)
-    # FIXME: custom header is ignored
-    # assert ad[1].hdr['FOO'] == 'BAR'
+    assert ad[1].hdr['FOO'] == 'BAR'
 
     # Write file and test it exists properly
     testfile = str(tmpdir.join('created_fits_file.fits'))
@@ -419,7 +467,12 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     phu = fits.PrimaryHDU()
     ad = astrodata.create(phu)
     astrodata.add_header_to_table(tbl)
-    ad.append(tbl, name='BOB')
+
+    with pytest.raises(ValueError,
+                       match='Tables should be set directly as attribute'):
+        ad.append(tbl, name='BOB')
+
+    ad.BOB = tbl
     assert ad.exposed == {'BOB'}
 
     assert ad.tables == {'BOB'}
@@ -679,7 +732,7 @@ def test_read_no_extensions(GRACES_SPECT):
     assert ad[0].hdr['EXTVER'] == 1
 
 
-def test_add_var_and_dq(caplog):
+def test_add_var_and_dq():
     shape = (3, 4)
     fakedata = np.arange(np.prod(shape)).reshape(shape)
 
@@ -699,28 +752,9 @@ def test_add_var_and_dq(caplog):
                        match="'VAR' need to be associated to a 'SCI' one"):
         ad.append(np.ones(shape), name='VAR')
 
-    with pytest.raises(ValueError,
-                       match="Can't append pixel planes to "
-                       "other objects without a name"):
-        ad.append(np.ones(shape), add_to=ad[0].nddata)
-
-    with pytest.raises(ValueError,
-                       match="Can't attach 'SCI' arrays to other objects"):
-        ad.append(np.ones(shape), name='SCI', add_to=ad[0].nddata)
-
-    ad.append(fits.ImageHDU(data=np.ones(shape)),
-              name='VAR',
-              add_to=ad[0].nddata)
-
-    ad.append(np.zeros(shape), name='DQ', add_to=ad[0].nddata, header='fake')
-    assert (caplog.records[0].message ==
-            "The header is ignored for 'DQ' extensions")
-
-    ad.append(np.ones(shape), name='FOO', add_to=ad[0].nddata)
-
-    assert_array_equal(ad[0].nddata.data, fakedata)
-    assert_array_equal(ad[0].nddata.variance, 1)
-    assert_array_equal(ad[0].nddata.mask, 0)
+    with pytest.raises(AttributeError,
+                       match="SCI extensions should be appended with .append"):
+        ad[0].SCI = np.ones(shape)
 
 
 def test_add_table():
@@ -731,18 +765,19 @@ def test_add_table():
     ad.append(fakedata)
 
     tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.append(tbl)
+    ad.TABLE1 = tbl
     assert ad.tables == {'TABLE1'}
-    ad.append(tbl)
+
+    ad.TABLE2 = tbl
     assert ad.tables == {'TABLE1', 'TABLE2'}
-    ad.append(tbl, name='MYTABLE')
+
+    ad.MYTABLE = tbl
     assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
 
-    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
     tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad.append(tbl, add_to=ad[0].nddata, header=hdr)
-    ad.append(tbl, add_to=ad[0].nddata)
-    ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
+    ad[0].TABLE3 = tbl
+    ad[0].TABLE4 = tbl
+    ad[0].OTHERTABLE = tbl
 
     assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
 
@@ -751,7 +786,6 @@ def test_add_table():
     assert ad[0].tables == expected_tables
     assert ad[0].exposed == expected_tables
 
-    assert ad[0].TABLE3.meta['header']['INSTRUME'] == 'darkimager'
     assert set(ad[0].nddata.meta['other'].keys()) == {'OTHERTABLE',
                                                       'TABLE3', 'TABLE4'}
     assert_array_equal(ad[0].TABLE3['col0'], ['aa', 'bb', 'cc'])
@@ -762,10 +796,8 @@ def test_add_table():
 @pytest.mark.dragons_remote_data
 def test_copy(GSAOI_DARK, capsys):
     ad = astrodata.open(GSAOI_DARK)
-    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.append(tbl)
-    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad.append(tbl, add_to=ad[0].nddata)
+    ad.TABLE = Table([['a', 'b', 'c'], [1, 2, 3]])
+    ad[0].MYTABLE = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
 
     ad.info()
     captured = capsys.readouterr()
