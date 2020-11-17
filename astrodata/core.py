@@ -831,7 +831,7 @@ class AstroData:
         if custom_header is not None:
             nd.meta['header'] = custom_header
 
-        header = nd.meta.setdefault('header', {})
+        header = nd.meta.setdefault('header', fits.Header())
         currname = header.get('EXTNAME')
 
         if currname is None:

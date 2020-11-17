@@ -225,15 +225,19 @@ def test_append_nddata_to_root_with_arbitrary_name(testfile2):
         ad.append(nd)
 
 
-def test_append_table_to_extensions():
+def test_append_table_to_extensions(tmp_path):
+    testfile = tmp_path / 'test.fits'
     ad = astrodata.create({})
     ad.append(NDData(np.zeros((4, 5))))
     ad.append(NDData(np.zeros((4, 5))))
-    ad.append(NDData(np.zeros((4, 5))))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {'FOO': 'BAR'}}))
     ad[0].TABLE1 = Table([[1]])
     ad[0].TABLE2 = Table([[22]])
     ad[1].TABLE2 = Table([[2]])  # extensions can have the same table name
     ad[2].TABLE3 = Table([[3]])
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
 
     # Check that slices do not report extension tables
     assert ad.exposed == set()
@@ -241,6 +245,8 @@ def test_append_table_to_extensions():
     assert ad[1].exposed == {'TABLE2'}
     assert ad[2].exposed == {'TABLE3'}
     assert ad[1:].exposed == set()
+
+    assert ad[2].hdr['FOO'] == 'BAR'
 
     match = ("Cannot append table 'TABLE1' because it would hide an "
              "extension table")
@@ -360,10 +366,10 @@ def test_build_ad_multiple_extensions(tmp_path):
                     uncertainty=VarianceUncertainty(np.ones(shape)),
                     mask=np.zeros(shape, dtype='uint16'))
         ad.append(nd)
-        ad.append(Table([[i]]), name='OBJCAT', add_to=nd)
-        ad.append(np.zeros(10) + i, name='MYARR', add_to=nd)
+        ad[-1].OBJCAT = Table([[i]])
+        ad[-1].MYARR = np.zeros(10) + i
 
-    ad.append(Table([['ref']]), name='REFCAT')
+    ad.REFCAT = Table([['ref']])
     ad.write(testfile)
 
     ad2 = astrodata.open(testfile)

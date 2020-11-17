@@ -578,6 +578,9 @@ def ad_to_hdulist(ad):
     for ext in ad._nddata:
         header = ext.meta['header']
 
+        if not isinstance(header, fits.Header):
+            header = fits.Header(header)
+
         if ext.meta.get('parent_ad') == id(ad):
             # If the extension belonged with this object, use its
             # original EXTVER
