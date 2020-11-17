@@ -16,9 +16,9 @@ from astrodata import wcs as adwcs
 
 from gempy.gemini import gemini_tools as gt
 try:
-    from gempy.library import brute
+    from gempy.library import cython_utils
 except ImportError:  # pragma: no cover
-    raise ImportError("Run 'cythonize -i brute.pyx' in gempy/library")
+    raise ImportError("Run 'cythonize -i cython_utils.pyx' in gempy/library")
 from ..utils import logutils
 from .astromodels import Rotate2D, Scale2D
 
@@ -398,9 +398,9 @@ class BruteLandscapeFitter(Fitter):
         if len(in_coords) == 1:
             out_coords = out_coords[np.new_axis, :]
         #result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords))
-        result = brute.landstat(landscape.ravel(), out_coords.ravel(),
-                                np.array(landscape.shape, dtype=np.int32),
-                                len(landscape.shape), out_coords[0].size)
+        result = cython_utils.landstat(landscape.ravel(), out_coords.ravel(),
+                                       np.array(landscape.shape, dtype=np.int32),
+                                       len(landscape.shape), out_coords[0].size)
         return -result  # to minimize
 
     def mklandscape(self, coords, sigma, maxsig, landshape):
