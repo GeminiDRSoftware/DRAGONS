@@ -720,14 +720,16 @@ def clip_sources(ad):
 
     is_ao = ad.is_ao()
     sn_limit = 25 if is_ao else 50
+    single = ad.is_single
+    ad_iterable = [ad] if single else ad
 
     # Produce warning but return what is expected
-    if not any([hasattr(ext, 'OBJCAT') for ext in ad]):
+    if not any([hasattr(ext, 'OBJCAT') for ext in ad_iterable]):
         log.warning("No OBJCATs found on input. Has detectSources() been run?")
-        return [Table()] * len(ad)
+        return Table() if single else [Table()] * len(ad)
 
     good_sources = []
-    for ext in ad:
+    for ext in ad_iterable:
         try:
             objcat = ext.OBJCAT
         except AttributeError:
@@ -778,7 +780,7 @@ def clip_sources(ad):
 
         good_sources.append(table)
 
-    return good_sources
+    return good_sources[0] if single else good_sources
 
 @handle_single_adinput
 def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
@@ -1004,7 +1006,10 @@ def fit_continuum(ad):
     tags = ad.tags
     acq_star_positions = ad.phu.get("ACQSLITS")
 
-    for ext in ad:
+    single = ad.is_single
+    ad_iterable = [ad] if single else ad
+
+    for ext in ad_iterable:
         fwhm_list = []
         x_list, y_list = [], []
         weight_list = []
@@ -1187,9 +1192,9 @@ def fit_continuum(ad):
         # Clip outliers in FWHM
         if len(table) >= 3:
             table = table[~sigma_clip(table['fwhm_arcsec']).mask]
-
         good_sources.append(table)
-    return good_sources
+
+    return good_sources[0] if single else good_sources
 
 def log_message(function=None, name=None, message_type=None):
     """
