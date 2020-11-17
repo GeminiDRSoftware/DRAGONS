@@ -1611,10 +1611,9 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
     out_basename, filetype = os.path.splitext(out_basename)
 
     for ext in ad:
-        extver = ext.hdr['EXTVER']
-        record_name = '{}_{:0.3d}'.format(basename, extver)
+        record_name = '{}_{:0.3d}'.format(basename, ext.id)
         db = at.SpectralDatabase(database_name, record_name)
-        out_record_name = '{}_{:0.3d}'.format(out_basename, extver)
+        out_record_name = '{}_{:0.3d}'.format(out_basename, ext.id)
         table = db.as_binary_table(record_name=out_record_name)
 
         ext.WAVECAL = table
@@ -1639,10 +1638,9 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
         SExtractor dictionary
     """
     for ext in adoutput:
-        outextver = ext.hdr['EXTVER']
         output_wcs = ext.wcs
         indices = [i for i in range(len(ext_mapping))
-                   if ext_mapping[i] == outextver]
+                   if ext_mapping[i] == ext.id]
         inp_objcats = [adinput[i].OBJCAT for i in indices if
                        hasattr(adinput[i], 'OBJCAT')]
 
@@ -1754,7 +1752,7 @@ def write_database(ad, database_name=None, input_name=None):
     basename, filetype = os.path.splitext(basename)
 
     for ext in ad:
-        record_name = '{}_{:0.3d}'.format(basename, ext.EXTVER)
+        record_name = '{}_{:0.3d}'.format(basename, ext.id)
         db = at.SpectralDatabase(binary_table=ext.WAVECAL,
                                  record_name=record_name)
         db.write_to_disk(database_name=database_name)
