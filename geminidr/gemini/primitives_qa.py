@@ -107,7 +107,7 @@ class QA(PrimitivesBASE):
 
                 if separate_ext:
                     report.report(results,
-                                  header=f"{ad.filename}:{ext.hdr['EXTVER']}")
+                                  header=f"{ad.filename} extension {ext.id}")
 
             # Collapse extension-by-extension numbers if multiple extensions
             if len(ad) > 1:
@@ -192,8 +192,8 @@ class QA(PrimitivesBASE):
             nom_phot_zpt = ad.nominal_photometric_zeropoint()
             if not any(nom_phot_zpt):
                 log.warning("No nominal photometric zeropoint available "
-                            "for {}, filter {}".format(ad.filename,
-                             ad.filter_name(pretty=True)))
+                            "for {}, filter {}"
+                            .format(ad.filename, ad.filter_name(pretty=True)))
                 continue
 
             if not any(hasattr(ext, 'OBJCAT') for ext in ad):
@@ -215,8 +215,7 @@ class QA(PrimitivesBASE):
             qad = {'zeropoint': {}}
             all_results = []
             for ext in ad:
-                extver = ext.hdr['EXTVER']
-                extid = f"{ad.filename}:{extver}"
+                extid = f"{ad.filename} extension {ext.id}"
                 nsources = report.add_measurement(ext)
                 results = report.calculate_metric()
                 if separate_ext and nsources == 0:
@@ -240,10 +239,10 @@ class QA(PrimitivesBASE):
 
                 if separate_ext:
                     report.report(results,
-                                  header=f"{ad.filename}:{extver}")
+                                  header=f"{ad.filename} extension {ext.id}")
 
                 # Store the number in the QA dictionary to report to the ADCC
-                ampname = ext.hdr.get("AMPNAME", f"amp{extver}")
+                ampname = ext.hdr.get("AMPNAME", f"amp{ext.id}")
                 qad['zeropoint'].update({ampname: {'value': results["mag"],
                                                    'error': results["mag_std"]}})
 
@@ -343,7 +342,7 @@ class QA(PrimitivesBASE):
 
                 has_sources = False
                 for ext in ad:
-                    extid = f"{ad.filename}:{ext.hdr['EXTVER']}"
+                    extid = f"{ad.filename} extension {ext.id}"
                     nsources = report.add_measurement(ext, strehl_fn=partial(_strehl, ext))
                     results = report.calculate_metric(ao_seeing_fn=ao_seeing_fn)
                     if nsources == 0:
@@ -688,7 +687,7 @@ class BGReport(QAReport):
         log = self.log
         bg, bgerr, nsamples = gt.measure_bg_from_image(ext, sampling=sampling,
                                                        gaussfit=False)
-        extid = f"{self.filename}:{ext.hdr['EXTVER']}"
+        extid = f"{self.filename} extension {ext.id}"
 
         if bg is not None:
             log.fullinfo("{}: Raw BG level = {:.3f}".format(extid, bg))
