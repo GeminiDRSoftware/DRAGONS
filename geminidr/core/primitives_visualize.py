@@ -232,17 +232,16 @@ class Visualize(PrimitivesBASE):
                     overlay_index += 1
 
                 # Define the display name
-                if tile and extname=='SCI':
+                if tile and extname == 'SCI':
                     name = ext.filename
                 elif tile:
-                    name = '{}({})'.format(ext.filename, extname)
+                    name = f'{ext.filename}({extname})'
                 else:
-                    name = '{}({},{})'.format(ext.filename, extname,
-                                              ext.hdr['EXTVER'])
+                    name = f'{ext.filename}({extname}, extension {ext.id})'
 
                 try:
                     lnd.display(data, name=name, frame=frame, zscale=zscale,
-                                bpm=None if extname=='DQ' else dqdata,
+                                bpm=None if extname == 'DQ' else dqdata,
                                 quiet=True, masks=masks, mask_colors=mask_colors)
                 except OSError:
                     log.warning("ds9 not found; cannot display input")

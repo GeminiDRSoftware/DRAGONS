@@ -295,14 +295,14 @@ class GMOSSpect(Spect, GMOS):
                     qe_correction = (qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value).astype(
                         np.float32) - 1) * taper + 1
                 except TypeError:  # qeModel() returns None
-                    msg = "No QE correction found for {}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                    msg = f"No QE correction found for {ad.filename} extension {ext.id}"
                     if 'sq' in self.mode:
                         raise ValueError(msg)
                     else:
                         log.warning(msg)
                         continue
-                log.stdinfo("Mean relative QE of EXTVER {} is {:.5f}".
-                             format(ext.hdr['EXTVER'], qe_correction.mean()))
+                log.stdinfo(f"Mean relative QE of extension {ext.id} is "
+                            f"{qe_correction.mean():.5f}")
                 if not is_flat:
                     qe_correction = 1. / qe_correction
                 ext.multiply(qe_correction)

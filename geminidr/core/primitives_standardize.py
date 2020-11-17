@@ -71,7 +71,7 @@ class Standardize(PrimitivesBASE):
                                                    user_bpm_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
-                    'already been processed by addDQ'.format(ad.filename))
+                            'already been processed by addDQ'.format(ad.filename))
                 continue
 
             if static is None:
@@ -80,20 +80,20 @@ class Standardize(PrimitivesBASE):
             else:
                 log.fullinfo("Using {} as static BPM".format(static.filename))
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
-                                        aux_type='bpm', return_dtype=DQ.datatype)
+                                                      aux_type='bpm',
+                                                      return_dtype=DQ.datatype)
 
             if user is None:
                 final_user = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as user BPM".format(user.filename))
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
-                                        aux_type='bpm', return_dtype=DQ.datatype)
+                                                    aux_type='bpm',
+                                                    return_dtype=DQ.datatype)
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
-                extver = ext.hdr['EXTVER']
                 if ext.mask is not None:
-                    log.warning('A mask already exists in extver {}'.
-                                format(extver))
+                    log.warning(f'A mask already exists in extension {ext.id}')
                     continue
 
                 non_linear_level = ext.non_linear_level()
@@ -107,19 +107,19 @@ class Standardize(PrimitivesBASE):
                     ext.mask |= user_ext.data
 
                 if saturation_level:
-                    log.fullinfo('Flagging saturated pixels in {}:{} '
-                                 'above level {:.2f}'.
-                                 format(ad.filename, extver, saturation_level))
+                    log.fullinfo('Flagging saturated pixels in {} extension '
+                                 '{} above level {:.2f}'.format(
+                                     ad.filename, ext.id, saturation_level))
                     ext.mask |= np.where(ext.data >= saturation_level,
                                          DQ.saturated, 0).astype(DQ.datatype)
 
                 if non_linear_level:
                     if saturation_level:
                         if saturation_level > non_linear_level:
-                            log.fullinfo('Flagging non-linear pixels in {}:{} '
-                                         'above level {:.2f}'.
-                                         format(ad.filename, extver,
-                                                non_linear_level))
+                            log.fullinfo('Flagging non-linear pixels in {} '
+                                         'extension {} above level {:.2f}'
+                                         .format(ad.filename, ext.id,
+                                                 non_linear_level))
                             ext.mask |= np.where((ext.data >= non_linear_level) &
                                                  (ext.data < saturation_level),
                                                  DQ.non_linear, 0).astype(DQ.datatype)
@@ -149,18 +149,19 @@ class Standardize(PrimitivesBASE):
                             ext.mask |= hidden_saturation_array
 
                         elif saturation_level < non_linear_level:
-                            log.warning('{}:{} has saturation level less than '
-                                'non-linear level'.format(ad.filename, extver))
+                            log.warning(f'{ad.filename} extension {ext.id} '
+                                        'has saturation level less than '
+                                        'non-linear level')
                         else:
                             log.fullinfo('Saturation and non-linear levels '
                                          'are the same for {}:{}. Only '
-                                         'flagging saturated pixels'.
-                                format(ad.filename, extver))
+                                         'flagging saturated pixels'
+                                         .format(ad.filename, ext.id))
                     else:
                         log.fullinfo('Flagging non-linear pixels in {}:{} '
-                                     'above level {:.2f}'.
-                                     format(ad.filename, extver,
-                                            non_linear_level))
+                                     'above level {:.2f}'
+                                     .format(ad.filename, ext.id,
+                                             non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0).astype(DQ.datatype)
 
@@ -472,16 +473,15 @@ class Standardize(PrimitivesBASE):
             log.warning("It is not recommended to add Poisson noise "
                         "to the variance of a bias frame")
         elif ('GMOS' in tags and
-                      self.timestamp_keys["biasCorrect"] not in ad.phu and
-                      self.timestamp_keys["subtractOverscan"] not in ad.phu):
+              self.timestamp_keys["biasCorrect"] not in ad.phu and
+              self.timestamp_keys["subtractOverscan"] not in ad.phu):
             log.warning("It is not recommended to add Poisson noise to the"
                         " variance of data that still contain a bias level")
         gain_list = ad.gain()
         for ext, gain in zip(ad, gain_list):
-            extver = ext.hdr['EXTVER']
             if 'poisson' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Poisson noise already added for "
-                            "{}:{}".format(ad.filename, extver))
+                            f"{ad.filename} extension {ext.id}")
                 continue
             var_array = np.where(ext.data > 0, ext.data, 0).astype(dtype)
             if not ext.is_coadds_summed():
@@ -515,18 +515,17 @@ class Standardize(PrimitivesBASE):
         gain_list = ad.gain()
         read_noise_list = ad.read_noise()
         for ext, gain, read_noise in zip(ad, gain_list, read_noise_list):
-            extver = ext.hdr['EXTVER']
             if 'read' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Read noise already added for "
-                            "{}:{}".format(ad.filename, extver))
+                            f"{ad.filename} extension {ext.id}")
                 continue
             if read_noise is None:
-                log.warning("Read noise for {}:{} = None. Setting to "
-                            "zero".format(ad.filename, extver))
+                log.warning(f"Read noise for {ad.filename} extension {ext.id} "
+                            "is None. Setting to zero")
                 read_noise = 0.0
             else:
-                log.fullinfo('Read noise for {}:{} = {} electrons'.
-                             format(ad.filename, extver, read_noise))
+                log.fullinfo(f"Read noise for {ad.filename} extension {ext.id}"
+                             f" = {read_noise} electrons")
             if ext.is_in_adu():
                 read_noise /= gain
             var_array = np.full_like(ext.data, read_noise * read_noise,
