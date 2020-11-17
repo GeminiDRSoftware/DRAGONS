@@ -85,17 +85,16 @@ class GSAOI(Gemini, NearIR):
             # problem is currently May 15 2013. It is not clear if this bug is
             # in the detector controller code or the SDSU board timing.
             if ad.phu.get('DATE-OBS') >= '2013-05-13':
-                for ext in ad:
+                for i, ext in enumerate(ad):
                     if ext.array_section(pretty=True) == '[513:1536,513:1536]':
-                        log.stdinfo("Updating the CCDSEC for central ROI data")
+                        if i == 0:
+                            log.stdinfo("Updating the CCDSEC for central ROI data")
 
                         for sec_name in ('array_section', 'detector_section'):
                             kw = ad._keyword_for(sec_name)
                             sec = getattr(ext, sec_name)()
 
-                            y1o = (sec.y1 + 1) if ext.hdr['EXTVER'] < 3 else \
-                                (sec.y1 - 1)
-
+                            y1o = (sec.y1 + 1) if i < 2 else (sec.y1 - 1)
                             y2o = y1o + 1024
 
                             secstr = "[{}:{},{}:{}]".format(
