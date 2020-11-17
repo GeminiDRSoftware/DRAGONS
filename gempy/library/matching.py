@@ -15,6 +15,10 @@ from astropy.modeling.fitting import (_validate_model,
 from astrodata import wcs as adwcs
 
 from gempy.gemini import gemini_tools as gt
+try:
+    from gempy.library import brute
+except ImportError:  # pragma: no cover
+    raise ImportError("Run 'cythonize -i brute.pyx' in gempy/library")
 from ..utils import logutils
 from .astromodels import Rotate2D, Scale2D
 
@@ -384,28 +388,19 @@ class BruteLandscapeFitter(Fitter):
             statistic representing quality of fit to be minimized
         """
 
-        def _element_if_in_bounds(arr, index):
-            try:
-                return arr[index]
-            except IndexError:
-                return 0
+        #def _element_if_in_bounds(arr, index):
+        #    try:
+        #        return arr[index]
+        #    except IndexError:
+        #        return 0
 
-        out_coords = self.grid_model(*updated_model(*in_coords))
+        out_coords = (np.array(self.grid_model(*updated_model(*in_coords))) + 0.5).astype(np.int32)
         if len(in_coords) == 1:
-            out_coords = (out_coords,)
-        out_coords2 = tuple((coords - 0.5).astype(int)
-                            for coords in out_coords)
-        result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
-        ################################################################################
-        # This stuff replaces the above 3 lines if speed doesn't hold up
-        #    sum = np.sum(landscape[i] for i in out_coords if i>=0 and i<len(landscape))
-        # elif len(in_coords) == 2:
-        #    xt, yt = out_coords
-        #    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
-        #                                                   (yt-0.5).astype(int))
-        #                  if ix>=0 and iy>=0 and ix<landscape.shape[1]
-        #                                     and iy<landscape.shape[0])
-        ################################################################################
+            out_coords = out_coords[np.new_axis, :]
+        #result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords))
+        result = brute.landstat(landscape.ravel(), out_coords.ravel(),
+                                np.array(landscape.shape, dtype=np.int32),
+                                len(landscape.shape), out_coords[0].size)
         return -result  # to minimize
 
     def mklandscape(self, coords, sigma, maxsig, landshape):
@@ -841,12 +836,10 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, scale=None,
         m_init = model.copy()
 
     # More precise minimization using pairwise calculations
-    fit_it = KDTreeFitter(sigma=sigma)  # TODO: set parameters?
+    fit_it = KDTreeFitter(sigma=sigma, method='Nelder-Mead')
     # We don't care about how much the function value changes (fatol), only
     # that the position is robust (xatol)
-    m_final = fit_it(m_init, xin, xout, method='Nelder-Mead',
-                     options={'xatol': tolerance})
-    #m_final = fit_it(m_init, xin, xout, method='shgo')
+    m_final = fit_it(m_init, xin, xout, options={'xatol': tolerance})
     if verbose:
         log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
                                 format((datetime.now() - start).total_seconds())))

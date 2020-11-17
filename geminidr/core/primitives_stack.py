@@ -296,10 +296,14 @@ class Stack(PrimitivesBASE):
         # Propagate REFCAT as the union of all input REFCATs
         refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
         if refcats:
-            out_refcat = table.unique(table.vstack(refcats, metadata_conflicts='silent'),
-                                      keys='Cat_Id')
-            out_refcat['Id'] = list(range(1, len(out_refcat)+1))
-            ad_out.REFCAT = out_refcat
+            try:
+                out_refcat = table.unique(table.vstack(refcats, metadata_conflicts='silent'),
+                                          keys=('RAJ2000', 'DEJ2000'))
+            except KeyError:
+                pass
+            else:
+                out_refcat['Id'] = list(range(1, len(out_refcat)+1))
+                ad_out.REFCAT = out_refcat
 
         # Set AIRMASS to be the mean of the input values
         try:
