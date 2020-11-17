@@ -367,7 +367,7 @@ class Standardize(PrimitivesBASE):
     def standardizeStructure(self, adinputs=None, **params):
         return adinputs
 
-    def standardizeWCS(self, adinputs=None, suffix=None, reference_extension=None):
+    def standardizeWCS(self, adinputs=None, suffix=None):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
         in the input AstroData objects. For spectroscopic data, it means
@@ -380,8 +380,7 @@ class Standardize(PrimitivesBASE):
         ----------
         suffix: str/None
             suffix to be added to output files
-        reference_extension: int/None
-            reference extension whose WCS is inherited by others
+
         """
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
