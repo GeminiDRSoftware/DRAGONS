@@ -73,7 +73,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=2, axis=0,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         # diff = abs(fit_vals - self.sky)
         # tol = 20 + 0.015 * abs(self.sky)
@@ -101,7 +101,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=2, axis=0,
                           lsigma=3., hsigma=2.3, iterations=5, grow=2,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.sky, atol=15., rtol=0.015)
 
@@ -113,7 +113,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=5,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.025)
 
@@ -127,7 +127,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=5, axis=1,
                           lsigma=3.7, hsigma=3.7, iterations=5, grow=2,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -139,7 +139,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data[16], weights=self.weights[16],
                           function='chebyshev', order=5,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj[16], atol=30., rtol=0.02)
 
@@ -151,7 +151,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data[16:17], weights=self.weights[16:17],
                           function='chebyshev', order=5,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         # This should work, but currently fails because fit_1D is returning
         # a result with shape (140, 1) from (1, 140) inputs.
@@ -167,7 +167,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data[:, 70:71], weights=self.weights[:, 70:71],
                           function='chebyshev', order=2, axis=0,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.sky[:, 70:71], atol=10., rtol=0.)
 
@@ -179,7 +179,7 @@ class TestFit1D:
 
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=2, axis=0, iterations=0,
-                          regions="1:10,23:30", plot=debug).fitvals
+                          regions="1:10,23:30", plot=debug)()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
@@ -192,7 +192,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=2, axis=0, iterations=0,
                           regions=[slice(0, 10), slice(22, 30)],
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
@@ -204,7 +204,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='spline1', order=1, axis=0,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
@@ -217,7 +217,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='spline3', order=3,
                           lsigma=2.5, hsigma=2.5, iterations=5, grow=1,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -229,7 +229,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='legendre', order=5, axis=1,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -241,7 +241,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.masked_data, weights=self.weights,
                           function='chebyshev', order=5,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -254,7 +254,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.masked_data, weights=self.weights,
                           function='spline3', order=3,
                           lsigma=2.5, hsigma=2.5, iterations=5, grow=1,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -297,7 +297,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=5, axis=0,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
 
@@ -315,7 +315,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data.T, weights=self.weights.T,
                           function='chebyshev', order=5,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
 
@@ -328,7 +328,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='spline3', order=3, axis=0,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
 
@@ -341,7 +341,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data.T, weights=self.weights.T,
                           function='spline3', order=3,
                           lsigma=2.5, hsigma=2.5, iterations=5,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
 
@@ -355,7 +355,7 @@ class TestFit1DCube:
                           weights=np.rollaxis(self.weights, 0, 2),
                           function='spline3', order=3, axis=1,
                           lsigma=3.5, hsigma=3.5, iterations=5, grow=1,
-                          plot=debug).fitvals
+                          plot=debug)()
 
         assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2),
                         atol=45., rtol=0.015)
