@@ -1023,7 +1023,7 @@ class DataGroup:
                                          "tested for non-affine transforms")
 
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
-                        transform.append(reduce(Model.__and__, [models.Shift(-1)] * ndim))
+                        transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
 
                         # These are the coordinates in the input frame corresponding to each
                         # (subsampled) output pixel in a frame with an additional 1-pixel boundary
