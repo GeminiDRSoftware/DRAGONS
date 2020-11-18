@@ -30,12 +30,3 @@ Appendix
 
    appendices/appendix_descriptors
    api
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
