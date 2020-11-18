@@ -1377,23 +1377,23 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
             if gaussfit:
                 frac = 0.55
                 datamax = np.percentile(bg_data, frac * 100)
-                bg, bgsig = np.median(bg_data), np.std(bg_data)
+                bg, bg_std = np.median(bg_data), np.std(bg_data)
                 bg_data = np.sort(bg_data[bg_data < datamax])[::sampling]
                 niter = 0
                 while True:
-                    oldbg, oldbgsig = bg, bgsig
-                    g_init = Ogive(bg, bgsig, frac)
+                    oldbg, oldbg_std = bg, bg_std
+                    g_init = Ogive(bg, bg_std, frac)
                     g_init.lowfrac.bounds = (0.001, 0.999)
                     fit_g = fitting.LevMarLSQFitter()
                     g = fit_g(g_init, bg_data, np.linspace(0., 1., bg_data.size + 1)[1:])
-                    bg, bgsig = g.mean.value, abs(g.stddev.value)
-                    if abs(bg - oldbg) < 0.001 * bgsig or niter > maxiter:
+                    bg, bg_std = g.mean.value, abs(g.stddev.value)
+                    if abs(bg - oldbg) < 0.001 * bg_std or niter > maxiter:
                         break
                     # Remove brightest pixels if we're sampling too much
                     # to the bright side of the peak
                     if g.lowfrac.value > 0.9:
                         bg_data = bg_data[:int(0.9 * bg_data.size)]
-                    bg_data = bg_data[bg_data < bg + bgsig * 0.5]
+                    bg_data = bg_data[bg_data < bg + bg_std * 0.5]
                     niter += 1
             else:
                 # Sigma-clipping will screw up the stats of course!
