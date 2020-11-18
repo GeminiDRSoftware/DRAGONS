@@ -3,7 +3,7 @@
    contain the root `toctree` directive.
    Manually edited by KL Tue Jan 17 2017
 
-Astrodata Cheat Sheet 
+Astrodata Cheat Sheet
 =====================
 
 .. admonition:: Document ID
@@ -15,13 +15,3 @@ Astrodata Cheat Sheet
    :maxdepth: 2
 
    cheatsheet
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-.. todolist::
-

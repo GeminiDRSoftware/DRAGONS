@@ -11,13 +11,24 @@ Astrodata
 
 ..    PIPE-USER-105_AstrodataCheatSheet
 
+This is the cheat sheet bla bla...
+
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
-   cheatsheet/cheatsheet
+   cheatsheet/index
+
+This is the user documentation bla bla...
+
+.. toctree::
+   :maxdepth: 2
 
    usermanual/index
+
+This is the programmer documentation bla bla...
+
+.. toctree::
+   :maxdepth: 2
 
    progmanual/index
 
