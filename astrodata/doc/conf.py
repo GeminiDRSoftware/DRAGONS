@@ -372,22 +372,17 @@ def run_api_doc(_):
         'gemini_instruments'
     ]
 
-    current_path = os.getcwd()
-    relative_path = "../../"
+    current_path = os.path.abspath(os.path.dirname(__file__))
+    root_path = os.path.abspath(os.path.join(current_path, '..', '..'))
 
     print(("Current Path:", current_path))
 
     for p in build_packages:
 
-        build_path = os.path.join(current_path, relative_path, p)
+        build_path = os.path.join(root_path, p)
 
-        ignore_paths = [
-            'doc',
-            'test',
-            'tests',
-        ]
-
-        ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+        ignore_paths = ['doc', 'test*', '**/test*']
+        ignore_paths = [os.path.join(build_path, i, '*') for i in ignore_paths]
 
         argv = [
             "--force",
