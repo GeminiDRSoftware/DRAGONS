@@ -14,7 +14,6 @@ from astropy.modeling.fitting import (_validate_model,
 
 from astrodata import wcs as adwcs
 
-from gempy.gemini import gemini_tools as gt
 try:
     from gempy.library import cython_utils
 except ImportError:  # pragma: no cover
@@ -768,7 +767,7 @@ class KDTreeFitter(Fitter):
         return -result  # to minimize
 
 
-def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, scale=None,
+def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-5, scale=None,
               brute=True, release=False, verbose=True):
     """
     Finds the best-fitting mapping to convert from xin to xout, using a
@@ -911,34 +910,26 @@ def match_sources(incoords, refcoords, radius=2.0):
     return matched
 
 
-def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
-                          min_sources=1, search_radius=10, match_radius=2,
-                          rotate=False, scale=False, full_wcs=False,
-                          brute=True, return_matches=False):
+def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
+                             search_radius=10, match_radius=2, rotate=False,
+                             scale=False, brute=True, sigma=10, factor=None,
+                             return_matches=False):
     """
-    This function takes two images (an input image, and a reference image) and
-    works out the modifications needed to the WCS of the input images so that
-    the world coordinates of its OBJCAT sources match the world coordinates of
-    the OBJCAT sources in the reference image. This is done by modifying the
-    WCS of the input image and mapping the reference image sources to pixels
-    in the input image via the reference image WCS (fixed) and the input image
-    WCS. As such, in the nomenclature of the fitting routines, the pixel
-    positions of the input image's OBJCAT become the "reference" sources,
-    while the converted positions of the reference image's OBJCAT are the
-    "input" sources.
+    This function computes a transform that maps one set of coordinates to
+    another. By default, only a shift is used, by a rotation and magnification
+    can also be applied if requested. An initial transform may be supplied
+    and, if so, its affine approximation will be used as a starting point.
 
     Parameters
     ----------
-    adinput: AstroData
-        input AD whose pixel shift is requested
-    adref: AstroData
-        reference AD image
+    incoords: tuple
+        x-coords and y-coords of objects in input image
+    refcoords: tuple
+        x-coords and y-coords of objects in reference image
     transform: Transform/None
         existing transformation (if None, will do brute search)
-    cull_sources: bool
-        limit matched sources to "good" (i.e., stellar) objects
-    min_sources: int
-        minimum number of sources to use for cross-correlation
+    shape: 2-tuple/None
+        shape (standard python order, y-first)
     search_radius: float
         size of search box (in pixels)
     match_radius: float
@@ -947,82 +938,44 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         add a rotation to the alignment transform?
     scale: bool
         add a magnification to the alignment transform?
-    full_wcs: bool
-        use the two images' WCSs to reproject the reference image's coordinates
-        onto the input image's pixel plane, rather than just align the OBJCAT
-        coordinates?
     brute: bool
         perform brute (landscape) search first?
+    sigma: float
+        scale-length for source matching
+    factor: float/None
+        scaling factor to convert coordinates to pixels in the BruteLandscapeFitter()
     return_matches: bool
         return a list of matched objects as well as the Transform?
 
     Returns
     -------
-    matches: 2 lists
+    Model: alignment transform
+    matches: 2 lists (optional)
         OBJCAT sources in input and reference that are matched
-    WCS: new WCS for input image
     """
     log = logutils.get_logger(__name__)
-    if len(adinput) * len(adref) != 1:
-        log.warning('Can only match single-extension images')
-        return None
+    if shape is None:
+        shape = tuple(max(c) - min(c) for c in incoords)
 
-    try:
-        input_objcat = adinput[0].OBJCAT
-        ref_objcat = adref[0].OBJCAT
-    except AttributeError:
-        log.warning('Both input images must have object catalogs')
-        return None
-
-    if len(input_objcat) < min_sources or len(ref_objcat) < min_sources:
-        log.warning("Too few sources in one or both images. Cannot align.")
-        return None
-
-    largest_dimension = max(*adinput[0].shape, *adref[0].shape)
+    largest_dimension = max(*shape)
     # Values larger than these result in errors of >1 pixel
     mag_threshold = 1. / largest_dimension
     rot_threshold = np.degrees(mag_threshold)
 
-    # OK, we can proceed
-    incoords = (input_objcat['X_IMAGE'].data-1, input_objcat['Y_IMAGE'].data-1)
-    refcoords = (ref_objcat['X_IMAGE'].data-1, ref_objcat['Y_IMAGE'].data-1)
-    if cull_sources:
-        good_src1 = gt.clip_sources(adinput)[0]
-        good_src2 = gt.clip_sources(adref)[0]
-        if len(good_src1) < min_sources or len(good_src2) < min_sources:
-            log.warning("Too few sources in culled list, using full set "
-                        "of sources")
-        else:
-            incoords = (good_src1["x"]-1, good_src1["y"]-1)
-            refcoords = (good_src2["x"]-1, good_src2["y"]-1)
-
     # Set up the initial model
-    magnification, rotation = 1, 0  # May be overridden later
-    try:
-        t = adref[0].wcs.forward_transform | adinput[0].wcs.backward_transform
-    except AttributeError:  # for cases with no defined WCS
-        t = None
-        if full_wcs:
-            log.warning("Cannot determine WCS information: setting full_wcs=False")
-            full_wcs = False
-
-    if full_wcs:
-        refcoords = t(*refcoords)
-    elif transform is None and t is not None:
-        transform = t.inverse
     if transform is None:
         transform = models.Identity(2)
 
     # We always refactor the transform (if provided) in a prescribed way so
     # as to ensure it's fittable and not overly weird
-    affine = adwcs.calculate_affine_matrices(transform, adinput[0].shape)
+    affine = adwcs.calculate_affine_matrices(transform, shape)
     m_init = models.Shift(affine.offset[1]) & models.Shift(affine.offset[0])
 
     # This is approximate since the affine matrix might have differential
     # scaling and a shear
     magnification = np.sqrt(abs(np.linalg.det(affine.matrix)))
-    rotation = np.degrees(np.arctan2(affine.matrix[1,0] - affine.matrix[0,1],
-                                     affine.matrix[0,0] + affine.matrix[1,1]))
+    rotation = np.degrees(np.arctan2(affine.matrix[0, 1] - affine.matrix[1, 0],
+                                     affine.matrix[0, 0] + affine.matrix[1, 1]))
     m_init.offset_0.bounds = (m_init.offset_0 - search_radius,
                               m_init.offset_0 + search_radius)
     m_init.offset_1.bounds = (m_init.offset_1 - search_radius,
@@ -1048,13 +1001,21 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         log.warning("A magnification of {:.4f} is expected but the "
                     "magnification is fixed".format(magnification))
 
-    # Perform the fit
-    m_final = fit_model(m_init, incoords, refcoords, sigma=10, brute=brute)
+    from astropy.table import Table
+    tobj = Table([*incoords, *m_init(*incoords)], names=['XIN', 'YIN', 'XTRANS', 'YTRANS'])
+    tref = Table(refcoords, names=['XREF', 'YREF'])
+    tobj.write('obj.fits', format='fits', overwrite=True)
+    tref.write('ref.fits', format='fits', overwrite=True)
+
+    # Perform the fit. We expect sigma ~ 10 pixels, so the tolerance
+    # here is ~ 0.001 pixels, which is fine
+    m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
+                        brute=brute, tolerance=sigma*1e-4)
     if return_matches:
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
         ind1 = matched[ind2]
         obj_list = [[], []] if len(ind1) < 1 else [np.array(list(zip(*incoords)))[ind2],
                                                    np.array(list(zip(*refcoords)))[ind1]]
-        return obj_list, m_final
+        return m_final, obj_list
     return m_final

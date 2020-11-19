@@ -19,7 +19,7 @@ from astrodata import wcs as adwcs
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am, astrotools as at
-from gempy.library.matching import fit_model, match_sources
+from gempy.library.matching import find_alignment_transform, fit_model, match_sources
 from gempy.gemini import qap_tools as qap
 
 from geminidr.core import Image, Photometry
@@ -114,8 +114,6 @@ class GSAOIImage(GSAOI, Image, Photometry):
         # but we can't check that
         ref_transform = adref[0].wcs.pipeline[-2].transform
 
-        mag_threshold = 1 / 5000
-        rot_threshold = np.degrees(mag_threshold)
         for ad in adinputs[1:]:
             objcat = merge_gsaoi_objcats(ad, cull_sources=cull_sources)
             incoords = (objcat['X_STATIC'], objcat['Y_STATIC'])
@@ -129,43 +127,10 @@ class GSAOIImage(GSAOI, Image, Photometry):
             else:
                 log.stdinfo("Cross-correlating sources between "
                             f"{ad.filename} and {adref.filename}")
-                # We always refactor the transform (if provided) in a prescribed way so
-                # as to ensure it's fittable and not overly weird
-                affine = adwcs.calculate_affine_matrices(transform, (100, 100))
-                m_init = models.Shift(affine.offset[1]) & models.Shift(affine.offset[0])
-
-                # This is approximate since the affine matrix might have differential
-                # scaling and a shear
-                magnification = np.sqrt(abs(np.linalg.det(affine.matrix)))
-                rotation = np.degrees(np.arctan2(affine.matrix[1, 0] - affine.matrix[0, 1],
-                                                 affine.matrix[0, 0] + affine.matrix[1, 1]))
-                m_init.offset_0.bounds = (m_init.offset_0 - initial,
-                                          m_init.offset_0 + initial)
-                m_init.offset_1.bounds = (m_init.offset_1 - initial,
-                                          m_init.offset_1 + initial)
-                m_shift = m_init
-
-                m_rotate = am.Rotate2D(rotation)
-                if rotate:
-                    m_rotate.angle.bounds = (rotation - 5, rotation + 5)
-                    m_init = m_rotate | m_init
-                elif abs(rotation) > rot_threshold:
-                    m_rotate.angle.fixed = True
-                    m_init = m_rotate | m_init
-                    log.warning("A rotation of {:.3f} degrees is expected but the "
-                                "rotation is fixed".format(rotation))
-
-                m_magnify = am.Scale2D(magnification)
-                if scale:
-                    m_magnify.factor.bounds = (magnification - 0.05, magnification + 0.05)
-                    m_init = m_magnify | m_init
-                elif abs(magnification - 1) > mag_threshold:
-                    m_magnify.factor.fixed = True
-                    m_init = m_magnify | m_init
-                    log.warning("A magnification of {:.4f} is expected but the "
-                                "magnification is fixed".format(magnification))
-                transform = fit_model(m_init, incoords, refcoords, sigma=0.2,
-                                      scale=1/0.02, brute=True)
+                transform = find_alignment_transform(incoords, refcoords, transform=transform,
+                                                     shape=(5000, 5000), search_radius=initial,
+                                                     rotate=rotate, scale=scale,
+                                                     sigma=0.2, factor=1/0.02, brute=True)
 
             # This order will assign the closest OBJCAT to each REFCAT source
             matched = match_sources(refcoords, transform(*incoords),
@@ -174,8 +139,9 @@ class GSAOIImage(GSAOI, Image, Photometry):
             if (rotate or scale) and num_matched < min_sources + rotate + scale:
                 log.warning(f"Too few correlated objects ({num_matched}). "
                             "Setting rotate=False, scale=False")
-                transform = fit_model(m_shift, incoords, refcoords, sigma=0.2,
-                                      scale=1/0.02, brute=True)
+                transform = find_alignment_transform(incoords, refcoords, transform=transform,
+                                                     shape=(5000, 5000), rotate=False, scale=False,
+                                                     sigma=0.2, factor=1/0.02, brute=True)
             if num_matched < min_sources:
                 log.warning(f"Too few correlated sources ({num_matched}). "
                             "Cannot adjust WCS.")
@@ -273,9 +239,9 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
         self._attach_static_distortion(adinputs)
         if any(self.timestamp_keys["adjustWCSToReference"] in ad.phu for ad in adinputs):
-            raise ValueError("One or more inputs has been processed by "
-                             f"adjustWCSToReference. {self.myself()} must be "
-                             "run first.")
+            log.warning("One or more inputs has been processed by "
+                        f"adjustWCSToReference. {self.myself()} will not"
+                        "preserve these alignments.")
 
         for ad in adinputs:
             if len(ad) == 1:
@@ -315,10 +281,10 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
             # This will be the same for all extensions if the user hasn't
             # hacked it (which is something we can't really check)
-            backward_transform = ad[0].wcs.get_transform(ad[0].wcs.output_frame,
-                                                         "static")
-            xref, yref = backward_transform(refcat['RAJ2000'],
-                                            refcat['DEJ2000'])
+            static_to_world_transform = ad[0].wcs.get_transform("static",
+                                                                ad[0].wcs.output_frame)
+            xref, yref = static_to_world_transform.inverse(refcat['RAJ2000'],
+                                                           refcat['DEJ2000'])
             in_field = np.all((xref > xmin, xref < xmax,
                                yref > ymin, yref < ymax), axis=0)
             num_ref_sources = in_field.sum()
@@ -419,8 +385,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
                     var_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="variable")
                     ext.wcs = gWCS(ext.wcs.pipeline[:1] +
                                    [(ext.wcs.pipeline[1].frame, transform),
-                                    (var_frame, ext.wcs.pipeline[1].transform)] +
-                                   ext.wcs.pipeline[2:])
+                                    (var_frame, static_to_world_transform),
+                                    (ext.wcs.output_frame, None)])
                     ext.objcat = objcat[objcat['ext_index'] == index]
                     ext.objcat['X_WORLD'], ext.objcat['Y_WORLD'] = ext.wcs(ext.objcat['X_IMAGE']-1,
                                                                            ext.objcat['Y_IMAGE']-1)
@@ -523,8 +489,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 sky_model = models.Scale(1 / 3600) & models.Scale(1 / 3600)
                 # the PA header keyword isn't good enough
                 wcs_dict = adwcs.gwcs_to_fits(ad[ref_location[0]].nddata)
-                a, b, c, d = [wcs_dict[f'CD{i}_{j}'] for j in (1, 2) for i in (1, 2)]
-                pa = np.arctan2([b, b, -c, -c], [a, d, a, d]).mean()
+                pa = np.arctan2(wcs_dict["CD2_1"] - wcs_dict["CD1_2"],
+                                wcs_dict["CD1_1"] + wcs_dict["CD2_2"])
                 if abs(pa) > 0.00175:  # radians ~ 0.01 degrees
                     # Rotation2D() breaks things because it explicitly converts
                     # the Column objects to Quantity objects, which retain units
