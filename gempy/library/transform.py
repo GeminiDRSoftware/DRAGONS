@@ -896,6 +896,8 @@ class DataGroup:
         for array_shape, transform in zip(array_shapes, transforms):
             corners = np.array(at.get_corners(array_shape)).T[::-1]
             trans_corners = transform(*corners)
+            if len(array_shape) == 1:
+                trans_corners = (trans_corners,)
             all_corners.extend(corner[::-1] for corner in zip(*trans_corners))
         limits = [(int(np.ceil(min(c))), int(np.floor(max(c))) + 1)
                   for c in zip(*all_corners)]
