@@ -2353,7 +2353,7 @@ class Spect(PrimitivesBASE):
                 sky_model = fit_1D(sky, weights=sky_weights, function=function,
                                    order=order, axis=axis, sigma_lower=lsigma,
                                    sigma_upper=hsigma, niter=max_iters,
-                                   grow=grow, regions=regions, plot=debug)
+                                   grow=grow, regions=regions, plot=debug)()
 
                 ext.data -= sky_model
 
