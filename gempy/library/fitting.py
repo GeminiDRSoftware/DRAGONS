@@ -63,11 +63,11 @@ class fit_1D:
         Array axis along which to perform fitting (Python convention;
         default -1, ie. rows).
 
-    lsigma, hsigma : `float`, optional
+    sigma_lower, sigma_upper : `float`, optional
         Rejection threshold in standard deviations below and above the mean,
         respectively (default 3.0).
 
-    iterations : `int`, optional
+    niter : `int`, optional
         Maximum number of rejection and re-fitting iterations (default 0, ie.
         a single fit with no iteration).
 
@@ -97,16 +97,16 @@ class fit_1D:
     """
 
     def __init__(self, image, weights=None, function='legendre', order=1,
-                 axis=-1, lsigma=3.0, hsigma=3.0, iterations=0, grow=False,
-                 regions=None, plot=False):
+                 axis=-1, sigma_lower=3.0, sigma_upper=3.0, niter=0,
+                 grow=False, regions=None, plot=False):
 
         # Save the fitting parameter values:
         self.function = function
         self.order = order
         self.axis = axis
-        self.lsigma = lsigma
-        self.hsigma = hsigma
-        self.iterations = iterations
+        self.sigma_lower = sigma_lower
+        self.sigma_upper = sigma_upper
+        self.niter = niter
         self.grow = grow
         self.regions = regions
 
@@ -237,10 +237,10 @@ class fit_1D:
             fitter = fitting.FittingWithOutlierRemoval(
                 fitting.LinearLSQFitter(),
                 sigma_clip,
-                niter=self.iterations,
+                niter=self.niter,
                 # additional args are passed to outlier_func, i.e. sigma_clip
-                sigma_lower=self.lsigma,
-                sigma_upper=self.hsigma,
+                sigma_lower=self.sigma_lower,
+                sigma_upper=self.sigma_upper,
                 maxiters=1,
                 cenfunc='mean',
                 stdfunc='std',
@@ -282,9 +282,9 @@ class fit_1D:
                 # parameter names in function_map, eg. weights -> w?
                 single_model = self.model_class(
                     points[user_reg], imrow[user_reg], order=self.order,
-                    w=wrow, niter=self.iterations, grow=int(self.grow),
-                    lsigma=self.lsigma, hsigma=self.hsigma, maxiters=1,
-                    **self.model_args
+                    w=wrow, niter=self.niter, grow=int(self.grow),
+                    sigma_lower=self.sigma_lower, sigma_upper=self.sigma_upper,
+                    maxiters=1, **self.model_args
                 )
                 fitted_models.append(single_model)
 
