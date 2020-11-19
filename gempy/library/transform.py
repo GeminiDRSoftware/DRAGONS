@@ -833,7 +833,6 @@ class DataGroup:
             self._transforms = copy.deepcopy(transforms)
             self._arrays = arrays
         self.no_data = {}
-        self.output_dict = {}
         self.output_shape = None
         self.origin = None
         self.log = logutils.get_logger(__name__)
@@ -967,6 +966,7 @@ class DataGroup:
         -------
         dict: {key: array} of arrays containing the transformed attributes
         """
+        self.output_dict = {}
         if parallel:
             processes = []
             process_keys = []
