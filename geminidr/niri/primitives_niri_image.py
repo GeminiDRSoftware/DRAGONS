@@ -101,8 +101,8 @@ class NIRIImage(NIRI, Image, Photometry):
                                     np.tile(out, (len(yticks), len(xticks))))
                         sigma_out = sigclip(np.ma.masked_array(out_quad, quad.mask)).std()
                         if sigma_out > sigma_in:
-                            qstr = "{}:{} quadrant ({},{})".format(ad.filename,
-                                                                   ext.hdr['EXTVER'], xstart, ystart)
+                            qstr = (f"{ad.filename} extension {ext.id} "
+                                    f"quadrant ({xstart},{ystart})")
                             if force:
                                 log.stdinfo("Forcing cleaning on " + qstr)
                             else:

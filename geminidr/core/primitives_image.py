@@ -374,7 +374,6 @@ class Image(Preprocess, Register, Resample):
         for ad in adinputs:
             all_data = []
             for index, ext in enumerate(ad):
-                extver = ext.hdr['EXTVER']
                 if section is None:
                     x1, y1 = 0, 0
                     y2, x2 = ext.data.shape
@@ -384,8 +383,9 @@ class Image(Preprocess, Register, Resample):
                 if data.size:
                     mask = None if ext.mask is None else ext.mask[y1:y2, x1:x2]
                 else:
-                    log.warning("Section does not intersect with data for {}:{}."
-                                " Using full frame.".format(ad.filename, extver))
+                    log.warning("Section does not intersect with data for "
+                                f"{ad.filename} extension {ext.id}."
+                                " Using full frame.")
                     data = ext.data
                     mask = ext.mask
                 if mask is not None:
@@ -397,12 +397,12 @@ class Image(Preprocess, Register, Resample):
                 if separate_ext or index == len(ad)-1:
                     if separate_ext:
                         value = getattr(np, scaling)(data)
-                        log.fullinfo("{}:{} has {} value of {}".format(ad.filename,
-                                                            extver, scaling, value))
+                        log.fullinfo(f"{ad.filename} extension {ext.id} has "
+                                     f"{scaling} value of {value}")
                     else:
                         value = getattr(np, scaling)(all_data)
-                        log.fullinfo("{} has {} value of {}".format(ad.filename,
-                                                                    scaling, value))
+                        log.fullinfo(f"{ad.filename} has {scaling} value of {value}")
+
                     if np.isnan(targets[index]):
                         targets[index] = value
                     else:

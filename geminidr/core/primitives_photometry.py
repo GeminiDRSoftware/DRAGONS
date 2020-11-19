@@ -179,9 +179,9 @@ class Photometry(PrimitivesBASE):
             # Get the appropriate SExtractor input files
             dqtype = 'no_dq' if any(ext.mask is None for ext in ad) else 'dq'
             sexpars = {'config': self.sx_dict[dqtype, 'sex'],
-                      'PARAMETERS_NAME': self.sx_dict[dqtype, 'param'],
-                      'FILTER_NAME': self.sx_dict[dqtype, 'conv'],
-                      'STARNNW_NAME': self.sx_dict[dqtype, 'nnw']}
+                       'PARAMETERS_NAME': self.sx_dict[dqtype, 'param'],
+                       'FILTER_NAME': self.sx_dict[dqtype, 'conv'],
+                       'STARNNW_NAME': self.sx_dict[dqtype, 'nnw']}
 
             # In general, we want the passed parameters to have the same names
             # as the SExtractor params (but in lowercase). PHOT_AUTOPARAMS
@@ -192,8 +192,7 @@ class Photometry(PrimitivesBASE):
                 elif value is False:
                     value = 'N'
                 if key == 'phot_min_radius':
-                    sexpars.update({"PHOT_AUTOPARAMS":
-                                    "2.5,{}".format(value)})
+                    sexpars.update({"PHOT_AUTOPARAMS": f"2.5,{value}"})
                 else:
                     sexpars.update({key.upper(): value})
 
@@ -209,8 +208,11 @@ class Photometry(PrimitivesBASE):
                 # If we don't have a seeing estimate, try to get one
                 if seeing_estimate is None:
                     log.debug("Running SExtractor to obtain seeing estimate")
-                    sex_task = SExtractorETI(primitives_class=self, inputs=[ext],
-                            params=sexpars, mask_dq_bits=mask_bits, getmask=True)
+                    sex_task = SExtractorETI(primitives_class=self,
+                                             inputs=[ext],
+                                             params=sexpars,
+                                             mask_dq_bits=mask_bits,
+                                             getmask=True)
                     sex_task.run()
                     # An OBJCAT is *always* attached, even if no sources found
                     seeing_estimate = _estimate_seeing(ext.OBJCAT)
@@ -219,11 +221,13 @@ class Photometry(PrimitivesBASE):
                 # didn't get an estimate), and get a new estimate
                 if seeing_estimate is not None:
                     log.debug("Running SExtractor with seeing estimate "
-                              "{:.3f}".format(seeing_estimate))
-                    sexpars.update({'SEEING_FWHM': '{:.3f}'.
-                                   format(seeing_estimate)})
-                    sex_task = SExtractorETI(primitives_class=self, inputs=[ext],
-                            params=sexpars, mask_dq_bits=mask_bits, getmask=True)
+                              f"{seeing_estimate:.3f}")
+                    sexpars.update({'SEEING_FWHM': f'{seeing_estimate:.3f}'})
+                    sex_task = SExtractorETI(primitives_class=self,
+                                             inputs=[ext],
+                                             params=sexpars,
+                                             mask_dq_bits=mask_bits,
+                                             getmask=True)
                     sex_task.run()
                     # We don't want to replace an actual value with "None"
                     temp_seeing_estimate = _estimate_seeing(ext.OBJCAT)
@@ -238,10 +242,10 @@ class Photometry(PrimitivesBASE):
                 clean_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
-                ad = gt.add_objcat(ad, extver=ext.hdr['EXTVER'], replace=False,
+                ad = gt.add_objcat(ad, index=ext.id - 1, replace=False,
                                    table=objcat, sx_dict=self.sx_dict)
-                log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
-                                            ad.filename, ext.hdr['EXTVER']))
+                log.stdinfo(f"Found {len(ext.OBJCAT)} sources in "
+                            f"{ad.filename}:{ext.id}")
                 # The presence of an OBJCAT demands objects (philosophical)
                 if len(ext.OBJCAT) == 0:
                     del ext.OBJCAT

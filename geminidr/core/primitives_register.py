@@ -287,18 +287,17 @@ class Register(PrimitivesBASE):
 
             for index in objcat_order:
                 ext = ad[index]
-                extver = ext.hdr['EXTVER']
                 if not isinstance(ext.wcs.output_frame, cf.CelestialFrame):
-                    log.warning(f"WCS of {ad.filename}:{extver} does not "
-                                "transform to a CelestialFrame -- cannot "
+                    log.warning(f"WCS of {ad.filename} extension {ext.id} does"
+                                " not transform to a CelestialFrame -- cannot "
                                 "perform astrometry")
                     info_list.append({})
                     continue
                 try:
                     objcat = ad[index].OBJCAT
                 except AttributeError:
-                    log.stdinfo(f'No OBJCAT in {ad.filename}:{extver} -- '
-                                'cannot perform astrometry')
+                    log.stdinfo(f'No OBJCAT in {ad.filename} extension '
+                                f'{ext.id} -- cannot perform astrometry')
                     info_list.append({})
                     continue
                 objcat_len = len(objcat)
@@ -372,22 +371,24 @@ class Register(PrimitivesBASE):
                 # Send all sources to the alignment/matching engine, indicating the ones to
                 # use for the alignment
                 if num_ref_sources > 0:
-                    log.stdinfo('Aligning {}:{} with {} REFCAT and {} OBJCAT sources'.
-                                format(ad.filename, extver, num_ref_sources, keep_num))
-                    transform = fit_model(m_init, (objcat['X_IMAGE'][sorted_idx]-1,
-                                                   objcat['Y_IMAGE'][sorted_idx]-1),
-                                           (xref[in_field], yref[in_field]),
+                    log.stdinfo(f'Aligning {ad.filename} extension {ext.id} '
+                                f'with {num_ref_sources} REFCAT and '
+                                f'{keep_num} OBJCAT sources')
+                    transform = fit_model(m_init,
+                                          (objcat['X_IMAGE'][sorted_idx]-1,
+                                           objcat['Y_IMAGE'][sorted_idx]-1),
+                                          (xref[in_field], yref[in_field]),
                                           sigma=10.0, tolerance=0.0001, brute=True)
                     matched = match_sources(transform.inverse(xref, yref),
                                             (objcat['X_IMAGE']-1, objcat['Y_IMAGE']-1),
                                             radius=final)
                 else:
-                    log.stdinfo(f'No REFCAT sources in field of extver {extver}')
+                    log.stdinfo(f'No REFCAT sources in field of extension {ext.id}')
                     continue
 
                 num_matched = np.sum(matched >= 0)
-                log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
-                            format(num_matched, extver))
+                log.stdinfo(f"Matched {num_matched} objects in OBJCAT "
+                            f"extension {ext.id} against REFCAT")
                 # If this is a "better" match, save it
                 # TODO? Some sort of averaging of models?
                 if num_matched > max(best_matches, 2):
@@ -428,18 +429,16 @@ class Register(PrimitivesBASE):
                                               refcat['DEJ2000'][i]))
                     dra_std = np.std(dra)
                     ddec_std = np.std(ddec)
-                    log.fullinfo("WCS Updated for extver {}. Astrometric "
-                                 "offset is:".format(extver))
-                    log.fullinfo("RA: {:6.2f} +/- {:.2f} arcsec".
-                                 format(delta_ra, dra_std))
-                    log.fullinfo("Dec:{:6.2f} +/- {:.2f} arcsec".
-                                 format(delta_dec, ddec_std))
+                    log.fullinfo(f"WCS Updated for extension {ext.id}. "
+                                 "Astrometric offset is:")
+                    log.fullinfo(f"RA: {delta_ra:6.2f} +/- {dra_std:.2f} arcsec")
+                    log.fullinfo(f"Dec:{delta_dec:6.2f} +/- {ddec_std:.2f} arcsec")
                     info_list.append({"dra": delta_ra, "dra_std": dra_std,
                                       "ddec": delta_dec, "ddec_std": ddec_std,
                                       "nsamples": int(num_matched)})
                 else:
                     log.stdinfo("Could not determine astrometric offset for "
-                                "{}:{}".format(ad.filename, extver))
+                                f"{ad.filename} extension {ext.id}")
                     info_list.append({})
 
             # Report the measurement to the fitsstore

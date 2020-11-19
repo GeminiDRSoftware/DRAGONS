@@ -232,17 +232,16 @@ class Visualize(PrimitivesBASE):
                     overlay_index += 1
 
                 # Define the display name
-                if tile and extname=='SCI':
+                if tile and extname == 'SCI':
                     name = ext.filename
                 elif tile:
-                    name = '{}({})'.format(ext.filename, extname)
+                    name = f'{ext.filename}({extname})'
                 else:
-                    name = '{}({},{})'.format(ext.filename, extname,
-                                              ext.hdr['EXTVER'])
+                    name = f'{ext.filename}({extname}, extension {ext.id})'
 
                 try:
                     lnd.display(data, name=name, frame=frame, zscale=zscale,
-                                bpm=None if extname=='DQ' else dqdata,
+                                bpm=None if extname == 'DQ' else dqdata,
                                 quiet=True, masks=masks, mask_colors=mask_colors)
                 except OSError:
                     log.warning("ds9 not found; cannot display input")
@@ -332,7 +331,7 @@ class Visualize(PrimitivesBASE):
             # we can catch that, trim, and try again. Don't catch anything else
             try:
                 ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
-                                                          order=order, process_objcat=False)
+                                                     order=order, process_objcat=False)
             except ValueError as e:
                 if 'data sections' in repr(e):
                     ad = gt.trim_to_data_section(ad, self.keyword_comments)

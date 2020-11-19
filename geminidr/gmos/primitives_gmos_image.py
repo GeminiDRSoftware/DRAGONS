@@ -106,8 +106,8 @@ class GMOSImage(GMOS, Image, Photometry):
                 x, y = ext.wcs.backward_transform(oira, oidec)
                 if x < datasec_list[index].x2 + 0.5:
                     gs_index = index
-                    log.fullinfo('Guide star location found at ({:.2f},{:.2f})'
-                                 ' on EXTVER {}'.format(x, y, ext.hdr['EXTVER']))
+                    log.fullinfo(f'Guide star location found at '
+                                 f'({x:.2f},{y:.2f}) on extension {ext.id}')
                     break
             if gs_index == -1:
                 log.warning('Could not find OI probe location on any extensions.')

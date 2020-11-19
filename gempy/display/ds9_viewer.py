@@ -52,7 +52,7 @@ class ds9Viewer(imexam.connect):
             frame = 1
         self.view(data_to_display)
         if title is None:
-            title = "{}:[{}]{} {}".format(ext.filename, ext.hdr['EXTVER'],
+            title = "{}:[{}]{} {}".format(ext.filename, ext.id,
                                           attribute, ext.phu['OBJECT'])
         if wcs:
             header = fits.Header()

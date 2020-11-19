@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
 from astropy.io import fits
-from astropy.nddata import NDData
+from astropy.nddata import NDData, VarianceUncertainty
 from astropy.table import Table
 from numpy.testing import assert_array_equal
 
@@ -152,7 +152,6 @@ def test_append_array_to_root_no_name(testfile2):
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
     assert ad[-1].hdr['EXTNAME'] == 'SCI'
-    assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
 @pytest.mark.dragons_remote_data
@@ -165,7 +164,6 @@ def test_append_array_to_root_with_name_sci(testfile2):
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
     assert ad[-1].hdr['EXTNAME'] == 'SCI'
-    assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
 @pytest.mark.dragons_remote_data
@@ -227,15 +225,19 @@ def test_append_nddata_to_root_with_arbitrary_name(testfile2):
         ad.append(nd)
 
 
-def test_append_table_to_extensions():
+def test_append_table_to_extensions(tmp_path):
+    testfile = tmp_path / 'test.fits'
     ad = astrodata.create({})
     ad.append(NDData(np.zeros((4, 5))))
     ad.append(NDData(np.zeros((4, 5))))
-    ad.append(NDData(np.zeros((4, 5))))
+    ad.append(NDData(np.zeros((4, 5)), meta={'header': {'FOO': 'BAR'}}))
     ad[0].TABLE1 = Table([[1]])
     ad[0].TABLE2 = Table([[22]])
     ad[1].TABLE2 = Table([[2]])  # extensions can have the same table name
     ad[2].TABLE3 = Table([[3]])
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
 
     # Check that slices do not report extension tables
     assert ad.exposed == set()
@@ -243,6 +245,8 @@ def test_append_table_to_extensions():
     assert ad[1].exposed == {'TABLE2'}
     assert ad[2].exposed == {'TABLE3'}
     assert ad[1:].exposed == set()
+
+    assert ad[2].hdr['FOO'] == 'BAR'
 
     match = ("Cannot append table 'TABLE1' because it would hide an "
              "extension table")
@@ -281,12 +285,10 @@ def test_append_single_slice(testfile1, testfile2):
     ad2 = astrodata.open(testfile1)
 
     lbefore = len(ad2)
-    last_ever = ad2[-1].nddata.meta['header'].get('EXTVER', -1)
     ad2.append(ad[1])
 
     assert len(ad2) == (lbefore + 1)
     assert np.all(ad2[-1].data == ad[1].data)
-    assert last_ever < ad2[-1].nddata.meta['header'].get('EXTVER', -1)
 
     # With a custom header
     ad2.append(ad[1], header=fits.Header({'FOO': 'BAR'}))
@@ -349,3 +351,30 @@ def test_delete_arbitrary_attribute_from_ad(testfile2):
 
     with pytest.raises(AttributeError):
         ad.arbitrary
+
+
+def test_build_ad_multiple_extensions(tmp_path):
+    """Build an AD object with multiple extensions and check that we retrieve
+    everything in the correct order after writing.
+    """
+    shape = (4, 5)
+    testfile = tmp_path / 'test.fits'
+
+    ad = astrodata.create({})
+    for i in range(1, 4):
+        nd = NDData(np.zeros(shape) + i,
+                    uncertainty=VarianceUncertainty(np.ones(shape)),
+                    mask=np.zeros(shape, dtype='uint16'))
+        ad.append(nd)
+        ad[-1].OBJCAT = Table([[i]])
+        ad[-1].MYARR = np.zeros(10) + i
+
+    ad.REFCAT = Table([['ref']])
+    ad.write(testfile)
+
+    ad2 = astrodata.open(testfile)
+
+    for ext, ext2 in zip(ad, ad2):
+        assert_array_equal(ext.data, ext2.data)
+        assert_array_equal(ext.MYARR, ext2.MYARR)
+        assert_array_equal(ext.OBJCAT['col0'], ext2.OBJCAT['col0'])

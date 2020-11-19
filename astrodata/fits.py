@@ -540,7 +540,11 @@ def read_fits(cls, source, extname_parser=None):
                 # In case WCS info is in the PHU
                 nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
 
-        ad.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
+        ad.append(nd, name=DEFAULT_EXTENSION)
+
+        # This is used in the writer to keep track of the extensions that
+        # were read from the current object.
+        nd.meta['parent_ad'] = id(ad)
 
         for other in parts['other']:
             if not other.name:
@@ -553,7 +557,7 @@ def read_fits(cls, source, extname_parser=None):
             continue
         name = other.header.get('EXTNAME')
         try:
-            ad.append(other, name=name, reset_ver=False)
+            ad.append(other, name=name)
         except ValueError as e:
             warnings.warn(f"Discarding {name} :\n {e}")
 
@@ -565,9 +569,27 @@ def ad_to_hdulist(ad):
     hdul = HDUList()
     hdul.append(PrimaryHDU(header=ad.phu, data=DELAYED))
 
+    # Find the maximum EXTVER for extensions that belonged with this
+    # object if it was read from a FITS file
+    maxver = max((nd.meta['header'].get('EXTVER', 0) for nd in ad._nddata
+                  if nd.meta.get('parent_ad') == id(ad)),
+                 default=0)
+
     for ext in ad._nddata:
-        meta = ext.meta
-        header, ver = meta['header'], meta['ver']
+        header = ext.meta['header']
+
+        if not isinstance(header, fits.Header):
+            header = fits.Header(header)
+
+        if ext.meta.get('parent_ad') == id(ad):
+            # If the extension belonged with this object, use its
+            # original EXTVER
+            ver = header['EXTVER']
+        else:
+            # Otherwise renumber the extension
+            ver = header['EXTVER'] = maxver + 1
+            maxver += 1
+
         wcs = ext.wcs
 
         if isinstance(wcs, gWCS):
@@ -602,17 +624,19 @@ def ad_to_hdulist(ad):
         if isinstance(wcs, gWCS):
             hdul.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
 
-        for name, other in meta.get('other', {}).items():
+        for name, other in ext.meta.get('other', {}).items():
             if isinstance(other, Table):
-                hdul.append(table_to_bintablehdu(other))
+                hdu = table_to_bintablehdu(other)
             elif isinstance(other, np.ndarray):
-                header = meta['other_header'].get(name, meta['header'])
-                hdul.append(new_imagehdu(other, header, name=name))
+                hdu = new_imagehdu(other, header, name=name)
             elif isinstance(other, NDDataObject):
-                hdul.append(new_imagehdu(other.data, meta['header']))
+                hdu = new_imagehdu(other.data, ext.meta['header'])
             else:
                 raise ValueError("I don't know how to write back an object "
-                                 "of type {}".format(type(other)))
+                                 f"of type {type(other)}")
+
+            hdu.ver = ver
+            hdul.append(hdu)
 
     if ad._tables is not None:
         for name, table in sorted(ad._tables.items()):
@@ -680,7 +704,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
     )
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
-    result.meta['other_header'] = {}
 
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
@@ -727,7 +750,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
             # otherwise for a NDData one AstroData would use the name of the
             # AstroData object.
             other[name] = other[name].data
-            result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
 
     return result
 
