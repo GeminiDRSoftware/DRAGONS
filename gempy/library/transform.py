@@ -866,8 +866,8 @@ class DataGroup:
         self._arrays.append(array)
         self._transforms.append(copy.deepcopy(transform))
 
-    def calculate_output_shape(self, additional_array_shapes=[],
-                               additional_transforms=[]):
+    def calculate_output_shape(self, additional_array_shapes=None,
+                               additional_transforms=None):
         """
         This method sets the output_shape and origin attributes of the
         DataGroup. output_shape is the shape that fully encompasses all of
@@ -886,8 +886,11 @@ class DataGroup:
         additional_transforms: list
             additional transforms, one for each of additional_array_shapes
         """
-        array_shapes = [arr.shape for arr in self.arrays] + additional_array_shapes
-        transforms = self.transforms + additional_transforms
+        array_shapes = [arr.shape for arr in self.arrays]
+        transforms = self.transforms
+        if additional_array_shapes:
+            array_shapes += additional_array_shapes
+            transforms += additional_transforms
         if len(array_shapes) != len(transforms):
             raise self.UnequalError
         all_corners = []
