@@ -21,13 +21,13 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.doctest',
+    'sphinx.ext.graphviz',
     'sphinx.ext.ifconfig',
     'sphinx.ext.imgmath',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.graphviz',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -111,6 +111,15 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
+    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'python': ('https://docs.python.org/3', None),
+}
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -335,22 +344,10 @@ texinfo_documents = [
 # texinfo_no_detailmenu = False
 
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {
-    'astropy': ('https://docs.astropy.org/en/stable/', None),
-    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('https://matplotlib.org/', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'python': ('https://docs.python.org/3', None),
-}
-
-# Activate the todos
-todo_include_todos = True
-
-
 # -- Automatically generate API documentation --------------------------------
 # -- Enable autoapi ----------------------------------------------------------
+
+
 def run_api_doc(_):
     """
     Automatic API generator
