@@ -59,22 +59,22 @@ Object structure
 
 Description
 -----------
-The |astrodata_class| object is assigned by "tags" that describe the
+The |AstroData| object is assigned by "tags" that describe the
 type of data it contains. The tags are drawn from rules defined in
 |gemini_instruments| and are based on header information.
 
 When mapping a FITS file, each science pixel extension is loaded as a
 |NDAstroData| object. The list is zero-indexed. So FITS
-extension 1 becomes element 0 of the |astrodata_class| object. If a ``VAR``
+extension 1 becomes element 0 of the |AstroData| object. If a ``VAR``
 extension is present, it is loaded to the variance attribute of the
 |NDAstroData|. If a ``DQ`` extension is present, it is loaded to the ``.mask``
 attribute of the |NDAstroData|. ``SCI``, ``VAR`` and ``DQ`` are associated
 through the ``EXTVER`` keyword value.
 
-In the file below, each |astrodata_class| "extension" contains the pixel data,
+In the file below, each |AstroData| "extension" contains the pixel data,
 then an error plane (``.variance``) and a bad pixel mask plane (``.mask``).
 |Table| can be attached to an extension, like OBJCAT, or to the
-|astrodata_class| object globally, like REFCAT. (In this case, OBJCAT is a
+|AstroData| object globally, like REFCAT. (In this case, OBJCAT is a
 catalogue of the sources detected in the image, REFCAT is a reference catalog
 for the area covered by the whole file.)  If other 2D data needs to be
 associated with an extension this can also be done, like here with OBJMASK,
@@ -149,7 +149,7 @@ Attach a table to an extension::
 
     >>> adcopy[3].BOB = advar[0].OBJCAT
 
-Attach a table to the |astrodata_class| object::
+Attach a table to the |AstroData| object::
 
     >>> adcopy.BILL = advar.REFCAT
 
@@ -438,7 +438,7 @@ or another way::
     >>> hdu = fits.ImageHDU(data=pixel_data, name='SCI')
     >>> ad = astrodata.create(phu, [hdu])
 
-A |Table| as an |astrodata_class| object::
+A |Table| as an |AstroData| object::
 
     >>> from astropy.table import Table
 

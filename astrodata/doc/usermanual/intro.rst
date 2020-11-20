@@ -1,6 +1,6 @@
 .. intro.rst
 
-.. _intro:
+.. _intro_usermanual:
 
 ************
 Introduction
@@ -21,13 +21,13 @@ about how to read, manipulate and write pixel data and tables, respectively.
 
 
 If you are looking for a quick reference, please, have a look on the
-`AstroData Cheat Sheet`_.
+:doc:`../cheatsheet/cheatsheet`.
 
 Reference Documents
 ===================
 
-    - `DRAGONS Documentation <https://dragons.readthedocs.io/>`_
-    - `AstroData Cheat Sheet`_
+    - |DRAGONS|_
+    - :doc:`../cheatsheet/cheatsheet`
     - `Recipe System Users Manual`_
     - `Recipe System Programmers Manual`_
 
@@ -45,8 +45,8 @@ the details are coded inside the class associated with the instrument, that
 class then provides the interface. The appropriate class is selected
 automatically when the file is opened and inspected by |astrodata|.
 
-Currently |astrodata| implements a representation for Multi-Extension FITS (MEF)
-files. (Other representations can be implemented.)
+Currently |astrodata| implements a representation for Multi-Extension FITS
+(MEF) files. (Other representations can be implemented.)
 
 
 .. _install:

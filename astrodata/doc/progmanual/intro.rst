@@ -1,6 +1,6 @@
 .. intro.rst
 
-.. _intro:
+.. _intro_progmanual:
 
 *************************
 Precedents and Motivation
@@ -31,7 +31,7 @@ In 2016 a decision was reached to overhaul Gemini Python. While the
 principles behind AstroData were sound, the coding involved unnecessary
 layers of abstraction and eschewed features of the Python language in favor
 of its own implementation. Thus,
-DRAGONS\ [#DRAGONS]_ was born, with a new, simplified (and backward *incompatible*)
+|DRAGONS| was born, with a new, simplified (and backward *incompatible*)
 AstroData v2.0 (which we will refer to simply as AstroData)
 
 This manual documents both the high level design and some implementation
@@ -42,4 +42,3 @@ package to work for new environments.
 
 .. [#IRAF] http://iraf.net
 .. [#FITS] The `Flexible Image Transport System <http://https://fits.gsfc.nasa.gov/fits_standard.html>`_
-.. [#DRAGONS] The `Data Reduction for Astronomy from Gemini Observatory North and South <https://github.com/GeminiDRSoftware/DRAGONS>`_ package

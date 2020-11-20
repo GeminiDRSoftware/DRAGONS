@@ -125,18 +125,17 @@ intersphinx_mapping = {
 # be used globally.
 rst_epilog = f"""
 .. _`Anaconda`: https://www.anaconda.com/
-.. _`AstroData User's Manual`: https://astrodata-user-manual.readthedocs.io/
-.. _`AstroData Cheat Sheet`: https://astrodata-cheat-sheet.readthedocs.io/
-.. _`astropy`: http://docs.astropy.org/en/stable/
+.. _`Astropy`: http://docs.astropy.org/en/stable/
 .. _`Conda`: https://conda.io/docs/
+.. _`DRAGONS`: https://dragons.readthedocs.io/
+.. _`Numpy`: https://numpy.org/doc/stable/
 .. _`Recipe System Programmers Manual`: http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/
 .. _`Recipe System Users Manual`: http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/
 
-.. |astrodata_class| replace:: :class:`~astrodata.AstroData`
 .. |AstroData| replace:: :class:`~astrodata.AstroData`
 .. |astrodata| replace:: :mod:`~astrodata`
-.. |astropy| replace:: `astropy`_
-.. |DRAGONS| replace:: ``DRAGONS``
+.. |astropy| replace:: `Astropy`_
+.. |DRAGONS| replace:: `DRAGONS`_
 .. |geminidr| replace:: :mod:`~geminidr`
 .. |gemini_instruments| replace:: :mod:`gemini_instruments`
 .. |gemini| replace:: ``gemini``
@@ -144,7 +143,7 @@ rst_epilog = f"""
 .. |mappers| replace:: :mod:`recipe_system.mappers`
 .. |NDAstroData| replace:: :class:`~astrodata.nddata.NDAstroData`
 .. |NDData| replace:: :class:`~astropy.nddata.NDData`
-.. |numpy| replace:: :mod:`~numpy`
+.. |numpy| replace:: `Numpy`_
 .. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
 .. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
 .. |recipe_system| replace:: :mod:`recipe_system`
