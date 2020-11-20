@@ -11,7 +11,6 @@ Astrodata Programmer's Manual
    PIPE-USER-104_AstrodataProgManual
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
    intro
@@ -26,7 +25,6 @@ Appendix
 --------
 
 .. toctree::
-   :numbered:
    :maxdepth: 1
 
    appendices/api_refguide

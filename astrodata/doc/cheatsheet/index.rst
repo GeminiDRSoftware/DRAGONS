@@ -11,7 +11,6 @@ Astrodata Cheat Sheet
    PIPE-USER-105_AstrodataCheatSheet
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
    cheatsheet

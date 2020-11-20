@@ -11,7 +11,6 @@ Astrodata User Manual
    PIPE-USER-106_AstrodataUserManual
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
    intro
