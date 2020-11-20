@@ -3,6 +3,8 @@
    contain the root `toctree` directive.
    Manually edited by KL Wed April 17 2019
 
+:orphan:
+
 Astrodata User Manual
 =====================
 
@@ -34,5 +36,3 @@ Astrodata User Manual
    :maxdepth: 1
 
    appendices/api_refguide
-
-
