@@ -7,6 +7,8 @@
 from copy import copy, deepcopy
 from importlib import import_module
 
+from gempy.library.config import RangeField
+
 import astrodata
 import geminidr
 import numpy as np
@@ -31,6 +33,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
+from .parameters_gmos_longslit import normalizeFlatConfig
 
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
@@ -562,6 +565,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 all_masked_data = []
                 all_weights = []
                 all_orders = []
+                all_m_init = []
+                nrows = ad_tiled[0].shape[0]
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
                     # If the entire row is unilluminated, we want to fit
                     # the pixels but still keep the edges masked
@@ -582,22 +587,59 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     all_pixels.append(pixels)
                     all_orders.append(order)
 
-                    all_masked_data.append(ext_masked_data)
+                    # all_masked_data.append(ext_masked_data)
+                    all_masked_data.append(np.ma.masked_array(ext.nddata[0].data, ext.nddata[0].mask))
                     all_weights.append(ext_weights)
 
-                    for i, row in enumerate(ext.nddata):
-                        ext_masked_data.append(np.ma.masked_array(row.data, mask=row.mask))
-                        ext_weights.append(np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.)))
+                    # ext_masked_data.append(ext.nddata[0])
+                    # for i, row in enumerate(ext.nddata):
+                    #     ext_masked_data.append(np.ma.masked_array(row.data, mask=row.mask))
+                    #     ext_weights.append(np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.)))
+                    dispaxis = 2 - ext.dispersion_axis()
+                    all_m_init.append(models.Chebyshev1D(degree=order, c0=0,
+                                                 domain=[0, ext.shape[dispaxis] - 1]))
 
                 # It's unfortunate that we have to do this (taken from Chris' logic)
+                # class rowifiedNormalizeFlatConfig(normalizeFlatConfig):
+                #     row = RangeField("Row of data to operate on", int, 0, min=0, max=nrows)
+
+                # config =rowifiedNormalizeFlatConfig('rowifiedNormalizeFlatConfig', (None,), {"__doc__": 'doc'})
+                # config = rowifiedNormalizeFlatConfig()
+                # TODO adding row to the base config until I decide how to get this to work
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                visualizer = MultiSplineVisualizer(all_shapes, all_pixels, all_masked_data, all_orders, all_weights,
-                                                   config=config, recalc_button=True, **spline_kwargs)
+                reinit_params = ["row",]  # todo add new conf element for row select and recalc by pulling that row from all 3
+                reinit_extras = [("row", RangeField("Row of data to operate on", int, 0, min=0, max=nrows-1)), ]
+                def reconstruct_points(conf, extras):
+                    row = extras['row']
+                    all_coords = []
+                    for rppixels, rpext in zip(all_pixels, ad_tiled):
+                        all_coords.append([rppixels, rpext.nddata[row]])
+                    return all_coords
+
+                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_m_init, config,
+                                                   reinit_params=reinit_params,
+                                                   reinit_extras=reinit_extras,
+                                                   order_param='spectral_order',
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x', ylabel='y',
+                                                   grow_slider=True,
+                                                   reconstruct_points=reconstruct_points,
+                                                   reinit_live=True)
+                # visualizer = MultiSplineVisualizer(all_shapes, all_pixels, all_masked_data, all_orders, all_weights,
+                #                                    config=config, recalc_button=True, **spline_kwargs)
                 status = geminidr.interactive.server.interactive_fitter(visualizer)
-                for fitted_data, ext in zip(visualizer.fitted_data(), ad_tiled):
-                    ad_fitted.append(fitted_data, header=ext.hdr)
+
+                all_m_final = [fit.model.model for fit in visualizer.fits]
+                for m_final, ext in zip(all_m_final, ad_tiled):
+                    fd = []
+                    for i, row in enumerate(ext.nddata):
+                        fd.append(m_final.evaluate(row.data))
+                        # fd.append([fdi for fdi in st.fitted_data()])
+                    ad_fitted.append(fd, header=ext.hdr)
+                # for fitted_data, ext in zip(visualizer.fitted_data(), ad_tiled):
+                #     ad_fitted.append(fitted_data, header=ext.hdr)
             else:
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
                     # If the entire row is unilluminated, we want to fit

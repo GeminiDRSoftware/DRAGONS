@@ -22,6 +22,7 @@ class PrimitiveVisualizer(ABC):
         top level call you are visualizing from.
         """
         self.log = log
+        self.extras = dict()
         if config is None:
             self.config = None
         else:
@@ -128,7 +129,7 @@ class PrimitiveVisualizer(ABC):
         """ % message)
         widget.js_on_change('disabled', callback)
 
-    def make_widgets_from_config(self, params):
+    def make_widgets_from_config(self, params, extras, reinit_live):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -167,6 +168,34 @@ class PrimitiveVisualizer(ABC):
             elif hasattr(field, 'allowed'):
                 # ChoiceField => drop-down menu
                 widget = Dropdown(label=doc, menu=list(self.config.allowed.keys()))
+            else:
+                # Anything else
+                widget = TextInput(label=doc)
+
+            widgets.append(widget)
+            # Complex multi-widgets will already have been added
+            if pname not in self.widgets:
+                self.widgets[pname] = widget
+        for pname, field in extras:
+            # Do some inspection of the config to determine what sort of widget we want
+            doc = field.doc.split('\n')[0]
+            if hasattr(field, 'min'):
+                # RangeField => Slider
+                start, end = field.min, field.max
+                # TODO: Be smarter here!
+                if start is None:
+                    start = -20
+                if end is None:
+                    end = 50
+                step = start
+
+                def handler(val):
+                    self.extras[pname] = val
+                    if reinit_live:
+                        self.reconstruct_points()
+                widget = build_text_slider(doc, field.default, step, start, end, obj=self.extras, attr=pname,
+                                           handler=handler, throttled=True)
+                self.widgets[pname] = widget.children[0]
             else:
                 # Anything else
                 widget = TextInput(label=doc)
@@ -265,13 +294,17 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     def handle_value(attrib, old, new):
         # Handle a new value and set the registered object/attribute accordingly
         # Also updates the slider and calls the registered handler function, if any
+        numeric_value = None
+        if is_float:
+            numeric_value = float(new)
+        else:
+            numeric_value = int(new)
         if obj and attr:
-            if is_float:
-                numeric_value = float(new)
-            else:
-                numeric_value = int(new)
             try:
-                obj.__setattr__(attr, numeric_value)
+                if not hasattr(obj, attr) and isinstance(obj, dict):
+                    obj[attr] = numeric_value
+                else:
+                    obj.__setattr__(attr, numeric_value)
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
@@ -280,7 +313,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
             else:
                 update_slider(attrib, old, new)
         if handler:
-            handler()
+            if numeric_value is not None:
+                handler(numeric_value)
+            else:
+                handler(new)
 
     if throttled:
         # Since here the text_input calls handle_value, we don't

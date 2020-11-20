@@ -16,7 +16,6 @@ from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras, GIBandListener
 
 
-
 class InteractiveModel(ABC):
     MASK_TYPE = ['band', 'user', 'good', 'fit']
     MARKERS = ['circle', 'circle', 'triangle', 'square']
@@ -189,7 +188,11 @@ class InteractiveModel1D(InteractiveModel):
         """
         if mask is None:
             try:  # Handle y as masked array
-                init_mask = y.mask or np.zeros_like(x, dtype=bool)
+                if any(y.mask):
+                    init_mask = y.mask
+                else:
+                    init_mask = np.zeros_like(x, dtype=bool)
+                # init_mask = y.mask or np.zeros_like(x, dtype=bool)
             except AttributeError:
                 init_mask = np.zeros_like(x, dtype=bool)
             else:
@@ -307,7 +310,7 @@ class InteractiveModel1D(InteractiveModel):
         """
         return self.model.domain
 
-    def perform_fit(self):
+    def perform_fit(self, *args):
         """
         Perform the fit.
 
@@ -690,7 +693,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     """
 
     def __init__(self, allx, ally, models, config, log=None,
-                 reinit_params=None, order_param=None,
+                 reinit_params=None, reinit_extras=None, reinit_live=False,
+                 order_param=None,
                  min_order=1, max_order=10, tab_name_fmt='{}',
                  xlabel='x', ylabel='y', reconstruct_points=None, **kwargs):
         """
@@ -725,26 +729,33 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.nmodels = 1
 
         # Make the panel with widgets to control the creation of (x, y) arrays
-        if reinit_params is not None:
+        if reinit_params is not None or reinit_extras is not None:
             # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params)
+            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, reinit_live)
 
             # This should really go in the parent class, like submit_button
-            self.reinit_button = bm.Button(label="Reconstruct points")
-            self.reinit_button.on_click(self.reconstruct_points)
-            self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
-            reinit_widgets.append(self.reinit_button)
+            if not reinit_live:
+                self.reinit_button = bm.Button(label="Reconstruct points")
+                self.reinit_button.on_click(self.reconstruct_points)
+                self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
+                reinit_widgets.append(self.reinit_button)
 
             self.reinit_panel = column(*reinit_widgets)
         else:
             self.reinit_panel = None
 
+        self.reinit_extras = [] if reinit_extras is None else reinit_extras
+
         field = self.config._fields[order_param]
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
-        if field.min:
+        if hasattr(field, 'min') and field.min:
             kwargs['min_order'] = field.min
-        if field.max:
+        else:
+            kwargs['min_order'] = 1
+        if hasattr(field, 'max') and field.max:
             kwargs['max_order'] = field.max
+        else:
+            kwargs['max_order'] = field.default * 2
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
@@ -791,11 +802,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         expensive function is wrapped in the bokeh Tornado
         event look so the modal dialog can display.
         """
-        self.reinit_button.disabled = True
+        if hasattr(self, 'reinit_button'):
+            self.reinit_button.disabled = True
 
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
+            for extra in self.reinit_extras:
+                del config_update[extra]
             for k, v in config_update.items():
                 print(f'{k} = {v}')
             self.config.update(**config_update)
@@ -803,9 +817,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         if self.reconstruct_points_fn is not None:
             def rfn():
-                all_coords = self.reconstruct_points_fn(self.config)
+                all_coords = self.reconstruct_points_fn(self.config, self.extras)
                 for fit, coords in zip(self.fits, all_coords):
                     fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
                     fit.perform_fit()
-                self.reinit_button.disabled = False
+                if hasattr(self, 'reinit_button'):
+                    self.reinit_button.disabled = False
             self.do_later(rfn)

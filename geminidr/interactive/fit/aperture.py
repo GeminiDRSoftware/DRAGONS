@@ -188,7 +188,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.details = None
         self.fig = None
 
-    def clear_and_recalc(self):
+    def clear_and_recalc(self, *args):
         """
         Clear apertures and recalculate a new set.
         """

@@ -97,7 +97,7 @@ class SplineTab:
         # do an initial fit
         self.preview_fit()
 
-    def preview_fit(self):
+    def preview_fit(self, *args):
         idx = 0
         i = 0
         self.spline_kwargs['grow'] = self.grow
