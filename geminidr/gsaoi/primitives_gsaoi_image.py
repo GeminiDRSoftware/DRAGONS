@@ -339,11 +339,17 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                                 max_iters=max_iters,
                                                 match_radius=final, clip=True,
                                                 log=self.log)
+                else:
+                    log.warning("Insufficient matches to perform distortion "
+                                "correction - performing simple alignment only."
+                                " Perhaps try increasing the value of "
+                                f"'final' (using {final})?")
 
                 # Associate REFCAT properties with their OBJCAT
                 # counterparts. Remember! matched is the reference
                 # (OBJCAT) source for the input (REFCAT) source
-                dra, ddec = [], []
+                dx, dy = [], []
+                xtrans, ytrans = transform(objcat['X_STATIC'], objcat['Y_STATIC'])
                 cospa, sinpa = math.cos(ad.phu['PA']), math.sin(ad.phu['PA'])
                 for i, m in enumerate(matched):
                     if m >= 0:
@@ -356,15 +362,15 @@ class GSAOIImage(GSAOI, Image, Photometry):
                             objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
                         except KeyError:  # no such columns in REFCAT
                             pass
-                        dx = xref[i] - objcat['X_STATIC'][m]
-                        dy = yref[i] - objcat['Y_STATIC'][m]
-                        dra.append(dx * cospa - dy * sinpa)
-                        ddec.append(dx * sinpa + dy * cospa)
+                        dx.append(xref[i] - xtrans[m])
+                        dy.append(yref[i] - ytrans[m])
 
-                delta_ra = np.mean(dra)
-                delta_dec = np.mean(ddec)
-                dra_std = np.std(dra)
-                ddec_std = np.std(ddec)
+                x0, y0 = transform(0, 0)
+                delta_ra = x0 * cospa - y0 * sinpa
+                delta_dec = x0 * sinpa + y0 * cospa
+                dra = np.array(dx) * cospa - np.array(dy) * sinpa
+                ddec = np.array(dx) * sinpa + np.array(dy) * cospa
+                dra_std, ddec_std = dra.std(), ddec.std()
                 log.fullinfo(f"WCS Updated for {ad.filename}. Astrometric "
                              "offset is:")
                 log.fullinfo("RA: {:6.2f} +/- {:.2f} arcsec".
