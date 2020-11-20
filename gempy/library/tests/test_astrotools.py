@@ -1,24 +1,12 @@
-# pytest suite
-
 """
 Tests for the astrotools module.
-
-This is a suite of tests to be run with pytest.
-
-To run:
-   1) Set the environment variable GEMPYTHON_TESTDATA to the path that contains
-      the file N20130510S0178_forStack.fits.
-      Eg. /net/chara/data2/pub/ad_testdata/GMOS
-   2) Then run: py.test -v   (must in gemini_python or have it in PYTHONPATH)
 """
 
 import numpy as np
+import pytest
 from gempy.library import astrotools as at
 from astropy import units as u
 
-
-# TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
-# TESTFITS = 'N20130510S0178_forStack.fits'
 
 def test_array_from_list():
     values = (1, 2, 3)
@@ -83,3 +71,17 @@ def test_clipped_mean():
     results = at.clipped_mean(dist)
     expected_values = (6.1, 3.7)
     assert np.allclose(results, expected_values)
+
+
+def test_cartesian_regions_to_slices():
+    cart = at.cartesian_regions_to_slices
+    assert cart('')[0] == slice(None)
+    assert cart('1:10')[0] == slice(0, 10)
+    assert cart('[1:10]')[0] == slice(0, 10)
+    assert cart('1:10:2')[0] == slice(0, 10, 2)
+    assert cart('1-10:2')[0] == slice(0, 10, 2)
+    assert cart('1:10,20:30') == (slice(19, 30), slice(0, 10))
+    assert cart('[:,:10]') == (slice(None, 10), slice(None))
+
+    with pytest.raises(TypeError):
+        cart(12)

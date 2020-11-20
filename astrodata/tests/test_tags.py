@@ -6,12 +6,12 @@ from astropy.table import Table
 
 import astrodata
 from astrodata import (astro_data_tag, astro_data_descriptor, TagSet,
-                       AstroDataFits, factory, returns_list)
+                       AstroData, factory, returns_list)
 
 SHAPE = (4, 5)
 
 
-class AstroDataMyInstrument(AstroDataFits):
+class AstroDataMyInstrument(AstroData):
     __keyword_dict = dict(
         array_name='AMPNAME',
         array_section='CCDSECT'
@@ -130,7 +130,7 @@ def test_info(testfile, capsys):
     out = captured.out.splitlines()
     assert out[0].endswith('fakebias.fits')
     assert out[1:] == [
-        'Tags: DARK MYINSTRUMENT ',
+        'Tags: DARK MYINSTRUMENT',
         '',
         'Pixels Extensions',
         'Index  Content                  Type              Dimensions     Format',
@@ -147,7 +147,7 @@ def test_info(testfile, capsys):
     out = captured.out.splitlines()
     assert out[0].endswith('fakebias.fits')
     assert out[1:] == [
-        'Tags: DARK MYINSTRUMENT ',
+        'Tags: DARK MYINSTRUMENT',
         '',
         'Pixels Extensions',
         'Index  Content                  Type              Dimensions     Format',

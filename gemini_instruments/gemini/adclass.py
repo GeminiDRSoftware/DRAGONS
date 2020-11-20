@@ -12,7 +12,7 @@ import dateutil.parser
 
 import numpy as np
 
-from astrodata import AstroDataFits
+from astrodata import AstroData
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
 from astrodata import TagSet
@@ -108,7 +108,7 @@ gemini_keyword_names = dict(
 )
 
 # ------------------------------------------------------------------------------
-class AstroDataGemini(AstroDataFits):
+class AstroDataGemini(AstroData):
     __keyword_dict = gemini_keyword_names
 
     @staticmethod

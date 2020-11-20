@@ -1,7 +1,9 @@
 """
 Recipes available to data with tags ['GMOS', 'SPECT', 'LS', 'SLITILLUM'].
 These are GMOS longslit observations.
-Default is "reduce".
+
+Default is "makeProcessedSlitIllum".
+
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'SLITILLUM'}
 

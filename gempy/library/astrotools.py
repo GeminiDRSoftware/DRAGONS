@@ -154,6 +154,7 @@ def cartesian_regions_to_slices(regions):
     """
     Convert a sample region(s) string, consisting of a comma-separated list
     of (colon-or-hyphen-separated) pixel ranges into Python slice objects.
+
     These ranges may describe either multiple 1D regions or a single higher-
     dimensional region (with one range per axis), a distinction which is not
     important here. The ranges are specified in 1-indexed Cartesian pixel
@@ -203,7 +204,7 @@ def cartesian_regions_to_slices(regions):
             try:
                 # Adjust only the lower limit for 1-based indexing since Python
                 # ranges are exclusive:
-                sliceobj = slice(*(int(lim)-adj if lim else None \
+                sliceobj = slice(*(int(lim)-adj if lim else None
                                    for lim, adj in zip(limits, (origin, 0, 0))))
             except ValueError:
                 err = True                # no non-numeric values

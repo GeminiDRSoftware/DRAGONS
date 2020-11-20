@@ -40,7 +40,7 @@ of the MEF format. One example is the creation and propagation of information
 describing the quality and uncertainty of the scientific data: while
 this was a feature of
 Gemini IRAF\ [#iraf]_, the coding required to implement it was cumbersome
-and AstroData uses the ``astropy.nddata.NDData`` class,
+and AstroData uses the `astropy.nddata.NDData` class,
 as discussed in :ref:`containers`. This makes the relationship between these
 data much clearer, and AstroData creates a syntax that makes readily apparent the
 roles of other data and metadata that may be created during the reduction

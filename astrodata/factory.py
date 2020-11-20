@@ -1,38 +1,38 @@
 import logging
 import os
+from contextlib import contextmanager
 from copy import deepcopy
 
 from astropy.io import fits
 
-from .core import AstroDataError
-
-LOGGER = logging.getLogger('AstroData Factory')
+LOGGER = logging.getLogger(__name__)
 
 
-def fits_opener(source):
-    return fits.open(source, memmap=True)
+class AstroDataError(Exception):
+    pass
 
 
 class AstroDataFactory:
 
     _file_openers = (
-        fits_opener,
+        fits.open,
     )
 
     def __init__(self):
         self._registry = set()
 
     @staticmethod
+    @contextmanager
     def _openFile(source):
         """
-        Internal static method that takes a `source`, assuming that it is a
+        Internal static method that takes a ``source``, assuming that it is a
         string pointing to a file to be opened.
 
         If this is the case, it will try to open the file and return an
         instance of the appropriate native class to be able to manipulate it
         (eg. ``HDUList``).
 
-        If `source` is not a string, it will be returned verbatim, assuming
+        If ``source`` is not a string, it will be returned verbatim, assuming
         that it represents an already opened file.
 
         """
@@ -44,15 +44,20 @@ class AstroDataFactory:
             # try vs all handlers
             for func in AstroDataFactory._file_openers:
                 try:
-                    return func(source)
+                    fp = func(source)
+                    yield fp
                 except Exception:
                     # Just ignore the error. Assume that it is a not supported
                     # format and go for the next opener
                     pass
+                else:
+                    if hasattr(fp, 'close'):
+                        fp.close()
+                    return
             raise AstroDataError("No access, or not supported format for: {}"
                                  .format(source))
         else:
-            return source
+            yield source
 
     def addClass(self, cls):
         """
@@ -76,17 +81,18 @@ class AstroDataFactory:
         not possible to find a match
 
         """
-        opened = self._openFile(source)
         candidates = []
-        for adclass in self._registry:
-            try:
-                if adclass._matches_data(opened):
-                    candidates.append(adclass)
-            except Exception:  # Some problem opening this
-                pass
+        with self._openFile(source) as opened:
+            for adclass in self._registry:
+                try:
+                    if adclass._matches_data(opened):
+                        candidates.append(adclass)
+                except Exception:  # Some problem opening this
+                    pass
 
-        # For every candidate in the list, remove the ones that are base classes
-        # for other candidates. That way we keep only the more specific ones.
+        # For every candidate in the list, remove the ones that are base
+        # classes for other candidates. That way we keep only the more
+        # specific ones.
         final_candidates = []
         for cnd in candidates:
             if any(cnd in x.mro() for x in candidates if x != cnd):
@@ -98,7 +104,7 @@ class AstroDataFactory:
         elif not final_candidates:
             raise AstroDataError("No class matches this dataset")
 
-        return final_candidates[0].load(source)
+        return final_candidates[0].read(source)
 
     def createFromScratch(self, phu, extensions=None):
         """Creates an AstroData object from a collection of objects.

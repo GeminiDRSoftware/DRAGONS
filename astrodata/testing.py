@@ -3,7 +3,9 @@ Fixtures to be used in tests in DRAGONS
 """
 
 import os
+import re
 import shutil
+import subprocess
 import urllib
 import xml.etree.ElementTree as et
 from contextlib import contextmanager
@@ -152,8 +154,8 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
     models involving orthonormal polynomials etc.
     """
 
-    from numpy.testing import assert_allclose
     from astropy.modeling import Model
+    from numpy.testing import assert_allclose
 
     if not (isinstance(model1, Model) and isinstance(model2, Model)):
         raise TypeError('Inputs must be Model instances')
@@ -229,25 +231,26 @@ def change_working_dir(path_to_outputs):
     """
     path = os.path.join(path_to_outputs, "outputs")
     os.makedirs(path, exist_ok=True)
+    print(f"Using working dir:\n  {path}")
 
     @contextmanager
     def _change_working_dir(sub_path=""):
         """
-        Changed the current working directory temporarily easily using the 
+        Changed the current working directory temporarily easily using the
         `with` statement.
-         
+
         Parameters
         ----------
-        sub_path : str 
+        sub_path : str
             Sub-path inside the directory where we are working.
         """
         oldpwd = os.getcwd()
         os.chdir(path)
-        
+
         if sub_path:
             os.makedirs(sub_path, exist_ok=True)
             os.chdir(sub_path)
-                        
+
         try:
             yield
         finally:
@@ -333,6 +336,34 @@ def get_associated_calibrations(filename, nbias=5):
     return cals
 
 
+def get_active_git_branch():
+    """
+    Returns the name of the active GIT branch to be used in Continuous
+    Integration tasks and organize input/reference files.
+
+    Note: This works currently only if the remote name is "origin", though it
+    would be easy to adapt for other cases if needed.
+
+    Returns
+    -------
+    str or None : Name of the input active git branch. It returns None if
+        the branch name could not be retrieved.
+
+    """
+    branch_re = r'\(HEAD.*, \w+\/(\w*)(?:,\s\w+)?\)'
+    git_cmd = ['git', 'log', '-n', '1', '--pretty=%d', 'HEAD']
+    try:
+        out = subprocess.check_output(git_cmd).decode('utf8')
+        branch_name = re.search(branch_re, out).groups()[0]
+    except Exception:
+        print("\nCould not retrieve active git branch. Make sure that the\n"
+              "following path is a valid Git repository: {}\n"
+              .format(os.getcwd()))
+    else:
+        print(f"\nRetrieved active branch name:  {branch_name:s}")
+        return branch_name
+
+
 @pytest.fixture(scope='module')
 def path_to_inputs(request, env_var='DRAGONS_TEST'):
     """
@@ -371,6 +402,14 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
         pytest.fail('\n  Path to input test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
 
+    branch_name = get_active_git_branch()
+
+    if branch_name:
+        branch_name = branch_name.replace("/", "_")
+        path_with_branch = path.replace("/inputs", f"/inputs_{branch_name}")
+        path = path_with_branch if os.path.exists(path_with_branch) else path
+
+    print(f"Using the following path to the inputs:\n  {path}\n")
     return path
 
 
@@ -412,6 +451,14 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
         pytest.fail('\n Path to reference test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
 
+    branch_name = get_active_git_branch()
+
+    if branch_name:
+        branch_name = branch_name.replace("/", "_")
+        path_with_branch = path.replace("/refs", f"/refs_{branch_name}")
+        path = path_with_branch if os.path.exists(path_with_branch) else path
+
+    print(f"Using the following path to the refs:\n  {path}\n")
     return path
 
 
@@ -434,11 +481,9 @@ def path_to_outputs(request, tmp_path_factory):
     IOError
         If output path does not exits.
     """
-    path = tmp_path_factory.mktemp(basename="dragons-test-", numbered=True)
-
     module_path = request.module.__name__.split('.')
     module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(str(path), *module_path)
+    path = os.path.join(str(tmp_path_factory.getbasetemp()), *module_path)
     os.makedirs(path, exist_ok=True)
 
     return path

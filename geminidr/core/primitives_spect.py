@@ -7,7 +7,6 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from datetime import datetime
 from importlib import import_module
 import warnings
 
@@ -39,8 +38,9 @@ from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as ext
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
-from gempy.library.astrotools import array_from_list
 from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library.astrotools import array_from_list, boxcar
+from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
 from gempy.library import tracing, astrotools as at
@@ -1364,6 +1364,9 @@ class Spect(PrimitivesBASE):
             is required. Default: 10.
         interactive: bool
             Perform extraction interactively
+        subtract_sky : bool
+            Extract and subtract sky spectra from object spectra if the 2D
+            spectral image has not been sky subtracted?
         debug: bool
             draw apertures on image display window?
 
@@ -1379,6 +1382,7 @@ class Spect(PrimitivesBASE):
         method = params["method"]
         width = params["width"]
         grow = params["grow"]
+        subtract_sky = params["subtract_sky"]
         debug = params["debug"]
         interactive = params["interactive"]
 
@@ -1391,11 +1395,11 @@ class Spect(PrimitivesBASE):
             ad_spec = astrodata.create(ad.phu)
             ad_spec.filename = ad.filename
             ad_spec.orig_filename = ad.orig_filename
-            skysub_needed = self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu
+            skysub_needed = (subtract_sky and
+                             self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu)
             if skysub_needed:
-                log.stdinfo("Sky subtraction has not been performed on {} "
-                            "- extracting sky from separate apertures".
-                            format(ad.filename))
+                log.stdinfo(f"Sky subtraction has not been performed on {ad.filename}"
+                            " - extracting sky from separate apertures")
 
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
@@ -2166,13 +2170,13 @@ class Spect(PrimitivesBASE):
         # For the 2D case check that all ad objects have only 1 extension
         if ndim > 1:
             adjust_key = self.timestamp_keys['adjustWCSToReference']
-            for i, ad in enumerate(adinputs):
-                if len(ad) != 1:
-                    raise ValueError('inputs must have only 1 extension')
-                if adjust_key not in ad.phu:
-                    log.warning(
-                        "{} has not offset, adjustWCSToReference "
-                        "should be run first".format(ad.filename))
+            if len(adinputs) > 1 and not all(adjust_key in ad.phu
+                                             for ad in adinputs):
+                log.warning("2D spectral images should be processed by "
+                            "adjustWCSToReference if accurate spatial "
+                            "alignment is required.")
+            if not all(len(ad) == 1 for ad in adinputs):
+                raise ValueError('inputs must have only 1 extension')
             # Store these values for later!
             refad = adinputs[0]
             ref_coords = (refad.central_wavelength(asNanometers=True),
@@ -2348,13 +2352,10 @@ class Spect(PrimitivesBASE):
         """
         Performs row-by-row/column-by-column sky subtraction of 2D spectra.
 
-        For that, it fits the sky contribution using a Univariate Spline and
-        builds a mask of rejected pixels during the fitting process. It also
-        adds any apertures defined in the APERTURE table to this mask if it
-        exists.
-
-        If there are less than 4 good pixels on each row/column, then the fit
-        is performed to every pixel.
+        For that, it fits the sky contribution along each row/column
+        perpendicular to the dispersion axis and builds a mask of rejected
+        pixels during the fitting process. It also adds any apertures defined
+        in the APERTURE table to this mask if it exists.
 
         This primitive should be called on data free of distortion.
 
@@ -2362,20 +2363,36 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             2D science spectra loaded as :class:`~astrodata.AstroData` objects.
-        suffix : str or None
+        suffix : str or None, optional
             Suffix to be added to output files.
-        regions : str or None
+        regions : str or None, optional
             Sample region(s) to fit along rows/columns parallel to the slit,
             as a comma-separated list of pixel ranges. Any pixels outside these
             ranges (and/or included in the source aperture table) will be
             ignored when fitting each row or column.
-        order : int or None
-            Order of piecewise cubic spline fit to each row/column. If `None`,
-            it uses as many pieces as required to get chi^2=1. Else, it is
-            reduced proportionately by the ratio between the number of good pixels
-            in each row/column and the total number of pixels. Default: 5.
-        grow : float
-            Masking growth radius (in pixels) for each aperture. Default: 0.
+        function : {'splineN', 'legendre', 'chebyshev', 'polynomial'}, optional
+            Type of function/model to be used for fitting rows or columns
+            perpendicular to the dispersion axis (default 'spline3', a cubic
+            spline). For spline fits, N may be 1-5 (linear to quintic).
+        order : int or None, optional
+            Order of fit to each row/column (default 5). For spline fits, this
+            is the number of spline pieces; if `None`, as many pieces will be
+            used as are required to get chi^2=1, otherwise the specified number
+            will be reduced in proportion to the ratio of good pixels to total
+            pixels in each row/column. If there are fewer than 4 good pixels in
+            a given row/column, the fit will be performed using every pixel.
+            For polynomial fitting functions, ``order`` is the number of terms,
+            or degree + 1.
+        lsigma, hsigma : float, optional
+            Lower and upper pixel rejection limits for fitting, in standard
+            deviations from the fit (default 3.0).
+        max_iters : int, optional
+            Maximum number of fitting iterations (default 3).
+        grow : float or False, optional
+            Masking growth radius (in pixels) for each source aperture and
+            each statistically-rejected pixel. Default: 2.
+        debug : bool
+            Show diagnostic plots?
 
         Returns
         -------
@@ -2392,32 +2409,29 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        order = params["order"]
-        grow = params["grow"]
         regions = params["regions"]
-
-        slices = cartesian_regions_to_slices(regions)
+        function = params["function"]
+        order = params["order"]
+        lsigma = params["lsigma"]
+        hsigma = params["hsigma"]
+        max_iters = params["max_iters"]
+        grow = params["grow"]
+        debug = params["debug"]
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
                 log.warning("{} has not been distortion corrected. Sky "
                             "subtraction is likely to be poor.".format(ad.filename))
 
-            start = datetime.now()
             for ext in ad:
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
-                slitlen = ext.shape[1 - dispaxis]
-                pixels = np.arange(slitlen)
+                axis = ext.dispersion_axis() - 1  # python sense
 
-                # We want to mask pixels in apertures in addition to the mask
+                # We want to mask pixels in apertures in addition to the mask.
+                # Should we also leave DQ.cosmic_ray (because sky lines can get
+                # flagged as CRs) and/or DQ.overlap unmasked here?
                 sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
-                            if ext.mask is None else ext.mask.copy())
-
-                # Convert user region constraints to Boolean masks for slicing:
-                user_reg = np.zeros(slitlen, dtype=np.bool)
-                for _slice in slices:
-                    user_reg[_slice] = True
-                user_masked = ~user_reg
+                            if ext.mask is None else
+                            ext.mask.copy() & DQ.not_signal)
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
@@ -2429,38 +2443,38 @@ class Spect(PrimitivesBASE):
                     for row in aptable:
                         model_dict = dict(zip(aptable.colnames, row))
                         trace_model = astromodels.dict_to_chebyshev(model_dict)
-                        aperture = tracing.Aperture(trace_model, aper_lower=model_dict['aper_lower'],
-                                                    aper_upper=model_dict['aper_upper'])
+                        aperture = tracing.Aperture(
+                            trace_model, aper_lower=model_dict['aper_lower'],
+                            aper_upper=model_dict['aper_upper']
+                        )
                         sky_mask |= aperture.aperture_mask(ext, grow=grow)
 
-                # Transpose if needed so we're iterating along rows
-                data, mask, var = _transpose_if_needed(ext.data, sky_mask, ext.variance, transpose=dispaxis == 1)
-                sky_model = np.empty_like(data)
-                sky_weights = (np.ones_like(data) if var is None
-                               else np.sqrt(np.divide(1., var, out=np.zeros_like(data),
-                                                      where=var > 0)))
+                if debug:
+                    from astropy.visualization import simple_norm
+                    fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
+                                                   sharey=True)
+                    ax1.imshow(ext.data, cmap='gray',
+                               norm=simple_norm(ext.data, max_percent=99))
+                    ax2.imshow(sky_mask, cmap='gray', vmax=4)
+                    plt.show()
 
-                # Now fit the model for each row/column along dispersion axis
-                for i, (data_row, mask_row, weight_row) in \
-                    enumerate(zip(data, mask, sky_weights[:, user_reg])):
+                if ext.variance is None:
+                    sky_weights = None
+                else:
+                    sky_weights = np.sqrt(np.divide(1., ext.variance,
+                                          out=np.zeros_like(ext.data),
+                                          where=ext.variance > 0))
 
-                    sky = np.ma.masked_array(data_row, mask=mask_row)[user_reg]
+                # This would combine the specified mask with any existing mask,
+                # but should we include some specific set of DQ codes here?
+                sky = np.ma.masked_array(ext.data, mask=sky_mask)
 
-                    if weight_row.sum() == 0:
-                        weight_row = None
+                sky_model = fit_1D(sky, weights=sky_weights, function=function,
+                                   order=order, axis=axis, sigma_lower=lsigma,
+                                   sigma_upper=hsigma, niter=max_iters,
+                                   grow=grow, regions=regions, plot=debug)()
 
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels[user_reg], sky, order=order,
-                                                                            w=weight_row, grow=2)
-                    # Spline fit has been returned so only need to compute
-                    # regions ignored in the fitting
-                    sky_model[i][user_reg] = spline.data
-                    sky_model[i][user_masked] = spline(pixels[user_masked])
-
-                    # Here we have the have the original row/column data, the
-                    # spline.mask, the evaluated sky_model fit and the user
-                    # regions available for plotting, when implemented.
-
-                ext.data -= (sky_model if dispaxis == 0 else sky_model.T)
+                ext.data -= sky_model
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

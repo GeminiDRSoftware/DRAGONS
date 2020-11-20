@@ -6,19 +6,17 @@
 AstroData and Derivatives
 *************************
 
-The ``astrodata.core.AstroData`` class (or simply ``astrodata.AstroData``)
-is the main interface to the package. When
-opening files or creating new objects, a derivative of this class is
-returned, as the ``AstroData``
-class is not intended to be used directly. It provides the logic to calculate
-the :ref:`tag set <ad_tags>` for an image, which is common to all data products. Aside from
-that, it lacks any kind of specialized knowledge about the different
-instruments that produce the FITS files. More importantly, it defines two
-methods (``info`` and ``load``) as abstract, meaning that the class cannot be
-instantiated directly: a derivative must implement those methods in order to be
-useful. Such derivatives can also implement descriptors, which provide
-processed metadata in a way that abstracts the user from the raw information
-(e.g., the keywords in FITS headers).
+The ``astrodata.AstroData`` class is the main interface to the package. When
+opening files or creating new objects, a derivative of this class is returned,
+as the ``AstroData`` class is not intended to be used directly. It provides the
+logic to calculate the :ref:`tag set <ad_tags>` for an image, which is common
+to all data products. Aside from that, it lacks any kind of specialized
+knowledge about the different instruments that produce the FITS files. More
+importantly, it defines two methods (``info`` and ``load``) as abstract,
+meaning that the class cannot be instantiated directly: a derivative must
+implement those methods in order to be useful. Such derivatives can also
+implement descriptors, which provide processed metadata in a way that abstracts
+the user from the raw information (e.g., the keywords in FITS headers).
 
 ``AstroData`` does define a common interface, though. Much of it consists on
 implementing semantic behavior (access to components through indices, like a
@@ -44,9 +42,8 @@ standard Python methods:
 * Implements ``__iadd__``, ``__isub__``, ``__imul__``, ``__itruediv__``, and
   their not-in-place versions, based on them.
 
-All of these provide default implementations that rely heavily on the
-``DataProvider`` capabilities. There are a few other methods. For a detailed
-discussion, please refer to the :ref:`api_refguide`.
+There are a few other methods. For a detailed discussion, please refer to the
+:ref:`api_refguide`.
 
 .. _tags_prop_entry:
 
@@ -61,7 +58,7 @@ fast to compare sets, e.g., testing for membership; or calculating intersection,
 etc., to figure out if a certain dataset belongs to an arbitrary category.
 
 The implementation for the tags property is just a call to
-``AstroData.__process_tags()``. This function implements the actual logic behind
+``AstroData._process_tags()``. This function implements the actual logic behind
 calculating the tag set (described :ref:`below <ad_tags>`). A derivative class
 could redefine the algorithm, or build upon it.
 
@@ -129,11 +126,11 @@ Create your derivative class
 This is an excerpt of a typical derivative module::
 
     from astrodata import astro_data_tag, astro_data_descriptor, TagSet
-    from astrodata import AstroDataFits
+    from astrodata import AstroData
 
     from . import lookup
 
-    class AstroDataInstrument(AstroDataFits):
+    class AstroDataInstrument(AstroData):
         __keyword_dict = dict(
                 array_name = 'AMPNAME',
                 array_section = 'CCDSECT'
