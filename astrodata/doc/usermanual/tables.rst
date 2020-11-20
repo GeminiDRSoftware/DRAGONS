@@ -220,7 +220,7 @@ Now we append this Astropy ``Table`` to a new ``AstroData`` object.
 
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
-    >>> ad.append(my_astropy_table, name='MYTABLE')
+    >>> ad.MYTABLE = my_astropy_table
     >>> ad.info()
     >>> ad.MYTABLE
 

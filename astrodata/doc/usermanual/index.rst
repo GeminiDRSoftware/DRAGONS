@@ -26,7 +26,6 @@ Appendix
 
 .. toctree::
    :maxdepth: 1
-   :caption: More
 
    appendices/appendix_descriptors
    api

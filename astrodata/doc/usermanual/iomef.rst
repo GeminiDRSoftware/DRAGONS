@@ -90,7 +90,7 @@ returns a :class:`numpy.ndarray`. The list of |NDAstroData| is zero-indexed.
     >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
     >>> data = ad[0].data
     >>> type(data)
-    <type 'numpy.ndarray'>
+    <class 'numpy.ndarray'>
     >>> data.shape
     (2112, 256)
 
@@ -490,7 +490,7 @@ example below will not run, though this is how it would be done.)
     >>> ad = astrodata.create(phu)
 
     >>> astrodata.add_header_to_table(my_astropy_table)
-    >>> ad.append(my_astropy_table, name='BOB')
+    >>> ad.BOB = my_astropy_table
 
 
 In the second example, we start with a FITS :class:`~astropy.io.fits.BinTableHDU`
@@ -499,7 +499,7 @@ and attach it to a new |AstroData| object. (Again, we have not created
 
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
-    >>> ad.append(my_fits_table, name='BILL')
+    >>> ad.BILL = my_fits_table
 
 As before, once the |AstroData| object is constructed, the ``ad.write()``
 method can be used to write it to disk as a MEF file.

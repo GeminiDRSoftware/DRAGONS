@@ -42,7 +42,10 @@ the pixel data. ::
     >>> for ext in ad:
     ...     the_data = ext.data
     ...     print(the_data.sum())
-    ...
+    333071030
+    335104458
+    333170484
+    333055206
 
 In this example, we first access the pixels for the second extensions.
 Remember that in Python, list are zero-indexed, hence we access the second
@@ -110,7 +113,6 @@ extension, a for-loop is needed::
 
     >>> for (ext, gain) in zip(ad, ad.gain()):
     ...     ext.multiply(gain)
-    ...
 
 If you want to do the above but on a new object, leaving the original unchanged,
 use ``deepcopy`` first. ::
@@ -119,7 +121,6 @@ use ``deepcopy`` first. ::
     >>> adcopy = deepcopy(ad)
     >>> for (ext, gain) in zip(adcopy, adcopy.gain()):
     ...     ext.multiply(gain)
-    ...
 
 
 Operator Precedence
@@ -170,7 +171,6 @@ extensions.
 
     >>> for (extension, gain) in zip(ad, ad.gain()):
     ...    extension.variance = extension.data / gain
-    ...
 
 Check ``ad.info()``, you will see a variance plane for each of the four
 extensions.
@@ -185,8 +185,8 @@ Let's look into an example.
 
 ::
 
-    #     output = x * x
-    # var_output = var * x^2 + var * x^2
+    >>> #     output = x * x
+    >>> # var_output = var * x^2 + var * x^2
     >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
 
     >>> ad[1].data[50,50]

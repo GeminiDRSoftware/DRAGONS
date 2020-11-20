@@ -90,18 +90,18 @@ Here are a few examples using Descriptors::
 
     >>> #--- print a value
     >>> print('The airmass is : ', ad.airmass())
+    The airmass is :  1.089
 
     >>> #--- use a value to control the flow
     >>> if ad.exposure_time() < 240.:
     ...     print('This is a short exposure.')
     ... else:
     ...     print('This is a long exposure.')
-    ...
+    This is a short exposure.
 
     >>> #--- multiply all extensions by their respective gain
     >>> for ext, gain in zip(ad, ad.gain()):
     ...     ext *= gain
-    ...
 
     >>> #--- do arithmetics
     >>> fwhm_pixel = 3.5
