@@ -121,6 +121,39 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
 }
 
+# This is added to the end of RST files - a good place to put substitutions to
+# be used globally.
+rst_epilog = f"""
+.. _`Anaconda`: https://www.anaconda.com/
+.. _`AstroData User's Manual`: https://astrodata-user-manual.readthedocs.io/
+.. _`AstroData Cheat Sheet`: https://astrodata-cheat-sheet.readthedocs.io/
+.. _`astropy`: http://docs.astropy.org/en/stable/
+.. _`Conda`: https://conda.io/docs/
+.. _`Recipe System Programmers Manual`: http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/
+.. _`Recipe System Users Manual`: http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/
+
+.. |astrodata_class| replace:: :class:`~astrodata.AstroData`
+.. |AstroData| replace:: :class:`~astrodata.AstroData`
+.. |astrodata| replace:: :mod:`~astrodata`
+.. |astropy| replace:: `astropy`_
+.. |DRAGONS| replace:: ``DRAGONS``
+.. |geminidr| replace:: :mod:`~geminidr`
+.. |gemini_instruments| replace:: :mod:`gemini_instruments`
+.. |gemini| replace:: ``gemini``
+.. |Mapper| replace:: :class:`~recipe_system.mappers.baseMapper.Mapper`
+.. |mappers| replace:: :mod:`recipe_system.mappers`
+.. |NDAstroData| replace:: :class:`~astrodata.nddata.NDAstroData`
+.. |NDData| replace:: :class:`~astropy.nddata.NDData`
+.. |numpy| replace:: :mod:`~numpy`
+.. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
+.. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
+.. |recipe_system| replace:: :mod:`recipe_system`
+.. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
+.. |reduce| replace:: ``reduce``
+.. |Table| replace:: :class:`~astropy.table.Table`
+.. |TagSet| replace:: :class:`~astrodata.TagSet`
+"""
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

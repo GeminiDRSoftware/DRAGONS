@@ -1,7 +1,5 @@
 .. structure.rst
 
-.. include:: references.txt
-
 .. _structure:
 
 ********************

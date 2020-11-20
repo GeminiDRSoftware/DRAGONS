@@ -1,8 +1,5 @@
 .. tags.rst
 
-.. include:: references.txt
-
-
 .. _tags:
 
 **************

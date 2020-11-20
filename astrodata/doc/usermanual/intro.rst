@@ -1,7 +1,5 @@
 .. intro.rst
 
-.. include:: references.txt
-
 .. _intro:
 
 ************
