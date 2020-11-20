@@ -147,11 +147,11 @@ Delete and add variance and mask planes::
 
 Attach a table to an extension::
 
-    >>> adcopy[3].append(advar[0].OBJCAT, name='BOB')
+    >>> adcopy[3].BOB = advar[0].OBJCAT
 
 Attach a table to the |astrodata_class| object::
 
-    >>> adcopy.append(advar.REFCAT, name='BILL')
+    >>> adcopy.BILL = advar.REFCAT
 
 Delete a table::
 
@@ -167,11 +167,11 @@ Astrodata tags
 
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
     >>> ad.tags
-    set(['GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'OVERSCAN_TRIMMED', 'IMAGE',
-    'OVERSCAN_SUBTRACTED', 'PREPARED'])
+    {'GMOS', 'OVERSCAN_SUBTRACTED', 'SIDEREAL', 'NORTH', 'OVERSCAN_TRIMMED',
+    'PREPARED', 'IMAGE', 'GEMINI'}
 
     >>> type(ad.tags)
-    <type 'set'>
+    <class 'set'>
 
     >>> {'IMAGE', 'PREPARED'}.issubset(ad.tags)
     True
@@ -397,7 +397,7 @@ Rejecting :class:`numpy.nan` before doing something with the values::
     >>> t['zmag'].mean()
     nan
     >>> t['zmag'][np.where(~np.isnan(t['zmag']))].mean()
-    20.2924
+    20.377306
 
 If for some reason you need to access the FITS table headers, here is how to do it.
 
@@ -433,7 +433,8 @@ Basic header and data array set to zeros::
     >>> ad = astrodata.create(phu)
     >>> ad.append(hdu, name='SCI')
 
-    or another way:
+or another way::
+
     >>> hdu = fits.ImageHDU(data=pixel_data, name='SCI')
     >>> ad = astrodata.create(phu, [hdu])
 
@@ -446,12 +447,13 @@ A |Table| as an |astrodata_class| object::
 
     >>> astrodata.add_header_to_table(my_astropy_table)
     >>> ad = astrodata.create(phu)
-    >>> ad.append(my_astropy_table, name='BOB')
+    >>> ad.BOB = my_astropy_table
 
-    From a BinTableHDU:
+From a `~astropy.io.fits.BinTableHDU`::
+
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
-    >>> ad.append(my_fits_table, name='BOB')
+    >>> ad.BOB = my_fits_table
 
-    WARNING: This last line will not run like the others as we have not defined
-    "my_fits_table".  This is nonetheless how it is done if you had a FITS table.
+WARNING: This last line will not run like the others as we have not defined
+``my_fits_table``.  This is nonetheless how it is done if you had a FITS table.
