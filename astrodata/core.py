@@ -626,8 +626,7 @@ class AstroData:
     def _pixel_info(self):
         for idx, nd in enumerate(self._nddata):
             other_objects = []
-            uncer = nd.uncertainty
-            fixed = (('variance', None if uncer is None else uncer),
+            fixed = (('variance', nd.uncertainty),
                      ('mask', nd.mask))
             for name, other in fixed + tuple(sorted(nd.meta['other'].items())):
                 if other is None:
