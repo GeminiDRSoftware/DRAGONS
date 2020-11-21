@@ -639,23 +639,11 @@ class AstroData:
                         data_type='n/a'
                     ))
                 else:
-                    dim = ''
-                    if hasattr(other, 'dtype'):
-                        dt = other.dtype.name
-                        dim = str(other.shape)
-                    elif hasattr(other, 'data'):
-                        dt = other.data.dtype.name
-                        dim = str(other.data.shape)
-                    elif hasattr(other, 'array'):
-                        dt = other.array.dtype.name
-                        dim = str(other.array.shape)
-                    else:
-                        dt = 'unknown'
                     other_objects.append(dict(
                         attr=name,
                         type=type(other).__name__,
-                        dim=dim,
-                        data_type=dt
+                        dim=_find_dim(other),
+                        data_type=_find_data_type(other)
                     ))
 
             yield dict(
@@ -668,6 +656,30 @@ class AstroData:
                 ),
                 other=other_objects
             )
+
+
+    def _find_data_type(self, other)
+        if hasattr(other, 'dtype'):
+            dt = other.dtype.name
+        elif hasattr(other, 'data'):
+            dt = other.data.dtype.name
+        elif hasattr(other, 'array'):
+            dt = other.array.dtype.name
+        else:
+            dt = 'unknown'
+        return dt
+
+    def _find_dim(self, other)
+        if hasattr(other, 'dtype'):
+            dim = str(other.shape)
+        elif hasattr(other, 'data'):
+            dim = str(other.data.shape)
+        elif hasattr(other, 'array'):
+            dim = str(other.array.shape)
+        else
+            dim = ''
+        return dim
+
 
     def info(self):
         """Prints out information about the contents of this instance."""
