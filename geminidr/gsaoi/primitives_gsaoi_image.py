@@ -148,20 +148,11 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 continue
 
             if num_matched > 0:
-                # No point trying to compute a more complex model if it will
-                # be insufficiently constrained
                 if num_matched > 2:
-                    if len(models.Polynomial2D(degree=order).parameters) > num_matched:
-                        while len(models.Polynomial2D(degree=order).parameters) > num_matched:
-                            order -= 1
-                        log.warning(f"Downgrading fit to order {order} due to "
-                                    "limited number of matches.")
-
                     transform, matched = create_polynomial_transform(transform,
                                                 incoords, refcoords, order=order,
                                                 max_iters=max_iters,
-                                                match_radius=final, clip=False,
-                                                log=self.log)
+                                                match_radius=final, log=self.log)
                     n_corr = np.sum(matched >= 0)
                     log.fullinfo("Number of correlated sources: {}".format(n_corr))
                     log.fullinfo("\nMatched sources:  Ref. ext Ref. x  Ref. y  "
@@ -179,8 +170,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
                             #xmatched[m] = refcoords[0][i]
                             #ymatched[m] = refcoords[1][i]
                     log.fullinfo("")
-                    #objcat["X_MATCHED"] = xmatched
-                    #objcat["Y_MATCHED"] = ymatched
+                    #objcat["X_MATCHED"], objcat["Y_MATCHED"] = xmatched, ymatched
                     #objcat["X_TRANS"], objcat['Y_TRANS'] = transform(*incoords)
                     #objcat.write(f'obj_{ad.filename}', overwrite=True)
 
@@ -285,6 +275,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                                                 ad[0].wcs.output_frame)
             xref, yref = static_to_world_transform.inverse(refcat['RAJ2000'],
                                                            refcat['DEJ2000'])
+            #refcat["X_STATIC"], refcat["Y_STATIC"] = xref, yref
+            #refcat.write(f"ref_{ad.filename}", overwrite=True)
             in_field = np.all((xref > xmin, xref < xmax,
                                yref > ymin, yref < ymax), axis=0)
             num_ref_sources = in_field.sum()
@@ -324,21 +316,12 @@ class GSAOIImage(GSAOI, Image, Photometry):
             log.stdinfo(f"Matched {num_matched} objects")
 
             if num_matched > 0:
-                # No point trying to compute a more complex model if it will
-                # be insufficiently constrained
                 if num_matched > 2:
-                    if len(models.Polynomial2D(degree=order).parameters) > num_matched:
-                        while len(models.Polynomial2D(degree=order).parameters) > num_matched:
-                            order -= 1
-                        log.warning(f"Downgrading fit to order {order} due to "
-                                    "limited number of matches.")
-
                     transform, matched = create_polynomial_transform(transform,
                                                 (objcat['X_STATIC'], objcat['Y_STATIC']),
                                                 (xref, yref), order=order,
                                                 max_iters=max_iters,
-                                                match_radius=final, clip=True,
-                                                log=self.log)
+                                                match_radius=final, log=self.log)
                 else:
                     log.warning("Insufficient matches to perform distortion "
                                 "correction - performing simple alignment only."
@@ -351,6 +334,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 dx, dy = [], []
                 xtrans, ytrans = transform(objcat['X_STATIC'], objcat['Y_STATIC'])
                 cospa, sinpa = math.cos(ad.phu['PA']), math.sin(ad.phu['PA'])
+                xmatched = np.full((len(objcat),), -999, dtype=float)
+                ymatched = np.full((len(objcat),), -999, dtype=float)
                 for i, m in enumerate(matched):
                     if m >= 0:
                         try:
@@ -364,6 +349,11 @@ class GSAOIImage(GSAOI, Image, Photometry):
                             pass
                         dx.append(xref[i] - xtrans[m])
                         dy.append(yref[i] - ytrans[m])
+                        xmatched[m], ymatched[m] = xref[i], yref[i]
+
+                #objcat["X_MATCHED"], objcat["Y_MATCHED"] = xmatched, ymatched
+                #objcat["X_TRANS"], objcat['Y_TRANS'] = xtrans, ytrans
+                #objcat.write(f'obj_{ad.filename}', overwrite=True)
 
                 x0, y0 = transform(0, 0)
                 delta_ra = x0 * cospa - y0 * sinpa
@@ -550,7 +540,7 @@ def merge_gsaoi_objcats(ad, cull_sources=False):
     return table.vstack(objcats, metadata_conflicts='silent')
 
 def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
-                                max_iters=5, match_radius=0.1, clip=False,
+                                max_iters=5, match_radius=0.1, clip=True,
                                 log=None):
     """
     This function maps a set of 2D input coordinates to a set of 2D reference
@@ -571,6 +561,8 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
         maximum number of iterations to perform
     match_radius : float
         matching radius for sources (in units of the reference coords)
+    clip : bool
+        sigma-clip sources after matching?
     log : logging object
 
     Returns
@@ -581,13 +573,10 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
         matched incoord for each refcoord
     """
     affine = adwcs.calculate_affine_matrices(transform, shape=(100, 100))
-    xmodel = models.Polynomial2D(degree=order, c0_0=affine.offset[1],
-                                 c1_0=affine.matrix[1, 1],
-                                 c0_1=affine.matrix[1, 0])
-    ymodel = models.Polynomial2D(degree=order, c0_0=affine.offset[0],
-                                 c1_0=affine.matrix[0, 1],
-                                 c0_1=affine.matrix[0, 0])
+    num_params = [len(models.Polynomial2D(degree=i).parameters)
+                  for i in range(order+1)]
 
+    orig_order = last_order = order
     xref, yref = ref_coords
     xin, yin = in_coords
     if clip:
@@ -601,6 +590,23 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
     num_matched = np.sum(matched >= 0)
     niter = 0
     while True:
+        # No point trying to compute a more complex model if it will
+        # be insufficiently constrained
+        order = min(np.searchsorted(num_params, num_matched, side="right"),
+                    orig_order)
+        if order < last_order:
+            log.warning(f"Downgrading fit to order {order} due to "
+                        "limited number of matches.")
+        elif order > last_order:
+            log.stdinfo(f"Upgrading fit to order {order} due to "
+                        "increased number of matches.")
+
+        xmodel = models.Polynomial2D(degree=order, c0_0=affine.offset[1],
+                                     c1_0=affine.matrix[1, 1],
+                                     c0_1=affine.matrix[1, 0])
+        ymodel = models.Polynomial2D(degree=order, c0_0=affine.offset[0],
+                                     c1_0=affine.matrix[0, 1],
+                                     c0_1=affine.matrix[0, 0])
         old_num_matched = num_matched
         xobj_matched, yobj_matched = [], []
         xref_matched, yref_matched = [], []
@@ -618,6 +624,7 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
         matched = match_sources((xref, yref), transform(xin, yin),
                                 radius=match_radius)
         num_matched = np.sum(matched >= 0)
+        last_order = order
         niter += 1
         log.stdinfo(f"Iteration {niter}: Matched {num_matched} objects")
         if num_matched == old_num_matched or niter > max_iters:
