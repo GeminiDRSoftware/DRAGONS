@@ -9,7 +9,7 @@ class adjustWCSToReferenceConfig(parameters_register.adjustWCSToReferenceConfig)
                                   int, 5, min=1, max=20, inclusiveMax=True)
     def setDefaults(self):
         del self.method, self.fallback
-        self.first_pass = 2.0
+        self.first_pass = 3.0
 
 
 class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
@@ -28,7 +28,7 @@ class determineAstrometricSolutionConfig(parameters_register.determineAstrometri
                                   int, 5, min=1, max=20, inclusiveMax=True)
     def setDefaults(self):
         self.initial = 3
-        self.final = 0.1
+        self.final = 0.5
 
 
 class resampleToCommonFrameConfig(parameters_resample.resampleToCommonFrameConfig):
