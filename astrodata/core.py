@@ -625,27 +625,7 @@ class AstroData:
 
     def _pixel_info(self):
         for idx, nd in enumerate(self._nddata):
-            other_objects = []
-            fixed = (('variance', nd.uncertainty),
-                     ('mask', nd.mask))
-            for name, other in fixed + tuple(sorted(nd.meta['other'].items())):
-                if other is None:
-                    continue
-                if isinstance(other, Table):
-                    other_objects.append(dict(
-                        attr=name,
-                        type='Table',
-                        dim=str((len(other), len(other.columns))),
-                        data_type='n/a'
-                    ))
-                else:
-                    other_objects.append(dict(
-                        attr=name,
-                        type=type(other).__name__,
-                        dim=_find_dim(other),
-                        data_type=_find_data_type(other)
-                    ))
-
+            other_objects = self._build_others(nd)
             yield dict(
                 idx='[{:2}]'.format(idx),
                 main=dict(
@@ -656,6 +636,32 @@ class AstroData:
                 ),
                 other=other_objects
             )
+
+    def _build_others(self, nd):
+        other_objects = []
+        for name, other in self._nd_name_other(nd):
+            if other is None:
+                continue
+            if isinstance(other, Table):
+                other_objects.append(dict(
+                    attr=name,
+                    type='Table',
+                    dim=str((len(other), len(other.columns))),
+                    data_type='n/a'
+                ))
+            else:
+                other_objects.append(dict(
+                    attr=name,
+                    type=type(other).__name__,
+                    dim=self._find_dim(other),
+                    data_type=self._find_data_type(other)
+                ))
+        return other_objects
+
+    def _nd_name_other(self, nd):
+        fixed = (('variance', nd.uncertainty),
+                 ('mask', nd.mask))
+        return fixed + tuple(sorted(nd.meta['other'].items()))
 
 
     def _find_data_type(self, other)
