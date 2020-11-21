@@ -489,7 +489,6 @@ class BruteLandscapeFitter(Fitter):
         farg = (model_copy,) + _convert_input(in_coords, landscape)
         p0, _ = _model_to_fit_params(model_copy)
 
-        # TODO: Use the name of the parameter to infer the step size
         ranges = []
         for p in model_copy.param_names:
             bounds = model_copy.bounds[p]
@@ -500,7 +499,13 @@ class BruteLandscapeFitter(Fitter):
             else:
                 # We don't check that the value of a fixed param is within bounds
                 if diff > 0 and not model_copy.fixed[p]:
-                    ranges.append(slice(*(bounds + (min(0.5 * sigma, 0.1 * diff),))))
+                    if 'offset' in p:
+                        stepsize = min(0.5 * sigma, 0.1 * diff)
+                    elif 'angle' in p:
+                        stepsize = max(0.5, 0.1 * diff)
+                    elif 'factor' in p:
+                        stepsize = max(0.01, 0.1 * diff)
+                    ranges.append(slice(*(bounds + (stepsize,))))
                     continue
             ranges.append((getattr(model_copy, p).value,) * 2)
 
