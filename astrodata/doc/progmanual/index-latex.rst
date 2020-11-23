@@ -31,8 +31,3 @@ Astrodata User Manual
    \appendix
    \noappendicestocpagenum
    \addappheadtotoc
-
-.. toctree::
-   :maxdepth: 1
-
-   appendices/api_refguide

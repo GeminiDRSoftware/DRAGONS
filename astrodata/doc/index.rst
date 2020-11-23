@@ -32,6 +32,15 @@ This is the programmer documentation bla bla...
 
    progmanual/index
 
+Reference API
+=============
+
+.. toctree::
+   :maxdepth: 1
+
+   api/astrodata
+   api/gemini_instruments
+
 Indices and tables
 ==================
 

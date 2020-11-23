@@ -30,7 +30,7 @@ data for a SCI extension, on Gemini data), along with any other associated data
 
 ``astrodata.core.DataProvider`` is, again, an abstract class, defining the
 minimum interface expected from a data provider. This interface is described in
-greater detail in the :ref:`api_refguide`, but among other things, one would
+greater detail in the :doc:`api`, but among other things, one would
 need to implement:
 
 * ``is_settable``: AstroData exposes attributes from its data provider through

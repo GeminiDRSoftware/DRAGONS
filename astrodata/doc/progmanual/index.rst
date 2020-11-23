@@ -20,11 +20,3 @@ Astrodata Programmer's Manual
    containers
    tags
    descriptors
-
-Appendix
---------
-
-.. toctree::
-   :maxdepth: 1
-
-   appendices/api_refguide
