@@ -441,11 +441,11 @@ object that will be eventually written to disk.  The |AstroData| object
 created also needs to know that it will have to be written using the MEF
 format. This is fortunately handled fairly transparently by |astrodata|.
 
-The key to associating the FITS data provider to the |AstroData| object
-is simply to create the |AstroData| object from :mod:`astropy.io.fits` header
-objects. Those will be recognized by |astrodata| as FITS and the
-constructor for FITS will be used. The user does not need to do anything
-else special. Here is how it is done.
+The key to associating the FITS data to the |AstroData| object is simply to
+create the |AstroData| object from :mod:`astropy.io.fits` header objects. Those
+will be recognized by |astrodata| as FITS and the constructor for FITS will be
+used. The user does not need to do anything else special. Here is how it is
+done.
 
 Create a MEF with basic header and data array set to zeros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

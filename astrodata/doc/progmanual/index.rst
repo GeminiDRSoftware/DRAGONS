@@ -17,7 +17,6 @@ Astrodata Programmer's Manual
    intro
    design
    adclass
-   providers
    containers
    tags
    descriptors

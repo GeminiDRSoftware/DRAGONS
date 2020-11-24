@@ -25,7 +25,7 @@ class AstroDataTexes(AstroDataGemini):
     )
 
     @classmethod
-    def load(cls, source):
+    def read(cls, source):
         def texes_parser(hdu):
             xnam, xver = hdu.header.get('EXTNAME'), hdu.header.get('EXTVER')
             if 'RAWFRAME' in [xnam] and xver:
