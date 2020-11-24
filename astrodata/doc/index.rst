@@ -21,9 +21,9 @@ Astrodata Manual
 
 This documentation provides different levels of information:
 
-- :doc:`cheatsheet`
-- :doc:`usermanual/index`
-- :doc:`progmanual/index`
+- :doc:`cheatsheet` - A refresher on common astrodata operations
+- :doc:`usermanual/index` - How to code with astrodata
+- :doc:`progmanual/index` - How to code for astrodata
 
 
 .. raw:: latex
