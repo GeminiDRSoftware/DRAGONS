@@ -462,7 +462,6 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     tbl = Table([np.zeros(10), np.ones(10)], names=['col1', 'col2'])
     phu = fits.PrimaryHDU()
     ad = astrodata.create(phu)
-    astrodata.add_header_to_table(tbl)
 
     with pytest.raises(ValueError,
                        match='Tables should be set directly as attribute'):
