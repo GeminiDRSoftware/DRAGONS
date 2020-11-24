@@ -3,9 +3,9 @@
    contain the root `toctree` directive.
    Manually edited by KL Wed Jan 18 2017
 
-=====================
-Astrodata User Manual
-=====================
+===========
+User Manual
+===========
 
 .. admonition:: Document ID
 

@@ -15,13 +15,13 @@ Astrodata Manual
    :hidden:
    :numbered:
 
-   cheatsheet/index
+   cheatsheet
    usermanual/index
    progmanual/index
 
 This documentation provides different levels of information:
 
-- :doc:`cheatsheet/index`
+- :doc:`cheatsheet`
 - :doc:`usermanual/index`
 - :doc:`progmanual/index`
 

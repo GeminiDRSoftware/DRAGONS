@@ -2,9 +2,13 @@
 
 .. _cheatsheet:
 
-*********************
-Astrodata Cheat Sheet
-*********************
+***********
+Cheat Sheet
+***********
+
+.. admonition:: Document ID
+
+   PIPE-USER-105_AstrodataCheatSheet
 
 A data package is available for download if you wish to run the examples
 included in this cheat sheet.  Download it at:

@@ -445,7 +445,7 @@ def setup(app):
     # Adding style in order to have the todos show up in a red box.
     app.add_css_file('todo-styles.css')
     app.add_css_file('rtd_theme_overrides.css')
-    app.add_css_file('css/rtd_theme_overrides_references.css')
+    app.add_css_file('rtd_theme_overrides_references.css')
 
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)
