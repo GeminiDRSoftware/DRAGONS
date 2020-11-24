@@ -14,7 +14,7 @@ import jsonschema
 import numpy as np
 from astropy import units as u
 from astropy.io import fits
-from astropy.io.fits import (DELAYED, BinTableHDU, Column, FITS_rec, HDUList,
+from astropy.io.fits import (DELAYED, BinTableHDU, Column, HDUList,
                              ImageHDU, PrimaryHDU, TableHDU)
 from astropy.nddata import NDData
 # NDDataRef is still not in the stable astropy, but this should be the one
@@ -145,86 +145,22 @@ def table_to_bintablehdu(table, extname=None):
     Returns
     -------
     BinTableHDU
+
     """
-    add_header_to_table(table)
-    array = table.as_array()
-    header = table.meta['header'].copy()
+    table_header = table.meta.pop('header', None)
+    hdu = fits.table_to_hdu(table)
+    update_header(hdu.header, table_header)
     if extname:
-        header['EXTNAME'] = (extname, 'added by AstroData')
-    coldefs = []
-    for n, name in enumerate(array.dtype.names, 1):
-        coldefs.append(Column(
-            name=header.get(f'TTYPE{n}'),
-            format=header.get(f'TFORM{n}'),
-            unit=header.get(f'TUNIT{n}'),
-            null=header.get(f'TNULL{n}'),
-            bscale=header.get(f'TSCAL{n}'),
-            bzero=header.get(f'TZERO{n}'),
-            disp=header.get(f'TDISP{n}'),
-            start=header.get(f'TBCOL{n}'),
-            dim=header.get(f'TDIM{n}'),
-            array=array[name],
-        ))
-
-    return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
-
-
-header_type_map = {
-    'bool': 'L',
-    'int8': 'B',
-    'int16': 'I',
-    'int32': 'J',
-    'int64': 'K',
-    'uint8': 'B',
-    'uint16': 'I',
-    'uint32': 'J',
-    'uint64': 'K',
-    'float32': 'E',
-    'float64': 'D',
-    'complex64': 'C',
-    'complex128': 'M'
-}
+        hdu.header['EXTNAME'] = (extname, 'added by AstroData')
+    return hdu
 
 
 def header_for_table(table):
-    columns = []
-    for col in table.itercols():
-        descr = {'name': col.name}
-        typekind = col.dtype.kind
-        typename = col.dtype.name
-        if typekind in {'S', 'U'}:  # Array of strings
-            strlen = col.dtype.itemsize // col.dtype.alignment
-            descr['format'] = f'{strlen}A'
-            descr['disp'] = f'A{strlen}'
-        elif typekind == 'O':  # Variable length array
-            raise TypeError("Variable length arrays like in column '{}' are "
-                            "not supported".format(col.name))
-        else:
-            try:
-                typedesc = header_type_map[typename]
-            except KeyError:
-                raise TypeError("I don't know how to treat type {!r} for "
-                                "column {}".format(col.dtype, col.name))
-            repeat = ''
-            data = col.data
-            shape = data.shape
-            if len(shape) > 1:
-                repeat = data.size // shape[0]
-                if len(shape) > 2:
-                    descr['dim'] = shape[1:]
-            if typedesc == 'L' and len(shape) > 1:
-                # Bit array
-                descr['format'] = f'{repeat}X'
-            else:
-                descr['format'] = f'{repeat}{typedesc}'
-            if col.unit is not None:
-                descr['unit'] = str(col.unit)
-
-        columns.append(Column(array=col.data, **descr))
-
-    fits_header = BinTableHDU.from_columns(columns).header
-    if 'header' in table.meta:
-        fits_header = update_header(table.meta['header'], fits_header)
+    table_header = table.meta.pop('header', None)
+    fits_header = fits.table_to_hdu(table).header
+    if table_header:
+        table.meta['header'] = table_header  # restore original meta
+        fits_header = update_header(table_header, fits_header)
     return fits_header
 
 
@@ -249,8 +185,7 @@ def _process_table(table, name=None, header=None):
         elif 'header' not in obj.meta:
             obj.meta['header'] = header_for_table(obj)
     else:
-        raise ValueError("{} is not a recognized table type"
-                         .format(table.__class__))
+        raise ValueError(f"{table.__class__} is not a recognized table type")
 
     if name is not None:
         obj.meta['header']['EXTNAME'] = name
