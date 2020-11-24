@@ -6,8 +6,7 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from io import BytesIO
-from itertools import product as cart_product
-from itertools import zip_longest
+from itertools import product as cart_product, zip_longest
 
 import asdf
 import astropy
@@ -24,9 +23,8 @@ from astropy.nddata import NDData
 from astropy.table import Table
 from gwcs.wcs import WCS as gWCS
 
-from . import wcs as adwcs
-from .nddata import ADVarianceUncertainty
-from .nddata import NDAstroData as NDDataObject
+from .nddata import ADVarianceUncertainty, NDAstroData as NDDataObject
+from .wcs import fitswcs_to_gwcs, gwcs_to_fits
 
 DEFAULT_EXTENSION = 'SCI'
 NO_DEFAULT = object()
@@ -34,10 +32,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 class FitsHeaderCollection:
-    """
-    This class provides group access to a list of PyFITS Header-like objects.
-    It exposes a number of methods (`set`, `get`, etc.) that operate over all
-    the headers at the same time. It can also be iterated.
+    """Group access to a list of FITS Header-like objects.
+
+    It exposes a number of methods (``set``, ``get``, etc.) that operate over
+    all the headers at the same time. It can also be iterated.
 
     Parameters
     ----------
@@ -102,7 +100,7 @@ class FitsHeaderCollection:
             except KeyError:
                 pass
         if not deleted:
-            raise KeyError("'{}' is not on any of the extensions".format(key))
+            raise KeyError(f"'{key}' is not on any of the extensions")
 
     def get_comment(self, key):
         return [header.comments[key] for header in self._headers]
@@ -110,7 +108,7 @@ class FitsHeaderCollection:
     def set_comment(self, key, comment):
         def _inner_set_comment(header):
             if key not in header:
-                raise KeyError("Keyword {!r} not available".format(key))
+                raise KeyError(f"Keyword {key!r} not available")
 
             header.set(key, comment=comment)
 
@@ -118,7 +116,7 @@ class FitsHeaderCollection:
             try:
                 _inner_set_comment(header)
             except KeyError as err:
-                raise KeyError(err.args[0] + " at header {}".format(n))
+                raise KeyError(err.args[0] + f" at header {n}")
 
     def __contains__(self, key):
         return any(tuple(key in h for h in self._headers))
@@ -156,16 +154,16 @@ def table_to_bintablehdu(table, extname=None):
     coldefs = []
     for n, name in enumerate(array.dtype.names, 1):
         coldefs.append(Column(
-            name   = header.get('TTYPE{}'.format(n)),
-            format = header.get('TFORM{}'.format(n)),
-            unit   = header.get('TUNIT{}'.format(n)),
-            null   = header.get('TNULL{}'.format(n)),
-            bscale = header.get('TSCAL{}'.format(n)),
-            bzero  = header.get('TZERO{}'.format(n)),
-            disp   = header.get('TDISP{}'.format(n)),
-            start  = header.get('TBCOL{}'.format(n)),
-            dim    = header.get('TDIM{}'.format(n)),
-            array  = array[name]
+            name=header.get(f'TTYPE{n}'),
+            format=header.get(f'TFORM{n}'),
+            unit=header.get(f'TUNIT{n}'),
+            null=header.get(f'TNULL{n}'),
+            bscale=header.get(f'TSCAL{n}'),
+            bzero=header.get(f'TZERO{n}'),
+            disp=header.get(f'TDISP{n}'),
+            start=header.get(f'TBCOL{n}'),
+            dim=header.get(f'TDIM{n}'),
+            array=array[name],
         ))
 
     return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
@@ -196,8 +194,8 @@ def header_for_table(table):
         typename = col.dtype.name
         if typekind in {'S', 'U'}:  # Array of strings
             strlen = col.dtype.itemsize // col.dtype.alignment
-            descr['format'] = '{}A'.format(strlen)
-            descr['disp'] = 'A{}'.format(strlen)
+            descr['format'] = f'{strlen}A'
+            descr['disp'] = f'A{strlen}'
         elif typekind == 'O':  # Variable length array
             raise TypeError("Variable length arrays like in column '{}' are "
                             "not supported".format(col.name))
@@ -216,15 +214,15 @@ def header_for_table(table):
                     descr['dim'] = shape[1:]
             if typedesc == 'L' and len(shape) > 1:
                 # Bit array
-                descr['format'] = '{}X'.format(repeat)
+                descr['format'] = f'{repeat}X'
             else:
-                descr['format'] = '{}{}'.format(repeat, typedesc)
+                descr['format'] = f'{repeat}{typedesc}'
             if col.unit is not None:
                 descr['unit'] = str(col.unit)
 
-        columns.append(fits.Column(array=col.data, **descr))
+        columns.append(Column(array=col.data, **descr))
 
-    fits_header = fits.BinTableHDU.from_columns(columns).header
+    fits_header = BinTableHDU.from_columns(columns).header
     if 'header' in table.meta:
         fits_header = update_header(table.meta['header'], fits_header)
     return fits_header
@@ -241,7 +239,7 @@ def _process_table(table, name=None, header=None):
         obj = Table(table.data, meta={'header': header or table.header})
         for i, col in enumerate(obj.columns, start=1):
             try:
-                obj[col].unit = u.Unit(obj.meta['header']['TUNIT{}'.format(i)])
+                obj[col].unit = u.Unit(obj.meta['header'][f'TUNIT{i}'])
             except (KeyError, TypeError):
                 pass
     elif isinstance(table, Table):
@@ -535,10 +533,10 @@ def read_fits(cls, source, extname_parser=None):
             nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
         if nd.wcs is None:
             # Fallback to the data header
-            nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+            nd.wcs = fitswcs_to_gwcs(nd.meta['header'])
             if nd.wcs is None:
                 # In case WCS info is in the PHU
-                nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
+                nd.wcs = fitswcs_to_gwcs(hdulist[0].header)
 
         ad.append(nd, name=DEFAULT_EXTENSION)
 
@@ -596,7 +594,7 @@ def ad_to_hdulist(ad):
             # We don't have access to the AD tags so see if it's an image
             # Catch ValueError as any sort of failure
             try:
-                wcs_dict = adwcs.gwcs_to_fits(ext, ad.phu)
+                wcs_dict = gwcs_to_fits(ext, ad.phu)
             except (ValueError, NotImplementedError) as e:
                 LOGGER.warning(e)
             else:
@@ -806,7 +804,7 @@ def wcs_to_asdftablehdu(wcs, extver=None):
         wcsbuf = np.frombuffer(wcsbuf, dtype=np.uint8)
     else:
         hduclass = TableHDU
-        fmt = 'A{0}'.format(max(len(line) for line in wcsbuf))
+        fmt = 'A{}'.format(max(len(line) for line in wcsbuf))
 
     # Construct the FITS table extension:
     col = Column(name='gWCS', format=fmt, array=wcsbuf,
