@@ -225,7 +225,8 @@ class fit_1D:
                 n_models = np.sum(self._good_cols)
                 if n_models < image.shape[1]:
                     image_to_fit = image[:, self._good_cols]
-                    weights = weights[:, self._good_cols]
+                    if weights is not None:
+                        weights = weights[:, self._good_cols]
 
             model_set = self.model_class(
                 degree=(self.order - 1), n_models=n_models,
