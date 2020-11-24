@@ -3,6 +3,7 @@
    contain the root `toctree` directive.
    Manually edited by KL Wed Jan 18 2017
 
+=====================
 Astrodata User Manual
 =====================
 
@@ -20,11 +21,3 @@ Astrodata User Manual
    headers
    data
    tables
-
-Appendix
---------
-
-.. toctree::
-   :maxdepth: 1
-
-   appendices/appendix_descriptors

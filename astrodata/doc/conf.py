@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'Astrodata User Manual'
+project = 'Astrodata Manual'
 copyright = '2020, Association of Universities for Research in Astronomy'
 # Note that AURA owns the Copyright, not you.
 
@@ -296,7 +296,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index-latex', 'AstrodataManual.tex', 'Astrodata Manual',
+  ('index', 'AstrodataManual.tex', 'Astrodata Manual',
    'Kathleen Labrie', 'manual'),
 ]
 
@@ -417,7 +417,7 @@ def run_api_doc(_):
         ignore_paths = [os.path.join(build_path, i, '*') for i in ignore_paths]
 
         argv = [
-            "--force",
+            # "--force",
             "--no-toc",
             # "--separate",
             "--module",

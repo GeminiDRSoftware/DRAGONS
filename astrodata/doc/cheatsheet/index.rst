@@ -3,6 +3,7 @@
    contain the root `toctree` directive.
    Manually edited by KL Tue Jan 17 2017
 
+=====================
 Astrodata Cheat Sheet
 =====================
 
