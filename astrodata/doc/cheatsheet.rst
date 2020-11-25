@@ -449,7 +449,6 @@ A |Table| as an |AstroData| object::
     >>> my_astropy_table = Table(list(np.random.rand(2,100)), names=['col1', 'col2'])
     >>> phu = fits.PrimaryHDU()
 
-    >>> astrodata.add_header_to_table(my_astropy_table)
     >>> ad = astrodata.create(phu)
     >>> ad.BOB = my_astropy_table
 

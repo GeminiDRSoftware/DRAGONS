@@ -489,7 +489,6 @@ example below will not run, though this is how it would be done.)
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
 
-    >>> astrodata.add_header_to_table(my_astropy_table)
     >>> ad.BOB = my_astropy_table
 
 
