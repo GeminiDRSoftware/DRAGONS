@@ -44,15 +44,15 @@ E.g.,::
 import gc
 import inspect
 import traceback
-from datetime import datetime
-
-from functools import wraps
+from contextlib import suppress
 from copy import copy, deepcopy
+from datetime import datetime
+from functools import wraps
 
 import geminidr
 from astrodata import AstroData
-from astrodata.provenance import add_provenance_history, clone_provenance, clone_provenance_history
-
+from astrodata.provenance import (add_provenance_history, clone_provenance,
+                                  clone_provenance_history)
 from gempy.utils import logutils
 from recipe_system.utils.md5 import md5sum
 
@@ -165,13 +165,14 @@ def _get_provenance_inputs(adinputs):
             provenance_history = ad.PROVENANCE_HISTORY.copy()
         else:
             provenance_history = []
-        retval[ad.data_label()] = \
-            {
-                "filename": ad.filename,
-                "md5": md5,
-                "provenance": provenance,
-                "provenance_history": provenance_history
-            }
+
+        retval[ad.data_label()] = {
+            "filename": ad.filename,
+            "md5": md5,
+            "provenance": provenance,
+            "provenance_history": provenance_history
+        }
+
     return retval
 
 
@@ -202,7 +203,7 @@ def _clone_provenance_deprecated(provenance_input, ad):
         ad.add_provenance(prov)
 
 
-def __top_level_primitive__():
+def _top_level_primitive():
     """ Check if we are at the top-level, not being called from another primitive.
 
     We only want to capture provenance history when we are passing through the
@@ -243,10 +244,6 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     --------
     none
     """
-    if not __top_level_primitive__():
-        # We're inside a primitive being called from another, we want to omit this
-        # from the provenance.  Only the recipe calls are relevant.
-        return
     try:
         timestamp = datetime.now()
         for ad in ret_value:
@@ -278,6 +275,10 @@ def parameter_override(fn):
     def gn(pobj, *args, **kwargs):
         pname = fn.__name__
 
+        # Determine if this is a top-level primitive, by checking if the
+        # calling function contains a self that is also a primitive
+        toplevel = _top_level_primitive()
+
         # for provenance information
         stringified_args = "%s" % kwargs
         timestamp_start = datetime.now()
@@ -295,22 +296,24 @@ def parameter_override(fn):
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
         set_logging(pname)
+
+        if toplevel:
+            for k, v in kwargs.items():
+                if k in params:
+                    log.warning(f'Parameter {k}={params[k]} was set but will '
+                                'be ignored because the recipe enforces a '
+                                'different value (={v})')
+
         # Override with values in the function call
-        for k, v in kwargs.items():
-            if k in params:
-                log.warning('Parameter {}={} was set but will be ignored '
-                            'because the recipe enforces a different value '
-                            '(={})'.format(k, params[k], v))
         params.update(kwargs)
+
         # config doesn't know about streams or adinputs
         instream = params.get('instream', params.get('stream', 'main'))
         outstream = params.get('outstream', params.get('stream', 'main'))
         adinputs = params.get('adinputs')
         for k in ('adinputs', 'stream', 'instream', 'outstream'):
-            try:
+            with suppress(KeyError):
                 del params[k]
-            except KeyError:
-                pass
         # Can update config now it only has parameters it knows about
         config.update(**params)
         config.validate()
@@ -324,12 +327,18 @@ def parameter_override(fn):
             else:
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])
+
             try:
-                provenance_inputs = _get_provenance_inputs(adinputs)
+                if toplevel:
+                    provenance_inputs = _get_provenance_inputs(adinputs)
+
                 fnargs = dict(config.items())
                 stringified_args = "%s" % fnargs
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
-                _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
+
+                if toplevel:
+                    _capture_provenance(provenance_inputs, ret_value,
+                                        timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise
@@ -338,12 +347,19 @@ def parameter_override(fn):
         else:
             if args:  # if not, adinputs has already been assigned from params
                 adinputs = args[0]
+
             try:
                 if isinstance(adinputs, AstroData):
-                    raise TypeError("Single AstroData instance passed to primitive, should be a list")
-                provenance_inputs = _get_provenance_inputs(adinputs)
+                    raise TypeError("Single AstroData instance passed to "
+                                    "primitive, should be a list")
+                if toplevel:
+                    provenance_inputs = _get_provenance_inputs(adinputs)
+
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-                _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
+
+                if toplevel:
+                    _capture_provenance(provenance_inputs, ret_value,
+                                        timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise
