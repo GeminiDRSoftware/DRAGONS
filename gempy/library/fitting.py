@@ -30,8 +30,9 @@ class fit_1D:
     vector along some axis of an N-dimensional image array, with iterative
     pixel rejection and re-fitting, similar to IRAF's fit1d.
 
-    The only interactivity currently supported is plotting for debugging
-    purposes; DRAGONS implements interaction via a separate wrapper.
+    Only simple, non-interactive plotting for inspection/debugging is
+    implemented here; DRAGONS provides interactive plotting via a separate
+    wrapper.
 
 
     Parameters
@@ -52,12 +53,14 @@ class fit_1D:
         The spline options may be 'spline1' (linear) to 'spline5' (quintic).
 
     order : `int` or `None`, optional
-        Order (number of terms or degree+1) of the fitting function (default
-        1). For spline fits, this is the maximum number of spline pieces,
-        which (if applicable) will be reduced in proportion to the number of
-        masked pixels for each fit. A value of `None` uses as many pieces as
+        Order/degree (ie. highest power, or number of terms minus one) for
+        polynomial fitting functions. For spline fits, this is the maximum
+        number of spline pieces, which (if applicable) will be reduced in
+        proportion to the number of masked pixels for each fit. The default of
+        0 always fits a constant. A value of `None` uses as many pieces as
         required to get chi^2=1 for spline fits, while for other functions it
-        maps to the default of 1.
+        maps to the default of 0. Note that the equivalent value for polynomial
+        functions in IRAF is 1 greater than with this definition.
 
     axis : `int`, optional
         Array axis along which to perform fitting (Python convention;
@@ -96,7 +99,7 @@ class fit_1D:
 
     """
 
-    def __init__(self, image, weights=None, function='legendre', order=1,
+    def __init__(self, image, weights=None, function='legendre', order=0,
                  axis=-1, sigma_lower=3.0, sigma_upper=3.0, niter=0,
                  grow=False, regions=None, plot=False):
 
@@ -117,7 +120,7 @@ class fit_1D:
         # AstroPy polynomials require an integer degree so map None to default:
         if (self.order is None and
             self.model_class is not UnivariateSplineWithOutlierRemoval):
-            self.order = 1
+            self.order = 0
 
         # Parse the sample regions or check that they're already slices:
         if not regions or isinstance(regions, str):
@@ -229,7 +232,7 @@ class fit_1D:
                         weights = weights[:, self._good_cols]
 
             model_set = self.model_class(
-                degree=(self.order - 1), n_models=n_models,
+                degree=self.order, n_models=n_models,
                 model_set_axis=(None if n_models == 1 else 1),
                 **self.model_args
             )
@@ -309,7 +312,7 @@ class fit_1D:
         else:
             self.mask = np.rollaxis(mask, -1, self.axis)
 
-        # TEST: Plot the fit:
+        # Plot the fit:
         if plot:
             self._plot(origim, index=None if plot is True else plot)
 

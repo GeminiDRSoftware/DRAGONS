@@ -71,7 +71,7 @@ class TestFit1D:
         """
 
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=2, axis=0,
+                          function='chebyshev', order=1, axis=0,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
@@ -99,25 +99,25 @@ class TestFit1D:
         """
 
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=2, axis=0,
+                          function='chebyshev', order=1, axis=0,
                           sigma_lower=3., sigma_upper=2.3, niter=5, grow=2,
                           plot=debug)()
 
         assert_allclose(fit_vals, self.sky, atol=15., rtol=0.015)
 
-    def test_chebyshev_def_ax_quintic(self):
+    def test_chebyshev_def_ax_quartic(self):
         """
         Fit object spectrum with Chebyshev polynomial, rejecting the sky.
         """
 
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=5,
+                          function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.025)
 
-    def test_chebyshev_ax1_quintic_grow2(self):
+    def test_chebyshev_ax1_quartic_grow2(self):
         """
         Fit object spectrum using higher thresholds than the last test to
         reject sky lines and grow=2 to compensate. Specify axis=1 explicitly,
@@ -125,31 +125,31 @@ class TestFit1D:
         """
 
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=5, axis=1,
+                          function='chebyshev', order=4, axis=1,
                           sigma_lower=3.7, sigma_upper=3.7, niter=5, grow=2,
                           plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
-    def test_chebyshev_single_quintic(self):
+    def test_chebyshev_single_quartic(self):
         """
         Fit object spectrum, rejecting the sky in a single 1D array.
         """
 
         fit_vals = fit_1D(self.data[16], weights=self.weights[16],
-                          function='chebyshev', order=5,
+                          function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
         assert_allclose(fit_vals, self.obj[16], atol=30., rtol=0.02)
 
-    def test_chebyshev_1_model_def_ax_quintic(self):
+    def test_chebyshev_1_model_def_ax_quartic(self):
         """
         Fit object spectrum in a single 1xN row, rejecting the sky.
         """
 
         fit_vals = fit_1D(self.data[16:17], weights=self.weights[16:17],
-                          function='chebyshev', order=5,
+                          function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
@@ -165,7 +165,7 @@ class TestFit1D:
         """
 
         fit_vals = fit_1D(self.data[:, 70:71], weights=self.weights[:, 70:71],
-                          function='chebyshev', order=2, axis=0,
+                          function='chebyshev', order=1, axis=0,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
@@ -178,7 +178,7 @@ class TestFit1D:
         """
 
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=2, axis=0, niter=0,
+                          function='chebyshev', order=1, axis=0, niter=0,
                           regions="1:10,23:30", plot=debug)()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
@@ -190,7 +190,7 @@ class TestFit1D:
         but passing a list of slice objects rather than a regions string).
         """
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=2, axis=0, niter=0,
+                          function='chebyshev', order=1, axis=0, niter=0,
                           regions=[slice(0, 10), slice(22, 30)],
                           plot=debug)()
 
@@ -221,25 +221,25 @@ class TestFit1D:
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
-    def test_legendre_ax1_quintic(self):
+    def test_legendre_ax1_quartic(self):
         """
         Fit object spectrum with Legendre polynomial, rejecting the sky.
         """
 
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='legendre', order=5, axis=1,
+                          function='legendre', order=4, axis=1,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
-    def test_chebyshev_def_ax_quintic_masked(self):
+    def test_chebyshev_def_ax_quartic_masked(self):
         """
         Fit masked object spectrum with Chebyshev polynomial, rejecting sky.
         """
 
         fit_vals = fit_1D(self.masked_data, weights=self.weights,
-                          function='chebyshev', order=5,
+                          function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
@@ -288,20 +288,20 @@ class TestFit1DCube:
         self.weights = 1. / std
         # fits.writeto('testsim3.fits', data)
 
-    def test_chebyshev_ax0_quintic(self):
+    def test_chebyshev_ax0_quartic(self):
         """
         Fit object spectrum in x-y-lambda cube with Chebyshev polynomial,
         rejecting the sky.
         """
 
         fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=5, axis=0,
+                          function='chebyshev', order=4, axis=0,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
         assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
 
-    def test_chebyshev_def_ax_quintic(self):
+    def test_chebyshev_def_ax_quartic(self):
         """
         Fit object spectrum in transposed lambda-y-x cube with Chebyshev
         polynomial, rejecting the sky.
@@ -313,7 +313,7 @@ class TestFit1DCube:
         # too short to have clean sky regions.
 
         fit_vals = fit_1D(self.data.T, weights=self.weights.T,
-                          function='chebyshev', order=5,
+                          function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug)()
 
