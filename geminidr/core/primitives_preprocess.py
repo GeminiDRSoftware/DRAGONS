@@ -7,12 +7,13 @@ import math
 import datetime
 import numpy as np
 from copy import deepcopy
+from functools import partial
+
 from scipy.ndimage import binary_dilation, filters
 from astropy.table import Table
 from astropy.convolution import convolve
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
 from astrodata.provenance import add_provenance
 
 from gempy.gemini import gemini_tools as gt
@@ -1241,6 +1242,8 @@ class Preprocess(PrimitivesBASE):
                         "Setting offset_sky=False.")
             zero = False
 
+        skyfunc = partial(gt.measure_bg_from_image, value_only=True)
+
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):
             if ad.phu.get(timestamp_key):
@@ -1251,35 +1254,30 @@ class Preprocess(PrimitivesBASE):
 
             if ad_sky is not None:
                 # Only call measure_bg_from_image if we need it
-                if reset_sky or scale or zero:
-                    old_bg = gt.measure_bg_from_image(ad, value_only=True)
-                log.stdinfo("Subtracting the image ({}) from the science "
-                            "AstroData object {}".
-                            format(ad_sky.filename, ad.filename))
+                if reset_sky:
+                    orig_bg = skyfunc(ad)
+                log.stdinfo(f"Subtracting {ad_sky.filename} from "
+                            f"the science frame {ad.filename}")
                 if scale or zero:
-                    sky_bg = gt.measure_bg_from_image(ad_sky, value_only=True)
-                    for ext_sky, final_bg, init_bg in zip(ad_sky, old_bg, sky_bg):
-                        if scale:
-                            ext_sky *= final_bg / init_bg
-                        else:
-                            ext_sky += final_bg - init_bg
-                        log.fullinfo("Applying {} to EXTVER {} from {} to {}".
-                                format(("scaling" if scale else "zeropoint"),
-                                       ext_sky.hdr['EXTVER'], init_bg, final_bg))
+                    factors = [gt.sky_factor(ext, ext_sky, skyfunc, multiplicative=scale)
+                               for ext, ext_sky in zip(ad, ad_sky)]
+                    for ext_sky, factor in zip(ad_sky, factors):
+                        log.fullinfo("Applying {} of {} to EXTVER {}".
+                                format("scaling" if scale else "offset",
+                                       factor, ext_sky.hdr['EXTVER']))
+                else:
+                    ad.subtract(ad_sky)
                 if save_sky:
                     #ad_sky.update_filename(suffix='_skyimage', strip=True)
                     self.writeOutputs([ad_sky])
-                ad.subtract(ad_sky)
                 if reset_sky:
-                    new_bg = gt.measure_bg_from_image(ad, value_only=True)
-                    for ext, new_level, old_level in zip(ad, new_bg, old_bg):
-                        sky_offset = old_level - new_level
-                        log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
+                    for ext, bg in zip(ad, orig_bg):
+                        log.stdinfo("  Adding {} to {}:{}".format(bg,
                                             ad.filename, ext.hdr['EXTVER']))
-                        ext.add(sky_offset)
+                        ext.add(bg)
             else:
-                log.warning("No changes will be made to {}, since no "
-                            "sky was specified".format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since no sky was specified")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

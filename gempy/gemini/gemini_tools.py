@@ -1620,6 +1620,49 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         ext.WAVECAL = table
     return ad
 
+def sky_factor(nd1, nd2, skyfunc, multiplicative=False, threshold=0.001):
+    """
+    This function determines the corrective factor (either additive or
+    multiplicative) to apply to a sky frame so that, when subtracted from a
+    science frame, the resulting background level is zero. The science
+    NDAstroData object is modified, the sky NDAstroData object is returned
+    to its original state. A multiplicative correction requires an iterative
+    method, which converges once the changes are less than a given fraction
+    of the original sky frame.
+
+    Parameters
+    ----------
+    nd1 : NDAstroData
+        the "science" frame
+    nd2 : NDAstroData
+        the "sky" frame
+    skyfunc : callable
+        function to determine sky level
+    multiplicative : bool
+        compute multiplicative rather than additive factor?
+    threshold : float
+        accuracy of sky subtraction relative to original sky level
+
+    Returns
+    -------
+    float : factor to apply to "sky" to match "science"
+    """
+    factor = 0
+    if multiplicative:
+        current_sky = 1
+        ndcopy = deepcopy(nd1)
+        while abs(current_sky) > threshold:
+            f = skyfunc(ndcopy) / skyfunc(nd2)
+            ndcopy.subtract(nd2.multiply(f))
+            current_sky *= f
+            factor += current_sky
+        nd1.subtract(nd2.multiply(factor / current_sky))
+        nd2.divide(factor)  # reset to original value
+    else:
+        factor = skyfunc(nd1.subtract(nd2))
+        nd1.subtract(factor)
+    return factor
+
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
