@@ -17,12 +17,20 @@ def testnd():
     shape = (5, 5)
     hdr = fits.Header({'CRPIX1': 1, 'CRPIX2': 2})
     nd = NDAstroData(data=np.arange(np.prod(shape)).reshape(shape),
-                     uncertainty=ADVarianceUncertainty(np.ones(shape) + 0.5),
+                     variance=np.ones(shape) + 0.5,
                      mask=np.zeros(shape, dtype=bool),
                      wcs=WCS(header=hdr),
                      unit='ct')
     nd.mask[3, 4] = True
     return nd
+
+
+def test_var(testnd):
+    data = np.zeros(5)
+    var = np.array([1.2, 2, 1.5, 1, 1.3])
+    nd1 = NDAstroData(data=data, uncertainty=ADVarianceUncertainty(var))
+    nd2 = NDAstroData(data=data, variance=var)
+    assert_array_equal(nd1.variance, nd2.variance)
 
 
 def test_window(testnd):
@@ -42,9 +50,7 @@ def test_windowedOp(testnd):
         data = np.array([arr.data for arr in arrays]).sum(axis=0)
         unc = np.array([arr.uncertainty.array for arr in arrays]).sum(axis=0)
         mask = np.array([arr.mask for arr in arrays]).sum(axis=0)
-        return NDAstroData(data=data,
-                           uncertainty=ADVarianceUncertainty(unc),
-                           mask=mask)
+        return NDAstroData(data=data, variance=unc, mask=mask)
 
     result = windowedOp(stack, [testnd, testnd],
                         kernel=(3, 3),
@@ -77,19 +83,25 @@ def test_set_section(testnd):
     assert_array_equal(testnd[:2, 1:3].variance, 1)
 
 
-def test_variance_uncertainty_warn_if_there_are_any_negative_numbers():
-    arr = np.zeros((5, 5))
-    arr[2, 2] = -0.001
+def test_uncertainty_negative_numbers():
+    arr = np.zeros(5)
+
+    # No warning if all 0
+    with pytest.warns(None) as w:
+        ADVarianceUncertainty(arr)
+    assert len(w) == 0
+
+    arr[2] = -0.001
 
     with pytest.warns(RuntimeWarning, match='Negative variance values found.'):
         result = ADVarianceUncertainty(arr)
 
     assert not np.all(arr >= 0)
     assert isinstance(result, ADVarianceUncertainty)
-    assert result.array[2, 2] == 0
+    assert result.array[2] == 0
 
     # check that it always works with a VarianceUncertainty instance
-    result.array[2, 2] = -0.001
+    result.array[2] = -0.001
 
     with pytest.warns(RuntimeWarning, match='Negative variance values found.'):
         result2 = ADVarianceUncertainty(result)
@@ -97,14 +109,7 @@ def test_variance_uncertainty_warn_if_there_are_any_negative_numbers():
     assert not np.all(arr >= 0)
     assert not np.all(result.array >= 0)
     assert isinstance(result2, ADVarianceUncertainty)
-    assert result2.array[2, 2] == 0
-
-
-def test_new_variance_uncertainty_instance_no_warning_if_the_array_is_zeros():
-    arr = np.zeros((5, 5))
-    with pytest.warns(None) as w:
-        ADVarianceUncertainty(arr)
-    assert len(w) == 0
+    assert result2.array[2] == 0
 
 
 def test_wcs_slicing():
