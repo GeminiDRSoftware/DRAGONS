@@ -149,7 +149,8 @@ def table_to_bintablehdu(table, extname=None):
     """
     table_header = table.meta.pop('header', None)
     hdu = fits.table_to_hdu(table)
-    update_header(hdu.header, table_header)
+    if table_header is not None:
+        update_header(hdu.header, table_header)
     if extname:
         hdu.header['EXTNAME'] = (extname, 'added by AstroData')
     return hdu
