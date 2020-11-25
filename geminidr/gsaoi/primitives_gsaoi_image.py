@@ -153,8 +153,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                                 incoords, refcoords, order=order,
                                                 max_iters=max_iters,
                                                 match_radius=final, log=self.log)
-                    n_corr = np.sum(matched >= 0)
-                    log.fullinfo("Number of correlated sources: {}".format(n_corr))
+                    num_matched = np.sum(matched >= 0)
+                    log.stdinfo("Number of correlated sources: {}".format(num_matched))
                     log.fullinfo("\nMatched sources:  Ref. ext Ref. x  Ref. y  "
                                  "Img. ext Img. x  Img. y\n  {}".format("-" * 31))
                     #xmatched = np.full((len(objcat),), -999, dtype=float)
@@ -313,7 +313,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                     transform(objcat['X_STATIC'], objcat['Y_STATIC']),
                                     radius=final)
             num_matched = np.sum(matched >= 0)
-            log.stdinfo(f"Matched {num_matched} objects")
+            log.stdinfo(f"Initial match: {num_matched} objects")
 
             if num_matched > 0:
                 if num_matched > 2:
@@ -322,6 +322,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                                 (xref, yref), order=order,
                                                 max_iters=max_iters,
                                                 match_radius=final, log=self.log)
+                    num_matched = np.sum(matched >= 0)
+                    log.stdinfo(f"Final match: {num_matched} objects")
                 else:
                     log.warning("Insufficient matches to perform distortion "
                                 "correction - performing simple alignment only."
@@ -626,7 +628,7 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
         num_matched = np.sum(matched >= 0)
         last_order = order
         niter += 1
-        log.stdinfo(f"Iteration {niter}: Matched {num_matched} objects")
+        log.debug(f"Iteration {niter}: Matched {num_matched} objects")
         if num_matched == old_num_matched or niter > max_iters:
             break
     xmodel_inv = fit_it(xmodel, np.array(xref_matched), np.array(yref_matched), xobj_matched)
