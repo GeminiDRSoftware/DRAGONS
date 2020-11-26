@@ -87,7 +87,7 @@ def userpar_override(pname, args, upars):
     for key, val in list(upars.items()):
         if ':' in key:
             prim, par = key.split(':')
-            if prim == pname and par in args:
+            if prim == pname:
                 parset.update({par: val})
         elif key in args:
             parset.update({key: val})
