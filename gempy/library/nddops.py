@@ -87,9 +87,7 @@ def stack_nddata(fn):
             instance, data=data, mask=mask, variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
-        ret_value = NDAstroData(out_data, mask=out_mask)
-        if out_var is not None:
-            ret_value.variance = out_var
+        ret_value = NDAstroData(out_data, mask=out_mask, variance=out_var)
         if rejmap is not None:
             ret_value.meta['other'] = {'REJMAP': NDAstroData(rejmap)}
         return ret_value
