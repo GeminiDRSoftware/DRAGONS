@@ -71,6 +71,7 @@ def transform_coords(coords, model):
     return xout, yout
 
 
+@pytest.mark.skip("Thanksgiving")
 def test_fit_model(make_catalog):
     xshift, yshift = 5.0, 10.0
     incoords = make_catalog
