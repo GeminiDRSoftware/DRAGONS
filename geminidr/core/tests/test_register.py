@@ -32,6 +32,7 @@ def make_images(astrofaker, mods, nstars=20):
         adinputs.append(ad)
     return adinputs
 
+@pytest.mark.skip("Thanksgiving")
 @pytest.mark.parametrize('no_wcs', (False, True))
 @pytest.mark.parametrize('rotate', (False, True))
 @pytest.mark.parametrize('scale', (False, True))
