@@ -1011,10 +1011,9 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
     tobj.write('obj.fits', format='fits', overwrite=True)
     tref.write('ref.fits', format='fits', overwrite=True)
 
-    # Perform the fit. We expect sigma ~ 10 pixels, so the tolerance
-    # here is ~ 0.001 pixels, which is fine
+    # Tolerance here aims to achieve <0.1 pixel differences in the tests
     m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
-                        brute=brute, tolerance=sigma*1e-4)
+                        brute=brute, tolerance=sigma*1e-5)
     if return_matches:
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
