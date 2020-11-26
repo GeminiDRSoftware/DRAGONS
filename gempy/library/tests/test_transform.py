@@ -9,9 +9,7 @@ from geminidr.gmos.lookups import geometry_conf as geotable
 
 @models.custom_model
 def InverseQuadratic1D(x, c0=0, c1=0, c2=0):
-    if c1 * c1 > 4 * c2 * (c0 - x):
-        return 0.5 * (np.sqrt(c1*c1 - 4*c2*(c0-x)) - c1) / c2
-    return 0
+    return 0.5 * (np.sqrt(c1*c1 - 4*c2*(c0-x)) - c1) / c2
 
 # Star locations: Use unique y values to enable sorting
 GMOS_STAR_LOCATIONS = ((200, 50), (204, 450), (4000, 50), (4004, 450))
@@ -82,7 +80,6 @@ def test_2d_affine_transform():
     assert np.array_equal(x[1:-1, 1:-1], y)
 
 
-@pytest.mark.skip("Thanksgiving")
 def test_1d_nonaffine_transform():
     """Test a more complex 1D transform with and without flux conservation"""
     triangle = models.Polynomial1D(degree=2, c0=0, c1=0.5, c2=0.5)
@@ -109,7 +106,6 @@ def test_1d_nonaffine_transform():
     assert np.allclose(x[5:-1], y, rtol=0.005)
 
 
-@pytest.mark.skip("Thanksgiving")
 def test_2d_nonaffine_transform():
     """Test a more complex 2D transform with and without flux conservation"""
     triangle = models.Polynomial1D(degree=2, c0=0, c1=0.5, c2=0.5)
