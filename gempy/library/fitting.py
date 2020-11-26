@@ -228,7 +228,8 @@ class fit_1D:
         # Record intermediate array properties for later evaluation of models
         # onto the same grid, where only a subset of rows/cols may have been
         # fitted due to some being entirely masked:
-        self._stack_shape, self._dtype = image.shape, image.dtype
+        self._stack_shape = image.shape
+        self._dtype = image.dtype if image.dtype.kind == 'f' else np.float32
 
         # Create a full-sized mask within which the fitter will populate the
         # user-specified region(s) and the rest will remain masked out:
@@ -395,18 +396,18 @@ class fit_1D:
         ----------
 
         points : array-like, optional
-            1D input array containing the points along `self.axis` at which
-            the fitted models are to be evaluated. If this argument is not
-            specified, the fit will be sampled at the same points as the
-            original input `image` to which it was performed.
+            1D input array containing the 0-indexed points along `self.axis`
+            at which the fitted models are to be evaluated. If this argument
+            is not specified, the fit will be sampled at the same points as
+            the original input `image` to which it was performed.
 
         Returns
         -------
 
         fitvals : `numpy.ndarray`
-            Array of fitted model values, sampled at `points` along the fitted
-            `axis` and matching the shape of the original input `image` to
-            which the fit was performed along any other axes.
+            Floating-point array of fitted model values, sampled at `points`
+            along the fitted `axis` and matching the shape of the original
+            input `image` to which the fit was performed along any other axes.
 
         """
         astropy_model = isinstance(self._models, Model)
