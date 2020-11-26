@@ -790,7 +790,7 @@ class GeoMap:
         transformed = (self._transform(*grids)[::-1] if len(shape) > 1
                        else self._transform(grids))
         #self.coords = [coord.astype(np.float32) for coord in transformed]
-        self.coords = transformed
+        self.coords = transformed  # Y then X
 
     def affinity(self):
         """
@@ -833,7 +833,6 @@ class DataGroup:
             self._transforms = copy.deepcopy(transforms)
             self._arrays = arrays
         self.no_data = {}
-        self.output_dict = {}
         self.output_shape = None
         self.origin = None
         self.log = logutils.get_logger(__name__)
@@ -866,8 +865,8 @@ class DataGroup:
         self._arrays.append(array)
         self._transforms.append(copy.deepcopy(transform))
 
-    def calculate_output_shape(self, additional_array_shapes=[],
-                               additional_transforms=[]):
+    def calculate_output_shape(self, additional_array_shapes=None,
+                               additional_transforms=None):
         """
         This method sets the output_shape and origin attributes of the
         DataGroup. output_shape is the shape that fully encompasses all of
@@ -886,8 +885,11 @@ class DataGroup:
         additional_transforms: list
             additional transforms, one for each of additional_array_shapes
         """
-        array_shapes = [arr.shape for arr in self.arrays] + additional_array_shapes
-        transforms = self.transforms + additional_transforms
+        array_shapes = [arr.shape for arr in self.arrays]
+        transforms = self.transforms
+        if additional_array_shapes:
+            array_shapes += additional_array_shapes
+            transforms += additional_transforms
         if len(array_shapes) != len(transforms):
             raise self.UnequalError
         all_corners = []
@@ -896,6 +898,8 @@ class DataGroup:
         for array_shape, transform in zip(array_shapes, transforms):
             corners = np.array(at.get_corners(array_shape)).T[::-1]
             trans_corners = transform(*corners)
+            if len(array_shape) == 1:
+                trans_corners = (trans_corners,)
             all_corners.extend(corner[::-1] for corner in zip(*trans_corners))
         limits = [(int(np.ceil(min(c))), int(np.floor(max(c))) + 1)
                   for c in zip(*all_corners)]
@@ -962,6 +966,7 @@ class DataGroup:
         -------
         dict: {key: array} of arrays containing the transformed attributes
         """
+        self.output_dict = {}
         if parallel:
             processes = []
             process_keys = []
@@ -1019,7 +1024,7 @@ class DataGroup:
                     # derivatives so expand the output pixel grid.
                     if conserve:
 
-                        self.log.warning("Flux conservation has not been fully"
+                        self.log.warning("Flux conservation has not been fully "
                                          "tested for non-affine transforms")
 
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
@@ -1032,14 +1037,17 @@ class DataGroup:
                         for num_axis in range(ndim):
                             coords = jacobian_mapping.coords[num_axis]
                             for denom_axis in range(ndim):
+                                # We're numerically estimating the partial
+                                # derivatives 2*dx/dx', 2*dx/dy', etc., multiplied
+                                # by 1/subsample
                                 diff_coords = coords - np.roll(coords, 2, axis=denom_axis)
                                 slice_ = [slice(1, -1)] * ndim
                                 slice_[denom_axis] = slice(2, None)
                                 # Account for the fact that we are measuring
                                 # differences in the subsampled plane
-                                det_matrices[num_axis, denom_axis] = 2. / (
-                                    diff_coords[tuple(slice_)].flatten() * subsample)
-                        jfactor = 1. / abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
+                                det_matrices[num_axis, denom_axis] = (0.5 * subsample *
+                                    diff_coords[tuple(slice_)].flatten())
+                        jfactor = abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
                         # Delete the extra Shift(1) and put a better jfactor in the list
                         del transform[-1]
                         self.jfactors[-1] = np.mean(jfactor)

@@ -33,8 +33,8 @@ ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
 
 @models.custom_model
-def CumGauss1D(x, mean=0.0, stddev=1.0):
-    return 0.5*(1.0+erf((x-mean) / (1.414213562*stddev)))
+def Ogive(x, mean=0.0, stddev=1.0, lowfrac=1.0):
+    return 0.5 / lowfrac * (1.0 + erf((x - mean) / (1.414213562 * stddev)))
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -1354,6 +1354,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         such things
     """
     # Handle NDData objects (or anything with .data and .mask attributes
+    maxiter = 10
     try:
         single = ad.is_single
     except AttributeError:
@@ -1377,25 +1378,34 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
                     else getattr(ext, 'OBJMASK', None)
             bg_data = ext.data.ravel()
 
-        if flags is None:
-            bg_data = bg_data[::sampling]
-        else:
-            bg_data = bg_data[flags.ravel()==0][::sampling]
+        if flags is not None:
+            bg_data = bg_data[flags.ravel() == 0][::sampling]
 
         if len(bg_data) > 0:
             if gaussfit:
-                # An ogive fit is more robust than a histogram fit
-                bg_data = np.sort(bg_data)
-                bg = np.median(bg_data)
-                bg_std = 0.5*(np.percentile(bg_data, 84.13) -
-                              np.percentile(bg_data, 15.87))
-                g_init = CumGauss1D(bg, bg_std)
-                fit_g = fitting.LevMarLSQFitter()
-                g = fit_g(g_init, bg_data, np.linspace(0.,1.,len(bg_data)+1)[1:])
-                bg, bg_std = g.mean.value, abs(g.stddev.value)
+                frac = 0.55
+                datamax = np.percentile(bg_data, frac * 100)
+                bg, bg_std = np.median(bg_data), np.std(bg_data)
+                bg_data = np.sort(bg_data[bg_data < datamax])[::sampling]
+                niter = 0
+                while True:
+                    oldbg, oldbg_std = bg, bg_std
+                    g_init = Ogive(bg, bg_std, frac)
+                    g_init.lowfrac.bounds = (0.001, 0.999)
+                    fit_g = fitting.LevMarLSQFitter()
+                    g = fit_g(g_init, bg_data, np.linspace(0., 1., bg_data.size + 1)[1:])
+                    bg, bg_std = g.mean.value, abs(g.stddev.value)
+                    if abs(bg - oldbg) < 0.001 * bg_std or niter > maxiter:
+                        break
+                    # Remove brightest pixels if we're sampling too much
+                    # to the bright side of the peak
+                    if g.lowfrac.value > 0.9:
+                        bg_data = bg_data[:int(0.9 * bg_data.size)]
+                    bg_data = bg_data[bg_data < bg + bg_std * 0.5]
+                    niter += 1
             else:
                 # Sigma-clipping will screw up the stats of course!
-                bg_data = sigma_clip(bg_data, sigma=2.0, maxiters=2)
+                bg_data = sigma_clip(bg_data[::sampling], sigma=2.0, maxiters=2)
                 bg_data = bg_data.data[~bg_data.mask]
                 bg = np.median(bg_data)
                 bg_std = np.std(bg_data)
@@ -1619,6 +1629,49 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         ext.WAVECAL = table
     return ad
 
+
+def sky_factor(nd1, nd2, skyfunc, multiplicative=False, threshold=0.001):
+    """
+    This function determines the corrective factor (either additive or
+    multiplicative) to apply to a sky frame so that, when subtracted from a
+    science frame, the resulting background level is zero. The science
+    NDAstroData object is modified, the sky NDAstroData object is returned
+    to its original state. A multiplicative correction requires an iterative
+    method, which converges once the changes are less than a given fraction
+    of the original sky frame.
+
+    Parameters
+    ----------
+    nd1 : NDAstroData
+        the "science" frame
+    nd2 : NDAstroData
+        the "sky" frame
+    skyfunc : callable
+        function to determine sky level
+    multiplicative : bool
+        compute multiplicative rather than additive factor?
+    threshold : float
+        accuracy of sky subtraction relative to original sky level
+
+    Returns
+    -------
+    float : factor to apply to "sky" to match "science"
+    """
+    factor = 0
+    if multiplicative:
+        current_sky = 1
+        ndcopy = deepcopy(nd1)
+        while abs(current_sky) > threshold:
+            f = skyfunc(ndcopy) / skyfunc(nd2)
+            ndcopy.subtract(nd2.multiply(f))
+            current_sky *= f
+            factor += current_sky
+        nd1.subtract(nd2.multiply(factor / current_sky))
+        nd2.divide(factor)  # reset to original value
+    else:
+        factor = skyfunc(nd1.subtract(nd2))
+        nd1.subtract(factor)
+    return factor
 
 # FIXME: unused ?
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):

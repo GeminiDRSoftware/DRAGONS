@@ -11,15 +11,16 @@
 If switching to new versions of Python under anaconda, you may need to run
 this command again under the new environment.::
 
-    $ cythonize -i cyclip.pyx
+    $ cythonize -i cython_utils.pyx
 
 """
-
 import numpy as np
 cimport cython
 from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free
 
+# These functions are used by nddops.py for combining images, especially
+# in the stackFrames() primitive
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -268,3 +269,31 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
     free(tmpmask)
 
     return np.asarray(data), np.asarray(mask), np.asarray(variance)
+
+##############################################################
+# The following function is used by the BruteLandscapeFitter()
+
+def landstat(double [:] landscape, int [:] coords, int [:] len_axes,
+             int num_axes, int num_coords):
+    cdef int c, coord, i, j, l, ok
+    cdef float sum=0.
+    cdef int sum2=0
+
+    for i in range(num_coords):
+        c = i
+        ok = 1
+        l = 0
+        for j in range(num_axes-1, -1, -1):
+            coord = coords[c]
+            if coord >=0 and coord < len_axes[j]:
+                if j < num_axes - 1:
+                    l += coord * len_axes[j+1]
+                else:
+                    l += coord
+            else:
+                ok = 0
+            c += num_coords
+        if ok:
+            sum += landscape[l]
+
+    return sum

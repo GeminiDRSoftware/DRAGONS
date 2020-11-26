@@ -3,11 +3,12 @@
 #
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
+import os
 import numpy as np
 import warnings
 
 from astropy.stats import sigma_clip
-from astropy.table import Column
+from astropy.table import Table, Column
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -33,11 +34,15 @@ class Photometry(PrimitivesBASE):
 
     def addReferenceCatalog(self, adinputs=None, **params):
         """
-        This primitive calls the gemini_catalog_client module to query a
-        catalog server and construct a fits table containing the catalog data
+        This primitive attaches a reference catalog to each AstroData input
+        as a top-level Table called "REFCAT'. The user can supply the name
+        of a file on disk or one of a specific list of catalogs (2mass, gmos,
+        sdss9, or ukidss9) for which a query will be made via the
+        gemini_catalog_client module.
 
-        That module will query either gemini catalog servers or vizier.
-        Currently, sdss9 and 2mass (point source catalogs are supported.
+        If a catalog server is queried, sources within a circular region of
+        the sky will be added. If a file on disk is used as the reference
+        catalog, it is attached in full to each file.
 
         For example, with sdss9, the FITS table has the following columns:
 
@@ -59,23 +64,43 @@ class Photometry(PrimitivesBASE):
         With 2mass, the first 4 columns are the same, but the photometry
         columns reflect the J H and K bands.
 
-        This primitive then adds the fits table catalog to the Astrodata
-        object as 'REFCAT'
-
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
         radius: float
             search radius (in degrees)
-        source: str
-            identifier for server to be used for catalog search
+        source: str/None
+            identifier for server to be used for catalog search or filename
+        format: str/None
+            format of catalog on disk (passed to Table.read())
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         source = params["source"]
         radius = params["radius"]
+        format = params["format"]
+
+        if source is None:
+            log.stdinfo("No source provided for reference catalog.")
+            return adinputs
+
+        if os.path.isfile(source):
+            try:
+                user_refcat = Table.read(source, format=format)
+                log.stdinfo(f"Successfully read reference catalog {source}")
+                # Allow raw SExtractor catalog to be used
+                if not {'RAJ2000', 'DEJ2000'}.issubset(user_refcat.colnames):
+                    if {'X_WORLD', 'Y_WORLD'}.issubset(user_refcat.colnames):
+                        log.stdinfo("Renaming X_WORLD, Y_WORLD to RAJ2000, DEJ2000")
+                        user_refcat.rename_column('X_WORLD', 'RAJ2000')
+                        user_refcat.rename_column('Y_WORLD', 'DEJ2000')
+            except:
+                log.warning(f"File {source} exists but cannot be read - continuing")
+                return adinputs
+        else:
+            user_refcat = None
 
         for ad in adinputs:
             try:
@@ -95,11 +120,14 @@ class Photometry(PrimitivesBASE):
                 else:
                     raise
 
-            log.fullinfo(f"Querying {source} for reference catalog, "
-                         f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                refcat = get_fits_table(source, ra, dec, radius)
+            if user_refcat:
+                refcat = user_refcat.copy()
+            else:
+                log.fullinfo(f"Querying {source} for reference catalog, "
+                             f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    refcat = get_fits_table(source, ra, dec, radius)
 
             if refcat is None:
                 log.stdinfo("No reference catalog sources found for {}".

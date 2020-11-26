@@ -216,8 +216,8 @@ if use_cython:
 else:
     suffix = 'c'
 cyextensions = [Extension(
-    "gempy.library.cyclip",
-    [os.path.join('gempy', 'library', 'cyclip.' + suffix)],
+    "gempy.library.cython_utils",
+    [os.path.join('gempy', 'library', 'cython_utils.' + suffix)],
 ),
 ]
 if use_cython:
