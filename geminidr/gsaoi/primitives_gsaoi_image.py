@@ -84,13 +84,13 @@ class GSAOIImage(GSAOI, Image, Photometry):
             return adinputs
 
         initial = params["first_pass"]
+        final = params["final"]
         min_sources = params["min_sources"]
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
         scale = params["scale"]
         order = params["order"]
         max_iters = params["max_iters"]
-        final = 0.1
 
         self._attach_static_distortion(adinputs)
 
@@ -114,6 +114,10 @@ class GSAOIImage(GSAOI, Image, Photometry):
         # but we can't check that
         ref_transform = adref[0].wcs.pipeline[-2].transform
 
+        # This means a warning will be triggered if images have a rotation that
+        # differs by an amount large enough to avoid an object-to-object match
+        faux_shape = (4000 / (final / adref.pixel_scale()),) * 2
+
         for ad in adinputs[1:]:
             objcat = merge_gsaoi_objcats(ad, cull_sources=cull_sources)
             incoords = (objcat['X_STATIC'], objcat['Y_STATIC'])
@@ -124,24 +128,30 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 log.stdinfo(f"Matching sources between {ad.filename} and "
                             f"{adref.filename} using distortion determined "
                             "by determineAstrometricSolution.")
+                # This order will assign the closest OBJCAT to each REFCAT source
+                matched = match_sources(refcoords, transform(*incoords),
+                                        radius=final)
             else:
                 log.stdinfo("Cross-correlating sources between "
                             f"{ad.filename} and {adref.filename}")
                 transform = find_alignment_transform(incoords, refcoords, transform=transform,
-                                                     shape=(5000, 5000), search_radius=initial,
+                                                     shape=faux_shape, search_radius=initial,
                                                      rotate=rotate, scale=scale,
                                                      sigma=0.2, factor=1/0.02, brute=True)
+                # This order will assign the closest OBJCAT to each REFCAT source
+                matched = match_sources(refcoords, transform(*incoords),
+                                        radius=final)
+                num_matched = np.sum(matched >= 0)
+                if (rotate or scale) and num_matched < min_sources + rotate + scale:
+                    log.warning(f"Too few correlated objects ({num_matched}). "
+                                "Setting rotate=False, scale=False")
+                    transform = find_alignment_transform(incoords, refcoords, transform=transform,
+                                                         shape=faux_shape, rotate=False, scale=False,
+                                                         sigma=0.2, factor=1/0.02, brute=True)
+                    matched = match_sources(refcoords, transform(*incoords),
+                                            radius=final)
 
-            # This order will assign the closest OBJCAT to each REFCAT source
-            matched = match_sources(refcoords, transform(*incoords),
-                                    radius=final)
             num_matched = np.sum(matched >= 0)
-            if (rotate or scale) and num_matched < min_sources + rotate + scale:
-                log.warning(f"Too few correlated objects ({num_matched}). "
-                            "Setting rotate=False, scale=False")
-                transform = find_alignment_transform(incoords, refcoords, transform=transform,
-                                                     shape=(5000, 5000), rotate=False, scale=False,
-                                                     sigma=0.2, factor=1/0.02, brute=True)
             if num_matched < min_sources:
                 log.warning(f"Too few correlated sources ({num_matched}). "
                             "Cannot adjust WCS.")
