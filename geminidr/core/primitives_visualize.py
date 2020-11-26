@@ -450,7 +450,7 @@ class Visualize(PrimitivesBASE):
                         #ext.wcs.insert_frame(ext.wcs.input_frame, ext_shift,
                         #                     Frame2D(name="tile"))
                         ext.wcs = gWCS([(ext.wcs.input_frame, ext_shift),
-                                        (Frame2D(name="tile"), ext.wcs.pipeline[0][1])] +
+                                        (Frame2D(name="tile"), ext.wcs.pipeline[0].transform)] +
                                        ext.wcs.pipeline[1:])
                         ext.wcs.insert_transform('tile', ext_shift.inverse, after=True)
 
