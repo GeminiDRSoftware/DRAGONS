@@ -214,6 +214,7 @@ class Resample(PrimitivesBASE):
 
         # pop the params so we can pass the rest of the dict to helper method
         shifts_param = params.pop("shifts")
+        trim_data = params.pop("trim_data")
         sfx = params.pop("suffix")
 
         # TODO: Maybe remove this requirement
@@ -221,9 +222,9 @@ class Resample(PrimitivesBASE):
             raise OSError("All input images must have only one extension.")
 
         # Ill-defined behaviour for this situation so
-        if len(adinputs) == 1 and not params["trim_data"]:
+        if len(adinputs) == 1 and not trim_data:
             log.warning("Setting trim_data=True since there is only one input frame")
-            params["trim_data"] = True
+            trim_data = True
 
         # Check we can get some numerical shifts and that the number is
         # compatible with the number of images
@@ -249,6 +250,11 @@ class Resample(PrimitivesBASE):
         elif num_shifts != num_images:
             raise ValueError(f"Number of shifts ({num_shifts}) incompatible "
                              f"with number of images ({num_images})")
+
+        if trim_data:
+            reference = adinputs[0]
+            params.update({'origin': (0,) * len(reference[0].shape),
+                           'output_shape': reference[0].shape})
 
         for ad, shift in zip(adinputs, shifts):
             if len(shift) != len(ad[0].shape):
