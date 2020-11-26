@@ -296,7 +296,6 @@ class fit_1D:
             # If there are no weights, produce a None for every row:
             weights = iter(lambda: None, True) if weights is None else weights
 
-            user_masked = ~user_reg
             fitted_models = []
 
             for n, (imrow, wrow) in enumerate(zip(image, weights)):
@@ -446,8 +445,6 @@ class fit_1D:
             for n, single_model in enumerate(self._models):
                 # Determine model values to be returned (see comment in _fit
                 # about discarding values stored in the spline object):
-                # fitvals[n][user_reg] = single_model.data
-                # fitvals[n][user_masked] = single_model(points[user_masked])
                 fitvals[n] = single_model(points)
 
         # Restore the ordering & shape of the original input array:
