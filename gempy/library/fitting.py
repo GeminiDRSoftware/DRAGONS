@@ -43,7 +43,7 @@ class fit_1D:
         it is a `numpy.ma.MaskedArray`, any masked points are ignored when
         fitting.
 
-    weights : `ndarray`, optional
+    weights : `~numpy.ndarray`, optional
         N-dimensional input array containing fitting weights for each point.
         The weights will be ignored for a given 1D fit if all zero, to allow
         processing regions without data (in progress: splines only).
@@ -96,6 +96,30 @@ class fit_1D:
         omitted, eg. (24, 34) would fit the central spectrum of an IFU data cube
         with shape (2822, 49, 68). For 2D data only, a single row/column number
         may be provided without parentheses. The default is `False` (no plot).
+
+    Attributes
+    ----------
+
+    The arguments that control fitting and rejection (`function`, `order`,
+    `axis`, `sigma_lower`, `sigma_upper`, `niter`, `grow` and `regions`) are
+    stored in like-named attributes, in addition to which the following are
+    defined:
+
+    mask : `~numpy.ndarray`
+        A Boolean mask matching the input `image` that records which pixels
+        (`True`) were ignored when fitting, either because they were already
+        masked in the input `image` or because they were rejected statistically
+        during the iterative fitting process.
+
+    model_class : `~astropy.modeling.core.Model` or
+                  `astromodels.UnivariateSplineWithOutlierRemoval:`
+        The underlying class to which the `function` argument has been mapped.
+
+    regions_pix : `tuple` of (`int`, `int`)
+        The actual fitted pixel ranges of the input `image` corresponding to
+        `regions`, in inclusive, 1-indexed (start, end) pairs, with no
+        wildcards or adjacent/overlapping ranges. These are provided primarily
+        to facilitate plot annotation.
 
     """
 
@@ -302,7 +326,7 @@ class fit_1D:
 
         # Save the set of fitted models in the flattened co-ordinate system,
         # to allow later (re-)evaluation at arbitrary points:
-        self.models = fitted_models
+        self._models = fitted_models
 
         # Convert the mask to the ordering & shape of the input array and
         # save it:
@@ -386,7 +410,7 @@ class fit_1D:
             which the fit was performed along any other axes.
 
         """
-        astropy_model = isinstance(self.models, Model)
+        astropy_model = isinstance(self._models, Model)
 
         tmpaxis = 0 if astropy_model else -1
 
@@ -411,15 +435,15 @@ class fit_1D:
 
         # Determine the model values we want to return:
         if astropy_model:
-            if fitvals.ndim > 1 and len(self.models) < fitvals.shape[1]:
+            if fitvals.ndim > 1 and len(self._models) < fitvals.shape[1]:
                 # If we removed bad columns, we now need to fill them properly
                 # in the output array
-                fitvals[:, self._good_cols] = self.models(points,
-                                                          model_set_axis=False)
+                fitvals[:, self._good_cols] = self._models(points,
+                                                           model_set_axis=False)
             else:
-                fitvals[:] = self.models(points, model_set_axis=False)
+                fitvals[:] = self._models(points, model_set_axis=False)
         else:
-            for n, single_model in enumerate(self.models):
+            for n, single_model in enumerate(self._models):
                 # Determine model values to be returned (see comment in _fit
                 # about discarding values stored in the spline object):
                 # fitvals[n][user_reg] = single_model.data
