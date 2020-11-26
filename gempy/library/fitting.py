@@ -361,7 +361,7 @@ class fit_1D:
         index = tuple(index)  # NumPy warns against indexing with a list
 
         points1 = np.arange(1, data.shape[self.axis]+1, dtype=np.int16) # FITS
-        imrow, maskrow = data[index], self.mask[index]
+        imrow, maskrow = np.ma.masked_array(data).data[index], self.mask[index]
         # This is a bit grossly inefficient, but currently there's no way to
         # evaluate a single model from a set and it's only a "debugging" plot
         # (if needed later, we could try constructing a single model by slicing
