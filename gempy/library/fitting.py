@@ -230,9 +230,9 @@ class fit_1D:
         # fitted due to some being entirely masked:
         self._stack_shape, self._dtype = image.shape, image.dtype
 
-        # Create an empty, full-sized mask within which the fitter will
-        # populate only the user-specified region(s):
-        mask = np.zeros(image.shape, dtype=bool)
+        # Create a full-sized mask within which the fitter will populate the
+        # user-specified region(s) and the rest will remain masked out:
+        mask = np.ones(image.shape, dtype=bool)
 
         # Branch pending on whether we're using an AstroPy model or some other
         # supported fitting function (principally splines):
