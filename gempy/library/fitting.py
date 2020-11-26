@@ -1,5 +1,4 @@
-# Copyright(c) 2016 Association of Universities for Research in Astronomy, Inc.
-# by James E.H. Turner.
+# Copyright(c) 2016,2018,2020 Association of Universities for Research in Astronomy, Inc.
 
 from collections.abc import Iterable
 
