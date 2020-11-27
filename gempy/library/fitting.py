@@ -1,5 +1,4 @@
-# Copyright(c) 2016 Association of Universities for Research in Astronomy, Inc.
-# by James E.H. Turner.
+# Copyright(c) 2016,2018,2020 Association of Universities for Research in Astronomy, Inc.
 
 from collections.abc import Iterable
 
@@ -30,8 +29,9 @@ class fit_1D:
     vector along some axis of an N-dimensional image array, with iterative
     pixel rejection and re-fitting, similar to IRAF's fit1d.
 
-    The only interactivity currently supported is plotting for debugging
-    purposes; DRAGONS implements interaction via a separate wrapper.
+    Only simple, non-interactive plotting for inspection/debugging is
+    implemented here; DRAGONS provides interactive plotting via a separate
+    wrapper.
 
 
     Parameters
@@ -42,7 +42,7 @@ class fit_1D:
         it is a `numpy.ma.MaskedArray`, any masked points are ignored when
         fitting.
 
-    weights : `ndarray`, optional
+    weights : `~numpy.ndarray`, optional
         N-dimensional input array containing fitting weights for each point.
         The weights will be ignored for a given 1D fit if all zero, to allow
         processing regions without data (in progress: splines only).
@@ -52,12 +52,14 @@ class fit_1D:
         The spline options may be 'spline1' (linear) to 'spline5' (quintic).
 
     order : `int` or `None`, optional
-        Order (number of terms or degree+1) of the fitting function (default
-        1). For spline fits, this is the maximum number of spline pieces,
-        which (if applicable) will be reduced in proportion to the number of
-        masked pixels for each fit. A value of `None` uses as many pieces as
+        Order/degree (ie. highest power, or number of terms minus one) for
+        polynomial fitting functions. For spline fits, this is the maximum
+        number of spline pieces, which (if applicable) will be reduced in
+        proportion to the number of masked pixels for each fit. The default of
+        0 always fits a constant. A value of `None` uses as many pieces as
         required to get chi^2=1 for spline fits, while for other functions it
-        maps to the default of 1.
+        maps to the default of 0. Note that the equivalent value for polynomial
+        functions in IRAF is 1 greater than with this definition.
 
     axis : `int`, optional
         Array axis along which to perform fitting (Python convention;
@@ -94,9 +96,33 @@ class fit_1D:
         with shape (2822, 49, 68). For 2D data only, a single row/column number
         may be provided without parentheses. The default is `False` (no plot).
 
+    Attributes
+    ----------
+
+    The arguments that control fitting and rejection (`function`, `order`,
+    `axis`, `sigma_lower`, `sigma_upper`, `niter`, `grow` and `regions`) are
+    stored in like-named attributes, in addition to which the following are
+    defined:
+
+    mask : `~numpy.ndarray`
+        A Boolean mask matching the input `image` that records which pixels
+        (`True`) were ignored when fitting, either because they were already
+        masked in the input `image` or because they were rejected statistically
+        during the iterative fitting process.
+
+    model_class : `~astropy.modeling.core.Model` or
+                  `astromodels.UnivariateSplineWithOutlierRemoval:`
+        The underlying class to which the `function` argument has been mapped.
+
+    regions_pix : `tuple` of (`int`, `int`)
+        The actual fitted pixel ranges of the input `image` corresponding to
+        `regions`, in inclusive, 1-indexed (start, end) pairs, with no
+        wildcards or adjacent/overlapping ranges. These are provided primarily
+        to facilitate plot annotation.
+
     """
 
-    def __init__(self, image, weights=None, function='legendre', order=1,
+    def __init__(self, image, weights=None, function='legendre', order=0,
                  axis=-1, sigma_lower=3.0, sigma_upper=3.0, niter=0,
                  grow=False, regions=None, plot=False):
 
@@ -117,7 +143,7 @@ class fit_1D:
         # AstroPy polynomials require an integer degree so map None to default:
         if (self.order is None and
             self.model_class is not UnivariateSplineWithOutlierRemoval):
-            self.order = 1
+            self.order = 0
 
         # Parse the sample regions or check that they're already slices:
         if not regions or isinstance(regions, str):
@@ -201,11 +227,12 @@ class fit_1D:
         # Record intermediate array properties for later evaluation of models
         # onto the same grid, where only a subset of rows/cols may have been
         # fitted due to some being entirely masked:
-        self._stack_shape, self._dtype = image.shape, image.dtype
+        self._stack_shape = image.shape
+        self._dtype = image.dtype if image.dtype.kind == 'f' else np.float32
 
-        # Create an empty, full-sized mask within which the fitter will
-        # populate only the user-specified region(s):
-        mask = np.zeros(image.shape, dtype=bool)
+        # Create a full-sized mask within which the fitter will populate the
+        # user-specified region(s) and the rest will remain masked out:
+        mask = np.ones(image.shape, dtype=bool)
 
         # Branch pending on whether we're using an AstroPy model or some other
         # supported fitting function (principally splines):
@@ -225,10 +252,11 @@ class fit_1D:
                 n_models = np.sum(self._good_cols)
                 if n_models < image.shape[1]:
                     image_to_fit = image[:, self._good_cols]
-                    weights = weights[:, self._good_cols]
+                    if weights is not None:
+                        weights = weights[:, self._good_cols]
 
             model_set = self.model_class(
-                degree=(self.order - 1), n_models=n_models,
+                degree=self.order, n_models=n_models,
                 model_set_axis=(None if n_models == 1 else 1),
                 **self.model_args
             )
@@ -268,7 +296,6 @@ class fit_1D:
             # If there are no weights, produce a None for every row:
             weights = iter(lambda: None, True) if weights is None else weights
 
-            user_masked = ~user_reg
             fitted_models = []
 
             for n, (imrow, wrow) in enumerate(zip(image, weights)):
@@ -298,7 +325,7 @@ class fit_1D:
 
         # Save the set of fitted models in the flattened co-ordinate system,
         # to allow later (re-)evaluation at arbitrary points:
-        self.models = fitted_models
+        self._models = fitted_models
 
         # Convert the mask to the ordering & shape of the input array and
         # save it:
@@ -308,7 +335,7 @@ class fit_1D:
         else:
             self.mask = np.rollaxis(mask, -1, self.axis)
 
-        # TEST: Plot the fit:
+        # Plot the fit:
         if plot:
             self._plot(origim, index=None if plot is True else plot)
 
@@ -333,7 +360,7 @@ class fit_1D:
         index = tuple(index)  # NumPy warns against indexing with a list
 
         points1 = np.arange(1, data.shape[self.axis]+1, dtype=np.int16) # FITS
-        imrow, maskrow = data[index], self.mask[index]
+        imrow, maskrow = np.ma.masked_array(data).data[index], self.mask[index]
         # This is a bit grossly inefficient, but currently there's no way to
         # evaluate a single model from a set and it's only a "debugging" plot
         # (if needed later, we could try constructing a single model by slicing
@@ -368,21 +395,21 @@ class fit_1D:
         ----------
 
         points : array-like, optional
-            1D input array containing the points along `self.axis` at which
-            the fitted models are to be evaluated. If this argument is not
-            specified, the fit will be sampled at the same points as the
-            original input `image` to which it was performed.
+            1D input array containing the 0-indexed points along `self.axis`
+            at which the fitted models are to be evaluated. If this argument
+            is not specified, the fit will be sampled at the same points as
+            the original input `image` to which it was performed.
 
         Returns
         -------
 
         fitvals : `numpy.ndarray`
-            Array of fitted model values, sampled at `points` along the fitted
-            `axis` and matching the shape of the original input `image` to
-            which the fit was performed along any other axes.
+            Floating-point array of fitted model values, sampled at `points`
+            along the fitted `axis` and matching the shape of the original
+            input `image` to which the fit was performed along any other axes.
 
         """
-        astropy_model = isinstance(self.models, Model)
+        astropy_model = isinstance(self._models, Model)
 
         tmpaxis = 0 if astropy_model else -1
 
@@ -407,19 +434,17 @@ class fit_1D:
 
         # Determine the model values we want to return:
         if astropy_model:
-            if fitvals.ndim > 1 and len(self.models) < fitvals.shape[1]:
+            if fitvals.ndim > 1 and len(self._models) < fitvals.shape[1]:
                 # If we removed bad columns, we now need to fill them properly
                 # in the output array
-                fitvals[:, self._good_cols] = self.models(points,
-                                                          model_set_axis=False)
+                fitvals[:, self._good_cols] = self._models(points,
+                                                           model_set_axis=False)
             else:
-                fitvals[:] = self.models(points, model_set_axis=False)
+                fitvals[:] = self._models(points, model_set_axis=False)
         else:
-            for n, single_model in enumerate(self.models):
+            for n, single_model in enumerate(self._models):
                 # Determine model values to be returned (see comment in _fit
                 # about discarding values stored in the spline object):
-                # fitvals[n][user_reg] = single_model.data
-                # fitvals[n][user_masked] = single_model(points[user_masked])
                 fitvals[n] = single_model(points)
 
         # Restore the ordering & shape of the original input array:
