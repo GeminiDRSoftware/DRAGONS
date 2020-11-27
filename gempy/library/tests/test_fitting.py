@@ -360,3 +360,43 @@ class TestFit1DCube:
         assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2),
                         atol=45., rtol=0.015)
 
+
+class TestFit1DNewPoints:
+
+    def setup_class(self):
+
+        # A smooth function that we can try to fit:
+        gauss = Gaussian1D(amplitude=10., mean=15.8, stddev=2.)
+
+        # 1x and 5x sampled model values:
+        self.data_coarse = np.tile(gauss(np.arange(30)) + 1, (3,1))
+        self.data_fine = np.tile(gauss(np.arange(0, 30, 0.2)) + 1, (3,1))
+
+    def test_chebyshev(self):
+
+        # Fit the more-coarsely-sampled Gaussian model:
+        fit = fit_1D(self.data_coarse, function='chebyshev', order=17, niter=0,
+                     plot=debug)
+
+        # Evaluate the fits onto 5x finer sampling:
+        fit_vals = fit(np.arange(0., self.data_coarse.shape[-1], 0.2))
+
+        # Compare fit values with the 5x sampled version of the original model
+        # (ignoring the equivalent of the end 3 pixels from the input, where
+        # the fit diverges a bit):
+        assert_allclose(fit_vals[:,15:-15], self.data_fine[:,15:-15], atol=0.1)
+
+    def test_spline(self):
+
+        # Fit the more-coarsely-sampled Gaussian model:
+        fit = fit_1D(self.data_coarse, function='spline3', order=15, niter=0,
+                     plot=debug)
+
+        # Evaluate the fits onto 5x finer sampling:
+        fit_vals = fit(np.arange(0., self.data_coarse.shape[-1], 0.2))
+
+        # Compare fit values with the 5x sampled version of the original model
+        # (ignoring the equivalent of the end 3 pixels from the input, where
+        # the fit diverges a bit):
+        assert_allclose(fit_vals[:,15:-15], self.data_fine[:,15:-15], atol=0.1)
+
