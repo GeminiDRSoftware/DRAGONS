@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 
 
 import numpy as np
-from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
@@ -14,6 +12,32 @@ from bokeh.palettes import Category10
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras, GIBandListener
+from gempy.library.fitting import fit_1D
+
+
+class FittingParameters(object):
+    def __init__(self, *, function='legendre', order=None, axis=0, sigma_lower=3.0, sigma_upper=3.0,
+                 niter=0, grow=False, regions=None):
+        self.function = function
+        self.order = order
+        self.axis = axis
+        self.sigma_lower = sigma_lower
+        self.sigma_upper = sigma_upper
+        self.niter = niter
+        self.grow = grow
+        self.regions = regions
+
+    def build_fit_1D(self, data, weights):
+        return fit_1D(data, weights=weights,
+                      function=self.function,
+                      order=self.order, axis=self.axis,
+                      sigma_lower=self.sigma_lower,
+                      sigma_upper=self.sigma_upper,
+                      niter=self.niter,
+                      grow=self.grow,
+                      regions=self.regions,
+                      # plot=debug
+                      )
 
 
 class InteractiveModel(ABC):
@@ -117,7 +141,7 @@ class InteractiveModel1D(InteractiveModel):
     """
     Subclass for 1D models
     """
-    def __init__(self, model, x=None, y=None, mask=None, var=None,
+    def __init__(self, fitting_parameters, domain, x=None, y=None, mask=None, var=None,
                  grow=0, sigma=3, lsigma=None, hsigma=None, maxiter=3,
                  section=None):
         """
@@ -146,16 +170,11 @@ class InteractiveModel1D(InteractiveModel):
             max iterations to do on fit
         section
         """
-        if isinstance(model, models.Chebyshev1D):
-            model = InteractiveChebyshev1D(model)
-        else:
-            model = InteractiveSpline1D(model)
+        model = InteractiveNewFit1D(fitting_parameters, domain)
         super().__init__(model)
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
         xlinspace = np.linspace(*self.domain, 100)
-        self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
-                                               'model': self.evaluate(xlinspace)})
         self.populate_bokeh_objects(x, y, mask, var)
 
         # Our single slider isn't well set up for different low/hi sigma
@@ -170,6 +189,10 @@ class InteractiveModel1D(InteractiveModel):
         self.grow = grow
         self.maxiter = maxiter
         self.var = None
+
+        model.perform_fit(self)
+        self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
+                                               'model': self.evaluate(xlinspace)})
 
     def populate_bokeh_objects(self, x, y, mask=None, var=None):
         """
@@ -331,26 +354,28 @@ class InteractiveModel1D(InteractiveModel):
         return self.model(x)
 
 
-class InteractiveChebyshev1D:
-    def __init__(self, model):
+class InteractiveNewFit1D:
+    def __init__(self, fitting_parameters, domain):
         """
-        Create `~InteractiveChebyshev1D` wrapper around a basic model.
+        Create `~InteractiveNewFit1D` wrapper around the new fit1d model.
 
         The models don't like being modified, so this wrapper class handles
         that for us.  We can just keep a reference to this and, when needed,
-        it will build a new `~models.Chebyshev1D` instance and replace it's
+        it will build a new `~fitting.fit_1D` instance and replace it's
         previous copy.
 
         Parameters
         ----------
-        model : :class:`~models.Chebyshev1D`
-            :class:`~models.Chebyshev1D` instance to wrap
+        model : :class:`~fitting.fit_1D`
+            :class:`~fitting.fit_1D` instance to wrap
         """
-        assert isinstance(model, models.Chebyshev1D)
-        self.model = model
+        assert isinstance(fitting_parameters, FittingParameters)
+        self.fitting_parameters= fitting_parameters
+        self.domain = domain
+        self.fit = None
 
     def __call__(self, x):
-        return self.model(x)
+        return self.fit(x)
 
     @property
     def order(self):
@@ -359,9 +384,9 @@ class InteractiveChebyshev1D:
 
         Returns
         -------
-        int : `degree` of the model we are wrapping
+        int : `order` of the model we are wrapping
         """
-        return self.model.degree
+        return self.fitting_parameters.order
 
     @order.setter
     def order(self, order):
@@ -376,16 +401,7 @@ class InteractiveChebyshev1D:
         order : int
             order to use in the fit
         """
-        degree = int(order)  # because of TextInput issues
-        new_model = self.model.__class__(degree=degree, domain=self.model.domain)
-        for i in range(degree + 1):
-            setattr(new_model, f'c{i}', getattr(self.model, f'c{i}', 0))
-        self.model = new_model
-
-    @property
-    def domain(self):
-        # Defined explicitly here since a spline doesn't have a domain
-        return self.model.domain
+        self.fitting_parameters.order = int(order)  # fix if TextInput
 
     def perform_fit(self, parent):
         """
@@ -399,9 +415,10 @@ class InteractiveChebyshev1D:
         ----------
         parent : :class:`~InteractiveModel1D`
             wrapper model passes itself when it calls into this method
-
         """
-        goodpix = ~(parent.user_mask | parent.band_mask)
+        # Note that band_mask is now handled by passing a region string to fit_1D
+        # but we still use the band_mask for highlighting the affected points
+        goodpix = ~parent.user_mask  # ~(parent.user_mask | parent.band_mask)
         if parent.var is None:
             weights = None
         else:
@@ -409,41 +426,19 @@ class InteractiveChebyshev1D:
                                 where=parent.var > 0)[goodpix]
 
         if parent.sigma_clip:
-            fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                       sigma_clip, sigma=parent.sigma,
-                                                       niter=parent.maxiter)
-            try:
-                new_model, mask = fit_it(self.model, parent.x[goodpix], parent.y[goodpix], weights=weights)
-            except (IndexError, np.linalg.linalg.LinAlgError):
-                print("Problem with fitting")
-            else:
-                ngood = np.sum(~mask)
-                if ngood > self.order:
-                    rms = np.sqrt(np.sum((new_model(parent.x[goodpix][~mask]) - parent.y[goodpix][~mask])**2) / ngood)
-                    # I'm not sure how to report the rms
-                    self.model = new_model
-                    parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
-                    parent.fit_mask[goodpix] = mask
-                else:
-                    print("Too few remaining points to constrain the fit")
+            self.fit = self.fitting_parameters.build_fit_1D(parent.y[goodpix], weights=weights)
+            parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
+
+            # Now pull in the sigma mask
+            parent.fit_mask[goodpix] = self.fit.mask
         else:
-            fit_it = fitting.LinearLSQFitter()
-            try:
-                new_model = fit_it(self.model, parent.x[goodpix], parent.y[goodpix], weights=weights)
-            except (IndexError, np.linalg.linalg.LinAlgError):
-                print("Problem with fitting")
-            else:
-                self.model = new_model
-                parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
-
-
-class InteractiveSpline1D:
-    pass
-# ----------------------------------------------------------------------------
+            fitter = self.fitting_parameters.build_fit_1D(parent.y[goodpix], weights=weights)
+            self.fit = fitter()
+            parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
 
 
 class Fit1DPanel:
-    def __init__(self, visualizer, model, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
+    def __init__(self, visualizer, fitting_parameters, domain, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, grow_slider=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
@@ -452,8 +447,10 @@ class Fit1DPanel:
         ----------
         visualizer : :class:`~geminidr.interactive.fit.Fit1DVisualizer`
             visualizer to associate with
-        model : :class:`~geminidr.interactive.fit.Fit1DModel`
-            model for this UI to present
+        fitting_parameters : :class:`~geminidr.interactive.fit.FittingParameters`
+            parameters for this fit
+        domain : list of pixel coordinates
+            Used for new fit_1D fitter
         x : :class:`~numpy.ndarray`
             X coordinate values
         y : :class:`~numpy.ndarray`
@@ -479,21 +476,31 @@ class Fit1DPanel:
         self.visualizer = visualizer
 
         # Probably do something better here with factory function/class
-        self.fit = InteractiveModel1D(model, x, y)
+        self.fitting_parameters = fitting_parameters
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y)
 
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
-                                                     fit, "order", fit.perform_fit)
-        sigma_slider = interactive.build_text_slider("Sigma", fit.sigma, 0.01, 1, 10,
-                                                     fit, "sigma", self.sigma_slider_handler)
+                                                     fit, "order", fit.perform_fit, throttled=True)
+        sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters.sigma_upper, 0.01, 1, 10,
+                                                           fitting_parameters, "sigma_upper", self.sigma_slider_handler,
+                                                           throttled=True)
+        sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters.sigma_lower, 0.01, 1, 10,
+                                                           fitting_parameters, "sigma_lower", self.sigma_slider_handler,
+                                                           throttled=True)
         sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         sigma_button.on_change('active', self.sigma_button_handler)
-        controls_column = [order_slider, row(sigma_slider, sigma_button)]
-        if grow_slider:
-            controls_column.append(interactive.build_text_slider("Growth radius", fit.grow, 1, 0, 10,
-                                                        fit, "grow", fit.perform_fit))
-        controls_column.append(interactive.build_text_slider("Max iterations", fit.maxiter, 1, 0, 10,
-                                                    fit, "maxiter", fit.perform_fit))
+        controls_column = [order_slider, row(sigma_upper_slider, sigma_button)]
+        controls_column.append(sigma_lower_slider)
+        # if grow_slider:
+        #     controls_column.append(interactive.build_text_slider("Growth radius",
+        #                                                          fitting_parameters.grow, 1, 0, 10,
+        #                                                          fitting_parameters, "grow",
+        #                                                          fit.perform_fit))
+        controls_column.append(interactive.build_text_slider("Max iterations", fitting_parameters.niter,
+                                                             1, 0, 10,
+                                                             fitting_parameters, "niter",
+                                                             fit.perform_fit))
 
         # Only need this if there are multiple tabs
         apply_button = bm.Button(label="Apply model universally")
@@ -581,7 +588,7 @@ class Fit1DPanel:
         """
         self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
 
-    def sigma_slider_handler(self):
+    def sigma_slider_handler(self, val):
         """
         Handle the sigma clipping being adjusted.
 
@@ -671,6 +678,7 @@ class Fit1DPanel:
                 self.fit.band_mask[i] = 1
         # Band operations can come in through the keypress URL
         # so we defer the fit back onto the Bokeh IO event loop
+        self.fitting_parameters.regions = self.band_model.build_regions()
         self.visualizer.do_later(self.fit.perform_fit)
 
 
@@ -692,11 +700,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fits: list of InteractiveModel instances, one per (x,y) array
     """
 
-    def __init__(self, allx, ally, models, config, log=None,
+    def __init__(self, allx, ally, fitting_parameters, config, log=None,
                  reinit_params=None, reinit_extras=None, reinit_live=False,
                  order_param=None,
                  min_order=1, max_order=10, tab_name_fmt='{}',
-                 xlabel='x', ylabel='y', reconstruct_points=None, **kwargs):
+                 xlabel='x', ylabel='y', reconstruct_points=None,
+                 domains=None, **kwargs):
         """
         Parameters
         ----------
@@ -716,17 +725,17 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.widgets = {}
 
         # Some sanity checks now
-        if isinstance(models, list):
-            if not(len(models) == len(allx) == len(ally)):
+        if isinstance(fitting_parameters, list):
+            if not(len(fitting_parameters) == len(allx) == len(ally)):
                 raise ValueError("Different numbers of models and coordinates")
             for x, y in zip(allx, ally):
                 if len(x) != len(y):
                     raise ValueError("Different (x, y) array sizes")
-            self.nmodels = len(models)
+            self.nfits = len(fitting_parameters)
         else:
             if allx.size != ally.size:
                 raise ValueError("Different (x, y) array sizes")
-            self.nmodels = 1
+            self.nfits = 1
 
         # Make the panel with widgets to control the creation of (x, y) arrays
         if reinit_params is not None or reinit_extras is not None:
@@ -759,14 +768,16 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
-        if self.nmodels > 1:
-            for i, (model, x, y) in enumerate(zip(models, allx, ally), start=1):
-                tui = Fit1DPanel(self, model, x, y, **kwargs)
+        if self.nfits > 1:
+            if domains is None:
+                domains = [None] * len(fitting_parameters)
+            for i, (fitting_parms, domain, x, y) in enumerate(zip(fitting_parameters, domains, allx, ally), start=1):
+                tui = Fit1DPanel(self, fitting_parms, domain, x, y, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
         else:
-            tui = Fit1DPanel(models, allx, ally, **kwargs)
+            tui = Fit1DPanel(fitting_parameters, allx, ally, **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
@@ -824,3 +835,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 if hasattr(self, 'reinit_button'):
                     self.reinit_button.disabled = False
             self.do_later(rfn)
+
+    def results(self):
+        return [fit.model.fit for fit in self.fits]

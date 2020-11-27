@@ -1,5 +1,7 @@
 # Interactive Tools
 
+#This is in flux while I rewrite it on fit_1D as the backend fitter
+
 This is a guide to the interactive APIs and how to use them
 in the primitives in the recipe system.  These tools depend
 on bokeh and spin up an embedded webserver to provide the

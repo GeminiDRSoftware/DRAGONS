@@ -868,6 +868,11 @@ class GIBandModel(object):
                 return True
         return False
 
+    def build_regions(self):
+        if self.bands is None or len(self.bands == 0):
+            return None
+        return ','.join(['{}:{}'.format(b[0], b[1]) for b in self.bands])
+
 
 class GIBandView(GIBandListener):
     """

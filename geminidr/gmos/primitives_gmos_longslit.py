@@ -31,6 +31,8 @@ from gwcs.wcs import WCS as gWCS
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from gempy.library.fitting import fit_1D
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
 from .parameters_gmos_longslit import normalizeFlatConfig
@@ -42,6 +44,7 @@ from . import parameters_gmos_longslit
 
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
+from ..interactive.fit.fit1d import FittingParameters
 from ..interactive.fit.multispline import MultiSplineVisualizer
 from ..interactive.fit.spline import SplineVisualizer
 
@@ -545,6 +548,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         spectral_order = spline_kwargs.pop("spectral_order")
         threshold = spline_kwargs.pop("threshold")
         interactive_reduce = spline_kwargs.pop("interactive_reduce")
+        hsigma = spline_kwargs.pop('hsigma')
+        lsigma = spline_kwargs.pop('lsigma')
+        grow = spline_kwargs.pop('grow')
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
@@ -565,7 +571,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 all_masked_data = []
                 all_weights = []
                 all_orders = []
-                all_m_init = []
+                all_fp_init = []
+                all_domains = []
                 nrows = ad_tiled[0].shape[0]
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
                     # If the entire row is unilluminated, we want to fit
@@ -596,29 +603,28 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     #     ext_masked_data.append(np.ma.masked_array(row.data, mask=row.mask))
                     #     ext_weights.append(np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.)))
                     dispaxis = 2 - ext.dispersion_axis()
-                    all_m_init.append(models.Chebyshev1D(degree=order, c0=0,
-                                                 domain=[0, ext.shape[dispaxis] - 1]))
+                    # all_m_init.append(models.Chebyshev1D(degree=order, c0=0,
+                    #                              domain=[0, ext.shape[dispaxis] - 1]))
+                    all_domains.append([0, ext.shape[dispaxis] - 1])
+                    all_fp_init.append(FittingParameters(function='spline1', order=order,
+                                                         sigma_upper=hsigma,
+                                                         sigma_lower=lsigma,
+                                                         grow=grow))
 
-                # It's unfortunate that we have to do this (taken from Chris' logic)
-                # class rowifiedNormalizeFlatConfig(normalizeFlatConfig):
-                #     row = RangeField("Row of data to operate on", int, 0, min=0, max=nrows)
-
-                # config =rowifiedNormalizeFlatConfig('rowifiedNormalizeFlatConfig', (None,), {"__doc__": 'doc'})
-                # config = rowifiedNormalizeFlatConfig()
-                # TODO adding row to the base config until I decide how to get this to work
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                reinit_params = ["row",]  # todo add new conf element for row select and recalc by pulling that row from all 3
+                reinit_params = ["row", ]
                 reinit_extras = [("row", RangeField("Row of data to operate on", int, 0, min=0, max=nrows-1)), ]
+
                 def reconstruct_points(conf, extras):
-                    row = extras['row']
+                    r = extras['row']
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
-                        all_coords.append([rppixels, rpext.nddata[row]])
+                        all_coords.append([rppixels, rpext.nddata[r]])
                     return all_coords
 
-                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_m_init, config,
+                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_fp_init, config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
                                                    order_param='spectral_order',
@@ -626,20 +632,16 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    xlabel='x', ylabel='y',
                                                    grow_slider=True,
                                                    reconstruct_points=reconstruct_points,
-                                                   reinit_live=True)
-                # visualizer = MultiSplineVisualizer(all_shapes, all_pixels, all_masked_data, all_orders, all_weights,
-                #                                    config=config, recalc_button=True, **spline_kwargs)
+                                                   reinit_live=True,
+                                                   domains=all_domains)
                 status = geminidr.interactive.server.interactive_fitter(visualizer)
 
-                all_m_final = [fit.model.model for fit in visualizer.fits]
+                all_m_final = visualizer.results()
                 for m_final, ext in zip(all_m_final, ad_tiled):
                     fd = []
-                    for i, row in enumerate(ext.nddata):
-                        fd.append(m_final.evaluate(row.data))
-                        # fd.append([fdi for fdi in st.fitted_data()])
+                    for row in ext.nddata:
+                        fd.append(m_final(row.data))
                     ad_fitted.append(fd, header=ext.hdr)
-                # for fitted_data, ext in zip(visualizer.fitted_data(), ad_tiled):
-                #     ad_fitted.append(fitted_data, header=ext.hdr)
             else:
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
                     # If the entire row is unilluminated, we want to fit
@@ -658,8 +660,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     for i, row in enumerate(ext.nddata):
                         masked_data = np.ma.masked_array(row.data, mask=row.mask)
                         weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
-                        spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                                                order=order, w=weights, **spline_kwargs)
+                        spline = fit_1D(masked_data, weights=weights, function='spline1',
+                                        order=order, axis=dispaxis,
+                                        sigma_lower=lsigma,
+                                        sigma_upper=hsigma,
+                                        grow=grow,
+                                        )()
+
                         fitted_data[i] = spline(pixels)
                     # Copy header so we have the _section() descriptors
                     ad_fitted.append(fitted_data, header=ext.hdr)

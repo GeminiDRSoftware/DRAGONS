@@ -50,6 +50,7 @@ from . import parameters_spect
 import matplotlib
 
 from ..interactive.fit import fit1d
+from ..interactive.fit.fit1d import FittingParameters
 from ..interactive.fit.multispline import MultiSplineVisualizer
 
 from ..interactive.server import interactive_fitter
@@ -2565,6 +2566,8 @@ class Spect(PrimitivesBASE):
                 # Set up the initial tracing models, one per aperture
                 all_m_init = [models.Chebyshev1D(degree=order, c0=c0,
                                                  domain=[0, ext.shape[dispaxis] - 1]) for c0 in locations]
+                # axis?
+                all_fp_init = [FittingParameters(function='chebyshev', order=order, axis=0) for c0 in locations]  # c0? domain?
 
                 # It's unfortunate that we have to do this
                 config = self.params[self.myself()]
@@ -2601,7 +2604,7 @@ class Spect(PrimitivesBASE):
                 if interactive:
                     allx = [coords[0] for coords in all_coords]
                     ally = [coords[1] for coords in all_coords]
-                    visualizer = fit1d.Fit1DVisualizer(allx, ally, all_m_init, config,
+                    visualizer = fit1d.Fit1DVisualizer(allx, ally, all_fp_init, config,
                                                                   reinit_params=reinit_params,
                                                                   order_param='trace_order',
                                                                   tab_name_fmt="Aperture {}",
@@ -2610,17 +2613,18 @@ class Spect(PrimitivesBASE):
                                                                   reconstruct_points=
                                                                       trace_apertures_reconstruct_points)
                     status = geminidr.interactive.server.interactive_fitter(visualizer)
-                    all_m_final = [fit.model.model for fit in visualizer.fits]
-                    for m in all_m_final:
-                        print(m)
+                    all_m_final = visualizer.fits
+                    # for m in all_m_final:
+                    #     print(m)
                 else:
                     all_m_final = []
-                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                               sigma_clip, sigma=3)
-                    for aperture, coords, m_init, in zip(aptable, all_coords, all_m_init):
+                    # fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                    #                                            sigma_clip, sigma=3)
+                    for aperture, coords, m_init, fp_init in zip(aptable, all_coords, all_m_init, all_fp_init):
                         location = aperture['c0']
                         try:
-                            m_final, _ = fit_it(m_init, coords[0], coords[1])
+                            # m_final, _ = fit_it(m_init, coords[0], coords[1])
+                            m_final = fp_init.build_fit_1D(coords[1])  # coords[0]
                         except (IndexError, np.linalg.linalg.LinAlgError):
                             # This hides a multitude of sins, including no points
                             # returned by the trace, or insufficient points to
