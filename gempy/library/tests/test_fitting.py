@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose, assert_array_less
+from numpy.testing import assert_allclose, assert_array_less, assert_equal
 
 from astropy.io import fits
 from astropy.modeling.models import BlackBody, Gaussian1D, Gaussian2D
@@ -67,13 +67,14 @@ class TestFit1D:
         """
         Fit linear sky background along the slit, rejecting the object
         spectrum. Require resulting fit to match the true sky model within
-        tolerances that roughly allow for model noise & fitting systematics.
+        tolerances that roughly allow for model noise & fitting systematics
+        and check that the expected pixels are rejected.
         """
 
-        fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=1, axis=0,
-                          sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+        fit = fit_1D(self.data, weights=self.weights, function='chebyshev',
+                     order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
+                     niter=5, plot=debug)
+        fit_vals = fit()
 
         # diff = abs(fit_vals - self.sky)
         # tol = 20 + 0.015 * abs(self.sky)
@@ -90,6 +91,12 @@ class TestFit1D:
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.015)
         # assert not np.any(np.abs(fit_vals-self.sky) > 2.*self.std)
         # assert_array_less(np.abs(fit_vals-self.sky), 2.*self.std)
+
+        # Also check that the rejected pixels were as expected (from previous
+        # runs) for the central column:
+        assert_equal(fit.mask[:12, 70], False)
+        assert_equal(fit.mask[12:21, 70], True)
+        assert_equal(fit.mask[21:, 70], False)
 
     def test_chebyshev_ax0_lin_grow2(self):
         """
@@ -199,14 +206,21 @@ class TestFit1D:
     def test_lin_spline_ax0_ord1(self):
         """
         Fit object spectrum with a low-order cubic spline, rejecting the sky.
+        Check that the pixel rejection is as expected, as well as the values.
         """
 
-        fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='spline1', order=1, axis=0,
-                          sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+        fit = fit_1D(self.data, weights=self.weights, function='spline1',
+                     order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
+                     niter=5, plot=debug)
+        fit_vals = fit()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
+
+        # Also check that the rejected pixels were as expected (from previous
+        # runs) for the central column:
+        assert_equal(fit.mask[:11, 70], False)
+        assert_equal(fit.mask[11:21, 70], True)
+        assert_equal(fit.mask[21:, 70], False)
 
     def test_cubic_spline_def_ax_ord3(self):
         """
@@ -238,12 +252,17 @@ class TestFit1D:
         Fit masked object spectrum with Chebyshev polynomial, rejecting sky.
         """
 
-        fit_vals = fit_1D(self.masked_data, weights=self.weights,
-                          function='chebyshev', order=4,
-                          sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+        fit = fit_1D(self.masked_data, weights=self.weights,
+                     function='chebyshev', order=4,
+                     sigma_lower=2.5, sigma_upper=2.5, niter=5, plot=debug)
+        fit_vals = fit()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+
+        # Ensure that masked input values have been passed through to the
+        # output mask by the fitter:
+        assert_equal(fit.mask[4:6,80:93], True)
+        assert_equal(fit.mask[24:27,24:27], True)
 
     def test_cubic_spline_def_ax_ord3_masked(self):
         """
@@ -251,12 +270,18 @@ class TestFit1D:
         the sky with grow=1.
         """
 
-        fit_vals = fit_1D(self.masked_data, weights=self.weights,
-                          function='spline3', order=3,
-                          sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
-                          plot=debug)()
+        fit = fit_1D(self.masked_data, weights=self.weights,
+                     function='spline3', order=3,
+                     sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
+                     plot=debug)
+        fit_vals = fit()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+
+        # Ensure that masked input values have been passed through to the
+        # output mask by the fitter:
+        assert_equal(fit.mask[4:6,80:93], True)
+        assert_equal(fit.mask[24:27,24:27], True)
 
 
 class TestFit1DCube:
@@ -362,7 +387,10 @@ class TestFit1DCube:
 
 
 class TestFit1DNewPoints:
-
+    """
+    Some tests for gempy.library.fitting.fit_1D evaluation at user-specified
+    points instead of the original input points.
+    """
     def setup_class(self):
 
         # A smooth function that we can try to fit:
@@ -399,4 +427,3 @@ class TestFit1DNewPoints:
         # (ignoring the equivalent of the end 3 pixels from the input, where
         # the fit diverges a bit):
         assert_allclose(fit_vals[:,15:-15], self.data_fine[:,15:-15], atol=0.1)
-
