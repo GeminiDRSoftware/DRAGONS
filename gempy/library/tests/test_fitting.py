@@ -184,11 +184,14 @@ class TestFit1D:
         region excluded by the user and no other rejection.
         """
 
-        fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=1, axis=0, niter=0,
-                          regions="1:10,23:30", plot=debug)()
+        fit = fit_1D(self.data, weights=self.weights, function='chebyshev',
+                     order=1, axis=0, niter=0, regions="1:10,23:30",
+                     plot=debug)
+        fit_vals = fit()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
+
+        assert fit.regions_pix == ((1,10),(23,30))
 
     def test_chebyshev_ax0_lin_slices_noiter(self):
         """
@@ -196,12 +199,14 @@ class TestFit1D:
         region excluded by the user and no other rejection (same test as above
         but passing a list of slice objects rather than a regions string).
         """
-        fit_vals = fit_1D(self.data, weights=self.weights,
-                          function='chebyshev', order=1, axis=0, niter=0,
-                          regions=[slice(0, 10), slice(22, 30)],
-                          plot=debug)()
+        fit = fit_1D(self.data, weights=self.weights, function='chebyshev',
+                     order=1, axis=0, niter=0,
+                     regions=[slice(0, 10), slice(22, 30)], plot=debug)
+        fit_vals = fit()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
+
+        assert fit.regions_pix == ((1,10),(23,30))
 
     def test_lin_spline_ax0_ord1(self):
         """
@@ -221,6 +226,8 @@ class TestFit1D:
         assert_equal(fit.mask[:11, 70], False)
         assert_equal(fit.mask[11:21, 70], True)
         assert_equal(fit.mask[21:, 70], False)
+
+        assert fit.regions_pix == ((1,30),)
 
     def test_cubic_spline_def_ax_ord3(self):
         """
@@ -263,6 +270,8 @@ class TestFit1D:
         # output mask by the fitter:
         assert_equal(fit.mask[4:6,80:93], True)
         assert_equal(fit.mask[24:27,24:27], True)
+
+        assert fit.regions_pix == ((1,140),)
 
     def test_cubic_spline_def_ax_ord3_masked(self):
         """
