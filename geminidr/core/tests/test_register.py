@@ -32,7 +32,6 @@ def make_images(astrofaker, mods, nstars=20):
         adinputs.append(ad)
     return adinputs
 
-@pytest.mark.skip("Thanksgiving")
 @pytest.mark.parametrize('no_wcs', (False, True))
 @pytest.mark.parametrize('rotate', (False, True))
 @pytest.mark.parametrize('scale', (False, True))
@@ -53,7 +52,7 @@ def test_adjust_wcs_to_reference(astrofaker, no_wcs, rotate, scale):
             ad[0].wcs = None
     p = NIRIImage(adinputs)
     p.detectSources()
-    p.adjustWCSToReference(first_pass=45 if no_wcs else 5,
+    p.adjustWCSToReference(first_pass=42 if no_wcs else 5,
                            rotate=rotate, scale=scale)
 
     # We're going to confirm that a grid of input points are transformed
