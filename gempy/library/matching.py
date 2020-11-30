@@ -6,7 +6,7 @@ from functools import partial, reduce
 import inspect
 
 from scipy import optimize, spatial
-from astropy.modeling import fitting, models, FittableModel
+from astropy.modeling import fitting, models, Model, FittableModel
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter)
