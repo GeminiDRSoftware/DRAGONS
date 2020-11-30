@@ -278,7 +278,7 @@ class UnivariateSplineWithOutlierRemoval:
                 # Determine actual order to apply based on fraction of unmasked
                 # pixels, and unmask everything if there are too few good pixels
                 this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
-                if this_order == 0:
+                if this_order == 0 and order > 0:
                     full_mask = np.zeros(x.shape, dtype=bool)
                     if w is not None and not all(w == 0):
                         full_mask |= (w == 0)
@@ -311,17 +311,17 @@ class UnivariateSplineWithOutlierRemoval:
 
             sort_indices = np.argsort(xgood)
             # Create appropriate spline object using current mask
-            try:
-                spline = cls_(xgood[sort_indices], y[~full_mask][sort_indices],
-                              *spline_args, w=None if w is None else w[~full_mask][sort_indices],
-                              **spline_kwargs)
-            except ValueError as e:
-                if this_order == 0:
-                    avg_y = np.average(y[~full_mask],
-                                       weights=None if w is None else w[~full_mask])
-                    spline = lambda xx: avg_y
-                else:
-                    raise e
+            if order is None or this_order > 0:
+                spline = cls_(
+                    xgood[sort_indices], y[~full_mask][sort_indices],
+                    *spline_args,
+                    w=None if w is None else w[~full_mask][sort_indices],
+                    **spline_kwargs
+                )
+            else:
+                avg_y = np.average(y[~full_mask],
+                                   weights=None if w is None else w[~full_mask])
+                spline = lambda xx: avg_y
 
             spline_y = spline(x)
             masked_residuals = outlier_func(np.ma.array(spline_y - y,
