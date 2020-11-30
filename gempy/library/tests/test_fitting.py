@@ -74,7 +74,7 @@ class TestFit1D:
         fit1d = fit_1D(self.data, weights=self.weights, function='chebyshev',
                        order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
                        niter=5, plot=debug)
-        fit_vals = fit1d()
+        fit_vals = fit1d.evaluate()
 
         # diff = abs(fit_vals - self.sky)
         # tol = 20 + 0.015 * abs(self.sky)
@@ -108,7 +108,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=1, axis=0,
                           sigma_lower=3., sigma_upper=2.3, niter=5, grow=2,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.sky, atol=15., rtol=0.015)
 
@@ -120,7 +120,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.025)
 
@@ -134,7 +134,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=4, axis=1,
                           sigma_lower=3.7, sigma_upper=3.7, niter=5, grow=2,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -146,7 +146,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data[16], weights=self.weights[16],
                           function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj[16], atol=30., rtol=0.02)
 
@@ -158,7 +158,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data[16:17], weights=self.weights[16:17],
                           function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         # This should work, but currently fails because fit_1D is returning
         # a result with shape (140, 1) from (1, 140) inputs.
@@ -174,7 +174,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data[:, 70:71], weights=self.weights[:, 70:71],
                           function='chebyshev', order=1, axis=0,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.sky[:, 70:71], atol=10., rtol=0.)
 
@@ -187,7 +187,7 @@ class TestFit1D:
         fit1d = fit_1D(self.data, weights=self.weights, function='chebyshev',
                        order=1, axis=0, niter=0, regions="1:10,23:30",
                        plot=debug)
-        fit_vals = fit1d()
+        fit_vals = fit1d.evaluate()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
@@ -202,7 +202,7 @@ class TestFit1D:
         fit1d = fit_1D(self.data, weights=self.weights, function='chebyshev',
                        order=1, axis=0, niter=0,
                        regions=[slice(0, 10), slice(22, 30)], plot=debug)
-        fit_vals = fit1d()
+        fit_vals = fit1d.evaluate()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
@@ -217,7 +217,7 @@ class TestFit1D:
         fit1d = fit_1D(self.data, weights=self.weights, function='spline1',
                        order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
                        niter=5, plot=debug)
-        fit_vals = fit1d()
+        fit_vals = fit1d.evaluate()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
@@ -238,7 +238,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='spline3', order=3,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -250,7 +250,7 @@ class TestFit1D:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='legendre', order=4, axis=1,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -262,7 +262,7 @@ class TestFit1D:
         fit1d = fit_1D(self.masked_data, weights=self.weights,
                        function='chebyshev', order=4,
                        sigma_lower=2.5, sigma_upper=2.5, niter=5, plot=debug)
-        fit_vals = fit1d()
+        fit_vals = fit1d.evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -283,7 +283,7 @@ class TestFit1D:
                        function='spline3', order=3,
                        sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
                        plot=debug)
-        fit_vals = fit1d()
+        fit_vals = fit1d.evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
@@ -330,7 +330,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='chebyshev', order=4, axis=0,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
 
@@ -348,7 +348,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data.T, weights=self.weights.T,
                           function='chebyshev', order=4,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
 
@@ -361,7 +361,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data, weights=self.weights,
                           function='spline3', order=3, axis=0,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
 
@@ -374,7 +374,7 @@ class TestFit1DCube:
         fit_vals = fit_1D(self.data.T, weights=self.weights.T,
                           function='spline3', order=3,
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
 
@@ -388,7 +388,7 @@ class TestFit1DCube:
                           weights=np.rollaxis(self.weights, 0, 2),
                           function='spline3', order=3, axis=1,
                           sigma_lower=3.5, sigma_upper=3.5, niter=5, grow=1,
-                          plot=debug)()
+                          plot=debug).evaluate()
 
         assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2),
                         atol=45., rtol=0.015)
@@ -415,7 +415,9 @@ class TestFit1DNewPoints:
                        niter=0, plot=debug)
 
         # Evaluate the fits onto 5x finer sampling:
-        fit_vals = fit1d(np.arange(0., self.data_coarse.shape[-1], 0.2))
+        fit_vals = fit1d.evaluate(
+            np.arange(0., self.data_coarse.shape[-1], 0.2)
+        )
 
         # Compare fit values with the 5x sampled version of the original model
         # (ignoring the equivalent of the end 3 pixels from the input, where
@@ -429,7 +431,9 @@ class TestFit1DNewPoints:
                        plot=debug)
 
         # Evaluate the fits onto 5x finer sampling:
-        fit_vals = fit1d(np.arange(0., self.data_coarse.shape[-1], 0.2))
+        fit_vals = fit1d.evaluate(
+            np.arange(0., self.data_coarse.shape[-1], 0.2)
+        )
 
         # Compare fit values with the 5x sampled version of the original model
         # (ignoring the equivalent of the end 3 pixels from the input, where
