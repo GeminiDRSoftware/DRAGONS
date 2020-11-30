@@ -1065,11 +1065,11 @@ class AstroData:
         This is a convenience method, which is equivalent to::
 
             for ext in ad:
-                ad.ext.data = operator(ad.ext.data, *args, **kwargs)
-                if ad.ext.mask is not None:
-                    ad.ext.mask = operator(ad.ext.mask, *args, **kwargs)
-                if ad.ext.variance is not None:
-                    ad.ext.variance = operator(ad.ext.variance, *args, **kwargs)
+                ext.data = operator(ext.data, *args, **kwargs)
+                if ext.mask is not None:
+                    ext.mask = operator(ext.mask, *args, **kwargs)
+                if ext.variance is not None:
+                    ext.variance = operator(ext.variance, *args, **kwargs)
 
         with the additional advantage that it will work on single slices, too.
 

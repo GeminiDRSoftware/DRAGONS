@@ -45,7 +45,7 @@ jobs:
 
       - name: Install packages
         shell: bash -l {0}
-        run: python -m pip install tox tox-conda coverage
+        run: python -m pip install tox tox-conda
 
       - name: Setup DRAGONS_TEST
         shell: bash -l {0}
@@ -55,9 +55,3 @@ jobs:
         shell: bash -l {0}
         run: |
           tox -e py37-unit -v
-          python -m coverage xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          fail_ci_if_error: true
