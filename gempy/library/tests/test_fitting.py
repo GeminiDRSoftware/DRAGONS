@@ -71,10 +71,10 @@ class TestFit1D:
         and check that the expected pixels are rejected.
         """
 
-        fit = fit_1D(self.data, weights=self.weights, function='chebyshev',
-                     order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
-                     niter=5, plot=debug)
-        fit_vals = fit()
+        fit1d = fit_1D(self.data, weights=self.weights, function='chebyshev',
+                       order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
+                       niter=5, plot=debug)
+        fit_vals = fit1d()
 
         # diff = abs(fit_vals - self.sky)
         # tol = 20 + 0.015 * abs(self.sky)
@@ -94,9 +94,9 @@ class TestFit1D:
 
         # Also check that the rejected pixels were as expected (from previous
         # runs) for the central column:
-        assert_equal(fit.mask[:12, 70], False)
-        assert_equal(fit.mask[12:21, 70], True)
-        assert_equal(fit.mask[21:, 70], False)
+        assert_equal(fit1d.mask[:12, 70], False)
+        assert_equal(fit1d.mask[12:21, 70], True)
+        assert_equal(fit1d.mask[21:, 70], False)
 
     def test_chebyshev_ax0_lin_grow2(self):
         """
@@ -184,14 +184,14 @@ class TestFit1D:
         region excluded by the user and no other rejection.
         """
 
-        fit = fit_1D(self.data, weights=self.weights, function='chebyshev',
-                     order=1, axis=0, niter=0, regions="1:10,23:30",
-                     plot=debug)
-        fit_vals = fit()
+        fit1d = fit_1D(self.data, weights=self.weights, function='chebyshev',
+                       order=1, axis=0, niter=0, regions="1:10,23:30",
+                       plot=debug)
+        fit_vals = fit1d()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
-        assert fit.regions_pix == ((1,10),(23,30))
+        assert fit1d.regions_pix == ((1,10),(23,30))
 
     def test_chebyshev_ax0_lin_slices_noiter(self):
         """
@@ -199,14 +199,14 @@ class TestFit1D:
         region excluded by the user and no other rejection (same test as above
         but passing a list of slice objects rather than a regions string).
         """
-        fit = fit_1D(self.data, weights=self.weights, function='chebyshev',
-                     order=1, axis=0, niter=0,
-                     regions=[slice(0, 10), slice(22, 30)], plot=debug)
-        fit_vals = fit()
+        fit1d = fit_1D(self.data, weights=self.weights, function='chebyshev',
+                       order=1, axis=0, niter=0,
+                       regions=[slice(0, 10), slice(22, 30)], plot=debug)
+        fit_vals = fit1d()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
-        assert fit.regions_pix == ((1,10),(23,30))
+        assert fit1d.regions_pix == ((1,10),(23,30))
 
     def test_lin_spline_ax0_ord1(self):
         """
@@ -214,20 +214,20 @@ class TestFit1D:
         Check that the pixel rejection is as expected, as well as the values.
         """
 
-        fit = fit_1D(self.data, weights=self.weights, function='spline1',
-                     order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
-                     niter=5, plot=debug)
-        fit_vals = fit()
+        fit1d = fit_1D(self.data, weights=self.weights, function='spline1',
+                       order=1, axis=0, sigma_lower=2.5, sigma_upper=2.5,
+                       niter=5, plot=debug)
+        fit_vals = fit1d()
 
         assert_allclose(fit_vals, self.sky, atol=20., rtol=0.02)
 
         # Also check that the rejected pixels were as expected (from previous
         # runs) for the central column:
-        assert_equal(fit.mask[:11, 70], False)
-        assert_equal(fit.mask[11:21, 70], True)
-        assert_equal(fit.mask[21:, 70], False)
+        assert_equal(fit1d.mask[:11, 70], False)
+        assert_equal(fit1d.mask[11:21, 70], True)
+        assert_equal(fit1d.mask[21:, 70], False)
 
-        assert fit.regions_pix == ((1,30),)
+        assert fit1d.regions_pix == ((1,30),)
 
     def test_cubic_spline_def_ax_ord3(self):
         """
@@ -259,19 +259,19 @@ class TestFit1D:
         Fit masked object spectrum with Chebyshev polynomial, rejecting sky.
         """
 
-        fit = fit_1D(self.masked_data, weights=self.weights,
-                     function='chebyshev', order=4,
-                     sigma_lower=2.5, sigma_upper=2.5, niter=5, plot=debug)
-        fit_vals = fit()
+        fit1d = fit_1D(self.masked_data, weights=self.weights,
+                       function='chebyshev', order=4,
+                       sigma_lower=2.5, sigma_upper=2.5, niter=5, plot=debug)
+        fit_vals = fit1d()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
         # Ensure that masked input values have been passed through to the
         # output mask by the fitter:
-        assert_equal(fit.mask[4:6,80:93], True)
-        assert_equal(fit.mask[24:27,24:27], True)
+        assert_equal(fit1d.mask[4:6,80:93], True)
+        assert_equal(fit1d.mask[24:27,24:27], True)
 
-        assert fit.regions_pix == ((1,140),)
+        assert fit1d.regions_pix == ((1,140),)
 
     def test_cubic_spline_def_ax_ord3_masked(self):
         """
@@ -279,18 +279,18 @@ class TestFit1D:
         the sky with grow=1.
         """
 
-        fit = fit_1D(self.masked_data, weights=self.weights,
-                     function='spline3', order=3,
-                     sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
-                     plot=debug)
-        fit_vals = fit()
+        fit1d = fit_1D(self.masked_data, weights=self.weights,
+                       function='spline3', order=3,
+                       sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
+                       plot=debug)
+        fit_vals = fit1d()
 
         assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
 
         # Ensure that masked input values have been passed through to the
         # output mask by the fitter:
-        assert_equal(fit.mask[4:6,80:93], True)
-        assert_equal(fit.mask[24:27,24:27], True)
+        assert_equal(fit1d.mask[4:6,80:93], True)
+        assert_equal(fit1d.mask[24:27,24:27], True)
 
 
 class TestFit1DCube:
@@ -320,7 +320,6 @@ class TestFit1DCube:
 
         self.obj, self.sky, self.data = obj, sky, data
         self.weights = 1. / std
-        # fits.writeto('testsim3.fits', data)
 
     def test_chebyshev_ax0_quartic(self):
         """
@@ -412,11 +411,11 @@ class TestFit1DNewPoints:
     def test_chebyshev(self):
 
         # Fit the more-coarsely-sampled Gaussian model:
-        fit = fit_1D(self.data_coarse, function='chebyshev', order=17, niter=0,
-                     plot=debug)
+        fit1d = fit_1D(self.data_coarse, function='chebyshev', order=17,
+                       niter=0, plot=debug)
 
         # Evaluate the fits onto 5x finer sampling:
-        fit_vals = fit(np.arange(0., self.data_coarse.shape[-1], 0.2))
+        fit_vals = fit1d(np.arange(0., self.data_coarse.shape[-1], 0.2))
 
         # Compare fit values with the 5x sampled version of the original model
         # (ignoring the equivalent of the end 3 pixels from the input, where
@@ -426,11 +425,11 @@ class TestFit1DNewPoints:
     def test_spline(self):
 
         # Fit the more-coarsely-sampled Gaussian model:
-        fit = fit_1D(self.data_coarse, function='spline3', order=15, niter=0,
-                     plot=debug)
+        fit1d = fit_1D(self.data_coarse, function='spline3', order=15, niter=0,
+                       plot=debug)
 
         # Evaluate the fits onto 5x finer sampling:
-        fit_vals = fit(np.arange(0., self.data_coarse.shape[-1], 0.2))
+        fit_vals = fit1d(np.arange(0., self.data_coarse.shape[-1], 0.2))
 
         # Compare fit values with the 5x sampled version of the original model
         # (ignoring the equivalent of the end 3 pixels from the input, where
