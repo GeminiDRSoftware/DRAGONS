@@ -252,9 +252,9 @@ class Stack(PrimitivesBASE):
             [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
 
         ad_out = astrodata.create(adinputs[0].phu)
-        for index, (extver, sfactors, zfactors) in enumerate(
-                zip(adinputs[0].hdr.get('EXTVER'), scale_factors, zero_offsets)):
-            status = ("Combining EXTVER {}.".format(extver) if num_ext > 1 else
+        for index, (ext, sfactors, zfactors) in enumerate(
+                zip(adinputs[0], scale_factors, zero_offsets)):
+            status = (f"Combining extension {ext.id}." if num_ext > 1 else
                       "Combining images.")
             if scale:
                 status += " Applying scale factors."
@@ -295,10 +295,14 @@ class Stack(PrimitivesBASE):
         # Propagate REFCAT as the union of all input REFCATs
         refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
         if refcats:
-            out_refcat = table.unique(table.vstack(refcats, metadata_conflicts='silent'),
-                                      keys='Cat_Id')
-            out_refcat['Id'] = list(range(1, len(out_refcat)+1))
-            ad_out.REFCAT = out_refcat
+            try:
+                out_refcat = table.unique(table.vstack(refcats, metadata_conflicts='silent'),
+                                          keys=('RAJ2000', 'DEJ2000'))
+            except KeyError:
+                pass
+            else:
+                out_refcat['Id'] = list(range(1, len(out_refcat)+1))
+                ad_out.REFCAT = out_refcat
 
         # Set AIRMASS to be the mean of the input values
         try:

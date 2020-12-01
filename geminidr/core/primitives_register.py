@@ -17,7 +17,7 @@ from gempy.gemini import qap_tools as qap
 from gempy.library import astromodels as am
 from gempy.utils import logutils
 
-from gempy.library.matching import align_images_from_wcs, fit_model, match_sources
+from gempy.library.matching import find_alignment_transform, fit_model, match_sources
 
 from geminidr import PrimitivesBASE
 from . import parameters_register
@@ -38,37 +38,24 @@ class Register(PrimitivesBASE):
     def adjustWCSToReference(self, adinputs=None, **params):
         """
         This primitive registers images to a reference image by correcting
-        the relative error in their world coordinate systems. The function
-        uses points of reference common to the reference image and the
-        input images to fit the input WCS to the reference one. The fit
-        is done by a least-squares minimization of the difference between
-        the reference points in the input image pixel coordinate system.
-        This function is intended to be followed by the
-        align_to_reference_image function, which applies the relative
-        transformation encoded in the WCS to transform input images into the
-        reference image pixel coordinate system.
+        the relative error in their world coordinate systems. This is
+        preferably done via alignment of sources common to the reference
+        and input images but a fallback method that uses the header offsets
+        is also available, if there are too few sources to provide a robust
+        alignment, or if the initial WCSs are incorrect.
 
-        The primary registration method is intended to be by direct mapping
-        of sources in the image frame to correlated sources in the reference
-        frame. This method fails when there are no correlated sources in the
-        field, or when the WCSs are very far off to begin with. As a back-up
-        method, the user can try correcting the WCS by the shifts indicated
-        in the POFFSET and QOFFSET header keywords (option fallback='header'),
-        By default, only the direct method is
-        attempted, as it is expected that the relative WCS will generally be
-        more correct than either indirect method. If the user prefers not to
-        attempt direct mapping at all, they may set method to 'header'.
+        The alignment of sources is done via the KDTreeFitter, which does
+        not require a direct one-to-one mapping of sources between the
+        images. The alignment is performed in the pixel frame of each input
+        image, with sources in the reference image being transformed into
+        that frame via the existing WCS transforms. Therefore, whatever
+        transformation is required can simply be placed at the start of each
+        input image's WCS pipeline.
 
         In order to use the direct mapping method, sources must have been
         detected in the frame and attached to the AstroData instance in an
         OBJCAT extension. This can be accomplished via the detectSources
-        primitive. Running time is optimal, and sometimes the solution is
-        more robust, when there are not too many sources in the OBJCAT. Try
-        running detectSources with threshold=20. The solution may also be
-        more robust if sub-optimal sources are rejected from the set of
-        correlated sources (use option cull_sources=True). This option may
-        substantially increase the running time if there are many sources in
-        the OBJCAT.
+        primitive.
 
         It is expected that the relative difference between the WCSs of
         images to be combined should be quite small, so it may not be necessary
@@ -79,9 +66,6 @@ class Register(PrimitivesBASE):
         images. Significant rotation and scaling of the images themselves
         will generally already be encoded in the WCS, and will be corrected for
         when the images are aligned.
-
-        The WCS keywords in the headers of the output images are updated
-        to contain the optimal registration solution.
 
         Parameters
         ----------
@@ -113,7 +97,7 @@ class Register(PrimitivesBASE):
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
-                        "input images are required for matchWCSToReference")
+                        "input images are required for adjustWCSToReference")
             return adinputs
 
         if not all(len(ad) == 1 for ad in adinputs):
@@ -129,39 +113,51 @@ class Register(PrimitivesBASE):
 
         # Use first image in list as reference
         adref = adinputs[0]
-        log.stdinfo("Reference image: {}".format(adref.filename))
+        log.stdinfo(f"Reference image: {adref.filename}")
         # Create a dummy WCS to facilitate future operations
         if adref[0].wcs is None:
             adref[0].wcs = gWCS([(cf.Frame2D(name="pixels"), models.Identity(len(adref[0].shape))),
                                   (cf.Frame2D(name="world"), None)])
 
-        if (not hasattr(adref[0], 'OBJCAT') or len(adref[0].OBJCAT)
-                                        < min_sources) and method == 'sources':
-            log.warning("Too few objects found in reference image. "
-                        "{}.".format(warnings[fallback]))
-            if fallback is None:
-                return adinputs
-            else:
+        try:
+            ref_objcat = adref[0].OBJCAT
+        except AttributeError:
+            log.warning(f"Reference image has no OBJCAT. {warnings[fallback]}")
+            method = fallback
+        else:
+            if len(ref_objcat) < min_sources and method == "sources":
+                log.warning(f"Too few objects found in reference image {warnings[fallback]}")
                 method = fallback
+        if method is None:
+            return adinputs
+
+        adoutputs = [adref]
 
         for ad in adinputs[1:]:
-            if method == "offsets":
-                log.stdinfo("Using offsets specified in header for alignment.")
+            msg = ""
+            if method == "sources":
+                try:
+                    objcat = ad[0].OBJCAT
+                except AttributeError:
+                    msg = f"{ad.filename} image has no OBJCAT. "
+                else:
+                    if len(objcat) < min_sources:
+                        msg = f"{ad.filename} has too few sources. "
+
+            if msg or method == "offsets":
+                msg += warnings[fallback]
+                log.stdinfo(msg)
                 _create_wcs_from_offsets(ad, adref)
                 continue
 
-            try:
-                nobj = len(ad[0].OBJCAT)
-            except AttributeError:
-                nobj = 0
-            if nobj < min_sources:
-                log.warning("Too few objects found in {}. "
-                            "{}.".format(ad.filename, warnings[fallback]))
-                continue
+            # GNIRS WCS is dubious, so update WCS by using the ref
+            # image's WCS and the telescope offsets before alignment
+            #if ad.instrument() == 'GNIRS':
+            #    log.stdinfo("Recomputing WCS for GNIRS from offsets")
+            #    ad = _create_wcs_from_offsets(ad, adref)
 
-            log.fullinfo("Number of objects in {}: {}".format(ad.filename, nobj))
-            log.stdinfo("Cross-correlating sources in {}, {}".
-                         format(adref.filename, ad.filename))
+            log.fullinfo(f"Number of objects in {ad.filename}: {len(objcat)}")
+            log.stdinfo(f"Cross-correlating sources in {adref.filename}, {ad.filename}")
 
             pixscale = ad.pixel_scale()
             if pixscale is None:
@@ -171,45 +167,59 @@ class Register(PrimitivesBASE):
             else:
                 firstpasspix = first_pass / pixscale
 
-            # GNIRS WCS is dubious, so update WCS by using the ref
-            # image's WCS and the telescope offsets
-            #if ad.instrument() == 'GNIRS':
-            #    log.stdinfo("Recomputing WCS for GNIRS from offsets")
-            #    ad = _create_wcs_from_offsets(ad, adref)
+            incoords = (objcat['X_IMAGE'].data - 1, objcat['Y_IMAGE'].data - 1)
+            refcoords = (ref_objcat['X_IMAGE'].data - 1, ref_objcat['Y_IMAGE'].data - 1)
+            if cull_sources:
+                good_src1 = gt.clip_sources(ad)[0]
+                good_src2 = gt.clip_sources(adref)[0]
+                if len(good_src1) < min_sources or len(good_src2) < min_sources:
+                    log.warning("Too few sources in culled list, using full set "
+                                "of sources")
+                else:
+                    incoords = (good_src1["x"] - 1, good_src1["y"] - 1)
+                    refcoords = (good_src2["x"] - 1, good_src2["y"] - 1)
+
+            try:
+                t_init = adref[0].wcs.forward_transform | ad[0].wcs.backward_transform
+            except AttributeError:  # for cases with no defined WCS
+                pass
+            else:
+                refcoords = t_init(*refcoords)
 
             # The code used to start with a translation-only model, but this
             # isn't helpful if there's a sizeable rotation or scaling, so
-            # let's just try to do the whole thing and see what happens.
-            obj_list, transform = align_images_from_wcs(ad, adref,
-                    search_radius=firstpasspix, min_sources=min_sources,
-                    cull_sources=cull_sources, full_wcs=True,
-                    rotate=rotate, scale=scale, return_matches=True)
+            # let's just try to do the whole thing (if the user asks) and
+            # see what happens.
+            transform, obj_list = find_alignment_transform(incoords, refcoords,
+                    transform=None, shape=ad[0].shape,
+                    search_radius=firstpasspix, rotate=rotate, scale=scale,
+                    return_matches=True)
 
             n_corr = len(obj_list[0])
             if n_corr < min_sources + rotate + scale:
                 log.warning(f"Too few correlated objects ({n_corr}). "
                             "Setting rotate=False, scale=False")
-                obj_list, transform = align_images_from_wcs(ad, adref,
-                                                  search_radius=firstpasspix,
-                                                  cull_sources=cull_sources,
-                                                  full_wcs=True, rotate=False,
-                                                  scale=False, return_matches=True)
+                transform, obj_list = find_alignment_transform(incoords, refcoords,
+                        transform=None, shape=ad[0].shape,
+                        search_radius=firstpasspix, rotate=False, scale=False,
+                        return_matches=True)
                 n_corr = len(obj_list[0])
 
-            log.fullinfo("Number of correlated sources: {}".format(n_corr))
+            log.stdinfo(f"Number of correlated sources: {n_corr}")
             log.fullinfo("\nMatched sources:")
             log.fullinfo("   Ref. x Ref. y  Img. x  Img. y\n  {}".
                          format("-"*31))
             for img, ref in zip(*obj_list):
                 log.fullinfo("  {:7.2f} {:7.2f} {:7.2f} {:7.2f}".
                             format(*ref, *img))
-            log.fullinfo("")
+            log.stdinfo("")
 
             if n_corr < min_sources:
                 log.warning("Too few correlated sources found. "
                             "{}".format(warnings[fallback]))
                 if fallback == 'offsets':
                     _create_wcs_from_offsets(ad, adref)
+                adoutputs.append(ad)
                 continue
 
             try:
@@ -217,12 +227,13 @@ class Register(PrimitivesBASE):
             except AttributeError:  # no WCS
                 ad[0].wcs = gWCS([(cf.Frame2D(name="pixels"), transform),
                                   (cf.Frame2D(name="world"), None)])
+            adoutputs.append(ad)
 
         # Timestamp and update filenames
-        for ad in adinputs:
+        for ad in adoutputs:
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-        return adinputs
+        return adoutputs
 
     def determineAstrometricSolution(self, adinputs=None, **params):
         """
@@ -260,6 +271,11 @@ class Register(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
+            if not ('RAJ2000' in refcat.colnames and 'DEJ2000' in refcat.colnames):
+                log.warning(f'REFCAT in {ad.filename} is missing RAJ2000 '
+                            'and/or DEJ2000 columns - cannot calculate astrometry')
+                continue
+
             # List of values to report to FITSstore
             info_list = []
 
@@ -282,18 +298,17 @@ class Register(PrimitivesBASE):
 
             for index in objcat_order:
                 ext = ad[index]
-                extver = ext.hdr['EXTVER']
                 if not isinstance(ext.wcs.output_frame, cf.CelestialFrame):
-                    log.warning(f"WCS of {ad.filename}:{extver} does not "
-                                "transform to a CelestialFrame -- cannot "
+                    log.warning(f"WCS of {ad.filename} extension {ext.id} does"
+                                " not transform to a CelestialFrame -- cannot "
                                 "perform astrometry")
                     info_list.append({})
                     continue
                 try:
                     objcat = ad[index].OBJCAT
                 except AttributeError:
-                    log.stdinfo(f'No OBJCAT in {ad.filename}:{extver} -- '
-                                'cannot perform astrometry')
+                    log.stdinfo(f'No OBJCAT in {ad.filename} extension '
+                                f'{ext.id} -- cannot perform astrometry')
                     info_list.append({})
                     continue
                 objcat_len = len(objcat)
@@ -367,22 +382,24 @@ class Register(PrimitivesBASE):
                 # Send all sources to the alignment/matching engine, indicating the ones to
                 # use for the alignment
                 if num_ref_sources > 0:
-                    log.stdinfo('Aligning {}:{} with {} REFCAT and {} OBJCAT sources'.
-                                format(ad.filename, extver, num_ref_sources, keep_num))
-                    transform = fit_model(m_init, (objcat['X_IMAGE'][sorted_idx]-1,
-                                                   objcat['Y_IMAGE'][sorted_idx]-1),
-                                           (xref[in_field], yref[in_field]),
+                    log.stdinfo(f'Aligning {ad.filename} extension {ext.id} '
+                                f'with {num_ref_sources} REFCAT and '
+                                f'{keep_num} OBJCAT sources')
+                    transform = fit_model(m_init,
+                                          (objcat['X_IMAGE'][sorted_idx]-1,
+                                           objcat['Y_IMAGE'][sorted_idx]-1),
+                                          (xref[in_field], yref[in_field]),
                                           sigma=10.0, tolerance=0.0001, brute=True)
                     matched = match_sources(transform.inverse(xref, yref),
                                             (objcat['X_IMAGE']-1, objcat['Y_IMAGE']-1),
                                             radius=final)
                 else:
-                    log.stdinfo(f'No REFCAT sources in field of extver {extver}')
+                    log.stdinfo(f'No REFCAT sources in field of extension {ext.id}')
                     continue
 
                 num_matched = np.sum(matched >= 0)
-                log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
-                            format(num_matched, extver))
+                log.stdinfo(f"Matched {num_matched} objects in OBJCAT "
+                            f"extension {ext.id} against REFCAT")
                 # If this is a "better" match, save it
                 # TODO? Some sort of averaging of models?
                 if num_matched > max(best_matches, 2):
@@ -423,18 +440,16 @@ class Register(PrimitivesBASE):
                                               refcat['DEJ2000'][i]))
                     dra_std = np.std(dra)
                     ddec_std = np.std(ddec)
-                    log.fullinfo("WCS Updated for extver {}. Astrometric "
-                                 "offset is:".format(extver))
-                    log.fullinfo("RA: {:6.2f} +/- {:.2f} arcsec".
-                                 format(delta_ra, dra_std))
-                    log.fullinfo("Dec:{:6.2f} +/- {:.2f} arcsec".
-                                 format(delta_dec, ddec_std))
+                    log.fullinfo(f"WCS Updated for extension {ext.id}. "
+                                 "Astrometric offset is:")
+                    log.fullinfo(f"RA: {delta_ra:6.2f} +/- {dra_std:.2f} arcsec")
+                    log.fullinfo(f"Dec:{delta_dec:6.2f} +/- {ddec_std:.2f} arcsec")
                     info_list.append({"dra": delta_ra, "dra_std": dra_std,
                                       "ddec": delta_dec, "ddec_std": ddec_std,
                                       "nsamples": int(num_matched)})
                 else:
                     log.stdinfo("Could not determine astrometric offset for "
-                                "{}:{}".format(ad.filename, extver))
+                                f"{ad.filename} extension {ext.id}")
                     info_list.append({})
 
             # Report the measurement to the fitsstore
