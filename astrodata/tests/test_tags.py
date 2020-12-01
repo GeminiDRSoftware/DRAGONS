@@ -87,8 +87,7 @@ def testfile(tmpdir):
     hdu2 = fits.ImageHDU(data=np.ones(SHAPE) + 1)
     ad = astrodata.create(phu, [hdu, hdu2])
     tbl = Table([np.zeros(10), np.ones(10)], names=['col1', 'col2'])
-    astrodata.add_header_to_table(tbl)
-    ad.append(tbl, name='MYCAT')
+    ad.MYCAT = tbl
     filename = str(tmpdir.join('fakebias.fits'))
     ad.write(filename)
     yield filename

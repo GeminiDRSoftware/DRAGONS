@@ -280,20 +280,31 @@ class GMOSSpect(Spect, GMOS):
                 ygrid, xgrid = np.indices(ext.shape)
                 # TODO: want with_units
                 waves = trans(xgrid, ygrid)[0] * u.nm  # Wavelength always axis 0
+
+                # Tapering required to prevent QE correction from blowing up
+                # at the extremes (remember, this is a ratio, not the actual QE)
+                # We use half-Gaussians to taper
+                taper = np.ones_like(ext.data)
+                taper_locut, taper_losig = 350 * u.nm, 25 * u.nm
+                taper_hicut, taper_hisig = 1200 * u.nm, 200 * u.nm
+                taper[waves < taper_locut] = np.exp(-((waves[waves < taper_locut]
+                                                       - taper_locut) / taper_losig) ** 2)
+                taper[waves > taper_hicut] = np.exp(-((waves[waves > taper_hicut]
+                                                       - taper_hicut) / taper_hisig) ** 2)
                 try:
-                    qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value).astype(np.float32)
+                    qe_correction = (qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value).astype(
+                        np.float32) - 1) * taper + 1
                 except TypeError:  # qeModel() returns None
-                    msg = "No QE correction found for {}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                    msg = f"No QE correction found for {ad.filename} extension {ext.id}"
                     if 'sq' in self.mode:
                         raise ValueError(msg)
                     else:
                         log.warning(msg)
-                log.stdinfo("Mean relative QE of EXTVER {} is {:.5f}".
-                             format(ext.hdr['EXTVER'], qe_correction.mean()))
+                        continue
+                log.stdinfo(f"Mean relative QE of extension {ext.id} is "
+                            f"{qe_correction.mean():.5f}")
                 if not is_flat:
                     qe_correction = 1. / qe_correction
-                qe_correction[qe_correction < 0] = 0
-                qe_correction[qe_correction > 10] = 0
                 ext.multiply(qe_correction)
 
             for ext, orig_wcs in zip(ad, original_wcs):

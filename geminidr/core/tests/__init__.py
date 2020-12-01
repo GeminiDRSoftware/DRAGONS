@@ -6,7 +6,6 @@ import numpy as np
 from gempy.utils import logutils
 from geminidr.gemini.lookups.timestamp_keywords import timestamp_keys
 
-# class CompareAD():
 
 def ad_compare(ad1, ad2):
     """
@@ -124,7 +123,7 @@ def ad_compare(ad1, ad2):
     # Extension by extension, check all the attributes
     log.stdinfo('Checking extensions...')
     for ext1, ext2 in zip(ad1, ad2):
-        log.stdinfo('  Checking extver {}'.format(ext1.hdr['EXTVER']))
+        log.stdinfo(f'  Checking extension {ext1.id}')
         for attr in ['data', 'mask', 'variance', 'OBJMASK', 'OBJCAT']:
             attr1 = getattr(ext1, attr, None)
             attr2 = getattr(ext2, attr, None)
@@ -177,4 +176,3 @@ def ad_compare(ad1, ad2):
         for i,e in enumerate(errorlist):
             print("%d) %s" % (i, e))
     return ok
-

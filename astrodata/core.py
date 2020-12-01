@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import textwrap
+import warnings
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
@@ -86,7 +87,6 @@ class AstroData:
         self._tables = tables or {}
 
         self._phu = phu or fits.Header()
-        self._exposed = set()
         self._fixed_settable = {'data', 'uncertainty', 'mask', 'variance',
                                 'wcs', 'path', 'filename'}
         self._logger = logging.getLogger(__name__)
@@ -104,27 +104,12 @@ class AstroData:
             this works.
 
         """
-        # Force the data provider to load data, if needed.
-        # FIXME: probably no more needed
-        len(self)
-
         obj = self.__class__()
 
-        for attr in ('_phu', '_path', '_orig_filename', '_tables', '_exposed'):
+        for attr in ('_phu', '_path', '_orig_filename', '_tables'):
             obj.__dict__[attr] = deepcopy(self.__dict__[attr])
 
         obj.__dict__['_all_nddatas'] = [deepcopy(nd) for nd in self._nddata]
-
-        # Top-level tables
-        for key in set(self.__dict__) - set(obj.__dict__):
-            obj.__dict__[key] = obj.__dict__['_tables'][key]
-
-        # FIXME: this was used by FitsProviderProxy, not sure which way is best
-        # for nd in self.nddata:
-        #     obj.append(deepcopy(nd))
-        # for t in self._tables.values():
-        #     obj.append(deepcopy(t))
-
         return obj
 
     def _keyword_for(self, name):
@@ -150,20 +135,13 @@ class AstroData:
         """
         for cls in self.__class__.mro():
             with suppress(AttributeError, KeyError):
-                mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
-                return getattr(self, mangled_dict_name)[name]
+                # __keyword_dict is a mangled variable
+                return getattr(self, f'_{cls.__name__}__keyword_dict')[name]
         else:
-            raise AttributeError("No match for '{}'".format(name))
+            raise AttributeError(f"No match for '{name}'")
 
     def _process_tags(self):
-        """
-        Determines the tag set for the current instance.
-
-        Returns
-        -------
-        set of str
-
-        """
+        """Return the tag set (as a set of str) for the current instance."""
         results = []
         # Calling inspect.getmembers on `self` would trigger all the
         # properties (tags, phu, hdr, etc.), and that's undesirable. To
@@ -288,6 +266,17 @@ class AstroData:
         return tuple(mname for (mname, method) in members)
 
     @property
+    def id(self):
+        """Returns the extension identifier (1-based extension number)
+        for sliced objects.
+        """
+        if self.is_single:
+            return self._indices[0] + 1
+        else:
+            raise ValueError("Cannot return id for an AstroData object "
+                             "that is not a single slice")
+
+    @property
     def indices(self):
         """Returns the extensions indices for sliced objects."""
         return self._indices if self._indices else list(range(len(self)))
@@ -341,8 +330,14 @@ class AstroData:
 
     @property
     def tables(self):
-        """Return the names of the `astropy.table.Table` objects."""
-        return set(self._tables.keys())
+        """Return the names of the `astropy.table.Table` objects associated to
+        the object or its extensions.
+        """
+        keys = set(self._tables)
+        if self.is_single:
+            keys |= set(key for key, obj in self.nddata.meta['other'].items()
+                        if isinstance(obj, Table))
+        return keys
 
     @property
     @returns_list
@@ -485,11 +480,6 @@ class AstroData:
                              phu=self.phu, indices=indices)
         obj._path = self.path
         obj._orig_filename = self.orig_filename
-        obj._exposed = self._exposed
-        # FIXME: tables are stored both in _tables and __dict__, not sure why,
-        # we could probably get rid of this (and exposed as well?)
-        for k in self._exposed:
-            obj.__dict__[k] = self.__dict__[k]
         return obj
 
     def __delitem__(self, idx):
@@ -530,26 +520,17 @@ class AstroData:
             If the attribute could not be found/computed.
 
         """
-        # Exposed objects are part of the normal object interface. We may have
-        # just lazy-loaded them, and that's why we get here...
-        if attribute in self._exposed:
-            return self.__dict__[attribute]
-
-        # Check if it's an aliased object
-        for nd in self._nddata:
-            if nd.meta.get('name') == attribute:
-                return nd
-
         # I we're working with single slices, let's look some things up
         # in the ND object
         if self.is_single and attribute.isupper():
-            try:
+            with suppress(KeyError):
                 return self.nddata.meta['other'][attribute]
-            except KeyError:
-                pass
 
-        raise AttributeError("{!r} object has no attribute {!r}"
-                             .format(self.__class__.__name__, attribute))
+        if attribute in self._tables:
+            return self._tables[attribute]
+
+        raise AttributeError(f"{self.__class__.__name__!r} object has no "
+                             f"attribute {attribute!r}")
 
     def __setattr__(self, attribute, value):
         """
@@ -568,22 +549,26 @@ class AstroData:
         def _my_attribute(attr):
             return attr in self.__dict__ or attr in self.__class__.__dict__
 
-        if attribute.isupper() and not _my_attribute(attribute):
+        if (attribute.isupper() and self.is_settable(attribute) and
+                not _my_attribute(attribute)):
             # This method is meant to let the user set certain attributes of
             # the NDData objects. First we check if the attribute belongs to
             # this object's dictionary.  Otherwise, see if we can pass it down.
             #
-            # CJS 20200131: if the attribute is "exposed" then we should set
-            # it via the append method I think (it's a Table or something)
-            if (self.is_settable(attribute) and
-                    (not _my_attribute(attribute) or
-                     attribute in self._exposed)):
-                if self.is_sliced and not self.is_single:
-                    raise TypeError("This attribute can only be "
-                                    "assigned to a single-slice object")
-                add_to = self.nddata[0] if self.is_sliced else None
-                self.append(value, name=attribute, add_to=add_to)
-                return
+            if self.is_sliced and not self.is_single:
+                raise TypeError("This attribute can only be "
+                                "assigned to a single-slice object")
+
+            if attribute == DEFAULT_EXTENSION:
+                raise AttributeError(f"{attribute} extensions should be "
+                                     "appended with .append")
+            elif attribute in {'DQ', 'VAR'}:
+                raise AttributeError(f"{attribute} should be set on the "
+                                     "nddata object")
+
+            add_to = self.nddata if self.is_single else None
+            self._append(value, name=attribute, add_to=add_to)
+            return
 
         super().__setattr__(attribute, value)
 
@@ -600,22 +585,15 @@ class AstroData:
             other = self.nddata.meta['other']
             if attribute in other:
                 del other[attribute]
-                otherh = self.nddata.meta['other_header']
-                if attribute in otherh:
-                    del otherh[attribute]
             else:
-                raise AttributeError(
-                    "{!r} sliced object has no attribute {!r}"
-                    .format(self.__class__.__name__, attribute))
+                raise AttributeError(f"{self.__class__.__name__!r} sliced "
+                                     "object has no attribute {attribute!r}")
         else:
-            # TODO: So far we're only deleting tables by name.
-            #       Figure out what to do with aliases
             if attribute in self._tables:
                 del self._tables[attribute]
             else:
-                raise AttributeError(
-                    "'{}' is not a global table for this instance"
-                    .format(attribute))
+                raise AttributeError(f"'{attribute}' is not a global table "
+                                     "for this instance")
 
     def __contains__(self, attribute):
         """
@@ -655,10 +633,9 @@ class AstroData:
         set(['OBJMASK', 'OBJCAT'])
 
         """
-        exposed = self._exposed.copy()
-        if self.is_sliced:
-            nd = self.nddata if self.is_single else self.nddata[0]
-            exposed |= set(nd.meta['other'])
+        exposed = set(self._tables)
+        if self.is_single:
+            exposed |= set(self.nddata.meta['other'])
         return exposed
 
     def _pixel_info(self):
@@ -840,142 +817,63 @@ class AstroData:
         obj._oper(obj._rdiv, oper)
         return obj
 
-    def _reset_ver(self, nd):
-        try:
-            ver = max(nd.meta['ver'] for nd in self._all_nddatas) + 1
-        except ValueError:
-            # This seems to be the first extension!
-            ver = 1
-
-        nd.meta['header']['EXTVER'] = ver
-        nd.meta['ver'] = ver
-
-        try:
-            oheaders = nd.meta['other_header']
-            for extname, ext in nd.meta['other'].items():
-                try:
-                    oheaders[extname]['EXTVER'] = ver
-                except KeyError:
-                    pass
-                try:
-                    # The object may keep the header on its own structure
-                    ext.meta['header']['EXTVER'] = ver
-                except AttributeError:
-                    pass
-        except KeyError:
-            pass
-
-        return ver
-
     def _process_pixel_plane(self, pixim, name=None, top_level=False,
-                             reset_ver=True, custom_header=None):
-        if not isinstance(pixim, NDDataObject):
-            # Assume that we get an ImageHDU or something that can be
-            # turned into one
-            if isinstance(pixim, fits.ImageHDU):
-                nd = NDDataObject(pixim.data, meta={'header': pixim.header})
-            elif custom_header is not None:
-                nd = NDDataObject(pixim, meta={'header': custom_header})
-            else:
-                nd = NDDataObject(pixim, meta={'header': {}})
-        else:
+                             custom_header=None):
+        # Assume that we get an ImageHDU or something that can be
+        # turned into one
+        if isinstance(pixim, fits.ImageHDU):
+            nd = NDDataObject(pixim.data, meta={'header': pixim.header})
+        elif isinstance(pixim, NDDataObject):
             nd = pixim
-            if custom_header is not None:
-                nd.meta['header'] = custom_header
+        else:
+            nd = NDDataObject(pixim)
 
-        header = nd.meta['header']
+        if custom_header is not None:
+            nd.meta['header'] = custom_header
+
+        header = nd.meta.setdefault('header', fits.Header())
         currname = header.get('EXTNAME')
-        ver = header.get('EXTVER', -1)
 
-        # TODO: Review the logic. This one seems bogus
-        if name and (currname is None):
+        if currname is None:
             header['EXTNAME'] = name if name is not None else DEFAULT_EXTENSION
 
         if top_level:
-            if 'other' not in nd.meta:
-                nd.meta['other'] = OrderedDict()
-                nd.meta['other_header'] = {}
-
-            if reset_ver or ver == -1:
-                self._reset_ver(nd)
-            else:
-                nd.meta['ver'] = ver
+            nd.meta.setdefault('other', OrderedDict())
 
         return nd
 
-    def _add_to_other(self, add_to, name, data, header=None):
-        meta = add_to.meta
-        meta['other'][name] = data
-        if header:
-            header['EXTVER'] = meta.get('ver', -1)
-            meta['other_header'][name] = header
-
     def _append_array(self, data, name=None, header=None, add_to=None):
+        if name in {'DQ', 'VAR'}:
+            raise ValueError(f"'{name}' need to be associated to a "
+                             f"'{DEFAULT_EXTENSION}' one")
+
         if add_to is None:
             # Top level extension
-
-            # Special cases for Gemini
-            if name is None:
-                name = DEFAULT_EXTENSION
-
-            if name in {'DQ', 'VAR'}:
-                raise ValueError("'{}' need to be associated to a '{}' one"
-                                 .format(name, DEFAULT_EXTENSION))
+            if name is not None:
+                hname = name
+            elif header is not None:
+                hname = header.get('EXTNAME', DEFAULT_EXTENSION)
             else:
-                # FIXME: the logic here is broken since name is
-                # always set to somehing above with DEFAULT_EXTENSION
-                if name is not None:
-                    hname = name
-                elif header is not None:
-                    hname = header.get('EXTNAME', DEFAULT_EXTENSION)
-                else:
-                    hname = DEFAULT_EXTENSION
+                hname = DEFAULT_EXTENSION
 
-                hdu = fits.ImageHDU(data, header=header)
-                hdu.header['EXTNAME'] = hname
-                ret = self._append_imagehdu(hdu, name=hname, header=None,
-                                            add_to=None)
+            hdu = fits.ImageHDU(data, header=header)
+            hdu.header['EXTNAME'] = hname
+            ret = self._append_imagehdu(hdu, name=hname, header=None,
+                                        add_to=None)
         else:
-            # Attaching to another extension
-            if header is not None and name in {'DQ', 'VAR'}:
-                self._logger.warning(
-                    "The header is ignored for '{}' extensions".format(name))
-            if name is None:
-                # FIXME: both should raise the same exception
-                if self.is_sliced:
-                    raise TypeError("Can't append objects to a slice "
-                                    "without an extension name")
-                else:
-                    raise ValueError("Can't append pixel planes to other "
-                                     "objects without a name")
-            elif name is DEFAULT_EXTENSION:
-                raise ValueError("Can't attach '{}' arrays to other objects"
-                                 .format(DEFAULT_EXTENSION))
-            elif name == 'DQ':
-                add_to.mask = data
-                ret = data
-            elif name == 'VAR':
-                std_un = ADVarianceUncertainty(data)
-                std_un.parent_nddata = add_to
-                add_to.uncertainty = std_un
-                ret = std_un
-            else:
-                self._add_to_other(add_to, name, data, header=header)
-                ret = data
+            ret = add_to.meta['other'][name] = data
 
         return ret
 
-    def _append_imagehdu(self, hdu, name, header, add_to, reset_ver=True):
+    def _append_imagehdu(self, hdu, name, header, add_to):
         if name in {'DQ', 'VAR'} or add_to is not None:
             return self._append_array(hdu.data, name=name, add_to=add_to)
         else:
             nd = self._process_pixel_plane(hdu, name=name, top_level=True,
-                                           reset_ver=reset_ver,
                                            custom_header=header)
             return self._append_nddata(nd, name, add_to=None)
 
-    def _append_raw_nddata(self, raw_nddata, name, header, add_to,
-                           reset_ver=True):
+    def _append_raw_nddata(self, raw_nddata, name, header, add_to):
         # We want to make sure that the instance we add is whatever we specify
         # as NDDataObject, instead of the random one that the user may pass
         top_level = add_to is None
@@ -983,11 +881,10 @@ class AstroData:
             raw_nddata = NDDataObject(raw_nddata)
         processed_nddata = self._process_pixel_plane(raw_nddata,
                                                      top_level=top_level,
-                                                     custom_header=header,
-                                                     reset_ver=reset_ver)
+                                                     custom_header=header)
         return self._append_nddata(processed_nddata, name=name, add_to=add_to)
 
-    def _append_nddata(self, new_nddata, name, add_to, reset_ver=True):
+    def _append_nddata(self, new_nddata, name, add_to):
         # NOTE: This method is only used by others that have constructed NDData
         # according to our internal format. We don't accept new headers at this
         # point, and that's why it's missing from the signature.  'name' is
@@ -999,43 +896,46 @@ class AstroData:
         hd = new_nddata.meta['header']
         hname = hd.get('EXTNAME', DEFAULT_EXTENSION)
         if hname == DEFAULT_EXTENSION:
-            if reset_ver:
-                self._reset_ver(new_nddata)
             self._all_nddatas.append(new_nddata)
         else:
             raise ValueError("Arbitrary image extensions can only be added "
-                             "in association to a '{}'"
-                             .format(DEFAULT_EXTENSION))
+                             f"in association to a '{DEFAULT_EXTENSION}'")
 
         return new_nddata
 
-    def _append_table(self, new_table, name, header, add_to, reset_ver=True):
+    def _append_table(self, new_table, name, header, add_to):
         tb = _process_table(new_table, name, header)
-        hname = tb.meta['header'].get('EXTNAME') if name is None else name
-        # if hname is None:
-        #     raise ValueError("Can't attach a table without a name!")
+        hname = tb.meta['header'].get('EXTNAME')
+
+        def find_next_num(tables):
+            table_num = 1
+            while f'TABLE{table_num}' in tables:
+                table_num += 1
+            return f'TABLE{table_num}'
+
         if add_to is None:
+            # Find table names for all extensions
+            ext_tables = set()
+            for nd in self._nddata:
+                ext_tables |= set(key for key, obj in nd.meta['other'].items()
+                                  if isinstance(obj, Table))
+
             if hname is None:
-                table_num = 1
-                while 'TABLE{}'.format(table_num) in self._tables:
-                    table_num += 1
-                hname = 'TABLE{}'.format(table_num)
-            # Don't use setattr, which is overloaded and may case problems
-            self.__dict__[hname] = tb
+                hname = find_next_num(set(self._tables) | ext_tables)
+            elif hname in ext_tables:
+                raise ValueError(f"Cannot append table '{hname}' because it "
+                                 "would hide an extension table")
+
             self._tables[hname] = tb
-            self._exposed.add(hname)
         else:
-            if hname is None:
-                table_num = 1
-                while getattr(add_to, 'TABLE{}'.format(table_num), None):
-                    table_num += 1
-                hname = 'TABLE{}'.format(table_num)
-            setattr(add_to, hname, tb)
-            self._add_to_other(add_to, hname, tb, tb.meta['header'])
+            if hname in self._tables:
+                raise ValueError(f"Cannot append table '{hname}' because it "
+                                 "would hide a top-level table")
+
             add_to.meta['other'][hname] = tb
         return tb
 
-    def _append_astrodata(self, ad, name, header, add_to, reset_ver=True):
+    def _append_astrodata(self, ad, name, header, add_to):
         if not ad.is_single:
             raise ValueError("Cannot append AstroData instances that are "
                              "not single slices")
@@ -1047,16 +947,32 @@ class AstroData:
         if header is not None:
             new_nddata.meta['header'] = deepcopy(header)
 
-        return self._append_nddata(new_nddata, name=None, add_to=None,
-                                   reset_ver=True)
+        return self._append_nddata(new_nddata, name=None, add_to=None)
 
-    def append(self, ext, name=None, header=None, reset_ver=True, add_to=None):
+    def _append(self, ext, name=None, header=None, add_to=None):
         """
-        Adds a new top-level extension. Objects appended to a single
-        slice will actually be made hierarchically dependent of the science
-        object represented by that slice. If appended to the provider as
-        a whole, the new member will be independent (eg. global table, new
-        science object).
+        Internal method to dispatch to the type specific methods. This is
+        called either by ``.append`` to append on top-level objects only or
+        by ``__setattr__``. In the second case ``name`` cannot be None, so
+        this is always the case when appending to extensions (add_to != None).
+        """
+        dispatcher = (
+            (NDData, self._append_raw_nddata),
+            ((Table, fits.TableHDU, fits.BinTableHDU), self._append_table),
+            (fits.ImageHDU, self._append_imagehdu),
+            (AstroData, self._append_astrodata),
+        )
+
+        for bases, method in dispatcher:
+            if isinstance(ext, bases):
+                return method(ext, name=name, header=header, add_to=add_to)
+
+        # Assume that this is an array for a pixel plane
+        return self._append_array(ext, name=name, header=header, add_to=add_to)
+
+    def append(self, ext, name=None, header=None):
+        """
+        Adds a new top-level extension.
 
         Parameters
         ----------
@@ -1091,40 +1007,25 @@ class AstroData:
             illegal somehow.
 
         """
-        if self.is_sliced and not self.is_single:
-            # TODO: We could rethink this one, but leave it like that at
-            # the moment
-            raise TypeError("Can't append objects to non-single slices")
-
-        # FIXME: this was used on FitsProviderProxy:
-        # elif name is None:
-        #     raise TypeError("Can't append objects to a slice without an "
-        #                     "extension name")
+        if self.is_sliced:
+            raise TypeError("Can't append objects to slices, use "
+                            "'ext.NAME = obj' instead")
 
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, fits.PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed. "
                              "Use .phu if you really need to set one")
+        elif isinstance(ext, Table):
+            raise ValueError("Tables should be set directly as attribute, "
+                             "i.e. 'ad.MYTABLE = table'")
 
-        if self.is_sliced:
-            add_to = self.nddata
+        if name is not None and not name.isupper():
+            warnings.warn(f"extension name '{name}' should be uppercase",
+                          UserWarning)
+            name = name.upper()
 
-        dispatcher = (
-            (NDData, self._append_raw_nddata),
-            ((Table, fits.TableHDU, fits.BinTableHDU), self._append_table),
-            (fits.ImageHDU, self._append_imagehdu),
-            (AstroData, self._append_astrodata),
-        )
-
-        for bases, method in dispatcher:
-            if isinstance(ext, bases):
-                return method(ext, name=name, header=header, add_to=add_to,
-                              reset_ver=reset_ver)
-        else:
-            # Assume that this is an array for a pixel plane
-            return self._append_array(ext, name=name, header=header,
-                                      add_to=add_to)
+        return self._append(ext, name=name, header=header)
 
     @classmethod
     def read(cls, source, extname_parser=None):
@@ -1151,53 +1052,6 @@ class AstroData:
             filename = self.path
 
         write_fits(self, filename, overwrite=overwrite)
-
-    def extver_map(self):
-        """
-        Provide a mapping between the FITS EXTVER of an extension and the index
-        that will be used to access it within this object.
-
-        Returns
-        -------
-        A dictionary ``{EXTVER:index, ...}``
-
-        Raises
-        ------
-        ValueError
-            If used against a single slice. It is of no use in that situation.
-
-        """
-        if self.is_single:
-            raise ValueError("Trying to get a mapping out of a single slice")
-        return {nd.meta['ver']: n for (n, nd) in enumerate(self._nddata)}
-
-    def extver(self, ver):
-        """
-        Get an extension using its EXTVER instead of the positional index
-        in this object.
-
-        Parameters
-        ----------
-        ver : int
-            The EXTVER for the desired extension.
-
-        Returns
-        -------
-        A sliced object containing the desired extension.
-
-        Raises
-        ------
-        IndexError
-            If the provided EXTVER doesn't exist.
-
-        """
-        try:
-            if isinstance(ver, int):
-                return self[self.extver_map()[ver]]
-            else:
-                raise ValueError("{} is not an integer EXTVER".format(ver))
-        except KeyError as e:
-            raise IndexError("EXTVER {} not found".format(e.args[0]))
 
     def operate(self, operator, *args, **kwargs):
         """

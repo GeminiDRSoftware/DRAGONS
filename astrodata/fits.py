@@ -2,61 +2,40 @@ import gc
 import logging
 import os
 import traceback
+import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from io import BytesIO
-from itertools import product as cart_product
-from itertools import zip_longest
+from itertools import product as cart_product, zip_longest
 
 import asdf
+import astropy
 import jsonschema
 import numpy as np
-
-import astropy
 from astropy import units as u
 from astropy.io import fits
-from astropy.io.fits import (DELAYED, BinTableHDU, Column, FITS_rec, HDUList,
+from astropy.io.fits import (DELAYED, BinTableHDU, Column, HDUList,
                              ImageHDU, PrimaryHDU, TableHDU)
 from astropy.nddata import NDData
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
 from astropy.table import Table
-from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 
-from . import wcs as adwcs
-from .nddata import ADVarianceUncertainty
-from .nddata import NDAstroData as NDDataObject
+from .nddata import ADVarianceUncertainty, NDAstroData as NDDataObject
+from .wcs import fitswcs_to_gwcs, gwcs_to_fits
 
 DEFAULT_EXTENSION = 'SCI'
 NO_DEFAULT = object()
 LOGGER = logging.getLogger(__name__)
 
 
-class KeywordCallableWrapper:
-    def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
-        self.kw = keyword
-        self.on_ext = on_ext
-        self.default = default
-        self.coercion_fn = coerce_with if coerce_with is not None else (lambda x: x)
-
-    def __call__(self, adobj):
-        def wrapper():
-            manip = adobj.phu if not self.on_ext else adobj.hdr
-            if self.default is NO_DEFAULT:
-                ret = getattr(manip, self.kw)
-            else:
-                ret = manip.get(self.kw, self.default)
-            return self.coercion_fn(ret)
-        return wrapper
-
-
 class FitsHeaderCollection:
-    """
-    This class provides group access to a list of PyFITS Header-like objects.
-    It exposes a number of methods (`set`, `get`, etc.) that operate over all
-    the headers at the same time. It can also be iterated.
+    """Group access to a list of FITS Header-like objects.
+
+    It exposes a number of methods (``set``, ``get``, etc.) that operate over
+    all the headers at the same time. It can also be iterated.
 
     Parameters
     ----------
@@ -121,7 +100,7 @@ class FitsHeaderCollection:
             except KeyError:
                 pass
         if not deleted:
-            raise KeyError("'{}' is not on any of the extensions".format(key))
+            raise KeyError(f"'{key}' is not on any of the extensions")
 
     def get_comment(self, key):
         return [header.comments[key] for header in self._headers]
@@ -129,7 +108,7 @@ class FitsHeaderCollection:
     def set_comment(self, key, comment):
         def _inner_set_comment(header):
             if key not in header:
-                raise KeyError("Keyword {!r} not available".format(key))
+                raise KeyError(f"Keyword {key!r} not available")
 
             header.set(key, comment=comment)
 
@@ -137,7 +116,7 @@ class FitsHeaderCollection:
             try:
                 _inner_set_comment(header)
             except KeyError as err:
-                raise KeyError(err.args[0] + " at header {}".format(n))
+                raise KeyError(err.args[0] + f" at header {n}")
 
     def __contains__(self, key):
         return any(tuple(key in h for h in self._headers))
@@ -166,86 +145,23 @@ def table_to_bintablehdu(table, extname=None):
     Returns
     -------
     BinTableHDU
+
     """
-    add_header_to_table(table)
-    array = table.as_array()
-    header = table.meta['header'].copy()
+    table_header = table.meta.pop('header', None)
+    hdu = fits.table_to_hdu(table)
+    if table_header is not None:
+        update_header(hdu.header, table_header)
     if extname:
-        header['EXTNAME'] = (extname, 'added by AstroData')
-    coldefs = []
-    for n, name in enumerate(array.dtype.names, 1):
-        coldefs.append(Column(
-            name   = header.get('TTYPE{}'.format(n)),
-            format = header.get('TFORM{}'.format(n)),
-            unit   = header.get('TUNIT{}'.format(n)),
-            null   = header.get('TNULL{}'.format(n)),
-            bscale = header.get('TSCAL{}'.format(n)),
-            bzero  = header.get('TZERO{}'.format(n)),
-            disp   = header.get('TDISP{}'.format(n)),
-            start  = header.get('TBCOL{}'.format(n)),
-            dim    = header.get('TDIM{}'.format(n)),
-            array  = array[name]
-        ))
-
-    return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
-
-
-header_type_map = {
-    'bool': 'L',
-    'int8': 'B',
-    'int16': 'I',
-    'int32': 'J',
-    'int64': 'K',
-    'uint8': 'B',
-    'uint16': 'I',
-    'uint32': 'J',
-    'uint64': 'K',
-    'float32': 'E',
-    'float64': 'D',
-    'complex64': 'C',
-    'complex128': 'M'
-}
+        hdu.header['EXTNAME'] = (extname, 'added by AstroData')
+    return hdu
 
 
 def header_for_table(table):
-    columns = []
-    for col in table.itercols():
-        descr = {'name': col.name}
-        typekind = col.dtype.kind
-        typename = col.dtype.name
-        if typekind in {'S', 'U'}:  # Array of strings
-            strlen = col.dtype.itemsize // col.dtype.alignment
-            descr['format'] = '{}A'.format(strlen)
-            descr['disp'] = 'A{}'.format(strlen)
-        elif typekind == 'O':  # Variable length array
-            raise TypeError("Variable length arrays like in column '{}' are "
-                            "not supported".format(col.name))
-        else:
-            try:
-                typedesc = header_type_map[typename]
-            except KeyError:
-                raise TypeError("I don't know how to treat type {!r} for "
-                                "column {}".format(col.dtype, col.name))
-            repeat = ''
-            data = col.data
-            shape = data.shape
-            if len(shape) > 1:
-                repeat = data.size // shape[0]
-                if len(shape) > 2:
-                    descr['dim'] = shape[1:]
-            if typedesc == 'L' and len(shape) > 1:
-                # Bit array
-                descr['format'] = '{}X'.format(repeat)
-            else:
-                descr['format'] = '{}{}'.format(repeat, typedesc)
-            if col.unit is not None:
-                descr['unit'] = str(col.unit)
-
-        columns.append(fits.Column(array=col.data, **descr))
-
-    fits_header = fits.BinTableHDU.from_columns(columns).header
-    if 'header' in table.meta:
-        fits_header = update_header(table.meta['header'], fits_header)
+    table_header = table.meta.pop('header', None)
+    fits_header = fits.table_to_hdu(table).header
+    if table_header:
+        table.meta['header'] = table_header  # restore original meta
+        fits_header = update_header(table_header, fits_header)
     return fits_header
 
 
@@ -260,7 +176,7 @@ def _process_table(table, name=None, header=None):
         obj = Table(table.data, meta={'header': header or table.header})
         for i, col in enumerate(obj.columns, start=1):
             try:
-                obj[col].unit = u.Unit(obj.meta['header']['TUNIT{}'.format(i)])
+                obj[col].unit = u.Unit(obj.meta['header'][f'TUNIT{i}'])
             except (KeyError, TypeError):
                 pass
     elif isinstance(table, Table):
@@ -270,8 +186,7 @@ def _process_table(table, name=None, header=None):
         elif 'header' not in obj.meta:
             obj.meta['header'] = header_for_table(obj)
     else:
-        raise ValueError("{} is not a recognized table type"
-                         .format(table.__class__))
+        raise ValueError(f"{table.__class__} is not a recognized table type")
 
     if name is not None:
         obj.meta['header']['EXTNAME'] = name
@@ -410,6 +325,7 @@ def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
 
     if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
         # MEF file
+        # First get HDUs for which EXTVER is defined
         for n, hdu in enumerate(hdulist):
             if extname_parser:
                 extname_parser(hdu)
@@ -422,6 +338,7 @@ def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
             new_list.append(hdu)
             recognized.add(hdu)
 
+        # Then HDUs that miss EXTVER
         for hdu in hdulist:
             if hdu in recognized:
                 continue
@@ -464,7 +381,7 @@ def read_fits(cls, source, extname_parser=None):
 
     ad = cls()
 
-    if isinstance(source, str):
+    if isinstance(source, (str, os.PathLike)):
         hdulist = fits.open(source, memmap=True,
                             do_not_scale_image_data=True, mode='readonly')
         ad.path = source
@@ -495,6 +412,7 @@ def read_fits(cls, source, extname_parser=None):
             if hdu.header.get('EXTVER') == ver and hdu.name not in skip_names:
                 yield hdu
 
+    # Only SCI HDUs
     sci_units = [hdu for hdu in hdulist[1:] if hdu.name == DEFAULT_EXTENSION]
 
     for idx, hdu in enumerate(sci_units):
@@ -508,6 +426,7 @@ def read_fits(cls, source, extname_parser=None):
             'other': [],
         }
 
+        # For each SCI HDU find if it has an associated variance, mask, wcs
         for extra_unit in associated_extensions(ver):
             seen.add(extra_unit)
             name = extra_unit.name
@@ -520,52 +439,61 @@ def read_fits(cls, source, extname_parser=None):
             else:
                 parts['other'].append(extra_unit)
 
-        if hdulist._file is not None and hdulist._file.memmap:
-            nd = NDDataObject(
-                    data=FitsLazyLoadable(parts['data']),
-                    uncertainty=(None if parts['uncertainty'] is None
-                                 else FitsLazyLoadable(parts['uncertainty'])),
-                    mask=(None if parts['mask'] is None
-                          else FitsLazyLoadable(parts['mask'])),
-                    wcs=(None if parts['wcs'] is None
-                         else asdftablehdu_to_wcs(parts['wcs'])),
-                    )
-            if nd.wcs is None:
-                try:
-                    nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
-                    # In case WCS info is in the PHU
-                    if nd.wcs is None:
-                        nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
-                except TypeError as e:
-                    raise e
-            ad.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
-        else:
-            nd = ad.append(parts['data'], name=DEFAULT_EXTENSION,
-                           reset_ver=False)
-            for item_name in ('mask', 'uncertainty'):
-                item = parts[item_name]
-                if item is not None:
-                    ad.append(item, name=item.header['EXTNAME'], add_to=nd)
-            if isinstance(nd, NDData):
-                if parts['wcs'] is not None:
-                    nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+        header = parts['data'].header
+        lazy = hdulist._file is not None and hdulist._file.memmap
+
+        for part_name in ('data', 'mask', 'uncertainty'):
+            if parts[part_name] is not None:
+                if lazy:
+                    # Use FitsLazyLoadable to delay loading of the data
+                    parts[part_name] = FitsLazyLoadable(parts[part_name])
                 else:
-                    try:
-                        nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
-                    except TypeError:
-                        pass
+                    # Otherwise use the data array
+                    parts[part_name] = parts[part_name].data
+
+        # handle the variance if not lazy
+        if (parts['uncertainty'] is not None and
+                not isinstance(parts['uncertainty'], FitsLazyLoadable)):
+            parts['uncertainty'] = ADVarianceUncertainty(parts['uncertainty'])
+
+        # Create the NDData object
+        nd = NDDataObject(
+            data=parts['data'],
+            uncertainty=parts['uncertainty'],
+            mask=parts['mask'],
+            meta={'header': header},
+        )
+
+        if parts['wcs'] is not None:
+            # Load the gWCS object from the ASDF extension
+            nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+        if nd.wcs is None:
+            # Fallback to the data header
+            nd.wcs = fitswcs_to_gwcs(nd.meta['header'])
+            if nd.wcs is None:
+                # In case WCS info is in the PHU
+                nd.wcs = fitswcs_to_gwcs(hdulist[0].header)
+
+        ad.append(nd, name=DEFAULT_EXTENSION)
+
+        # This is used in the writer to keep track of the extensions that
+        # were read from the current object.
+        nd.meta['parent_ad'] = id(ad)
 
         for other in parts['other']:
-            ad.append(other, name=other.header['EXTNAME'], add_to=nd)
+            if not other.name:
+                warnings.warn(f"Skip HDU {other} because it has no EXTNAME")
+            else:
+                setattr(ad[-1], other.name, other)
 
     for other in hdulist:
         if other in seen:
             continue
         name = other.header.get('EXTNAME')
         try:
-            ad.append(other, name=name, reset_ver=False)
+            ad.append(other, name=name)
         except ValueError as e:
-            print(str(e)+". Discarding "+name)
+            warnings.warn(f"Discarding {name} :\n {e}")
 
     return ad
 
@@ -575,16 +503,34 @@ def ad_to_hdulist(ad):
     hdul = HDUList()
     hdul.append(PrimaryHDU(header=ad.phu, data=DELAYED))
 
+    # Find the maximum EXTVER for extensions that belonged with this
+    # object if it was read from a FITS file
+    maxver = max((nd.meta['header'].get('EXTVER', 0) for nd in ad._nddata
+                  if nd.meta.get('parent_ad') == id(ad)),
+                 default=0)
+
     for ext in ad._nddata:
-        meta = ext.meta
-        header, ver = meta['header'], meta['ver']
+        header = ext.meta['header']
+
+        if not isinstance(header, fits.Header):
+            header = fits.Header(header)
+
+        if ext.meta.get('parent_ad') == id(ad):
+            # If the extension belonged with this object, use its
+            # original EXTVER
+            ver = header['EXTVER']
+        else:
+            # Otherwise renumber the extension
+            ver = header['EXTVER'] = maxver + 1
+            maxver += 1
+
         wcs = ext.wcs
 
         if isinstance(wcs, gWCS):
             # We don't have access to the AD tags so see if it's an image
             # Catch ValueError as any sort of failure
             try:
-                wcs_dict = adwcs.gwcs_to_fits(ext, ad.phu)
+                wcs_dict = gwcs_to_fits(ext, ad.phu)
             except (ValueError, NotImplementedError) as e:
                 LOGGER.warning(e)
             else:
@@ -612,17 +558,19 @@ def ad_to_hdulist(ad):
         if isinstance(wcs, gWCS):
             hdul.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
 
-        for name, other in meta.get('other', {}).items():
+        for name, other in ext.meta.get('other', {}).items():
             if isinstance(other, Table):
-                hdul.append(table_to_bintablehdu(other))
+                hdu = table_to_bintablehdu(other)
             elif isinstance(other, np.ndarray):
-                header = meta['other_header'].get(name, meta['header'])
-                hdul.append(new_imagehdu(other, header, name=name))
+                hdu = new_imagehdu(other, header, name=name)
             elif isinstance(other, NDDataObject):
-                hdul.append(new_imagehdu(other.data, meta['header']))
+                hdu = new_imagehdu(other.data, ext.meta['header'])
             else:
                 raise ValueError("I don't know how to write back an object "
-                                 "of type {}".format(type(other)))
+                                 f"of type {type(other)}")
+
+            hdu.ver = ver
+            hdul.append(hdu)
 
     if ad._tables is not None:
         for name, table in sorted(ad._tables.items()):
@@ -690,7 +638,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
     )
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
-    result.meta['other_header'] = {}
 
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
@@ -737,7 +684,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
             # otherwise for a NDData one AstroData would use the name of the
             # AstroData object.
             other[name] = other[name].data
-            result.meta['other_header'][name] = fits.Header({'EXTNAME': name})
 
     return result
 
@@ -794,7 +740,7 @@ def wcs_to_asdftablehdu(wcs, extver=None):
         wcsbuf = np.frombuffer(wcsbuf, dtype=np.uint8)
     else:
         hduclass = TableHDU
-        fmt = 'A{0}'.format(max(len(line) for line in wcsbuf))
+        fmt = 'A{}'.format(max(len(line) for line in wcsbuf))
 
     # Construct the FITS table extension:
     col = Column(name='gWCS', format=fmt, array=wcsbuf,

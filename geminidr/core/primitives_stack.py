@@ -253,9 +253,9 @@ class Stack(PrimitivesBASE):
             [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
 
         ad_out = astrodata.create(adinputs[0].phu)
-        for index, (extver, sfactors, zfactors) in enumerate(
-                zip(adinputs[0].hdr.get('EXTVER'), scale_factors, zero_offsets)):
-            status = ("Combining EXTVER {}.".format(extver) if num_ext > 1 else
+        for index, (ext, sfactors, zfactors) in enumerate(
+                zip(adinputs[0], scale_factors, zero_offsets)):
+            status = (f"Combining extension {ext.id}." if num_ext > 1 else
                       "Combining images.")
             if scale:
                 status += " Applying scale factors."

@@ -28,54 +28,6 @@ def ad2():
     return astrodata.create(phu, [hdu])
 
 
-def test_create_with_no_data():
-    for phu in (fits.PrimaryHDU(), fits.Header(), {}):
-        ad = astrodata.create(phu)
-        assert isinstance(ad, astrodata.AstroData)
-        assert len(ad) == 0
-        assert ad.instrument() is None
-        assert ad.object() is None
-
-
-def test_create_with_header():
-    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
-    for phu in (hdr, fits.PrimaryHDU(header=hdr), dict(hdr), list(hdr.cards)):
-        ad = astrodata.create(phu)
-        assert isinstance(ad, astrodata.AstroData)
-        assert len(ad) == 0
-        assert ad.instrument() == 'darkimager'
-        assert ad.object() == 'M42'
-
-
-def test_create_from_hdu():
-    phu = fits.PrimaryHDU()
-    hdu = fits.ImageHDU(data=np.zeros(SHAPE), name='SCI')
-    ad = astrodata.create(phu, [hdu])
-
-    assert isinstance(ad, astrodata.AstroData)
-    assert len(ad) == 1
-    assert isinstance(ad[0].data, np.ndarray)
-    assert ad[0].data is hdu.data
-
-
-def test_create_invalid():
-    with pytest.raises(ValueError):
-        astrodata.create('FOOBAR')
-    with pytest.raises(ValueError):
-        astrodata.create(42)
-
-
-def test_can_append_an_image_hdu_object_to_an_astrodata_object():
-    ad = astrodata.create(fits.PrimaryHDU())
-    hdu = fits.ImageHDU(data=np.zeros(SHAPE))
-    ad.append(hdu, name='SCI')
-    ad.append(hdu, name='SCI2')
-
-    assert len(ad) == 2
-    assert ad[0].data is hdu.data
-    assert ad[1].data is hdu.data
-
-
 def test_attributes(ad1):
     assert ad1[0].shape == SHAPE
 
@@ -236,17 +188,25 @@ def test_write_and_read(tmpdir, capsys):
     ad.append(nd)
 
     tbl = Table([np.zeros(10), np.ones(10)], names=('a', 'b'))
-    ad.append(tbl, name='BOB')
+
+    with pytest.raises(ValueError,
+                       match='Tables should be set directly as attribute'):
+        ad.append(tbl, name='BOB')
+
+    ad.BOB = tbl
 
     tbl = Table([np.zeros(5) + 2, np.zeros(5) + 3], names=('c', 'd'))
-    ad.append(tbl, name='BOB', add_to=nd)
 
-    ad.append(np.arange(10), name='MYVAL_WITH_A_VERY_LONG_NAME', add_to=nd)
+    match = "Cannot append table 'BOB' because it would hide a top-level table"
+    with pytest.raises(ValueError, match=match):
+        ad[0].BOB = tbl
+
+    ad[0].BOB2 = tbl
+    ad[0].MYVAL_WITH_A_VERY_LONG_NAME = np.arange(10)
 
     match = "You can only append NDData derived instances at the top level"
     with pytest.raises(TypeError, match=match):
-        ad.append(NDData(data=np.ones(10), meta={'header': fits.Header()}),
-                  name='MYNDD', add_to=nd)
+        ad[0].MYNDD = NDData(data=np.ones(10), meta={'header': fits.Header()})
 
     testfile = str(tmpdir.join('testfile.fits'))
     ad.write(testfile)
@@ -260,7 +220,7 @@ def test_write_and_read(tmpdir, capsys):
         '[ 0]   science                  NDAstroData       (2, 2)         int64',
         '          .variance             ADVarianceUncerta (2, 2)         float64',
         '          .mask                 ndarray           (2, 2)         uint16',
-        '          .BOB                  Table             (5, 2)         n/a',
+        '          .BOB2                 Table             (5, 2)         n/a',
         '          .MYVAL_WITH_A_VERY_LO ndarray           (10,)          int64',
         '',
         'Other Extensions',

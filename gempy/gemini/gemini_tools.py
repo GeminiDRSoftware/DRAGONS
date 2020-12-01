@@ -50,23 +50,23 @@ def handle_single_adinput(fn):
     return wrapper
 # ------------------------------------------------------------------------------
 @handle_single_adinput
-def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
+def add_objcat(adinput=None, index=0, replace=False, table=None, sx_dict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
 
     Parameters
     ----------
-    adinput: AstroData
+    adinput : AstroData
         AD object(s) to add table to
 
-    extver: int
-        Extension number for the table (should match the science extension)
+    index : int
+        Extension index for the table
 
-    replace: bool
+    replace : bool
         replace (overwrite) with new OBJCAT? If False, the new table must
         have the same length as the existing OBJCAT
 
-    table: Table
+    table : Table
         new OBJCAT Table or new columns. For a new table, X_IMAGE, Y_IMAGE,
         X_WORLD, and Y_WORLD are required columns
     """
@@ -83,11 +83,11 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
     # Parse sextractor parameters for the list of expected columns
     expected_columns = parse_sextractor_param(sx_dict['dq', 'param'])
     # Append a few more that don't come from directly from sextractor
-    expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR",
-                             "PROFILE_FWHM","PROFILE_EE50"])
+    expected_columns.extend(["REF_NUMBER", "REF_MAG", "REF_MAG_ERR",
+                             "PROFILE_FWHM", "PROFILE_EE50"])
 
     for ad in adinput:
-        ext = ad.extver(extver)
+        ext = ad[index]
         # Check if OBJCAT already exists and just update if desired
         objcat = getattr(ext, 'OBJCAT', None)
         if objcat and not replace:
@@ -116,8 +116,9 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
                     else:
                         unit = None
                 # Use input table column if given, otherwise the placeholder
-                new_objcat.add_column(table[name] if name in table.columns else
-                                Column(data=default, name=name, dtype=dtype, unit=unit))
+                new_objcat.add_column(
+                    table[name] if name in table.columns else
+                    Column(data=default, name=name, dtype=dtype, unit=unit))
 
             # Replace old version or append new table to AD object
             if objcat:
@@ -231,16 +232,16 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
 
         # Now check each extension
         for ext1, ext2 in zip(ad1, ad2):
-            log.fullinfo('Checking EXTVER {}'.format(ext1.hdr['EXTVER']))
+            log.fullinfo(f'Checking extension {ext1.id}')
 
             # Check shape/size
-            if check_shape and ext1.data.shape != ext2.data.shape :
+            if check_shape and ext1.data.shape != ext2.data.shape:
                 log.error('Extensions have different shapes')
                 raise ValueError('Extensions have different shape')
 
             # Check binning
             if (ext1.detector_x_bin() != ext2.detector_x_bin() or
-                        ext1.detector_y_bin() != ext2.detector_y_bin()):
+                    ext1.detector_y_bin() != ext2.detector_y_bin()):
                 log.error('Extensions have different binning')
                 raise ValueError('Extensions have different binning')
 
@@ -496,13 +497,14 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         pass
 
                 # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
+                new_aux.append(ext_to_clip[0].nddata)
 
             if not found:
                 raise OSError(
-                  "No auxiliary data in {} matches the detector section "
-                  "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                       ad.filename, ext.hdr['EXTVER']))
+                    f"No auxiliary data in {this_aux.filename} matches the "
+                    f"detector section {detsec} in {ad.filename} extension "
+                    f"{ext.id}"
+                )
 
         if clipped_this_ad:
             log.stdinfo("Clipping {} to match science data.".
@@ -671,13 +673,14 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                         pass
 
                 # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
+                new_aux.append(ext_to_clip[0].nddata)
 
             if not found:
                 raise OSError(
-                    "No auxiliary data in {} matches the detector section "
-                    "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                              ad.filename, ext.EXTVER))
+                    f"No auxiliary data in {this_aux.filename} matches the "
+                    f"detector section {detsec} in {ad.filename} extension "
+                    f"{ext.id}"
+                )
 
         log.stdinfo("Clipping {} to match science data.".
                     format(os.path.basename(this_aux.filename)))
@@ -720,14 +723,16 @@ def clip_sources(ad):
 
     is_ao = ad.is_ao()
     sn_limit = 25 if is_ao else 50
+    single = ad.is_single
+    ad_iterable = [ad] if single else ad
 
     # Produce warning but return what is expected
-    if not any([hasattr(ext, 'OBJCAT') for ext in ad]):
+    if not any([hasattr(ext, 'OBJCAT') for ext in ad_iterable]):
         log.warning("No OBJCATs found on input. Has detectSources() been run?")
-        return [Table()] * len(ad)
+        return Table() if single else [Table()] * len(ad)
 
     good_sources = []
-    for ext in ad:
+    for ext in ad_iterable:
         try:
             objcat = ext.OBJCAT
         except AttributeError:
@@ -778,7 +783,7 @@ def clip_sources(ad):
 
         good_sources.append(table)
 
-    return good_sources
+    return good_sources[0] if single else good_sources
 
 @handle_single_adinput
 def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
@@ -1004,7 +1009,10 @@ def fit_continuum(ad):
     tags = ad.tags
     acq_star_positions = ad.phu.get("ACQSLITS")
 
-    for ext in ad:
+    single = ad.is_single
+    ad_iterable = [ad] if single else ad
+
+    for ext in ad_iterable:
         fwhm_list = []
         x_list, y_list = [], []
         weight_list = []
@@ -1187,9 +1195,9 @@ def fit_continuum(ad):
         # Clip outliers in FWHM
         if len(table) >= 3:
             table = table[~sigma_clip(table['fwhm_arcsec']).mask]
-
         good_sources.append(table)
-    return good_sources
+
+    return good_sources[0] if single else good_sources
 
 def log_message(function=None, name=None, message_type=None):
     """
@@ -1563,6 +1571,8 @@ def parse_sextractor_param(param_file):
         columns.append(name)
     return columns
 
+
+# FIXME: unused ?
 def read_database(ad, database_name=None, input_name=None, output_name=None):
     """
     Reads IRAF wavelength calibration files from a database and attaches
@@ -1596,20 +1606,21 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         output_name = ad.filename
 
     basename = os.path.basename(input_name)
-    basename,filetype = os.path.splitext(basename)
+    basename, filetype = os.path.splitext(basename)
     out_basename = os.path.basename(output_name)
-    out_basename,filetype = os.path.splitext(out_basename)
+    out_basename, filetype = os.path.splitext(out_basename)
 
     for ext in ad:
-        extver = ext.hdr['EXTVER']
-        record_name = '{}_{:0.3d}'.format(basename, extver)
-        db = at.SpectralDatabase(database_name,record_name)
-        out_record_name = '{}_{:0.3d}'.format(out_basename, extver)
+        record_name = '{}_{:0.3d}'.format(basename, ext.id)
+        db = at.SpectralDatabase(database_name, record_name)
+        out_record_name = '{}_{:0.3d}'.format(out_basename, ext.id)
         table = db.as_binary_table(record_name=out_record_name)
 
         ext.WAVECAL = table
     return ad
 
+
+# FIXME: unused ?
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
@@ -1627,10 +1638,9 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
         SExtractor dictionary
     """
     for ext in adoutput:
-        outextver = ext.hdr['EXTVER']
         output_wcs = ext.wcs
         indices = [i for i in range(len(ext_mapping))
-                   if ext_mapping[i] == outextver]
+                   if ext_mapping[i] == ext.id]
         inp_objcats = [adinput[i].OBJCAT for i in indices if
                        hasattr(adinput[i], 'OBJCAT')]
 
@@ -1647,9 +1657,10 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             # Remove the NUMBER column so add_objcat renumbers
             out_objcat.remove_column('NUMBER')
 
-            adoutput = add_objcat(adinput=adoutput, extver=outextver,
-                            replace=True, table=out_objcat, sx_dict=sx_dict)
+            adoutput = add_objcat(adinput=adoutput, index=ext.id - 1,
+                                  replace=True, table=out_objcat, sx_dict=sx_dict)
     return adoutput
+
 
 @handle_single_adinput
 def trim_to_data_section(adinput=None, keyword_comments=None):
@@ -1689,24 +1700,24 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
             # Check whether data need to be trimmed
             sci_shape = ext.data.shape
-            if (sci_shape[0]==datasec.y2 and sci_shape[1]==datasec.x2 and
-                datasec.x1==0 and datasec.y1==0):
-                log.fullinfo('No changes will be made to {}[*,{}], since '
-                             'the data section matches the data shape'.format(
-                             ad.filename,ext.hdr['EXTVER']))
+            if (sci_shape[0] == datasec.y2 and sci_shape[1] == datasec.x2 and
+                    datasec.x1 == 0 and datasec.y1 == 0):
+                log.fullinfo(f'No changes will be made to {ad.filename} '
+                             f'extension {ext.id}, since '
+                             'the data section matches the data shape')
                 continue
 
             # Update logger with the section being kept
-            log.fullinfo('For {}:{}, keeping the data from the section {}'.
-                         format(ad.filename, ext.hdr['EXTVER'], datasecStr))
+            log.fullinfo(f'For {ad.filename} extension {ext.id}, '
+                         f'keeping the data from the section {datasecStr}')
 
             # Trim SCI, VAR, DQ to new section
-            ext.reset(ext.nddata[datasec.y1:datasec.y2,datasec.x1:datasec.x2])
+            ext.reset(ext.nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])
             # And OBJMASK (if it exists)
             # TODO: should check more generally for any image extensions
             if hasattr(ext, 'OBJMASK'):
                 ext.OBJMASK = ext.OBJMASK[datasec.y1:datasec.y2,
-                              datasec.x1:datasec.x2]
+                                          datasec.x1:datasec.x2]
 
             # Update header keys to match new dimensions
             newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
@@ -1718,6 +1729,8 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
     return adinput
 
+
+# FIXME: unused ?
 def write_database(ad, database_name=None, input_name=None):
     """
     Write out IRAF database files containing a wavelength calibration
@@ -1736,10 +1749,10 @@ def write_database(ad, database_name=None, input_name=None):
         input_name = ad.filename
 
     basename = os.path.basename(input_name)
-    basename,filetype = os.path.splitext(basename)
+    basename, filetype = os.path.splitext(basename)
 
     for ext in ad:
-        record_name = '{}_{:0.3d}'.format(basename, ext.EXTVER)
+        record_name = '{}_{:0.3d}'.format(basename, ext.id)
         db = at.SpectralDatabase(binary_table=ext.WAVECAL,
                                  record_name=record_name)
         db.write_to_disk(database_name=database_name)
