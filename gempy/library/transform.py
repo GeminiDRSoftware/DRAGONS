@@ -1606,17 +1606,15 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         new_wcs = gWCS(new_pipeline)
         if set(new_origin) != {0}:
             origin_model = reduce(Model.__and__, [models.Shift(s) for s in new_origin])
-            transform.append(origin_model.inverse)
-            #new_pipeline = [(cf.Frame2D(name='pixels'), reduce(Model.__and__, [models.Shift(s) for s in new_origin]))] + new_pipeline
+            # For if we tile the OBJCATs
+            for transform in dg.transforms:
+                transform.append(origin_model.inverse)
             new_wcs.insert_transform(new_wcs.input_frame, origin_model,
                                      after=True)
     ad_out[0].wcs = new_wcs
 
     # Update and delete keywords from extension (_update_headers)
     ndim = len(ref_ext.shape)
-    if ndim != 2:
-        log.warning("The updating of header keywords has only been "
-                    "fully tested for 2D data.")
     header = ad_out[0].hdr
     keywords = {sec: ad._keyword_for('{}_section'.format(sec))
                 for sec in ('array', 'data', 'detector')}

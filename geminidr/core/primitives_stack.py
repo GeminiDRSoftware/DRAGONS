@@ -161,16 +161,15 @@ class Stack(PrimitivesBASE):
         process_rn = all(rn is not None for read_noise in read_noises for rn in read_noise)
 
         # Compute gain and read noise of final stacked images
-        nexts = len(gains[0])
-        if process_gain:
-            gain_list = [np.mean([gain[i] for gain in gains])
-                         for i in range(nexts)]
-        if process_rn:
-            read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
-                                         for i in range(nexts)]
-
         num_img = len(adinputs)
         num_ext = len(adinputs[0])
+        if process_gain:
+            gain_list = [np.mean([gain[i] for gain in gains])
+                         for i in range(num_ext)]
+        if process_rn:
+            read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i]for rn in read_noises])) / num_img
+                                         for i in range(num_ext)]
+
         zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
         scale_factors = np.ones_like(zero_offsets)
 
@@ -253,9 +252,9 @@ class Stack(PrimitivesBASE):
             [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
 
         ad_out = astrodata.create(adinputs[0].phu)
-        for index, (ext, sfactors, zfactors) in enumerate(
-                zip(adinputs[0], scale_factors, zero_offsets)):
-            status = (f"Combining extension {ext.id}." if num_ext > 1 else
+        for index, (extver, sfactors, zfactors) in enumerate(
+                zip(adinputs[0].hdr.get('EXTVER'), scale_factors, zero_offsets)):
+            status = ("Combining EXTVER {}.".format(extver) if num_ext > 1 else
                       "Combining images.")
             if scale:
                 status += " Applying scale factors."
@@ -296,14 +295,10 @@ class Stack(PrimitivesBASE):
         # Propagate REFCAT as the union of all input REFCATs
         refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
         if refcats:
-            try:
-                out_refcat = table.unique(table.vstack(refcats, metadata_conflicts='silent'),
-                                          keys=('RAJ2000', 'DEJ2000'))
-            except KeyError:
-                pass
-            else:
-                out_refcat['Id'] = list(range(1, len(out_refcat)+1))
-                ad_out.REFCAT = out_refcat
+            out_refcat = table.unique(table.vstack(refcats, metadata_conflicts='silent'),
+                                      keys='Cat_Id')
+            out_refcat['Id'] = list(range(1, len(out_refcat)+1))
+            ad_out.REFCAT = out_refcat
 
         # Set AIRMASS to be the mean of the input values
         try:

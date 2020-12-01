@@ -142,7 +142,7 @@ def test_showprims_on_gnirs_spect():
 @pytest.mark.dragons_remote_data
 def test_showprims_on_gmos_spect():
     file_location = astrodata.testing.download_from_archive(GMOS_SPECT)
-    answer = showprims(file_location)
+    answer = showprims(file_location, 'ql')
     assert "geminidr.gmos.recipes.ql.recipes_LS_SPECT::reduce" in answer
 
 

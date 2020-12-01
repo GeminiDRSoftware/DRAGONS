@@ -628,7 +628,7 @@ class Spect(PrimitivesBASE):
 
             len_ad = len(ad)
             if arc is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode:
                     # TODO: Think about this when we have MOS/XD/IFU
                     if len(ad) == 1:
                         log.warning("No changes will be made to {}, since no "

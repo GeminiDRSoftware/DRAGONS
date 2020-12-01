@@ -70,7 +70,6 @@ def test_error_extension_shape(niri_adinputs, caplog):
         p.stackFrames()
 
 
-@pytest.mark.skip("Thanksgiving")
 def test_stackframes_refcat_propagation(niri_adinputs):
     refcat = Table([[1, 2], ['a', 'b']], names=('Id', 'Cat_Id'))
     for i, ad in enumerate(niri_adinputs):

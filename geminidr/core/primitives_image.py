@@ -126,7 +126,7 @@ class Image(Preprocess, Register, Resample):
             # At this point, we definitely want to do a fringe correction
             # so we'd better have a fringe frame!
             if fringe is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "fringe frame has been specified".
                                 format(ad.filename))
