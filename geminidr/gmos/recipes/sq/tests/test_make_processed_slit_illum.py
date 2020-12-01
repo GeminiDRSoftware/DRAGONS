@@ -26,7 +26,6 @@ associated_calibrations = {
 }
 
 
-@pytest.mark.skip("Should not go out with DRAGONS v3.0.x")
 @pytest.mark.gmosls
 @pytest.mark.integration_test
 @pytest.mark.preprocessed_data
