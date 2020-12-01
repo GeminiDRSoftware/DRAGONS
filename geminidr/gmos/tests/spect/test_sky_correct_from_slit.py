@@ -51,6 +51,12 @@ test_datasets = [
         dict(order=8, lsigma=5, hsigma=5, grow=2),
         'S20190204S0079_ref_1.fits',
     ),
+    pytest.param(
+        "S20181024S0035_aperturesTraced.fits",  # R400 : 0.656
+        dict(),
+        'S20181024S0035_ref_1.fits',
+        marks=pytest.mark.xfail
+    ),
 ]
 
 # Tests Definitions -----------------------------------------------------------
@@ -103,6 +109,9 @@ def create_inputs_recipe():
         },
         "S20190204S0079.fits": {
             "arc": "S20190206S0030.fits",
+        },
+        "S20181024S0035.fits" : {
+            "arc": "S20181025S0012.fits",
         },
     }
 
