@@ -17,13 +17,13 @@ pipeline {
     agent any
 
     triggers {
-        // pollSCM('MIN HOUR DoM MONTH DoW')
-        pollSCM('H H/4 * * *')  // Polls Source Code Manager every three hours
+        // Polls Source Code Manager every four hours
+        pollSCM('H H/4 * * *')
     }
 
     options {
         skipDefaultCheckout(true)
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+        buildDiscarder(logRotator(numToKeepStr: '5'))
         timestamps()
         timeout(time: 4, unit: 'HOURS')
     }
@@ -33,6 +33,7 @@ pipeline {
     }
 
     stages {
+
         stage ("Prepare"){
             steps{
                 sendNotifications 'STARTED'
@@ -101,7 +102,7 @@ pipeline {
                     environment {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                        DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+                        DRAGONS_TEST_OUT = "unit_tests_outputs/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -119,45 +120,22 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                         }
+                        failure {
+                            echo "Archiving tests results for Unit Tests"
+                            sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+//                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
+                        }
                     }
                 }
             }
         }
 
-        stage('GMOS LS Tests') {
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
-                echo "Running tests"
-                sh 'tox -e py37-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F gmosls'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside GmosArcTests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/*_results.xml'
-                    )
-                }  // end always
-            }  // end post
-        }  // end stage
-
         stage('Integration tests') {
-            agent { label "master" }
+            agent { label "centos7" }
             environment {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                DRAGONS_TEST_OUT = "$DRAGONS_TEST_OUT"
+                DRAGONS_TEST_OUT = "./integ_tests_outputs/"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -179,19 +157,66 @@ pipeline {
             } // end post
         } // end stage
 
+        stage('Regression Tests') {
+            agent { label "master" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "regression_tests_outputs"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                echo "${env.PATH}"
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Integration tests"
+                sh 'tox -e py37-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F integration'
+            } // end steps
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }
+            } // end post
+        }
+
+        stage('GMOS LS Tests') {
+            agent { label "master" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "gmosls_tests_outputs"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Running tests"
+                sh 'tox -e py37-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F gmosls'
+            }  // end steps
+            post {
+                always {
+                    echo "Running 'archivePlots' from inside GmosArcTests"
+                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }  // end always
+            }  // end post
+        }  // end stage
+
     }
     post {
-//         always {
-//           junit (
-//             allowEmptyResults: true,
-//             testResults: 'reports/*_results.xml'
-//             )
-//         }
         success {
-//             sh  '.jenkins/scripts/build_sdist_file.sh'
-//             sh  'pwd'
-//             echo 'Make tarball available'
             sendNotifications 'SUCCESSFUL'
+            deleteDir() /* clean up our workspace */
         }
         failure {
             sendNotifications 'FAILED'
