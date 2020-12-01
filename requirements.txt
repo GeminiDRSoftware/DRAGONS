@@ -1,6 +1,7 @@
 asdf
-astropy>=4.1
+astropy>=4.2
 astroquery
+bottleneck
 cython
 future
 ginga
