@@ -6,7 +6,7 @@ from functools import partial, reduce
 import inspect
 
 from scipy import optimize, spatial
-from astropy.modeling import fitting, models, FittableModel
+from astropy.modeling import fitting, models, Model, FittableModel
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter)
@@ -499,7 +499,7 @@ class BruteLandscapeFitter(Fitter):
                 # We don't check that the value of a fixed param is within bounds
                 if diff > 0 and not model_copy.fixed[p]:
                     if 'offset' in p:
-                        stepsize = min(0.5 * sigma, 0.1 * diff)
+                        stepsize = min(sigma, 0.1 * diff)
                     elif 'angle' in p:
                         stepsize = max(0.5, 0.1 * diff)
                     elif 'factor' in p:
@@ -916,7 +916,7 @@ def match_sources(incoords, refcoords, radius=2.0):
 
 def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
                              search_radius=10, match_radius=2, rotate=False,
-                             scale=False, brute=True, sigma=10, factor=None,
+                             scale=False, brute=True, sigma=5, factor=None,
                              return_matches=False):
     """
     This function computes a transform that maps one set of coordinates to
