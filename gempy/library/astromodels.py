@@ -17,20 +17,14 @@
 # make_inverse_chebyshev1d:              make a Chebyshev1D model that provides
 #                                        the inverse of the given model
 
-import numpy as np
 import math
 from collections import OrderedDict
 
-import astropy
-from astropy.modeling import models, fitting, FittableModel, Parameter
+import numpy as np
+from astropy.modeling import FittableModel, Parameter, fitting, models
 from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip
-from astropy.utils import minversion
-from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, BSpline
-
-from .nddops import NDStacker
-
-ASTROPY_LT_40 = not minversion(astropy, '4.0')
+from scipy.interpolate import BSpline, LSQUnivariateSpline, UnivariateSpline
 
 # -----------------------------------------------------------------------------
 # NEW MODEL CLASSES
@@ -57,12 +51,8 @@ class Pix2Sky(FittableModel):
         value for WCS origin parameter
     """
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     x_offset = Parameter()
     y_offset = Parameter()
@@ -109,12 +99,8 @@ class Pix2Sky(FittableModel):
 class Shift2D(FittableModel):
     """2D translation"""
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     x_offset = Parameter(default=0.0)
     y_offset = Parameter(default=0.0)
@@ -134,12 +120,8 @@ class Shift2D(FittableModel):
 class Scale2D(FittableModel):
     """2D scaling"""
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     factor = Parameter(default=1.0)
 
@@ -160,12 +142,8 @@ class Scale2D(FittableModel):
 class Rotate2D(FittableModel):
     """Rotation; Rotation2D isn't fittable"""
 
-    if ASTROPY_LT_40:
-        inputs = ('x', 'y')
-        outputs = ('x', 'y')
-    else:
-        n_inputs = 2
-        n_outputs = 2
+    n_inputs = 2
+    n_outputs = 2
 
     angle = Parameter(default=0.0, getter=np.rad2deg, setter=np.deg2rad)
 
@@ -260,6 +238,13 @@ class UnivariateSplineWithOutlierRemoval:
         else:
             raise ValueError("Both t and s have been specified")
 
+        # For compatibility with an older version which was using
+        # NDStacker.sigclip, rename parameters for sigma_clip
+        if 'lsigma' in outlier_kwargs:
+            outlier_kwargs['sigma_lower'] = outlier_kwargs.pop('lsigma')
+        if 'hsigma' in outlier_kwargs:
+            outlier_kwargs['sigma_upper'] = outlier_kwargs.pop('hsigma')
+
         # Both spline classes require sorted x, so do that here. We also
         # require unique x values, so we're going to deal with duplicates by
         # making duplicated values slightly larger. But we have to do this
@@ -280,8 +265,8 @@ class UnivariateSplineWithOutlierRemoval:
             orig_mask |= (w == 0)
 
         if debug:
-            print(y)
-            print(orig_mask)
+            print('y=', y)
+            print('orig_mask=', orig_mask.astype(int))
 
         iteration = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
@@ -293,7 +278,7 @@ class UnivariateSplineWithOutlierRemoval:
                 # Determine actual order to apply based on fraction of unmasked
                 # pixels, and unmask everything if there are too few good pixels
                 this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
-                if this_order == 0:
+                if this_order == 0 and order > 0:
                     full_mask = np.zeros(x.shape, dtype=bool)
                     if w is not None and not all(w == 0):
                         full_mask |= (w == 0)
@@ -322,40 +307,41 @@ class UnivariateSplineWithOutlierRemoval:
                          for xx in np.linspace(0, len(xunique)-1, this_order+1)[1:-1]]
                 spline_args = (knots,)
                 if debug:
-                    print ("KNOTS", knots)
+                    print("KNOTS", knots)
 
             sort_indices = np.argsort(xgood)
             # Create appropriate spline object using current mask
-            try:
-                spline = cls_(xgood[sort_indices], y[~full_mask][sort_indices],
-                              *spline_args, w=None if w is None else w[~full_mask][sort_indices],
-                              **spline_kwargs)
-            except ValueError as e:
-                if this_order == 0:
-                    avg_y = np.average(y[~full_mask],
-                                       weights=None if w is None else w[~full_mask])
-                    spline = lambda xx: avg_y
-                else:
-                    raise e
-            spline_y = spline(x)
-            #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
-            #mask = masked_residuals.mask
-
-            # When sigma-clipping, only remove the originally-masked points.
-            # Note that this differs from the astropy.modeling code because
-            # the sigma-clipping and spline-fitting are done independently here.
-            d, mask, v = NDStacker.sigclip(spline_y-y, mask=orig_mask, variance=None,
-                                           **outlier_kwargs)
-            if grow > 0:
-                maskarray = np.zeros((grow * 2 + 1, len(y)), dtype=bool)
-                for i in range(-grow, grow + 1):
-                    mx1 = max(i, 0)
-                    mx2 = min(len(y), len(y) + i)
-                    maskarray[grow + i, mx1:mx2] = mask[:mx2 - mx1]
-                grow_mask = np.logical_or.reduce(maskarray, axis=0)
-                full_mask = np.logical_or(mask, grow_mask)
+            if order is None or this_order > 0:
+                spline = cls_(
+                    xgood[sort_indices], y[~full_mask][sort_indices],
+                    *spline_args,
+                    w=None if w is None else w[~full_mask][sort_indices],
+                    **spline_kwargs
+                )
             else:
-                full_mask = mask.astype(bool)
+                avg_y = np.average(y[~full_mask],
+                                   weights=None if w is None else w[~full_mask])
+                spline = lambda xx: avg_y
+
+            spline_y = spline(x)
+            masked_residuals = outlier_func(np.ma.array(spline_y - y,
+                                                        mask=full_mask),
+                                            **outlier_kwargs)
+            mask = masked_residuals.mask
+
+            if debug:
+                print('mask=', mask.astype(int))
+
+            if grow > 0:
+                new_mask = mask ^ full_mask
+                if new_mask.any():
+                    for i in range(1, grow + 1):
+                        mask[i:] |= new_mask[:-i]
+                        mask[:-i] |= new_mask[i:]
+                    if debug:
+                        print('mask after growth=', mask.astype(int))
+
+            full_mask = mask
 
             # Check if the mask is unchanged
             if not np.logical_or.reduce(last_mask ^ full_mask):

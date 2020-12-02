@@ -7,7 +7,8 @@ import inspect
 
 from scipy import optimize, spatial
 from astropy.modeling import fitting, models, Model, FittableModel
-from astropy.modeling.fitting import (_validate_model,
+from astropy.modeling.fitting import (_validate_constraints,
+                                      _validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter)
 
@@ -362,6 +363,8 @@ class BruteLandscapeFitter(Fitter):
     over a "landscape" of "mountains" representing the reference coords
     """
 
+    supported_constraints = ['bounds', 'fixed']
+
     def __init__(self):
         super().__init__(optimize.brute, statistic=self._landstat)
 
@@ -458,7 +461,7 @@ class BruteLandscapeFitter(Fitter):
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
                  landscape=None, scale=None, **kwargs):
-        model_copy = _validate_model(model, ['bounds', 'fixed'])
+        model_copy = _validate_model(model, self.supported_constraints)
 
         # Turn 1D arrays into tuples to allow iteration over axes
         try:
@@ -559,6 +562,8 @@ class KDTreeFitter(Fitter):
     and the initial guess of the transformation (an astropy Model instance).
     """
 
+    supported_constraints = ['bounds', 'fixed']
+
     def __init__(self, method='Nelder-Mead', proximity_function=None,
                  sigma=5.0, maxsig=5.0, k=5):
         """
@@ -630,8 +635,10 @@ class KDTreeFitter(Fitter):
             final value of fitting function
         nit: int
             number of iterations performed
+
         """
-        model_copy = _validate_model(model, ['bounds', 'fixed'])
+        _validate_constraints(self.supported_constraints, model)
+        model_copy = model.copy()
 
         # Turn 1D arrays into tuples to allow iteration over axes
         try:
@@ -858,7 +865,7 @@ def _show_model(model, intro=""):
         iterator = [model]
     # Only display parameters of those models that have names
     for m in iterator:
-        if m.name is not 'xx':
+        if m.name != 'xx':
             for param in [getattr(m, name) for name in m.param_names]:
                 if not (param.fixed or (param.bounds[0] == param.bounds[1]
                                         and param.bounds[0] is not None)):

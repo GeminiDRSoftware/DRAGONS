@@ -28,7 +28,6 @@ def chebyshev1d():
     return model
 
 
-@pytest.mark.xfail(reason='review me')
 def test_KDTreeFitter_can_fit_a_chebyshev1d_function(chebyshev1d):
     np.random.seed(SEED)
 

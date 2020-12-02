@@ -22,7 +22,7 @@ import re
 from setuptools import setup
 from setuptools.extension import Extension
 
-from astrodata import version
+from astrodata._version import version
 
 try:
     from Cython.Build import cythonize
@@ -75,29 +75,35 @@ GEMINIDR_MODULES = ['geminidr',
                     'geminidr.gmos.lookups',
                     'geminidr.gmos.recipes',
                     'geminidr.gmos.recipes.qa',
+                    'geminidr.gmos.recipes.ql',
                     'geminidr.gmos.recipes.sq',
                     'geminidr.gnirs',
                     'geminidr.gnirs.lookups',
                     'geminidr.gnirs.recipes',
                     'geminidr.gnirs.recipes.qa',
+                    'geminidr.gnirs.recipes.ql',
                     'geminidr.gnirs.recipes.sq',
                     'geminidr.gsaoi',
                     'geminidr.gsaoi.lookups',
                     'geminidr.gsaoi.recipes',
                     'geminidr.gsaoi.recipes.qa',
+                    'geminidr.gsaoi.recipes.ql',
                     'geminidr.gsaoi.recipes.sq',
                     'geminidr.niri',
                     'geminidr.niri.lookups',
                     'geminidr.niri.recipes',
                     'geminidr.niri.recipes.qa',
+                    'geminidr.niri.recipes.ql',
                     'geminidr.niri.recipes.sq',
                     ]
 
 GEMPY_MODULES = ['gempy',
                  'gempy.adlibrary',
+                 'gempy.display',
                  'gempy.eti_core',
                  'gempy.gemini',
                  'gempy.gemini.eti',
+                 'gempy.numdisplay',  # not really needed for some reason
                  'gempy.library',
                  'gempy.library.config',
                  'gempy.utils',
@@ -134,6 +140,16 @@ instruments = ['gemini', 'f2', 'gmos', 'gnirs', 'gsaoi', 'niri']
 for inst in instruments:
     for root, dirs, files in os.walk(os.path.join('geminidr', inst,
                                                   'lookups', 'source_detection')):
+        files = [f for f in files if not f.endswith('.pyc')]
+        # remove the 'geminidr/' part of the file paths, then add to the DATA
+        PACKAGE_DATA['geminidr'].extend(
+            map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
+        )
+
+# files for spec stds in geminidr/gemini/lookups/spectrophotometric_standards
+for inst in instruments:
+    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
+                                                  'lookups', 'spectrophotometric_standards')):
         files = [f for f in files if not f.endswith('.pyc')]
         # remove the 'geminidr/' part of the file paths, then add to the DATA
         PACKAGE_DATA['geminidr'].extend(

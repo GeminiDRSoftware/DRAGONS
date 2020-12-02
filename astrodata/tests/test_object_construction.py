@@ -1,6 +1,7 @@
 import astrodata
 import numpy as np
 import pytest
+from astrodata import AstroData, factory
 from astrodata.testing import download_from_archive
 from astropy.io import fits
 from astropy.nddata import NDData, VarianceUncertainty
@@ -33,6 +34,25 @@ def testfile2():
     [ 5]   science                  NDAstroData       (4608, 1056)   uint16
     """
     return download_from_archive("N20160524S0119.fits")
+
+
+class AstroDataMyInstrument(AstroData):
+    __keyword_dict = dict(
+        array_name='AMPNAME',
+        array_section='CCDSECT'
+    )
+
+    @staticmethod
+    def _matches_data(source):
+        return source[0].header.get('INSTRUME', '').upper() == 'MYINSTRUMENT'
+
+
+def setup_module():
+    factory.addClass(AstroDataMyInstrument)
+
+
+def teardown_module():
+    factory._registry.remove(AstroDataMyInstrument)
 
 
 def test_create_with_no_data():
@@ -129,15 +149,15 @@ def test_can_read_data(testfile1):
     assert ad.shape == [(2304, 1056), (2304, 1056), (2304, 1056)]
 
 
-@pytest.mark.dragons_remote_data
 def test_can_read_write_pathlib(tmp_path):
     testfile = tmp_path / 'test.fits'
 
-    ad = astrodata.create({})
+    ad = astrodata.create({'INSTRUME': 'MYINSTRUMENT'})
     ad.append(np.zeros((4, 5)))
     ad.write(testfile)
 
     ad = astrodata.open(testfile)
+    assert isinstance(ad, AstroDataMyInstrument)
     assert len(ad) == 1
     assert ad.shape == [(4, 5)]
 
