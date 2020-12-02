@@ -73,6 +73,10 @@ def setup_module():
     factory.addClass(AstroDataMyInstrument)
 
 
+def teardown_module():
+    factory._registry.remove(AstroDataMyInstrument)
+
+
 @pytest.fixture(scope='function')
 def testfile(tmpdir):
     hdr = fits.Header({
