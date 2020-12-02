@@ -5,7 +5,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div
+from bokeh.models import Div, Select
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
@@ -16,8 +16,34 @@ from gempy.library.fitting import fit_1D
 
 
 class FittingParameters(object):
-    def __init__(self, *, function='legendre', order=None, axis=0, sigma_lower=3.0, sigma_upper=3.0,
+    def __init__(self, *, function='chebyshev', order=None, axis=0, sigma_lower=3.0, sigma_upper=3.0,
                  niter=0, grow=False, regions=None):
+        """
+        Describe a set of parameters for running fits of data with.
+
+        This makes it easy to bundle a set of parameters used to perform a fit.
+        These are used with the `~gempy.library.fitting.fit_1D` fitter to do
+        fits of the data.
+
+        Parameters
+        ----------
+        function : str
+            Name of the function to use for fitting (i.e. 'chebyshev')
+        order : int
+            Order of the fit
+        axis : int
+            Axis for data
+        sigma_lower : float
+            Lower sigma
+        sigma_upper : float
+            Upper sigma
+        niter : int
+            Number of iterations
+        grow : int
+            Grow window
+        regions : list of tuple start/stop pairs
+            This is a list of range start/stop pairs to pass down
+        """
         self.function = function
         self.order = order
         self.axis = axis
@@ -193,6 +219,21 @@ class InteractiveModel1D(InteractiveModel):
         model.perform_fit(self)
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
                                                'model': self.evaluate(xlinspace)})
+
+    def set_function(self, fn):
+        """
+        Set the fit function to use.
+
+        This sets the function the `gempy.library.fitting.fit_1D` fitter will use
+        to perform the data fit.  It's a helper method to pass the function down
+        to the model.
+
+        Parameters
+        ----------
+        fn : str
+            Which fitter to use
+        """
+        self.model.set_function(fn)
 
     def populate_bokeh_objects(self, x, y, mask=None, var=None):
         """
@@ -376,6 +417,9 @@ class InteractiveNewFit1D:
 
     def __call__(self, x):
         return self.fit(x)
+
+    def set_function(self, fn):
+        self.fitting_parameters.function = fn
 
     @property
     def order(self):
@@ -732,12 +776,27 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 if len(x) != len(y):
                     raise ValueError("Different (x, y) array sizes")
             self.nfits = len(fitting_parameters)
+            fn = fitting_parameters[0].function
         else:
             if allx.size != ally.size:
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
+            fn = fitting_parameters.function
 
         # Make the panel with widgets to control the creation of (x, y) arrays
+        # Dropdown for selecting fit_1D function
+        self.function = Select(title="Option:", value=fn,
+                               options=['chebyshev', 'legendre', 'polynomial', 'spline1',
+                                        'spline2', 'spline3', 'spline4', 'spline5'])
+
+        def fn_select_change(attr, old, new):
+            def refit():
+                for fit in self.fits:
+                    fit.set_function(new)
+                    fit.perform_fit()
+            self.do_later(refit)
+        self.function.on_change('value', fn_select_change)
+
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
             reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, reinit_live)
@@ -749,9 +808,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
                 reinit_widgets.append(self.reinit_button)
 
-            self.reinit_panel = column(*reinit_widgets)
+            self.reinit_panel = column(self.function, *reinit_widgets)
         else:
-            self.reinit_panel = None
+            # left panel with just the function selector (Chebyshev, etc.)
+            self.reinit_panel = column(self.function)
 
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
@@ -837,4 +897,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.do_later(rfn)
 
     def results(self):
+        """
+        Get the results of the interactive fit.
+
+        This gets the list of `~gempy.library.fitting.fit_1D` fits of
+        the data to be used by the caller.
+
+        Returns
+        -------
+        list of `~gempy.library.fitting.fit_1D`
+        """
         return [fit.model.fit for fit in self.fits]

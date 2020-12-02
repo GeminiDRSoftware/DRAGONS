@@ -213,9 +213,6 @@ as well as have it around for easy reference.
 
 These are random notes on things that it is useful to be aware of.
 
-The bokeh UI runs on a specific port.  It is not currently possible to run
-multiple interactive bokeh UIs at the same time.
-
 The slider/textbox combinations in the `build_*` methods infer if they are 
 working with `float` or `int` data based on the initial value.  If you
 call the helper with a starting value of `1`, it will assume it should only

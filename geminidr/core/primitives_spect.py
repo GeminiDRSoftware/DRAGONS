@@ -51,7 +51,6 @@ import matplotlib
 
 from ..interactive.fit import fit1d
 from ..interactive.fit.fit1d import FittingParameters
-from ..interactive.fit.multispline import MultiSplineVisualizer
 
 from ..interactive.server import interactive_fitter
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
@@ -2613,7 +2612,7 @@ class Spect(PrimitivesBASE):
                                                                   reconstruct_points=
                                                                       trace_apertures_reconstruct_points)
                     status = geminidr.interactive.server.interactive_fitter(visualizer)
-                    all_m_final = visualizer.fits
+                    all_m_final = visualizer.results()
                     # for m in all_m_final:
                     #     print(m)
                 else:
