@@ -36,10 +36,10 @@ class AstroDataFactory:
         that it represents an already opened file.
 
         """
-        if isinstance(source, str):
+        if isinstance(source, (str, os.PathLike)):
             stats = os.stat(source)
             if stats.st_size == 0:
-                LOGGER.warning("File {} is zero size".format(source))
+                LOGGER.warning(f"File {source} is zero size")
 
             # try vs all handlers
             for func in AstroDataFactory._file_openers:
