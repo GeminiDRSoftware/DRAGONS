@@ -201,9 +201,6 @@ PACKAGE_DATA['gempy'].append(os.path.join('library', 'config', 'README'))
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 DATA_FILES = []
 
-print(PACKAGES)
-print(PACKAGE_DATA)
-
 # SCRIPTS
 RS_SCRIPTS = [os.path.join('recipe_system', 'scripts', 'adcc'),
               os.path.join('recipe_system', 'scripts', 'caldb'),
