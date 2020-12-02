@@ -311,7 +311,6 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     assert warn == warning_given
 
 
-# --- Fixtures and helper functions --------------------------------------------
 # --- Fixtures and helper functions -------------------------------------------
 
 
