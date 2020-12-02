@@ -290,12 +290,12 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
                ("", True, None): (False, False),
                ("", True, True): (True, True),
                ("", True, False): (False, False),
-               ("W / (m2 Hz)", False, None): (False, True),
-               ("W / (m2 Hz)", False, True): (True, True),
-               ("W / (m2 Hz)", False, False): (False, True),
-               ("W / (m2 Hz)", True, None): (False, False),
-               ("W / (m2 Hz)", True, True): (True, False),
-               ("W / (m2 Hz)", True, False): (False, True)
+               ("W / (m2 nm)", False, None): (False, False),
+               ("W / (m2 nm)", False, True): (True, True),
+               ("W / (m2 nm)", False, False): (False, False),
+               ("W / (m2 nm)", True, None): (False, False),
+               ("W / (m2 nm)", True, True): (True, True),
+               ("W / (m2 nm)", True, False): (False, False)
                }
 
     ad = astrofaker.create("NIRI")
@@ -307,7 +307,7 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
                     flux_calibrated=flux_calibrated, log=p.log)
     correct, warn = RESULTS[unit, flux_calibrated, user_conserve]
     assert conserve == correct
-    warning_given = any("WARNING" in record for record in caplog.records)
+    warning_given = any("WARNING" in record.message for record in caplog.records)
     assert warn == warning_given
 
 
