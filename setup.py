@@ -147,9 +147,6 @@ for inst in instruments:
         )
 
 # files for spec stds in geminidr/gemini/lookups/spectrophotometric_standards
-gemdrdir = re.compile('geminidr/')
-PACKAGE_DATA['geminidr'] = []
-instruments = ['gemini', 'f2', 'gmos', 'gnirs', 'gsaoi', 'niri']
 for inst in instruments:
     for root, dirs, files in os.walk(os.path.join('geminidr', inst,
                                                   'lookups', 'spectrophotometric_standards')):
