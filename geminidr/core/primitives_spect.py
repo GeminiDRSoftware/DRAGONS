@@ -1800,8 +1800,9 @@ class Spect(PrimitivesBASE):
 
     def linearizeSpectra(self, adinputs=None, **params):
         """
-        Transforms 1D spectra so that the relationship between them and their
-        respective wavelength calibration is linear.
+        Transforms 1D spectra so that the relationship between the pixel
+        location and wavelength is linear. This primitive calls
+        resampleToCommonFrame to do the actual resampling.
 
         Parameters
         ----------
@@ -2159,6 +2160,8 @@ class Spect(PrimitivesBASE):
 
         adoutputs = []
         for i, ad in enumerate(adinputs):
+            flux_calibrated = self.timestamp_keys["fluxCalibrate"] in ad.phu
+
             for iext, ext in enumerate(ad):
                 wave_model = info[i][iext]['wave_model']
                 extn = f"{ad.filename} extension {ext.id}"
@@ -2181,6 +2184,9 @@ class Spect(PrimitivesBASE):
                         resampling_model = slit_offset & wave_resample
                     else:
                         resampling_model = wave_resample & slit_offset
+
+                this_conserve = conserve_or_interpolate(ext, user_conserve=conserve,
+                                        flux_calibrated=flux_calibrated, log=log)
 
                 if i == 0 and not linearize:
                     log.fullinfo(f"{ad.filename}: No interpolation")
@@ -2206,7 +2212,7 @@ class Spect(PrimitivesBASE):
                 output_shape = list(ext.shape)
                 output_shape[dispaxis] = npixout
                 new_ext = transform.resample_from_wcs(ext, 'resampled', subsample=subsample,
-                                                      attributes=attributes, conserve=conserve,
+                                                      attributes=attributes, conserve=this_conserve,
                                                       origin=origin, output_shape=output_shape)
                 if iext == 0:
                     ad_out = new_ext
@@ -2919,6 +2925,73 @@ def _extract_model_info(ext):
     dw = (w2 - w1) / (npix - 1)
     return {'wave_model': wave_model, 'w1': w1, 'w2': w2,
             'npix': npix, 'dw': dw}
+
+
+def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
+                            log=None):
+    """
+    This helper function decides whether the data should undergo flux
+    conservation (or data interpolation) based on its units and whether it
+    has been flux calibrated, and compares this to what the user has asked
+    for. It logs any concerns and returns what it considers to be the best
+    decision.
+
+    Parameters
+    ----------
+    ext : AstroData slice
+        extension of interest
+    user_conserve : bool/None
+        user parameter for conservation of flux
+    flux_calibrated : bool
+        has this AstroData object gone through the fluxCalibrate primitive?
+    log : logger
+
+    Returns
+    -------
+    bool : whether or not to conserve the flux
+    """
+    ext_str = f"{ext.filename} extension {ext.id}"
+    ext_unit = ext.hdr["BUNIT"]
+    if ext_unit in (None, ""):
+        if user_conserve is None:
+            this_conserve = not flux_calibrated
+            log.stdinfo(f"{ext_str} has no units but "
+                        f"{'has' if flux_calibrated else 'has not'} been flux"
+                        f" calibrated so setting conserve={this_conserve}")
+        else:
+            this_conserve = user_conserve
+            if this_conserve == flux_calibrated:
+                log.warning(f"{ext_str} {'has' if flux_calibrated else 'has not'}"
+                            f"been flux calibrated but conserve={user_conserve}")
+        return this_conserve
+
+    ext_unit = u.Unit(ext_unit)
+    # Test for units like flux density
+    units_imply_conserve = True
+    for unit1 in ("W", "photon", "electron", "adu"):
+        for unit2 in ("m2", ""):
+            try:
+                ext_unit.to(u.Unit(f"{unit1} / ({unit2} nm)"),
+                            equivalencies=u.spectral_density(1. * u.m))
+            except u.UnitConversionError:
+                pass
+            else:
+                units_imply_conserve = False
+                break
+
+    if flux_calibrated and units_imply_conserve:
+        log.warning(f"Possible unit mismatch for {ext_str}. File has been "
+                    f"flux calibrated but units are {ext_unit}")
+    if user_conserve is None:
+        this_conserve = units_imply_conserve
+        log.stdinfo(f"Setting conserve={this_conserve} for {ext_str} since "
+                    f"units are {ext_unit}")
+    else:
+        if user_conserve != units_imply_conserve:
+            log.warning(f"conserve is set to {user_conserve} but the "
+                        f"units of {ext_str} are {ext_unit}")
+        this_conserve = user_conserve  # but do what we're told
+    return this_conserve
 
 
 def QESpline(coeffs, xpix, data, weights, boundaries, order):

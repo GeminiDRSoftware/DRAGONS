@@ -42,6 +42,7 @@ from matplotlib import gridspec
 from scipy import optimize
 
 from geminidr.core import primitives_spect
+from geminidr.niri.primitives_niri_image import NIRIImage
 
 
 # -- Tests ---------------------------------------------------------------------
@@ -281,6 +282,45 @@ def test_trace_apertures():
     actual = np.array([ad_out[0].APERTURE[0][k] for k in keys])
 
     np.testing.assert_allclose(desired, actual, atol=0.18)
+
+
+@pytest.mark.parametrize('unit', ("", "electron", "W / (m2 nm)"))
+@pytest.mark.parametrize('flux_calibrated', (False, True))
+@pytest.mark.parametrize('user_conserve', (False, True, None))
+def test_flux_conservation_consistency(astrofaker, caplog, unit,
+                                       flux_calibrated, user_conserve):
+    # UNIT, FLUX_CALIBRATED, USER_CONSERVE: CORRECT_OUTCOME, WARN
+    RESULTS = {("electron", False, None): (True, False),
+               ("electron", False, True): (True, False),
+               ("electron", False, False): (False, True),
+               ("electron", True, None): (True, True),
+               ("electron", True, True): (True, True),
+               ("electron", True, False): (False, True),
+               ("", False, None): (True, False),
+               ("", False, True): (True, False),
+               ("", False, False): (False, True),
+               ("", True, None): (False, False),
+               ("", True, True): (True, True),
+               ("", True, False): (False, False),
+               ("W / (m2 Hz)", False, None): (False, True),
+               ("W / (m2 Hz)", False, True): (True, True),
+               ("W / (m2 Hz)", False, False): (False, True),
+               ("W / (m2 Hz)", True, None): (False, False),
+               ("W / (m2 Hz)", True, True): (True, False),
+               ("W / (m2 Hz)", True, False): (False, True)
+               }
+
+    ad = astrofaker.create("NIRI")
+    ad.init_default_extensions()
+    p = NIRIImage([ad])  # doesn't matter but we need a log object
+    ad.hdr["BUNIT"] = unit
+    conserve = primitives_spect.conserve_or_interpolate(ad[0],
+                    user_conserve=user_conserve,
+                    flux_calibrated=flux_calibrated, log=p.log)
+    correct, warn = RESULTS[unit, flux_calibrated, user_conserve]
+    assert conserve == correct
+    warning_given = any("WARNING" in record for record in caplog.records)
+    assert warn == warning_given
 
 
 # --- Fixtures and helper functions --------------------------------------------
