@@ -11,3 +11,5 @@ recursive-include gempy *.pyx
 graft geminidr/gemini/lookups/source_detection
 graft gempy/numdisplay
 graft recipe_system/adcc/client
+
+global-exclude *.py[cod] __pycache__ *.so .directory .git
