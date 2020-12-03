@@ -1,4 +1,4 @@
-include readme.md
+include README.md
 include LICENSE
 include tox.ini
 include gempy/library/config/README
