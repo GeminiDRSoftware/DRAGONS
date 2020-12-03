@@ -16,7 +16,7 @@ from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.fits import Header
 from astropy.modeling import models, fitting, Model
-from astropy.stats import sigma_clip
+from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -1536,14 +1536,18 @@ class Spect(PrimitivesBASE):
                 # sky-subtracted or not)
                 data1d, mask1d, var1d = NDStacker.mean(data, mask=mask,
                                                        variance=variance)
-                ndd = NDAstroData(var1d, mask=mask1d)
-                mean, sigma, _ = gt.measure_bg_from_image(ndd, sampling=1)
+                # Very light sigma-clipping to remove bright sky lines
+                var_excess = var1d - boxcar(var1d, np.median, size=min_sky_pix // 2)
+                mean, median, std = sigma_clipped_stats(var_excess, mask=mask1d,
+                                                        sigma=5.0, maxiters=1)
 
                 # Mask sky-line regions and find clumps of unmasked pixels
-                mask1d[var1d > mean + 3*sigma] = 1
+                mask1d[var_excess > 5 * std] = 1
                 slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
                 sky_regions = [slice_ for slice_ in slices
                                if slice_.stop - slice_.start >= min_sky_pix]
+                if not sky_regions:  # make sure we have something!
+                    sky_regions = [slice(None)]
 
                 sky_mask = np.ones_like(mask1d, dtype=bool)
                 for reg in sky_regions:
