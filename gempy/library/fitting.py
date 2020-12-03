@@ -365,7 +365,7 @@ class fit_1D:
         # evaluate a single model from a set and it's only a "debugging" plot
         # (if needed later, we could try constructing a single model by slicing
         # the model set parameters):
-        fitrow = self()[index]
+        fitrow = self.evaluate()[index]
 
         fig, ax = plt.subplots()
 
@@ -387,7 +387,7 @@ class fit_1D:
 
         plt.show()
 
-    def __call__(self, points=None):
+    def evaluate(self, points=None):
         """
         Evaluate the fitted model.
 

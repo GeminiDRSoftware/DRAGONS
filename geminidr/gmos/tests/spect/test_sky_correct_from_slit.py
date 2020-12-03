@@ -1,7 +1,7 @@
+
 """
 Regression tests for GMOS LS `skyCorrectFromSlit`. These tests run on real data
-to ensure that the output is always the same. Further investigation is needed
-to check if these outputs are scientifically relevant.
+to ensure that the output is always the same.
 """
 
 import os
@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
 from astropy.utils import minversion
-from geminidr.gmos import primitives_gmos_spect
+from geminidr.gmos import primitives_gmos_longslit
 from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
@@ -51,6 +51,11 @@ test_datasets = [
         dict(order=8, lsigma=5, hsigma=5, grow=2),
         'S20190204S0079_ref_1.fits',
     ),
+    (
+        "S20181024S0035_aperturesTraced.fits",  # R400 : 0.656
+        dict(),
+        'S20181024S0035_ref_1.fits',
+    ),
 ]
 
 # Tests Definitions -----------------------------------------------------------
@@ -74,7 +79,7 @@ def test_regression_extract_1d_spectra(filename, params, refname,
 
     with change_working_dir():
         logutils.config(file_name=f'log_regression_{ad.data_label()}.txt')
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.skyCorrectFromSlit(**params)
         sky_subtracted_ad = p.writeOutputs(outfilename=refname).pop()
@@ -104,6 +109,9 @@ def create_inputs_recipe():
         "S20190204S0079.fits": {
             "arc": "S20190206S0030.fits",
         },
+        "S20181024S0035.fits" : {
+            "arc": "S20181025S0012.fits",
+        },
     }
 
     module_name, _ = os.path.splitext(os.path.basename(__file__))
@@ -131,9 +139,9 @@ def create_inputs_recipe():
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
         p.prepare()
-        p.addDQ(static_bpm=None)
+        p.addDQ()
         p.addVAR(read_noise=True)
         p.overscanCorrect()
         p.ADUToElectrons()

@@ -135,7 +135,8 @@ def get_fits_table(catalog, ra, dec, sr, server=None, verbose=False):
     """
     # Check catalog given is valid
     if catalog not in CAT_SERVERS:
-        raise ValueError('Invalid Catalog')
+        raise ValueError('Invalid Catalog. Valid catalogs are: '+
+                         ' '.join(CAT_SERVERS))
 
     # Check server if given is valid
     if server is not None and server not in CAT_SERVERS[catalog]:

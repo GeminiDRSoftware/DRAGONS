@@ -85,17 +85,16 @@ class GSAOI(Gemini, NearIR):
             # problem is currently May 15 2013. It is not clear if this bug is
             # in the detector controller code or the SDSU board timing.
             if ad.phu.get('DATE-OBS') >= '2013-05-13':
-                for ext in ad:
+                for i, ext in enumerate(ad):
                     if ext.array_section(pretty=True) == '[513:1536,513:1536]':
-                        log.stdinfo("Updating the CCDSEC for central ROI data")
+                        if i == 0:
+                            log.stdinfo("Updating the CCDSEC for central ROI data")
 
                         for sec_name in ('array_section', 'detector_section'):
                             kw = ad._keyword_for(sec_name)
                             sec = getattr(ext, sec_name)()
 
-                            y1o = (sec.y1 + 1) if ext.hdr['EXTVER'] < 3 else \
-                                (sec.y1 - 1)
-
+                            y1o = (sec.y1 + 1) if i < 2 else (sec.y1 - 1)
                             y2o = y1o + 1024
 
                             secstr = "[{}:{},{}:{}]".format(
@@ -213,43 +212,3 @@ class GSAOI(Gemini, NearIR):
         flat.phu.set('OBJECT', 'BPM')
         gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
         return [flat]
-
-
-##############################################################################
-# Below are the helper functions for the primitives in this module           #
-##############################################################################
-
-def _tile_objcat(ad, shifts):
-    """
-    This produces a single Table instance combining all the individual
-    OBJCATs, with X_IMAGE and Y_IMAGE updated to account for the tiling,
-    and NUMBER changed to avoid duplications.
-
-    Parameters
-    ----------
-    ad: astrodata
-        input AD instance (with OBJCATs)
-    shifts: list of 2-tuples
-        array shifts (x,y) from original extension into tiled image
-
-    Returns
-    -------
-    Table: the tiled OBJCAT
-    """
-    tiled_objcat = None
-    for ext, shift in zip(ad, shifts):
-        try:
-            objcat = ext.OBJCAT
-        except AttributeError:
-            pass
-        else:
-            objcat['X_IMAGE'] += shift[0]
-            objcat['Y_IMAGE'] += shift[1]
-            if tiled_objcat:
-                objcat['NUMBER'] += max(tiled_objcat['NUMBER'])
-                tiled_objcat = vstack([tiled_objcat, objcat],
-                                      metadata_conflicts='silent')
-            else:
-                tiled_objcat = objcat
-
-    return tiled_objcat

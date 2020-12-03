@@ -4,6 +4,7 @@ These are GMOS longslit observations.
 Default is "reduceScience".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
+blocked_tags = {'NODANDSHUFFLE'}
 
 
 def reduceScience(p):
@@ -32,11 +33,11 @@ def reduceScience(p):
     p.stackFrames()
     p.findSourceApertures()
     p.traceApertures()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_2D")
     p.extract1DSpectra()
     p.fluxCalibrate()
     p.linearizeSpectra()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_1D")
 
 
 

@@ -16,7 +16,7 @@ def testdata():
 @pytest.fixture
 def testvar():
     data = np.repeat(np.arange(5, dtype=float), 2, axis=0).reshape(5, 2)
-    return (data+1) / 2
+    return (data + 1) / 2
 
 
 @pytest.fixture
@@ -64,8 +64,7 @@ def test_no_rejection(testdata):
 
 
 def test_unpack_nddata(testdata, testvar, testmask):
-    nd = NDAstroData(testdata, mask=testmask)
-    nd.variance = testvar
+    nd = NDAstroData(testdata, mask=testmask, variance=testvar)
     out_data, out_mask, out_var = NDStacker.none(nd)
     assert_allclose(out_data, testdata)
     assert_allclose(out_var, testvar)
@@ -87,18 +86,17 @@ def test_ndstacker(capsys):
 def test_varclip():
     # Confirm rejection of high pixel and correct output DQ
     data = np.array([1., 1., 2., 2., 2., 100.]).reshape(6, 1)
-    ndd = NDAstroData(data)
-    ndd.mask = np.zeros_like(data, dtype=DQ.datatype)
+    ndd = NDAstroData(data,
+                      mask=np.zeros_like(data, dtype=DQ.datatype),
+                      variance=np.ones_like(data))
     ndd.mask[5, 0] = DQ.saturated
-    ndd.variance = np.ones_like(data)
     stackit = NDStacker(combine="mean", reject="varclip")
     result = stackit(ndd)
     assert_allclose(result.data, 1.6)  # 100 is rejected
     assert_allclose(result.mask, 0)
 
     data = np.array([1., 1., 2., 2., 2., 100.]).reshape(6, 1)
-    ndd = NDAstroData(data)
-    ndd.variance = np.ones_like(data)
+    ndd = NDAstroData(data, variance=np.ones_like(data))
     ndd.variance[5] = 400
     stackit = NDStacker(combine="mean", reject="varclip", lsigma=3, hsigma=3)
     result = stackit(ndd)
@@ -293,17 +291,16 @@ def test_median_even(func, expected_median, expected_var, testdata, testvar,
 def test_sum1d():
     big_value = 10
     data = np.ones((10, ))
-    ndd = NDAstroData(data)
-    ndd.mask = np.zeros_like(data, dtype=DQ.datatype)
-    ndd.mask[1] = 1
-    ndd.mask[2] = 2
+    ndd = NDAstroData(data, mask=np.zeros_like(data, dtype=DQ.datatype),
+                      variance=np.ones_like(data))
+    ndd.mask[[1, 2]] = [1, 2]
     ndd.data[4] = big_value
-    ndd.variance = np.ones_like(data)
+
     x1 = -0.5
     for x2 in np.arange(0., 4.5, 0.5):
         result = sum1d(ndd, x1, x2, proportional_variance=True)
         if x2 > 3.5:
-            np.testing.assert_almost_equal(4 + big_value * (x2-3.5),
+            np.testing.assert_almost_equal(4 + big_value * (x2 - 3.5),
                                            result.data)
         else:
             np.testing.assert_almost_equal(x2 - x1, result.data)

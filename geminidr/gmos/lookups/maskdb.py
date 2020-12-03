@@ -14,8 +14,8 @@ bpm_dict = {
     # GMOS North e2V
     # - 11, 22 are empty full frames plus bad pixels from old imaging BPMs
     # - 44 and mixed binning are not available.
-    "GMOS-N_e2v_11_3amp_v1": "gmos-n_bpm_e2v_11_full_6amp_v1.fits",
-    "GMOS-N_e2v_22_3amp_v1": "gmos-n_bpm_e2v_22_full_6amp_v1.fits",
+    "GMOS-N_e2v_11_6amp_v1": "gmos-n_bpm_e2v_11_full_6amp_v1.fits",
+    "GMOS-N_e2v_22_6amp_v1": "gmos-n_bpm_e2v_22_full_6amp_v1.fits",
 
     # GMOS North Hamamatsu
     # - 11, 22, 44 are bad columns plus bad pixels from old imaging BPMs

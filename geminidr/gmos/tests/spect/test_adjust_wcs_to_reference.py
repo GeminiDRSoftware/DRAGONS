@@ -31,7 +31,7 @@ def test_adjust_wcs(files, path_to_inputs):
     adinputs = [astrodata.open(os.path.join(path_to_inputs, f)) for f in files]
     # Hack the WCS of all but the first input so they're wrong
     for ad in adinputs[1:]:
-        ad[0].wcs.pipeline[0][1]['crpix2'].offset = 600
+        ad[0].wcs.pipeline[0].transform['crpix2'].offset = 600
     p = primitives_gmos_longslit.GMOSLongslit(adinputs)
     p.adjustWCSToReference()
     # Return the (RA, dec) as a SkyCoord at the location of each aperture

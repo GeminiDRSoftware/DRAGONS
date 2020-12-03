@@ -316,6 +316,11 @@ class Spect(PrimitivesBASE):
             # We can only calculate the sensitivity for one extension in
             # non-XD data, so keep track of this in case it's not the first one
             calculated = False
+            for ext in ad:
+                if len(ext.shape) != 1:
+                    log.warning(f"{ad.filename} extension {ext.id} is not a "
+                                "1D spectrum")
+                    continue
 
             if interactive:
                 all_exts = list()
@@ -532,7 +537,7 @@ class Spect(PrimitivesBASE):
                 direction = "row" if dispaxis == 1 else "column"
 
                 # Here's a lot of input-checking
-                extname = '{}:{}'.format(ad.filename, ext.hdr['EXTVER'])
+                extname = f'{ad.filename} extension {ext.id}'
                 start = 0.5 * ext.shape[1 - dispaxis]
                 initial_peaks = None
                 try:
@@ -724,7 +729,7 @@ class Spect(PrimitivesBASE):
 
             len_ad = len(ad)
             if arc is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode:
                     # TODO: Think about this when we have MOS/XD/IFU
                     if len(ad) == 1:
                         log.warning("No changes will be made to {}, since no "
@@ -789,7 +794,7 @@ class Spect(PrimitivesBASE):
 
             if not distortion_models:
                 log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in arc {arc.filename}:{ext.hdr['EXTVER']} - "
+                            f"in arc {arc.filename} extension {ext.id} - "
                             "continuing")
                 continue
 
@@ -928,8 +933,8 @@ class Spect(PrimitivesBASE):
                                                                   subsample=subsample,
                                                                   parallel=False))
                     if wave_model is None:
-                        log.warning(f"{arc.filename}:{0} has no wavelength "
-                                    "solution".format(ext.hdr['EXTVER']))
+                        log.warning(f"{arc.filename} extension {ext.id} has "
+                                    "no wavelength solution")
 
             for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
                 # TODO: remove this; for debugging purposes only
@@ -1071,10 +1076,10 @@ class Spect(PrimitivesBASE):
             try:
                 arc_lines = np.loadtxt(arc_file, usecols=[0])
             except (OSError, TypeError):
-                log.warning("Cannot read file {} - using default linelist".format(arc_file))
+                log.warning(f"Cannot read file {arc_file} - using default linelist")
                 arc_file = None
             else:
-                log.stdinfo("Read arc line list {}".format(arc_file))
+                log.stdinfo(f"Read arc line list {arc_file}")
                 try:
                     arc_weights = np.sqrt(np.loadtxt(arc_file, usecols=[1]))
                 except IndexError:
@@ -1083,10 +1088,10 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("Read arc line relative weights")
 
         for ad in adinputs:
-            log.info("Determining wavelength solution for {}".format(ad.filename))
+            log.info(f"Determining wavelength solution for {ad.filename}")
             for ext in ad:
                 if len(ad) > 1:
-                    log.info("Determining solution for EXTVER {}".format(ext.hdr['EXTVER']))
+                    log.info(f"Determining solution for extension {ext.id}")
 
                 # Create 1D spectrum for calibration
                 if ext.data.ndim > 1:
@@ -1402,7 +1407,7 @@ class Spect(PrimitivesBASE):
                             " - extracting sky from separate apertures")
 
             for ext in ad:
-                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                extname = f"{ad.filename} extension {ext.id}"
                 if debug:
                     self.viewer.display_image(ext, wcs=False)
                 if len(ext.shape) == 1:
@@ -1412,8 +1417,8 @@ class Spect(PrimitivesBASE):
                 try:
                     aptable = ext.APERTURE
                 except AttributeError:
-                    log.warning("{} has no APERTURE table. Cannot extract "
-                                "spectra.".format(extname))
+                    log.warning(f"{extname} has no APERTURE table. Cannot "
+                                "extract spectra.")
                     continue
 
                 num_spec = len(aptable)
@@ -1428,8 +1433,7 @@ class Spect(PrimitivesBASE):
                     log.warning(f"Cannot find wavelength solution for {extname}")
                     wave_model = None
 
-                log.stdinfo("Extracting {} spectra from {}".format(num_spec,
-                                                                   extname))
+                log.stdinfo(f"Extracting {num_spec} spectra from {extname}")
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
 
@@ -1626,8 +1630,8 @@ class Spect(PrimitivesBASE):
                 log.warning("{} has not been distortion corrected".
                             format(ad.filename))
             for ext in ad:
-                log.stdinfo("Searching for sources in {}:{}".
-                            format(ad.filename, ext.hdr['EXTVER']))
+                log.stdinfo(f"Searching for sources in {ad.filename} "
+                            f"extension {ext.id}")
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 npix = ext.shape[dispaxis]
@@ -1836,7 +1840,7 @@ class Spect(PrimitivesBASE):
                 ext_std = std[max(index, len_std-1)]
                 sensfunc = ext_std.SENSFUNC
 
-                extver = '{}:{}'.format(ad.filename, ext.hdr['EXTVER'])
+                extname = f"{ad.filename} extension {ext.id}"
 
                 # Try to confirm the science image has the correct units
                 std_flux_unit = sensfunc['coefficients'].unit
@@ -1850,17 +1854,17 @@ class Spect(PrimitivesBASE):
                     unit = sci_flux_unit / (std_flux_unit * flux_units)
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
-                                     format(extver, exptime))
+                                     format(extname, exptime))
                         ext /= exptime
                         sci_flux_unit /= u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
                         log.warning("{} has incompatible units ('{}' and '{}')."
-                                    "Cannot flux calibrate".format(extver,
-                                                                   sci_flux_unit, std_flux_unit))
+                                    "Cannot flux calibrate"
+                                    .format(extname, sci_flux_unit, std_flux_unit))
                         continue
                 else:
                     log.warning("Cannot determine units of data and/or SENSFUNC "
-                                "table for {}, so cannot flux calibrate.".format(extver))
+                                f"table for {extname}, so cannot flux calibrate.")
                     continue
 
                 # Get wavelengths of all pixels
@@ -2204,12 +2208,11 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             adinfo = []
             for ext in ad:
-                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 try:
                     model_info = _extract_model_info(ext)
                 except ValueError:
-                    raise ValueError("Cannot determine wavelength solution for {}."
-                                     .format(extname))
+                    raise ValueError("Cannot determine wavelength solution "
+                                     f"for {ad.filename} extension {ext.id}.")
                 adinfo.append(model_info)
 
                 if w1 is None:
@@ -2281,7 +2284,7 @@ class Spect(PrimitivesBASE):
         for i, ad in enumerate(adinputs):
             for iext, ext in enumerate(ad):
                 wave_model = info[i][iext]['wave_model']
-                extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                extn = f"{ad.filename} extension {ext.id}"
                 wave_resample = wave_model | new_wave_model.inverse
                 # TODO: This shouldn't really be needed, but it is
                 wave_resample.inverse = new_wave_model | wave_model.inverse
@@ -2469,10 +2472,11 @@ class Spect(PrimitivesBASE):
                 # but should we include some specific set of DQ codes here?
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
 
-                sky_model = fit_1D(sky, weights=sky_weights, function=function,
-                                   order=order, axis=axis, sigma_lower=lsigma,
-                                   sigma_upper=hsigma, niter=max_iters,
-                                   grow=grow, regions=regions, plot=debug)()
+                sky_model = fit_1D(
+                    sky, weights=sky_weights, function=function, order=order,
+                    axis=axis, sigma_lower=lsigma, sigma_upper=hsigma,
+                    niter=max_iters, grow=grow, regions=regions, plot=debug
+                ).evaluate()
 
                 ext.data -= sky_model
 
@@ -2548,8 +2552,8 @@ class Spect(PrimitivesBASE):
                     aptable = ext.APERTURE
                     locations = aptable['c0'].data
                 except (AttributeError, KeyError):
-                    log.warning("Could not find aperture locations in {}:{} - "
-                                "continuing".format(ad.filename, ext.hdr['EXTVER']))
+                    log.warning("Could not find aperture locations in "
+                                f"{ad.filename} extension {ext.id} - continuing")
                     continue
 
                 if debug:

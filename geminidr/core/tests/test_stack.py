@@ -71,20 +71,21 @@ def test_error_extension_shape(niri_adinputs, caplog):
 
 
 def test_stackframes_refcat_propagation(niri_adinputs):
-    refcat = Table([[1, 2], ['a', 'b']], names=('Id', 'Cat_Id'))
+    refcat = Table([[1, 2], [0.0, 1.0], [40.0, 40.0]],
+                   names=('Id', 'RAJ2000', 'DEJ2000'))
     for i, ad in enumerate(niri_adinputs):
         if i > 0:
-            refcat['Cat_Id'] = ['b', 'c']
+            refcat['RAJ2000'] = [1.0, 2.0]
         ad.REFCAT = refcat
 
     p = NIRIImage(niri_adinputs)
     p.prepare()
     adout = p.stackFrames()[0]
 
-    # The merged REFCAT should contain 'a', 'b', 'c'
+    # The merged REFCAT should contain 3 sources as follows
     assert len(adout.REFCAT) == 3
     np.testing.assert_equal(adout.REFCAT['Id'], np.arange(1, 4))
-    assert all(adout.REFCAT['Cat_Id'] == ['a', 'b', 'c'])
+    assert all(adout.REFCAT['RAJ2000'] == [0.0, 1.0, 2.0])
 
 
 def test_rejmap(niri_adinputs):

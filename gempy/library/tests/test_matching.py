@@ -78,6 +78,7 @@ def test_fit_model(make_catalog):
     in_model = real_model.copy()
     for p in in_model.param_names:
         setattr(in_model, p, 0.0)
+        setattr(getattr(in_model, p), 'bounds', (-20, 20))
     model = matching.fit_model(in_model, incoords, refcoords, brute=True)
     for p in model.param_names:
         assert (abs(getattr(model, p) - getattr(real_model, p)) <

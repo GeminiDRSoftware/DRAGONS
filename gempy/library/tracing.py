@@ -29,8 +29,6 @@ from . import astrotools as at
 from .astrotools import divide0
 
 from astrodata import NDAstroData
-from matplotlib import pyplot as plt
-from datetime import datetime
 
 log = logutils.get_logger(__name__)
 
@@ -144,13 +142,12 @@ class Aperture:
 
     def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
-        slitlength = data.shape[0]
         all_x1 = self._center_pixels + aper_lower
         all_x2 = self._center_pixels + aper_upper
 
-        ext = NDAstroData(data, mask=mask)
-        ext.variance = var
-        results = [sum1d(ext[:,i], x1, x2) for i, (x1, x2) in enumerate(zip(all_x1, all_x2))]
+        ext = NDAstroData(data, mask=mask, variance=var)
+        results = [sum1d(ext[:, i], x1, x2)
+                   for i, (x1, x2) in enumerate(zip(all_x1, all_x2))]
         self.data[:] = [result.data for result in results]
         if mask is not None:
             self.mask[:] = [result.mask for result in results]
@@ -341,8 +338,7 @@ class Aperture:
 
         del self._center_pixels
         self._last_extraction = (aper_lower, aper_upper)
-        ndd = NDAstroData(self.data, mask=self.mask)
-        ndd.variance = self.var
+        ndd = NDAstroData(self.data, mask=self.mask, variance=self.var)
         try:
             ndd.meta['header'] = ext.hdr.copy()
         except AttributeError:  # we only had an ndarray

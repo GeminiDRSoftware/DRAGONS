@@ -36,10 +36,10 @@ class AstroDataFactory:
         that it represents an already opened file.
 
         """
-        if isinstance(source, str):
+        if isinstance(source, (str, os.PathLike)):
             stats = os.stat(source)
             if stats.st_size == 0:
-                LOGGER.warning("File {} is zero size".format(source))
+                LOGGER.warning(f"File {source} is zero size")
 
             # try vs all handlers
             for func in AstroDataFactory._file_openers:
@@ -80,6 +80,11 @@ class AstroDataFactory:
         Returns an instantiated object, or raises AstroDataError if it was
         not possible to find a match
 
+        Parameters
+        ----------
+        source : `str` or `pathlib.Path` or `fits.HDUList`
+            The file path or HDUList to read.
+
         """
         candidates = []
         with self._openFile(source) as opened:
@@ -111,7 +116,7 @@ class AstroDataFactory:
 
         Parameters
         ----------
-        phu : fits.PrimaryHDU or fits.Header or dict or list
+        phu : `fits.PrimaryHDU` or `fits.Header` or `dict` or `list`
             FITS primary HDU or header, or something that can be used to create
             a fits.Header (a dict, a list of "cards").
         extensions : list of HDUs

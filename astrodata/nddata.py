@@ -157,7 +157,13 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
-                 meta=None, unit=None, copy=False, window=None):
+                 meta=None, unit=None, copy=False, window=None, variance=None):
+
+        if variance is not None:
+            if uncertainty is not None:
+                raise ValueError()
+            uncertainty = ADVarianceUncertainty(variance)
+
         super().__init__(FakeArray(data) if is_lazy(data) else data,
                          None if is_lazy(uncertainty) else uncertainty,
                          mask, wcs, meta, unit, copy)

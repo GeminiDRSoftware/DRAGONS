@@ -47,15 +47,12 @@ def test_find_apertures_with_fake_data(seeing):
 
     model = Gaussian1D(mean=y0, stddev=stddev, amplitude=50)
     rows, cols = np.mgrid[:ad.shape[0][0], :ad.shape[0][1]]
-    print(rows.shape)
 
     for ext in ad:
         ext.data = model(rows)
         ext.data += np.random.poisson(ext.data)
         ext.data += (np.random.random(size=ext.data.shape) - 0.5) * gmos_fake_noise
-        
         ext.mask = np.zeros_like(ext.data, dtype=np.uint)
-        ext.variance = np.sqrt(ext.data)
 
     p = GMOSSpect([ad])
     _ad = p.findSourceApertures()[0]

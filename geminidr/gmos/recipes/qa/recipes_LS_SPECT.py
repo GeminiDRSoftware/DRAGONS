@@ -4,6 +4,7 @@ These are GMOS longslit observations.
 Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
+blocked_tags = {'NODANDSHUFFLE'}
 
 from time import sleep
 

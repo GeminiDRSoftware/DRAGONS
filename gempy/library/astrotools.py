@@ -88,10 +88,12 @@ def divide0(numerator, denominator):
             return 0 if denominator == 0 else numerator / denominator
         else:
             dtype = np.float32 if is_int else numerator.dtype
-            return np.divide(numerator, denominator, out=np.zeros(numerator.shape, dtype=dtype), where=denominator!=0)
+            return np.divide(numerator, denominator, out=np.zeros(numerator.shape, dtype=dtype),
+                             where=abs(denominator) > np.finfo(dtype).tiny)
     else:
         dtype = np.float32 if is_int else denominator.dtype
-        return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype), where=denominator!=0)
+        return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype),
+                         where=abs(denominator) > np.finfo(dtype).tiny)
 
 def rasextodec(string):
     """

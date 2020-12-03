@@ -9,6 +9,8 @@ from copy import copy
 
 from scipy.ndimage import affine_transform
 from astropy.modeling import models, Model
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 from gwcs.wcs import WCS as gWCS
 
 import astrodata, gemini_instruments
@@ -40,7 +42,7 @@ class Resample(PrimitivesBASE):
         This primitive applies the transformation encoded in the input images
         WCSs to align them with a reference image, in reference image pixel
         coordinates. The reference image is taken to be the first image in
-        the input list.
+        the input list if not explicitly provided as a parameter.
 
         By default, the transformation into the reference frame is done via
         interpolation. The variance plane, if present, is transformed in
@@ -51,59 +53,116 @@ class Resample(PrimitivesBASE):
         >1% influence from that bit of a bad pixel. The transformed masks are
         then added back together to generate the transformed DQ plane.
 
-        The WCS keywords in the headers of the output images are updated
-        to reflect the transformation.
+        The WCS objects of the output images are updated to reflect the
+        transformation.
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
-        order: int (0-5)
+        order : int (0-5)
             order of interpolation (0=nearest, 1=linear, etc.)
-        trim_data: bool
+        trim_data : bool
             trim image to size of reference image?
-        clean_data: bool
+        clean_data : bool
             replace bad pixels with a ring median of their values to avoid
             ringing if using a high-order interpolation?
+        conserve : bool
+            conserve flux when resampling to a different pixel scale?
+        force_affine : bool
+            convert the true resampling transformation to an affine
+            approximation? This speeds up the calculation and has a negligible
+            effect for instruments lacking significant distortion
+        reference : str/AstroData/None
+            reference image for resampling (if not provided, the first image
+            in the list will be used)
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params.pop("suffix")
-        force_affine = True
-
-        if len(adinputs) < 2:
-            log.warning("No alignment will be performed, since at least two "
-                        "input AstroData objects are required for "
-                        "resampleToCommonFrame")
-            return adinputs
+        reference = params.pop("reference")
+        trim_data = params.pop("trim_data")
+        force_affine = params.pop("force_affine")
+        # These two parameters are only for GSAOI and will help to define
+        # the output WCS if there's no reference image
+        pixel_scale = params.pop("pixel_scale", None)
+        position_angle = params.pop("pa", None)
 
         # TODO: Can we make it so that we don't need to mosaic detectors
         # before doing this? That would mean we only do one interpolation,
         # not two, and that's definitely better!
-        if not all(len(ad) == 1 for ad in adinputs):
+        if not all(len(ad) == 1 or ad.instrument() == "GSAOI" for ad in adinputs):
             raise OSError("All input images must have only one extension.")
 
-        ad_ref = adinputs[0]
-        ndim = len(ad_ref[0].shape)
+        if isinstance(reference, str):
+            reference = astrodata.open(reference)
+        elif reference is None and pixel_scale is None:
+            # Reference image will be the first AD, so we need 2+
+            if len(adinputs) < 2:
+                log.warning("No alignment will be performed, since at least "
+                            "two input AstroData objects are required for "
+                            "resampleToCommonFrame")
+                return adinputs
+
+        if reference is None and pixel_scale:
+            # This must be GSAOI projecting to the requested geometry
+            ad0 = adinputs[0]
+            ra, dec = ad0.target_ra(), ad0.target_dec()
+            # using SkyCoord facilitates formatting the log
+            center = SkyCoord(ra * u.deg, dec * u.deg)
+            ra_str = center.ra.to_string(u.hour, precision=3)
+            dec_str = center.dec.to_string(u.deg, precision=2, alwayssign=True)
+            log.stdinfo(f"Projecting with center {ra_str} {dec_str}\n"
+                        f"at PA={position_angle} with pixel scale={pixel_scale}")
+            pixel_scale /= 3600
+            new_wcs = (models.Scale(-pixel_scale) & models.Scale(pixel_scale) |
+                       models.Rotation2D(position_angle) |
+                       models.Pix2Sky_TAN() |
+                       models.RotateNative2Celestial(ra, dec, 180))
+            ref_wcs = gWCS([(ad0[0].wcs.input_frame, new_wcs),
+                            (ad0[0].wcs.output_frame, None)])
+            if trim_data:
+                log.warning("Setting trim_data=False as required when no "
+                            "reference imagevis provided.")
+                trim_data = False
+        else:
+            if reference is None:
+                reference = adinputs[0]
+            else:
+                log.stdinfo(f"Using {reference.filename} as reference image")
+                if not trim_data:
+                    log.warning("Setting trim_data=True to trim to size of the "
+                                "reference image.")
+                    trim_data = True
+            if len(reference) != 1:
+                raise OSError("Reference image must have only one extension.")
+            ref_wcs = reference[0].wcs
+
+        if trim_data:
+            params.update({'origin': (0,) * len(reference[0].shape),
+                           'output_shape': reference[0].shape})
 
         # No transform for the reference AD
-        for i_ad, ad in enumerate(adinputs):
-            if i_ad == 0:
-                ref_wcs = ad[0].wcs
-                t_align = models.Identity(ndim)
+        for ad in adinputs:
+            transforms = []
+            if reference is ad:
+                transforms.append(models.Identity(len(ad[0].shape)))
             else:
-                t_align = ad[0].wcs.forward_transform | ref_wcs.backward_transform
-                if force_affine:
-                    affine = adwcs.calculate_affine_matrices(t_align, ad[0].shape)
-                    t_align = models.AffineTransformation2D(matrix=affine.matrix[::-1, ::-1],
-                                                            translation=affine.offset[::-1])
+                for ext in ad:
+                    t_align = ext.wcs.forward_transform | ref_wcs.backward_transform
+                    if force_affine:
+                        affine = adwcs.calculate_affine_matrices(t_align, ext.shape)
+                        t_align = models.AffineTransformation2D(matrix=affine.matrix[::-1, ::-1],
+                                                                translation=affine.offset[::-1])
+                    transforms.append(t_align)
 
-            resampled_frame = copy(ad[0].wcs.input_frame)
-            resampled_frame.name = "resampled"
-            ad[0].wcs = gWCS([(ad[0].wcs.input_frame, t_align),
-                              (resampled_frame, ref_wcs.pipeline[0].transform)] +
-                              ref_wcs.pipeline[1:])
+            for ext, t_align in zip(ad, transforms):
+                resampled_frame = copy(ext.wcs.input_frame)
+                resampled_frame.name = "resampled"
+                ext.wcs = gWCS([(ext.wcs.input_frame, t_align),
+                                (resampled_frame, ref_wcs.pipeline[0].transform)] +
+                                 ref_wcs.pipeline[1:])
 
         adoutputs = self._resample_to_new_frame(adinputs, frame="resampled",
                                                 process_objcat=False, **params)
@@ -155,6 +214,7 @@ class Resample(PrimitivesBASE):
 
         # pop the params so we can pass the rest of the dict to helper method
         shifts_param = params.pop("shifts")
+        trim_data = params.pop("trim_data")
         sfx = params.pop("suffix")
 
         # TODO: Maybe remove this requirement
@@ -162,9 +222,9 @@ class Resample(PrimitivesBASE):
             raise OSError("All input images must have only one extension.")
 
         # Ill-defined behaviour for this situation so
-        if len(adinputs) == 1 and not params["trim_data"]:
+        if len(adinputs) == 1 and not trim_data:
             log.warning("Setting trim_data=True since there is only one input frame")
-            params["trim_data"] = True
+            trim_data = True
 
         # Check we can get some numerical shifts and that the number is
         # compatible with the number of images
@@ -191,6 +251,11 @@ class Resample(PrimitivesBASE):
             raise ValueError(f"Number of shifts ({num_shifts}) incompatible "
                              f"with number of images ({num_images})")
 
+        if trim_data:
+            reference = adinputs[0]
+            params.update({'origin': (0,) * len(reference[0].shape),
+                           'output_shape': reference[0].shape})
+
         for ad, shift in zip(adinputs, shifts):
             if len(shift) != len(ad[0].shape):
                 raise ValueError(f"Shift {shift} incompatible with "
@@ -216,8 +281,8 @@ class Resample(PrimitivesBASE):
         return adoutputs
 
     def _resample_to_new_frame(self, adinputs=None, frame=None, order=3,
-                               trim_data=False, clean_data=False,
-                               process_objcat=False):
+                               conserve=True, output_shape=None, origin=None,
+                               clean_data=False, process_objcat=False):
         """
         This private method resamples a number of AstroData objects to a
         CoordinateFrame they share. It is basically just a wrapper for the
@@ -231,12 +296,16 @@ class Resample(PrimitivesBASE):
             name of CoordinateFrame to be resampled to
         order: int (0-5)
             order of interpolation (0=nearest, 1=linear, etc.)
-        trim_data: bool
-            trim image to size of reference image?
-        clean_data: bool
+        output_shape : tuple/None
+            shape of output image (if None, calculate and use shape that
+            contains all resampled inputs)
+        origin: tuple/None
+            location of origin in reampled output (i.e., data to the left of
+            or below this will be cut)
+        clean_data : bool
             replace bad pixels with a ring median of their values to avoid
             ringing if using a high-order interpolation?
-        process_objcat: bool
+        process_objcat : bool
             update (rather than delete) the OBJCAT?
         """
         log = self.log
@@ -245,23 +314,21 @@ class Resample(PrimitivesBASE):
             self.applyDQPlane(adinputs, replace_flags=DQ.not_signal ^ DQ.no_data,
                               replace_value="median", inner=3, outer=5)
 
-        if trim_data:
-            output_shape = adinputs[0][0].shape
-            origin = (0,) * len(output_shape)
-        else:
+        if output_shape is None or origin is None:
             all_corners = np.concatenate([transform.get_output_corners(
-                ad[0].wcs.get_transform(ad[0].wcs.input_frame, frame),
-                input_shape=ad[0].shape) for ad in adinputs], axis=1)
-            origin = tuple(np.ceil(min(corners)) for corners in all_corners)
-            output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
-                                 for corners in all_corners)
+                ext.wcs.get_transform(ext.wcs.input_frame, frame),
+                input_shape=ext.shape) for ad in adinputs for ext in ad], axis=1)
+            if origin is None:
+                origin = tuple(np.ceil(min(corners)) for corners in all_corners)
+            if output_shape is None:
+                output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
+                                     for corners in all_corners)
 
-        print("ORIGIN", origin)
         log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
         adoutputs = []
         for ad in adinputs:
             log.stdinfo(f"Resampling {ad.filename}")
-            ad_out = transform.resample_from_wcs(ad, frame, order=order,
+            ad_out = transform.resample_from_wcs(ad, frame, order=order, conserve=conserve,
                                                  output_shape=output_shape, origin=origin,
                                                  process_objcat=process_objcat)
             adoutputs.append(ad_out)

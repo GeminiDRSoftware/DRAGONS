@@ -8,6 +8,7 @@ class measureBGConfig(config.Config):
 
 class measureCCConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_ccMeasured", optional=True)
+    separate_ext = config.Field("Supply measurement for each extension?", bool, False)
 
 class measureIQConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_iqMeasured", optional=True)

@@ -8,8 +8,7 @@ from astrodata.fits import header_for_table, card_filter, update_header
 
 def test_header_for_table():
     tbl = Table([[[1], [2, 3], [3, 4, 5]]], dtype=['object'])
-    with pytest.raises(TypeError,
-                       match=r"Variable length arrays .* are not supported"):
+    with pytest.raises(ValueError, match=r"Illegal format `object`"):
         header_for_table(tbl)
 
     tbl = Table([np.arange(2 * 3 * 4).reshape(3, 2, 4),
@@ -20,8 +19,8 @@ def test_header_for_table():
     tbl['b'].unit = u.arcsec
     hdr = header_for_table(tbl)
     assert hdr['TFORM1'] == '8K'
-    assert hdr['TDIM1'] == 2
-    assert hdr['TFORM4'] == '2X'
+    assert hdr['TDIM1'] == '(4,2)'
+    assert hdr['TFORM4'] == '2L'
     assert hdr['TUNIT2'] == 'arcsec'
 
 

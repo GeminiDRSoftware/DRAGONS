@@ -65,12 +65,12 @@ TESTS = {
         r"Recipe tags: ",
         r"Primitives used: "]),
     'GSAOI_IMAGE': (GSAOI_IMAGE, 'sq', '_default', [
-        r"Recipe not provided, default recipe \(reduce_nostack\) will be used",
+        r"Recipe not provided, default recipe \(reduce\) will be used",
         r"Input file: .*/{}".format(GSAOI_IMAGE),
         r"Input tags: ",
         r"Input mode: sq",
-        r"Input recipe: reduce_nostack",
-        r"Matched recipe: geminidr.gsaoi.recipes.sq.recipes_IMAGE::reduce_nostack",
+        r"Input recipe: reduce",
+        r"Matched recipe: geminidr.gsaoi.recipes.sq.recipes_IMAGE::reduce",
         r"Recipe location: .*/gsaoi/recipes/sq/recipes_IMAGE.py",
         r"Recipe tags: ",
         r"Primitives used: "]),
@@ -142,7 +142,7 @@ def test_showprims_on_gnirs_spect():
 @pytest.mark.dragons_remote_data
 def test_showprims_on_gmos_spect():
     file_location = astrodata.testing.download_from_archive(GMOS_SPECT)
-    answer = showprims(file_location)
+    answer = showprims(file_location, 'ql')
     assert "geminidr.gmos.recipes.ql.recipes_LS_SPECT::reduce" in answer
 
 

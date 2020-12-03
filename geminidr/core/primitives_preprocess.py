@@ -7,12 +7,13 @@ import math
 import datetime
 import numpy as np
 from copy import deepcopy
+from functools import partial
+
 from scipy.ndimage import binary_dilation, filters
 from astropy.table import Table
 from astropy.convolution import convolve
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
 from astrodata.provenance import add_provenance
 
 from gempy.gemini import gemini_tools as gt
@@ -72,9 +73,8 @@ class Preprocess(PrimitivesBASE):
                         # the 1-bit
                         ext.mask |= ext.OBJMASK
                 else:
-                    log.warning('No object mask present for {}:{}; cannot '
-                                'apply object mask'.format(ad.filename,
-                                                           ext.hdr['EXTVER']))
+                    log.warning(f'No object mask present for {ad.filename} '
+                                f'extension {ext.id}; cannot apply object mask')
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
@@ -106,8 +106,7 @@ class Preprocess(PrimitivesBASE):
             log.status("Converting {} from ADU to electrons by multiplying by "
                        "the gain".format(ad.filename))
             for ext, gain in zip(ad, gain_list):
-                extver = ext.hdr['EXTVER']
-                log.stdinfo("  gain for EXTVER {} = {}".format(extver, gain))
+                log.stdinfo(f"  gain for extension {ext.id} = {gain}")
                 ext.multiply(gain)
 
             # Update the headers of the AstroData Object. The pixel data now
@@ -157,9 +156,9 @@ class Preprocess(PrimitivesBASE):
         for ad in adinputs:
             for ext in ad:
                 if ext.mask is None:
-                    log.warning("No DQ plane exists for {}:{}, so the correction "
-                                "cannot be applied".format(ad.filename,
-                                                           ext.hdr['EXTVER']))
+                    log.warning(f"No DQ plane exists for {ad.filename} "
+                                f"extension {ext.id}, so the correction "
+                                "cannot be applied")
                     continue
 
                 # We need to know the dimensionality of the data to create the
@@ -177,9 +176,9 @@ class Preprocess(PrimitivesBASE):
 
                 try:
                     rep_value = float(replace_value)
-                    log.fullinfo("Replacing bad pixels in {}:{} with the "
-                                 "user value {}".format(ad.filename,
-                                                        ext.hdr['EXTVER'], rep_value))
+                    log.fullinfo(f"Replacing bad pixels in {ad.filename}"
+                                 f"extension {ext.id} with the "
+                                 f"user value {rep_value}")
                 except ValueError:  # already validated so must be "mean" or "median"
                     if footprint is not None:
                         mask = (ext.mask & replace_flags) > 0
@@ -211,9 +210,9 @@ class Preprocess(PrimitivesBASE):
                     else:
                         oper = getattr(np, replace_value)
                         rep_value = oper(ext.data[ext.mask & replace_flags == 0])
-                        log.fullinfo("Replacing bad pixels in {}:{} with the {} "
-                                     "of the good data".format(ad.filename,
-                                                ext.hdr['EXTVER'], replace_value))
+                        log.fullinfo(f"Replacing bad pixels in {ad.filename} "
+                                     f"extension {ext.id} with the "
+                                     f"{replace_value} of the good data")
 
                 # kernel-based replacement avoids this line
                 ext.data[(ext.mask & replace_flags) != 0] = rep_value
@@ -381,15 +380,15 @@ class Preprocess(PrimitivesBASE):
                     for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
                         if bg is None:
                             log.warning("Could not get background level from "
-                                        "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
+                                        f"{ad.filename} extension {ext.id}")
                             continue
 
                         # Add the appropriate value to this extension
-                        log.fullinfo("Background level is {:.0f} for {}:{}".
-                                     format(bg, ad.filename, ext.hdr['EXTVER']))
+                        log.fullinfo(f"Background level is {bg:.0f} for "
+                                     f"{ad.filename} extension {ext.id}")
                         difference = np.float32(ref - bg)
-                        log.fullinfo("Adding {:.0f} to match reference background "
-                                     "level {:.0f}".format(difference, ref))
+                        log.fullinfo(f"Adding {difference:.0f} to match "
+                                     f"reference background level {ref:.0f}")
                         ext.add(difference)
                         ext.hdr.set('SKYLEVEL', ref,
                                     self.keyword_comments["SKYLEVEL"])
@@ -456,7 +455,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if dark is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "dark was specified".format(ad.filename))
                     continue
@@ -580,7 +579,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if flat is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "flatfield has been specified".
                                 format(ad.filename))
@@ -665,8 +664,8 @@ class Preprocess(PrimitivesBASE):
             log.status("Applying nonlinearity correction to {}".
                        format(ad.filename))
             for ext, coeffs in zip(ad, nonlin_coeffs):
-                log.status("   nonlinearity correction for EXTVER {} is {}".
-                           format(ext.hdr['EXTVER'], coeffs))
+                log.status("   nonlinearity correction for extension {} is {}"
+                           .format(ext.id, coeffs))
                 pixel_data = np.zeros_like(ext.data)
 
                 # Convert back to ADU per exposure if coadds have been summed
@@ -736,16 +735,15 @@ class Preprocess(PrimitivesBASE):
                         scaling = operator(ext.data[ext.mask==0]).astype(np.float32)
                     # Divide the science extension by the median value
                     # VAR is taken care of automatically
-                    log.fullinfo("Normalizing {} EXTVER {} by dividing by {:.2f}".
-                                 format(ad.filename, ext.hdr['EXTVER'], scaling))
+                    log.fullinfo("Normalizing {} extension {} by dividing by {:.2f}"
+                                 .format(ad.filename, ext.id, scaling))
                     ext /= scaling
             else:
                 # Combine pixels from all extensions, using DQ if present
-                scaling = operator(np.concatenate([(ext.data.ravel()
-                        if ext.mask is None else ext.data[ext.mask==0].ravel())
-                                            for ext in ad])).astype(np.float32)
-                log.fullinfo("Normalizing {} by dividing by {:.2f}".
-                            format(ad.filename, scaling))
+                scaling = operator(np.concatenate([
+                    (ext.data.ravel() if ext.mask is None else ext.data[ext.mask==0].ravel())
+                    for ext in ad])).astype(np.float32)
+                log.fullinfo(f"Normalizing {ad.filename} by dividing by {scaling:.2f}")
                 ad /= scaling
 
             # Timestamp and update the filename
@@ -1073,14 +1071,14 @@ class Preprocess(PrimitivesBASE):
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
         offset_sky = params["offset_sky"]
+        suffix = params["suffix"]
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
             params["zero"] = False
 
         # Parameters to be passed to stackSkyFrames
-        stack_params = self._inherit_params(params, 'stackSkyFrames',
-                                            pass_suffix=True)
+        stack_params = self._inherit_params(params, 'stackSkyFrames')
         #stack_params['mask_objects'] = False  # We're doing this en masse
 
         # To avoid a crash in certain methods of operation
@@ -1194,7 +1192,7 @@ class Preprocess(PrimitivesBASE):
                     # Sky-subtraction is in place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
                                      offset_sky=offset_sky, reset_sky=reset_sky,
-                                     save_sky=save_sky)
+                                     save_sky=save_sky, suffix=suffix)
                     skytables[j] = []
                     # This deletes a reference to the AD sky object
                     stacked_skies[j] = None
@@ -1241,6 +1239,8 @@ class Preprocess(PrimitivesBASE):
                         "Setting offset_sky=False.")
             zero = False
 
+        skyfunc = partial(gt.measure_bg_from_image, value_only=True)
+
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):
             if ad.phu.get(timestamp_key):
@@ -1251,35 +1251,30 @@ class Preprocess(PrimitivesBASE):
 
             if ad_sky is not None:
                 # Only call measure_bg_from_image if we need it
-                if reset_sky or scale or zero:
-                    old_bg = gt.measure_bg_from_image(ad, value_only=True)
-                log.stdinfo("Subtracting the image ({}) from the science "
-                            "AstroData object {}".
-                            format(ad_sky.filename, ad.filename))
-                if scale or zero:
-                    sky_bg = gt.measure_bg_from_image(ad_sky, value_only=True)
-                    for ext_sky, final_bg, init_bg in zip(ad_sky, old_bg, sky_bg):
-                        if scale:
-                            ext_sky *= final_bg / init_bg
-                        else:
-                            ext_sky += final_bg - init_bg
-                        log.fullinfo("Applying {} to EXTVER {} from {} to {}".
-                                format(("scaling" if scale else "zeropoint"),
-                                       ext_sky.hdr['EXTVER'], init_bg, final_bg))
-                if save_sky:
-                    #ad_sky.update_filename(suffix='_skyimage', strip=True)
-                    self.writeOutputs([ad_sky])
-                ad.subtract(ad_sky)
                 if reset_sky:
-                    new_bg = gt.measure_bg_from_image(ad, value_only=True)
-                    for ext, new_level, old_level in zip(ad, new_bg, old_bg):
-                        sky_offset = old_level - new_level
-                        log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
-                                            ad.filename, ext.hdr['EXTVER']))
-                        ext.add(sky_offset)
+                    orig_bg = skyfunc(ad)
+                log.stdinfo(f"Subtracting {ad_sky.filename} from "
+                            f"the science frame {ad.filename}")
+                if scale or zero:
+                    factors = [gt.sky_factor(ext, ext_sky, skyfunc, multiplicative=scale)
+                               for ext, ext_sky in zip(ad, ad_sky)]
+                    for ext_sky, factor in zip(ad_sky, factors):
+                        log.fullinfo("Applying {} of {} to extension {}".
+                                format("scaling" if scale else "offset",
+                                       factor, ext_sky.id))
+                else:
+                    ad.subtract(ad_sky)
+                if save_sky:
+                    # ad_sky.update_filename(suffix='_skyimage', strip=True)
+                    self.writeOutputs([ad_sky])
+                if reset_sky:
+                    for ext, bg in zip(ad, orig_bg):
+                        log.stdinfo(f"  Adding {bg} to {ad.filename} "
+                                    f"extension {ext.id}")
+                        ext.add(bg)
             else:
-                log.warning("No changes will be made to {}, since no "
-                            "sky was specified".format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since no sky was specified")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1309,14 +1304,13 @@ class Preprocess(PrimitivesBASE):
 
             bg_list = ad.hdr.get('SKYLEVEL')
             for ext, bg in zip(ad, bg_list):
-                extver = ext.hdr['EXTVER']
                 if bg is None:
-                    log.warning("No changes will be made to {}:{}, since there "
-                                "is no sky background measured".
-                                format(ad.filename, extver))
+                    log.warning(f"No changes will be made to {ad.filename} "
+                                f"extension {ext.id}, since there "
+                                "is no sky background measured")
                 else:
-                    log.fullinfo("Subtracting {:.0f} to remove sky level from "
-                                 "image {}:{}".format(bg, ad.filename, extver))
+                    log.fullinfo(f"Subtracting {bg:.0f} to remove sky level "
+                                 f"from image {ad.filename} extension {ext.id}")
                     ext.subtract(bg)
 
             # Timestamp and update filename

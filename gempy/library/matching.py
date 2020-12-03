@@ -2,11 +2,11 @@
 
 import numpy as np
 from datetime import datetime
-from functools import partial
+from functools import partial, reduce
 import inspect
 
 from scipy import optimize, spatial
-from astropy.modeling import fitting, models, FittableModel
+from astropy.modeling import fitting, models, Model, FittableModel
 from astropy.modeling.fitting import (_validate_constraints,
                                       _validate_model,
                                       _fitter_to_model_params,
@@ -14,7 +14,10 @@ from astropy.modeling.fitting import (_validate_constraints,
 
 from astrodata import wcs as adwcs
 
-from gempy.gemini import gemini_tools as gt
+try:
+    from gempy.library import cython_utils
+except ImportError:  # pragma: no cover
+    raise ImportError("Run 'cythonize -i cython_utils.pyx' in gempy/library")
 from ..utils import logutils
 from .astromodels import Rotate2D, Scale2D
 
@@ -353,51 +356,6 @@ class Chebyshev1DMatchBox(MatchBox):
 
 ##############################################################################
 
-def _landstat(landscape, updated_model, in_coords):
-    """
-    Compute the statistic for transforming coordinates onto an existing
-    "landscape" of "mountains" representing source positions. Since the
-    landscape is an array and therefore pixellated, the precision is limited.
-
-    Parameters
-    ----------
-    landscape: nD array
-        synthetic image representing locations of sources in reference plane
-    updated_model: Model
-        transformation (input -> reference) being investigated
-    in_coords: nD array
-        input coordinates
-
-    Returns
-    -------
-    float:
-        statistic representing quality of fit to be minimized
-    """
-
-    def _element_if_in_bounds(arr, index):
-        try:
-            return arr[index]
-        except IndexError:
-            return 0
-
-    out_coords = updated_model(*in_coords)
-    if len(in_coords) == 1:
-        out_coords = (out_coords,)
-    out_coords2 = tuple((coords - 0.5).astype(int) for coords in out_coords)
-    result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
-    ################################################################################
-    # This stuff replaces the above 3 lines if speed doesn't hold up
-    #    sum = np.sum(landscape[i] for i in out_coords if i>=0 and i<len(landscape))
-    # elif len(in_coords) == 2:
-    #    xt, yt = out_coords
-    #    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
-    #                                                   (yt-0.5).astype(int))
-    #                  if ix>=0 and iy>=0 and ix<landscape.shape[1]
-    #                                     and iy<landscape.shape[0])
-    ################################################################################
-    return -result  # to minimize
-
-
 class BruteLandscapeFitter(Fitter):
     """
     Fitter class that employs brute-force optimization to map a set of input
@@ -408,10 +366,45 @@ class BruteLandscapeFitter(Fitter):
     supported_constraints = ['bounds', 'fixed']
 
     def __init__(self):
-        super().__init__(optimize.brute, statistic=_landstat)
+        super().__init__(optimize.brute, statistic=self._landstat)
 
-    @staticmethod
-    def mklandscape(coords, sigma, maxsig, landshape):
+    def _landstat(self, landscape, updated_model, in_coords):
+        """
+        Compute the statistic for transforming coordinates onto an existing
+        "landscape" of "mountains" representing source positions. Since the
+        landscape is an array and therefore pixellated, the precision is limited.
+
+        Parameters
+        ----------
+        landscape: nD array
+            synthetic image representing locations of sources in reference plane
+        updated_model: Model
+            transformation (input -> reference) being investigated
+        in_coords: nD array
+            input coordinates
+
+        Returns
+        -------
+        float:
+            statistic representing quality of fit to be minimized
+        """
+
+        #def _element_if_in_bounds(arr, index):
+        #    try:
+        #        return arr[index]
+        #    except IndexError:
+        #        return 0
+
+        out_coords = (np.array(self.grid_model(*updated_model(*in_coords))) + 0.5).astype(np.int32)
+        if len(in_coords) == 1:
+            out_coords = out_coords[np.new_axis, :]
+        #result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords))
+        result = cython_utils.landstat(landscape.ravel(), out_coords.ravel(),
+                                       np.array(landscape.shape, dtype=np.int32),
+                                       len(landscape.shape), out_coords[0].size)
+        return -result  # to minimize
+
+    def mklandscape(self, coords, sigma, maxsig, landshape):
         """
         Populates an array with Gaussian mountains at specified coordinates.
         Used to allow rapid goodness-of-fit calculations for cross-correlation.
@@ -446,7 +439,7 @@ class BruteLandscapeFitter(Fitter):
 
         # Place a mountain onto the landscape for each coord in coords
         # Need to crop at edges if mountain extends beyond landscape
-        for coord in zip(*coords):
+        for coord in zip(*self.grid_model(*coords)):
             lslice = []
             mslice = []
             for pos, length in zip(coord[::-1], landshape):
@@ -467,7 +460,7 @@ class BruteLandscapeFitter(Fitter):
         return landscape
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
-                 landscape=None, **kwargs):
+                 landscape=None, scale=None, **kwargs):
         model_copy = _validate_model(model, self.supported_constraints)
 
         # Turn 1D arrays into tuples to allow iteration over axes
@@ -481,15 +474,23 @@ class BruteLandscapeFitter(Fitter):
             ref_coords = (ref_coords,)
 
         # Remember, coords are x-first (reversed python order)
+        self.grid_model = models.Identity(len(in_coords))
         if landscape is None:
-            landshape = tuple(int(max(np.max(inco), np.max(refco)) + 10)
-                              for inco, refco in zip(in_coords, ref_coords))[::-1]
-            landscape = self.mklandscape(ref_coords, sigma, maxsig, landshape)
+            mins = [min(refco) for refco in ref_coords]
+            maxs = [max(refco) for refco in ref_coords]
+            if scale:
+                self.grid_model = reduce(Model.__and__, [models.Shift(-_min) |
+                                                         models.Scale(scale) for _min in mins])
+                landshape = tuple(int((_max - _min) * scale)
+                                  for _min, _max in zip(mins, maxs))[::-1]
+            else:
+                scale = 1
+                landshape = tuple(int(_max) for _max in maxs)[::-1]
+            landscape = self.mklandscape(ref_coords, sigma*scale, maxsig, landshape)
 
         farg = (model_copy, np.asanyarray(in_coords, dtype=float), landscape)
         p0, _ = _model_to_fit_params(model_copy)
 
-        # TODO: Use the name of the parameter to infer the step size
         ranges = []
         for p in model_copy.param_names:
             bounds = model_copy.bounds[p]
@@ -500,7 +501,13 @@ class BruteLandscapeFitter(Fitter):
             else:
                 # We don't check that the value of a fixed param is within bounds
                 if diff > 0 and not model_copy.fixed[p]:
-                    ranges.append(slice(*(bounds + (min(0.5 * sigma, 0.1 * diff),))))
+                    if 'offset' in p:
+                        stepsize = min(sigma, 0.1 * diff)
+                    elif 'angle' in p:
+                        stepsize = max(0.5, 0.1 * diff)
+                    elif 'factor' in p:
+                        stepsize = max(0.01, 0.1 * diff)
+                    ranges.append(slice(*(bounds + (stepsize,))))
                     continue
             ranges.append((getattr(model_copy, p).value,) * 2)
 
@@ -771,8 +778,8 @@ class KDTreeFitter(Fitter):
         return -result  # to minimize
 
 
-def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
-              release=False, verbose=True):
+def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-5, scale=None,
+              brute=True, release=False, verbose=True):
     """
     Finds the best-fitting mapping to convert from xin to xout, using a
     two-step approach by first doing a brute-force scan of parameter space,
@@ -791,6 +798,9 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
         size of the mountains for the BruteLandscapeFitter
     tolerance: float
         accuracy of parameters in final answer
+    scale: float/None
+        scaling to use for coordinates if performing a brute-force fit,
+        to ensure that the peaks in the "landscape" are separated
     brute: bool
         perform brute-force fit first?
     release: boolean
@@ -816,7 +826,7 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
 
         # Brute-force grid search using an image landscape
         fit_it = BruteLandscapeFitter()
-        m_init = fit_it(model, xin, xout, sigma=sigma)
+        m_init = fit_it(model, xin, xout, scale=scale, sigma=sigma)
         if verbose:
             log.stdinfo(_show_model(m_init, "Coarse model in {:.2f} seconds".
                                     format((datetime.now() - start).total_seconds())))
@@ -836,12 +846,10 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
         m_init = model.copy()
 
     # More precise minimization using pairwise calculations
-    fit_it = KDTreeFitter()  # TODO: set parameters?
+    fit_it = KDTreeFitter(sigma=sigma, method='Nelder-Mead')
     # We don't care about how much the function value changes (fatol), only
     # that the position is robust (xatol)
-    m_final = fit_it(m_init, xin, xout, method='Nelder-Mead',
-                     options={'xatol': tolerance})
-    #final_model = fit_it(m, xin, xout, method='shgo')
+    m_final = fit_it(m_init, xin, xout, options={'xatol': tolerance})
     if verbose:
         log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
                                 format((datetime.now() - start).total_seconds())))
@@ -913,34 +921,26 @@ def match_sources(incoords, refcoords, radius=2.0):
     return matched
 
 
-def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
-                          min_sources=1, search_radius=10, match_radius=2,
-                          rotate=False, scale=False, full_wcs=False,
-                          brute=True, return_matches=False):
+def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
+                             search_radius=10, match_radius=2, rotate=False,
+                             scale=False, brute=True, sigma=5, factor=None,
+                             return_matches=False):
     """
-    This function takes two images (an input image, and a reference image) and
-    works out the modifications needed to the WCS of the input images so that
-    the world coordinates of its OBJCAT sources match the world coordinates of
-    the OBJCAT sources in the reference image. This is done by modifying the
-    WCS of the input image and mapping the reference image sources to pixels
-    in the input image via the reference image WCS (fixed) and the input image
-    WCS. As such, in the nomenclature of the fitting routines, the pixel
-    positions of the input image's OBJCAT become the "reference" sources,
-    while the converted positions of the reference image's OBJCAT are the
-    "input" sources.
+    This function computes a transform that maps one set of coordinates to
+    another. By default, only a shift is used, by a rotation and magnification
+    can also be applied if requested. An initial transform may be supplied
+    and, if so, its affine approximation will be used as a starting point.
 
     Parameters
     ----------
-    adinput: AstroData
-        input AD whose pixel shift is requested
-    adref: AstroData
-        reference AD image
+    incoords: tuple
+        x-coords and y-coords of objects in input image
+    refcoords: tuple
+        x-coords and y-coords of objects in reference image
     transform: Transform/None
         existing transformation (if None, will do brute search)
-    cull_sources: bool
-        limit matched sources to "good" (i.e., stellar) objects
-    min_sources: int
-        minimum number of sources to use for cross-correlation
+    shape: 2-tuple/None
+        shape (standard python order, y-first)
     search_radius: float
         size of search box (in pixels)
     match_radius: float
@@ -949,82 +949,44 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         add a rotation to the alignment transform?
     scale: bool
         add a magnification to the alignment transform?
-    full_wcs: bool
-        use the two images' WCSs to reproject the reference image's coordinates
-        onto the input image's pixel plane, rather than just align the OBJCAT
-        coordinates?
     brute: bool
         perform brute (landscape) search first?
+    sigma: float
+        scale-length for source matching
+    factor: float/None
+        scaling factor to convert coordinates to pixels in the BruteLandscapeFitter()
     return_matches: bool
         return a list of matched objects as well as the Transform?
 
     Returns
     -------
-    matches: 2 lists
+    Model: alignment transform
+    matches: 2 lists (optional)
         OBJCAT sources in input and reference that are matched
-    WCS: new WCS for input image
     """
     log = logutils.get_logger(__name__)
-    if len(adinput) * len(adref) != 1:
-        log.warning('Can only match single-extension images')
-        return None
+    if shape is None:
+        shape = tuple(max(c) - min(c) for c in incoords)
 
-    try:
-        input_objcat = adinput[0].OBJCAT
-        ref_objcat = adref[0].OBJCAT
-    except AttributeError:
-        log.warning('Both input images must have object catalogs')
-        return None
-
-    if len(input_objcat) < min_sources or len(ref_objcat) < min_sources:
-        log.warning("Too few sources in one or both images. Cannot align.")
-        return None
-
-    largest_dimension = max(*adinput[0].shape, *adref[0].shape)
+    largest_dimension = max(*shape)
     # Values larger than these result in errors of >1 pixel
     mag_threshold = 1. / largest_dimension
     rot_threshold = np.degrees(mag_threshold)
 
-    # OK, we can proceed
-    incoords = (input_objcat['X_IMAGE'].data-1, input_objcat['Y_IMAGE'].data-1)
-    refcoords = (ref_objcat['X_IMAGE'].data-1, ref_objcat['Y_IMAGE'].data-1)
-    if cull_sources:
-        good_src1 = gt.clip_sources(adinput)[0]
-        good_src2 = gt.clip_sources(adref)[0]
-        if len(good_src1) < min_sources or len(good_src2) < min_sources:
-            log.warning("Too few sources in culled list, using full set "
-                        "of sources")
-        else:
-            incoords = (good_src1["x"]-1, good_src1["y"]-1)
-            refcoords = (good_src2["x"]-1, good_src2["y"]-1)
-
     # Set up the initial model
-    magnification, rotation = 1, 0  # May be overridden later
-    try:
-        t = adref[0].wcs.forward_transform | adinput[0].wcs.backward_transform
-    except AttributeError:  # for cases with no defined WCS
-        t = None
-        if full_wcs:
-            log.warning("Cannot determine WCS information: setting full_wcs=False")
-            full_wcs = False
-
-    if full_wcs:
-        refcoords = t(*refcoords)
-    elif transform is None and t is not None:
-        transform = t.inverse
     if transform is None:
         transform = models.Identity(2)
 
     # We always refactor the transform (if provided) in a prescribed way so
     # as to ensure it's fittable and not overly weird
-    affine = adwcs.calculate_affine_matrices(transform, adinput[0].shape)
+    affine = adwcs.calculate_affine_matrices(transform, shape)
     m_init = models.Shift(affine.offset[1]) & models.Shift(affine.offset[0])
 
     # This is approximate since the affine matrix might have differential
     # scaling and a shear
     magnification = np.sqrt(abs(np.linalg.det(affine.matrix)))
-    rotation = np.degrees(np.arctan2(affine.matrix[1,0] - affine.matrix[0,1],
-                                     affine.matrix[0,0] + affine.matrix[1,1]))
+    rotation = np.degrees(np.arctan2(affine.matrix[0, 1] - affine.matrix[1, 0],
+                                     affine.matrix[0, 0] + affine.matrix[1, 1]))
     m_init.offset_0.bounds = (m_init.offset_0 - search_radius,
                               m_init.offset_0 + search_radius)
     m_init.offset_1.bounds = (m_init.offset_1 - search_radius,
@@ -1050,13 +1012,20 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         log.warning("A magnification of {:.4f} is expected but the "
                     "magnification is fixed".format(magnification))
 
-    # Perform the fit
-    m_final = fit_model(m_init, incoords, refcoords, sigma=10, brute=brute)
+    from astropy.table import Table
+    tobj = Table([*incoords, *m_init(*incoords)], names=['XIN', 'YIN', 'XTRANS', 'YTRANS'])
+    tref = Table(refcoords, names=['XREF', 'YREF'])
+    tobj.write('obj.fits', format='fits', overwrite=True)
+    tref.write('ref.fits', format='fits', overwrite=True)
+
+    # Tolerance here aims to achieve <0.1 pixel differences in the tests
+    m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
+                        brute=brute, tolerance=sigma*1e-5)
     if return_matches:
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
         ind1 = matched[ind2]
         obj_list = [[], []] if len(ind1) < 1 else [np.array(list(zip(*incoords)))[ind2],
                                                    np.array(list(zip(*refcoords)))[ind1]]
-        return obj_list, m_final
+        return m_final, obj_list
     return m_final

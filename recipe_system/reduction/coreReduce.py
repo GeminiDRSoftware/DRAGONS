@@ -184,6 +184,11 @@ class Reduce:
         except RecipeNotFound:
             log.warning("No recipe can be found in {} recipe libs.".format(instpkg))
             log.warning("Searching primitives ...")
+            # If it's not a primitive, we'll crash later on, so assume it's a
+            # primitive and update uparms to prepend the name to any parameters
+            # without the primitive named explicitly
+            self.uparms = [((k if ':' in k else f"{self.recipename}:{k}"), v)
+                           for k, v in self.uparms]
         rm = None
 
         # PrimitiveMapper now returns the primitive class, not an instance.

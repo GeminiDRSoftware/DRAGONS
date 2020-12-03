@@ -21,9 +21,9 @@ from astrodata import NDAstroData
 from .astrotools import divide0
 from geminidr.gemini.lookups import DQ_definitions as DQ
 try:
-    from . import cyclip
+    from . import cython_utils
 except ImportError:  # pragma: no cover
-    raise ImportError("Run 'cythonize -i cyclip.pyx' in gempy/library")
+    raise ImportError("Run 'cythonize -i cython_utils.pyx' in gempy/library")
 
 # A lightweight NDData-like object
 NDD = namedtuple("NDD", "data mask variance")
@@ -87,9 +87,7 @@ def stack_nddata(fn):
             instance, data=data, mask=mask, variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
-        ret_value = NDAstroData(out_data, mask=out_mask)
-        if out_var is not None:
-            ret_value.variance = out_var
+        ret_value = NDAstroData(out_data, mask=out_mask, variance=out_var)
         if rejmap is not None:
             ret_value.meta['other'] = {'REJMAP': NDAstroData(rejmap)}
         return ret_value
@@ -570,7 +568,7 @@ class NDStacker:
         num_img = shape[0]
         # Force int in case arrays are 1D
         data_size = int(np.multiply.reduce(data.shape[1:]))
-        data, mask, variance = cyclip.iterclip(
+        data, mask, variance = cython_utils.iterclip(
             data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
             variance.ravel().astype(np.float32),
             has_var=has_var, num_img=num_img, data_size=data_size,

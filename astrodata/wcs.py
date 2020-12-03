@@ -35,6 +35,7 @@ def fitswcs_to_gwcs(hdr):
     except Exception as e:
         return None
     outputs = transform.outputs
+    wcs_info = read_wcs_from_header(hdr)
 
     naxes = transform.n_inputs
     axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
@@ -44,7 +45,7 @@ def fitswcs_to_gwcs(hdr):
 
     out_frames = []
     for i, output in enumerate(outputs):
-        unit_name = hdr.get(f'CUNIT{i+1}')
+        unit_name = wcs_info["CUNIT"][i]
         try:
             unit = u.Unit(unit_name)
         except TypeError:
@@ -61,18 +62,20 @@ def fitswcs_to_gwcs(hdr):
         out_frames.append(frame)
 
     if coordinate_outputs.issubset(outputs):
-        frame_name = hdr.get('RADESYS') or hdr.get('RADECSYS')  # FK5, etc.
+        frame_name = wcs_info["RADESYS"]  # FK5, etc.
         try:
             ref_frame = getattr(coord, frame_name)()
+            axes_names = None
             # TODO? Work out how to stuff EQUINOX and OBS-TIME into the frame
         except (AttributeError, TypeError):
             ref_frame = None
+            axes_names = ('lon', 'lat')
         axes_order = (outputs.index('alpha_C'), outputs.index('delta_C'))
 
         # Call it 'world' if there are no other axes, otherwise 'sky'
         name = 'SKY' if len(outputs) > 2 else 'world'
         cel_frame = cf.CelestialFrame(reference_frame=ref_frame, name=name,
-                                      axes_order=axes_order)
+                                      axes_names=axes_names, axes_order=axes_order)
         out_frames.append(cel_frame)
 
     out_frame = (out_frames[0] if len(out_frames) == 1
@@ -302,7 +305,7 @@ def read_wcs_from_header(header):
         wcs_info['WCSAXES'] = len(keys)
     wcsaxes = wcs_info['WCSAXES']
     # if not present call get_csystem
-    wcs_info['RADESYS'] = header.get('RADESYS', 'ICRS')
+    wcs_info['RADESYS'] = header.get('RADESYS', header.get('RADECSYS', 'FK5'))
     wcs_info['VAFACTOR'] = header.get('VAFACTOR', 1)
     # NAXIS=0 if we're reading from a PHU
     wcs_info['NAXIS'] = header.get('NAXIS') or max(int(k[5:]) for k in header['CRPIX*'].keys())
