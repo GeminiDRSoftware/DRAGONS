@@ -29,7 +29,7 @@ else:
     use_cython = True
 
 PACKAGENAME = 'dragons'
-PACKAGES = find_packages('.', exclude=['*tests'])
+PACKAGES = find_packages('.', exclude=['*tests*'])
 
 # PACKAGE_DATA
 PACKAGE_DATA = {
