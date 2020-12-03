@@ -28,7 +28,7 @@ else:
 VERSION = '3.1.0-dev'
 
 PACKAGENAME = 'dragons'
-PACKAGES = find_packages('.', exclude=['*tests*'])
+PACKAGES = find_packages()
 
 # SCRIPTS
 SCRIPTS = [
