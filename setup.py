@@ -106,4 +106,5 @@ setup(name='dragons',
       },
       # keywords=['astronomy', 'astrophysics', 'science', 'gemini'],
       python_requires='>=3.7',
+      entry_points={"pytest11": ["pytest_dragons = pytest_dragons.plugin"]},
       )

@@ -715,7 +715,7 @@ def create_inputs_recipe(use_branch_name=False):
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
-    from astrodata.testing import download_from_archive, get_active_git_branch
+    from astrodata.testing import download_from_archive
     from gempy.utils import logutils
     from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from recipe_system.reduction.coreReduce import Reduce
@@ -726,7 +726,7 @@ def create_inputs_recipe(use_branch_name=False):
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
 
-    input_path = os.path.join(path, "inputs/", get_active_git_branch())
+    input_path = os.path.join(path, "inputs/")
     os.makedirs(input_path, exist_ok=True)
 
     for filename, cals in associated_calibrations.items():
