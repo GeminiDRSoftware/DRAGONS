@@ -34,6 +34,7 @@ PACKAGES = find_packages('.', exclude=['*tests'])
 # PACKAGE_DATA
 PACKAGE_DATA = {
     'geminidr': ['geminidr/*/lookups/source_detection/*',
+                 'geminidr/*/lookups/spectrophotometric_standards/*',
                  'geminidr/*/lookups/BPM/*',
                  'geminidr/*/lookups/MDF/*'],
     'gempy': ['gempy/numdisplay/*',
