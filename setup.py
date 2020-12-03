@@ -33,13 +33,27 @@ PACKAGES = find_packages('.', exclude=['*tests*'])
 
 # PACKAGE_DATA
 PACKAGE_DATA = {
-    'geminidr': ['geminidr/*/lookups/source_detection/*',
-                 'geminidr/*/lookups/spectrophotometric_standards/*',
-                 'geminidr/*/lookups/BPM/*',
-                 'geminidr/*/lookups/MDF/*'],
-    'gempy': ['gempy/numdisplay/*',
-              'gempy/library/config/README'],
-    'recipe_system': ['recipe_system/adcc/client/*'],
+    'geminidr': [
+        '*/lookups/source_detection/*',
+        '*/lookups/spectrophotometric_standards/*',
+        '*/lookups/BPM/*.fits',
+        '*/lookups/MDF/*.fits',
+    ],
+    'gempy': [
+        'numdisplay/*',
+        'library/config/README',
+    ],
+    'recipe_system': [
+        'adcc/client/*',
+        'adcc/client/*/*',
+        'adcc/client/*/*/*',
+        'adcc/client/*/*/*/*',
+        'adcc/client/*/*/*/*/*',
+        'adcc/client/*/*/*/*/*/*',
+        'adcc/client/*/*/*/*/*/*/*',
+        'adcc/client/*/*/*/*/*/*/*/*',
+        'adcc/client/*/*/*/*/*/*/*/*/*',
+    ],
 }
 
 # SCRIPTS
