@@ -31,31 +31,6 @@ else:
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages('.', exclude=['*tests*'])
 
-# PACKAGE_DATA
-PACKAGE_DATA = {
-    'geminidr': [
-        '*/lookups/source_detection/*',
-        '*/lookups/spectrophotometric_standards/*',
-        '*/lookups/BPM/*.fits',
-        '*/lookups/MDF/*.fits',
-    ],
-    'gempy': [
-        'numdisplay/*',
-        'library/config/README',
-    ],
-    'recipe_system': [
-        'adcc/client/*',
-        'adcc/client/*/*',
-        'adcc/client/*/*/*',
-        'adcc/client/*/*/*/*',
-        'adcc/client/*/*/*/*/*',
-        'adcc/client/*/*/*/*/*/*',
-        'adcc/client/*/*/*/*/*/*/*',
-        'adcc/client/*/*/*/*/*/*/*/*',
-        'adcc/client/*/*/*/*/*/*/*/*/*',
-    ],
-}
-
 # SCRIPTS
 SCRIPTS = [
     os.path.join('recipe_system', 'scripts', name)
@@ -88,7 +63,7 @@ setup(name='dragons',
       license='BSD',
       zip_safe=False,
       packages=PACKAGES,
-      package_data=PACKAGE_DATA,
+      include_package_data=True,
       scripts=SCRIPTS,
       ext_modules=EXTENSIONS,
       classifiers=[
