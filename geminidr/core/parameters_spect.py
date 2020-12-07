@@ -154,7 +154,7 @@ def flux_units_check(value):
         raise ValueError("{} is not a recognized unit".format(value))
     try:
         unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
-    except:
+    except u.UnitConversionError:
         raise ValueError("Cannot convert {} to a flux density".format(value))
     return True
 
@@ -173,7 +173,7 @@ class linearizeSpectraConfig(config.Config):
     w2 = config.RangeField("Ending wavelength (nm)", float, None, min=0., optional=True)
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
-    conserve = config.Field("Conserve flux?", bool, False)
+    conserve = config.Field("Conserve flux?", bool, None, optional=True)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
 
     def validate(self):
@@ -200,7 +200,7 @@ class resampleToCommonFrameConfig(config.Config):
     w2 = config.RangeField("Ending wavelength (nm)", float, None, min=0., optional=True)
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
-    conserve = config.Field("Conserve flux?", bool, False)
+    conserve = config.Field("Conserve flux?", bool, None, optional=True)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     force_linear = config.Field("Force linear wavelength solution?", bool, True)

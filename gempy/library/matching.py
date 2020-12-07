@@ -1012,12 +1012,6 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
         log.warning("A magnification of {:.4f} is expected but the "
                     "magnification is fixed".format(magnification))
 
-    from astropy.table import Table
-    tobj = Table([*incoords, *m_init(*incoords)], names=['XIN', 'YIN', 'XTRANS', 'YTRANS'])
-    tref = Table(refcoords, names=['XREF', 'YREF'])
-    tobj.write('obj.fits', format='fits', overwrite=True)
-    tref.write('ref.fits', format='fits', overwrite=True)
-
     # Tolerance here aims to achieve <0.1 pixel differences in the tests
     m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
                         brute=brute, tolerance=sigma*1e-5)

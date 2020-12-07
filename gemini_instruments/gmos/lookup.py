@@ -1450,37 +1450,39 @@ nominal_zeropoints = {
     ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'z'): 26.718,
 
     # GMOS-S Hamamatsu CCDs
-    # Updating values supplied by German Gimeno on 2014-12-04, from
-    # data taken from June to November 2014.  Matches the information
-    # on the website.  http://www.gemini.edu/node/10697?q=node/10445
+    # Values on the website based on data taken between Jun 2014 and Dec 2015.
+    # https://www.gemini.edu/instrumentation/gmos/calibrations#PhotStand
     #
-    # Error values the numbers in-line that are commented out.  They
-    # from previous communications as new error estimates were not
-    # included in the table on the website.
+    # Numbers commented out are the color terms. Zeropoint uncertainties are
+    # listed as +/-0.011 mag and color term uncertainties +/- 0.023 mag.
+    #
+    # The combined zeropoint is simply the CCD2 zeropoint, since this will
+    # apply to post-flatfielded data, and the flatfield normalization is
+    # based solely on the CCD2 level.
     #
     # CCDr = BI5-36-4k-2
     # CCDg = BI11-33-4k-1
     # CCDb = BI12-34-4k-1
-    ('BI5-36-4k-2', 'u'): 24.105,  # 0.042,
-    ('BI11-33-4k-1', 'u'): 24.143,  # 0.011,
-    ('BI12-34-4k-1', 'u'): 24.207,  # 0.052,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'u'): 24.14,  # 0.011
-    ('BI5-36-4k-2', 'g'): 28.000,  # 0.047,
-    ('BI11-33-4k-1', 'g'): 28.019,  # 0.050,
-    ('BI12-34-4k-1', 'g'): 28.023,  # 0.061,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'g'): 28.02,  # 0.050
-    ('BI5-36-4k-2', 'r'): 28.192,  # 0.038,
-    ('BI11-33-4k-1', 'r'): 28.219,  # 0.041,
-    ('BI12-34-4k-1', 'r'): 28.256,  # 0.049,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'r'): 28.22,  # 0.041
-    ('BI5-36-4k-2', 'i'): 28.196,  # 0.028,
-    ('BI11-33-4k-1', 'i'): 28.181,  # 0.036,
-    ('BI12-34-4k-1', 'i'): 28.221,  # 0.036,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'i'): 28.20,  # 0.036
-    ('BI5-36-4k-2', 'z'): 27.076,  # 0.021,
-    ('BI11-33-4k-1', 'z'): 28.079,  # 0.035,
-    ('BI12-34-4k-1', 'z'): 28.096,  # 0.038,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'z'): 28.08,  # 0.035
+    ('BI5-36-4k-2', 'u'):  24.138,  # 0.025,
+    ('BI11-33-4k-1', 'u'): 24.103,  # 0.045,
+    ('BI12-34-4k-1', 'u'): 24.165,  # 0.015,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'u'): 24.10,
+    ('BI5-36-4k-2', 'g'):  28.002,  # 0.044,
+    ('BI11-33-4k-1', 'g'): 27.985,  # 0.059,
+    ('BI12-34-4k-1', 'g'): 27.984,  # 0.041,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'g'): 27.99,
+    ('BI5-36-4k-2', 'r'):  28.244,  # -0.022,
+    ('BI11-33-4k-1', 'r'): 28.227,  # 0.004,
+    ('BI12-34-4k-1', 'r'): 28.235,  # 0.000,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'r'): 28.23,
+    ('BI5-36-4k-2', 'i'):  28.229,  # -0.020,
+    ('BI11-33-4k-1', 'i'): 28.209,  # -0.012,
+    ('BI12-34-4k-1', 'i'): 28.238,  # -0.024,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'i'): 28.21,
+    ('BI5-36-4k-2', 'z'):  28.035,  # -0.068,
+    ('BI11-33-4k-1', 'z'): 28.020,  # -0.005,
+    ('BI12-34-4k-1', 'z'): 28.018,  # -0.055,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'z'): 28.02,
     ('BI5-36-4k-2', 'OVI'): 23.1,
     ('BI11-33-4k-1', 'OVI'): 23.1,
     ('BI12-34-4k-1', 'OVI'): 23.1,
