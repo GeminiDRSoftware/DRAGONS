@@ -60,7 +60,8 @@ class FittingParameters(object):
                       sigma_lower=self.sigma_lower,
                       sigma_upper=self.sigma_upper,
                       niter=self.niter,
-                      grow=self.grow,
+                      # TODO grow is being rejected by fit_1D with the sigma_clip() in astropy.stats.sigma_clipping
+                      # grow=self.grow,
                       regions=self.regions,
                       # plot=debug
                       )
