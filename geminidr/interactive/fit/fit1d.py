@@ -411,12 +411,12 @@ class InteractiveNewFit1D:
             :class:`~fitting.fit_1D` instance to wrap
         """
         assert isinstance(fitting_parameters, FittingParameters)
-        self.fitting_parameters= fitting_parameters
+        self.fitting_parameters = fitting_parameters
         self.domain = domain
         self.fit = None
 
     def __call__(self, x):
-        return self.fit(x)
+        return self.fit.evaluate(x)
 
     def set_function(self, fn):
         self.fitting_parameters.function = fn
@@ -462,7 +462,10 @@ class InteractiveNewFit1D:
         """
         # Note that band_mask is now handled by passing a region string to fit_1D
         # but we still use the band_mask for highlighting the affected points
-        goodpix = ~parent.user_mask  # ~(parent.user_mask | parent.band_mask)
+
+        # TODO switch back if we use the region string...
+        #goodpix = ~parent.user_mask
+        goodpix = ~(parent.user_mask | parent.band_mask)
         if parent.var is None:
             weights = None
         else:
@@ -722,7 +725,9 @@ class Fit1DPanel:
                 self.fit.band_mask[i] = 1
         # Band operations can come in through the keypress URL
         # so we defer the fit back onto the Bokeh IO event loop
-        self.fitting_parameters.regions = self.band_model.build_regions()
+
+        # TODO figure out if we are using this or band_mask
+        # self.fitting_parameters.regions = self.band_model.build_regions()
         self.visualizer.do_later(self.fit.perform_fit)
 
 
@@ -880,7 +885,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
             for extra in self.reinit_extras:
-                del config_update[extra]
+                del config_update[extra[0]]
             for k, v in config_update.items():
                 print(f'{k} = {v}')
             self.config.update(**config_update)

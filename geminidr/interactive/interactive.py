@@ -3,7 +3,7 @@ from copy import copy
 
 from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, \
-    Dropdown, RangeSlider, Span
+    Dropdown, RangeSlider, Span, NumeralTickFormatter
 
 from geminidr.interactive import server
 
@@ -244,7 +244,13 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
 
     start = min(value, min_value) if min_value else min(value, 0)
     end = max(value, max_value) if max_value else max(10, value*2)
-    slider = Slider(start=start, end=end, value=value, step=step, title=title)
+
+    # trying to convince int-based sliders to behave
+    if not is_float:
+        fmt = NumeralTickFormatter(format='0,0')
+        slider = Slider(start=start, end=end, value=value, step=step, title=title, format=fmt)
+    else:
+        slider = Slider(start=start, end=end, value=value, step=step, title=title)
     slider.width = 256
 
     text_input = TextInput()
@@ -746,7 +752,7 @@ class GIBandModel(object):
             Ending coordinate of the x range
 
         """
-        if start > stop:
+        if start is not None and stop is not None and start > stop:
             start, stop = stop, start
         self.bands[band_id] = [start, stop]
         for listener in self.listeners:
@@ -785,17 +791,20 @@ class GIBandModel(object):
                 # check for overlap and delete/merge bands
                 akey, aband = band_dump[i]
                 bkey, bband = band_dump[j]
-                if aband[0] < bband[1] and aband[1] > bband[0]:
+                if (aband[0] is None or bband[1] is None or aband[0] < bband[1]) \
+                        and (aband[1] is None or bband[0] is None or aband[1] > bband[0]):
                     # full overlap?
-                    if aband[0] <= bband[0] and aband[1] >= bband[1]:
+                    if (aband[0] is None or (bband[0] is not None and aband[0] <= bband[0])) \
+                            and (aband[1] is None or (bband is not None and aband[1] >= bband[1])):
                         # remove bband
                         self.delete_band(bkey)
-                    elif aband[0] >= bband[0] and aband[1] <= bband[1]:
+                    elif (bband[0] is None or (aband[0] is not None and aband[0] >= bband[0])) \
+                            and (bband[1] is None or (aband[1] is not None and aband[1] <= bband[1])):
                         # remove aband
                         self.delete_band(akey)
                     else:
-                        aband[0] = min(aband[0], bband[0])
-                        aband[1] = max(aband[1], bband[1])
+                        aband[0] = None if None in (aband[0], bband[0]) else min(aband[0], bband[0])
+                        aband[1] = None if None in (aband[1], bband[1]) else max(aband[1], bband[1])
                         self.adjust_band(akey, aband[0], aband[1])
                         self.delete_band(bkey)
         for listener in self.listeners:
@@ -815,7 +824,7 @@ class GIBandModel(object):
             tuple : (band id, start, stop) or (None, None, None) if there are no matches
         """
         for band_id, band in self.bands.items():
-            if band[0] <= x <= band[1]:
+            if (band[0] is None or band[0] <= x) and (band[1] is None or x <= band[1]):
                 return band_id, band[0], band[1]
         return None, None, None
 
@@ -836,13 +845,13 @@ class GIBandModel(object):
         ret_band = None
         closest = None
         for band_id, band in self.bands.items():
-            distance = abs(band[1]-x)
-            if closest is None or distance<closest:
+            distance = None if band[1] is None else abs(band[1]-x)
+            if closest is None or (distance is not None and distance < closest):
                 ret_band_id = band_id
                 ret_band = band[0]
                 closest = distance
-            distance = abs(band[0] - x)
-            if closest is None or distance < closest:
+            distance = None if band[0] is None else abs(band[0] - x)
+            if closest is None or (distance is not None and distance < closest):
                 ret_band_id = band_id
                 ret_band = band[1]
                 closest = distance
@@ -864,14 +873,28 @@ class GIBandModel(object):
         if len(self.bands.values()) == 0:
             return True
         for b in self.bands.values():
-            if b[0] < x < b[1]:
+            if (b[0] is None or b[0] < x) and (b[1] is None or x < b[1]):
                 return True
         return False
 
     def build_regions(self):
-        if self.bands is None or len(self.bands == 0):
+        if self.bands is None or len(self.bands.values()) == 0:
             return None
-        return ','.join(['{}:{}'.format(b[0], b[1]) for b in self.bands])
+        return ','.join(['{}:{}'.format(b[0], b[1]) for b in self.bands.values()])
+
+
+class BandHolder(object):
+    """
+    Used by `~geminidr.interactive.interactive.GIBandView` to track start/stop
+    independently of the bokeh Annotation since we want to support `None`.
+
+    We need to know if the start/stop values are a specific value or `None`
+    which is open ended left/right.
+    """
+    def __init__(self, annotation, start, stop):
+        self.annotation = annotation
+        self.start = start
+        self.stop = stop
 
 
 class GIBandView(GIBandListener):
@@ -895,6 +918,8 @@ class GIBandView(GIBandListener):
         model.add_listener(self)
         self.bands = dict()
         self.fig = fig
+        fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
+        fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
 
     def adjust_band(self, band_id, start, stop):
         """
@@ -914,15 +939,45 @@ class GIBandView(GIBandListener):
             end of the x range of the band
         """
         def fn():
+            draw_start = start
+            draw_stop = stop
+            if draw_start is None:
+                draw_start = self.fig.x_range.start - ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
+            if draw_stop is None:
+                draw_stop = self.fig.x_range.end + ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
             if band_id in self.bands:
                 band = self.bands[band_id]
-                band.left = start
-                band.right = stop
+                band.start = start
+                band.stop = stop
+                band.annotation.left = draw_start
+                band.annotation.right = draw_stop
             else:
-                band = BoxAnnotation(left=start, right=stop, fill_alpha=0.1, fill_color='navy')
+                band = BoxAnnotation(left=draw_start, right=draw_stop, fill_alpha=0.1, fill_color='navy')
                 self.fig.add_layout(band)
-                self.bands[band_id] = band
+                self.bands[band_id] = BandHolder(band, start, stop)
         self.fig.document.add_next_tick_callback(lambda: fn())
+
+    def update_viewport(self):
+        """
+        Update the view in the figure.
+
+        This call is made whenever we detect a change in the display
+        area of the view.  By redrawing, we ensure the lines and
+        axis label are in view, at 80% of the way up the visible
+        Y axis.
+
+        """
+        if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
+            for band in self.bands.values():
+                if band.start is None or band.stop is None:
+                    draw_start = band.start
+                    draw_stop = band.stop
+                    if draw_start is None:
+                        draw_start = self.fig.x_range.start - ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
+                    if draw_stop is None:
+                        draw_stop = self.fig.x_range.end + ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
+                    band.annotation.left = draw_start
+                    band.annotation.right = draw_stop
 
     def delete_band(self, band_id):
         """
@@ -940,8 +995,10 @@ class GIBandView(GIBandListener):
         def fn():
             if band_id in self.bands:
                 band = self.bands[band_id]
-                band.left = 0
-                band.right = 0
+                band.annotation.left = 0
+                band.annotation.right = 0
+                band.start = 0
+                band.stop = 0
                 # TODO remove it (impossible?)
         # We have to defer this as the delete may come via the keypress URL
         # But we aren't in the PrimitiveVisualizaer so we reference the

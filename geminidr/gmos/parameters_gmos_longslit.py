@@ -49,6 +49,7 @@ class normalizeFlatConfig(config.Config):
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
     interactive_reduce = config.Field("Interactive spline selection?", bool, False)
+    debug_plot = config.Field("Draw preview on image display? (not used with interactive)", bool, False)
 
 
 class slitIllumCorrectConfig(config.Config):

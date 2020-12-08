@@ -549,7 +549,7 @@ class BandTask(Task):
             self.band_model.band_id += 1
 
     def stop(self):
-        if self.band_edge is not None:
+        if self.band_id is not None:
             self.stop_band()
 
     def stop_band(self):
@@ -574,7 +574,7 @@ class BandTask(Task):
 
         """
         if key == 'b':
-            if self.band_edge is None:
+            if self.band_id is None:
                 self.start_band()
                 self.update_help()
                 return False
@@ -588,7 +588,7 @@ class BandTask(Task):
             self.update_help()
             return False
         if key == 'd':
-            if self.band_edge is not None:
+            if self.band_id is not None:
                 self.band_model.delete_band(self.band_id)
                 self.stop()
                 self.update_help()
@@ -599,6 +599,17 @@ class BandTask(Task):
                     self.band_model.delete_band(band_id)
                 self.update_help()
                 return True
+        if key == '*':
+            if self.band_id is not None and self.band_edge is not None:
+                if self.last_x < self.band_edge:
+                    # we're left of the anchor, so we want [None, band_edge]
+                    self.band_model.adjust_band(self.band_id, None, self.band_edge)
+                else:
+                    # we're right of the anchor, so we want [band_edge, None]
+                    self.band_model.adjust_band(self.band_id, self.band_edge, None)
+                self.stop_band()
+                self.update_help()
+
         return False
 
     def handle_mouse(self, x, y):
@@ -620,7 +631,7 @@ class BandTask(Task):
         self.last_x = x
         self.last_y = y
         # we are in band mode
-        if self.band_edge is not None:
+        if self.band_id is not None:
             start = x
             end = self.band_edge
             self.band_model.adjust_band(self.band_id, start, end)
@@ -637,10 +648,11 @@ class BandTask(Task):
         return "create a <b>band</b> with edge at cursor"
 
     def update_help(self):
-        if self.band_edge is not None:
+        if self.band_id is not None:
             self.helptext_area.text = """Drag to desired band width.<br/>\n
                   <b>B</b> to set the band<br/>\n
                   <b>D</b> to delete/cancel the current band
+                  <b>*</b> to extend to maximum
                   """
         else:
             self.helptext_area.text = """Drag to desired band width.<br/>\n

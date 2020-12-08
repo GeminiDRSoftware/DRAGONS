@@ -640,7 +640,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 for m_final, ext in zip(all_m_final, ad_tiled):
                     fd = []
                     for row in ext.nddata:
-                        fd.append(m_final(row.data))
+                        fd.append(m_final.evaluate(row.data))
                     ad_fitted.append(fd, header=ext.hdr)
             else:
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
@@ -667,7 +667,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                         grow=grow,
                                         )()
 
-                        fitted_data[i] = spline(pixels)
+                        fitted_data[i] = spline.evaluate(pixels)
                     # Copy header so we have the _section() descriptors
                     ad_fitted.append(fitted_data, header=ext.hdr)
 

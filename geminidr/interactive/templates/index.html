@@ -58,30 +58,39 @@
     // preventDefault causes the key not to pass to any widgets that are in focus, such as a text input
     document.addEventListener("keydown", function(event){
         // var tabs = Bokeh.documents[0].get_model_by_name('tabs');
-        switch(event.keyCode){
-        case 65:
+        console.log('key code: ' + event.keyCode);
+        console.log('char code: ' + event.charCode);
+        if (event.keyCode == 56 && event.shiftKey) {
+            console.log('got the *');
+            debugger;
+        }
+        switch(event.key){
+        case 'a':
             $.ajax('/handle_key?key=a');
             break;
-        case 66:
+        case 'b':
             $.ajax('/handle_key?key=b');
             break;
-        case 68:
+        case 'd':
             $.ajax('/handle_key?key=d');
             break;
-        case 69:
+        case 'e':
             $.ajax('/handle_key?key=e');
             break;
-        case 70:
+        case 'f':
             $.ajax('/handle_key?key=f');
             break;
-        case 219:
+        case '[':
             $.ajax('/handle_key?key=[');
             break;
-        case 221:
+        case ']':
             $.ajax('/handle_key?key=]');
             break;
-        case 76:
+        case 'l':
             $.ajax('/handle_key?key=l');
+            break;
+        case '*':
+            $.ajax('/handle_key?key=*');
             break;
         //case 65:
         //  tabs.active = 0;
