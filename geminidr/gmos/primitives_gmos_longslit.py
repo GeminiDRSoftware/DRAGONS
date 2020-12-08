@@ -54,14 +54,20 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
                          max_shift=None):
         """
-        Adds an illumination mask to each AD object
+        Adds an illumination mask to each AD object. This is only done for
+        full-frame (not Central Spectrum) GMOS spectra, and is calculated by
+        making a model illumination patter from the attached MDF and cross-
+        correlating it with the spatial profile of the data.
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
-        illum_mask: str/None
+        illum_mask : str/None
             name of illumination mask mask (None -> use default)
+        max_shift : float
+            maximum shift (in unbinned pixels) allowable for the cross-
+            correlation
         """
         offset_dict = {("GMOS-N", "Hamamatsu-N"): 1.5,
                        ("GMOS-N", "e2vDD"): -0.2,
