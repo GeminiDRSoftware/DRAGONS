@@ -7,7 +7,7 @@ from astropy.modeling import Model, models, fitting
 from astropy.stats import sigma_clip
 
 from .astromodels import UnivariateSplineWithOutlierRemoval
-from .astrotools import cartesian_regions_to_slices
+from . import astrotools as at
 
 __all__ = ['fit_1D']
 
@@ -42,6 +42,11 @@ class fit_1D:
         it is a `numpy.ma.MaskedArray`, any masked points are ignored when
         fitting.
 
+    points : `~numpy.ndarray`, optional
+        1-dimensional input array with the x-values of each 1D slice being
+        fitted, If not given, the independent variable will be treated as
+        a sequence of integers starting at zero.
+
     weights : `~numpy.ndarray`, optional
         N-dimensional input array containing fitting weights for each point.
         The weights will be ignored for a given 1D fit if all zero, to allow
@@ -50,6 +55,11 @@ class fit_1D:
     function : {'legendre', 'chebyshev', 'polynomial', 'splineN'}, optional
         Fitting function/model type to be used (current default 'legendre').
         The spline options may be 'spline1' (linear) to 'spline5' (quintic).
+
+    domain : tuple, optional
+        Domain for any of the astropy polynomial models. If None, the model
+        is fit with a domain equal to the interval covered by the independent
+        variable.
 
     order : `int` or `None`, optional
         Order/degree (ie. highest power, or number of terms minus one) for
@@ -122,12 +132,15 @@ class fit_1D:
 
     """
 
-    def __init__(self, image, weights=None, function='legendre', order=0,
-                 axis=-1, sigma_lower=3.0, sigma_upper=3.0, niter=0,
+    def __init__(self, image, points=None, weights=None, function='chebyshev',
+                 domain=None,
+                 order=0, axis=-1, sigma_lower=3.0, sigma_upper=3.0, niter=0,
                  grow=False, regions=None, plot=False):
 
         # Save the fitting parameter values:
+        self.points = points
         self.function = function
+        self.domain = domain
         self.order = order
         self.axis = axis
         self.sigma_lower = sigma_lower
@@ -147,7 +160,9 @@ class fit_1D:
 
         # Parse the sample regions or check that they're already slices:
         if not regions or isinstance(regions, str):
-            self._slices = cartesian_regions_to_slices(regions)
+            self._slices = (at.cartesian_regions_to_slices(regions)
+                            if points is None else
+                            at.parse_user_regions(regions, dtype=points.dtype))
         else:
             self._slices = None
             try:
@@ -177,7 +192,10 @@ class fit_1D:
                              .format(self.axis, image.shape))
 
         # Define pixel grid to fit on:
-        points = np.arange(npix, dtype=np.int16)
+        points = (np.arange(npix, dtype=np.int16) if self.points is None
+                  else self.points)
+        if self.domain is None:
+            self.domain = (min(points), max(points))
 
         # Classify the model to be fitted:
         try:
@@ -186,9 +204,7 @@ class fit_1D:
             astropy_model = False
 
         # Convert user regions to a Boolean mask for slicing:
-        user_reg = np.zeros(npix, dtype=np.bool)
-        for _slice in self._slices:
-            user_reg[_slice] = True
+        user_reg = ~at.create_mask_from_regions(points, self._slices)
 
         # Record the actual fitted, inclusive ranges in 1-indexed pixels for
         # this dataset (with no wildcards or adjacent/overlapping ranges etc.),
@@ -204,6 +220,9 @@ class fit_1D:
         )[0]
         self.regions_pix = tuple((start, end) for start, end in
                                  zip(reg_changes[::2]+1, reg_changes[1::2]))
+        self.fitted_regions = tuple((points[start], points[end])
+                                    for start, end in zip(reg_changes[::2],
+                                                          reg_changes[1::2]-1))
 
         # To support fitting any axis of an N-dimensional array, we must
         # flatten all the other dimensions into a single "model set axis"
@@ -257,6 +276,7 @@ class fit_1D:
 
             model_set = self.model_class(
                 degree=self.order, n_models=n_models,
+                domain=self.domain,
                 model_set_axis=(None if n_models == 1 else 1),
                 **self.model_args
             )
@@ -359,7 +379,7 @@ class fit_1D:
                                  'data')
         index = tuple(index)  # NumPy warns against indexing with a list
 
-        points1 = np.arange(1, data.shape[self.axis]+1, dtype=np.int16) # FITS
+        points1 = np.arange(data.shape[self.axis], dtype=np.int16)
         imrow, maskrow = np.ma.masked_array(data).data[index], self.mask[index]
         # This is a bit grossly inefficient, but currently there's no way to
         # evaluate a single model from a set and it's only a "debugging" plot
@@ -377,7 +397,7 @@ class fit_1D:
 
         # The extra +0.001 here avoids having identical start & end values
         # for single-pixel ranges, otherwise they don't get drawn:
-        for start, end in self.regions_pix:
+        for start, end in self.fitted_regions:
             ax.annotate('', xy=(start, 0), xytext=(end+0.001, 0),
                         xycoords=mixed_coords, textcoords=mixed_coords,
                         arrowprops=dict(
@@ -417,7 +437,8 @@ class fit_1D:
         # sampling from flattened model output:
         # - Does this need optimizing for simple 1D input?
         if points is None:
-            points = np.arange(self._tmpshape[tmpaxis], dtype=np.int16)
+            points = (np.arange(self._tmpshape[tmpaxis], dtype=np.int16)
+                      if self.points is None else self.points)
             tmpshape = self._tmpshape
             stack_shape = self._stack_shape
         else:

@@ -73,6 +73,18 @@ def test_clipped_mean():
     assert np.allclose(results, expected_values)
 
 
+def test_parse_user_regions():
+    parse = at.parse_user_regions
+    assert parse("*") == [(None, None)]
+    assert parse("") == [(None, None)]
+    assert parse(None) == [(None, None)]
+    assert parse("1:10,20:50") == [(1, 10), (20, 50)]
+    assert parse("1:10.2,20:50.2", dtype=float) == [(1, 10.2), (20, 50.2)]
+    assert parse("1:10,20:50:2", allow_step=True) == [(1, 10), (20, 50, 2)]
+    with pytest.raises(ValueError):
+        parse("1:10:2")
+
+
 def test_cartesian_regions_to_slices():
     cart = at.cartesian_regions_to_slices
     assert cart('')[0] == slice(None)

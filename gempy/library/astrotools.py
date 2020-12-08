@@ -95,50 +95,6 @@ def divide0(numerator, denominator):
         return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
 
-def rasextodec(string):
-    """
-    Convert hh:mm:ss.sss to decimal degrees
-    """
-    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
-    if match_ra:
-        hours = float(match_ra.group(1))
-        minutes = float(match_ra.group(2))
-        secs = float(match_ra.group(3))
-
-        minutes += (secs/60.0)
-        hours += (minutes/60.0)
-
-        degrees = hours * 15.0
-    else:
-        raise ValueError('Invalid RA string')
-
-    return degrees
-
-def degsextodec(string):
-    """
-    Convert [-]dd:mm:ss.sss to decimal degrees
-    """
-    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
-    if match_dec:
-        sign = match_dec.group(1)
-        if sign == '-':
-            sign = -1.0
-        else:
-            sign = +1.0
-
-        degs = float(match_dec.group(2))
-        minutes = float(match_dec.group(3))
-        secs = float(match_dec.group(4))
-
-        minutes += (secs/60.0)
-        degs += (minutes/60.0)
-
-        degs *= sign
-    else:
-        raise ValueError('Invalid Dec string')
-
-    return degs
-
 def section_str_to_tuple(section, log=None):
     warn = log.warning if log else print
     if section is not None:
@@ -151,6 +107,7 @@ def section_str_to_tuple(section, log=None):
         else:
             section = Section(x1-1, x2, y1-1, y2)
     return section
+
 
 def cartesian_regions_to_slices(regions):
     """
@@ -168,56 +125,97 @@ def cartesian_regions_to_slices(regions):
     remainder of the range (eg. '10:,:') and/or an optional step may be
     specified using colon syntax (eg. '1:10:2' or '1-10:2').
     """
-    if not regions:
-        return (slice(None, None, None),)
-
-    if not isinstance(regions, str):
-        raise TypeError('region must be a string or None, not \'{}\''
-                        .format(regions))
-
     origin = 1
-
-    ranges = regions.strip('[]').split(',')
-
     slices = []
-    for _range in ranges[::-1]:           # reverse Cartesian order for Python
+    ranges = parse_user_regions(regions, allow_step=True)
 
-        err = False if _range else True   # no empty string
-
-        if _range == '*':                 # allow '*' for all pix, like IRAF
-            slices.append(slice(None, None))
-            continue
-
-        limits = _range.replace('-', ':', 1).split(':')
+    for limits in ranges[::-1]:           # reverse Cartesian order for Python
         nlim = len(limits)
-
-        if err:
-            pass
-        elif nlim > 3:
-            err = True                    # can have at most start:stop:step
-        elif nlim == 1:
-            try:
-                lim = int(limits[0])-origin
-            except ValueError:
-                err = True                # no non-numeric values
-            else:
-                sliceobj = slice(lim, lim+1, None)
+        if nlim == 1:
+            lim = int(limits[0])-origin
+            sliceobj = slice(lim, lim+1)
         else:
-            try:
-                # Adjust only the lower limit for 1-based indexing since Python
-                # ranges are exclusive:
-                sliceobj = slice(*(int(lim)-adj if lim else None
-                                   for lim, adj in zip(limits, (origin, 0, 0))))
-            except ValueError:
-                err = True                # no non-numeric values
-
-        if err:
-            raise ValueError('Failed to parse sample regions \'{}\''
-                             .format(regions))
-
+            # Adjust only the lower limit for 1-based indexing since Python
+            # ranges are exclusive:
+            sliceobj = slice(*(int(lim)-adj if lim else None
+                               for lim, adj in zip(limits, (origin, 0, 0))))
         slices.append(sliceobj)
 
     return tuple(slices)
+
+def parse_user_regions(regions, dtype=int, allow_step=False):
+    """
+    Parse a string containing a list of sections into a list of tuples
+    containing the same information
+
+    Parameters
+    ----------
+    regions : str
+        comma-separated list of regions of form start:stop:step
+    dtype : dtype
+        string values will be coerced into this dtype, raising an error if
+        this is not possible
+    allow_step : bool
+        allow a step value in the ranges?
+
+    Returns
+    -------
+    list of slice-like tuples with 2 or 3 values per tuple
+    """
+    if not regions:
+        return [(None, None)]
+    elif not isinstance(regions, str):
+        raise TypeError(f"regions must be a string or None, not '{regions}'")
+
+    if isinstance(dtype, np.dtype):
+        dtype = getattr(np, dtype.name)
+
+    ranges = []
+    for range in regions.strip("[]").split(","):
+        print(range)
+        if range == "*":
+            ranges.append((None, None))
+            continue
+        try:
+            values = [dtype(x) if x else None
+                      for x in range.replace("-", ":", 1).split(":")]
+            assert len(values) in (1, 2, 2+allow_step)
+        except (ValueError, AssertionError):
+            raise ValueError(f"Failed to parse sample regions '{regions}'")
+        ranges.append(tuple(values))
+    return ranges
+
+def create_mask_from_regions(points, regions=None):
+    """
+    Produce a boolean mask given an array of x-values and a list of unmasked
+    regions. The regions can be specified either as slice objects (interpreted
+    as pixel indices in the standard python sense) or (start, end) tuples with
+    inclusive boundaries.
+
+    Parameters
+    ----------
+    points : `numpy.ndarray`
+        Input array
+    regions : list, optional
+        valid regions, either (start, end) or slice objects
+
+    Returns
+    -------
+    mask : boolean `numpy.ndarray`
+    """
+    mask = np.ones_like(points, dtype=bool)
+    if regions:
+        for region in regions:
+            if isinstance(region, slice):
+                mask[region] = False
+            else:
+                x1 = min(points) if region[0] is None else region[0]
+                x2 = max(points) if region[1] is None else region[1]
+                if x1 > x2:
+                    x1, x2 = x2, x1
+                mask[np.logical_and(points >= x1, points <= x2)] = False
+    return mask
+
 
 def get_corners(shape):
     """
@@ -287,6 +285,50 @@ def clipped_mean(data):
             break
 
     return mean, sigma
+
+def rasextodec(string):
+    """
+    Convert hh:mm:ss.sss to decimal degrees
+    """
+    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
+    if match_ra:
+        hours = float(match_ra.group(1))
+        minutes = float(match_ra.group(2))
+        secs = float(match_ra.group(3))
+
+        minutes += (secs/60.0)
+        hours += (minutes/60.0)
+
+        degrees = hours * 15.0
+    else:
+        raise ValueError('Invalid RA string')
+
+    return degrees
+
+def degsextodec(string):
+    """
+    Convert [-]dd:mm:ss.sss to decimal degrees
+    """
+    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
+    if match_dec:
+        sign = match_dec.group(1)
+        if sign == '-':
+            sign = -1.0
+        else:
+            sign = +1.0
+
+        degs = float(match_dec.group(2))
+        minutes = float(match_dec.group(3))
+        secs = float(match_dec.group(4))
+
+        minutes += (secs/60.0)
+        degs += (minutes/60.0)
+
+        degs *= sign
+    else:
+        raise ValueError('Invalid Dec string')
+
+    return degs
 
 
 # The following functions and classes were borrowed from STSCI's spectools
