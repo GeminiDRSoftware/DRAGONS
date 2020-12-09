@@ -1,4 +1,5 @@
 import astrodata
+import astropy.units as u
 import numpy as np
 import pytest
 from astrodata import AstroData, factory
@@ -284,6 +285,21 @@ def test_append_table_and_write(tmp_path):
 
     ad = astrodata.open(testfile)
     assert ad[0].exposed == {'TABLE1'}
+
+
+def test_table_with_units(tmp_path):
+    testfile = tmp_path / 'test.fits'
+    ad = astrodata.create({})
+    ad.append(NDData(np.zeros((4, 5))))
+    ad[0].TABLE1 = Table([[1]])
+    ad[0].TABLE1['col0'].unit = 'mag(cm2 electron / erg)'
+
+    with pytest.warns(None) as w:
+        ad.write(testfile)
+
+    assert len(w) == 0
+    ad = astrodata.open(testfile)
+    assert ad[0].TABLE1['col0'].unit == u.Unit('mag(cm2 electron / erg)')
 
 
 # Append / assign Gemini specific
