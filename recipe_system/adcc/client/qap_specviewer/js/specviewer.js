@@ -678,7 +678,7 @@ class SpecViewer {
     // Create buttons and add them to the navigation tab
     for (let i = 0; i < this.aperturesId.length; i++) {
       navTabContainer.append(`
-        <li><a href="#aperture${this.aperturesId[i]}"> Aperture ${this.aperturesId[i]}
+        <li><a href="#aperture${this.aperturesId[i]}"> Aperture ${i + 1}
         </a></li>`);
     }
 
