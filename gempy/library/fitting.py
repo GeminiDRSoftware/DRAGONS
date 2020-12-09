@@ -477,3 +477,26 @@ class fit_1D:
 
         return fitvals
 
+    def to_dicts(self):
+        """
+        Convert the fitted models to a list of dicts containing the fit parameters.
+        """
+        model_dicts = []
+        astropy_model = isinstance(self._models, Model)
+
+        if astropy_model:
+            domain = self._models.domain
+            model_dict = {"ndim": 1, "degree": self._models.degree,
+                          "domain_start": domain[0], "domain_end": domain[1]}
+            for i in range(len(self._models)):
+                for name in self._models.param_names:
+                    model_dict[name] = getattr(self._models, name).value[i]
+                model_dicts.append(model_dict.copy())
+        else:
+            for single_model in self._models:
+                knots, coeffs, degree = single_model.tck
+                model_dict = {"ndim": 1, "k": degree,
+                              "knots": knots, "coefficients": coeffs}
+                model_dicts.append(model_dict)
+
+        return model_dicts
