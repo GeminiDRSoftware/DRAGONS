@@ -49,7 +49,7 @@ def reduceScience(p):
     p.addToList(purpose='forStack')
     p.getList(purpose='forStack')
     p.adjustWCSToReference()
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.stackFrames()
     p.findSourceApertures()
     p.measureIQ(display=True)
@@ -95,7 +95,7 @@ def reduceStandard(p):
 
     p.addToList(purpose='forStack')
     p.getList(purpose='forStack')
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.stackFrames()
     p.plotSpectraForQA()
     p.calculateSensitivity()
