@@ -150,6 +150,7 @@ def create_inputs():
             logutils.config(file_name='log_bias_{}.txt'.format(data_label))
             r = Reduce()
             r.files.extend(bias_paths)
+            r.mode = 'qa'
             r.runr()
             master_bias = r.output_filenames.pop()
             cals.append(f"processed_bias:{master_bias}")
@@ -162,6 +163,7 @@ def create_inputs():
             r = Reduce()
             r.files.extend(quartz_paths)
             r.ucals = normalize_ucals(r.files, cals)
+            r.mode = 'qa'
             r.runr()
             master_quartz = r.output_filenames.pop()
             cals.append(f"processed_flat:{master_quartz}")
@@ -173,6 +175,7 @@ def create_inputs():
         r = Reduce()
         r.files.extend(arc_paths)
         r.ucals = normalize_ucals(r.files, cals)
+        r.mode = 'qa'
         r.runr()
         master_arc = r.output_filenames.pop()
 
