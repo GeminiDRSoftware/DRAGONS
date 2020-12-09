@@ -177,7 +177,7 @@ def _process_table(table, name=None, header=None):
         for i, col in enumerate(obj.columns, start=1):
             try:
                 obj[col].unit = u.Unit(obj.meta['header'][f'TUNIT{i}'])
-            except (KeyError, TypeError):
+            except (KeyError, TypeError, ValueError):
                 pass
     elif isinstance(table, Table):
         obj = Table(table)
