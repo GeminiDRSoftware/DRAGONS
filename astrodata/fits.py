@@ -147,10 +147,25 @@ def table_to_bintablehdu(table, extname=None):
     BinTableHDU
 
     """
+    # remove header to avoid warning from table_to_hdu
     table_header = table.meta.pop('header', None)
-    hdu = fits.table_to_hdu(table)
+
+    # table_to_hdu sets units only if the unit conforms to the FITS standard,
+    # otherwise it issues a warning, which we catch here.
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', UserWarning)
+        hdu = fits.table_to_hdu(table)
+
+    # And now we try to set the units that do not conform to the standard,
+    # using unit.to_string() without the format='fits' argument.
+    for col in table.itercols():
+        if col.unit and not hdu.columns[col.name].unit:
+            hdu.columns[col.name].unit = col.unit.to_string()
+
     if table_header is not None:
         update_header(hdu.header, table_header)
+        # reset table's header
+        table.meta['header'] = table_header
     if extname:
         hdu.header['EXTNAME'] = (extname, 'added by AstroData')
     return hdu
@@ -560,7 +575,7 @@ def ad_to_hdulist(ad):
 
         for name, other in ext.meta.get('other', {}).items():
             if isinstance(other, Table):
-                hdu = table_to_bintablehdu(other)
+                hdu = table_to_bintablehdu(other, extname=name)
             elif isinstance(other, np.ndarray):
                 hdu = new_imagehdu(other, header, name=name)
             elif isinstance(other, NDDataObject):
