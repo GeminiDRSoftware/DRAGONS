@@ -274,6 +274,18 @@ def test_append_table_to_extensions(tmp_path):
         ad.TABLE1 = Table([[1]])
 
 
+def test_append_table_and_write(tmp_path):
+    testfile = tmp_path / 'test.fits'
+    ad = astrodata.create({})
+    ad.append(NDData(np.zeros((4, 5))))
+    ad[0].TABLE1 = Table([[1]])
+    ad.write(testfile)
+    ad.write(testfile, overwrite=True)
+
+    ad = astrodata.open(testfile)
+    assert ad[0].exposed == {'TABLE1'}
+
+
 # Append / assign Gemini specific
 
 @pytest.mark.dragons_remote_data

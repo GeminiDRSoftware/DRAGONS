@@ -147,10 +147,13 @@ def table_to_bintablehdu(table, extname=None):
     BinTableHDU
 
     """
+    # remove header to avoid warning from table_to_hdu
     table_header = table.meta.pop('header', None)
     hdu = fits.table_to_hdu(table)
     if table_header is not None:
         update_header(hdu.header, table_header)
+        # reset table's header
+        table.meta['header'] = table_header
     if extname:
         hdu.header['EXTNAME'] = (extname, 'added by AstroData')
     return hdu
@@ -560,7 +563,7 @@ def ad_to_hdulist(ad):
 
         for name, other in ext.meta.get('other', {}).items():
             if isinstance(other, Table):
-                hdu = table_to_bintablehdu(other)
+                hdu = table_to_bintablehdu(other, extname=name)
             elif isinstance(other, np.ndarray):
                 hdu = new_imagehdu(other, header, name=name)
             elif isinstance(other, NDDataObject):
