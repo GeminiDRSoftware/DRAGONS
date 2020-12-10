@@ -3,32 +3,27 @@
 #
 #                                                       primitives_preprocess.py
 # ------------------------------------------------------------------------------
-import math
 import datetime
-import numpy as np
+import math
 from copy import deepcopy
 from functools import partial
 
-from scipy.ndimage import binary_dilation, filters
-from astropy.table import Table
-from astropy.convolution import convolve
-
-import astrodata, gemini_instruments
+import astrodata
+import gemini_instruments  # noqa
+import numpy as np
 from astrodata.provenance import add_provenance
-
-from gempy.gemini import gemini_tools as gt
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
+from astropy.table import Table
 from geminidr import PrimitivesBASE
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.gemini import gemini_tools as gt
+from gempy.library.filtering import ring_filter
+from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
+from scipy.ndimage import binary_dilation
+
 from . import parameters_preprocess
 
-from recipe_system.utils.decorators import parameter_override
 
-#import os, psutil
-#def memusage(proc):
-#    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
-# ------------------------------------------------------------------------------
 @parameter_override
 class Preprocess(PrimitivesBASE):
     """
@@ -138,6 +133,7 @@ class Preprocess(PrimitivesBASE):
             outer radius of the cleaning filter
         max_iters: int
             maximum number of cleaning iterations to perform
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -147,11 +143,11 @@ class Preprocess(PrimitivesBASE):
         inner_radius = params["inner"]
         outer_radius = params["outer"]
         max_iters = params["max_iters"]
-        footprint = None
 
-        flag_list = [int(math.pow(2,i)) for i,digit in
-                enumerate(str(bin(replace_flags))[2:][::-1]) if digit=='1']
-        log.stdinfo("The flags {} will be applied".format(flag_list))
+        flag_list = [int(math.pow(2, i))
+                     for i, digit in enumerate(bin(replace_flags)[2:][::-1])
+                     if digit == '1']
+        log.stdinfo(f"The flags {flag_list} will be applied")
 
         for ad in adinputs:
             for ext in ad:
@@ -161,51 +157,19 @@ class Preprocess(PrimitivesBASE):
                                 "cannot be applied")
                     continue
 
-                # We need to know the dimensionality of the data to create the
-                # footprint but, if we've done it once we can avoid creating
-                # it again if the dimensionality of this extension is the same
-                if inner_radius is not None and outer_radius is not None:
-                    ndim = len(ext.shape)
-                    if footprint is None or footprint.ndim != ndim:
-                        size = int(outer_radius)
-                        mgrid = np.array(np.meshgrid(*([np.arange(-size, size+1)] * ndim)))
-                        mgrid *= mgrid
-                        footprint = np.sqrt(np.sum(mgrid, axis=0))
-                        footprint = np.where(np.logical_and(footprint>=inner_radius,
-                                                            footprint<=outer_radius), 1, 0)
-
                 try:
                     rep_value = float(replace_value)
                     log.fullinfo(f"Replacing bad pixels in {ad.filename}"
                                  f"extension {ext.id} with the "
                                  f"user value {rep_value}")
-                except ValueError:  # already validated so must be "mean" or "median"
-                    if footprint is not None:
-                        mask = (ext.mask & replace_flags) > 0
-                        filtered_data = ext.data
-                        iter = 0
-                        while (iter < max_iters and np.any(mask)):
-                            iter += 1
-                            if replace_value == "median":
-                                median_data = filters.median_filter(filtered_data, footprint=footprint)
-                                filtered_data = np.where(mask, median_data, filtered_data)
-                                # If we're median filtering, we can update the mask...
-                                # if more than half the input pixels were bad, the
-                                # output is still bad.
-                                if iter < max_iters:
-                                    mask = filters.median_filter(mask, footprint=footprint)
-                            else:
-                                # "Mean" filtering is just convolution. The astropy
-                                # version handles the mask.
-                                median_data = convolve(filtered_data, footprint,
-                                                       mask=mask, boundary="extend")
-                                filtered_data = np.where(mask, median_data, filtered_data)
-                                # Output pixels are only bad if *all* the pixels in
-                                # the kernel were bad.
-                                if iter < max_iters:
-                                    mask = np.where(convolve(mask, footprint,
-                                                    boundary="extend")>0.9999, True, False)
-                        ext.data = filtered_data
+                except ValueError:
+                    # If replace_value is a string. It was already validated
+                    # so must be "mean" or "median"
+                    if inner_radius is not None and outer_radius is not None:
+                        ring_filter(ext, inner_radius, outer_radius,
+                                    max_iters=max_iters, inplace=True,
+                                    replace_flags=replace_flags,
+                                    replace_func=replace_value)
                         continue
                     else:
                         oper = getattr(np, replace_value)
@@ -1065,7 +1029,10 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        #print "STARTING", memusage(proc)
+        # import os, psutil
+        # def memusage(proc):
+        #     return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
+        # print "STARTING", memusage(proc)
 
         save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
