@@ -1,130 +1,168 @@
-# pytest suite
-"""
-Tests for primitives_preprocess.
-
-This is a suite of tests to be run with pytest.
-
-To run:
-    1) Set the environment variable GEMPYTHON_TESTDATA to the path that
-       contains the directories with the test data.
-       Eg. /net/chara/data2/pub/gempython_testdata/
-    2) From the ??? (location): pytest -v --capture=no
-"""
-
-# TODO @bquint: clean up these tests
-
-# import astrodata, gemini_instruments, os, sys, astrofaker
-# import geminidr.core.test.__init__ as init
-# af  = astrofaker.create('NIRI','IMAGE')
-# af2  = astrofaker.create('NIRI','IMAGE')
-# af3  = astrofaker.create('F2','IMAGE')
-# init.ad_compare(af, af2)
-
-import numpy as np
-import os
-import pytest
-
-from copy import deepcopy
+# import os
+# from copy import deepcopy
 
 import astrodata
 import gemini_instruments
-
-# from . import ad_compare
+import pytest
+from astrodata.testing import download_from_archive
+from geminidr.gemini.lookups import DQ_definitions as DQ
+# from geminidr.gmos.primitives_gmos_image import GMOSImage
 from geminidr.niri.primitives_niri_image import NIRIImage
-from geminidr.gmos.primitives_gmos_image import GMOSImage
-from gempy.utils import logutils
-
-TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
-logfilename = 'test_preprocess.log'
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 
 @pytest.fixture
-def niri_images(astrofaker):
-    """Create two NIRI images, one all 1s, the other all 2s"""
-    adinputs = []
-    for i in (1, 2):
-        ad = astrofaker.create('NIRI', 'IMAGE')
-        ad.init_default_extensions()
-        ad[0].data += i
-
-    adinputs.append(ad)
-
-    return NIRIImage(adinputs)
-
-
-@pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_scale_by_exposure_time(niri_images):
-    ad1, ad2 = niri_images.streams['main']
-
-    ad2.phu[ad2._keyword_for('exposure_time')] *= 0.5
-    ad2_orig_value = ad2[0].data.mean()
-
-    ad1, ad2 = niri_images.scaleByExposureTime(time=None)
-
-    # Check that ad2 had its data doubled
-    assert abs(ad2[0].data.mean() - ad2_orig_value * 2) < 0.001
-
-    ad1, ad2 = niri_images.scaleByExposureTime(time=1)
-
-    # Check that ad2 has been rescaled to 1-second
-    print(ad2[0].data.mean(), ad2_orig_value, ad2.phu["ORIGTEXP"])
-    assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
-
-
-@pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_add_object_mask_to_dq(astrofaker):
-    ad_orig = astrofaker.create('F2', 'IMAGE')
-
-    # astrodata.open(os.path.join(TESTDATAPATH, 'GMOS', 'N20150624S0106_refcatAdded.fits'))
-    p = GMOSImage([deepcopy(ad_orig)])
-    ad = p.addObjectMaskToDQ()[0]
-
-    for ext, ext_orig in zip(ad, ad_orig):
-        assert all(ext.mask[ext.OBJMASK == 0] == ext_orig.mask[ext.OBJMASK == 0])
-        assert all(ext.mask[ext.OBJMASK == 1] == ext_orig.mask[ext.OBJMASK == 1] | 1)
-
-
-@pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_adu_to_electrons(astrofaker):
-    ad = astrofaker.create("NIRI", "IMAGE")
-    # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
+def niriprim():
+    file_path = download_from_archive("N20190120S0287.fits")
+    ad = astrodata.open(file_path)
     p = NIRIImage([ad])
-    ad = p.ADUToElectrons()[0]
-    assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                       'N20070819S0104_ADUToElectrons.fits'))
+    p.addDQ()
+    return p
 
 
-@pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_apply_dq_plane(astrofaker):
-    ad = astrofaker.create("NIRI", "IMAGE")
-
-    # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_nonlinearityCorrected.fits'))
-
-    p = NIRIImage([ad])
-    ad = p.applyDQPlane()[0]
-
-    assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                       'N20070819S0104_dqPlaneApplied.fits'))
+@pytest.mark.dragons_remote_data
+def test_apply_dq_plane_default(niriprim):
+    """Default params: replace masked pixels by median of the image."""
+    ad = niriprim.applyDQPlane()[0]
+    assert_array_equal(ad[0].data[527:533, 430:435], 35)
 
 
-@pytest.mark.xfail(reason="Test needs revision", run=False)
-def test_associateSky():
-    filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
-                 for i in range(104, 109)]
+@pytest.mark.dragons_remote_data
+def test_apply_dq_plane_fixed_value(niriprim):
+    """Replace by fixed value"""
+    ad = niriprim.applyDQPlane(replace_value=0)[0]
+    assert_array_equal(ad[0].data[527:533, 430:435], 0)
 
-    adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
-                for f in filenames]
 
-    p = NIRIImage(adinputs)
-    p.separateSky()  # Difficult to construct this by hand
-    p.associateSky()
-    filename_set = {ad.phu['ORIGNAME'] for ad in adinputs}
+@pytest.mark.dragons_remote_data
+def test_apply_dq_plane_mean(niriprim):
+    """Replace by mean."""
+    ad = niriprim.applyDQPlane(replace_value="mean")[0]
+    assert_array_almost_equal(ad[0].data[527:533, 430:435], 38.56323,
+                              decimal=5)
 
-    # Test here is that each science frame has all other frames as skies
-    for k, v in p.sky_dict.items():
-        v = [ad.phu['ORIGNAME'] for ad in v]
-        assert len(v) == len(filenames) - 1
-        assert set([k] + v) == filename_set
+
+@pytest.mark.dragons_remote_data
+def test_apply_dq_plane_replace_flags(niriprim):
+    """Replace only given flags."""
+
+    # First check with no_data, which is not present in the mask so pixel
+    # should not be changed
+    data_orig = niriprim.streams['main'][0][0].data.copy()
+    ad = niriprim.applyDQPlane(replace_flags=DQ.no_data, replace_value=0)[0]
+    assert_array_equal(ad[0].data[527:533, 430:435],
+                       data_orig[527:533, 430:435])
+
+    # Now with bad_pixel, so we should get 0 for this region
+    ad = niriprim.applyDQPlane(replace_flags=DQ.bad_pixel, replace_value=0)[0]
+    assert_array_equal(ad[0].data[527:533, 430:435], 0)
+
+
+@pytest.mark.dragons_remote_data
+def test_apply_dq_plane_ring_median(niriprim):
+    """Replace by fixed value"""
+    ad = niriprim.applyDQPlane(replace_value='median', inner=3, outer=5)[0]
+    assert_array_equal(ad[0].data[527:533, 430:435],
+                       [[26., 27., 27., 27., 29.],
+                        [25., 27., 27., 26., 26.],
+                        [26., 27., 26., 25., 26.],
+                        [31., 31., 29., 25., 29.],
+                        [31., 30., 27., 26., 27.],
+                        [31., 30., 27., 26., 28.]])
+
+
+@pytest.mark.dragons_remote_data
+def test_apply_dq_plane_ring_mean(niriprim):
+    """Replace by fixed value"""
+    ad = niriprim.applyDQPlane(replace_value='mean', inner=3, outer=5)[0]
+    assert_array_almost_equal(
+        ad[0].data[527:533, 430:435],
+        [[28.428572, 28.82353, 44.878788, 43.6, 43.314285],
+         [27.6, 28.32353, 45.14706, 45.45714, 31.17647],
+         [27.710526, 28.846153, 42.71795, 42.75, 30.868422],
+         [41.871796, 43.825, 44.1, 42.325, 30.710526],
+         [44., 45.675674, 48.166668, 32.555557, 30.694445],
+         [31.68421, 32.432434, 33.7027, 32.675674, 30.552631]],
+        decimal=5
+    )
+
+
+# TODO @bquint: clean up these tests
+
+# @pytest.fixture
+# def niri_images(astrofaker):
+#     """Create two NIRI images, one all 1s, the other all 2s"""
+#     adinputs = []
+#     for i in (1, 2):
+#         ad = astrofaker.create('NIRI', 'IMAGE')
+#         ad.init_default_extensions()
+#         ad[0].data += i
+
+#     adinputs.append(ad)
+
+#     return NIRIImage(adinputs)
+
+
+# @pytest.mark.xfail(reason="Test needs revision", run=False)
+# def test_scale_by_exposure_time(niri_images):
+#     ad1, ad2 = niri_images.streams['main']
+
+#     ad2.phu[ad2._keyword_for('exposure_time')] *= 0.5
+#     ad2_orig_value = ad2[0].data.mean()
+
+#     ad1, ad2 = niri_images.scaleByExposureTime(time=None)
+
+#     # Check that ad2 had its data doubled
+#     assert abs(ad2[0].data.mean() - ad2_orig_value * 2) < 0.001
+
+#     ad1, ad2 = niri_images.scaleByExposureTime(time=1)
+
+#     # Check that ad2 has been rescaled to 1-second
+#     print(ad2[0].data.mean(), ad2_orig_value, ad2.phu["ORIGTEXP"])
+#     assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
+
+
+# @pytest.mark.xfail(reason="Test needs revision", run=False)
+# def test_add_object_mask_to_dq(astrofaker):
+#     ad_orig = astrofaker.create('F2', 'IMAGE')
+
+#     # astrodata.open(os.path.join(TESTDATAPATH, 'GMOS', 'N20150624S0106_refcatAdded.fits'))
+#     p = GMOSImage([deepcopy(ad_orig)])
+#     ad = p.addObjectMaskToDQ()[0]
+
+#     for ext, ext_orig in zip(ad, ad_orig):
+#         assert all(ext.mask[ext.OBJMASK == 0] == ext_orig.mask[ext.OBJMASK == 0])
+#         assert all(ext.mask[ext.OBJMASK == 1] == ext_orig.mask[ext.OBJMASK == 1] | 1)
+
+
+# @pytest.mark.xfail(reason="Test needs revision", run=False)
+# def test_adu_to_electrons(astrofaker):
+#     ad = astrofaker.create("NIRI", "IMAGE")
+#     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
+#     p = NIRIImage([ad])
+#     ad = p.ADUToElectrons()[0]
+#     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
+#                                        'N20070819S0104_ADUToElectrons.fits'))
+
+
+# @pytest.mark.xfail(reason="Test needs revision", run=False)
+# def test_associateSky():
+#     filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
+#                  for i in range(104, 109)]
+
+#     adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
+#                 for f in filenames]
+
+#     p = NIRIImage(adinputs)
+#     p.separateSky()  # Difficult to construct this by hand
+#     p.associateSky()
+#     filename_set = {ad.phu['ORIGNAME'] for ad in adinputs}
+
+#     # Test here is that each science frame has all other frames as skies
+#     for k, v in p.sky_dict.items():
+#         v = [ad.phu['ORIGNAME'] for ad in v]
+#         assert len(v) == len(filenames) - 1
+#         assert set([k] + v) == filename_set
 
 # def test_correctBackgroundToReference(self):
 #     pass
