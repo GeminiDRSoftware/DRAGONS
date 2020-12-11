@@ -661,11 +661,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         masked_data = np.ma.masked_array(row.data, mask=row.mask)
                         weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
                         spline = fit_1D(masked_data, weights=weights, function='spline1',
-                                        order=order, axis=dispaxis,
+                                        order=order, axis=0,  # TODO dispaxis? dispaxis,
                                         sigma_lower=lsigma,
                                         sigma_upper=hsigma,
                                         grow=grow,
-                                        )()
+                                        )
 
                         fitted_data[i] = spline.evaluate(pixels)
                     # Copy header so we have the _section() descriptors
