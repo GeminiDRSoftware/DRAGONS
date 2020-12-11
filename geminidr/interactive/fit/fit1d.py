@@ -550,10 +550,6 @@ class Fit1DPanel:
                                                              fitting_parameters, "niter",
                                                              fit.perform_fit))
 
-        # Only need this if there are multiple tabs
-        apply_button = bm.Button(label="Apply model universally")
-        apply_button.on_click(self.apply_button_handler)
-
         mask_button = bm.Button(label="Mask")
         mask_button.on_click(self.mask_button_handler)
 
@@ -563,7 +559,7 @@ class Fit1DPanel:
         controller_div = Div()
 
         controls = column(*controls_column,
-                          apply_button, row(mask_button, unmask_button), controller_div)
+                          row(mask_button, unmask_button), controller_div)
 
         # Now the figures
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
@@ -665,9 +661,6 @@ class Fit1DPanel:
         """
         self.fit.sigma_clip = bool(new)
         self.fit.perform_fit()
-
-    def apply_button_handler(self, stuff):
-        return
 
     def mask_button_handler(self, stuff):
         """
@@ -861,9 +854,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             bokeh document to draw the UI in
         """
         super().visualize(doc)
-        col = column(self.tabs, self.submit_button)
+        col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
-        layout = row(self.reinit_panel, col)
+        layout = column(row(self.reinit_panel, col), self.submit_button)
         doc.add_root(layout)
 
     def reconstruct_points(self):
