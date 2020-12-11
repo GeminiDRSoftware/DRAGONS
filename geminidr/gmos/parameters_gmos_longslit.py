@@ -21,8 +21,12 @@ class addDQConfig(parameters_standardize.addDQConfig):
         self.add_illum_mask = True   # adds bridges in longslit full frame
 
 
-class makeSlitIllumConfig(config.Config):
+class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
+    max_shift = config.RangeField("Maximum (unbinned) pixel shift for illumination mask",
+                                  int, 20, min=0, max=100, inclusiveMax=True)
 
+
+class makeSlitIllumConfig(config.Config):
     bins = config.Field("Total number of bins across the dispersion axis.",
                         int, None, optional=True)
     border = config.Field("Size of the border added to the reconstructed slit illumination image",
@@ -53,7 +57,6 @@ class normalizeFlatConfig(config.Config):
 
 
 class slitIllumCorrectConfig(config.Config):
-
     do_illum = config.Field("Perform Slit Illumination Correction?",
                             bool, True, optional=True)
     slit_illum = config.ListField("Slit Illumination Response",

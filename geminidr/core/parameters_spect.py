@@ -1,8 +1,17 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_spect.py file, in alphabetical order.
-from gempy.library import config
-from astrodata import AstroData
 from astropy import units as u
+
+from astrodata import AstroData
+from gempy.library import config, astrotools as at
+
+def validate_regions_float(value):
+    at.parse_user_regions(value, dtype=float, allow_step=False)
+    return True
+
+def validate_regions_int(value):
+    at.parse_user_regions(value, dtype=int, allow_step=True)
+    return True
 
 
 class adjustWCSToReferenceConfig(config.Config):
@@ -22,18 +31,18 @@ class adjustWCSToReferenceConfig(config.Config):
                                   float, 1, min=0., optional=True)
 
 
-class calculateSensitivityConfig(config.Config):
+class calculateSensitivityConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
-    suffix = config.Field("Filename suffix",
-                          str, "_sensitivityCalculated", optional=True)
-    order = config.RangeField("Order of spline fit", int, 6, min=1)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
+    regions = config.Field("Sample regions", str, None, optional=True,
+                           check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
     interactive_spline = config.Field("Interactive spline selection?", bool, False)
     niter = config.RangeField("Maximum number of clipping iterations to perform of spline fit", int, 3, min=1)
     grow = config.RangeField("Radius to reject pixels adjacent to masked pixels of spline fit", int, 0, min=0)
+    interactive = config.Field("Display interactive fitter?", bool, False)
 
 
 class determineDistortionConfig(config.Config):

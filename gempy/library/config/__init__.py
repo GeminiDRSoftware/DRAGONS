@@ -32,3 +32,18 @@ from .configDictField import *
 from .wrap import *
 from .registry import *
 #from .version import *
+
+
+class core_1Dfitting_config(Config):
+    function = ChoiceField("Fitting function", str,
+                           allowed={"spline3": "Cubic spline",
+                                    "chebyshev": "Chebyshev polynomial"},
+                           default="spline3", optional=False)
+    order = RangeField("Order of fitting function", int, 6, min=1)
+    lsigma = RangeField("Low rejection in sigma of fit", float, None,
+                        min=0, optional=True)
+    hsigma = RangeField("High rejection in sigma of fit", float, None,
+                        min=0, optional=True)
+    niter = RangeField("Maximum number of rejection iterations", int, None,
+                       min=0, optional=True)
+    grow = RangeField("Rejection growing radius", float, 0, min=0)

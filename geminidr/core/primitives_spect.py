@@ -250,6 +250,9 @@ class Spect(PrimitivesBASE):
             default bandpass width (in nm) to use if not present in the
             spectrophotometric data table (default: 5.)
 
+        interactive: bool, optional
+            Run the interactive UI for selecting the fit parameters
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -263,12 +266,10 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         datafile = params["filename"]
-        order = params["order"]
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
-        interactive = params["interactive_spline"]
-        niter = params["niter"]
-        grow = params["grow"]
+        interactive = params["interactive"]
+        fit1d_params = fit_1D.translate_params(params)
 
         # We're going to look in the generic (gemini) module as well as the
         # instrument module, so define that
@@ -327,8 +328,8 @@ class Spect(PrimitivesBASE):
                 all_shapes = list()
                 all_pixels = list()
                 all_masked_data = list()
-                all_orders = list()
                 all_weights = list()
+                all_fp_init = list()
 
                 for ext in ad:
                     if len(ext.shape) != 1:
@@ -336,6 +337,7 @@ class Spect(PrimitivesBASE):
                                     format(ad.filename, ext.hdr['EXTVER']))
                         continue
 
+# <<<<<<< HEAD
                     if calculated and 'XD' not in ad.tags:
                         log.warning("Found additional 1D extensions in non-XD data."
                                     " Ignoring.")
@@ -361,7 +363,6 @@ class Spect(PrimitivesBASE):
 
                     # TODO: Abstract to interactive fitting
                     wave = array_from_list(wave, unit=u.nm)
-
 
                     zpt = array_from_list(zpt)
                     zpt_err = array_from_list(zpt_err)
@@ -370,82 +371,76 @@ class Spect(PrimitivesBASE):
                     all_shapes.append(ext.shape[0])
                     all_pixels.append(wave.value)
                     all_masked_data.append(zpt.value)
-                    all_orders.append(order)
-                    all_weights.append(None)
+                    # all_orders.append(fit1d_params["order"]) # order)
+                    all_weights.append(1./zpt_err.value)
+                    # TODO fix parameters
+                    all_fp_init.append(FittingParameters(function='spline1',
+                                                         order=fit1d_params["order"],
+                                                         sigma_upper=fit1d_params["sigma_upper"],
+                                                         sigma_lower=fit1d_params["sigma_lower"],
+                                                         grow=fit1d_params["grow"]))
 
                     calculated = True
 
                 # ******************************************************************************************
                 config = self.params[self.myself()]
                 config.update(**params)
-                vis = SplineVisualizer(all_shapes, all_pixels, all_masked_data, all_orders, all_weights, config)
-                vis.config = config
-                interactive_fitter(vis)
 
-                for ext, spline in zip(all_exts, vis.get_splines()):
-                    knots, coeffs, degree = spline.tck
-                    sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                     names=('knots', 'coefficients'),
-                                     meta={'header': Header()})
-                    sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
+                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_fp_init, config,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x', ylabel='y',
+                                                   grow_slider=True,
+                                                   reinit_live=True,
+                                                   domains=all_shapes)
+                status = geminidr.interactive.server.interactive_fitter(visualizer)
+
+                all_m_final = visualizer.results()
+                for ext, fit in zip(all_exts, all_m_final):
+                    # knots, coeffs, degree = spline.tck
+                    # sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
+                    #                  names=('knots', 'coefficients'),
+                    #                  meta={'header': Header()})
+                    # sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
+                    sensfunc = fit.to_tables()[0]
+                    if "knots" in sensfunc.colnames:
+                        sensfunc["knots"].unit = wave.unit
+                        sensfunc["coefficients"].unit = zpt.unit
                     ext.SENSFUNC = sensfunc
             else:
-                for ext in ad:
-                    if len(ext.shape) != 1:
-                        log.warning("{}:{} is not a 1D spectrum".
-                                    format(ad.filename, ext.hdr['EXTVER']))
-                        continue
+# =======
+                spectrum = Spek1D(ext) / (exptime * u.s)
+                wave, zpt, zpt_err = [], [], []
 
-                    if calculated and 'XD' not in ad.tags:
-                        log.warning("Found additional 1D extensions in non-XD data."
-                                    " Ignoring.")
-                        break
+                # Compute values that are counts / (exptime * flux_density * bandpass)
+                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                    data, mask, variance = spectrum.signal(region)
+                    if mask == 0 and fluxdens > 0:
+                        # Regardless of whether FLUX column is f_nu or f_lambda
+                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                        if data > 0:
+                            wave.append(w0)
+                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                            zpt.append(u.Magnitude(data / flux))
+                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
-                    spectrum = Spek1D(ext) / (exptime * u.s)
-                    wave, zpt, zpt_err = [], [], []
-
-                    # Compute values that are counts / (exptime * flux_density * bandpass)
-                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                        data, mask, variance = spectrum.signal(region)
-                        if mask == 0 and fluxdens > 0:
-                            # Regardless of whether FLUX column is f_nu or f_lambda
-                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                            if data > 0:
-                                wave.append(w0)
-                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(data / flux))
-                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
-
-                    # TODO: Abstract to interactive fitting
-                    wave = array_from_list(wave, unit=u.nm)
-                    zpt = array_from_list(zpt)
-                    zpt_err = array_from_list(zpt_err)
-
-                    # we now return you to your regularly scheduled non-interactive spline
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
-                                                                            w=1./zpt_err.value,
-                                                                            order=order,
-                                                                            niter=niter,
-                                                                            grow=grow)
-                    knots, coeffs, degree = spline.tck
-                    sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                     names=('knots', 'coefficients'),
-                                     meta={'header': Header()})
-                    sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
-                    ext.SENSFUNC = sensfunc
-                    calculated = True
-
-                    if debug_plot:
-                        plt.ioff()
-                        fig, ax = plt.subplots()
-                        ax.plot(wave, zpt, 'bo')
-                        ax.plot(wave[spline.mask], zpt[spline.mask], 'ko')
-                        x = np.linspace(min(wave), max(wave), ext.shape[0])
-                        ax.plot(x, spline(x), 'r-')
-                        plt.show()
+                # TODO: Abstract to interactive fitting
+                wave = array_from_list(wave, unit=u.nm)
+                zpt = array_from_list(zpt)
+                zpt_err = array_from_list(zpt_err)
+                fit1d = fit_1D(zpt.value, points=wave.value,
+                               weights=1./zpt_err.value, **fit1d_params,
+                               plot=debug_plot)
+                sensfunc = fit1d.to_tables()[0]
+                # Add units to spline fit because the table is suitably designed
+                if "knots" in sensfunc.colnames:
+                    sensfunc["knots"].unit = wave.unit
+                    sensfunc["coefficients"].unit = zpt.unit
+                ext.SENSFUNC = sensfunc
+                calculated = True
+# >>>>>>> fit1d_integration
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2101,7 +2096,6 @@ class Spect(PrimitivesBASE):
             if mosaicked:
                 origin = admos.nddata[0].meta.pop('transform')['origin']
                 origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
-                print(origin_shift)
                 for ext, wcs in zip(ad, orig_wcs):
                     t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
                     geomap = transform.GeoMap(t, ext.shape, inverse=True)

@@ -210,7 +210,7 @@ class UnivariateSplineWithOutlierRemoval:
         check whether input contains only finite numbers
     outlier_func: callable
         function to call for defining outliers
-    niter: int
+    niter: int, optional
         maximum number of clipping iterations to perform
     grow: int
         radius to reject pixels adjacent to masked pixels
@@ -224,8 +224,10 @@ class UnivariateSplineWithOutlierRemoval:
     """
     def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=True, outlier_func=sigma_clip,
-                niter=3, grow=0, debug=False, **outlier_kwargs):
+                niter=0, grow=0, debug=False, **outlier_kwargs):
 
+        if niter is None:
+            niter = 100  # really should converge by this point
         # Decide what sort of spline object we're making
         spline_kwargs = {'bbox': bbox, 'k': k, 'ext': ext,
                          'check_finite': check_finite}
