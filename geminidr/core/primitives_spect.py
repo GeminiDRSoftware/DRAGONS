@@ -2631,13 +2631,13 @@ class Spect(PrimitivesBASE):
                     #     print(m)
                 else:
                     all_m_final = []
-                    # fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                    #                                            sigma_clip, sigma=3)
+                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                               sigma_clip, sigma=3)
                     for aperture, coords, m_init, fp_init in zip(aptable, all_coords, all_m_init, all_fp_init):
                         location = aperture['c0']
                         try:
-                            # m_final, _ = fit_it(m_init, coords[0], coords[1])
-                            m_final = fp_init.build_fit_1D(coords[1])  # coords[0]
+                            m_final, _ = fit_it(m_init, coords[0], coords[1])
+                            # m_final = fp_init.build_fit_1D(coords[1])  # coords[0]
                         except (IndexError, np.linalg.linalg.LinAlgError):
                             # This hides a multitude of sins, including no points
                             # returned by the trace, or insufficient points to
