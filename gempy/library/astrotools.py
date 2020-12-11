@@ -172,7 +172,6 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
 
     ranges = []
     for range in regions.strip("[]").split(","):
-        print(range)
         if range == "*":
             ranges.append((None, None))
             continue
