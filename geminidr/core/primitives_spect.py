@@ -31,7 +31,6 @@ from itertools import product as cart_product
 from bisect import bisect
 
 import astrodata
-from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
 from gempy.gemini import gemini_tools as gt
@@ -248,9 +247,9 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         datafile = params["filename"]
-        order = params["order"]
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
+        fit1d_params = fit_1D.translate_params(params)
 
         # We're going to look in the generic (gemini) module as well as the
         # instrument module, so define that
@@ -331,25 +330,16 @@ class Spect(PrimitivesBASE):
                 wave = array_from_list(wave, unit=u.nm)
                 zpt = array_from_list(zpt)
                 zpt_err = array_from_list(zpt_err)
-                spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
-                                                                        w=1./zpt_err.value,
-                                                                        order=order)
-                knots, coeffs, degree = spline.tck
-                sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                 names=('knots', 'coefficients'),
-                                 meta={'header': Header()})
-                sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
+                fit1d = fit_1D(zpt.value, points=wave.value,
+                               weights=1./zpt_err.value, **fit1d_params,
+                               plot=debug_plot)
+                sensfunc = fit1d.to_tables()[0]
+                # Add units to spline fit because the table is suitably designed
+                if "knots" in sensfunc.colnames:
+                    sensfunc["knots"].unit = wave.unit
+                    sensfunc["coefficients"].unit = zpt.unit
                 ext.SENSFUNC = sensfunc
                 calculated = True
-
-                if debug_plot:
-                    plt.ioff()
-                    fig, ax = plt.subplots()
-                    ax.plot(wave, zpt, 'bo')
-                    ax.plot(wave[spline.mask], zpt[spline.mask], 'ko')
-                    x = np.linspace(min(wave), max(wave), ext.shape[0])
-                    ax.plot(x, spline(x), 'r-')
-                    plt.show()
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1977,7 +1967,6 @@ class Spect(PrimitivesBASE):
             if mosaicked:
                 origin = admos.nddata[0].meta.pop('transform')['origin']
                 origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
-                print(origin_shift)
                 for ext, wcs in zip(ad, orig_wcs):
                     t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
                     geomap = transform.GeoMap(t, ext.shape, inverse=True)

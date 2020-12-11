@@ -5,6 +5,8 @@ from collections.abc import Iterable
 import numpy as np
 from astropy.modeling import Model, models, fitting
 from astropy.stats import sigma_clip
+from astropy.table import Table
+from astropy.io.fits import Header
 
 from .astromodels import UnivariateSplineWithOutlierRemoval
 from . import astrotools as at
@@ -379,7 +381,8 @@ class fit_1D:
                                  'data')
         index = tuple(index)  # NumPy warns against indexing with a list
 
-        points1 = np.arange(data.shape[self.axis], dtype=np.int16)
+        points1 = (np.arange(data.shape[self.axis], dtype=np.int16)
+                   if self.points is None else self.points)
         imrow, maskrow = np.ma.masked_array(data).data[index], self.mask[index]
         # This is a bit grossly inefficient, but currently there's no way to
         # evaluate a single model from a set and it's only a "debugging" plot
@@ -485,18 +488,79 @@ class fit_1D:
         astropy_model = isinstance(self._models, Model)
 
         if astropy_model:
+            n_models = len(self._models)
             domain = self._models.domain
-            model_dict = {"ndim": 1, "degree": self._models.degree,
+            model_dict = {"model": self.model_class.__name__,
+                          "ndim": 1, "degree": self._models.degree,
                           "domain_start": domain[0], "domain_end": domain[1]}
-            for i in range(len(self._models)):
+            for i in range(n_models):
                 for name in self._models.param_names:
-                    model_dict[name] = getattr(self._models, name).value[i]
+                    model_dict[name] = (getattr(self._models, name).value[i]
+                                        if n_models > 1 else
+                                        getattr(self._models, name).value)
                 model_dicts.append(model_dict.copy())
         else:
             for single_model in self._models:
                 knots, coeffs, degree = single_model.tck
-                model_dict = {"ndim": 1, "k": degree,
+                model_dict = {"model": "Spline", "ndim": 1, "k": degree,
                               "knots": knots, "coefficients": coeffs}
                 model_dicts.append(model_dict)
 
         return model_dicts
+
+    def to_tables(self):
+        """
+        Convert the fitted models to a list of Tables containing the fit parameters.
+        """
+        tables = []
+        astropy_model = isinstance(self._models, Model)
+
+        for model_dict in self.to_dicts():
+            if astropy_model:
+                t = Table([list(model_dict.keys()),
+                           list(model_dict.values())],
+                          names=('names', 'coefficients'))
+            else:
+                t = Table([model_dict["knots"],
+                           model_dict["coefficients"]],
+                           names=('knots', 'coefficients'),
+                           meta={'header': Header()})
+                t.meta['header']['ORDER'] = (model_dict["k"], 'Order of spline')
+            tables.append(t)
+
+        return tables
+
+    @staticmethod
+    def translate_params(params):
+        """
+        Translates the parameter names used by the primitives into those used
+        by fit_1D. Does not do any meaningful validation since that should be
+        handled by the Configs.
+
+        Parameters
+        ----------
+        params : dict
+            An input dict of parameters (can include irrelevant ones)
+
+        Returns
+        -------
+        params : dict
+            A dict suitable for passing to fit1D
+        """
+        lsigma, hsigma = params.get("lsigma"), params.get("hsigma")
+        if lsigma is None and hsigma is None:
+            lsigma = hsigma = params.get("sigma")  # still None if non-existent
+
+        # FittingWithOutlierRemoval should support niter=None but it crashes
+        niter = params.get("niter")
+        if niter is None:
+            niter = 100
+
+        new_params = {"grow": params.get("grow", 0),
+                      "niter": niter,
+                      "order": params["order"],
+                      "function": params["function"],
+                      "sigma_lower": lsigma,
+                      "sigma_upper": hsigma,
+                      "regions": params.get("regions")}
+        return new_params
