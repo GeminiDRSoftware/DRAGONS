@@ -1895,11 +1895,10 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params.pop("suffix")
-        spectral_order = params.pop("spectral_order")
-        center = params.pop("center")
-        nsum = params.pop("nsum")
-        spline_kwargs = params.copy()
+        sfx = params["suffix"]
+        center = params["center"]
+        nsum = params["nsum"]
+        fit1d_params = fit_1D.translate_params(params)
 
         for ad in adinputs:
             # Don't mosaic if the multiple extensions are because the
@@ -1939,7 +1938,7 @@ class Spect(PrimitivesBASE):
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
                     result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
-                                                                       weights, boundaries, spectral_order),
+                                                                       weights, boundaries, order),
                                                tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning("Problem with spline fitting: {}".format(result.message))
@@ -1952,12 +1951,11 @@ class Spect(PrimitivesBASE):
                         weights[slice_] /= coeff
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                                        order=spectral_order, w=weights,
-                                                                        **spline_kwargs)
+                fit1d = fit_1D(masked_data, points=None, weights=weights,
+                               **fit1d_params)
 
                 if not mosaicked:
-                    flat_data = np.tile(spline.data, (ext.shape[1-dispaxis], 1))
+                    flat_data = np.tile(fit1d.evaluate(), (ext.shape[1-dispaxis], 1))
                     ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
 
             # If we've mosaicked, there's only one extension
@@ -1970,7 +1968,7 @@ class Spect(PrimitivesBASE):
                 for ext, wcs in zip(ad, orig_wcs):
                     t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
                     geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                    flat_data = spline(geomap.coords[dispaxis])
+                    flat_data = fit1d.evaluate(geomap.coords[dispaxis])
                     ext.divide(flat_data)
                     ext.wcs = wcs
 

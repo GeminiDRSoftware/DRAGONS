@@ -186,14 +186,13 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
-class normalizeFlatConfig(config.Config):
+class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 20, min=1)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+
+    def setDefaults(self):
+        self.order = 20
 
 
 class resampleToCommonFrameConfig(config.Config):
