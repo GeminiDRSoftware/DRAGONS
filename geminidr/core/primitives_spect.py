@@ -14,7 +14,6 @@ import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
-from astropy.io.fits import Header
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
@@ -213,25 +212,31 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             1D spectra of spectrophotometric standard stars
+
         suffix :  str, optional
             Suffix to be added to output files (default: _sensitivityCalculated).
+
         filename: str or None, optional
             Location of spectrophotometric data file. If it is None, uses
             look up data based on the object name stored in OBJECT header key
             (default).
+
         function : str
             type of function to fit (splineN or polynomial types)
+
         order : int
             Order of the spline fit to be performed
-        lsigma : float/None
-            lower rejection limit in standard deviations
-        hsigma : float/None
-            upper rejection limit in standard deviations
+
+        lsigma, hsigma : float/None
+            lower and upper rejection limit in standard deviations
+
         niter : int
             maximum number of rejection iterations
+
         bandpass : float, optional
             default bandpass width (in nm) to use if not present in the
             spectrophotometric data table (default: 5.)
+
         individual : bool - TODO - Not in calculateSensitivityConfig
             Calculate sensitivity for each AD spectrum individually?
 
@@ -585,9 +590,9 @@ class Spect(PrimitivesBASE):
         arc : :class:`~astrodata.AstroData` or str or None
             Arc(s) containing distortion map.
         order : int (0 - 5)
-            Order of interpolation when resampling. Default: 3.
+            Order of interpolation when resampling.
         subsample : int
-            Pixel subsampling factor. Default: 1.
+            Pixel subsampling factor.
 
         Returns
         -------
@@ -1627,10 +1632,10 @@ class Spect(PrimitivesBASE):
             2D spectra are expected to be distortion corrected and its
             dispersion axis should be along rows.
 
-        suffix :  str, optional
+        suffix :  str
             Suffix to be added to output files (default: _fluxCalibrated).
 
-        standard: str or AstroData, optional
+        standard: str or AstroData
             Standard star spectrum containing one extension or the same number
             of extensions as the input spectra. Each extension must have a
             `.SENSFUNC` table containing information about the overall
@@ -1884,14 +1889,24 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str/None
             suffix to be added to output files
-        center: int/None
+        center : int/None
             central row/column for 1D extraction (None => use middle)
-        nsum: int
+        nsum : int
             number of rows/columns around center to combine
-        spectral_order: int
-            order of fit in spectral direction
+        function : str
+            type of function to fit (splineN or polynomial types)
+        order : int
+            Order of the spline fit to be performed
+        lsigma : float/None
+            lower rejection limit in standard deviations
+        hsigma : float/None
+            upper rejection limit in standard deviations
+        niter : int
+            maximum number of rejection iterations
+        grow : float/False
+            growth radius for rejected pixels
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -2240,9 +2255,9 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             2D science spectra loaded as :class:`~astrodata.AstroData` objects.
-        suffix : str or None, optional
+        suffix : str or None
             Suffix to be added to output files.
-        regions : str or None, optional
+        regions : str or None
             Sample region(s) to fit along rows/columns parallel to the slit,
             as a comma-separated list of pixel ranges. Any pixels outside these
             ranges (and/or included in the source aperture table) will be
@@ -2251,24 +2266,24 @@ class Spect(PrimitivesBASE):
             Type of function/model to be used for fitting rows or columns
             perpendicular to the dispersion axis (default 'spline3', a cubic
             spline). For spline fits, N may be 1-5 (linear to quintic).
-        order : int or None, optional
-            Order of fit to each row/column (default 5). For spline fits, this
+        order : int or None
+            Order of fit to each row/column. For spline fits, this
             is the number of spline pieces; if `None`, as many pieces will be
             used as are required to get chi^2=1, otherwise the specified number
             will be reduced in proportion to the ratio of good pixels to total
             pixels in each row/column. If there are fewer than 4 good pixels in
             a given row/column, the fit will be performed using every pixel.
-            For polynomial fitting functions, ``order`` is the number of terms,
-            or degree + 1.
-        lsigma, hsigma : float, optional
+            For polynomial fitting functions, ``order`` is the polynomial degree
+        lsigma, hsigma : float
             Lower and upper pixel rejection limits for fitting, in standard
-            deviations from the fit (default 3.0).
-        max_iters : int, optional
-            Maximum number of fitting iterations (default 3).
+            deviations from the fit
+        niter : int
+            Maximum number of fitting iterations
         grow : float or False, optional
-            Masking growth radius (in pixels) for each source aperture and
-            each statistically-rejected pixel. Default: 2.
-        debug : bool
+            Masking growth radius (in pixels) for each statistically-rejected pixel
+        aperture_growth : float
+            Masking growth radius (in pixels) for each aperture
+        debug_plot : bool
             Show diagnostic plots?
 
         Returns
@@ -2286,14 +2301,9 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        regions = params["regions"]
-        function = params["function"]
-        order = params["order"]
-        lsigma = params["lsigma"]
-        hsigma = params["hsigma"]
-        max_iters = params["max_iters"]
-        grow = params["grow"]
-        debug = params["debug"]
+        apgrow = params["aperture_growth"]
+        debug_plot = params["debug_plot"]
+        fit1d_params = fit_1D.translate_params(params)
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -2324,9 +2334,9 @@ class Spect(PrimitivesBASE):
                             trace_model, aper_lower=model_dict['aper_lower'],
                             aper_upper=model_dict['aper_upper']
                         )
-                        sky_mask |= aperture.aperture_mask(ext, grow=grow)
+                        sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
 
-                if debug:
+                if debug_plot:
                     from astropy.visualization import simple_norm
                     fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
                                                    sharey=True)
@@ -2345,13 +2355,8 @@ class Spect(PrimitivesBASE):
                 # This would combine the specified mask with any existing mask,
                 # but should we include some specific set of DQ codes here?
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
-
-                sky_model = fit_1D(
-                    sky, weights=sky_weights, function=function, order=order,
-                    axis=axis, sigma_lower=lsigma, sigma_upper=hsigma,
-                    niter=max_iters, grow=grow, regions=regions, plot=debug
-                ).evaluate()
-
+                sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
+                                   plot=debug_plot).evaluate()
                 ext.data -= sky_model
 
             # Timestamp and update the filename

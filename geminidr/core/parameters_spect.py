@@ -217,27 +217,10 @@ class resampleToCommonFrameConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
-class skyCorrectFromSlitConfig(config.Config):
+class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
-    regions = config.Field("Sample regions", str, None, optional=True)
-    function = config.ChoiceField(
-        "Type of fitting function", str,
-        allowed = {"chebyshev": "Chebyshev polynomial",
-                   "legendre": "Legendre polynomial",
-                   "polynomial": "Ordinary polynomial",
-                   "spline1": "Linear spline",
-                   "spline2": "Quadratic spline",
-                   "spline3": "Cublic spline",
-                   "spline4": "Quartic spline",
-                   "spline5": "Quintic spline",},
-        default="spline3"
-    )
-    order = config.RangeField("Sky fitting order", int, 5, min=1, optional=True)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0.)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0.)
-    max_iters = config.RangeField("Maximum number of clipping iterations", int, 3, min=0)
-    grow = config.RangeField("Aperture growth distance (pixels)", float, 2, min=0)
-    debug = config.Field("Show diagnostic plots?", bool, False)
+    aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
+    debug_plot = config.Field("Show diagnostic plots?", bool, False)
 
 
 class traceAperturesConfig(config.Config):
