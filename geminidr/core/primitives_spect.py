@@ -2356,7 +2356,7 @@ class Spect(PrimitivesBASE):
                 # but should we include some specific set of DQ codes here?
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
-                                   plot=debug_plot).evaluate()
+                                   axis=axis, plot=debug_plot).evaluate()
                 ext.data -= sky_model
 
             # Timestamp and update the filename
