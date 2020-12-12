@@ -213,26 +213,27 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             1D spectra of spectrophotometric standard stars
-
         suffix :  str, optional
             Suffix to be added to output files (default: _sensitivityCalculated).
-
         filename: str or None, optional
             Location of spectrophotometric data file. If it is None, uses
             look up data based on the object name stored in OBJECT header key
             (default).
-
-        order: int
+        function : str
+            type of function to fit (splineN or polynomial types)
+        order : int
             Order of the spline fit to be performed
-        order: int, optional
-            Order of the spline fit to be performed (default: 6)
-
-        individual: bool - TODO - Not in calculateSensitivityConfig
-            Calculate sensitivity for each AD spectrum individually?
-
-        bandpass: float, optional
+        lsigma : float/None
+            lower rejection limit in standard deviations
+        hsigma : float/None
+            upper rejection limit in standard deviations
+        niter : int
+            maximum number of rejection iterations
+        bandpass : float, optional
             default bandpass width (in nm) to use if not present in the
             spectrophotometric data table (default: 5.)
+        individual : bool - TODO - Not in calculateSensitivityConfig
+            Calculate sensitivity for each AD spectrum individually?
 
         Returns
         -------

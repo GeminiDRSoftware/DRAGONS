@@ -40,6 +40,9 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
 
+    def setDefaults(self):
+        del self.grow
+
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
