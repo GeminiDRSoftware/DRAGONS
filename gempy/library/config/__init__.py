@@ -40,9 +40,9 @@ class core_1Dfitting_config(Config):
                                     "chebyshev": "Chebyshev polynomial"},
                            default="spline3", optional=False)
     order = RangeField("Order of fitting function", int, 6, min=1)
-    lsigma = RangeField("Low rejection in sigma of fit", float, None,
+    lsigma = RangeField("Low rejection in sigma of fit", float, 3,
                         min=0, optional=True)
-    hsigma = RangeField("High rejection in sigma of fit", float, None,
+    hsigma = RangeField("High rejection in sigma of fit", float, 3,
                         min=0, optional=True)
     niter = RangeField("Maximum number of rejection iterations", int, None,
                        min=0, optional=True)
