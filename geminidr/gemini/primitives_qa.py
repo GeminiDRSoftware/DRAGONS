@@ -396,6 +396,8 @@ class QA(PrimitivesBASE):
                         if ellip:
                             ext.hdr.set("MEANELLP", ellip,
                                         comment=self.keyword_comments["MEANELLP"])
+                else:
+                    self.log.warning(f"No good sources found in {ad.filename}")
 
             if display:
                 # If displaying, make a mask to display along with image
@@ -624,7 +626,9 @@ class QAReport:
             extensions = slice(-1, None)
         elif extensions == 'all':
             extensions = slice(None, None)
-        return vstack([m for m in self.measurements[extensions] if m],
+
+        # Ensures a Table is returned, even if no measurements
+        return vstack([Table()] + [m for m in self.measurements[extensions] if m],
                       metadata_conflicts='silent')
 
     def info_list(self, update_band_info=True):
