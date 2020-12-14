@@ -20,6 +20,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, transform
+from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
 from gwcs import coordinate_frames
@@ -615,7 +616,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         ext.mask[:, -21 // xbin:] = 1
 
                 masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
-                weights = np.where(ext.variance > 0, 1. / ext.variance, 0.)
+                weights = np.sqrt(at.divide0(1., ext.variance))
 
                 fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
                                      axis=1).evaluate()

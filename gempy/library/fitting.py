@@ -54,7 +54,7 @@ class fit_1D:
         The weights will be ignored for a given 1D fit if all zero, to allow
         processing regions without data (in progress: splines only). If the
         data have known uncertainties, the weights should be equal to the
-        inverse of the variance.
+        inverse of the standard deviation.
 
     function : {'legendre', 'chebyshev', 'polynomial', 'splineN'}, optional
         Fitting function/model type to be used (current default 'legendre').
@@ -328,7 +328,7 @@ class fit_1D:
                 # without data (should we allow for NaNs as well?). The scipy
                 # spline-fitting routines state that weights should be inverse
                 # standard deviation, whereas fit_1D takes inverse-variance.
-                wrow = (np.sqrt(wrow[user_reg]) if wrow is not None and np.any(wrow)
+                wrow = (wrow[user_reg] if wrow is not None and np.any(wrow)
                         else None)
 
                 # Could generalize this a bit further using another dict to map

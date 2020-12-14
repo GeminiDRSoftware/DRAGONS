@@ -35,7 +35,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as ext
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
-from gempy.library.astrotools import array_from_list, boxcar
+from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -333,9 +333,9 @@ class Spect(PrimitivesBASE):
                             zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
                 # TODO: Abstract to interactive fitting
-                wave = array_from_list(wave, unit=u.nm)
-                zpt = array_from_list(zpt)
-                zpt_err = array_from_list(zpt_err)
+                wave = at.array_from_list(wave, unit=u.nm)
+                zpt = at.array_from_list(zpt)
+                zpt_err = at.array_from_list(zpt_err)
                 fit1d = fit_1D(zpt.value, points=wave.value,
                                weights=1./zpt_err.value, **fit1d_params,
                                plot=debug_plot)
@@ -1533,7 +1533,7 @@ class Spect(PrimitivesBASE):
                 data1d, mask1d, var1d = NDStacker.mean(data, mask=mask,
                                                        variance=variance)
                 # Very light sigma-clipping to remove bright sky lines
-                var_excess = var1d - boxcar(var1d, np.median, size=min_sky_pix // 2)
+                var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_pix // 2)
                 mean, median, std = sigma_clipped_stats(var_excess, mask=mask1d,
                                                         sigma=5.0, maxiters=1)
 
@@ -1954,7 +1954,8 @@ class Spect(PrimitivesBASE):
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
                     result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
-                                                                       weights, boundaries, order),
+                                                                       weights, boundaries,
+                                                                       fit1d_params["order"]),
                                                tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning("Problem with spline fitting: {}".format(result.message))
@@ -2348,9 +2349,7 @@ class Spect(PrimitivesBASE):
                 if ext.variance is None:
                     sky_weights = None
                 else:
-                    sky_weights = np.sqrt(np.divide(1., ext.variance,
-                                          out=np.zeros_like(ext.data),
-                                          where=ext.variance > 0))
+                    sky_weights = np.sqrt(at.divide0(1., ext.variance))
 
                 # This would combine the specified mask with any existing mask,
                 # but should we include some specific set of DQ codes here?
@@ -2444,7 +2443,7 @@ class Spect(PrimitivesBASE):
                 for i, loc in enumerate(locations):
                     c0 = int(loc + 0.5)
                     spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:,c0]
-                    start = np.argmax(boxcar(spectrum, size=3))
+                    start = np.argmax(at.boxcar(spectrum, size=3))
 
                     # The coordinates are always returned as (x-coords, y-coords)
                     ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
