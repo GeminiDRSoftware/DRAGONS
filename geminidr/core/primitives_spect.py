@@ -329,6 +329,7 @@ class Spect(PrimitivesBASE):
                 all_pixels = list()
                 all_masked_data = list()
                 all_weights = list()
+                all_var = list()
                 all_fp_init = list()
 
                 for ext in ad:
@@ -337,7 +338,6 @@ class Spect(PrimitivesBASE):
                                     format(ad.filename, ext.hdr['EXTVER']))
                         continue
 
-# <<<<<<< HEAD
                     if calculated and 'XD' not in ad.tags:
                         log.warning("Found additional 1D extensions in non-XD data."
                                     " Ignoring.")
@@ -373,12 +373,15 @@ class Spect(PrimitivesBASE):
                     all_masked_data.append(zpt.value)
                     # all_orders.append(fit1d_params["order"]) # order)
                     all_weights.append(1./zpt_err.value)
+                    all_var.append(zpt_err.value)
                     # TODO fix parameters
                     all_fp_init.append(FittingParameters(function='spline1',
                                                          order=fit1d_params["order"],
                                                          sigma_upper=fit1d_params["sigma_upper"],
                                                          sigma_lower=fit1d_params["sigma_lower"],
-                                                         grow=fit1d_params["grow"]))
+                                                         grow=fit1d_params["grow"],
+                                                         niter=fit1d_params["niter"],
+                                                         regions=fit1d_params["regions"]))
 
                     calculated = True
 
@@ -386,7 +389,9 @@ class Spect(PrimitivesBASE):
                 config = self.params[self.myself()]
                 config.update(**params)
 
+                # Hacking this out?
                 visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_fp_init, config,
+                                                   all_weights=all_weights,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
                                                    grow_slider=True,
@@ -407,7 +412,7 @@ class Spect(PrimitivesBASE):
                         sensfunc["coefficients"].unit = zpt.unit
                     ext.SENSFUNC = sensfunc
             else:
-# =======
+                # Non-interactive
                 spectrum = Spek1D(ext) / (exptime * u.s)
                 wave, zpt, zpt_err = [], [], []
 
@@ -430,17 +435,16 @@ class Spect(PrimitivesBASE):
                 wave = array_from_list(wave, unit=u.nm)
                 zpt = array_from_list(zpt)
                 zpt_err = array_from_list(zpt_err)
-                fit1d = fit_1D(zpt.value, points=wave.value,
-                               weights=1./zpt_err.value, **fit1d_params,
-                               plot=debug_plot)
-                sensfunc = fit1d.to_tables()[0]
+                fit = fit_1D(zpt.value, points=wave.value,
+                             weights=1./zpt_err.value, **fit1d_params,
+                             plot=debug_plot)
+                sensfunc = fit.to_tables()[0]
                 # Add units to spline fit because the table is suitably designed
                 if "knots" in sensfunc.colnames:
                     sensfunc["knots"].unit = wave.unit
                     sensfunc["coefficients"].unit = zpt.unit
                 ext.SENSFUNC = sensfunc
                 calculated = True
-# >>>>>>> fit1d_integration
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

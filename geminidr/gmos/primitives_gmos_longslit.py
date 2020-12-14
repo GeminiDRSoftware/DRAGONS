@@ -633,7 +633,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
                     # all_masked_data.append(ext_masked_data)
                     all_masked_data.append(np.ma.masked_array(ext.nddata[0].data, ext.nddata[0].mask))
-                    all_weights.append(ext_weights)
+                    all_weights.append(np.sqrt(np.where(ext.nddata[0].variance > 0, 1. / ext.nddata[0].variance, 0.)))
 
                     # ext_masked_data.append(ext.nddata[0])
                     # for i, row in enumerate(ext.nddata):
@@ -658,10 +658,14 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     r = extras['row']
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
-                        all_coords.append([rppixels, rpext.nddata[r]])
+                        row = rpext.nddata[r]
+                        weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
+                        all_coords.append([rppixels, rpext.nddata[r], weights])
                     return all_coords
 
-                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_fp_init, config,
+                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_fp_init,
+                                                   all_weights=all_weights,
+                                                   config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
                                                    order_param='spectral_order',

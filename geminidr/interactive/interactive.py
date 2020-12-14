@@ -734,6 +734,14 @@ class GIBandModel(object):
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
+    def load_from_tuples(self, tuples):
+        for band_id in self.bands.keys():
+            self.delete_band(band_id)
+        self.band_id=1
+        for tup in tuples:
+            self.adjust_band(self.band_id, tup.start, tup.stop)
+            self.band_id = self.band_id+1
+
     def adjust_band(self, band_id, start, stop):
         """
         Adjusts the given band ID to the specified X range.
@@ -914,10 +922,10 @@ class GIBandView(GIBandListener):
             the model for the band information (may be shared by multiple
             :class:`~geminidr.interactive.interactive.GIBandView` instances)
         """
+        self.fig = fig
         self.model = model
         model.add_listener(self)
         self.bands = dict()
-        self.fig = fig
         fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
         fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
 
@@ -955,7 +963,11 @@ class GIBandView(GIBandListener):
                 band = BoxAnnotation(left=draw_start, right=draw_stop, fill_alpha=0.1, fill_color='navy')
                 self.fig.add_layout(band)
                 self.bands[band_id] = BandHolder(band, start, stop)
-        self.fig.document.add_next_tick_callback(lambda: fn())
+        if self.fig.document is not None:
+            self.fig.document.add_next_tick_callback(lambda: fn())
+        else:
+            # do it now
+            fn()
 
     def update_viewport(self):
         """

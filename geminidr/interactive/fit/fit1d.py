@@ -12,6 +12,7 @@ from bokeh.palettes import Category10
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras, GIBandListener
+from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
@@ -44,6 +45,11 @@ class FittingParameters(object):
         regions : list of tuple start/stop pairs
             This is a list of range start/stop pairs to pass down
         """
+        # default sigmas if None
+        if sigma_lower is None:
+            sigma_lower = 3.0
+        if sigma_upper is None:
+            sigma_upper = 3.0
         self.function = function
         self.order = order
         self.axis = axis
@@ -53,16 +59,17 @@ class FittingParameters(object):
         self.grow = grow
         self.regions = regions
 
-    def build_fit_1D(self, data, weights):
-        return fit_1D(data, weights=weights,
+    def build_fit_1D(self, data, points, weights):
+        return fit_1D(data,
+                      points=points,
+                      weights=weights,
                       function=self.function,
                       order=self.order, axis=self.axis,
                       sigma_lower=self.sigma_lower,
                       sigma_upper=self.sigma_upper,
                       niter=self.niter,
-                      # TODO grow is being rejected by fit_1D with the sigma_clip() in astropy.stats.sigma_clipping
-                      # grow=self.grow,
-                      regions=self.regions,
+                      grow=self.grow,
+                      regions=None,  # self.regions,  # TODO add back in or use to generate mask elsewhere
                       # plot=debug
                       )
 
@@ -168,7 +175,7 @@ class InteractiveModel1D(InteractiveModel):
     """
     Subclass for 1D models
     """
-    def __init__(self, fitting_parameters, domain, x=None, y=None, mask=None, var=None,
+    def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
                  grow=0, sigma=3, lsigma=None, hsigma=None, maxiter=3,
                  section=None):
         """
@@ -197,12 +204,17 @@ class InteractiveModel1D(InteractiveModel):
             max iterations to do on fit
         section
         """
+
+        # TODO hacking var out
+        # var = None
+
         model = InteractiveNewFit1D(fitting_parameters, domain)
         super().__init__(model)
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
         xlinspace = np.linspace(*self.domain, 100)
-        self.populate_bokeh_objects(x, y, mask, var)
+        self.populate_bokeh_objects(x, y, mask)
+        self.weights = weights
 
         # Our single slider isn't well set up for different low/hi sigma
         # We can worry about how we want to deal with that later
@@ -215,7 +227,11 @@ class InteractiveModel1D(InteractiveModel):
         self.lsigma = self.hsigma = self.sigma  # placeholder
         self.grow = grow
         self.maxiter = maxiter
-        self.var = None
+
+        # try this?
+        self.fit_mask = np.zeros_like(x, dtype=bool)
+        self.user_mask = np.zeros_like(x, dtype=bool)
+        self.band_mask = np.zeros_like(x, dtype=bool)
 
         model.perform_fit(self)
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
@@ -236,7 +252,7 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.model.set_function(fn)
 
-    def populate_bokeh_objects(self, x, y, mask=None, var=None):
+    def populate_bokeh_objects(self, x, y, mask=None):
         """
         Initializes bokeh objects like a coord structure with extra
         columns for ratios and residuals and setting up masking
@@ -249,7 +265,6 @@ class InteractiveModel1D(InteractiveModel):
             y coordinate values
         mask : array of str
             named mask for coordinates
-        var
         """
         if mask is None:
             try:  # Handle y as masked array
@@ -264,9 +279,6 @@ class InteractiveModel1D(InteractiveModel):
                 y = y.data
         else:
             init_mask = mask
-        self.var = var
-        if var is not None:
-            init_mask |= (self.var <= 0)
 
         x = x[~init_mask]
         y = y[~init_mask]
@@ -465,28 +477,26 @@ class InteractiveNewFit1D:
         # but we still use the band_mask for highlighting the affected points
 
         # TODO switch back if we use the region string...
-        #goodpix = ~parent.user_mask
         goodpix = ~(parent.user_mask | parent.band_mask)
-        if parent.var is None:
-            weights = None
-        else:
-            weights = np.divide(1.0, parent.var, out=np.zeros_like(self.x),
-                                where=parent.var > 0)[goodpix]
 
         if parent.sigma_clip:
-            self.fit = self.fitting_parameters.build_fit_1D(parent.y[goodpix], weights=weights)
+            self.fit = self.fitting_parameters.build_fit_1D(parent.y[goodpix], points=parent.x[goodpix],
+                                                            weights=None if parent.weights is None else parent.weights[goodpix])
             parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
 
             # Now pull in the sigma mask
             parent.fit_mask[goodpix] = self.fit.mask
         else:
-            fitter = self.fitting_parameters.build_fit_1D(parent.y[goodpix], weights=weights)
+            fitter = self.fitting_parameters.build_fit_1D(parent.y[goodpix], points=parent.x[goodpix],
+                                                          weights=None if parent.weights is None else parent.weights[goodpix])
             self.fit = fitter()
             parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
 
 
 class Fit1DPanel:
-    def __init__(self, visualizer, fitting_parameters, domain, x, y, min_order=1, max_order=10, xlabel='x', ylabel='y',
+    def __init__(self, visualizer, fitting_parameters, domain, x, y,
+                 weights=None,
+                 min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, grow_slider=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
@@ -523,9 +533,14 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
+        # self.band_model = GIBandModel()
+        # if fitting_parameters.regions is not None:
+        #     region_tuples = cartesian_regions_to_slices(fitting_parameters.regions)
+        #     self.band_model.load_from_tuples(region_tuples)
+
         # Probably do something better here with factory function/class
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y)
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights)
 
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
@@ -598,6 +613,11 @@ class Fit1DPanel:
 
         self.band_model.add_listener(Fit1DBandListener(self.band_model_handler))
         connect_figure_extras(p_main, None, self.band_model)
+
+        if fitting_parameters.regions is not None:
+            region_tuples = cartesian_regions_to_slices(fitting_parameters.regions)
+            self.band_model.load_from_tuples(region_tuples)
+
         Controller(p_main, None, self.band_model, controller_div)
         fig_column = [p_main]
 
@@ -743,7 +763,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fits: list of InteractiveModel instances, one per (x,y) array
     """
 
-    def __init__(self, allx, ally, fitting_parameters, config, log=None,
+    def __init__(self, allx, ally, fitting_parameters, config,
+                 all_weights=None,
+                 log=None,
                  reinit_params=None, reinit_extras=None, reinit_live=False,
                  order_param=None,
                  min_order=1, max_order=10, tab_name_fmt='{}',
@@ -761,7 +783,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().__init__(log=log, config=config)
 
         self.reconstruct_points_fn = reconstruct_points
-
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -814,29 +835,37 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
-        field = self.config._fields[order_param]
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
-        if hasattr(field, 'min') and field.min:
-            kwargs['min_order'] = field.min
+        if order_param and order_param in self.config._fields:
+            field = self.config._fields[order_param]
+            if hasattr(field, 'min') and field.min:
+                kwargs['min_order'] = field.min
+            else:
+                kwargs['min_order'] = 1
+            if hasattr(field, 'max') and field.max:
+                kwargs['max_order'] = field.max
+            else:
+                kwargs['max_order'] = field.default * 2
         else:
             kwargs['min_order'] = 1
-        if hasattr(field, 'max') and field.max:
-            kwargs['max_order'] = field.max
-        else:
-            kwargs['max_order'] = field.default * 2
+            kwargs['max_order'] = 10
+
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
         if self.nfits > 1:
             if domains is None:
                 domains = [None] * len(fitting_parameters)
-            for i, (fitting_parms, domain, x, y) in enumerate(zip(fitting_parameters, domains, allx, ally), start=1):
-                tui = Fit1DPanel(self, fitting_parms, domain, x, y, **kwargs)
+            if all_weights is None:
+                all_weights = [None] * len(fitting_parameters)
+            for i, (fitting_parms, domain, x, y, weights) in \
+                    enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
+                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
         else:
-            tui = Fit1DPanel(fitting_parameters, allx, ally, **kwargs)
+            tui = Fit1DPanel(self, fitting_parameters[0], domains, allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
@@ -889,6 +918,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             def rfn():
                 all_coords = self.reconstruct_points_fn(self.config, self.extras)
                 for fit, coords in zip(self.fits, all_coords):
+                    if len(coords) > 2:
+                        fit.weights = coords[2]
+                    else:
+                        fit.weights = None
                     fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
                     fit.perform_fit()
                 if hasattr(self, 'reinit_button'):
