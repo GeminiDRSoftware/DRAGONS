@@ -37,7 +37,7 @@ def reduceScience(p):
 
     # side stream to generate 1D spectra from individual frame, pre-stack
     p.traceApertures(outstream='prestack')
-    p.extrac1DSpectra(stream='prestack')
+    p.extract1DSpectra(stream='prestack')
     p.fluxCalibrate(stream='prestack')
     p.plotSpectraForQA(stream='prestack')
     # The GUI polls for new data every 3 seconds.  The next steps can be
