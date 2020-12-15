@@ -568,9 +568,15 @@ class Fit1DPanel:
         y_range = None
         try:
             if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                x_range = Range1d(min(self.fit.data.data['x']), max(self.fit.data.data['x']))
+                x_min = min(self.fit.data.data['x'])
+                x_max = max(self.fit.data.data['x'])
+                x_pad = (x_max-x_min)*0.1
+                x_range = Range1d(x_min-x_pad, x_max+x_pad)
             if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
-                y_range = Range1d(min(self.fit.data.data['y']), max(self.fit.data.data['y']))
+                y_min = min(self.fit.data.data['y'])
+                y_max = max(self.fit.data.data['y'])
+                y_pad = (y_max-y_min)*0.1
+                y_range = Range1d(y_min-y_pad, y_max+y_pad)
         except:
             pass  # ok, we don't *need* ranges...
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
@@ -621,8 +627,8 @@ class Fit1DPanel:
             x_range = None
             try:
                 if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                    x_min = min(self.fit.data['x'])
-                    x_max = max(self.fit.data['x'])
+                    x_min = min(self.fit.data.data['x'])
+                    x_max = max(self.fit.data.data['x'])
                     x_pad = (x_max-x_min)*0.1
                     x_range = Range1d(x_min-x_pad, x_max+x_pad)
             except:
@@ -779,34 +785,33 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fits: list of InteractiveModel instances, one per (x,y) array
     """
 
-    def __init__(self, allx, ally, fitting_parameters, config,
-                 all_weights=None,
+    def __init__(self, data_source, fitting_parameters, config,
                  reinit_params=None, reinit_extras=None, reinit_live=False,
                  order_param=None,
                  tab_name_fmt='{}',
-                 xlabel='x', ylabel='y', reconstruct_points=None,
+                 xlabel='x', ylabel='y',
                  domains=None, **kwargs):
         """
         Parameters
         ----------
-        allx: 1D array/list of N 1D arrays
-            "x" coordinates
-        ally: 1D array/list of N 1D arrays
-            "y" coordinates
-        fitting_parameters : :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
+        data_source : array or function
+            input data or the function to calculate the input data.  The input data
+            should be [x, y] or [x, y, weights] or [[x, y], [x, y],.. or [[x, y, weights], [x, y, weights]..
+            or, if a function, it accepts (config, extras) where extras is a dict of values based on reinit_extras
+            and returns [[x, y], [x, y].. or [[x, y, weights], [x, y, weights], ...
+        fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters` or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             Description of parameters to use for `fit_1d`
         config : Config instance describing primitive parameters and limitations
-        all_weights : None or 1D array/list of N 1D arrays
-            weights for the fit
         reinit_params : list of str
-            list of parameter names in config related to reinitializing fit arrays.  These cause reconstruct_points
-            to be run to get the updated coordinates/weights
+            list of parameter names in config related to reinitializing fit arrays.  These cause the `data_source`
+            function to be run to get the updated coordinates/weights.  Should not be passed if `data_source` is
+            not a function.
         reinit_extras :
-            Extra parameters to show on the left side that can affect the output of `reconstruct_points` but
-            are not part of the primitive configuration
+            Extra parameters to show on the left side that can affect the output of `data_source` but
+            are not part of the primitive configuration.  Should not be passed if `data_source` is not a function.
         reinit_live :
-            If False, supplies a button to call reconstruct_points and doesn't do so automatically.  If
-            `reconstruct_points` is known to be inexpensive, you can set this to `True`
+            If False, supplies a button to call the `data_source` function and doesn't do so automatically when inputs
+            are adjusted.  If `data_source` is known to be inexpensive, you can set this to `True`
         order_param : str
             Name of the parameter this primitive uses for `order`, to infer the min/max suggested values
         tab_name_fmt : str
@@ -815,32 +820,19 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             String label for X axis
         ylabel : str
             String label for Y axis
-        reconstruct_points : `callable`
-            Function to call when needed to reconstruct all the x/y/weights inputs
         domains : list
             List of domains for the inputs
         """
         super().__init__(config=config)
 
-        self.reconstruct_points_fn = reconstruct_points
-
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
 
-        # Some sanity checks now
+        # Grab fitting function
         if isinstance(fitting_parameters, list):
-            if not(len(fitting_parameters) == len(allx) == len(ally)):
-                raise ValueError("Different numbers of models and coordinates")
-            for x, y in zip(allx, ally):
-                if len(x) != len(y):
-                    raise ValueError("Different (x, y) array sizes")
-            self.nfits = len(fitting_parameters)
             fn = fitting_parameters[0].function
         else:
-            if allx.size != ally.size:
-                raise ValueError("Different (x, y) array sizes")
-            self.nfits = 1
             fn = fitting_parameters.function
 
         # Make the panel with widgets to control the creation of (x, y) arrays
@@ -872,6 +864,47 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         else:
             # left panel with just the function selector (Chebyshev, etc.)
             self.reinit_panel = column(self.function)
+
+        # Grab input coordinates or calculate if we were given a callable
+        # TODO revisit the raging debate on `callable` for Python 3
+        if callable(data_source):
+            self.reconstruct_points_fn = data_source
+            data = data_source(config, self.extras)
+            # For this, we need to remap from
+            # [[x1, y1, weights1], [x2, y2, weights2], ...]
+            # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
+            allx = list()
+            ally = list()
+            all_weights = list()
+            for dat in data:
+                allx.append(dat[0])
+                ally.append(dat[1])
+                if len(dat) >= 3:
+                    all_weights.append(dat[2])
+            if len(all_weights) == 0:
+                all_weights = None
+        else:
+            self.reconstruct_points_fn = None
+            if reinit_params:
+                raise ValueError("Saw reinit_params but data_source is not a callable")
+            if reinit_extras:
+                raise ValueError("Saw reinit_extras but data_source is not a callable")
+            allx = data_source[0]
+            ally = data_source[1]
+            if len(data_source) >= 3:
+                all_weights = data_source[2]
+            else:
+                all_weights = None
+
+        # Some sanity checks now
+        if isinstance(fitting_parameters, list):
+            if not(len(fitting_parameters) == len(allx) == len(ally)):
+                raise ValueError("Different numbers of models and coordinates")
+            self.nfits = len(fitting_parameters)
+        else:
+            if allx.size != ally.size:
+                raise ValueError("Different (x, y) array sizes")
+            self.nfits = 1
 
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
 

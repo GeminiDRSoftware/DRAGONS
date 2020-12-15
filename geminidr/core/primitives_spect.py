@@ -52,11 +52,9 @@ import matplotlib
 from ..interactive.fit import fit1d
 from ..interactive.fit.fit1d import FittingParameters
 
-from ..interactive.server import interactive_fitter
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.deprecated.chebyshev2d import interactive_chebyshev2d
 from geminidr.interactive.deprecated.extractspectra import interactive_extract_spectra
-from ..interactive.fit.spline import SplineVisualizer
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -390,10 +388,9 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
 
                 # Hacking this out?
-                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data,
+                visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
-                                                   all_weights=all_weights,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
                                                    grow_slider=True,
@@ -2587,7 +2584,7 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
                 reinit_params = ('step', 'nsum', 'max_missed', 'max_shift')
 
-                def trace_apertures_reconstruct_points(config):
+                def trace_apertures_reconstruct_points(config, extras):
                     dispaxis = 2 - ext.dispersion_axis()
                     all_coords = []
                     for loc in locations:
@@ -2609,27 +2606,20 @@ class Spect(PrimitivesBASE):
                             all_coords.append(in_coords)
                     return all_coords
 
-                all_coords = trace_apertures_reconstruct_points(config)
-
                 # Purely for drawing in the image display
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
 
                 if interactive:
-                    allx = [coords[0] for coords in all_coords]
-                    ally = [coords[1] for coords in all_coords]
-                    visualizer = fit1d.Fit1DVisualizer(allx, ally, all_fp_init, config,
-                                                                  reinit_params=reinit_params,
-                                                                  order_param='trace_order',
-                                                                  tab_name_fmt="Aperture {}",
-                                                                  xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
-                                                                  grow_slider=True,
-                                                                  reconstruct_points=
-                                                                      trace_apertures_reconstruct_points)
-                    status = geminidr.interactive.server.interactive_fitter(visualizer)
+                    visualizer = fit1d.Fit1DVisualizer(trace_apertures_reconstruct_points, all_fp_init, config,
+                                                       reinit_params=reinit_params,
+                                                       order_param='trace_order',
+                                                       tab_name_fmt="Aperture {}",
+                                                       xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
+                                                       grow_slider=True)
+                    geminidr.interactive.server.interactive_fitter(visualizer)
                     all_m_final = visualizer.results()
-                    # for m in all_m_final:
-                    #     print(m)
                 else:
+                    all_coords = trace_apertures_reconstruct_points(config)
                     all_m_final = []
                     fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                                sigma_clip, sigma=3)

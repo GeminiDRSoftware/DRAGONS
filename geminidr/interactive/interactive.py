@@ -195,9 +195,11 @@ class PrimitiveVisualizer(ABC):
                 widget = build_text_slider(doc, field.default, step, start, end, obj=self.extras, attr=pname,
                                            handler=handler, throttled=True)
                 self.widgets[pname] = widget.children[0]
+                self.extras[pname] = field.default
             else:
                 # Anything else
                 widget = TextInput(label=doc)
+                self.extras[pname] = ''
 
             widgets.append(widget)
             # Complex multi-widgets will already have been added

@@ -13,8 +13,10 @@ user interface.
 
 Look over the primitive and see what inputs are used to
 generate the initial set of coordinates to be fit.  This 
-is typically an expensive operation and we want to 
-separate out these inputs accordingly in the UI.
+may be an expensive operation and we want to 
+separate out the needed inputs accordingly in the UI.
+These inputs will be UI widgets on the far left used
+to generate the full set of coordinates/weights.
 
 The logic to generate the coordinates from those
 inputs will also be placed in a method so it can be 
@@ -22,125 +24,35 @@ used by the existing non-interactive code and by the new
 interactive UI.
 
 You'll also want to note the inputs that go into the fit.
-These will be dynamically adjustable as the recalcuation
+These will be dynamically adjustable as the recalculation
 should be fairly quick.
 
 ## Standard Approach
 
-The standard approach in an interactive primitive is to
-provide 2 code paths.
+The normal approach in an interactive primitive is to
+provide 2 code paths around where the fit is done.
 
 The first is for an interactive
 session.  In this case, it spins up the bokeh UI and the
 user can interactively modify the fit or results to their
-liking.  Once they hit a submit button, the fit or results are then
+liking.  Once they hit a submit button, the fits are then
 returned to the primitive and it carries on as normal.
 
 The second path is non-interactive and the fit or results
 are determined normally.
 
-`traceApertures` is a good reference that does a 1-D fit.
+If the fit is being done with `fit_1D` then there is a
+feature rich generic UI that you can use for the interactive
+fit.  If you need to do something custom, you can subclass
+`PrimitiveVisualizer`.  Both approaches are described in
+more detail below.
 
-### traceApertures
+## fit_1D Interactive Fitting
 
-`traceApertures` follows the model described above.  It 
-is also interesting as it passes arrays of inputs and outputs
-to the interactive fitter.  However, for the non-interactive
-logic, it reverts to a more typical loop over each set of 
-input data.
 
-The core interactive/non-interactive piece in the primitive looks like this:
 
-```python
-    if interactive:
-        allx = [coords[0] for coords in all_coords]
-        ally = [coords[1] for coords in all_coords]
-        visualizer = fit1d.TraceApertures1DVisualizer(allx, ally, all_m_init, config,
-                                                      ext, locations,
-                                                      reinit_params=reinit_params,
-                                                      order_param='trace_order',
-                                                      tab_name_fmt="Aperture {}",
-                                                      xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
-                                                      grow_slider=True)
-        status = geminidr.interactive.server.interactive_fitter(visualizer)
-        all_m_final = [fit.model.model for fit in visualizer.fits]
-    else:
-        all_m_final = []
-        fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                   sigma_clip, sigma=3)
-        for aperture, coords, m_init, in zip(aptable, all_coords, all_m_init):
-            location = aperture['c0']
-            try:
-                m_final, _ = fit_it(m_init, coords[0], coords[1])
-            except (IndexError, np.linalg.linalg.LinAlgError):
-                # This hides a multitude of sins, including no points
-                # returned by the trace, or insufficient points to
-                # constrain the requested order of polynomial.
-                log.warning("Unable to trace aperture {}".format(aperture["number"]))
-                m_final = m_init
-            all_m_final.append(m_final)
-```
+## Custom Interactive Fitting
 
-In the case of the interactive code, an instance of `PrimitiveVisualizer` (in this
-case, `TraceApertures1DVisualizer`) is created
-with all the required inputs.  Then, the `interactive_fitter` method is called on it
-which will show the Visualizer's UI and wait for the user to submit the results.  
-Once the user is done, the code retrieves the array of results from the Visualizer.
-
-In the non-interactive case, the code iterates over the inputs and fits each set
-individually and appends them to the results one at a time.
-
-Either way, when the code proceeds from here, `all_m_final` has the fit results.
-
-The hope is that for most or all 1-D fits, the fairly short `TraceApertures1DVisualizer`
-and it's corresponding helper method `trace_apertures_reconstruct_points` are all that
-would be needed for additional primitives.
-
-### TraceApertures1DVisualizer
-
-It's worth taking a closer look at this visualizer that is used by `traceApertures`.
-This visualizer subclasses an abstract base class with most of the logic.  Here is 
-our constructor:
-
-```python
-class TraceApertures1DVisualizer(Fit1DVisualizer):
-    def __init__(self, allx, ally, models, config, ext=None, locations=None,
-                 **kwargs):
-        self.ext = ext
-        self.locations = locations
-        super().__init__(allx, ally, models, config, **kwargs)
-```
-
-This subclass enhances the base by holding onto the `AstroData` extension and the
-list of aperture locations.  All `Fit1DVisualizer`s also have a call to reconstruct
-the input coordinates.  This is the `reconstruct_points` method.  Here it depends
-on some logic custom to the aperture tracing.  Note the call to the super method
-and the inline function/`do_later` call.  This boilerplate approach should be used
-to allow the UI to pop up a modal message during the expensive calculation.  That is,
-while the code takes 20 second or so in `trace_apertures_reconstruct_points`, the
-base class will display a modal message to alert the user that work is being done.
-This happens due to the superclass call and the `do_later()` construct.
-
-```python
-def reconstruct_points(self):
-    """
-    Reconstruct the initial data points because the configuration has
-    changed and needs it.
-
-    This is expected to be slow.
-    """
-    # super() to update the Config with the widget values
-    # In this primitive, init_mask is always empty
-    super().reconstruct_points()
-
-    def fn():
-        all_coords = trace_apertures_reconstruct_points(self.ext, self.locations, self.config)
-        for fit, coords in zip(self.fits, all_coords):
-            fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
-            fit.perform_fit()
-        self.reinit_button.disabled = False
-    self.do_later(fn)
-```
 
 ## Modules
 

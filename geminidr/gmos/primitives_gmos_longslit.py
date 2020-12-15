@@ -46,8 +46,6 @@ from . import parameters_gmos_longslit
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
 from ..interactive.fit.fit1d import FittingParameters
-from ..interactive.fit.multispline import MultiSplineVisualizer
-from ..interactive.fit.spline import SplineVisualizer
 
 
 @parameter_override
@@ -663,8 +661,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         all_coords.append([rppixels, rpext.nddata[r], weights])
                     return all_coords
 
-                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_fp_init,
-                                                   all_weights=all_weights,
+                visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
+                                                   # all_weights=all_weights,
                                                    config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
@@ -672,7 +670,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
                                                    grow_slider=True,
-                                                   reconstruct_points=reconstruct_points,
                                                    reinit_live=True,
                                                    domains=all_domains)
                 status = geminidr.interactive.server.interactive_fitter(visualizer)
