@@ -1,3 +1,4 @@
+import collections
 from abc import ABC, abstractmethod
 
 
@@ -204,10 +205,6 @@ class InteractiveModel1D(InteractiveModel):
             max iterations to do on fit
         section
         """
-
-        # TODO hacking var out
-        # var = None
-
         model = InteractiveNewFit1D(fitting_parameters, domain)
         super().__init__(model)
         self.section = section
@@ -505,7 +502,7 @@ class Fit1DPanel:
         ----------
         visualizer : :class:`~geminidr.interactive.fit.Fit1DVisualizer`
             visualizer to associate with
-        fitting_parameters : :class:`~geminidr.interactive.fit.FittingParameters`
+        fitting_parameters : :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             parameters for this fit
         domain : list of pixel coordinates
             Used for new fit_1D fitter
@@ -533,11 +530,6 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
-        # self.band_model = GIBandModel()
-        # if fitting_parameters.regions is not None:
-        #     region_tuples = cartesian_regions_to_slices(fitting_parameters.regions)
-        #     self.band_model.load_from_tuples(region_tuples)
-
         # Probably do something better here with factory function/class
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights)
@@ -555,11 +547,6 @@ class Fit1DPanel:
         sigma_button.on_change('active', self.sigma_button_handler)
         controls_column = [order_slider, row(sigma_upper_slider, sigma_button)]
         controls_column.append(sigma_lower_slider)
-        # if grow_slider:
-        #     controls_column.append(interactive.build_text_slider("Growth radius",
-        #                                                          fitting_parameters.grow, 1, 0, 10,
-        #                                                          fitting_parameters, "grow",
-        #                                                          fit.perform_fit))
         controls_column.append(interactive.build_text_slider("Max iterations", fitting_parameters.niter,
                                                              1, 0, 10,
                                                              fitting_parameters, "niter",
@@ -794,22 +781,46 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
     def __init__(self, allx, ally, fitting_parameters, config,
                  all_weights=None,
-                 log=None,
                  reinit_params=None, reinit_extras=None, reinit_live=False,
                  order_param=None,
-                 min_order=1, max_order=10, tab_name_fmt='{}',
+                 tab_name_fmt='{}',
                  xlabel='x', ylabel='y', reconstruct_points=None,
                  domains=None, **kwargs):
         """
         Parameters
         ----------
-        allx: 1D array/list of N 1D arrays of "x" coordinates
-        ally: 1D array/list of N 1D arrays of "y" coordinates
-        models: Model/list of N Model instances
-        config: Config instance describing parameters and limitations
-        reinit_params: list of parameters related to reinitializing fit arrays
+        allx: 1D array/list of N 1D arrays
+            "x" coordinates
+        ally: 1D array/list of N 1D arrays
+            "y" coordinates
+        fitting_parameters : :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
+            Description of parameters to use for `fit_1d`
+        config : Config instance describing primitive parameters and limitations
+        all_weights : None or 1D array/list of N 1D arrays
+            weights for the fit
+        reinit_params : list of str
+            list of parameter names in config related to reinitializing fit arrays.  These cause reconstruct_points
+            to be run to get the updated coordinates/weights
+        reinit_extras :
+            Extra parameters to show on the left side that can affect the output of `reconstruct_points` but
+            are not part of the primitive configuration
+        reinit_live :
+            If False, supplies a button to call reconstruct_points and doesn't do so automatically.  If
+            `reconstruct_points` is known to be inexpensive, you can set this to `True`
+        order_param : str
+            Name of the parameter this primitive uses for `order`, to infer the min/max suggested values
+        tab_name_fmt : str
+            Format string for naming the tabs
+        xlabel : str
+            String label for X axis
+        ylabel : str
+            String label for Y axis
+        reconstruct_points : `callable`
+            Function to call when needed to reconstruct all the x/y/weights inputs
+        domains : list
+            List of domains for the inputs
         """
-        super().__init__(log=log, config=config)
+        super().__init__(config=config)
 
         self.reconstruct_points_fn = reconstruct_points
 
@@ -834,7 +845,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Make the panel with widgets to control the creation of (x, y) arrays
         # Dropdown for selecting fit_1D function
-        self.function = Select(title="Option:", value=fn,
+        self.function = Select(title="Fitting Function:", value=fn,
                                options=['chebyshev', 'legendre', 'polynomial', 'spline1',
                                         'spline2', 'spline3', 'spline4', 'spline5'])
 

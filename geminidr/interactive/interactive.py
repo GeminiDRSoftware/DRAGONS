@@ -11,7 +11,7 @@ from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, log=None, config=None):
+    def __init__(self, config=None):
         """
         Initialize a visualizer.
 
@@ -21,7 +21,6 @@ class PrimitiveVisualizer(ABC):
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
         """
-        self.log = log
         self.extras = dict()
         if config is None:
             self.config = None

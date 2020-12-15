@@ -390,7 +390,9 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
 
                 # Hacking this out?
-                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data, all_fp_init, config,
+                visualizer = fit1d.Fit1DVisualizer(data_source=(all_pixels, all_masked_data, all_weights),
+                                                   fitting_parameters=all_fp_init,
+                                                   config=config,
                                                    all_weights=all_weights,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
