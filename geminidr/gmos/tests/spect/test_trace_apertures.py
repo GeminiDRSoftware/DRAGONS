@@ -38,7 +38,7 @@ fixed_test_parameters_for_determine_distortion = {
     "max_shift": 0.09,
     "nsum": 20,
     "step": 10,
-    "trace_order": 2,
+    "order": 2,
 }
 
 

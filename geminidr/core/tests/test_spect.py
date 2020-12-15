@@ -267,7 +267,7 @@ def test_trace_apertures():
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
-    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters) + 1)[0]
+    ad_out = _p.traceApertures([ad], order=len(trace_model_parameters) + 1)[0]
 
     keys = trace_model_parameters.keys()
 

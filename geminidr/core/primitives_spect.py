@@ -2377,7 +2377,7 @@ class Spect(PrimitivesBASE):
             to one or more of its extensions.
         suffix : str
             Suffix to be added to output files.
-        trace_order : int
+        order : int
             Fitting order along spectrum. Default: 2
         step : int
             Step size for sampling along dispersion direction. Default: 10
