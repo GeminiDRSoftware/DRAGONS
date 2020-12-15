@@ -2414,12 +2414,15 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        order = params["trace_order"]
         step = params["step"]
         nsum = params["nsum"]
         max_missed = params["max_missed"]
         max_shift = params["max_shift"]
         debug = params["debug"]
+        fit1d_params = fit_1D.translate_params({**params,
+                                                "function": "chebyshev"})
+        # pop "order" seing we may need to call fit_1D with a different value
+        order = fit1d_params.pop("order")
 
         for ad in adinputs:
             for ext in ad:
@@ -2478,28 +2481,31 @@ class Spect(PrimitivesBASE):
 
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis
-                    m_init = models.Chebyshev1D(degree=order, c0=location,
-                                                domain=[0, ext.shape[dispaxis] - 1])
-                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                               sigma_clip, sigma=3)
                     try:
-                        m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
+                        fit1d = fit_1D(in_coords[dispaxis], points=in_coords[1 - dispaxis],
+                                       domain=[0, ext.shape[dispaxis] - 1],
+                                       order=order, **fit1d_params)
                     except (IndexError, np.linalg.linalg.LinAlgError):
                         # This hides a multitude of sins, including no points
                         # returned by the trace, or insufficient points to
-                        # constrain the request order of polynomial.
+                        # constrain fit. We call fit1d with dummy points to
+                        # ensure we get the same type of result as if it had
+                        # been successful.
                         log.warning("Unable to trace aperture {}".format(aperture["number"]))
-                        m_final = models.Chebyshev1D(degree=0, c0=location,
-                                                     domain=[0, ext.shape[dispaxis] - 1])
+                        fit1d = fit_1D(np.full_like(spectral_coords, c0),
+                                       points=spectral_coords,
+                                       domain=[0, ext.shape[dispaxis] - 1],
+                                       order=0, **fit1d_params)
                     else:
                         if debug:
-                            plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
+                            plot_coords = np.array([spectral_coords, fit1d.evaluate(spectral_coords)]).T
                             self.viewer.polygon(plot_coords, closed=False,
                                                 xfirst=(dispaxis == 1), origin=0)
-                    model_dict = astromodels.chebyshev_to_dict(m_final)
+                    model_dict = fit1d.to_dicts()[0]
+                    del model_dict["model"]
 
                     # Recalculate aperture limits after rectification
-                    apcoords = m_final(np.arange(ext.shape[dispaxis]))
+                    apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
                     model_dict['aper_lower'] = aperture['aper_lower'] + (location - np.min(apcoords))
                     model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()
