@@ -16,9 +16,11 @@ from astropy.table import Table
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
+from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.filtering import ring_filter
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
+from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation
 
 from . import parameters_preprocess
@@ -495,6 +497,76 @@ class Preprocess(PrimitivesBASE):
 
             ad.update_filename(suffix=suffix, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        return adinputs
+
+    def fixPixels(self, adinputs=None, suffix=None, regions=None):
+        """
+        This primitive ...
+
+        Parameters
+        ----------
+        adinputs : list of `~astrodata.AstroData`
+            List of input files.
+        suffix : str
+            suffix to be added to output files.
+        regions : str
+            List of pixels or regions to fix. Ranges are 1-indexed, inclusive
+            of the upper limit.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        regions = regions.split(';')
+
+        for ad in adinputs:
+            for ext in ad:
+                for region in regions:
+                    try:
+                        sy, sx = cartesian_regions_to_slices(region.strip())
+                    except ValueError:
+                        log.warning(f'Failed to parse region: {region}')
+                        continue
+
+                    width = sx.stop - sx.start
+                    height = sy.stop - sy.start
+
+                    # debug
+                    import matplotlib.pyplot as plt
+                    origdata = ext.data[sy, sx].copy()
+
+                    if width > height:
+                        # horizontal region → interpolate along columns
+                        pass
+                    elif width < height:
+                        # vertical region → interpolate along lines
+                        ind = np.arange(ext.shape[1])
+                        ind = np.concatenate([ind[:sx.start], ind[sx.stop:]])
+                        data = np.concatenate([ext.data[sy, :sx.start],
+                                               ext.data[sy, sx.stop:]], axis=1)
+                        f = interp1d(ind, data, kind='linear', axis=-1,
+                                     bounds_error=True)
+                        ext.data[sy, sx] = f(ind[sx])
+                    else:
+                        # square
+                        pass
+
+                    fig, (ax1, ax2) = plt.subplots(1, 2)
+                    ax1.imshow(origdata, vmin=0, vmax=50)
+                    ax2.imshow(ext.data[sy, sx], vmin=0, vmax=50)
+                    plt.show()
+
+                    # # If replace_value is a string. It was already validated
+                    # # so must be "mean" or "median"
+                    # if inner_radius is not None and outer_radius is not None:
+                    #     ring_filter(ext, inner_radius, outer_radius,
+                    #                 max_iters=max_iters, inplace=True,
+                    #                 replace_flags=replace_flags,
+                    #                 replace_func=replace_value)
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_flat=True):

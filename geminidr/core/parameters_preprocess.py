@@ -53,6 +53,13 @@ class dilateObjectMaskConfig(config.Config):
     dilation = config.RangeField("Dilation radius (pixels)", float, 1., min=0)
     repeat = config.Field("Allow dilation of already-dilated image?", bool, False)
 
+
+class fixPixelsConfig(config.Config):
+    suffix = config.Field("Filename suffix", dtype=str,
+                          default="_pixelsFixed", optional=True)
+    regions = config.Field("Regions to fix", dtype=str)
+
+
 class flatCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_flatCorrected", optional=True)
     flat = config.ListField("Flatfield frame", (str, AstroData), None, optional=True, single=True)

@@ -87,6 +87,11 @@ def test_apply_dq_plane_ring_mean(niriprim):
     )
 
 
+@pytest.mark.dragons_remote_data
+def test_fixpix(niriprim):
+    ad = niriprim.fixPixels(regions='430:436,513:533 ; 540,521')[0]
+
+
 # TODO @bquint: clean up these tests
 
 # @pytest.fixture

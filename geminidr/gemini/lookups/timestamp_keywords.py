@@ -34,6 +34,7 @@ timestamp_keys = {
     "extract1DSpectra": "EXTRACT",
     "findAcquisitionSlits": "FINDACQS",
     "findSourceApertures": "FINDAPER",
+    "fixPixels": "FIXPIX",
     "flatCorrect": "FLATCORR",
     "fluxCalibrate": "FLUXCAL",
     "fringeCorrect": "FRNGCORR",
