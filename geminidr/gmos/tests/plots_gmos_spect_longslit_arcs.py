@@ -84,7 +84,7 @@ def rebuild_distortion_model(ext):
     :class:`~astropy.modeling.models.Model`
         Model that receives 2D data and return a 1D array.
     """
-    model = astromodels.dict_to_chebyshev(
+    model = astromodels.dict_to_polynomial(
         dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
     )
 
@@ -575,7 +575,7 @@ class PlotGmosSpectLongslitArcs:
             peaks = ext.WAVECAL["peaks"] - 1  # ToDo: Refactor peaks to be 0-indexed
             wavelengths = ext.WAVECAL["wavelengths"]
 
-            wavecal_model = astromodels.dict_to_chebyshev(
+            wavecal_model = astromodels.dict_to_polynomial(
                 dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
             )
 

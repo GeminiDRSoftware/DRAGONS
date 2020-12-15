@@ -549,7 +549,7 @@ class Spect(PrimitivesBASE):
 
                 columns = []
                 for m in (m_final, m_inverse):
-                    model_dict = astromodels.chebyshev_to_dict(m)
+                    model_dict = astromodels.polynomial_to_dict(m)
                     columns.append(list(model_dict.keys()))
                     columns.append(list(model_dict.values()))
                 # If we're genuinely worried about the two models, they might
@@ -1181,7 +1181,7 @@ class Spect(PrimitivesBASE):
                 # Add 1 to pixel coordinates so they're 1-indexed
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
-                model_dict = astromodels.chebyshev_to_dict(m_final)
+                model_dict = astromodels.polynomial_to_dict(m_final)
                 model_dict.update({'rms': rms, 'fwidth': fwidth})
                 # Add information about where the extraction took place
                 if ext.data.ndim > 1:
@@ -1332,7 +1332,7 @@ class Spect(PrimitivesBASE):
                 apertures = []
                 for row in aptable:
                     model_dict = dict(zip(aptable.colnames, row))
-                    trace_model = astromodels.dict_to_chebyshev(model_dict)
+                    trace_model = astromodels.dict_to_polynomial(model_dict)
                     aperture = tracing.Aperture(trace_model,
                                                 aper_lower=model_dict['aper_lower'],
                                                 aper_upper=model_dict['aper_upper'])
@@ -1601,7 +1601,7 @@ class Spect(PrimitivesBASE):
                 all_model_dicts = []
                 for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
-                    model_dict = astromodels.chebyshev_to_dict(cheb)
+                    model_dict = astromodels.polynomial_to_dict(cheb)
                     lower, upper = limits - loc
                     model_dict['aper_lower'] = lower
                     model_dict['aper_upper'] = upper
@@ -2330,7 +2330,7 @@ class Spect(PrimitivesBASE):
                 else:
                     for row in aptable:
                         model_dict = dict(zip(aptable.colnames, row))
-                        trace_model = astromodels.dict_to_chebyshev(model_dict)
+                        trace_model = astromodels.dict_to_polynomial(model_dict)
                         aperture = tracing.Aperture(
                             trace_model, aper_lower=model_dict['aper_lower'],
                             aper_upper=model_dict['aper_upper']

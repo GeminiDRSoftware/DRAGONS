@@ -269,11 +269,11 @@ class TestGmosSpectLongslitArcs:
         ad_ref = astrodata.open(reference)
 
         for ext_out, ext_ref in zip(ad_out, ad_ref):
-            model = astromodels.dict_to_chebyshev(
+            model = astromodels.dict_to_polynomial(
                 dict(zip(ext_out.WAVECAL["name"], ext_out.WAVECAL["coefficients"]))
             )
 
-            ref_model = astromodels.dict_to_chebyshev(
+            ref_model = astromodels.dict_to_polynomial(
                 dict(zip(ext_ref.WAVECAL["name"], ext_ref.WAVECAL["coefficients"]))
             )
 
@@ -441,11 +441,11 @@ class TestGmosSpectLongslitArcs:
             # print(coefficients)
         # for ext_out, ext_ref in zip(ad_out, ad_ref):
         #
-        #     model_out = astromodels.dict_to_chebyshev(
+        #     model_out = astromodels.dict_to_polynomial(
         #         dict(zip(
         #             ext_out.FITCOORD['name'], ext_out.FITCOORD['coefficients'])))
         #
-        #     # model_ref = astromodels.dict_to_chebyshev(
+        #     # model_ref = astromodels.dict_to_polynomial(
         #     #     dict(zip(
         #     #         ext_ref.FITCOORD['name'], ext_ref.FITCOORD['coefficients'])))
         #

@@ -227,10 +227,10 @@ def test_regression_determine_wavelength_solution(
     table = wcalibrated_ad[0].WAVECAL
     table_ref = ref_ad[0].WAVECAL
 
-    model = astromodels.dict_to_chebyshev(
+    model = astromodels.dict_to_polynomial(
         dict(zip(table["name"], table["coefficients"])))
 
-    ref_model = astromodels.dict_to_chebyshev(
+    ref_model = astromodels.dict_to_polynomial(
         dict(zip(table_ref["name"], table_ref["coefficients"])))
 
     x = np.arange(wcalibrated_ad[0].shape[1])
@@ -322,7 +322,7 @@ def do_plots(ad):
         peaks = ext.WAVECAL["peaks"] - 1  # ToDo: Refactor peaks to be 0-indexed
         wavelengths = ext.WAVECAL["wavelengths"]
 
-        wavecal_model = astromodels.dict_to_chebyshev(
+        wavecal_model = astromodels.dict_to_polynomial(
             dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"])))
 
         middle = ext.data.shape[0] // 2
