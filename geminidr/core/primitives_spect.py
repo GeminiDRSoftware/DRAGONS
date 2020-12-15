@@ -390,7 +390,7 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
 
                 # Hacking this out?
-                visualizer = fit1d.Fit1DVisualizer(data_source=(all_pixels, all_masked_data, all_weights),
+                visualizer = fit1d.Fit1DVisualizer(all_pixels, all_masked_data,
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
                                                    all_weights=all_weights,
