@@ -5,7 +5,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select
+from bokeh.models import Div, Select, Range1d
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
@@ -577,10 +577,19 @@ class Fit1DPanel:
                           row(mask_button, unmask_button), controller_div)
 
         # Now the figures
+        x_range = None
+        y_range = None
+        try:
+            if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
+                x_range = Range1d(min(self.fit.data.data['x']), max(self.fit.data.data['x']))
+            if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
+                y_range = Range1d(min(self.fit.data.data['y']), max(self.fit.data.data['y']))
+        except:
+            pass  # ok, we don't *need* ranges...
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                         tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                        output_backend="webgl", x_range=None, y_range=None)
+                        output_backend="webgl", x_range=x_range, y_range=y_range)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
         self.band_model = GIBandModel()
@@ -622,11 +631,20 @@ class Fit1DPanel:
         fig_column = [p_main]
 
         if plot_residuals:
+            x_range = None
+            try:
+                if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
+                    x_min = min(self.fit.data['x'])
+                    x_max = max(self.fit.data['x'])
+                    x_pad = (x_max-x_min)*0.1
+                    x_range = Range1d(x_min-x_pad, x_max+x_pad)
+            except:
+                pass  # ok, we don't *need* ranges...
             p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
                              title='Fit Residuals',
                              x_axis_label=xlabel, y_axis_label='delta'+ylabel,
                              tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
-                             output_backend="webgl", x_range=None, y_range=None)
+                             output_backend="webgl", x_range=x_range, y_range=None)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             connect_figure_extras(p_resid, None, self.band_model)
@@ -639,6 +657,17 @@ class Fit1DPanel:
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
                                       size=5, **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
+
+        # TODO refactor? this is dupe from band_model_handler
+        # hacking it in here so I can account for the initial
+        # state of the band model (which used to be always empty)
+        x_data = self.fit.data.data['x']
+        for i in np.arange(len(x_data)):
+            if self.band_model.contains(x_data[i]):
+                self.fit.band_mask[i] = 0
+            else:
+                self.fit.band_mask[i] = 1
+
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=1, color='red')
 
