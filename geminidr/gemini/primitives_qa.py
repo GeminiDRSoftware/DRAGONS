@@ -396,6 +396,8 @@ class QA(PrimitivesBASE):
                         if ellip:
                             ext.hdr.set("MEANELLP", ellip,
                                         comment=self.keyword_comments["MEANELLP"])
+                else:
+                    self.log.warning(f"No good sources found in {ad.filename}")
 
             if display:
                 # If displaying, make a mask to display along with image
@@ -624,7 +626,9 @@ class QAReport:
             extensions = slice(-1, None)
         elif extensions == 'all':
             extensions = slice(None, None)
-        return vstack([m for m in self.measurements[extensions] if m],
+
+        # Ensures a Table is returned, even if no measurements
+        return vstack([Table()] + [m for m in self.measurements[extensions] if m],
                       metadata_conflicts='silent')
 
     def info_list(self, update_band_info=True):
@@ -760,13 +764,17 @@ class BGReport(QAReport):
             results = {'nsamples': weights.sum()}
             for value_key, std_key in (('bg', 'bgerr'), ('mag', 'mag_std'),
                                        ('electrons', 'electrons_std')):
-                mean = np.ma.average(t[value_key], weights=weights)
-                if mean is not np.ma.masked:
-                    var1 = np.average((t[value_key] - mean)**2, weights=weights)
-                    var2 = (weights * t[std_key] ** 2).sum() / weights.sum()
-                    sigma = np.sqrt(var1 + var2)
-                    # Coercion to float to ensure JSONable
-                    results.update({value_key: float(mean), std_key: float(sigma)})
+                try:
+                    mean = np.ma.average(t[value_key], weights=weights)
+                except KeyError:
+                    pass
+                else:
+                    if mean is not np.ma.masked:
+                        var1 = np.average((t[value_key] - mean)**2, weights=weights)
+                        var2 = (weights * t[std_key] ** 2).sum() / weights.sum()
+                        sigma = np.sqrt(var1 + var2)
+                        # Coercion to float to ensure JSONable
+                        results.update({value_key: float(mean), std_key: float(sigma)})
             self.calculate_qa_band(results.get('mag'), results.get('mag_std'))
             if self.warning:
                 self.comments.append(self.warning)

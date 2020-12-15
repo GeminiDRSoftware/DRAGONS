@@ -163,7 +163,14 @@ def table_to_bintablehdu(table, extname=None):
             hdu.columns[col.name].unit = col.unit.to_string()
 
     if table_header is not None:
-        update_header(hdu.header, table_header)
+        # Update with cards from table.meta, but skip structural FITS
+        # keywords since those have been set by table_to_hdu
+        exclude = ('SIMPLE', 'XTENSION', 'BITPIX', 'NAXIS', 'EXTEND', 'PCOUNT',
+                   'GCOUNT', 'TFIELDS', 'TFORM', 'TSCAL', 'TZERO', 'TNULL',
+                   'TTYPE', 'TUNIT', 'TDISP', 'TDIM', 'THEAP', 'TBCOL')
+        hdr = fits.Header([card for card in table_header.cards
+                           if not card.keyword.startswith(exclude)])
+        update_header(hdu.header, hdr)
         # reset table's header
         table.meta['header'] = table_header
     if extname:
@@ -225,8 +232,7 @@ def update_header(headera, headerb):
     if cardsa == cardsb:
         return headera
 
-    # Ok, headerb differs somehow. Let's try to bring the changes to
-    # headera
+    # Ok, headerb differs somehow. Let's try to bring the changes to headera
     # Updated keywords that should be unique
     difference = set(cardsb) - set(cardsa)
     headera.update(card_filter(difference, exclude={'HISTORY', 'COMMENT', ''}))
