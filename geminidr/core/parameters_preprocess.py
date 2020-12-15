@@ -58,6 +58,8 @@ class fixPixelsConfig(config.Config):
     suffix = config.Field("Filename suffix", dtype=str,
                           default="_pixelsFixed", optional=True)
     regions = config.Field("Regions to fix", dtype=str)
+    use_local_median = config.Field("Use a local median filter for single pixels?",
+                                    dtype=bool, default=False, optional=True)
 
 
 class flatCorrectConfig(config.Config):

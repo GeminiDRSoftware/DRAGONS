@@ -3,6 +3,7 @@
 #
 #                                                       primitives_preprocess.py
 # ------------------------------------------------------------------------------
+import ast
 import datetime
 import math
 from copy import deepcopy
@@ -11,6 +12,7 @@ from functools import partial
 import astrodata
 import gemini_instruments  # noqa
 import numpy as np
+from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
 from astropy.table import Table
 from geminidr import PrimitivesBASE
@@ -499,7 +501,8 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def fixPixels(self, adinputs=None, suffix=None, regions=None):
+    def fixPixels(self, adinputs=None, suffix=None, regions=None,
+                  use_local_median=False):
         """
         This primitive ...
 
@@ -512,6 +515,8 @@ class Preprocess(PrimitivesBASE):
         regions : str
             List of pixels or regions to fix. Ranges are 1-indexed, inclusive
             of the upper limit.
+        use_local_median : bool
+            Use a local median filter for single pixels?
 
         """
         log = self.log
@@ -538,7 +543,14 @@ class Preprocess(PrimitivesBASE):
                     px = slice(sx.start - 10, sx.stop + 10)
                     origdata = ext.data[py, px].copy()
 
-                    if width > height:
+                    if use_local_median and width * height == 1:
+                        breakpoint()
+                        nd = NDAstroData(data=ext.data,
+                                         mask=np.zeros(ext.shape, dtype=bool))
+                        nd.mask[sy, sx] = 1
+                        ring_filter(nd, 3, 5, inplace=True,
+                                    replace_flags=1, replace_func='median')
+                    elif width > height:
                         # horizontal region → interpolate along columns
                         ind = np.arange(ext.shape[0])
                         ind = np.delete(ind, sy)
@@ -559,14 +571,6 @@ class Preprocess(PrimitivesBASE):
                     ax1.imshow(origdata, vmin=0, vmax=100)
                     ax2.imshow(ext.data[py, px], vmin=0, vmax=100)
                     plt.show()
-
-                    # # If replace_value is a string. It was already validated
-                    # # so must be "mean" or "median"
-                    # if inner_radius is not None and outer_radius is not None:
-                    #     ring_filter(ext, inner_radius, outer_radius,
-                    #                 max_iters=max_iters, inplace=True,
-                    #                 replace_flags=replace_flags,
-                    #                 replace_func=replace_value)
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)

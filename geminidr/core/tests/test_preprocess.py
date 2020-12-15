@@ -90,7 +90,7 @@ def test_apply_dq_plane_ring_mean(niriprim):
 
 
 @pytest.mark.dragons_remote_data
-def test_fixpix(niriprim):
+def test_fixpixels(niriprim):
     regions = [
         '430:437,513:533',  # vertical region
         '450,521',  # single pixel
@@ -109,6 +109,19 @@ def test_fixpix(niriprim):
     sy, sx = cartesian_regions_to_slices(regions[2])
     assert_almost_equal(ad[0].data[sy, sx].min(), 37.166, decimal=2)
     assert_almost_equal(ad[0].data[sy, sx].max(), 60.333, decimal=2)
+
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_median(niriprim):
+    regions = [
+        '450,521',  # single pixel
+    ]
+    ad = niriprim.fixPixels(regions=';'.join(regions),
+                            use_local_median=True)[0]
+
+    sy, sx = cartesian_regions_to_slices(regions[0])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 28, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 28, decimal=2)
 
 
 # TODO @bquint: clean up these tests

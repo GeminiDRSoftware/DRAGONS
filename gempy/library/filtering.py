@@ -61,5 +61,5 @@ def ring_filter(nd, inner_radius, outer_radius, max_iters=1, inplace=False,
                                 boundary="extend") > 0.9999, True, False)
 
     out = nd if inplace else copy.deepcopy(nd)
-    out.data = filtered_data
+    out.data[:] = filtered_data
     return out
