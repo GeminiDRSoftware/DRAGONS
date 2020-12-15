@@ -534,27 +534,30 @@ class Preprocess(PrimitivesBASE):
 
                     # debug
                     import matplotlib.pyplot as plt
-                    origdata = ext.data[sy, sx].copy()
+                    py = slice(sy.start - 10, sy.stop + 10)
+                    px = slice(sx.start - 10, sx.stop + 10)
+                    origdata = ext.data[py, px].copy()
 
                     if width > height:
                         # horizontal region → interpolate along columns
-                        pass
-                    elif width < height:
+                        ind = np.arange(ext.shape[0])
+                        ind = np.delete(ind, sy)
+                        data = np.delete(ext.data[:, sx], sy, axis=0)
+                        f = interp1d(ind, data, kind='linear', axis=0,
+                                     bounds_error=True)
+                        ext.data[sy, sx] = f(np.arange(sy.start, sy.stop))
+                    else:
                         # vertical region → interpolate along lines
                         ind = np.arange(ext.shape[1])
-                        ind = np.concatenate([ind[:sx.start], ind[sx.stop:]])
-                        data = np.concatenate([ext.data[sy, :sx.start],
-                                               ext.data[sy, sx.stop:]], axis=1)
+                        ind = np.delete(ind, sx)
+                        data = np.delete(ext.data[sy], sx, axis=1)
                         f = interp1d(ind, data, kind='linear', axis=-1,
                                      bounds_error=True)
-                        ext.data[sy, sx] = f(ind[sx])
-                    else:
-                        # square
-                        pass
+                        ext.data[sy, sx] = f(np.arange(sx.start, sx.stop))
 
                     fig, (ax1, ax2) = plt.subplots(1, 2)
-                    ax1.imshow(origdata, vmin=0, vmax=50)
-                    ax2.imshow(ext.data[sy, sx], vmin=0, vmax=50)
+                    ax1.imshow(origdata, vmin=0, vmax=100)
+                    ax2.imshow(ext.data[py, px], vmin=0, vmax=100)
                     plt.show()
 
                     # # If replace_value is a string. It was already validated

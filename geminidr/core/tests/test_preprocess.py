@@ -8,7 +8,9 @@ from astrodata.testing import download_from_archive
 from geminidr.gemini.lookups import DQ_definitions as DQ
 # from geminidr.gmos.primitives_gmos_image import GMOSImage
 from geminidr.niri.primitives_niri_image import NIRIImage
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from gempy.library.astrotools import cartesian_regions_to_slices
+from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
+                           assert_array_equal)
 
 
 @pytest.fixture
@@ -89,7 +91,24 @@ def test_apply_dq_plane_ring_mean(niriprim):
 
 @pytest.mark.dragons_remote_data
 def test_fixpix(niriprim):
-    ad = niriprim.fixPixels(regions='430:436,513:533 ; 540,521')[0]
+    regions = [
+        '430:437,513:533',  # vertical region
+        '450,521',  # single pixel
+        '429:439,136:140',  # horizontal region
+    ]
+    ad = niriprim.fixPixels(regions=';'.join(regions))[0]
+
+    sy, sx = cartesian_regions_to_slices(regions[0])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 18.555, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 42.888, decimal=2)
+
+    sy, sx = cartesian_regions_to_slices(regions[1])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 24.5, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 24.5, decimal=2)
+
+    sy, sx = cartesian_regions_to_slices(regions[2])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 37.166, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 60.333, decimal=2)
 
 
 # TODO @bquint: clean up these tests
