@@ -50,7 +50,6 @@ from . import parameters_spect
 import matplotlib
 
 from ..interactive.fit import fit1d
-from ..interactive.fit.fit1d import FittingParameters
 
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.deprecated.chebyshev2d import interactive_chebyshev2d
@@ -380,13 +379,7 @@ class Spect(PrimitivesBASE):
                     all_weights.append(1./zpt_err.value)
                     all_var.append(zpt_err.value)
                     # TODO fix parameters
-                    all_fp_init.append(FittingParameters(function='spline1',
-                                                         order=fit1d_params["order"],
-                                                         sigma_upper=fit1d_params["sigma_upper"],
-                                                         sigma_lower=fit1d_params["sigma_lower"],
-                                                         grow=fit1d_params["grow"],
-                                                         niter=fit1d_params["niter"],
-                                                         regions=fit1d_params["regions"]))
+                    all_fp_init.append(fit1d_params)
 
                     calculated = True
 
@@ -403,15 +396,10 @@ class Spect(PrimitivesBASE):
                                                    grow_slider=True,
                                                    reinit_live=True,
                                                    domains=all_shapes)
-                status = geminidr.interactive.server.interactive_fitter(visualizer)
+                geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
                 for ext, fit in zip(all_exts, all_m_final):
-                    # knots, coeffs, degree = spline.tck
-                    # sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                    #                  names=('knots', 'coefficients'),
-                    #                  meta={'header': Header()})
-                    # sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
                     sensfunc = fit.to_tables()[0]
                     if "knots" in sensfunc.colnames:
                         sensfunc["knots"].unit = wave.unit
@@ -436,17 +424,6 @@ class Spect(PrimitivesBASE):
                             # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
                             zpt.append(u.Magnitude(data / flux))
                             zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
-
-                # TODO: Abstract to interactive fitting
-# <<<<<<< HEAD
-#                 wave = array_from_list(wave, unit=u.nm)
-#                 zpt = array_from_list(zpt)
-#                 zpt_err = array_from_list(zpt_err)
-#                 fit = fit_1D(zpt.value, points=wave.value,
-#                              weights=1./zpt_err.value, **fit1d_params,
-#                              plot=debug_plot)
-#                 sensfunc = fit.to_tables()[0]
-# =======
                 wave = at.array_from_list(wave, unit=u.nm)
                 zpt = at.array_from_list(zpt)
                 zpt_err = at.array_from_list(zpt_err)
@@ -454,7 +431,6 @@ class Spect(PrimitivesBASE):
                                weights=1./zpt_err.value, **fit1d_params,
                                plot=debug_plot)
                 sensfunc = fitter.to_tables()[0]
-# >>>>>>> fit1d_integration
                 # Add units to spline fit because the table is suitably designed
                 if "knots" in sensfunc.colnames:
                     sensfunc["knots"].unit = wave.unit

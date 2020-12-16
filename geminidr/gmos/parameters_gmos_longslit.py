@@ -49,14 +49,9 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
                                   (int, str), 20, check=flat_order_check)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0, inclusiveMin=False)
-# <<<<<<< HEAD
-#     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-#     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-#     grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
-#     debug_plot = config.Field("Draw preview on image display? (not used with interactive)", bool, False)
-# =======
-# >>>>>>> fit1d_integration
     interactive_reduce = config.Field("Interactive spline selection?", bool, False)
+    debug_plot = config.Field("Create diagnosis plots?",
+                              bool, False, optional=True)
 
 
 class slitIllumCorrectConfig(config.Config):

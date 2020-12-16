@@ -17,62 +17,54 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-class FittingParameters(object):
-    def __init__(self, *, function='chebyshev', order=None, axis=0, sigma_lower=3.0, sigma_upper=3.0,
-                 niter=0, grow=False, regions=None):
-        """
-        Describe a set of parameters for running fits of data with.
+# class FittingParameters(object):
+#     def __init__(self, *, function='chebyshev', order=None, axis=0, sigma_lower=3.0, sigma_upper=3.0,
+#                  niter=0, grow=False, regions=None):
+#         """
+#         Describe a set of parameters for running fits of data with.
+#
+#         This makes it easy to bundle a set of parameters used to perform a fit.
+#         These are used with the `~gempy.library.fitting.fit_1D` fitter to do
+#         fits of the data.
+#
+#         Parameters
+#         ----------
+#         function : str
+#             Name of the function to use for fitting (i.e. 'chebyshev')
+#         order : int
+#             Order of the fit
+#         axis : int
+#             Axis for data
+#         sigma_lower : float
+#             Lower sigma
+#         sigma_upper : float
+#             Upper sigma
+#         niter : int
+#             Number of iterations
+#         grow : int
+#             Grow window
+#         regions : list of tuple start/stop pairs
+#             This is a list of range start/stop pairs to pass down
+#         """
+#         # default sigmas if None
+#         if sigma_lower is None:
+#             sigma_lower = 3.0
+#         if sigma_upper is None:
+#             sigma_upper = 3.0
+#         self.function = function
+#         self.order = order
+#         self.axis = axis
+#         self.sigma_lower = sigma_lower
+#         self.sigma_upper = sigma_upper
+#         self.niter = niter
+#         self.grow = grow
+#         self.regions = regions
 
-        This makes it easy to bundle a set of parameters used to perform a fit.
-        These are used with the `~gempy.library.fitting.fit_1D` fitter to do
-        fits of the data.
-
-        Parameters
-        ----------
-        function : str
-            Name of the function to use for fitting (i.e. 'chebyshev')
-        order : int
-            Order of the fit
-        axis : int
-            Axis for data
-        sigma_lower : float
-            Lower sigma
-        sigma_upper : float
-            Upper sigma
-        niter : int
-            Number of iterations
-        grow : int
-            Grow window
-        regions : list of tuple start/stop pairs
-            This is a list of range start/stop pairs to pass down
-        """
-        # default sigmas if None
-        if sigma_lower is None:
-            sigma_lower = 3.0
-        if sigma_upper is None:
-            sigma_upper = 3.0
-        self.function = function
-        self.order = order
-        self.axis = axis
-        self.sigma_lower = sigma_lower
-        self.sigma_upper = sigma_upper
-        self.niter = niter
-        self.grow = grow
-        self.regions = regions
-
-    def build_fit_1D(self, data, points, weights):
-        return fit_1D(data,
-                      points=points,
-                      weights=weights,
-                      function=self.function,
-                      order=self.order, axis=self.axis,
-                      sigma_lower=self.sigma_lower,
-                      sigma_upper=self.sigma_upper,
-                      niter=self.niter,
-                      grow=self.grow,
-                      regions=None,  # self.regions,  # TODO add back in or use to generate mask elsewhere
-                      # plot=debug
-                      )
+def build_fit_1D(fit1d_params, data, points, weights):
+    return fit_1D(data,
+                  points=points,
+                  weights=weights,
+                  **fit1d_params)
 
 
 class InteractiveModel(ABC):
@@ -420,7 +412,6 @@ class InteractiveNewFit1D:
         model : :class:`~fitting.fit_1D`
             :class:`~fitting.fit_1D` instance to wrap
         """
-        assert isinstance(fitting_parameters, FittingParameters)
         self.fitting_parameters = fitting_parameters
         self.domain = domain
         self.fit = None
@@ -429,7 +420,7 @@ class InteractiveNewFit1D:
         return self.fit.evaluate(x)
 
     def set_function(self, fn):
-        self.fitting_parameters.function = fn
+        self.fitting_parameters["function"] = fn
 
     @property
     def order(self):
@@ -440,7 +431,7 @@ class InteractiveNewFit1D:
         -------
         int : `order` of the model we are wrapping
         """
-        return self.fitting_parameters.order
+        return self.fitting_parameters["order"]
 
     @order.setter
     def order(self, order):
@@ -455,7 +446,7 @@ class InteractiveNewFit1D:
         order : int
             order to use in the fit
         """
-        self.fitting_parameters.order = int(order)  # fix if TextInput
+        self.fitting_parameters["order"] = int(order)  # fix if TextInput
 
     def perform_fit(self, parent):
         """
@@ -477,15 +468,15 @@ class InteractiveNewFit1D:
         goodpix = ~(parent.user_mask | parent.band_mask)
 
         if parent.sigma_clip:
-            self.fit = self.fitting_parameters.build_fit_1D(parent.y[goodpix], points=parent.x[goodpix],
-                                                            weights=None if parent.weights is None else parent.weights[goodpix])
+            self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
+                                    weights=None if parent.weights is None else parent.weights[goodpix])
             parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
 
             # Now pull in the sigma mask
             parent.fit_mask[goodpix] = self.fit.mask
         else:
-            fitter = self.fitting_parameters.build_fit_1D(parent.y[goodpix], points=parent.x[goodpix],
-                                                          weights=None if parent.weights is None else parent.weights[goodpix])
+            fitter = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
+                                  weights=None if parent.weights is None else parent.weights[goodpix])
             self.fit = fitter()
             parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
 
@@ -537,19 +528,23 @@ class Fit1DPanel:
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
                                                      fit, "order", fit.perform_fit, throttled=True)
-        sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters.sigma_upper, 0.01, 1, 10,
+        sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"], 0.01, 1, 10,
                                                            fitting_parameters, "sigma_upper", self.sigma_slider_handler,
                                                            throttled=True)
-        sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters.sigma_lower, 0.01, 1, 10,
+        sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"], 0.01, 1, 10,
                                                            fitting_parameters, "sigma_lower", self.sigma_slider_handler,
                                                            throttled=True)
         sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         sigma_button.on_change('active', self.sigma_button_handler)
         controls_column = [order_slider, row(sigma_upper_slider, sigma_button)]
         controls_column.append(sigma_lower_slider)
-        controls_column.append(interactive.build_text_slider("Max iterations", fitting_parameters.niter,
+        controls_column.append(interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
                                                              1, 0, 10,
                                                              fitting_parameters, "niter",
+                                                             fit.perform_fit))
+        controls_column.append(interactive.build_text_slider("Grow", fitting_parameters["grow"],
+                                                             1, 0, 10,
+                                                             fitting_parameters, "grow",
                                                              fit.perform_fit))
 
         mask_button = bm.Button(label="Mask")
@@ -616,9 +611,11 @@ class Fit1DPanel:
         self.band_model.add_listener(Fit1DBandListener(self.band_model_handler))
         connect_figure_extras(p_main, None, self.band_model)
 
-        if fitting_parameters.regions is not None:
-            region_tuples = cartesian_regions_to_slices(fitting_parameters.regions)
+        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
+            region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
+            # clear the regions so we don't pass it to the fit
+            del fitting_parameters["regions"]
 
         Controller(p_main, None, self.band_model, controller_div)
         fig_column = [p_main]
@@ -831,9 +828,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Grab fitting function
         if isinstance(fitting_parameters, list):
-            fn = fitting_parameters[0].function
+            fn = fitting_parameters[0]["function"]
         else:
-            fn = fitting_parameters.function
+            fn = fitting_parameters["function"]
 
         # Make the panel with widgets to control the creation of (x, y) arrays
         # Dropdown for selecting fit_1D function
