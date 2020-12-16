@@ -19,7 +19,7 @@ from geminidr.core.primitives_spect import _transpose_if_needed
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels, transform
+from gempy.library import astromodels, transform, tracing
 from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
@@ -52,7 +52,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         self._param_update(parameters_gmos_longslit)
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
-                         max_shift=None):
+                         shift=None, max_shift=20):
         """
         Adds an illumination mask to each AD object. This is only done for
         full-frame (not Central Spectrum) GMOS spectra, and is calculated by
@@ -65,7 +65,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             suffix to be added to output files
         illum_mask : str/None
             name of illumination mask mask (None -> use default)
-        max_shift : float
+        shift : int/None
+            user-defined shift to apply to illumination mask
+        max_shift : int
             maximum shift (in unbinned pixels) allowable for the cross-
             correlation
         """
@@ -133,22 +135,33 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
                     model[yccd[0]:yccd[1]+1] = 1
 
-                if max_shift and max_shift > 0:
-                    xcorr = correlate(row_medians, model, mode='same')
-                    mshift = (model.size // 2 if max_shift is None else max_shift) // ad.detector_y_bin()
-                    yshift = xcorr[model.size // 2 - mshift:model.size // 2 + mshift].argmax() - mshift
+                if shift is None:
+                    mshift = max_shift // ad.detector_y_bin()
+                    # model[] indexing avoids reduction in signal as slit
+                    # is shifted off the top of the image
+                    xcorr = correlate(row_medians, model[mshift:-mshift],
+                                      mode='same')[model.size // 2 - mshift:
+                                                   model.size // 2 + mshift]
+                    yshift = xcorr.argmax() - mshift
+                    xcorr_width = tracing.estimate_peak_width(xcorr)
+                    if not (4 < xcorr_width < 10):
+                        log.warning(f"{ad.filename}: cross-correlation peak is"
+                                    " untrustworthy so not adding illumination "
+                                    "mask. Please re-run with a specified shift.")
+                        yshift = None
                 else:
-                    yshift = 0
-                log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
-                row_mask = np.ones_like(model, dtype=int)
-                if yshift < 0:
-                    row_mask[:yshift] = 1 - model[-yshift:]
-                elif yshift > 0:
-                    row_mask[yshift:] = 1 - model[:-yshift]
-                else:
-                    row_mask[:] = 1 - model
-                for ext in ad:
-                    ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
+                    yshift = shift
+                if yshift is not None:
+                    log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
+                    row_mask = np.ones_like(model, dtype=int)
+                    if yshift < 0:
+                        row_mask[:yshift] = 1 - model[-yshift:]
+                    elif yshift > 0:
+                        row_mask[yshift:] = 1 - model[:-yshift]
+                    else:
+                        row_mask[:] = 1 - model
+                    for ext in ad:
+                        ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
 
             if has_48rows:
                 actual_rows = 48 // ad.detector_y_bin()
