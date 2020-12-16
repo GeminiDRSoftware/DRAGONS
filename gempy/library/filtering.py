@@ -4,8 +4,9 @@ from astropy.convolution import convolve
 from scipy.ndimage import median_filter
 
 
-def ring_filter(nd, inner_radius, outer_radius, max_iters=1, inplace=False,
-                replace_flags=65535, replace_func='median'):
+def ring_median_filter(nd, inner_radius, outer_radius, max_iters=1,
+                       inplace=False, replace_flags=65535,
+                       replace_func='median'):
     """Replace masked values with a median or mean of surrounding values.
 
     Parameters

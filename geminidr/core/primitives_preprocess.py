@@ -3,7 +3,6 @@
 #
 #                                                       primitives_preprocess.py
 # ------------------------------------------------------------------------------
-import ast
 import datetime
 import math
 from copy import deepcopy
@@ -20,7 +19,7 @@ from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.library.astrotools import cartesian_regions_to_slices
-from gempy.library.filtering import ring_filter
+from gempy.library.filtering import ring_median_filter
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
 from scipy.interpolate import interp1d
@@ -171,10 +170,10 @@ class Preprocess(PrimitivesBASE):
                     # If replace_value is a string. It was already validated
                     # so must be "mean" or "median"
                     if inner_radius is not None and outer_radius is not None:
-                        ring_filter(ext, inner_radius, outer_radius,
-                                    max_iters=max_iters, inplace=True,
-                                    replace_flags=replace_flags,
-                                    replace_func=replace_value)
+                        ring_median_filter(ext, inner_radius, outer_radius,
+                                           max_iters=max_iters, inplace=True,
+                                           replace_flags=replace_flags,
+                                           replace_func=replace_value)
                         continue
                     else:
                         oper = getattr(np, replace_value)
@@ -560,8 +559,9 @@ class Preprocess(PrimitivesBASE):
                         nd = NDAstroData(data=ext.data,
                                          mask=np.zeros(ext.shape, dtype=bool))
                         nd.mask[sy, sx] = 1
-                        ring_filter(nd, 3, 5, inplace=True,
-                                    replace_flags=1, replace_func='median')
+                        ring_median_filter(nd, 3, 5, inplace=True,
+                                           replace_flags=1,
+                                           replace_func='median')
                     elif use_axis == 1:
                         # horizontal region → interpolate along columns
                         ind = np.arange(ext.shape[0])
