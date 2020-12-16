@@ -354,12 +354,17 @@ class fit_1D:
         self._models = fitted_models
 
         # Convert the mask to the ordering & shape of the input array and
-        # save it:
+        # save it. Calculate rms.
         mask = mask.reshape(self._tmpshape)
         if astropy_model:
-            self.mask = np.rollaxis(mask, 0, (self.axis + 1) or mask.ndim)
+            start = (self.axis + 1) or mask.ndim
+            self.mask = np.rollaxis(mask, 0, start)
+            rms = (np.rollaxis(image, 0, start) - self.evaluate())[~self.mask].std()
         else:
             self.mask = np.rollaxis(mask, -1, self.axis)
+            rms = (np.rollaxis(image.reshape(self._tmpshape), -1, self.axis) -
+                   self.evaluate())[~self.mask].std()
+        self.rms = rms
 
         # Plot the fit:
         if plot:
