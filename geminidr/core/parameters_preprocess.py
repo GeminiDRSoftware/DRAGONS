@@ -57,7 +57,9 @@ class dilateObjectMaskConfig(config.Config):
 class fixPixelsConfig(config.Config):
     suffix = config.Field("Filename suffix", dtype=str,
                           default="_pixelsFixed", optional=True)
-    regions = config.Field("Regions to fix", dtype=str)
+    regions = config.Field("Regions to fix", dtype=str, optional=True)
+    regions_file = config.Field("Path to a file containing the regions to fix",
+                                dtype=str, optional=True)
     axis = config.Field("Axis over which the interpolation is done",
                         dtype=int, optional=True)
     use_local_median = config.Field("Use a local median filter for single pixels?",

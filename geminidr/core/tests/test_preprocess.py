@@ -143,6 +143,32 @@ def test_fixpixels_specify_axis(niriprim):
     assert_almost_equal(ad[0].data[sy, sx].max(), 38.863, decimal=2)
 
 
+@pytest.mark.dragons_remote_data
+def test_fixpixels_with_file(niriprim, tmp_path):
+    regions = [
+        '430:437,513:533',  # vertical region
+        '450,521',  # single pixel
+        '429:439,136:140',  # horizontal region
+    ]
+    regions_file = str(tmp_path / 'regions.txt')
+    with open(regions_file, mode='w') as f:
+        f.write('\n'.join(regions))
+
+    ad = niriprim.fixPixels(regions_file=regions_file, debug=DEBUG)[0]
+
+    sy, sx = cartesian_regions_to_slices(regions[0])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 18.555, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 42.888, decimal=2)
+
+    sy, sx = cartesian_regions_to_slices(regions[1])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 24.5, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 24.5, decimal=2)
+
+    sy, sx = cartesian_regions_to_slices(regions[2])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 37.166, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 60.333, decimal=2)
+
+
 # TODO @bquint: clean up these tests
 
 # @pytest.fixture

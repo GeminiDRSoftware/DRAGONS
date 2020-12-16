@@ -501,8 +501,8 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def fixPixels(self, adinputs=None, suffix=None, regions=None, axis=None,
-                  use_local_median=False, debug=False):
+    def fixPixels(self, adinputs=None, suffix=None, axis=None, regions=None,
+                  regions_file=None, use_local_median=False, debug=False):
         """
         This primitive ...
 
@@ -515,6 +515,8 @@ class Preprocess(PrimitivesBASE):
         regions : str
             List of pixels or regions to fix. Ranges are 1-indexed, inclusive
             of the upper limit.
+        regions_file : str
+            Path to a file containing the regions to fix.
         axis : int
             Axis over which the interpolation is done. By default the axis is
             determined from the narrowest dimension of each region.
@@ -528,7 +530,14 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        regions = regions.split(';')
+        if regions is not None:
+            regions = regions.split(';')
+        elif regions_file is not None:
+            with open(regions_file) as f:
+                regions = f.read().strip().splitlines()
+        else:
+            raise ValueError('regions must be specified either as a string '
+                             '(regions) or with a file (regions_file)')
 
         for ad in adinputs:
             for ext in ad:
