@@ -145,7 +145,7 @@ class InteractiveModel1D(InteractiveModel):
     """
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
                  grow=0, sigma=3, lsigma=None, hsigma=None, maxiter=3,
-                 section=None):
+                 section=None, listeners=[]):
         """
         Create base class with given parameters as initial model inputs.
 
@@ -172,7 +172,7 @@ class InteractiveModel1D(InteractiveModel):
             max iterations to do on fit
         section
         """
-        model = InteractiveNewFit1D(fitting_parameters, domain)
+        model = InteractiveNewFit1D(fitting_parameters, domain, listeners=listeners)
         super().__init__(model)
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
@@ -366,7 +366,7 @@ class InteractiveModel1D(InteractiveModel):
 
 
 class InteractiveNewFit1D:
-    def __init__(self, fitting_parameters, domain):
+    def __init__(self, fitting_parameters, domain, listeners=[]):
         """
         Create `~InteractiveNewFit1D` wrapper around the new fit1d model.
 
@@ -383,6 +383,7 @@ class InteractiveNewFit1D:
         self.fitting_parameters = fitting_parameters
         self.domain = domain
         self.fit = None
+        self.listeners = listeners
 
     def __call__(self, x):
         return self.fit.evaluate(x)
@@ -435,17 +436,14 @@ class InteractiveNewFit1D:
         # TODO switch back if we use the region string...
         goodpix = ~(parent.user_mask | parent.band_mask)
 
+        self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
+                                weights=None if parent.weights is None else parent.weights[goodpix])
+        parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
         if parent.sigma_clip:
-            self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
-                                    weights=None if parent.weights is None else parent.weights[goodpix])
-            parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
-
             # Now pull in the sigma mask
             parent.fit_mask[goodpix] = self.fit.mask
-        else:
-            self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
-                                    weights=None if parent.weights is None else parent.weights[goodpix])
-            parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
+        for ll in self.listeners:
+            ll(self.fit)
 
 
 class Fit1DPanel:
@@ -487,10 +485,15 @@ class Fit1DPanel:
         """
         # Just to get the doc later
         self.visualizer = visualizer
+        self.info_div = Div()
 
-        # Probably do something better here with factory function/class
+        # Make a listener to update the info panel with the RMS on a fit
+        def update_info(info_div, f):
+            info_div.update(text='<b>RMS:</b> {rms:.4f}'.format(rms=f.rms))
+        listeners = [lambda f: update_info(self.info_div, f), ]
+
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights)
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
 
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
@@ -521,9 +524,10 @@ class Fit1DPanel:
         unmask_button.on_click(self.unmask_button_handler)
 
         controller_div = Div()
+        self.info_div = Div()
 
         controls = column(*controls_column,
-                          row(mask_button, unmask_button), controller_div)
+                          row(mask_button, unmask_button), controller_div, self.info_div)
 
         # Now the figures
         x_range = None
