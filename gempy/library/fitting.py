@@ -359,7 +359,8 @@ class fit_1D:
         if astropy_model:
             start = (self.axis + 1) or mask.ndim
             self.mask = np.rollaxis(mask, 0, start)
-            rms = (np.rollaxis(image, 0, start) - self.evaluate())[~self.mask].std()
+            rms = (np.rollaxis(image.reshape(self._tmpshape), 0, start) -
+                   self.evaluate())[~self.mask].std()
         else:
             self.mask = np.rollaxis(mask, -1, self.axis)
             rms = (np.rollaxis(image.reshape(self._tmpshape), -1, self.axis) -
