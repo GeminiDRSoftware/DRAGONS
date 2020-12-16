@@ -78,7 +78,7 @@ class Spek1D(Spectrum1D, NDAstroData):
                                     models.Scale(spectrum.hdr['CD1_1']) |
                                     models.Shift(spectrum.hdr['CRVAL1']))
                     else:
-                        det2wave = am.dict_to_chebyshev(wavecal)
+                        det2wave = am.dict_to_polynomial(wavecal)
                         det2wave.inverse = am.make_inverse_chebyshev1d(det2wave, sampling=1)
                         spec_unit = u.nm
                     detector_frame = cf.CoordinateFrame(1, axes_type='SPATIAL',

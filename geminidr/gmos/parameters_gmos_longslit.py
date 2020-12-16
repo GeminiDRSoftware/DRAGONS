@@ -43,17 +43,20 @@ class makeSlitIllumConfig(config.Config):
                            int, 4, optional=True)
 
 
-class normalizeFlatConfig(config.Config):
+class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
-    spectral_order = config.Field("Fitting order in spectral direction",
+    order = config.Field("Fitting order in spectral direction",
                                   (int, str), 20, check=flat_order_check)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0, inclusiveMin=False)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+# <<<<<<< HEAD
+#     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
+#     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
+#     grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+#     debug_plot = config.Field("Draw preview on image display? (not used with interactive)", bool, False)
+# =======
+# >>>>>>> fit1d_integration
     interactive_reduce = config.Field("Interactive spline selection?", bool, False)
-    debug_plot = config.Field("Draw preview on image display? (not used with interactive)", bool, False)
 
 
 class slitIllumCorrectConfig(config.Config):

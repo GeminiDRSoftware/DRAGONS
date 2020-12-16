@@ -17,14 +17,14 @@ from scipy.signal import correlate
 from astrodata.provenance import add_provenance
 from astropy import visualization as vis
 from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip
 
 from geminidr.core.primitives_spect import _transpose_if_needed
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
 from gempy.library import astromodels, transform
+from gempy.library import astrotools as at
+from gempy.library.fitting import fit_1D
 
 from gwcs import coordinate_frames
 from gwcs.wcs import WCS as gWCS
@@ -566,10 +566,27 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str/None
             suffix to be added to output files
-        spectral_order: int/str
-            order of fit in spectral direction
+        center : int/None
+            central row/column for 1D extraction (None => use middle)
+        nsum : int
+            number of rows/columns around center to combine
+        function : str
+            type of function to fit (splineN or polynomial types)
+        order : int/str
+            Order of the spline fit to be performed
+            (can be 3 ints, separated by commas)
+        lsigma : float/None
+            lower rejection limit in standard deviations
+        hsigma : float/None
+            upper rejection limit in standard deviations
+        niter : int
+            maximum number of rejection iterations
+        grow : float/False
+            growth radius for rejected pixels
+        threshold : float
+            threshold (relative to peak) for flagging unilluminated pixels
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -578,14 +595,22 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         # For flexibility, the code is going to pass whatever validated
         # parameters it gets (apart from suffix and spectral_order) to
         # the spline fitter
-        spline_kwargs = params.copy()
-        suffix = spline_kwargs.pop("suffix")
-        spectral_order = spline_kwargs.pop("spectral_order")
-        threshold = spline_kwargs.pop("threshold")
-        interactive_reduce = spline_kwargs.pop("interactive_reduce")
-        hsigma = spline_kwargs.pop('hsigma')
-        lsigma = spline_kwargs.pop('lsigma')
-        grow = spline_kwargs.pop('grow')
+# <<<<<<< HEAD
+#         spline_kwargs = params.copy()
+#         suffix = spline_kwargs.pop("suffix")
+#         spectral_order = spline_kwargs.pop("spectral_order")
+#         threshold = spline_kwargs.pop("threshold")
+#         interactive_reduce = spline_kwargs.pop("interactive_reduce")
+#         hsigma = spline_kwargs.pop('hsigma')
+#         lsigma = spline_kwargs.pop('lsigma')
+#         grow = spline_kwargs.pop('grow')
+# =======
+        suffix = params["suffix"]
+        threshold = params["threshold"]
+        spectral_order = params["order"]
+        fit1d_params = fit_1D.translate_params(params)
+        interactive_reduce = params["interactive_reduce"]
+# >>>>>>> fit1d_integration
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
@@ -599,6 +624,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
             ad_fitted = astrodata.create(ad.phu)
+# <<<<<<< HEAD
 
             if interactive_reduce:
                 all_shapes = []
@@ -641,10 +667,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     # all_m_init.append(models.Chebyshev1D(degree=order, c0=0,
                     #                              domain=[0, ext.shape[dispaxis] - 1]))
                     all_domains.append([0, ext.shape[dispaxis] - 1])
-                    all_fp_init.append(FittingParameters(function='spline1', order=order,
-                                                         sigma_upper=hsigma,
-                                                         sigma_lower=lsigma,
-                                                         grow=grow))
+                    all_fp_init.append(FittingParameters(function='spline1',
+                                                         order=fit1d_params['order'],
+                                                         sigma_upper=fit1d_params['upper_sigma'],
+                                                         sigma_lower=fit1d_params['lower_sigma'],
+                                                         grow=fit1d_params['grow']))
 
                 config = self.params[self.myself()]
                 config.update(**params)
@@ -666,13 +693,12 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
-                                                   order_param='spectral_order',
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
                                                    grow_slider=True,
                                                    reinit_live=True,
                                                    domains=all_domains)
-                status = geminidr.interactive.server.interactive_fitter(visualizer)
+                geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
                 for m_final, ext in zip(all_m_final, ad_tiled):
@@ -681,7 +707,36 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         fd.append(m_final.evaluate(row.data))
                     ad_fitted.append(fd, header=ext.hdr)
             else:
+                # for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
+                #     # If the entire row is unilluminated, we want to fit
+                #     # the pixels but still keep the edges masked
+                #     try:
+                #         ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
+                #     except TypeError:  # ext.mask is None
+                #         pass
+                #     else:
+                #         if is_hamamatsu:
+                #             ext.mask[:, :21 // xbin] = 1
+                #             ext.mask[:, -21 // xbin:] = 1
+                #     fitted_data = np.empty_like(ext.data)
+                #     pixels = np.arange(ext.shape[1])
+                #
+                #     for i, row in enumerate(ext.nddata):
+                #         masked_data = np.ma.masked_array(row.data, mask=row.mask)
+                #         weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
+                #         spline = fit_1D(masked_data, weights=weights, function='spline1',
+                #                         order=order, axis=0,  # TODO dispaxis? dispaxis,
+                #                         sigma_lower=lsigma,
+                #                         sigma_upper=hsigma,
+                #                         grow=grow,
+                #                         )
+                #
+                #         fitted_data[i] = spline.evaluate(pixels)
+                #     # Copy header so we have the _section() descriptors
+                #     ad_fitted.append(fitted_data, header=ext.hdr)
+# =======
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
+                    fit1d_params["order"] = order
                     # If the entire row is unilluminated, we want to fit
                     # the pixels but still keep the edges masked
                     try:
@@ -692,22 +747,16 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         if is_hamamatsu:
                             ext.mask[:, :21 // xbin] = 1
                             ext.mask[:, -21 // xbin:] = 1
-                    fitted_data = np.empty_like(ext.data)
-                    pixels = np.arange(ext.shape[1])
 
-                    for i, row in enumerate(ext.nddata):
-                        masked_data = np.ma.masked_array(row.data, mask=row.mask)
-                        weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
-                        spline = fit_1D(masked_data, weights=weights, function='spline1',
-                                        order=order, axis=0,  # TODO dispaxis? dispaxis,
-                                        sigma_lower=lsigma,
-                                        sigma_upper=hsigma,
-                                        grow=grow,
-                                        )
+                    masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
+                    weights = np.sqrt(at.divide0(1., ext.variance))
 
-                        fitted_data[i] = spline.evaluate(pixels)
+                    fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
+                                         axis=1).evaluate()
+
                     # Copy header so we have the _section() descriptors
                     ad_fitted.append(fitted_data, header=ext.hdr)
+# >>>>>>> fit1d_integration
 
             # Find the largest spline value for each row across all extensions
             # and mask pixels below the requested fraction of the peak

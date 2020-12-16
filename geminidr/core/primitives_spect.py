@@ -14,7 +14,6 @@ import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
-from astropy.io.fits import Header
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
@@ -40,6 +39,7 @@ from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.astrotools import array_from_list, boxcar
+from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -236,20 +236,27 @@ class Spect(PrimitivesBASE):
             look up data based on the object name stored in OBJECT header key
             (default).
 
-        order: int
+        function : str
+            type of function to fit (splineN or polynomial types)
+
+        order : int
             Order of the spline fit to be performed
-        order: int, optional
-            Order of the spline fit to be performed (default: 6)
 
-        individual: bool - TODO - Not in calculateSensitivityConfig
-            Calculate sensitivity for each AD spectrum individually?
+        lsigma, hsigma : float/None
+            lower and upper rejection limit in standard deviations
 
-        bandpass: float, optional
+        niter : int
+            maximum number of rejection iterations
+
+        bandpass : float, optional
             default bandpass width (in nm) to use if not present in the
             spectrophotometric data table (default: 5.)
 
         interactive: bool, optional
             Run the interactive UI for selecting the fit parameters
+
+        individual : bool - TODO - Not in calculateSensitivityConfig
+            Calculate sensitivity for each AD spectrum individually?
 
         Returns
         -------
@@ -431,13 +438,23 @@ class Spect(PrimitivesBASE):
                             zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
                 # TODO: Abstract to interactive fitting
-                wave = array_from_list(wave, unit=u.nm)
-                zpt = array_from_list(zpt)
-                zpt_err = array_from_list(zpt_err)
-                fit = fit_1D(zpt.value, points=wave.value,
-                             weights=1./zpt_err.value, **fit1d_params,
-                             plot=debug_plot)
-                sensfunc = fit.to_tables()[0]
+# <<<<<<< HEAD
+#                 wave = array_from_list(wave, unit=u.nm)
+#                 zpt = array_from_list(zpt)
+#                 zpt_err = array_from_list(zpt_err)
+#                 fit = fit_1D(zpt.value, points=wave.value,
+#                              weights=1./zpt_err.value, **fit1d_params,
+#                              plot=debug_plot)
+#                 sensfunc = fit.to_tables()[0]
+# =======
+                wave = at.array_from_list(wave, unit=u.nm)
+                zpt = at.array_from_list(zpt)
+                zpt_err = at.array_from_list(zpt_err)
+                fitter = fit_1D(zpt.value, points=wave.value,
+                               weights=1./zpt_err.value, **fit1d_params,
+                               plot=debug_plot)
+                sensfunc = fitter.to_tables()[0]
+# >>>>>>> fit1d_integration
                 # Add units to spline fit because the table is suitably designed
                 if "knots" in sensfunc.colnames:
                     sensfunc["knots"].unit = wave.unit
@@ -653,7 +670,7 @@ class Spect(PrimitivesBASE):
 
                 columns = []
                 for m in (m_final, m_inverse):
-                    model_dict = astromodels.chebyshev_to_dict(m)
+                    model_dict = astromodels.polynomial_to_dict(m)
                     columns.append(list(model_dict.keys()))
                     columns.append(list(model_dict.values()))
                 # If we're genuinely worried about the two models, they might
@@ -694,9 +711,9 @@ class Spect(PrimitivesBASE):
         arc : :class:`~astrodata.AstroData` or str or None
             Arc(s) containing distortion map.
         order : int (0 - 5)
-            Order of interpolation when resampling. Default: 3.
+            Order of interpolation when resampling.
         subsample : int
-            Pixel subsampling factor. Default: 1.
+            Pixel subsampling factor.
 
         Returns
         -------
@@ -1285,7 +1302,7 @@ class Spect(PrimitivesBASE):
                 # Add 1 to pixel coordinates so they're 1-indexed
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
-                model_dict = astromodels.chebyshev_to_dict(m_final)
+                model_dict = astromodels.polynomial_to_dict(m_final)
                 model_dict.update({'rms': rms, 'fwidth': fwidth})
                 # Add information about where the extraction took place
                 if ext.data.ndim > 1:
@@ -1439,7 +1456,7 @@ class Spect(PrimitivesBASE):
                 apertures = []
                 for row in aptable:
                     model_dict = dict(zip(aptable.colnames, row))
-                    trace_model = astromodels.dict_to_chebyshev(model_dict)
+                    trace_model = astromodels.dict_to_polynomial(model_dict)
                     aperture = tracing.Aperture(trace_model,
                                                 aper_lower=model_dict['aper_lower'],
                                                 aper_upper=model_dict['aper_upper'])
@@ -1646,7 +1663,7 @@ class Spect(PrimitivesBASE):
                 data1d, mask1d, var1d = NDStacker.mean(data, mask=mask,
                                                        variance=variance)
                 # Very light sigma-clipping to remove bright sky lines
-                var_excess = var1d - boxcar(var1d, np.median, size=min_sky_pix // 2)
+                var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_pix // 2)
                 mean, median, std = sigma_clipped_stats(var_excess, mask=mask1d,
                                                         sigma=5.0, maxiters=1)
 
@@ -1726,7 +1743,7 @@ class Spect(PrimitivesBASE):
                 all_model_dicts = []
                 for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
-                    model_dict = astromodels.chebyshev_to_dict(cheb)
+                    model_dict = astromodels.polynomial_to_dict(cheb)
                     lower, upper = limits - loc
                     model_dict['aper_lower'] = lower
                     model_dict['aper_upper'] = upper
@@ -1758,10 +1775,10 @@ class Spect(PrimitivesBASE):
             2D spectra are expected to be distortion corrected and its
             dispersion axis should be along rows.
 
-        suffix :  str, optional
+        suffix :  str
             Suffix to be added to output files (default: _fluxCalibrated).
 
-        standard: str or AstroData, optional
+        standard: str or AstroData
             Standard star spectrum containing one extension or the same number
             of extensions as the input spectra. Each extension must have a
             `.SENSFUNC` table containing information about the overall
@@ -2015,23 +2032,32 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str/None
             suffix to be added to output files
-        center: int/None
+        center : int/None
             central row/column for 1D extraction (None => use middle)
-        nsum: int
+        nsum : int
             number of rows/columns around center to combine
-        spectral_order: int
-            order of fit in spectral direction
+        function : str
+            type of function to fit (splineN or polynomial types)
+        order : int
+            Order of the spline fit to be performed
+        lsigma : float/None
+            lower rejection limit in standard deviations
+        hsigma : float/None
+            upper rejection limit in standard deviations
+        niter : int
+            maximum number of rejection iterations
+        grow : float/False
+            growth radius for rejected pixels
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params.pop("suffix")
-        spectral_order = params.pop("spectral_order")
-        center = params.pop("center")
-        nsum = params.pop("nsum")
-        spline_kwargs = params.copy()
+        sfx = params["suffix"]
+        center = params["center"]
+        nsum = params["nsum"]
+        fit1d_params = fit_1D.translate_params(params)
 
         for ad in adinputs:
             # Don't mosaic if the multiple extensions are because the
@@ -2071,7 +2097,8 @@ class Spect(PrimitivesBASE):
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
                     result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
-                                                                       weights, boundaries, spectral_order),
+                                                                       weights, boundaries,
+                                                                       fit1d_params["order"]),
                                                tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning("Problem with spline fitting: {}".format(result.message))
@@ -2084,12 +2111,11 @@ class Spect(PrimitivesBASE):
                         weights[slice_] /= coeff
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                                        order=spectral_order, w=weights,
-                                                                        **spline_kwargs)
+                fit1d = fit_1D(masked_data, points=None, weights=weights,
+                               **fit1d_params)
 
                 if not mosaicked:
-                    flat_data = np.tile(spline.data, (ext.shape[1-dispaxis], 1))
+                    flat_data = np.tile(fit1d.evaluate(), (ext.shape[1-dispaxis], 1))
                     ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
 
             # If we've mosaicked, there's only one extension
@@ -2102,7 +2128,7 @@ class Spect(PrimitivesBASE):
                 for ext, wcs in zip(ad, orig_wcs):
                     t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
                     geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                    flat_data = spline(geomap.coords[dispaxis])
+                    flat_data = fit1d.evaluate(geomap.coords[dispaxis])
                     ext.divide(flat_data)
                     ext.wcs = wcs
 
@@ -2373,9 +2399,9 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             2D science spectra loaded as :class:`~astrodata.AstroData` objects.
-        suffix : str or None, optional
+        suffix : str or None
             Suffix to be added to output files.
-        regions : str or None, optional
+        regions : str or None
             Sample region(s) to fit along rows/columns parallel to the slit,
             as a comma-separated list of pixel ranges. Any pixels outside these
             ranges (and/or included in the source aperture table) will be
@@ -2384,24 +2410,24 @@ class Spect(PrimitivesBASE):
             Type of function/model to be used for fitting rows or columns
             perpendicular to the dispersion axis (default 'spline3', a cubic
             spline). For spline fits, N may be 1-5 (linear to quintic).
-        order : int or None, optional
-            Order of fit to each row/column (default 5). For spline fits, this
+        order : int or None
+            Order of fit to each row/column. For spline fits, this
             is the number of spline pieces; if `None`, as many pieces will be
             used as are required to get chi^2=1, otherwise the specified number
             will be reduced in proportion to the ratio of good pixels to total
             pixels in each row/column. If there are fewer than 4 good pixels in
             a given row/column, the fit will be performed using every pixel.
-            For polynomial fitting functions, ``order`` is the number of terms,
-            or degree + 1.
-        lsigma, hsigma : float, optional
+            For polynomial fitting functions, ``order`` is the polynomial degree
+        lsigma, hsigma : float
             Lower and upper pixel rejection limits for fitting, in standard
-            deviations from the fit (default 3.0).
-        max_iters : int, optional
-            Maximum number of fitting iterations (default 3).
+            deviations from the fit
+        niter : int
+            Maximum number of fitting iterations
         grow : float or False, optional
-            Masking growth radius (in pixels) for each source aperture and
-            each statistically-rejected pixel. Default: 2.
-        debug : bool
+            Masking growth radius (in pixels) for each statistically-rejected pixel
+        aperture_growth : float
+            Masking growth radius (in pixels) for each aperture
+        debug_plot : bool
             Show diagnostic plots?
 
         Returns
@@ -2419,14 +2445,9 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        regions = params["regions"]
-        function = params["function"]
-        order = params["order"]
-        lsigma = params["lsigma"]
-        hsigma = params["hsigma"]
-        max_iters = params["max_iters"]
-        grow = params["grow"]
-        debug = params["debug"]
+        apgrow = params["aperture_growth"]
+        debug_plot = params["debug_plot"]
+        fit1d_params = fit_1D.translate_params(params)
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -2452,14 +2473,14 @@ class Spect(PrimitivesBASE):
                 else:
                     for row in aptable:
                         model_dict = dict(zip(aptable.colnames, row))
-                        trace_model = astromodels.dict_to_chebyshev(model_dict)
+                        trace_model = astromodels.dict_to_polynomial(model_dict)
                         aperture = tracing.Aperture(
                             trace_model, aper_lower=model_dict['aper_lower'],
                             aper_upper=model_dict['aper_upper']
                         )
-                        sky_mask |= aperture.aperture_mask(ext, grow=grow)
+                        sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
 
-                if debug:
+                if debug_plot:
                     from astropy.visualization import simple_norm
                     fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
                                                    sharey=True)
@@ -2471,20 +2492,13 @@ class Spect(PrimitivesBASE):
                 if ext.variance is None:
                     sky_weights = None
                 else:
-                    sky_weights = np.sqrt(np.divide(1., ext.variance,
-                                          out=np.zeros_like(ext.data),
-                                          where=ext.variance > 0))
+                    sky_weights = np.sqrt(at.divide0(1., ext.variance))
 
                 # This would combine the specified mask with any existing mask,
                 # but should we include some specific set of DQ codes here?
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
-
-                sky_model = fit_1D(
-                    sky, weights=sky_weights, function=function, order=order,
-                    axis=axis, sigma_lower=lsigma, sigma_upper=hsigma,
-                    niter=max_iters, grow=grow, regions=regions, plot=debug
-                ).evaluate()
-
+                sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
+                                   axis=axis, plot=debug_plot).evaluate()
                 ext.data -= sky_model
 
             # Timestamp and update the filename
@@ -2492,6 +2506,8 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
+
+
 
     def traceApertures(self, adinputs=None, **params):
         """
@@ -2506,7 +2522,7 @@ class Spect(PrimitivesBASE):
             to one or more of its extensions.
         suffix : str
             Suffix to be added to output files.
-        trace_order : int
+        order : int
             Fitting order along spectrum. Default: 2
         step : int
             Step size for sampling along dispersion direction. Default: 10
@@ -2520,8 +2536,6 @@ class Spect(PrimitivesBASE):
             Default: 0.05
         debug: bool
             draw aperture traces on image display window?
-        interactive: bool
-            Show interactive interface to fine tune aperture tracing
 
         Returns
         -------
@@ -2545,13 +2559,15 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        order = params["trace_order"]
         step = params["step"]
         nsum = params["nsum"]
         max_missed = params["max_missed"]
         max_shift = params["max_shift"]
         debug = params["debug"]
-        interactive = params["interactive"]
+        fit1d_params = fit_1D.translate_params({**params,
+                                                "function": "chebyshev"})
+        # pop "order" seing we may need to call fit_1D with a different value
+        order = fit1d_params.pop("order")
 
         for ad in adinputs:
             for ext in ad:
@@ -2568,87 +2584,73 @@ class Spect(PrimitivesBASE):
                     self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-                self.viewer.color = "green"
+                # For efficiency, we would like to trace all sources
+                # simultaneously (like we do with arc lines), but we need to
+                # start somewhere the source is bright enough, and there may
+                # not be a single location where that is true for all sources
+                for i, loc in enumerate(locations):
+                    c0 = int(loc + 0.5)
+                    spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:,c0]
+                    start = np.argmax(at.boxcar(spectrum, size=3))
 
+                    # The coordinates are always returned as (x-coords, y-coords)
+                    ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                                start=start, initial=[loc],
+                                                                rwidth=None, cwidth=5, step=step,
+                                                                nsum=nsum, max_missed=max_missed,
+                                                                initial_tolerance=None,
+                                                                max_shift=max_shift,
+                                                                viewer=self.viewer if debug else None)
+                    if i:
+                        all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+                        all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+                    else:
+                        all_ref_coords = ref_coords
+                        all_in_coords = in_coords
+
+                self.viewer.color = "blue"
+                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
                 all_column_names = []
                 all_model_dicts = []
-
-                # Set up the initial tracing models, one per aperture
-                all_m_init = [models.Chebyshev1D(degree=order, c0=c0,
-                                                 domain=[0, ext.shape[dispaxis] - 1]) for c0 in locations]
-                # axis?
-                all_fp_init = [FittingParameters(function='chebyshev', order=order, axis=0) for c0 in locations]  # c0? domain?
-
-                # It's unfortunate that we have to do this
-                config = self.params[self.myself()]
-                config.update(**params)
-                reinit_params = ('step', 'nsum', 'max_missed', 'max_shift')
-
-                def trace_apertures_reconstruct_points(config, extras):
-                    dispaxis = 2 - ext.dispersion_axis()
-                    all_coords = []
-                    for loc in locations:
-                        c0 = int(loc + 0.5)
-                        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(at.boxcar(spectrum, size=3))
-
-                        # The coordinates are always returned as (x-coords, y-coords)
-                        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                    start=start, initial=[loc],
-                                                                    rwidth=None, cwidth=5, step=config.step,
-                                                                    nsum=config.nsum, max_missed=config.max_missed,
-                                                                    initial_tolerance=None,
-                                                                    max_shift=config.max_shift)
-                        # Store as spectral coordinate first (i.e., x in the y(x) fit)
-                        if dispaxis == 0:
-                            all_coords.append(in_coords[::-1])
-                        else:
-                            all_coords.append(in_coords)
-                    return all_coords
-
-                # Purely for drawing in the image display
-                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-
-                if interactive:
-                    visualizer = fit1d.Fit1DVisualizer(trace_apertures_reconstruct_points, all_fp_init, config,
-                                                       reinit_params=reinit_params,
-                                                       order_param='trace_order',
-                                                       tab_name_fmt="Aperture {}",
-                                                       xlabel='yx'[dispaxis], ylabel='xy'[dispaxis],
-                                                       grow_slider=True)
-                    geminidr.interactive.server.interactive_fitter(visualizer)
-                    all_m_final = visualizer.results()
-                else:
-                    all_coords = trace_apertures_reconstruct_points(config)
-                    all_m_final = []
-                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                               sigma_clip, sigma=3)
-                    for aperture, coords, m_init, fp_init in zip(aptable, all_coords, all_m_init, all_fp_init):
-                        location = aperture['c0']
-                        try:
-                            m_final, _ = fit_it(m_init, coords[0], coords[1])
-                            # m_final = fp_init.build_fit_1D(coords[1])  # coords[0]
-                        except (IndexError, np.linalg.linalg.LinAlgError):
-                            # This hides a multitude of sins, including no points
-                            # returned by the trace, or insufficient points to
-                            # constrain the requested order of polynomial.
-                            log.warning("Unable to trace aperture {}".format(aperture["number"]))
-                            m_final = m_init
-                        all_m_final.append(m_final)
-
-                # Create dicts from the final models
-                for aperture, m_final in zip(aptable, all_m_final):
+                for aperture in aptable:
                     location = aperture['c0']
-                    if debug:
-                        self.viewer.color = "blue"
-                        plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
-                        self.viewer.polygon(plot_coords, closed=False,
-                                            xfirst=(dispaxis == 1), origin=0)
+                    # Funky stuff to extract the traced coords associated with
+                    # each aperture (there's just a big list of all the coords
+                    # from all the apertures) and sort them by coordinate
+                    # along the spectrum
+                    coords = np.array([list(c1) + list(c2)
+                                       for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
+                                       if c1[dispaxis] == location])
+                    values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
+                    ref_coords, in_coords = values[:2], values[2:]
 
-                    model_dict = astromodels.chebyshev_to_dict(m_final)
+                    # Find model to transform actual (x,y) locations to the
+                    # value of the reference pixel along the dispersion axis
+                    try:
+                        fit1d = fit_1D(in_coords[dispaxis], points=in_coords[1 - dispaxis],
+                                       domain=[0, ext.shape[dispaxis] - 1],
+                                       order=order, **fit1d_params)
+                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        # This hides a multitude of sins, including no points
+                        # returned by the trace, or insufficient points to
+                        # constrain fit. We call fit1d with dummy points to
+                        # ensure we get the same type of result as if it had
+                        # been successful.
+                        log.warning("Unable to trace aperture {}".format(aperture["number"]))
+                        fit1d = fit_1D(np.full_like(spectral_coords, c0),
+                                       points=spectral_coords,
+                                       domain=[0, ext.shape[dispaxis] - 1],
+                                       order=0, **fit1d_params)
+                    else:
+                        if debug:
+                            plot_coords = np.array([spectral_coords, fit1d.evaluate(spectral_coords)]).T
+                            self.viewer.polygon(plot_coords, closed=False,
+                                                xfirst=(dispaxis == 1), origin=0)
+                    model_dict = fit1d.to_dicts()[0]
+                    del model_dict["model"]
 
                     # Recalculate aperture limits after rectification
-                    apcoords = m_final(np.arange(ext.shape[dispaxis]))
+                    apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
                     model_dict['aper_lower'] = aperture['aper_lower'] + (location - np.min(apcoords))
                     model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()

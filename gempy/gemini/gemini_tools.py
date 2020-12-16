@@ -1065,7 +1065,7 @@ def fit_continuum(ad):
                 aptable = ext.APERTURE
                 for row in aptable:
                     model_dict = dict(zip(aptable.colnames, row))
-                    trace_model = astromodels.dict_to_chebyshev(model_dict)
+                    trace_model = astromodels.dict_to_polynomial(model_dict)
                     aperture = tracing.Aperture(trace_model,
                                                 aper_lower=model_dict['aper_lower'],
                                                 aper_upper=model_dict['aper_upper'])

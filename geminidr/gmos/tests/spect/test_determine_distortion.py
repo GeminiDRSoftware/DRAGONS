@@ -197,11 +197,11 @@ def test_regression_for_determine_distortion_using_fitcoord_table(
 
     table = ad[0].FITCOORD
     model_dict = dict(zip(table['name'], table['coefficients']))
-    model = astromodels.dict_to_chebyshev(model_dict)
+    model = astromodels.dict_to_polynomial(model_dict)
 
     ref_table = ref_ad[0].FITCOORD
     ref_model_dict = dict(zip(ref_table['name'], ref_table['coefficients']))
-    ref_model = astromodels.dict_to_chebyshev(ref_model_dict)
+    ref_model = astromodels.dict_to_polynomial(ref_model_dict)
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
@@ -404,7 +404,7 @@ def rebuild_distortion_model(ext):
     :class:`~astropy.modeling.models.Model`
         Model that receives 2D data and return a 1D array.
     """
-    model = astromodels.dict_to_chebyshev(
+    model = astromodels.dict_to_polynomial(
         dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
     )
 

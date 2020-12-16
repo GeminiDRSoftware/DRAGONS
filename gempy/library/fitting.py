@@ -52,7 +52,9 @@ class fit_1D:
     weights : `~numpy.ndarray`, optional
         N-dimensional input array containing fitting weights for each point.
         The weights will be ignored for a given 1D fit if all zero, to allow
-        processing regions without data (in progress: splines only).
+        processing regions without data (in progress: splines only). If the
+        data have known uncertainties, the weights should be equal to the
+        inverse of the standard deviation.
 
     function : {'legendre', 'chebyshev', 'polynomial', 'splineN'}, optional
         Fitting function/model type to be used (current default 'legendre').
@@ -323,7 +325,9 @@ class fit_1D:
             for n, (imrow, wrow) in enumerate(zip(image, weights)):
 
                 # Deal with weights being None or all undefined in regions
-                # without data (should we allow for NaNs as well?):
+                # without data (should we allow for NaNs as well?). The scipy
+                # spline-fitting routines state that weights should be inverse
+                # standard deviation, whereas fit_1D takes inverse-variance.
                 wrow = (wrow[user_reg] if wrow is not None and np.any(wrow)
                         else None)
 

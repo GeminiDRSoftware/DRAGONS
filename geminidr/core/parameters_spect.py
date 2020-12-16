@@ -44,6 +44,9 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     grow = config.RangeField("Radius to reject pixels adjacent to masked pixels of spline fit", int, 0, min=0)
     interactive = config.Field("Display interactive fitter?", bool, False)
 
+    def setDefaults(self):
+        del self.grow
+
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
@@ -193,14 +196,13 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
-class normalizeFlatConfig(config.Config):
+class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 20, min=1)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+
+    def setDefaults(self):
+        self.order = 20
 
 
 class resampleToCommonFrameConfig(config.Config):
@@ -222,36 +224,30 @@ class resampleToCommonFrameConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
-class skyCorrectFromSlitConfig(config.Config):
+class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
-    regions = config.Field("Sample regions", str, None, optional=True)
-    function = config.ChoiceField(
-        "Type of fitting function", str,
-        allowed = {"chebyshev": "Chebyshev polynomial",
-                   "legendre": "Legendre polynomial",
-                   "polynomial": "Ordinary polynomial",
-                   "spline1": "Linear spline",
-                   "spline2": "Quadratic spline",
-                   "spline3": "Cublic spline",
-                   "spline4": "Quartic spline",
-                   "spline5": "Quintic spline",},
-        default="spline3"
-    )
-    order = config.RangeField("Sky fitting order", int, 5, min=1, optional=True)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0.)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0.)
-    max_iters = config.RangeField("Maximum number of clipping iterations", int, 3, min=0)
-    grow = config.RangeField("Aperture growth distance (pixels)", float, 2, min=0)
-    debug = config.Field("Show diagnostic plots?", bool, False)
+    aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
+    debug_plot = config.Field("Show diagnostic plots?", bool, False)
+
+    def setDefaults(self):
+        self.order = 5
+        self.niter = 3
+        self.grow = 2
 
 
 class traceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)
-    trace_order = config.RangeField("Fitting order in spectral direction", int, 2, min=1)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
+    order = config.RangeField("Order of fitting function", int, 2, min=1)
+    sigma = config.RangeField("Rejection in sigma of fit", float, 3,
+                        min=0, optional=True)
+    niter = config.RangeField("Maximum number of rejection iterations", int, None,
+                       min=0, optional=True)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Draw aperture traces on image display?", bool, False)
-    interactive = config.Field("Use interactive interface for Chebyshev calculation", bool, False)
+
+    def setDefaults(self):
+        self.order = 2

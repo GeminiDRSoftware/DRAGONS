@@ -149,7 +149,7 @@ def create_inputs_recipe():
         p.mosaicDetectors()
         p.distortionCorrect(arc=arc)
         p.findSourceApertures(max_apertures=1)
-        p.traceApertures(trace_order=2,
+        p.traceApertures(order=2,
                          nsum=20,
                          step=10,
                          max_shift=0.09,

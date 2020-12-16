@@ -12,7 +12,7 @@
 # Shift2D: single model to shift in 2D
 #
 # Functions:
-# chebyshev_to_dict / dict_to_chebyshev: Turn a Chebyshev model into a dict to
+# polynomial_to_dict / dict_to_polynomial: Turn a Chebyshev model into a dict to
 #                                        assist with reading/writing as a Table
 # make_inverse_chebyshev1d:              make a Chebyshev1D model that provides
 #                                        the inverse of the given model
@@ -370,13 +370,13 @@ class UnivariateSplineWithOutlierRemoval:
 # -----------------------------------------------------------------------------
 # MODEL -> DICT FUNCTIONS
 #
-def chebyshev_to_dict(model):
+def polynomial_to_dict(model):
     """
-    This function turns an instance of a ChebyshevND model into a dict of
-    parameter and property names and their values. This allows it to be
-    written as a Table and attached to an AstroData object. A Table is not
-    constructed here because it may have additional rows added to it, and
-    that's inefficient.
+    This function turns an instance of a ChebyshevND, LegendreND, or
+    PolynomialND model into a dict of parameter and property names and their
+    values. This allows it to be written as a Table and attached to an
+    AstroData object. A Table is not constructed here because it may have
+    additional rows added to it, and that's inefficient.
 
     Parameters
     ----------
@@ -386,22 +386,22 @@ def chebyshev_to_dict(model):
     -------
     OrderedDict: property names and their values
     """
-    if isinstance(model, models.Chebyshev1D):
-        ndim = 1
-        properties = ('degree', 'domain')
-    elif isinstance(model, models.Chebyshev2D):
-        ndim = 2
-        properties = ('x_degree', 'y_degree', 'x_domain', 'y_domain')
+    model_name = model.__class__.__name__
+    ndim = int(model_name[-2])
+    if ndim == 1:
+        properties = ("degree", "domain")
+    elif ndim == 2:
+        properties = ("x_degree", "y_degree", "x_domain", "y_domain")
     else:
         return {}
 
-    model_dict = OrderedDict({'ndim': ndim})
+    model_dict = {"model": model_name, "ndim": ndim}
     for property in properties:
-        if 'domain' in property:
+        if "domain" in property:
             domain = getattr(model, property)
             if domain is not None:
-                model_dict['{}_start'.format(property)] = domain[0]
-                model_dict['{}_end'.format(property)] = domain[1]
+                model_dict[f"{property}_start"] = domain[0]
+                model_dict[f"{property}_end"] = domain[1]
         else:
             model_dict[property] = getattr(model, property)
     for name in model.param_names:
@@ -410,10 +410,10 @@ def chebyshev_to_dict(model):
     return model_dict
 
 
-def dict_to_chebyshev(model_dict):
+def dict_to_polynomial(model_dict):
     """
-    This is the inverse of chebyshev_to_dict(), taking a dict of property/
-    parameter names and their values and making a ChebyshevND model instance.
+    This is the inverse of polynomial_to_dict(), taking a dict of property/
+    parameter names and their values and making a suitable model instance.
 
     Parameters
     ----------
@@ -439,22 +439,29 @@ def dict_to_chebyshev(model_dict):
 
     """
     try:
-        ndim = int(model_dict.pop('ndim'))
-        if ndim == 1:
-            model = models.Chebyshev1D(degree=int(model_dict.pop('degree')))
-        elif ndim == 2:
-            model = models.Chebyshev2D(x_degree=int(model_dict.pop('x_degree')),
-                                       y_degree=int(model_dict.pop('y_degree')))
-        else:
+        model_class = model_dict.pop("model")
+    except KeyError:  # Handle old models (assumed to be Chebyshevs)
+        try:
+            ndim = int(model_dict.pop("ndim"))
+        except KeyError:
             return None
-    except KeyError:
-        return None
+        model_class = f"Chebyshev{ndim}D"
+    if "ndim" in model_dict:
+        del model_dict["ndim"]
+
+    cls = getattr(models, model_class)
+
+    if ndim == 1:
+        model = cls(degree=int(model_dict.pop("degree")))
+    elif ndim == 2:
+        model = cls(x_degree=int(model_dict.pop("x_degree")),
+                    y_degree=int(model_dict.pop("y_degree")))
 
     for k, v in model_dict.items():
         try:
-            if k.endswith('domain_start'):
-                setattr(model, k.replace('_start', ''), [v, model_dict[k.replace('start', 'end')]])
-            elif k and not k.endswith('domain_end'):  # ignore k==""
+            if k.endswith("domain_start"):
+                setattr(model, k.replace("_start", ""), [v, model_dict[k.replace("start", "end")]])
+            elif k and not k.endswith("domain_end"):  # ignore k==""
                 setattr(model, k, v)
         except (KeyError, AttributeError):
             return None

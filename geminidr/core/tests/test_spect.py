@@ -33,7 +33,6 @@ import pytest
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
-from geminidr.core import primitives_spect
 from scipy import optimize
 
 from geminidr.core import primitives_spect
@@ -185,7 +184,9 @@ def test_sky_correct_from_slit():
 
     # Running the test ----------------
     p = primitives_spect.Spect([])
-    ad_out = p.skyCorrectFromSlit([ad])[0]
+    ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
@@ -213,7 +214,9 @@ def test_sky_correct_from_slit_with_aperture_table():
 
     # Running the test ----------------
     p = primitives_spect.Spect([])
-    ad_out = p.skyCorrectFromSlit([ad])[0]
+    ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
@@ -244,7 +247,9 @@ def test_sky_correct_from_slit_with_multiple_sources():
 
     # Running the test ----------------
     p = primitives_spect.Spect([])
-    ad_out = p.skyCorrectFromSlit([ad])[0]
+    ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
@@ -262,7 +267,7 @@ def test_trace_apertures():
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
-    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters) + 1)[0]
+    ad_out = _p.traceApertures([ad], order=len(trace_model_parameters) + 1)[0]
 
     keys = trace_model_parameters.keys()
 

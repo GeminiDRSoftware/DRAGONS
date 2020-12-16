@@ -787,7 +787,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
     def __init__(self, data_source, fitting_parameters, config,
                  reinit_params=None, reinit_extras=None, reinit_live=False,
-                 order_param=None,
+                 order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, **kwargs):
