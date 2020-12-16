@@ -430,11 +430,7 @@ class Spect(PrimitivesBASE):
                 fitter = fit_1D(zpt.value, points=wave.value,
                                weights=1./zpt_err.value, **fit1d_params,
                                plot=debug_plot)
-                sensfunc = fitter.to_tables()[0]
-                # Add units to spline fit because the table is suitably designed
-                if "knots" in sensfunc.colnames:
-                    sensfunc["knots"].unit = wave.unit
-                    sensfunc["coefficients"].unit = zpt.unit
+                sensfunc = fitter.to_tables(xunit=wave.unit, yunit=zpt.unit)[0]
                 ext.SENSFUNC = sensfunc
                 calculated = True
 
@@ -1833,20 +1829,33 @@ class Spect(PrimitivesBASE):
 
             for index, ext in enumerate(ad):
                 ext_std = std[max(index, len_std-1)]
+                extname = f"{ad.filename} extension {ext.id}"
                 sensfunc = ext_std.SENSFUNC
 
-                extname = f"{ad.filename} extension {ext.id}"
+                # Create the correct callable function (we may want to
+                # abstract this in the future)
+                try:
+                    model_dict = dict(zip(sensfunc['names'], sensfunc['coefficients']))
+                except KeyError:  # it's a spline
+                    order = sensfunc.meta['header'].get('ORDER', 3)
+                    func = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
+                    std_wave_unit = sensfunc['knots'].unit
+                    std_flux_unit = sensfunc['coefficients'].unit
+                else:
+                    func = astromodels.dict_to_polynomial(model_dict)
+                    std_wave_unit = u.Unit(func.meta['xunit'])
+                    std_flux_unit = u.Unit(func.meta['yunit'])
 
                 # Try to confirm the science image has the correct units
-                std_flux_unit = sensfunc['coefficients'].unit
-                if isinstance(std_flux_unit, u.LogUnit):
-                    std_flux_unit = std_flux_unit.physical_unit
+                std_physical_unit = (std_flux_unit.physical_unit if
+                                     isinstance(std_flux_unit, u.LogUnit)
+                                     else std_flux_unit)
                 try:
                     sci_flux_unit = u.Unit(ext.hdr.get('BUNIT'))
                 except:
                     sci_flux_unit = None
-                if not (std_flux_unit is None or sci_flux_unit is None):
-                    unit = sci_flux_unit / (std_flux_unit * flux_units)
+                if not (std_physical_unit is None or sci_flux_unit is None):
+                    unit = sci_flux_unit / (std_physical_unit * flux_units)
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
                                      format(extname, exptime))
@@ -1879,9 +1888,7 @@ class Spect(PrimitivesBASE):
                 pixel_sizes = abs(np.diff(all_waves[::2]))
 
                 # Reconstruct the spline and evaluate it at every wavelength
-                order = sensfunc.meta['header'].get('ORDER', 3)
-                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
-                sens_factor = spline(waves.to(sensfunc['knots'].unit)) * sensfunc['coefficients'].unit
+                sens_factor = func(waves.to(std_wave_unit).value) * std_flux_unit
                 try:  # conversion from magnitude/logarithmic units
                     sens_factor = sens_factor.physical
                 except AttributeError:

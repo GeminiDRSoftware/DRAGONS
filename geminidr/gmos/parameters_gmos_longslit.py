@@ -16,14 +16,16 @@ def flat_order_check(value):
         return len(orders) == 3 and min(orders) > 0
 
 
-class addDQConfig(parameters_standardize.addDQConfig):
-    def setDefaults(self):
-        self.add_illum_mask = True   # adds bridges in longslit full frame
-
-
 class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
+    shift = config.RangeField("User-defined shift for illumination mask", int, None,
+                              min=-100, max=100, inclusiveMax=True, optional=True)
     max_shift = config.RangeField("Maximum (unbinned) pixel shift for illumination mask",
                                   int, 20, min=0, max=100, inclusiveMax=True)
+
+
+class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
+    def setDefaults(self):
+        self.add_illum_mask = True   # adds bridges in longslit full frame
 
 
 class makeSlitIllumConfig(config.Config):

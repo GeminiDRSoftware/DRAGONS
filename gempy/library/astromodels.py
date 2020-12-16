@@ -407,6 +407,10 @@ def polynomial_to_dict(model):
     for name in model.param_names:
         model_dict[name] = getattr(model, name).value
 
+    for unit in ("xunit", "yunit"):
+        if unit in model.meta:
+            model_dict[unit] = model.meta[unit]
+
     return model_dict
 
 
@@ -440,6 +444,7 @@ def dict_to_polynomial(model_dict):
     """
     try:
         model_class = model_dict.pop("model")
+        ndim = int(model_class[-2])
     except KeyError:  # Handle old models (assumed to be Chebyshevs)
         try:
             ndim = int(model_dict.pop("ndim"))
@@ -456,6 +461,9 @@ def dict_to_polynomial(model_dict):
     elif ndim == 2:
         model = cls(x_degree=int(model_dict.pop("x_degree")),
                     y_degree=int(model_dict.pop("y_degree")))
+
+    model.meta["xunit"] = model_dict.pop("xunit", None)
+    model.meta["yunit"] = model_dict.pop("yunit", None)
 
     for k, v in model_dict.items():
         try:

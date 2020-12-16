@@ -354,12 +354,18 @@ class fit_1D:
         self._models = fitted_models
 
         # Convert the mask to the ordering & shape of the input array and
-        # save it:
+        # save it. Calculate rms.
         mask = mask.reshape(self._tmpshape)
         if astropy_model:
-            self.mask = np.rollaxis(mask, 0, (self.axis + 1) or mask.ndim)
+            start = (self.axis + 1) or mask.ndim
+            self.mask = np.rollaxis(mask, 0, start)
+            rms = (np.rollaxis(image.reshape(self._tmpshape), 0, start) -
+                   self.evaluate())[~self.mask].std()
         else:
             self.mask = np.rollaxis(mask, -1, self.axis)
+            rms = (np.rollaxis(image.reshape(self._tmpshape), -1, self.axis) -
+                   self.evaluate())[~self.mask].std()
+        self.rms = rms
 
         # Plot the fit:
         if plot:
@@ -512,17 +518,31 @@ class fit_1D:
 
         return model_dicts
 
-    def to_tables(self):
+    def to_tables(self, xunit=None, yunit=None):
         """
         Convert the fitted models to a list of Tables containing the fit parameters.
+
+        Parameters
+        ----------
+        xunit : Unit/None
+            unit of independent variable
+        yunit : Unit/None
+            unit of dependent varaiable
         """
         tables = []
         astropy_model = isinstance(self._models, Model)
 
         for model_dict in self.to_dicts():
             if astropy_model:
-                t = Table([list(model_dict.keys()),
-                           list(model_dict.values())],
+                keys = list(model_dict.keys())
+                values = list(model_dict.values())
+                if xunit is not None:
+                    keys.append('xunit')
+                    values.append(str(xunit))
+                if yunit is not None:
+                    keys.append('yunit')
+                    values.append(str(yunit))
+                t = Table([keys, values],
                           names=('names', 'coefficients'))
             else:
                 t = Table([model_dict["knots"],
@@ -530,6 +550,8 @@ class fit_1D:
                            names=('knots', 'coefficients'),
                            meta={'header': Header()})
                 t.meta['header']['ORDER'] = (model_dict["k"], 'Order of spline')
+                t['knots'].unit = xunit
+                t['coefficients'].unit = yunit
             tables.append(t)
 
         return tables
