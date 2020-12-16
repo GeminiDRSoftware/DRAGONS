@@ -21,13 +21,13 @@ about how to read, manipulate and write pixel data and tables, respectively.
 
 
 If you are looking for a quick reference, please, have a look on the
-:doc:`../cheatsheet/cheatsheet`.
+:doc:`../cheatsheet`.
 
 Reference Documents
 ===================
 
     - |DRAGONS|_
-    - :doc:`../cheatsheet/cheatsheet`
+    - :doc:`../cheatsheet`
     - `Recipe System Users Manual`_
     - `Recipe System Programmers Manual`_
 
