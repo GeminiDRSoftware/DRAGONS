@@ -17,50 +17,25 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-# class FittingParameters(object):
-#     def __init__(self, *, function='chebyshev', order=None, axis=0, sigma_lower=3.0, sigma_upper=3.0,
-#                  niter=0, grow=False, regions=None):
-#         """
-#         Describe a set of parameters for running fits of data with.
-#
-#         This makes it easy to bundle a set of parameters used to perform a fit.
-#         These are used with the `~gempy.library.fitting.fit_1D` fitter to do
-#         fits of the data.
-#
-#         Parameters
-#         ----------
-#         function : str
-#             Name of the function to use for fitting (i.e. 'chebyshev')
-#         order : int
-#             Order of the fit
-#         axis : int
-#             Axis for data
-#         sigma_lower : float
-#             Lower sigma
-#         sigma_upper : float
-#             Upper sigma
-#         niter : int
-#             Number of iterations
-#         grow : int
-#             Grow window
-#         regions : list of tuple start/stop pairs
-#             This is a list of range start/stop pairs to pass down
-#         """
-#         # default sigmas if None
-#         if sigma_lower is None:
-#             sigma_lower = 3.0
-#         if sigma_upper is None:
-#             sigma_upper = 3.0
-#         self.function = function
-#         self.order = order
-#         self.axis = axis
-#         self.sigma_lower = sigma_lower
-#         self.sigma_upper = sigma_upper
-#         self.niter = niter
-#         self.grow = grow
-#         self.regions = regions
-
 def build_fit_1D(fit1d_params, data, points, weights):
+    """
+    Create a fit_1D from the given parameter dictionary and x/y/weights
+
+    Parameters
+    ----------
+    fit1d_params : dict
+        Dictionary of parameters for the fit_1D
+    data : list
+        X coordinates
+    points : list
+        Y values
+    weights : list
+        weights
+
+    Returns
+    -------
+        :class:`~gempy.library.fitting.fit_1D` fitter
+    """
     return fit_1D(data,
                   points=points,
                   weights=weights,
@@ -205,17 +180,10 @@ class InteractiveModel1D(InteractiveModel):
         self.populate_bokeh_objects(x, y, mask)
         self.weights = weights
 
-        # Our single slider isn't well set up for different low/hi sigma
-        # We can worry about how we want to deal with that later
-        if sigma:
-            self.sigma = sigma
+        if "sigma_lower" in fitting_parameters or "sigma_upper" in fitting_parameters:
             self.sigma_clip = True
         else:
-            self.sigma = 3
             self.sigma_clip = False
-        self.lsigma = self.hsigma = self.sigma  # placeholder
-        self.grow = grow
-        self.maxiter = maxiter
 
         # try this?
         self.fit_mask = np.zeros_like(x, dtype=bool)
@@ -475,9 +443,8 @@ class InteractiveNewFit1D:
             # Now pull in the sigma mask
             parent.fit_mask[goodpix] = self.fit.mask
         else:
-            fitter = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
-                                  weights=None if parent.weights is None else parent.weights[goodpix])
-            self.fit = fitter()
+            self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
+                                    weights=None if parent.weights is None else parent.weights[goodpix])
             parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
 
 
