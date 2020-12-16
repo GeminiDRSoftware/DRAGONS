@@ -3,6 +3,7 @@
 
 import astrodata
 import gemini_instruments
+import os
 import pytest
 from astrodata.testing import download_from_archive
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -11,6 +12,8 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 from gempy.library.astrotools import cartesian_regions_to_slices
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
                            assert_array_equal)
+
+DEBUG = bool(os.getenv('DEBUG', False))
 
 
 @pytest.fixture
@@ -96,7 +99,7 @@ def test_fixpixels(niriprim):
         '450,521',  # single pixel
         '429:439,136:140',  # horizontal region
     ]
-    ad = niriprim.fixPixels(regions=';'.join(regions))[0]
+    ad = niriprim.fixPixels(regions=';'.join(regions), debug=DEBUG)[0]
 
     sy, sx = cartesian_regions_to_slices(regions[0])
     assert_almost_equal(ad[0].data[sy, sx].min(), 18.555, decimal=2)
@@ -117,11 +120,27 @@ def test_fixpixels_median(niriprim):
         '450,521',  # single pixel
     ]
     ad = niriprim.fixPixels(regions=';'.join(regions),
-                            use_local_median=True)[0]
+                            use_local_median=True, debug=DEBUG)[0]
 
     sy, sx = cartesian_regions_to_slices(regions[0])
     assert_almost_equal(ad[0].data[sy, sx].min(), 28, decimal=2)
     assert_almost_equal(ad[0].data[sy, sx].max(), 28, decimal=2)
+
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_specify_axis(niriprim):
+    regions = [
+        '430:437,513:533',  # vertical region
+    ]
+
+    with pytest.raises(ValueError):
+        ad = niriprim.fixPixels(regions=';'.join(regions), axis=2)[0]
+
+    ad = niriprim.fixPixels(regions=';'.join(regions), axis=1, debug=DEBUG)[0]
+
+    sy, sx = cartesian_regions_to_slices(regions[0])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 17.636, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 38.863, decimal=2)
 
 
 # TODO @bquint: clean up these tests

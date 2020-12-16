@@ -11,6 +11,7 @@ from functools import partial
 
 import astrodata
 import gemini_instruments  # noqa
+import matplotlib.pyplot as plt
 import numpy as np
 from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
@@ -501,8 +502,8 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def fixPixels(self, adinputs=None, suffix=None, regions=None,
-                  use_local_median=False):
+    def fixPixels(self, adinputs=None, suffix=None, regions=None, axis=None,
+                  use_local_median=False, debug=False):
         """
         This primitive ...
 
@@ -515,8 +516,13 @@ class Preprocess(PrimitivesBASE):
         regions : str
             List of pixels or regions to fix. Ranges are 1-indexed, inclusive
             of the upper limit.
+        axis : int
+            Axis over which the interpolation is done. By default the axis is
+            determined from the narrowest dimension of each region.
         use_local_median : bool
             Use a local median filter for single pixels?
+        debug : bool
+            Display regions?
 
         """
         log = self.log
@@ -537,20 +543,26 @@ class Preprocess(PrimitivesBASE):
                     width = sx.stop - sx.start
                     height = sy.stop - sy.start
 
-                    # debug
-                    import matplotlib.pyplot as plt
-                    py = slice(sy.start - 10, sy.stop + 10)
-                    px = slice(sx.start - 10, sx.stop + 10)
-                    origdata = ext.data[py, px].copy()
+                    if axis is None:
+                        use_axis = 1 if width > height else 0
+                    else:
+                        if axis not in range(ext.data.ndim):
+                            raise ValueError('axis should specify a dimension '
+                                             f'between 0 and {ext.data.ndim}')
+                        use_axis = axis
+
+                    if debug:
+                        py = slice(sy.start - 10, sy.stop + 10)
+                        px = slice(sx.start - 10, sx.stop + 10)
+                        origdata = ext.data[py, px].copy()
 
                     if use_local_median and width * height == 1:
-                        breakpoint()
                         nd = NDAstroData(data=ext.data,
                                          mask=np.zeros(ext.shape, dtype=bool))
                         nd.mask[sy, sx] = 1
                         ring_filter(nd, 3, 5, inplace=True,
                                     replace_flags=1, replace_func='median')
-                    elif width > height:
+                    elif use_axis == 1:
                         # horizontal region → interpolate along columns
                         ind = np.arange(ext.shape[0])
                         ind = np.delete(ind, sy)
@@ -567,10 +579,11 @@ class Preprocess(PrimitivesBASE):
                                      bounds_error=True)
                         ext.data[sy, sx] = f(np.arange(sx.start, sx.stop))
 
-                    fig, (ax1, ax2) = plt.subplots(1, 2)
-                    ax1.imshow(origdata, vmin=0, vmax=100)
-                    ax2.imshow(ext.data[py, px], vmin=0, vmax=100)
-                    plt.show()
+                    if debug:
+                        fig, (ax1, ax2) = plt.subplots(1, 2)
+                        ax1.imshow(origdata, vmin=0, vmax=100)
+                        ax2.imshow(ext.data[py, px], vmin=0, vmax=100)
+                        plt.show()
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
