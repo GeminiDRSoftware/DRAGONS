@@ -1,15 +1,15 @@
-.. Astrodata Cheat Sheet  master file, created from team template
+.. Astrodata Master Manual
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
-   Manually edited by KL Tue Jan 17 2017
+   Manually edited by SC December 2020
 
 ################
 Astrodata Manual
 ################
 
-.. .. admonition:: Document ID
+.. admonition:: Document ID
 
-..    PIPE-USER-105_AstrodataCheatSheet
+   PIPE-USER-120_AstrodataMasterManual
 
 .. toctree::
    :hidden:
