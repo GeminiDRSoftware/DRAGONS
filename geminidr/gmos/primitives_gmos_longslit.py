@@ -663,16 +663,15 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 config.update(**params)
 
                 reinit_params = ["row", ]
-                reinit_extras = [("row", RangeField("Row of data to operate on", int, 0, min=0, max=nrows-1)), ]
+                reinit_extras = {"row": RangeField("Row of data to operate on", int, 0, min=0, max=nrows-1)}
 
                 def reconstruct_points(conf, extras):
                     r = extras['row']
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
-                        # row = rpext.nddata[r]
                         masked_data = np.ma.masked_array(rpext.data[r],
                                                          mask=None if rpext.mask is None else rpext.mask[r])
-                        weights = np.sqrt(at.divide0(1., rpext.variance[r]))  # np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
+                        weights = np.sqrt(at.divide0(1., rpext.variance[r]))
                         all_coords.append([rppixels, masked_data, weights])
                     return all_coords
 
@@ -682,7 +681,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    reinit_extras=reinit_extras,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
-                                                   grow_slider=True,
                                                    reinit_live=True,
                                                    domains=all_domains)
                 geminidr.interactive.server.interactive_fitter(visualizer)

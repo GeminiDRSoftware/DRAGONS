@@ -138,6 +138,10 @@ class PrimitiveVisualizer(ABC):
         ----------
         params : list of str
             which DRAGONS configuration fields to make a UI for
+        extras : dict
+            Dictionary of additional field definitions for anything not included in the primitive configuration
+        reinit_live : bool
+            True if recalcuating points is cheap, in which case we don't need a button and do it on any change
 
         Returns
         -------
@@ -175,7 +179,7 @@ class PrimitiveVisualizer(ABC):
             # Complex multi-widgets will already have been added
             if pname not in self.widgets:
                 self.widgets[pname] = widget
-        for pname, field in extras:
+        for pname, field in extras.items():
             # Do some inspection of the config to determine what sort of widget we want
             doc = field.doc.split('\n')[0]
             if hasattr(field, 'min'):

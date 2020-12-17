@@ -43,9 +43,9 @@ def build_fit_1D(fit1d_params, data, points, weights):
 
 
 class InteractiveModel(ABC):
-    MASK_TYPE = ['band', 'user', 'good', 'fit', 'init']
-    MARKERS = ['circle', 'circle', 'triangle', 'square', 'circle']
-    PALETTE = Category10[5]
+    MASK_TYPE = ['band', 'user', 'good', 'fit']
+    MARKERS = ['circle', 'circle', 'triangle', 'square']
+    PALETTE = Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -129,9 +129,7 @@ class InteractiveModel(ABC):
         """
         # Update the "mask" column to change the glyphs
         new_mask = ['good'] * len(self.data.data['mask'])
-        for i, (bdm, um, fm, im) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask, self.init_mask)):
-            if im:
-                new_mask[i] = 'init'
+        for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
             if fm:
                 new_mask[i] = 'fit'
             if bdm:
@@ -179,7 +177,7 @@ class InteractiveModel1D(InteractiveModel):
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
         xlinspace = np.linspace(*self.domain, 100)
-        self.populate_bokeh_objects(x, y, mask)
+        weights = self.populate_bokeh_objects(x, y, mask)
         self.weights = weights
 
         if "sigma_lower" in fitting_parameters or "sigma_upper" in fitting_parameters:
@@ -188,10 +186,9 @@ class InteractiveModel1D(InteractiveModel):
             self.sigma_clip = False
 
         # try this?
-        self.fit_mask = np.zeros_like(x, dtype=bool)
-        self.user_mask = np.zeros_like(x, dtype=bool)
-        self.band_mask = np.zeros_like(x, dtype=bool)
-        self.init_mask = np.zeros_like(x, dtype=bool)
+        # self.fit_mask = np.zeros_like(x, dtype=bool)
+        # self.user_mask = np.zeros_like(x, dtype=bool)
+        # self.band_mask = np.zeros_like(x, dtype=bool)
 
         model.perform_fit(self)
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
@@ -212,7 +209,7 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.model.set_function(fn)
 
-    def populate_bokeh_objects(self, x, y, mask=None):
+    def populate_bokeh_objects(self, x, y, weights, mask=None):
         """
         Initializes bokeh objects like a coord structure with extra
         columns for ratios and residuals and setting up masking
@@ -229,19 +226,21 @@ class InteractiveModel1D(InteractiveModel):
         if mask is None:
             try:  # Handle y as masked array
                 if any(y.mask):
-                    self.init_mask = y.mask
+                    init_mask = y.mask
                 else:
-                    self.init_mask = np.zeros_like(x, dtype=bool)
+                    init_mask = np.zeros_like(x, dtype=bool)
                 # init_mask = y.mask or np.zeros_like(x, dtype=bool)
             except AttributeError:
-                self.init_mask = np.zeros_like(x, dtype=bool)
+                init_mask = np.zeros_like(x, dtype=bool)
             else:
                 y = y.data
         else:
-            self.init_mask = mask
+            init_mask = mask
 
-        # x = x[~init_mask]
-        # y = y[~init_mask]
+        x = x[~init_mask]
+        y = y[~init_mask]
+        if weights is not None:
+            weights = weights[~init_mask]
 
         self.fit_mask = np.zeros_like(x, dtype=bool)
         # "section" is the valid section provided by the user,
@@ -263,6 +262,8 @@ class InteractiveModel1D(InteractiveModel):
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
         self.update_mask()
+
+        return weights
 
     @property
     def x(self):
@@ -437,7 +438,7 @@ class InteractiveNewFit1D:
         # but we still use the band_mask for highlighting the affected points
 
         # TODO switch back if we use the region string...
-        goodpix = ~(parent.user_mask | parent.band_mask | parent.init_mask)
+        goodpix = ~(parent.user_mask | parent.band_mask)
 
         self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
                                 weights=None if parent.weights is None else parent.weights[goodpix])
@@ -453,7 +454,7 @@ class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True, grow_slider=True):
+                 plot_width=600, plot_height=400, plot_residuals=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -461,7 +462,7 @@ class Fit1DPanel:
         ----------
         visualizer : :class:`~geminidr.interactive.fit.Fit1DVisualizer`
             visualizer to associate with
-        fitting_parameters : :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
+        fitting_parameters : dict
             parameters for this fit
         domain : list of pixel coordinates
             Used for new fit_1D fitter
@@ -501,16 +502,20 @@ class Fit1DPanel:
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
                                                      fit, "order", fit.perform_fit, throttled=True)
-        sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"], 0.01, 1, 10,
-                                                           fitting_parameters, "sigma_upper", self.sigma_slider_handler,
-                                                           throttled=True)
-        sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"], 0.01, 1, 10,
-                                                           fitting_parameters, "sigma_lower", self.sigma_slider_handler,
-                                                           throttled=True)
+        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
+                                                                0.01, 1, 10,
+                                                                fitting_parameters, "sigma_upper",
+                                                                self.sigma_slider_handler,
+                                                                throttled=True)
+        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
+                                                                0.01, 1, 10,
+                                                                fitting_parameters, "sigma_lower",
+                                                                self.sigma_slider_handler,
+                                                                throttled=True)
         sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         sigma_button.on_change('active', self.sigma_button_handler)
-        controls_column = [order_slider, row(sigma_upper_slider, sigma_button)]
-        controls_column.append(sigma_lower_slider)
+        controls_column = [order_slider, row(self.sigma_upper_slider, sigma_button)]
+        controls_column.append(self.sigma_lower_slider)
         controls_column.append(interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
                                                              1, 0, 10,
                                                              fitting_parameters, "niter",
@@ -673,6 +678,12 @@ class Fit1DPanel:
             new value of the toggle button
         """
         self.fit.sigma_clip = bool(new)
+        if self.fit.sigma_clip:
+            self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
+            self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
+        else:
+            self.fitting_parameters["sigma_upper"] = None
+            self.fitting_parameters["sigma_lower"] = None
         self.fit.perform_fit()
 
     def mask_button_handler(self, stuff):
@@ -761,7 +772,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
-                 domains=None, **kwargs):
+                 domains=None, function=None, **kwargs):
         """
         Parameters
         ----------
@@ -793,6 +804,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             String label for Y axis
         domains : list
             List of domains for the inputs
+        function : str
+            ID of fit_1d function to use, if not a configuration option
         """
         super().__init__(config=config)
 
@@ -800,25 +813,30 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # their properties if the default setup isn't great
         self.widgets = {}
 
-        # Grab fitting function
-        if isinstance(fitting_parameters, list):
-            fn = fitting_parameters[0]["function"]
-        else:
-            fn = fitting_parameters["function"]
-
         # Make the panel with widgets to control the creation of (x, y) arrays
-        # Dropdown for selecting fit_1D function
-        self.function = Select(title="Fitting Function:", value=fn,
-                               options=['chebyshev', 'legendre', 'polynomial', 'spline1',
-                                        'spline2', 'spline3', 'spline4', 'spline5'])
 
-        def fn_select_change(attr, old, new):
-            def refit():
-                for fit in self.fits:
-                    fit.set_function(new)
-                    fit.perform_fit()
-            self.do_later(refit)
-        self.function.on_change('value', fn_select_change)
+        # Function - either a dropdown or a label for the single option
+        if 'function' in config._fields:
+            fn = config.function
+            fn_allowed = [k for k in config._fields['function'].allowed.keys()]
+
+            # Dropdown for selecting fit_1D function
+            self.function = Select(title="Fitting Function:", value=fn,
+                                   options=fn_allowed)
+
+            def fn_select_change(attr, old, new):
+                def refit():
+                    for fit in self.fits:
+                        fit.set_function(new)
+                        fit.perform_fit()
+
+                self.do_later(refit)
+
+            self.function.on_change('value', fn_select_change)
+        else:
+            if function is None:
+                function = 'chebyshev'
+            self.function=Div(text='Function: %s' % function)
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
@@ -966,7 +984,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                         fit.weights = coords[2]
                     else:
                         fit.weights = None
-                    fit.populate_bokeh_objects(coords[0], coords[1], mask=None)
+                    fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
                     fit.perform_fit()
                 if hasattr(self, 'reinit_button'):
                     self.reinit_button.disabled = False
