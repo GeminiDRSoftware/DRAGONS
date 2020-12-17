@@ -433,7 +433,7 @@ class Spect(PrimitivesBASE):
 
                 # Here's a lot of input-checking
                 extname = f'{ad.filename} extension {ext.id}'
-                start = 0.5 * ext.shape[1 - dispaxis]
+                start = ext.shape[1 - dispaxis] // 2
                 initial_peaks = None
                 try:
                     wavecal = ext.WAVECAL
@@ -1181,8 +1181,8 @@ class Spect(PrimitivesBASE):
                 model_dict.update({'rms': rms, 'fwidth': fwidth})
                 # Add information about where the extraction took place
                 if ext.data.ndim > 1:
-                    model_dict[direction] = 0.5 * (extract_slice.start +
-                                                   extract_slice.stop - 1)
+                    model_dict[direction] = (extract_slice.start +
+                                             extract_slice.stop - 1) // 2
                     model_dict['nsum'] = nsum
 
                 # Ensure all columns have the same length
