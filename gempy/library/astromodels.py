@@ -468,9 +468,10 @@ def dict_to_polynomial(model_dict):
     for k, v in model_dict.items():
         try:
             if k.endswith("domain_start"):
-                setattr(model, k.replace("_start", ""), [v, model_dict[k.replace("start", "end")]])
+                setattr(model, k.replace("_start", ""),
+                        [float(v), float(model_dict[k.replace("start", "end")])])
             elif k and not k.endswith("domain_end"):  # ignore k==""
-                setattr(model, k, v)
+                setattr(model, k, float(v))
         except (KeyError, AttributeError):
             return None
 

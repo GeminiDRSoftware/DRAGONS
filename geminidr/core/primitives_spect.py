@@ -451,7 +451,7 @@ class Spect(PrimitivesBASE):
                                     "not be correct.".format(direction, extname,
                                                              direction))
                     else:
-                        start = wavecal['coefficients'][index]
+                        start = int(wavecal['coefficients'][index])
                     if id_only:
                         try:
                             # Peak locations in pixels are 1-indexed
@@ -466,7 +466,7 @@ class Spect(PrimitivesBASE):
                         except ValueError:
                             pass
                         else:
-                            fwidth = wavecal['coefficients'][index]
+                            fwidth = float(wavecal['coefficients'][index])
 
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
