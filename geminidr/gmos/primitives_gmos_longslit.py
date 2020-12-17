@@ -669,9 +669,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     r = extras['row']
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
-                        row = rpext.nddata[r]
-                        weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
-                        all_coords.append([rppixels, rpext.nddata[r], weights])
+                        # row = rpext.nddata[r]
+                        masked_data = np.ma.masked_array(rpext.data[r],
+                                                         mask=None if rpext.mask is None else rpext.mask[r])
+                        weights = np.sqrt(at.divide0(1., rpext.variance[r]))  # np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
+                        all_coords.append([rppixels, masked_data, weights])
                     return all_coords
 
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,

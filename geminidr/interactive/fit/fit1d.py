@@ -43,9 +43,9 @@ def build_fit_1D(fit1d_params, data, points, weights):
 
 
 class InteractiveModel(ABC):
-    MASK_TYPE = ['band', 'user', 'good', 'fit']
-    MARKERS = ['circle', 'circle', 'triangle', 'square']
-    PALETTE = Category10[4]
+    MASK_TYPE = ['band', 'user', 'good', 'fit', 'init']
+    MARKERS = ['circle', 'circle', 'triangle', 'square', 'circle']
+    PALETTE = Category10[5]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -125,11 +125,13 @@ class InteractiveModel(ABC):
         This will consolidate the `~geminidr.interactive.fit.fit1d.InteractiveModel.band_mask`,
         `~geminidr.interactive.fit.fit1d.InteractiveModel.user_mask`, and
         `~geminidr.interactive.fit.fit1d.InteractiveModel.fit_mask` into a unified data mask.
-        Order of preference is `user`, `band`, `fit`
+        Order of preference is `user`, `band`, `fit`, `init`
         """
         # Update the "mask" column to change the glyphs
         new_mask = ['good'] * len(self.data.data['mask'])
-        for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
+        for i, (bdm, um, fm, im) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask, self.init_mask)):
+            if im:
+                new_mask[i] = 'init'
             if fm:
                 new_mask[i] = 'fit'
             if bdm:
@@ -189,6 +191,7 @@ class InteractiveModel1D(InteractiveModel):
         self.fit_mask = np.zeros_like(x, dtype=bool)
         self.user_mask = np.zeros_like(x, dtype=bool)
         self.band_mask = np.zeros_like(x, dtype=bool)
+        self.init_mask = np.zeros_like(x, dtype=bool)
 
         model.perform_fit(self)
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
@@ -226,19 +229,19 @@ class InteractiveModel1D(InteractiveModel):
         if mask is None:
             try:  # Handle y as masked array
                 if any(y.mask):
-                    init_mask = y.mask
+                    self.init_mask = y.mask
                 else:
-                    init_mask = np.zeros_like(x, dtype=bool)
+                    self.init_mask = np.zeros_like(x, dtype=bool)
                 # init_mask = y.mask or np.zeros_like(x, dtype=bool)
             except AttributeError:
-                init_mask = np.zeros_like(x, dtype=bool)
+                self.init_mask = np.zeros_like(x, dtype=bool)
             else:
                 y = y.data
         else:
-            init_mask = mask
+            self.init_mask = mask
 
-        x = x[~init_mask]
-        y = y[~init_mask]
+        # x = x[~init_mask]
+        # y = y[~init_mask]
 
         self.fit_mask = np.zeros_like(x, dtype=bool)
         # "section" is the valid section provided by the user,
@@ -434,7 +437,7 @@ class InteractiveNewFit1D:
         # but we still use the band_mask for highlighting the affected points
 
         # TODO switch back if we use the region string...
-        goodpix = ~(parent.user_mask | parent.band_mask)
+        goodpix = ~(parent.user_mask | parent.band_mask | parent.init_mask)
 
         self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
                                 weights=None if parent.weights is None else parent.weights[goodpix])
