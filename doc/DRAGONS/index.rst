@@ -19,21 +19,19 @@ DRAGONS Documentation
 Tutorials - Reducing data with DRAGONS
 --------------------------------------
 
-* `GMOS Imaging Data Reduction Tutorial <http://GMOSImg-DRTutorial.readthedocs.io/en/release-2.1.x>`_
-* `NIRI Imaging Data Reduction Tutorial <http://NIRIImg-DRTutorial.readthedocs.io/en/release-2.1.x>`_
-* `Flamingos-2 Imaging Data Reduction Tutorial <http://F2Img-DRTutorial.readthedocs.io/en/release-2.1.x>`_
-* `GSAOI Imaging Data Reduction Tutorial <http://GSAOIImg-DRTutorial.readthedocs.io/en/release-2.1.x>`_
-* `GNIRS Keyhole Imaging Data Reduction Tutorial <http://GNIRSImg-DRTutorial.readthedocs.io/en/release-2.1.x>`_
+* `GMOS Imaging Data Reduction Tutorial <http://GMOSImg-DRTutorial.readthedocs.io/en/latest>`_
+* `NIRI Imaging Data Reduction Tutorial <http://NIRIImg-DRTutorial.readthedocs.io/en/latest>`_
+* `Flamingos-2 Imaging Data Reduction Tutorial <http://F2Img-DRTutorial.readthedocs.io/en/latest>`_
+* `GSAOI Imaging Data Reduction Tutorial <http://GSAOIImg-DRTutorial.readthedocs.io/en/latest>`_
+* `GNIRS Keyhole Imaging Data Reduction Tutorial <http://GNIRSImg-DRTutorial.readthedocs.io/en/latest>`_
 
 
 DRAGONS Manuals
 ---------------
 
-* `AstroData Cheat Sheet <http://astrodata-cheat-sheet.readthedocs.io/en/release-2.1.x/>`_      :small:`(Document ID: PIPE-USER-105_AstrodataCheatSheet)`
-* `Astrodata User Manual <http://astrodata-user-manual.readthedocs.io/en/release-2.1.x/>`_      :small:`(Document ID: PIPE-USER-106_AstrodataUserManual)`
-* `Astrodata Programmer Manual <http://astrodata-programmer-manual.readthedocs.io/en/release-2.1.x/>`_    :small:`(Document ID: PIPE-USER-104_AstrodataProgManual)`
-* `Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-2.1.x/>`_   :small:`(Document ID: PIPE-USER-108_RSProgManual)`
-* `Recipe System Users Manual <http://dragons-recipe-system-users-manual.readthedocs.io/en/release-2.1.x/>`_      :small:`(Document ID: PIPE-USER-109_RSUserManual)`
+* `Astrodata Manual <http://astrodata.readthedocs.io/en/latest>`_ :small:`(Document ID: PIPE-USER-120_AstrodataMasterManual)`
+* `Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest>`_   :small:`(Document ID: PIPE-USER-108_RSProgManual)`
+* `Recipe System Users Manual <http://dragons-recipe-system-users-manual.readthedocs.io/en/latest>`_      :small:`(Document ID: PIPE-USER-109_RSUserManual)`
 
 =========
 

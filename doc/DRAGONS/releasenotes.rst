@@ -6,6 +6,8 @@
 Release Notes
 *************
 
+This is the documentation from the latest commit.  We recommend that you use the `stable` version of the documentation instead of the `latest`.
+
 V2.1.1
 ======
 This is a bug fix and compatibility releases. For a list of changes relative to v2.1.0, see :ref:`changes`.
