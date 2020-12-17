@@ -7,12 +7,10 @@ from datetime import datetime
 
 import numpy as np
 
-from astropy.modeling import models, fitting
-from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline
-
 from astrodata.provenance import add_provenance
-from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
+from gempy.library.fitting import fit_1D
 
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -148,11 +146,12 @@ class CCD(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
-        niterate = params["niterate"]
-        lo_rej = params["low_reject"]
-        hi_rej = params["high_reject"]
-        order = params["order"] or 0  # None is the same as 0
-        func = (params["function"] or 'none').lower()
+        fit1d_params = fit_1D.translate_params(params)
+        # We need some of these parameters for pre-processing
+        function = (fit1d_params.pop("function") or "none").lower()
+        lsigma = params["lsigma"]
+        hsigma = params["hsigma"]
+        order = params["order"]
         nbiascontam = params["nbiascontam"]
 
         for ad in adinputs:
@@ -166,69 +165,57 @@ class CCD(PrimitivesBASE):
             dsec_list = ad.data_section()
             for ext, osec, dsec in zip(ad, osec_list, dsec_list):
                 x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
-                if x1 > dsec.x1:  # Bias on right
-                    x1 += nbiascontam
-                    x2 -= 1
-                else:  # Bias on left
-                    x1 += 1
-                    x2 -= nbiascontam
+                axis = np.argmin([y2 - y1, x2 - x1])
+                if axis == 1:
+                    if x1 > dsec.x1:  # Bias on right
+                        x1 += nbiascontam
+                        x2 -= 1
+                    else:  # Bias on left
+                        x1 += 1
+                        x2 -= nbiascontam
+                    pixels = np.arange(y1, y2)
+                    sigma = ext.read_noise() / np.sqrt(x2 - x1)
+                else:
+                    if y1 > dsec.y1:  # Bias on top
+                        y1 += nbiascontam
+                        y2 -= 1
+                    else:  # Bias on bottom
+                        y1 += 1
+                        y2 -= nbiascontam
+                    pixels = np.arange(x1, x2)
+                    sigma = ext.read_noise() / np.sqrt(y2 - y1)
 
-                row = np.arange(y1, y2)
-                data = np.mean(ext.data[y1:y2, x1:x2], axis=1)
-                # Weights are used to determine number of spline pieces
-                # should be the estimate of the mean
-                wt = np.sqrt(x2 - x1) / ext.read_noise()
+                data = np.mean(ext.data[y1:y2, x1:x2], axis=axis)
                 if ext.is_in_adu():
-                    wt *= ext.gain()
+                    sigma /= ext.gain()
 
-                medboxsize = 2  # really 2n+1 = 5
-                for iter in range(niterate+1):
-                    # The UnivariateSpline will make reduced-chi^2=1 so it will
-                    # fit bad rows. Need to mask these before starting, so use a
-                    # running median. Probably a good starting point for all fits.
-                    if iter == 0 or func == 'none':
-                        medarray = np.full((medboxsize * 2 + 1, y2 - y1), np.nan)
-                        for i in range(-medboxsize, medboxsize + 1):
-                            mx1 = max(i, 0)
-                            mx2 = min(y2 - y1, y2 - y1 + i)
-                            medarray[medboxsize + i, mx1:mx2] = data[:mx2 - mx1]
-                        runmed = np.ma.median(np.ma.masked_where(np.isnan(medarray),
-                                                                 medarray), axis=0)
-                        residuals = data - runmed
-                        sigma = np.sqrt(x2 - x1) / wt  # read noise
+                # The UnivariateSpline will make reduced-chi^2=1 so it will
+                # fit bad rows. Need to mask these before starting, so use a
+                # running median. Probably a good starting point for all fits.
+                runmed = at.boxcar(data, operation=np.median, size=2)
+                residuals = data - runmed
+                mask = np.logical_or(residuals > hsigma * sigma
+                                     if hsigma is not None else False,
+                                     residuals < -lsigma * sigma
+                                     if lsigma is not None else False)
+                if "spline" in function and order is None:
+                    data = np.where(mask, runmed, data)
 
-                    mask = np.logical_or(residuals > hi_rej * sigma
-                                        if hi_rej is not None else False,
-                                        residuals < -lo_rej * sigma
-                                        if lo_rej is not None else False)
-
-                    # Don't clip any pixels if iter==0
-                    if func == 'none' and iter < niterate:
-                        # Replace bad data with running median
-                        data = np.where(mask, runmed, data)
-                    elif func != 'none':
-                        if func == 'spline':
-                            if order:
-                                # Equally-spaced knots (like IRAF)
-                                knots = np.linspace(row[0], row[-1], order+1)[1:-1]
-                                bias = LSQUnivariateSpline(row[~mask], data[~mask], knots)
-                            else:
-                                bias = UnivariateSpline(row[~mask], data[~mask],
-                                                        w=[wt]*np.sum(~mask))
-                        else:
-                            bias_init = models.Chebyshev1D(degree=order,
-                                                           c0=np.median(data[~mask]))
-                            fit_f = fitting.LinearLSQFitter()
-                            bias = fit_f(bias_init, row[~mask], data[~mask])
-
-                        residuals = data - bias(row)
-                        sigma = np.std(residuals[~mask])
+                if function == "none":
+                    bias = data
+                else:
+                    fit1d = fit_1D(np.ma.masked_array(data, mask=mask),
+                                   points=pixels,
+                                   weights=np.full_like(data, 1. / sigma),
+                                   function=function, **fit1d_params)
+                    bias = fit1d.evaluate(np.arange(ext.data.shape[axis]))
+                    sigma = fit1d.rms
 
                 # using "-=" won't change from int to float
-                if func != 'none':
-                    data = bias(np.arange(0, ext.data.shape[0]))
-                ext.data = ext.data - np.tile(data,
-                                        (ext.data.shape[1],1)).T.astype(np.float32)
+                if axis == 1:
+                    ext.data = ext.data - bias[:, np.newaxis].astype(np.float32)
+                else:
+                    ext.data = ext.data - bias.astype(np.float32)
 
                 ext.hdr.set('OVERSEC', '[{}:{},{}:{}]'.format(x1+1,x2,y1+1,y2),
                             self.keyword_comments['OVERSEC'])
