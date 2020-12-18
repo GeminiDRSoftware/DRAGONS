@@ -610,7 +610,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         suffix = params["suffix"]
         threshold = params["threshold"]
         spectral_order = params["order"]
-        fit1d_params = fit_1D.translate_params(params)
+        all_fp_init = [fit_1D.translate_params(params)] * 3
         interactive_reduce = params["interactive_reduce"]
 
         # Parameter validation should ensure we get an int or a list of 3 ints
@@ -618,6 +618,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             orders = [int(x) for x in spectral_order]
         except TypeError:
             orders = [spectral_order] * 3
+        # capture the per extension order into the fit parameters
+        for order, fp_init in zip(orders, all_fp_init):
+            fp_init["order"] = order
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
@@ -640,31 +643,30 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
             # Interactive or not
             if interactive_reduce:
-                all_shapes = []
+                # all_X arrays are used to track appropriate inputs for each of the N extensions
                 all_pixels = []
-                all_masked_data = []
-                all_orders = []
-                all_fp_init = []
                 all_domains = []
                 nrows = ad_tiled[0].shape[0]
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
                     pixels = np.arange(ext.shape[1])
 
-                    all_shapes.append(ext.shape[0])
                     all_pixels.append(pixels)
-                    all_orders.append(order)
-
-                    all_masked_data.append(np.ma.masked_array(ext.nddata[0].data, ext.nddata[0].mask))
                     dispaxis = 2 - ext.dispersion_axis()
                     all_domains.append([0, ext.shape[dispaxis] - 1])
-                    all_fp_init.append(fit1d_params)
 
                 config = self.params[self.myself()]
                 config.update(**params)
 
+                # Create a 'row' parameter to add to the UI so the user can select the row they
+                # want to fit.
                 reinit_params = ["row", ]
                 reinit_extras = {"row": RangeField("Row of data to operate on", int, 0, min=0, max=nrows-1)}
 
+                # This function is used by the interactive fitter to generate the x,y,weights to use
+                # for each fit.  We only want to fit a single row of data interactively, so that we can
+                # be responsive in the UI.  The 'row' extra parameter defined above will create a
+                # slider for the user and we will have access to the selected value in the 'extras'
+                # dictionary passed in here.
                 def reconstruct_points(conf, extras):
                     r = extras['row']
                     all_coords = []
@@ -689,6 +691,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    title="Normalize Flat")
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
+                # The fit models were done on a single row, so we need to
+                # get the parameters that were used in the final fit for
+                # each one, and then rerun it on the full data for that
+                # extension.
                 all_m_final = visualizer.results()
                 for m_final, ext in zip(all_m_final, ad_tiled):
                     masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
@@ -701,9 +707,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     # Copy header so we have the _section() descriptors
                     ad_fitted.append(fitted_data, header=ext.hdr)
             else:
-                for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
-                    fit1d_params["order"] = order
-
+                for ext, indices, fit1d_params in zip(ad_tiled, array_info.extensions, all_fp_init):
                     masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
                     weights = np.sqrt(at.divide0(1., ext.variance))
 
