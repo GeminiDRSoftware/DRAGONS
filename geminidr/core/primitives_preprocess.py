@@ -504,7 +504,21 @@ class Preprocess(PrimitivesBASE):
     def fixPixels(self, adinputs=None, suffix=None, axis=None, regions=None,
                   regions_file=None, use_local_median=False, debug=False):
         """
-        This primitive ...
+        This primitive replaces bad pixels by linear interpolation along
+        lines or columns using the nearest good pixels, similar to IRAF's
+        fixpix.
+
+        Regions must be specified either as a string, separated by semi-colons,
+        with the ``regions`` parameter, or with a file (``regions_file``), one
+        region per line. Regions strings must be a comma-separated list of
+        (colon-or-hyphen-separated) pixel ranges, in 1-indexed Cartesian pixel
+        co-ordinates, inclusive of the upper limit.
+
+        By default, interpolation is performed across the narrowest dimension
+        spanning bad pixels with interpolation along image lines if the two
+        dimensions are equal (in the 2D case). 3D is also supported with the
+        same behavior. For single pixels it is possible to use a local median
+        filter instead.
 
         Parameters
         ----------
@@ -556,6 +570,9 @@ class Preprocess(PrimitivesBASE):
 
                     # Find the axis that will be used for the interpolation
                     if axis is None:
+                        # If we have two axis with the same size, we should
+                        # use the deeper one. E.g. for images with a square
+                        # region, interpolation is done on lines.
                         use_axis = np.where(
                             region_shape == region_shape.min())[0][-1]
                     else:
@@ -565,6 +582,8 @@ class Preprocess(PrimitivesBASE):
                         use_axis = axis
 
                     if debug:
+                        log.debug(f'Replacing pixel {region} with a '
+                                  'local median ')
                         plot_slices = [slice(sl.start - 10, sl.stop + 10)
                                        for sl in slices]
                         if len(plot_slices) > 2:
@@ -579,6 +598,8 @@ class Preprocess(PrimitivesBASE):
                                            replace_flags=1,
                                            replace_func='median')
                     else:
+                        log.debug(f'Interpolating region {region} on '
+                                  f'axis {use_axis}')
                         # Extract the data corresponding to the region
                         slices_extract = list(slices)
                         slices_extract[use_axis] = slice(None)
