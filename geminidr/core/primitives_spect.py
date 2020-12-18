@@ -1177,25 +1177,23 @@ class Spect(PrimitivesBASE):
                 # Add 1 to pixel coordinates so they're 1-indexed
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
-                model_dict = am.polynomial_to_dict(m_final)
-                model_dict.update({'rms': rms, 'fwidth': fwidth})
-                # Add information about where the extraction took place
+                temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
+                temptable.add_columns([[rms], [fwidth]], names=("rms", "fwidth"))
                 if ext.data.ndim > 1:
-                    model_dict[direction] = (extract_slice.start +
+                    temptable[direction] = (extract_slice.start +
                                              extract_slice.stop - 1) // 2
-                    model_dict['nsum'] = nsum
-
-                # Ensure all columns have the same length
-                pad_rows = nmatched - len(model_dict)
+                    temptable["nsum"] = nsum
+                pad_rows = nmatched - len(temptable.colnames)
                 if pad_rows < 0:  # Really shouldn't be the case
                     incoords = list(incoords) + [0] * (-pad_rows)
                     outcoords = list(outcoords) + [0] * (-pad_rows)
                     pad_rows = 0
 
-                fit_table = Table([list(model_dict.keys()) + [''] * pad_rows,
-                                   list(model_dict.values()) + [0] * pad_rows,
+                fit_table = Table([temptable.colnames + [''] * pad_rows,
+                                   list(temptable[0].values()) + [0] * pad_rows,
                                    incoords, outcoords],
-                                  names=("name", "coefficients", "peaks", "wavelengths"))
+                                  names=("name", "coefficients", "peaks", "wavelengths"),
+                                  meta=temptable.meta)
                 fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
                                               'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
