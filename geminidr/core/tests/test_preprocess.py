@@ -174,9 +174,21 @@ def test_fixpixels_with_file(niriprim, tmp_path):
 
 @pytest.mark.dragons_remote_data
 def test_fixpixels_3D(astrofaker):
+    np.random.seed(42)
     arr = np.arange(4 * 5 * 6, dtype=float).reshape(4, 5, 6)
+
+    # Shuffle the values to be sure the interpolation is done on the good axis
+    # (when chacking the data below)
+    i, k = np.arange(4), np.arange(6)
+    np.random.shuffle(i)
+    np.random.shuffle(k)
+    arr = arr[i, :, :]
+    arr = arr[:, :, k]
     refarr = arr.copy()
+
+    # Set to 0 the region to be fixed
     arr[1:3, 2:4, 1:5] = 0
+
     ad = astrofaker.create('NIRI', 'IMAGE')
     ad.append(arr)
     p = Preprocess([ad])
@@ -184,7 +196,36 @@ def test_fixpixels_3D(astrofaker):
     regions = ['2:5,3:4,2:3']
     ad = p.fixPixels(regions=';'.join(regions), debug=DEBUG)[0]
 
+    breakpoint()
     assert_array_equal(refarr, ad[0].data)
+
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_3D_axis(astrofaker):
+    np.random.seed(42)
+    arr = np.arange(4 * 5 * 6, dtype=float).reshape(4, 5, 6)
+
+    # Shuffle the values to be sure the interpolation is done on the good axis
+    # (when chacking the data below)
+    j, k = np.arange(4), np.arange(6)
+    np.random.shuffle(j)
+    np.random.shuffle(k)
+    arr = arr[:, j, :]
+    arr = arr[:, :, k]
+    refarr = arr.copy()
+
+    # Set to 0 the region to be fixed
+    arr[1:3, 2:4, 1:5] = 0
+
+    ad = astrofaker.create('NIRI', 'IMAGE')
+    ad.append(arr)
+    p = Preprocess([ad])
+
+    regions = ['2:5,3:4,2:3']
+    ad = p.fixPixels(regions=';'.join(regions), debug=DEBUG, axis=0)[0]
+
+    assert_array_equal(refarr, ad[0].data)
+
 
 # TODO @bquint: clean up these tests
 
