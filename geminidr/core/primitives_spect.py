@@ -16,13 +16,12 @@ from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip, sigma_clipped_stats
-from astropy.table import Table
+from astropy.table import Table, vstack
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
 from scipy import spatial, optimize
-from scipy.interpolate import BSpline
 from scipy.signal import correlate
 from specutils import SpectralRegion
 from functools import reduce
@@ -1592,20 +1591,26 @@ class Spect(PrimitivesBASE):
                 all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
                                                 threshold=threshold, method=sizing_method)
 
-                all_model_dicts = []
-                for loc, limits in zip(locations, all_limits):
+                # This is a little convoluted because of the simplicity of the
+                # initial models, but we want to ensure that the APERTURE
+                # table is written in an identical way to other models, and so
+                # we should use the model_to_table() function
+                all_tables = []
+                for i, (loc, limits) in enumerate(zip(locations, all_limits),
+                                                  start=1):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
-                    model_dict = am.polynomial_to_dict(cheb)
+                    aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
-                    model_dict['aper_lower'] = lower
-                    model_dict['aper_upper'] = upper
-                    all_model_dicts.append(model_dict)
+                    aptable["number"] = i
+                    aptable["aper_lower"] = lower
+                    aptable["aper_upper"] = upper
+                    all_tables.append(aptable)
                     log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
 
-                aptable = Table([np.arange(len(locations)) + 1], names=['number'])
-                for name in model_dict.keys():  # Still defined from above loop
-                    aptable[name] = [model_dict.get(name, 0)
-                                     for model_dict in all_model_dicts]
+                aptable = vstack(all_tables, metadata_conflicts="silent")
+                # Move "number" to be the first column
+                new_order = ["number"] + [c for c in aptable.colnames if c != "number"]
+                aptable = aptable[new_order]
                 ext.APERTURE = aptable
 
             # Timestamp and update the filename
