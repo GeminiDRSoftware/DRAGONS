@@ -43,7 +43,7 @@ test_datasets = [
     ),
     (
         "N20180508S0021_aperturesTraced.fits",  # B600 720
-        dict(order=5, function='legendre', lsigma=2, hsigma=2, max_iters=2),
+        dict(order=5, function='chebyshev', lsigma=2, hsigma=2, niter=2),
         'N20180508S0021_ref_4.fits',
     ),
     (
