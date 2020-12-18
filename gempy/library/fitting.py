@@ -490,6 +490,27 @@ class fit_1D:
 
         return fitvals
 
+    @property
+    def model(self):
+        """
+        Expose the callable instance describing the model fit
+
+        Returns
+        -------
+        callable : a single callable (either an ~astropy.modeling.core.Model`
+                  or `astromodels.UnivariateSplineWithOutlierRemoval:`)
+                  representing the model fit
+        """
+        if len(self._models) > 1:
+            raise ValueError("Cannot provide model property if there are "
+                             "greater than one models.")
+        astropy_model = isinstance(self._models, Model)
+        if astropy_model:
+            return self._models
+        else:
+            return self._models[0]
+
+
     def to_dicts(self):
         """
         Convert the fitted models to a list of dicts containing the fit parameters.

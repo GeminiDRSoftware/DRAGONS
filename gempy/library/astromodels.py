@@ -18,12 +18,13 @@
 #                                        the inverse of the given model
 
 import math
-from collections import OrderedDict
+import re
 
 import numpy as np
 from astropy.modeling import FittableModel, Parameter, fitting, models
-from astropy.modeling.core import CompoundModel
+from astropy.modeling.core import Model, CompoundModel
 from astropy.stats import sigma_clip
+from astropy.table import Table
 from scipy.interpolate import BSpline, LSQUnivariateSpline, UnivariateSpline
 
 # -----------------------------------------------------------------------------
@@ -474,6 +475,73 @@ def dict_to_polynomial(model_dict):
                 setattr(model, k, float(v))
         except (KeyError, AttributeError):
             return None
+
+    return model
+
+
+def model_to_table(model, xunit=None, yunit=None, zunit=None):
+    meta = getattr(model, "meta", {})
+    if xunit:
+        meta["xunit"] = xunit
+    if yunit:
+        meta["yunit"] = yunit
+    if zunit:
+        meta["zunit"] = zunit
+
+    if isinstance(model, Model):
+        table = Table()
+        for unit in ("xunit", "yunit", "zunit"):
+            if unit in meta:
+                table.meta["header"][unit.upper()] = str(meta[unit])
+    else:
+        knots, coeffs, order = model.tck
+        table = Table([knots, coeffs],
+                      names=("knots", "coefficients"),
+                      units=(meta.get("xunit"), meta.get("yunit")))
+        table.meta["header"] = {"MODEL": f"spline{order}"}
+
+
+
+
+def table_to_model(table):
+    meta = table.meta["header"]
+    model_class = meta["MODEL"]
+    try:
+        cls = getattr(models, model_class)
+    except:  # it's a spline
+        k = int(model_class[-1])
+        knots, coeffs = table["knots"], table["coefficients"]
+        model = BSpline(knots.data, coeffs.data, k)
+        setattr(model, "meta", {"xunit": knots.unit,
+                                "yunit": coeffs.unit})
+    else:
+        ndim = int(model_class[-2])
+        if ndim == 1:
+            r = re.compile("c([0-9]+)")
+            param_names = list(filter(r.match, table.colnames))
+            degree = max([int(r.match(p).groups()[0]) for p in param_names])
+            domain = [meta.get("DOMAIN_START"), meta.get("DOMAIN_END")]
+            model = cls(degree=degree, domain=domain)
+        elif ndim == 2:
+            r = re.compile("c([0-9]+)_([0-9]+)")
+            param_names = list(filter(r.match, table.colnames))
+            xdegree = max([int(r.match(p).groups()[0]) for p in param_names])
+            ydegree = max([int(r.match(p).groups()[1]) for p in param_names])
+            xdomain = [meta.get("XDOMAIN_START"), meta.get("XDOMAIN_END")]
+            ydomain = [meta.get("YDOMAIN_START"), meta.get("YDOMAIN_END")]
+            model = cls(x_degree=xdegree, y_degree=ydegree,
+                        x_domain=xdomain, y_domain=ydomain)
+        else:
+            raise ValueError(f"Invalid dimensionality of model '{model_class}'")
+        model.meta.update({"xunit": meta.get("XUNIT"),
+                           "yunit": meta.get("YUNIT")})
+        for c in table.conames:
+            if c in param_names:
+                setattr(model, c, table[c])
+            else:  # other columns go in the meta
+                model.meta[c] = table[c]
+        if ndim == 2:
+            model.meta["zunit"] = meta.get("ZUNIT")
 
     return model
 
