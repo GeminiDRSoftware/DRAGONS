@@ -60,7 +60,7 @@ test_datasets = [
 
 # Tests Definitions -----------------------------------------------------------
 
-
+@pytest.mark.skip("fit1d issues")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression

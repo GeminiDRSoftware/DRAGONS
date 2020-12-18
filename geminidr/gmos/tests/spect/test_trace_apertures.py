@@ -43,6 +43,7 @@ fixed_test_parameters_for_determine_distortion = {
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip("fit1d issues")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
