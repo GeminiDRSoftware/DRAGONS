@@ -1,11 +1,14 @@
 # import os
 # from copy import deepcopy
 
+import os
+
 import astrodata
 import gemini_instruments
-import os
+import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
+from geminidr.core.primitives_preprocess import Preprocess
 from geminidr.gemini.lookups import DQ_definitions as DQ
 # from geminidr.gmos.primitives_gmos_image import GMOSImage
 from geminidr.niri.primitives_niri_image import NIRIImage
@@ -136,7 +139,7 @@ def test_fixpixels_specify_axis(niriprim):
     with pytest.raises(ValueError):
         ad = niriprim.fixPixels(regions=';'.join(regions), axis=2)[0]
 
-    ad = niriprim.fixPixels(regions=';'.join(regions), axis=1, debug=DEBUG)[0]
+    ad = niriprim.fixPixels(regions=';'.join(regions), axis=0, debug=DEBUG)[0]
 
     sy, sx = cartesian_regions_to_slices(regions[0])
     assert_almost_equal(ad[0].data[sy, sx].min(), 17.636, decimal=2)
@@ -168,6 +171,20 @@ def test_fixpixels_with_file(niriprim, tmp_path):
     assert_almost_equal(ad[0].data[sy, sx].min(), 37.166, decimal=2)
     assert_almost_equal(ad[0].data[sy, sx].max(), 60.333, decimal=2)
 
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_3D(astrofaker):
+    arr = np.arange(4 * 5 * 6, dtype=float).reshape(4, 5, 6)
+    refarr = arr.copy()
+    arr[1:3, 2:4, 1:5] = 0
+    ad = astrofaker.create('NIRI', 'IMAGE')
+    ad.append(arr)
+    p = Preprocess([ad])
+
+    regions = ['2:5,3:4,2:3']
+    ad = p.fixPixels(regions=';'.join(regions), debug=DEBUG)[0]
+
+    assert_array_equal(refarr, ad[0].data)
 
 # TODO @bquint: clean up these tests
 

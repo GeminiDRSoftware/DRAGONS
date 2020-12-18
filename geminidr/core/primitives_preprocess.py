@@ -543,16 +543,21 @@ class Preprocess(PrimitivesBASE):
             for ext in ad:
                 for region in regions:
                     try:
-                        sy, sx = cartesian_regions_to_slices(region.strip())
+                        slices = cartesian_regions_to_slices(region.strip())
                     except ValueError:
                         log.warning(f'Failed to parse region: {region}')
                         continue
 
-                    width = sx.stop - sx.start
-                    height = sy.stop - sy.start
+                    if len(slices) != ext.data.ndim:
+                        raise ValueError(f'region {region} does not match '
+                                         'array dimension')
 
+                    region_shape = np.array([s.stop - s.start for s in slices])
+
+                    # Find the axis that will be used for the interpolation
                     if axis is None:
-                        use_axis = 1 if width > height else 0
+                        use_axis = np.where(
+                            region_shape == region_shape.min())[0][-1]
                     else:
                         if axis not in range(ext.data.ndim):
                             raise ValueError('axis should specify a dimension '
@@ -560,38 +565,52 @@ class Preprocess(PrimitivesBASE):
                         use_axis = axis
 
                     if debug:
-                        py = slice(sy.start - 10, sy.stop + 10)
-                        px = slice(sx.start - 10, sx.stop + 10)
-                        origdata = ext.data[py, px].copy()
+                        plot_slices = [slice(sl.start - 10, sl.stop + 10)
+                                       for sl in slices]
+                        if len(plot_slices) > 2:
+                            plot_slices = [Ellipsis] + plot_slices[-2:]
+                        origdata = ext.data[plot_slices].copy()
 
-                    if use_local_median and width * height == 1:
+                    if use_local_median and np.prod(region_shape) == 1:
                         nd = NDAstroData(data=ext.data,
                                          mask=np.zeros(ext.shape, dtype=bool))
-                        nd.mask[sy, sx] = 1
+                        nd.mask[slices] = 1
                         ring_median_filter(nd, 3, 5, inplace=True,
                                            replace_flags=1,
                                            replace_func='median')
-                    elif use_axis == 1:
-                        # horizontal region → interpolate along columns
-                        ind = np.arange(ext.shape[0])
-                        ind = np.delete(ind, sy)
-                        data = np.delete(ext.data[:, sx], sy, axis=0)
-                        f = interp1d(ind, data, kind='linear', axis=0,
-                                     bounds_error=True)
-                        ext.data[sy, sx] = f(np.arange(sy.start, sy.stop))
                     else:
-                        # vertical region → interpolate along lines
-                        ind = np.arange(ext.shape[1])
-                        ind = np.delete(ind, sx)
-                        data = np.delete(ext.data[sy], sx, axis=1)
-                        f = interp1d(ind, data, kind='linear', axis=-1,
+                        # Extract the data corresponding to the region
+                        slices_extract = list(slices)
+                        slices_extract[use_axis] = slice(None)
+                        data = ext.data[tuple(slices_extract)]
+
+                        # Reshape to put the interpolation axis first, and
+                        # flatten the other axes
+                        data = np.rollaxis(data, use_axis)
+                        extracted_shape = data.shape
+                        data = data.reshape(ext.shape[use_axis], -1)
+
+                        # Prepare the data to interpolate, removing the values
+                        # from the region
+                        sl = slices[use_axis]
+                        ind = np.arange(ext.shape[use_axis])
+                        ind = np.delete(ind, sl)
+                        data_in = np.delete(data, sl, axis=0)
+
+                        # Do the interpolation and replace the values
+                        f = interp1d(ind, data_in, kind='linear', axis=0,
                                      bounds_error=True)
-                        ext.data[sy, sx] = f(np.arange(sx.start, sx.stop))
+                        data[sl, :] = f(np.arange(sl.start, sl.stop))
+
+                        # Reshape the other way, and replace the final values
+                        data = data.reshape(extracted_shape)
+                        data = np.rollaxis(data, 0, use_axis + 1)
+                        ext.data[tuple(slices_extract)] = data
 
                     if debug:
                         fig, (ax1, ax2) = plt.subplots(1, 2)
                         ax1.imshow(origdata, vmin=0, vmax=100)
-                        ax2.imshow(ext.data[py, px], vmin=0, vmax=100)
+                        ax2.imshow(ext.data[plot_slices], vmin=0, vmax=100)
                         plt.show()
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
