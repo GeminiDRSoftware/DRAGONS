@@ -25,6 +25,8 @@ from astropy.modeling import FittableModel, Parameter, fitting, models
 from astropy.modeling.core import Model, CompoundModel
 from astropy.stats import sigma_clip
 from astropy.table import Table
+from astropy import units as u
+from astropy.io.fits import Header
 from scipy.interpolate import BSpline, LSQUnivariateSpline, UnivariateSpline
 
 # -----------------------------------------------------------------------------
@@ -480,6 +482,23 @@ def dict_to_polynomial(model_dict):
 
 
 def model_to_table(model, xunit=None, yunit=None, zunit=None):
+    """
+    Convert a model instance to a Table, suitable for attaching to an AstroData
+    object or interrogating.
+
+    Parameters
+    ----------
+    model : a callable function , either a `~astropy.modeling.core.Model`
+        or a `~scipy.interpolate.BSpline` instance
+    xunit, yunit, zunit : Unit or None
+        unit of each axis (y axis may be dependent or independent variable)
+
+    Returns
+    -------
+    Table : a Table describing the model, with some information in the
+        meta["header"] dict
+    """
+    # Override existing model units with new ones if requested
     meta = getattr(model, "meta", {})
     if xunit:
         meta["xunit"] = xunit
@@ -488,22 +507,57 @@ def model_to_table(model, xunit=None, yunit=None, zunit=None):
     if zunit:
         meta["zunit"] = zunit
 
+    model_class = model.__class__.__name__
     if isinstance(model, Model):
-        table = Table()
+        header = Header({"MODEL": model_class})
+        ndim = model.n_inputs
+        if ndim == 1:
+            if getattr(model, "domain", None) is not None:
+                header.update({"DOMAIN_START": model.domain[0],
+                               "DOMAIN_END": model.domain[1]})
+        elif ndim == 2:
+            if getattr(model, "x_domain", None) is not None:
+                header.update({"XDOMAIN_START": model.x_domain[0],
+                               "XDOMAIN_END": model.x_domain[1]})
+            if getattr(model, "y_domain", None) is not None:
+                header.update({"YDOMAIN_START": model.y_domain[0],
+                               "YDOMAIN_END": model.y_domain[1]})
+        else:
+            raise ValueError(f"Cannot handle model class '{model_class}' "
+                             f"with dimensionality {ndim}")
+        table = Table(model.parameters, names=model.param_names)
         for unit in ("xunit", "yunit", "zunit"):
             if unit in meta:
-                table.meta["header"][unit.upper()] = str(meta[unit])
-    else:
+                header[unit.upper()] = (str(meta[unit]),
+                                        f"Units of {unit[0]} axis")
+    elif isinstance(model, BSpline):
         knots, coeffs, order = model.tck
+        header = Header({"MODEL": f"spline{order}"})
         table = Table([knots, coeffs],
                       names=("knots", "coefficients"),
                       units=(meta.get("xunit"), meta.get("yunit")))
-        table.meta["header"] = {"MODEL": f"spline{order}"}
+    else:
+        raise TypeError(f"Cannot convert object of class '{model_class}'")
 
-
+    table.meta["header"] = header
+    return table
 
 
 def table_to_model(table):
+    """
+    Convert a Table instance, as created by model_to_table(), back into a
+    callable function.
+
+    Parameters
+    ----------
+    table : `~astropy.table.Table`
+        Table describing the model
+
+    Returns
+    -------
+    callable : either a `~astropy.modeling.core.Model` or a
+               `~scipy.interpolate.BSpline` instance
+    """
     meta = table.meta["header"]
     model_class = meta["MODEL"]
     try:
@@ -533,15 +587,15 @@ def table_to_model(table):
                         x_domain=xdomain, y_domain=ydomain)
         else:
             raise ValueError(f"Invalid dimensionality of model '{model_class}'")
-        model.meta.update({"xunit": meta.get("XUNIT"),
-                           "yunit": meta.get("YUNIT")})
-        for c in table.conames:
+        for c in table.colnames:
             if c in param_names:
                 setattr(model, c, table[c])
             else:  # other columns go in the meta
                 model.meta[c] = table[c]
-        if ndim == 2:
-            model.meta["zunit"] = meta.get("ZUNIT")
+        for unit in ("xunit", "yunit", "zunit"):
+            value = meta.get(unit.upper())
+            if value:
+                model.meta[unit] = u.Unit(value)
 
     return model
 
