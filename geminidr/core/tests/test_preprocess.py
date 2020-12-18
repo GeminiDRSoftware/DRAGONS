@@ -196,7 +196,6 @@ def test_fixpixels_3D(astrofaker):
     regions = ['2:5,3:4,2:3']
     ad = p.fixPixels(regions=';'.join(regions), debug=DEBUG)[0]
 
-    breakpoint()
     assert_array_equal(refarr, ad[0].data)
 
 
