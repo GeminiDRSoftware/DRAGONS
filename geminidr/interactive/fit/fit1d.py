@@ -175,6 +175,11 @@ class InteractiveModel1D(InteractiveModel):
         """
         model = InteractiveNewFit1D(fitting_parameters, domain, listeners=listeners)
         super().__init__(model)
+
+        self.user_mask = None
+        self.fit_mask = None
+        self.band_mask = None
+
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
         xlinspace = np.linspace(*self.domain, 100)
@@ -185,11 +190,6 @@ class InteractiveModel1D(InteractiveModel):
             self.sigma_clip = True
         else:
             self.sigma_clip = False
-
-        # try this?
-        # self.fit_mask = np.zeros_like(x, dtype=bool)
-        # self.user_mask = np.zeros_like(x, dtype=bool)
-        # self.band_mask = np.zeros_like(x, dtype=bool)
 
         model.perform_fit(self)
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
@@ -253,7 +253,9 @@ class InteractiveModel1D(InteractiveModel):
             for slice_ in self.section:
                 self.user_mask[slice_.start < x < slice_.stop] = False
 
-        self.band_mask = np.zeros_like(self.fit_mask)
+        if self.band_mask is None:
+            # otherwise we want to keep the band mask as we still have the bands in place
+            self.band_mask = np.zeros_like(self.fit_mask)
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
