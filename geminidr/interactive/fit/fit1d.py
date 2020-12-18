@@ -166,7 +166,8 @@ class InteractiveModel1D(InteractiveModel):
             grow for fit
         sigma
             sigma clip for fit
-        lsigma
+        lsigma : float
+            Lower sigma (default None takes from sigma)
         hsigma
         maxiter
             max iterations to do on fit
@@ -421,6 +422,31 @@ class InteractiveNewFit1D:
         """
         self.fitting_parameters["order"] = int(order)  # fix if TextInput
 
+    @property
+    def regions(self):
+        """
+        Get the regions of the fitter.
+
+        Returns
+        -------
+        int : `order` of the model we are wrapping
+        """
+        return self.fitting_parameters["regions"]
+
+    @regions.setter
+    def regions(self, regions):
+        """
+        Set the regions in this fitter.
+
+        This sets the regions.
+
+        Parameters
+        ----------
+        regions : str
+            regions to use in the fit
+        """
+        self.fitting_parameters["regions"] = regions
+
     def perform_fit(self, parent):
         """
         Perform the fit, update self.model, parent.fit_mask
@@ -438,7 +464,8 @@ class InteractiveNewFit1D:
         # but we still use the band_mask for highlighting the affected points
 
         # TODO switch back if we use the region string...
-        goodpix = ~(parent.user_mask | parent.band_mask)
+        # goodpix = ~(parent.user_mask | parent.band_mask)
+        goodpix = ~parent.user_mask
 
         self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
                                 weights=None if parent.weights is None else parent.weights[goodpix])
@@ -489,6 +516,8 @@ class Fit1DPanel:
         """
         # Just to get the doc later
         self.visualizer = visualizer
+
+
         self.info_div = Div()
 
         # Make a listener to update the info panel with the RMS on a fit
@@ -498,6 +527,7 @@ class Fit1DPanel:
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+
 
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
@@ -559,7 +589,6 @@ class Fit1DPanel:
                         output_backend="webgl", x_range=x_range, y_range=y_range)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
-        self.band_model = GIBandModel()
 
         class Fit1DBandListener(GIBandListener):
             """
@@ -587,14 +616,18 @@ class Fit1DPanel:
             def finish_bands(self):
                 self.fn()
 
+        self.band_model = GIBandModel()
+
+        def update_regions():
+            self.fit.model.regions = self.band_model.build_regions()
+        self.band_model.add_listener(Fit1DBandListener(update_regions))
         self.band_model.add_listener(Fit1DBandListener(self.band_model_handler))
+
         connect_figure_extras(p_main, None, self.band_model)
 
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
-            # clear the regions so we don't pass it to the fit
-            del fitting_parameters["regions"]
 
         Controller(p_main, None, self.band_model, controller_div)
         fig_column = [p_main]
@@ -772,7 +805,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
-                 domains=None, function=None, **kwargs):
+                 domains=None, function=None, title=None, **kwargs):
         """
         Parameters
         ----------
@@ -806,8 +839,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             List of domains for the inputs
         function : str
             ID of fit_1d function to use, if not a configuration option
+        title : str
+            Title for UI (Interactive <Title>)
         """
         super().__init__(config=config)
+
+        title_div = None
+        if title is not None:
+            title_div = Div(text='<h2>%s</h2>' % title)
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -849,10 +888,16 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
                 reinit_widgets.append(self.reinit_button)
 
-            self.reinit_panel = column(self.function, *reinit_widgets)
+            if title_div is not None:
+                self.reinit_panel = column(title_div, self.function, *reinit_widgets)
+            else:
+                self.reinit_panel = column(self.function, *reinit_widgets)
         else:
             # left panel with just the function selector (Chebyshev, etc.)
-            self.reinit_panel = column(self.function)
+            if title_div is not None:
+                self.reinit_panel = column(title_div, self.function)
+            else:
+                self.reinit_panel = column(self.function)
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -970,7 +1015,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
             for extra in self.reinit_extras:
-                del config_update[extra[0]]
+                del config_update[extra]
             for k, v in config_update.items():
                 print(f'{k} = {v}')
             self.config.update(**config_update)

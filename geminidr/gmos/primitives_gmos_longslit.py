@@ -626,26 +626,28 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
             ad_fitted = astrodata.create(ad.phu)
 
+            # If the entire row is unilluminated, we want to fit
+            # the pixels but still keep the edges masked
+            for ext in ad_tiled:
+                try:
+                    ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
+                except TypeError:  # ext.mask is None
+                    pass
+                else:
+                    if is_hamamatsu:
+                        ext.mask[:, :21 // xbin] = 1
+                        ext.mask[:, -21 // xbin:] = 1
+
+            # Interactive or not
             if interactive_reduce:
                 all_shapes = []
                 all_pixels = []
                 all_masked_data = []
-                all_weights = []
                 all_orders = []
                 all_fp_init = []
                 all_domains = []
                 nrows = ad_tiled[0].shape[0]
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
-                    # If the entire row is unilluminated, we want to fit
-                    # the pixels but still keep the edges masked
-                    try:
-                        ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
-                    except TypeError:  # ext.mask is None
-                        pass
-                    else:
-                        if is_hamamatsu:
-                            ext.mask[:, :21 // xbin] = 1
-                            ext.mask[:, -21 // xbin:] = 1
                     pixels = np.arange(ext.shape[1])
 
                     all_shapes.append(ext.shape[0])
@@ -653,8 +655,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     all_orders.append(order)
 
                     all_masked_data.append(np.ma.masked_array(ext.nddata[0].data, ext.nddata[0].mask))
-                    all_weights.append(np.sqrt(np.where(ext.nddata[0].variance > 0, 1. / ext.nddata[0].variance, 0.)))
-
                     dispaxis = 2 - ext.dispersion_axis()
                     all_domains.append([0, ext.shape[dispaxis] - 1])
                     all_fp_init.append(fit1d_params)
@@ -671,7 +671,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
                         masked_data = np.ma.masked_array(rpext.data[r],
                                                          mask=None if rpext.mask is None else rpext.mask[r])
-                        weights = np.sqrt(at.divide0(1., rpext.variance[r]))
+                        if rpext.variance is None:
+                            weights = None
+                        else:
+                            weights = np.sqrt(at.divide0(1., rpext.variance[r]))
                         all_coords.append([rppixels, masked_data, weights])
                     return all_coords
 
@@ -682,28 +685,24 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
                                                    reinit_live=True,
-                                                   domains=all_domains)
+                                                   domains=all_domains,
+                                                   title="Normalize Flat")
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
                 for m_final, ext in zip(all_m_final, ad_tiled):
-                    fd = []
-                    for row in ext.nddata:
-                        fd.append(m_final.evaluate(row.data))
-                    ad_fitted.append(fd, header=ext.hdr)
+                    masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
+                    weights = np.sqrt(at.divide0(1., ext.variance))
+
+                    fit1d_params = m_final.extract_params()
+                    fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
+                                         axis=1).evaluate()
+
+                    # Copy header so we have the _section() descriptors
+                    ad_fitted.append(fitted_data, header=ext.hdr)
             else:
                 for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
                     fit1d_params["order"] = order
-                    # If the entire row is unilluminated, we want to fit
-                    # the pixels but still keep the edges masked
-                    try:
-                        ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
-                    except TypeError:  # ext.mask is None
-                        pass
-                    else:
-                        if is_hamamatsu:
-                            ext.mask[:, :21 // xbin] = 1
-                            ext.mask[:, -21 // xbin:] = 1
 
                     masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
                     weights = np.sqrt(at.divide0(1., ext.variance))

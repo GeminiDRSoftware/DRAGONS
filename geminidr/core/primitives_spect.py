@@ -393,9 +393,9 @@ class Spect(PrimitivesBASE):
                                                    config=config,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x', ylabel='y',
-                                                   grow_slider=True,
                                                    reinit_live=True,
-                                                   domains=all_shapes)
+                                                   domains=all_shapes,
+                                                   title="Calculate Sensitivity")
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()

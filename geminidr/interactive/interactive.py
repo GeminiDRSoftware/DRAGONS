@@ -767,6 +767,10 @@ class GIBandModel(object):
         """
         if start is not None and stop is not None and start > stop:
             start, stop = stop, start
+        if start is not None:
+            start = int(start)
+        if stop is not None:
+            stop = int(stop)
         self.bands[band_id] = [start, stop]
         for listener in self.listeners:
             listener.adjust_band(band_id, start, stop)
