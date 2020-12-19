@@ -460,24 +460,20 @@ def get_aperture_table(height, width, center=None):
 
     aperture = table.Table(
         [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [width - 1],  # domain_end
          [center],  # c0
          [-3],  # aper_lower
          [3],  # aper_upper
          ],
         names=[
             'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
             'c0',
             'aper_lower',
             'aper_upper'],
     )
+    # Doesn't need to be a Header for the test
+    aperture.meta['header'] = {"MODEL": "Chebyshev1D",
+                               "DOMAIN_START": 0,
+                               "DOMAIN_END": width-1}
 
     return aperture
 
