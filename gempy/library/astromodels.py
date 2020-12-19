@@ -573,7 +573,11 @@ def table_to_model(table):
         if ndim == 1:
             r = re.compile("c([0-9]+)")
             param_names = list(filter(r.match, table.colnames))
-            degree = max([int(r.match(p).groups()[0]) for p in param_names])
+            # Handle cases (e.g., APERTURE tables) where the number of
+            # columns must be the same for all rows but the degree of
+            # polynomial might be different
+            degree = max([int(r.match(p).groups()[0]) for p in param_names
+                          if table[p] is not np.ma.masked])
             domain = [meta.get("DOMAIN_START"), meta.get("DOMAIN_END")]
             model = cls(degree=degree, domain=domain)
         elif ndim == 2:
