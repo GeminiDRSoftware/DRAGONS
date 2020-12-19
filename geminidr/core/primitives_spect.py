@@ -542,9 +542,22 @@ class Spect(PrimitivesBASE):
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
-                ext.FITCOORD = vstack([am.model_to_table(m_final),
-                                       am.model_to_table(m_inverse)],
-                                      metadata_conflicts="silent")
+                # This is all we need for the new FITCOORD table
+                fitcoord = vstack([am.model_to_table(m_final),
+                                   am.model_to_table(m_inverse)],
+                                  metadata_conflicts="silent")
+
+                # All this stuff can go once the tests have been rewritten
+                name_column = (["ndim", "x_degree", "y_degree", "x_domain_start",
+                                "x_domain_end", "y_domain_start", "y_domain_end"]
+                               + fitcoord.colnames)
+                old_stuff = ([2, m_final.x_degree, m_final.y_degree] +
+                             list(m_final.x_domain) + list(m_final.y_domain))
+                old_fitcoord = Table([name_column, old_stuff + list(fitcoord[0].values()),
+                                      name_column, old_stuff + list(fitcoord[1].values())],
+                                     names=("name", "coefficients",
+                                            "inv_name", "inv_coefficients"))
+                ext.FITCOORD = old_fitcoord
 
                 # Put this model before the first step if there's an existing WCS
                 if ext.wcs is None:
