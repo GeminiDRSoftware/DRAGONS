@@ -2466,8 +2466,7 @@ class Spect(PrimitivesBASE):
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-                all_column_names = []
-                all_model_dicts = []
+                all_tables = []
                 for aperture in aptable:
                     location = aperture['c0']
                     # Funky stuff to extract the traced coords associated with
@@ -2492,7 +2491,7 @@ class Spect(PrimitivesBASE):
                         # constrain fit. We call fit1d with dummy points to
                         # ensure we get the same type of result as if it had
                         # been successful.
-                        log.warning("Unable to trace aperture {}".format(aperture["number"]))
+                        log.warning(f"Unable to trace aperture {aperture['number']}")
                         fit1d = fit_1D(np.full_like(spectral_coords, c0),
                                        points=spectral_coords,
                                        domain=[0, ext.shape[dispaxis] - 1],
@@ -2502,19 +2501,19 @@ class Spect(PrimitivesBASE):
                             plot_coords = np.array([spectral_coords, fit1d.evaluate(spectral_coords)]).T
                             self.viewer.polygon(plot_coords, closed=False,
                                                 xfirst=(dispaxis == 1), origin=0)
-                    model_dict = fit1d.to_dicts()[0]
-                    del model_dict["model"]
+                    this_aptable = am.model_to_table(fit1d.model)
 
                     # Recalculate aperture limits after rectification
                     apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
-                    model_dict['aper_lower'] = aperture['aper_lower'] + (location - np.min(apcoords))
-                    model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
-                    all_column_names.extend([k for k in model_dict.keys()
-                                             if k not in all_column_names])
-                    all_model_dicts.append(model_dict)
+                    this_aptable["aper_lower"] = aperture["aper_lower"] + (location - np.min(apcoords))
+                    this_aptable["aper_upper"] = aperture["aper_upper"] - (np.max(apcoords) - location)
+                    all_tables.append(this_aptable)
 
-                for name in all_column_names:
-                    aptable[name] = [model_dict.get(name, 0) for model_dict in all_model_dicts]
+                new_aptable = vstack(all_tables, metadata_conflicts="silent")
+                # In order to put these columns at the end
+                aptable.remove_columns(["aper_lower", "aper_upper"])
+                for name in new_aptable.colnames:
+                    aptable[name] = new_aptable[name]
                 # We don't need to reattach the Table because it was a
                 # reference all along!
 
