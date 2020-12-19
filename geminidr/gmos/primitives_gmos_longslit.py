@@ -628,6 +628,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
             ad_fitted = astrodata.create(ad.phu)
+            all_fp_init = []
 
             # If the entire row is unilluminated, we want to fit
             # the pixels but still keep the edges masked
@@ -640,6 +641,17 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     if is_hamamatsu:
                         ext.mask[:, :21 // xbin] = 1
                         ext.mask[:, -21 // xbin:] = 1
+
+                all_fp_init.append(fit_1D.translate_params(params))
+
+            # Parameter validation should ensure we get an int or a list of 3 ints
+            try:
+                orders = [int(x) for x in spectral_order]
+            except TypeError:
+                orders = [spectral_order] * 3
+            # capture the per extension order into the fit parameters
+            for order, fp_init in zip(orders, all_fp_init):
+                fp_init["order"] = order
 
             # Interactive or not
             if interactive_reduce:
