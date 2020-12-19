@@ -483,7 +483,8 @@ class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True):
+                 plot_width=600, plot_height=400, plot_residuals=True,
+                 enable_user_masking=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -566,8 +567,11 @@ class Fit1DPanel:
         controller_div = Div()
         self.info_div = Div()
 
-        controls = column(*controls_column,
-                          row(mask_button, unmask_button), controller_div, self.info_div)
+        if enable_user_masking:
+            controls = column(*controls_column,
+                              row(mask_button, unmask_button), controller_div, self.info_div)
+        else:
+            controls = column(*controls_column, controller_div, self.info_div)
 
         # Now the figures
         x_range = None
@@ -585,9 +589,13 @@ class Fit1DPanel:
                 y_range = Range1d(y_min-y_pad, y_max+y_pad)
         except:
             pass  # ok, we don't *need* ranges...
+        if enable_user_masking:
+            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
+        else:
+            tools = "pan,wheel_zoom,box_zoom,reset"
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
-                        tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                        tools=tools,
                         output_backend="webgl", x_range=x_range, y_range=y_range)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
@@ -647,7 +655,7 @@ class Fit1DPanel:
             p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
                              title='Fit Residuals',
                              x_axis_label=xlabel, y_axis_label='delta'+ylabel,
-                             tools="pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap",
+                             tools="pan,wheel_zoom,box_zoom,reset",
                              output_backend="webgl", x_range=x_range, y_range=None)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'

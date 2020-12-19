@@ -700,7 +700,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    xlabel='x', ylabel='y',
                                                    reinit_live=True,
                                                    domains=all_domains,
-                                                   title="Normalize Flat")
+                                                   title="Normalize Flat",
+                                                   enable_user_masking=False)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # The fit models were done on a single row, so we need to
