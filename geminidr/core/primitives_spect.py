@@ -1171,6 +1171,10 @@ class Spect(PrimitivesBASE):
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
                 temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
+                #### Temporary to ensure all the old stuff is still there
+                # while I refactor tests
+                temptable.add_columns([[1], [order], [m_final.domain[0]], [m_final.domain[1]]],
+                                      names=("ndim", "degree", "domain_start", "domain_end"))
                 temptable.add_columns([[rms], [fwidth]], names=("rms", "fwidth"))
                 if ext.data.ndim > 1:
                     temptable[direction] = (extract_slice.start +
