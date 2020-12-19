@@ -542,15 +542,9 @@ class Spect(PrimitivesBASE):
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
-                columns = []
-                for m in (m_final, m_inverse):
-                    model_dict = am.polynomial_to_dict(m)
-                    columns.append(list(model_dict.keys()))
-                    columns.append(list(model_dict.values()))
-                # If we're genuinely worried about the two models, they might
-                # have different orders and we might need to pad one
-                ext.FITCOORD = Table(columns, names=("name", "coefficients",
-                                                     "inv_name", "inv_coefficients"))
+                ext.FITCOORD = vstack([am.model_to_table(m_final),
+                                       am.model_to_table(m_inverse)],
+                                      metadata_conflicts="silent")
 
                 # Put this model before the first step if there's an existing WCS
                 if ext.wcs is None:
