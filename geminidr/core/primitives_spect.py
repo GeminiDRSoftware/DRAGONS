@@ -1324,11 +1324,10 @@ class Spect(PrimitivesBASE):
                 # We loop twice so we can construct the aperture mask if needed
                 apertures = []
                 for row in aptable:
-                    model_dict = dict(zip(aptable.colnames, row))
-                    trace_model = am.dict_to_polynomial(model_dict)
+                    trace_model = am.table_to_model(row)
                     aperture = tracing.Aperture(trace_model,
-                                                aper_lower=model_dict['aper_lower'],
-                                                aper_upper=model_dict['aper_upper'])
+                                                aper_lower=row['aper_lower'],
+                                                aper_upper=row['aper_upper'])
                     if width is not None:
                         aperture.width = width
                     apertures.append(aperture)
