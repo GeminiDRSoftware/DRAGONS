@@ -10,7 +10,8 @@ from scipy.interpolate import BSpline
 
 from gempy.library import astromodels as am
 
-@pytest.mark.parametrize("model", "Chebyshev1D", "Legendre1D", "Polynomial1D")
+
+@pytest.mark.parametrize("model", ("Chebyshev1D", "Legendre1D", "Polynomial1D"))
 def test_astropy1d_table_recovery(model):
     """Convert a model to a Table and back"""
     m = getattr(models, model)(degree=3, c0=0, c1=1, c2=0.5, c3=0.25)
