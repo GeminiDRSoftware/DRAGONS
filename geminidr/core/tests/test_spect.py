@@ -35,6 +35,7 @@ from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
 
+from gempy.library import astromodels as am
 from geminidr.core import primitives_spect
 from geminidr.niri.primitives_niri_image import NIRIImage
 
@@ -243,7 +244,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
     ad[0].data += source
     ad[0].data += sky(ad[0].data, axis=1)
     ad[0].APERTURE = get_aperture_table(height, width, center=height // 2)
-    ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, y1, -3, 3])
+    ad[0].APERTURE.add_row([2, y1, -3, 3])
 
     # Running the test ----------------
     p = primitives_spect.Spect([])
@@ -451,29 +452,14 @@ def get_aperture_table(height, width, center=None):
     Returns
     -------
     astropy.table.Table
-        Aperture table containing the parameters needed to build a Chebyshev1D
-        model (number, ndim, degree, domain_start, domain_end, aper_lower,
-        aper_uper, c0, c1, c...)
+        Aperture table containing the parameters defining the aperture
 
     """
     center = height // 2 if center is None else center
-
-    aperture = table.Table(
-        [[1],  # Number
-         [center],  # c0
-         [-3],  # aper_lower
-         [3],  # aper_upper
-         ],
-        names=[
-            'number',
-            'c0',
-            'aper_lower',
-            'aper_upper'],
-    )
-    # Doesn't need to be a Header for the test
-    aperture.meta['header'] = {"MODEL": "Chebyshev1D",
-                               "DOMAIN_START": 0,
-                               "DOMAIN_END": width-1}
+    apmodel = models.Chebyshev1D(degree=0, domain=[0, width-1], c0=center)
+    aperture = am.model_to_table(apmodel)
+    aperture['aper_lower'] = -3
+    aperture['aper_upper'] = 3
 
     return aperture
 
