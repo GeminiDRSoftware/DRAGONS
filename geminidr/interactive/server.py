@@ -51,8 +51,6 @@ def _bkapp(doc):
     """
     global _visualizer
 
-    curdoc().template_variables["primitive_name"] = 'Cheeeeeze'  # self.title
-
     with open('%s/templates/index.html' % pathlib.Path(__file__).parent.absolute()) as f:
         # Because Bokeh has broken templating...
         title = _visualizer.title

@@ -48,7 +48,7 @@ class Controller(object):
     control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, band_model, helptext):
+    def __init__(self, fig, aperture_model, band_model, helptext, mask_handlers=None):
         """
         Create a controller to manage the given aperture and band models on the given GIFigure
 
@@ -65,6 +65,15 @@ class Controller(object):
         """
         self.aperture_model = aperture_model
         self.helptext = helptext
+        self.enable_user_masking = True if mask_handlers else False
+        if mask_handlers:
+            if len(mask_handlers) != 2:
+                raise ValueError("Must pass tuple (mask_fn, unmask_fn) to mask_handlers argument of Controller")
+            self.mask_handler = mask_handlers[0]
+            self.unmask_handler = mask_handlers[1]
+        else:
+            self.mask_handler = None
+            self.unmask_handler = None
         self.tasks = dict()
         if aperture_model:
             self.tasks['a'] = ApertureTask(aperture_model, helptext)
@@ -97,7 +106,10 @@ class Controller(object):
         if text is not None:
             ht = text
         else:
-            ht = """While the mouse is over the plot, choose from the following commands:<br/>\n"""
+            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+            if self.enable_user_masking:
+                ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
+                    "<b>U</b> - Unmask selected points<br/><br/>"
             for key, task in sorted(self.tasks.items()):
                 ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
 
@@ -128,7 +140,13 @@ class Controller(object):
             for k, v in self.tasks.items():
                 self.task = v
             # self.task = self.tasks.values()[0]
-            self.set_help_text(self.task.helptext())
+            if self.enable_user_masking:
+                ht = "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
+                     "<b>U</b> - Unmask selected points<br/><br/>%s"\
+                    % self.task.helptext()
+            else:
+                ht = self.task.helptext()
+            self.set_help_text(ht)
             self.task.start(self.x, self.y)
         else:
             # show selection of available tasks
@@ -189,17 +207,22 @@ class Controller(object):
 
         """
         def _ui_loop_handle_key(key):
-            if self.task:
+            if key == 'm' or key == 'M':
+                if self.mask_handler:
+                    self.mask_handler()
+            elif key == 'u' or key == 'U':
+                if self.unmask_handler:
+                    self.unmask_handler()
+            elif self.task:
                 if self.task.handle_key(key):
                     if len(self.tasks) > 1:
                         # only if we have multiple tasks, otherwise no point in offering 1 task option
                         self.task = None
                         self.set_help_text()
-            else:
-                if key in self.tasks:
-                    self.task = self.tasks[key]
-                    self.set_help_text(self.task.helptext())
-                    self.task.start(self.x, self.y)
+            elif key in self.tasks:
+                self.task = self.tasks[key]
+                self.set_help_text(self.task.helptext())
+                self.task.start(self.x, self.y)
         if self.helptext.document:
             # we now have an associated document, need to do this inside that context
             self.helptext.document.add_next_tick_callback(lambda: _ui_loop_handle_key(key=key))

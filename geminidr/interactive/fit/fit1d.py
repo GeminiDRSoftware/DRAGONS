@@ -557,10 +557,10 @@ class Fit1DPanel:
                                                              fitting_parameters, "grow",
                                                              fit.perform_fit))
 
-        mask_button = bm.Button(label="Mask")
+        mask_button = bm.Button(label="Mask", align='center', button_type='primary', width_policy='min')
         mask_button.on_click(self.mask_button_handler)
 
-        unmask_button = bm.Button(label="Unmask")
+        unmask_button = bm.Button(label="Unmask", align='center', button_type='primary', width_policy='min')
         unmask_button.on_click(self.unmask_button_handler)
 
         controller_div = Div()
@@ -638,7 +638,8 @@ class Fit1DPanel:
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
 
-        Controller(p_main, None, self.band_model, controller_div)
+        Controller(p_main, None, self.band_model, controller_div, mask_handlers=(self.mask_button_handler,
+                                                                                 self.unmask_button_handler))
         fig_column = [p_main]
 
         if plot_residuals:
@@ -728,7 +729,7 @@ class Fit1DPanel:
             self.fitting_parameters["sigma_lower"] = None
         self.fit.perform_fit()
 
-    def mask_button_handler(self, stuff):
+    def mask_button_handler(self, stuff=None):
         """
         Handler for the mask button.
 
@@ -747,7 +748,7 @@ class Fit1DPanel:
             self.fit.user_mask[i] = 1
         self.fit.perform_fit()
 
-    def unmask_button_handler(self, stuff):
+    def unmask_button_handler(self, stuff=None):
         """
         Handler for the unmask button.
 
