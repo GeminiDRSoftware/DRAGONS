@@ -1,3 +1,5 @@
+from bokeh.io import curdoc
+
 from astrodata import version
 
 import pathlib
@@ -49,8 +51,17 @@ def _bkapp(doc):
     """
     global _visualizer
 
+    curdoc().template_variables["primitive_name"] = 'Cheeeeeze'  # self.title
+
     with open('%s/templates/index.html' % pathlib.Path(__file__).parent.absolute()) as f:
-        t = Template(f.read())
+        # Because Bokeh has broken templating...
+        title = _visualizer.title
+        if not title:
+            title = 'Interactive'
+        template = f.read()
+        template = template.replace('{{ primitive_name }}', title)
+
+        t = Template(template)
         doc.template = t
     _visualizer.visualize(doc)
 

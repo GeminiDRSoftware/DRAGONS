@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import copy
 
+from bokeh.io import curdoc
 from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, \
     Dropdown, RangeSlider, Span, NumeralTickFormatter
@@ -11,7 +12,7 @@ from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None):
+    def __init__(self, config=None, title=''):
         """
         Initialize a visualizer.
 
@@ -21,6 +22,7 @@ class PrimitiveVisualizer(ABC):
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
         """
+        self.title = title
         self.extras = dict()
         if config is None:
             self.config = None
@@ -72,6 +74,9 @@ class PrimitiveVisualizer(ABC):
         """
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
+
+        # curdoc().template_variables["primitive_name"] = 'Cheeeeeze'  # self.title
+
         # callback = CustomJS(code="""
         #     setVersion('2.2.1');
         # """)

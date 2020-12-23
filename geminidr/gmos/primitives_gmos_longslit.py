@@ -672,7 +672,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # Create a 'row' parameter to add to the UI so the user can select the row they
                 # want to fit.
                 reinit_params = ["row", ]
-                reinit_extras = {"row": RangeField("Row of data to operate on", int, 0, min=0, max=nrows-1)}
+                reinit_extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
 
                 # This function is used by the interactive fitter to generate the x,y,weights to use
                 # for each fit.  We only want to fit a single row of data interactively, so that we can
@@ -680,7 +680,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # slider for the user and we will have access to the selected value in the 'extras'
                 # dictionary passed in here.
                 def reconstruct_points(conf, extras):
-                    r = extras['row']
+                    r = min(0, extras['row'] - 1)
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
                         masked_data = np.ma.masked_array(rpext.data[r],

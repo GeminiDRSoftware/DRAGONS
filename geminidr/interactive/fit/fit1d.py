@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from bokeh import models as bm, transform as bt
+from bokeh.io import curdoc
 from bokeh.layouts import row, column
 from bokeh.models import Div, Select, Range1d
 from bokeh.plotting import figure
@@ -520,7 +521,6 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
-
         self.info_div = Div()
 
         # Make a listener to update the info panel with the RMS on a fit
@@ -530,7 +530,6 @@ class Fit1DPanel:
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
-
 
         fit = self.fit
         order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
@@ -681,7 +680,7 @@ class Fit1DPanel:
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=1, color='red')
+        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
 
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
@@ -852,11 +851,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         title : str
             Title for UI (Interactive <Title>)
         """
-        super().__init__(config=config)
+        super().__init__(config=config, title=title)
 
-        title_div = None
-        if title is not None:
-            title_div = Div(text='<h2>%s</h2>' % title)
+        # title_div = None
+        # if title is not None:
+        #     title_div = Div(text='<h2>%s</h2>' % title)
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -898,16 +897,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
                 reinit_widgets.append(self.reinit_button)
 
-            if title_div is not None:
-                self.reinit_panel = column(title_div, self.function, *reinit_widgets)
-            else:
-                self.reinit_panel = column(self.function, *reinit_widgets)
+            self.reinit_panel = column(self.function, *reinit_widgets)
         else:
             # left panel with just the function selector (Chebyshev, etc.)
-            if title_div is not None:
-                self.reinit_panel = column(title_div, self.function)
-            else:
-                self.reinit_panel = column(self.function)
+            self.reinit_panel = column(self.function)
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -1002,7 +995,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
-        layout = column(row(self.reinit_panel, col), self.submit_button)
+        layout = column(row(self.reinit_panel, col), self.submit_button, sizing_mode="stretch_width")
         doc.add_root(layout)
 
     def reconstruct_points(self):
