@@ -52,8 +52,6 @@ import matplotlib
 from ..interactive.fit import fit1d
 
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
-from geminidr.interactive.deprecated.chebyshev2d import interactive_chebyshev2d
-from geminidr.interactive.deprecated.extractspectra import interactive_extract_spectra
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -333,7 +331,6 @@ class Spect(PrimitivesBASE):
                 all_pixels = list()
                 all_masked_data = list()
                 all_weights = list()
-                all_var = list()
                 all_fp_init = list()
 
                 for ext in ad:
@@ -375,11 +372,8 @@ class Spect(PrimitivesBASE):
                     all_shapes.append(ext.shape[0])
                     all_pixels.append(wave.value)
                     all_masked_data.append(zpt.value)
-                    # all_orders.append(fit1d_params["order"]) # order)
                     all_weights.append(1./zpt_err.value)
-                    all_var.append(zpt_err.value)
-                    # TODO fix parameters
-                    all_fp_init.append(fit1d_params)
+                    all_fp_init.append(fit_1D.translate_params(params))
 
                     calculated = True
 
@@ -509,7 +503,6 @@ class Spect(PrimitivesBASE):
         max_shift = params["max_shift"]
         max_missed = params["max_missed"]
         debug = params["debug"]
-        interactive = params["interactive"]
 
         orders = (spectral_order, spatial_order)
 
@@ -586,34 +579,29 @@ class Spect(PrimitivesBASE):
                                                             max_shift=max_shift * ybin / xbin,
                                                             viewer=self.viewer if debug else None)
 
-                if interactive:
-                    m_init, fit_it, m_final, m_inverse, masked = \
-                        interactive_chebyshev2d(ext, orders, dispaxis, sigma_clip, in_coords, ref_coords,
-                                                min_order=1 , max_order=20)
-                else:
-                    ## These coordinates need to be in the reference frame of a
-                    ## full-frame unbinned image, so modify the coordinates by
-                    ## the detector section
-                    # x1, x2, y1, y2 = ext.detector_section()
-                    # ref_coords = np.array([ref_coords[0] * xbin + x1,
-                    #                       ref_coords[1] * ybin + y1])
-                    # in_coords = np.array([in_coords[0] * xbin + x1,
-                    #                      in_coords[1] * ybin + y1])
+                ## These coordinates need to be in the reference frame of a
+                ## full-frame unbinned image, so modify the coordinates by
+                ## the detector section
+                # x1, x2, y1, y2 = ext.detector_section()
+                # ref_coords = np.array([ref_coords[0] * xbin + x1,
+                #                       ref_coords[1] * ybin + y1])
+                # in_coords = np.array([in_coords[0] * xbin + x1,
+                #                      in_coords[1] * ybin + y1])
 
-                    # The model is computed entirely in the pixel coordinate frame
-                    # of the data, so it could be used as a gWCS object
-                    m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
-                                                y_degree=orders[dispaxis],
-                                                x_domain=[0, ext.shape[1]],
-                                                y_domain=[0, ext.shape[0]])
-                    # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
-                    # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
-                    # Find model to transform actual (x,y) locations to the
-                    # value of the reference pixel along the dispersion axis
-                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                               sigma_clip, sigma=3)
-                    m_final, _ = fit_it(m_init, *in_coords, ref_coords[1 - dispaxis])
-                    m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1 - dispaxis])
+                # The model is computed entirely in the pixel coordinate frame
+                # of the data, so it could be used as a gWCS object
+                m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
+                                            y_degree=orders[dispaxis],
+                                            x_domain=[0, ext.shape[1]],
+                                            y_domain=[0, ext.shape[0]])
+                # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
+                # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
+                # Find model to transform actual (x,y) locations to the
+                # value of the reference pixel along the dispersion axis
+                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                           sigma_clip, sigma=3)
+                m_final, _ = fit_it(m_init, *in_coords, ref_coords[1 - dispaxis])
+                m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1 - dispaxis])
 
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
@@ -1376,7 +1364,6 @@ class Spect(PrimitivesBASE):
         grow = params["grow"]
         subtract_sky = params["subtract_sky"]
         debug = params["debug"]
-        interactive = params["interactive"]
 
         colors = ("green", "blue", "red", "yellow", "cyan", "magenta")
         offset_step = 2
@@ -1444,11 +1431,8 @@ class Spect(PrimitivesBASE):
                     log.stdinfo(f"    Extracting spectrum from aperture {apnum}")
                     self.viewer.width = 2
                     self.viewer.color = colors[(apnum-1) % len(colors)]
-                    if interactive:
-                        ndd_spec = interactive_extract_spectra(apnum, aperture, ext, method=method, dispaxis=dispaxis)
-                    else:
-                        ndd_spec = aperture.extract(ext, width=width,
-                                                    method=method, viewer=self.viewer if debug else None)
+                    ndd_spec = aperture.extract(ext, width=width,
+                                                method=method, viewer=self.viewer if debug else None)
 
                     # This whole (rather large) section is an attempt to ensure
                     # that sky apertures don't overlap with source apertures

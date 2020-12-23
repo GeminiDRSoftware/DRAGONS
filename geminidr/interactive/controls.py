@@ -69,7 +69,7 @@ class Controller(object):
         if aperture_model:
             self.tasks['a'] = ApertureTask(aperture_model, helptext)
         if band_model:
-            self.tasks['b'] = BandTask(band_model, helptext)
+            self.tasks['r'] = BandTask(band_model, helptext)
         self.task = None
         self.x = None
         self.y = None
@@ -494,16 +494,16 @@ class ApertureTask(Task):
 
 class BandTask(Task):
     """
-    Task for operating on the bands.
+    Task for operating on the regions.
     """
     def __init__(self, band_model, helptext):
         """
-        Create a band task for the given :class:`GIBandModel`
+        Create a region task for the given :class:`GIBandModel`
 
         Parameters
         ----------
         band_model : :class:`GIBandModel`
-            The band model to operate on with this task
+            The region model to operate on with this task
         """
         self.band_model = band_model
         self.band_edge = None
@@ -514,7 +514,7 @@ class BandTask(Task):
 
     def start(self, x, y):
         """
-        Start a band task with the current mouse position.
+        Start a region task with the current mouse position.
 
         Parameters
         ----------
@@ -529,9 +529,9 @@ class BandTask(Task):
 
     def start_band(self):
         """
-        Start a new band with the current mouse position.
+        Start a new region with the current mouse position.
 
-        This starts a band with one edge at the current x coordinate.
+        This starts a region with one edge at the current x coordinate.
         """
         x = self.last_x
         y = self.last_y
@@ -554,7 +554,7 @@ class BandTask(Task):
 
     def stop_band(self):
         """
-        Stop modifying the current band.
+        Stop modifying the current region.
         """
         self.band_edge = None
         self.band_id = None
@@ -573,7 +573,7 @@ class BandTask(Task):
             key that was pressed by the user.
 
         """
-        if key == 'b':
+        if key == 'b' or key == 'r':
             if self.band_id is None:
                 self.start_band()
                 self.update_help()
@@ -618,7 +618,7 @@ class BandTask(Task):
 
         This receives updates for the mouse movement as long as
         the task is active.  We modify the other edge of the
-        active band to this x value.
+        active region to this x value.
 
         Parameters
         ----------
@@ -645,20 +645,20 @@ class BandTask(Task):
         -------
             str description of the task
         """
-        return "create a <b>band</b> with edge at cursor"
+        return "create a <b>region</b> with edge at cursor"
 
     def update_help(self):
         if self.band_id is not None:
-            self.helptext_area.text = """Drag to desired band width.<br/>\n
-                  <b>B</b> to set the band<br/>\n
-                  <b>D</b> to delete/cancel the current band
-                  <b>*</b> to extend to maximum
+            self.helptext_area.text = """Drag to desired region width.<br/>\n
+                  <b>R</b> to set the region<br/>\n
+                  <b>D</b> to delete/cancel the current region
+                  <b>*</b> to extend to maximum on this side
                   """
         else:
-            self.helptext_area.text = """Drag to desired band width.<br/>\n
-                  <b>B</b> to start a new band<br/>\n
-                  <b>E</b> to edit nearest band<br/>\n
-                  <b>D</b> to delete the nearest band
+            self.helptext_area.text = """Drag to desired region width.<br/>\n
+                  <b>R</b> to start a new region<br/>\n
+                  <b>E</b> to edit nearest region<br/>\n
+                  <b>D</b> to delete the nearest region
                   """
 
     def helptext(self):
@@ -669,8 +669,8 @@ class BandTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Drag to desired band width.<br/>\n
-                  <b>B</b> to set the band<br/>\n
-                  <b>E</b> to edit nearest band<br/>\n
-                  <b>D</b> to delete/cancel the current/nearest band
+        return """Edit Regions<br/>\n
+                  <b>R</b> to start a new region or set the edge if editing<br/>\n
+                  <b>E</b> to edit nearest region<br/>\n
+                  <b>D</b> to delete/cancel the current/nearest region
                   """

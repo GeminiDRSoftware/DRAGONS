@@ -49,9 +49,88 @@ more detail below.
 
 ## fit_1D Interactive Fitting
 
+If the fit is a normal 1-D fit for each extension, there is a pre-done UI for
+doing the interactive fit.  There is still some work to be done, but it is
+basically generating the points/weights and passing in a set of parameters.
+Then, the pre-done UI returns the set of final `fit_1D` fits to be used in the
+primitive.
 
+As an example, you can look at `calculateSensitivity`.
+
+### calculateSensitivity
+
+The `calculateSensitivty` primitive is a good example of the common case and 
+how to use the pre-done fitting UI.  The code ends up like this:
+
+```python
+if interactive:
+    for ext in ad:
+        # calculate the x, y, weights
+        # create a dict of fit_1D parameters
+        # add each to an array
+        # <snip>...
+        all_exts.append(ext)
+        all_shapes.append(ext.shape[0])
+        all_pixels.append(wave.value)
+        all_masked_data.append(zpt.value)
+        all_weights.append(1./zpt_err.value)
+        # Do NOT reuse the fit_1D.translate_params output for all values as the
+        # UI will update the dictionary and that would affect all extensions
+        all_fp_init.append(fit_1D.translate_params(params))
+
+    # Clone the config
+    config = self.params[self.myself()]
+    config.update(**params)
+
+    # Create the 1-D Fitter.  The first argument is either a tuple of x, y, weight arrays
+    # or a function that returns a tuple of x, y, weight arrays.  Each array has 1 array
+    # per extension.  So x[0], y[0], weights[0] all belong to the first extension, etc.
+    visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
+                                       fitting_parameters=all_fp_init,
+                                       config=config,
+                                       tab_name_fmt="CCD {}",
+                                       xlabel='x', ylabel='y',
+                                       reinit_live=True,
+                                       domains=all_shapes,
+                                       title="Calculate Sensitivity")
+    # This bit spins up bokeh and waits for the user to click 'Submit' or close the window
+    geminidr.interactive.server.interactive_fitter(visualizer)
+    
+    # Grab the fit_1D outputs and do something
+    all_m_final = visualizer.results()
+    for ext, fit in zip(all_exts, all_m_final):
+        # Do something
+        # <snip>...
+else:
+    # non-interactive variant
+```
+
+### normalizeFlat
+
+The `normalizeFlat` primitive is quite expensive, so we modify the basic UI a bit.  This
+primitive passes a function to access the x, y, weights.  What this will do is create extra
+UI controls on the left side of the UI, outside the per-extension tabs.  These controls can 
+be modified to alter values of the `config`.  You can also add additional parameters via the
+`reinit_extras` dictionary of name, Field pairs.  The config and the values of the extras are 
+then passed into the function you provided to recalculate the x, y, weights for all 
+extensions.
+
+In the case of normalizeFlat, this capability was used to pull out a single row from each 
+extension to be fit.  When the user selects a row, say `100`, the UI will call back into the
+supplied function from `normalizeFlat`.  It will then extract x, y, weights for all extensions
+by pulling that row out.
+
+Once the user hits Submit, the fits are not useable as-is.  Instead, this primitive pulls the
+`fit_1D` parameters out of the returned fits and does a new fit with the full data using the
+same parameters.
+
+It's probably best to examine this primitive as a reference should you need to do something
+similar.
 
 ## Custom Interactive Fitting
+
+
+### Trace Apertures?  Other?
 
 
 ## Modules

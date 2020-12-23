@@ -895,9 +895,11 @@ class GIBandModel(object):
         return False
 
     def build_regions(self):
+        def deNone(val):
+            return '' if val is None else val
         if self.bands is None or len(self.bands.values()) == 0:
             return None
-        return ','.join(['{}:{}'.format(b[0], b[1]) for b in self.bands.values()])
+        return ','.join(['{}:{}'.format(deNone(b[0]), deNone(b[1])) for b in self.bands.values()])
 
 
 class BandHolder(object):
