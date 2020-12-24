@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from copy import copy
 
-from bokeh.io import curdoc
 from bokeh.layouts import row, column
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, Column, Div, \
+from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, \
     Dropdown, RangeSlider, Span, NumeralTickFormatter
 
 from geminidr.interactive import server
+from gempy.library.astrotools import cartesian_regions_to_slices
 
 from gempy.library.config import FieldValidationError
 
@@ -586,12 +586,12 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
     return component
 
 
-def connect_figure_extras(fig, aperture_model, band_model):
+def connect_figure_extras(fig, aperture_model, region_model):
     """
-    Connect a figure to an aperture and band model for rendering.
+    Connect a figure to an aperture and region model for rendering.
 
     This call will add extra visualizations to the bokeh figure to
-    show the bands and apertures in the given models.  Either may
+    show the regions and apertures in the given models.  Either may
     be passed as None if not relevant.
 
     This call also does a fix to bokeh to work around a rendering bug.
@@ -602,17 +602,17 @@ def connect_figure_extras(fig, aperture_model, band_model):
         bokeh Figure to add visualizations too
     aperture_model : :class:`~geminidr.interactive.interactive.GIApertureModel`
         Aperture model to add view for
-    band_model : :class:`~geminidr.interactive.interactive.GIBandModel`
+    region_model : :class:`~geminidr.interactive.interactive.GIRegionModel`
         Band model to add view for
     """
-    # If we have bands or apertures to show, show them
-    if band_model:
-        bands = GIBandView(fig, band_model)
+    # If we have regions or apertures to show, show them
+    if region_model:
+        regions = GIRegionView(fig, region_model)
     if aperture_model:
         aperture_view = GIApertureView(aperture_model, fig)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
-    # apertures and bands will not update properly after the figure is visible.
+    # apertures and regions will not update properly after the figure is visible.
     fig.js_on_change('center', CustomJS(args=dict(plot=fig),
                                         code="plot.properties.renderers.change.emit()"))
 
@@ -670,20 +670,20 @@ def hamburger_helper(title, widget):
     return column(top, widget)
 
 
-class GIBandListener(ABC):
+class GIRegionListener(ABC):
     """
-    interface for classes that want to listen for updates to a set of bands.
+    interface for classes that want to listen for updates to a set of regions.
     """
 
     @abstractmethod
-    def adjust_band(self, band_id, start, stop):
+    def adjust_region(self, region_id, start, stop):
         """
-        Called when the model adjusted a band's range.
+        Called when the model adjusted a region's range.
 
         Parameters
         ----------
-        band_id : int
-            ID of the band that was adjusted
+        region_id : int
+            ID of the region that was adjusted
         start : float
             New start of the range
         stop : float
@@ -692,78 +692,82 @@ class GIBandListener(ABC):
         pass
 
     @abstractmethod
-    def delete_band(self, band_id):
+    def delete_region(self, region_id):
         """
-        Called when the model deletes a band.
+        Called when the model deletes a region.
 
         Parameters
         ----------
-        band_id : int
-            ID of the band that was deleted
+        region_id : int
+            ID of the region that was deleted
         """
         pass
 
     @abstractmethod
-    def finish_bands(self):
+    def finish_regions(self):
         """
-        Called by the model when a band update completes and any resulting
-        band merges have already been done.
+        Called by the model when a region update completes and any resulting
+        region merges have already been done.
         """
         pass
 
 
-class GIBandModel(object):
+class GIRegionModel(object):
     """
-    Model for tracking a set of bands.
+    Model for tracking a set of regions.
     """
     def __init__(self):
-        # Right now, the band model is effectively stateless, other
+        # Right now, the region model is effectively stateless, other
         # than maintaining the set of registered listeners.  That is
-        # because the bands are not used for anything, so there is
+        # because the regions are not used for anything, so there is
         # no need to remember where they all are.  This is likely to
         # change in future and that information should likely be
         # kept in here.
-        self.band_id = 1
+        self.region_id = 1
         self.listeners = list()
-        self.bands = dict()
+        self.regions = dict()
 
     def add_listener(self, listener):
         """
-        Add a listener to this band model.
+        Add a listener to this region model.
 
-        The listener can either be a :class:`GIBandListener` or
+        The listener can either be a :class:`GIRegionListener` or
         it can be a function,  The function should expect as
-        arguments, the `band_id`, and `start`, and `stop` x
+        arguments, the `region_id`, and `start`, and `stop` x
         range values.
 
         Parameters
         ----------
-        listener : :class:`~geminidr.interactive.interactive.GIBandListener`
+        listener : :class:`~geminidr.interactive.interactive.GIRegionListener`
         """
-        if not isinstance(listener, GIBandListener):
+        if not isinstance(listener, GIRegionListener):
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
     def load_from_tuples(self, tuples):
-        for band_id in self.bands.keys():
-            self.delete_band(band_id)
-        self.band_id=1
+        region_ids = list(self.regions.keys())
+        for region_id in region_ids:
+            self.delete_region(region_id)
+        self.region_id=1
         for tup in tuples:
-            self.adjust_band(self.band_id, tup.start, tup.stop)
-            self.band_id = self.band_id+1
+            self.adjust_region(self.region_id, tup.start, tup.stop)
+            self.region_id = self.region_id + 1
 
-    def adjust_band(self, band_id, start, stop):
+    def load_from_string(self, region_string):
+        self.load_from_tuples(cartesian_regions_to_slices(region_string))
+
+    def adjust_region(self, region_id, start, stop):
         """
-        Adjusts the given band ID to the specified X range.
+        Adjusts the given region ID to the specified X range.
 
-        The band ID may refer to a brand new band ID as well.
+        The region ID may refer to a brand new region ID as well.
         This method will call into all registered listeners
         with the updated information.
 
         Parameters
         ----------
-        band_id : int
-            ID fo the band to modify
+        region_id : int
+            ID fo the region to modify
         start : float
             Starting coordinate of the x range
         stop : float
@@ -776,83 +780,83 @@ class GIBandModel(object):
             start = int(start)
         if stop is not None:
             stop = int(stop)
-        self.bands[band_id] = [start, stop]
+        self.regions[region_id] = [start, stop]
         for listener in self.listeners:
-            listener.adjust_band(band_id, start, stop)
+            listener.adjust_region(region_id, start, stop)
 
-    def delete_band(self, band_id):
+    def delete_region(self, region_id):
         """
-        Delete a band by id
+        Delete a region by id
 
         Parameters
         ----------
-        band_id : int
-            ID of the band to delete
+        region_id : int
+            ID of the region to delete
 
         """
-        del self.bands[band_id]
+        del self.regions[region_id]
         for listener in self.listeners:
-            listener.delete_band(band_id)
+            listener.delete_region(region_id)
 
-    def finish_bands(self):
+    def finish_regions(self):
         """
-        Finish operating on the bands.
+        Finish operating on the regions.
 
-        This call is for when a band update is completed.  During normal
+        This call is for when a region update is completed.  During normal
         mouse movement, we update the view to be interactive.  We do not
-        do more expensive stuff like merging intersecting bands together
+        do more expensive stuff like merging intersecting regions together
         or updating the mask and redoing the fit.  That is done here
-        instead once the band is set.
+        instead once the region is set.
         """
         # first we do a little consolidation, in case we have overlaps
-        band_dump = list()
-        for key, value in self.bands.items():
-            band_dump.append([key, value])
-        for i in range(len(band_dump)-1):
-            for j in range(i+1, len(band_dump)):
-                # check for overlap and delete/merge bands
-                akey, aband = band_dump[i]
-                bkey, bband = band_dump[j]
-                if (aband[0] is None or bband[1] is None or aband[0] < bband[1]) \
-                        and (aband[1] is None or bband[0] is None or aband[1] > bband[0]):
+        region_dump = list()
+        for key, value in self.regions.items():
+            region_dump.append([key, value])
+        for i in range(len(region_dump)-1):
+            for j in range(i+1, len(region_dump)):
+                # check for overlap and delete/merge regions
+                akey, aregion = region_dump[i]
+                bkey, bregion = region_dump[j]
+                if (aregion[0] is None or bregion[1] is None or aregion[0] < bregion[1]) \
+                        and (aregion[1] is None or bregion[0] is None or aregion[1] > bregion[0]):
                     # full overlap?
-                    if (aband[0] is None or (bband[0] is not None and aband[0] <= bband[0])) \
-                            and (aband[1] is None or (bband is not None and aband[1] >= bband[1])):
-                        # remove bband
-                        self.delete_band(bkey)
-                    elif (bband[0] is None or (aband[0] is not None and aband[0] >= bband[0])) \
-                            and (bband[1] is None or (aband[1] is not None and aband[1] <= bband[1])):
-                        # remove aband
-                        self.delete_band(akey)
+                    if (aregion[0] is None or (bregion[0] is not None and aregion[0] <= bregion[0])) \
+                            and (aregion[1] is None or (bregion is not None and aregion[1] >= bregion[1])):
+                        # remove bregion
+                        self.delete_region(bkey)
+                    elif (bregion[0] is None or (aregion[0] is not None and aregion[0] >= bregion[0])) \
+                            and (bregion[1] is None or (aregion[1] is not None and aregion[1] <= bregion[1])):
+                        # remove aregion
+                        self.delete_region(akey)
                     else:
-                        aband[0] = None if None in (aband[0], bband[0]) else min(aband[0], bband[0])
-                        aband[1] = None if None in (aband[1], bband[1]) else max(aband[1], bband[1])
-                        self.adjust_band(akey, aband[0], aband[1])
-                        self.delete_band(bkey)
+                        aregion[0] = None if None in (aregion[0], bregion[0]) else min(aregion[0], bregion[0])
+                        aregion[1] = None if None in (aregion[1], bregion[1]) else max(aregion[1], bregion[1])
+                        self.adjust_region(akey, aregion[0], aregion[1])
+                        self.delete_region(bkey)
         for listener in self.listeners:
-            listener.finish_bands()
+            listener.finish_regions()
 
-    def find_band(self, x):
+    def find_region(self, x):
         """
-        Find the first band that contains x in it's range, or return a tuple of None
+        Find the first region that contains x in it's range, or return a tuple of None
 
         Parameters
         ----------
         x : float
-            Find the first band that contains x, if any
+            Find the first region that contains x, if any
 
         Returns
         -------
-            tuple : (band id, start, stop) or (None, None, None) if there are no matches
+            tuple : (region id, start, stop) or (None, None, None) if there are no matches
         """
-        for band_id, band in self.bands.items():
-            if (band[0] is None or band[0] <= x) and (band[1] is None or x <= band[1]):
-                return band_id, band[0], band[1]
+        for region_id, region in self.regions.items():
+            if (region[0] is None or region[0] <= x) and (region[1] is None or x <= region[1]):
+                return region_id, region[0], region[1]
         return None, None, None
 
-    def closest_band(self, x):
+    def closest_region(self, x):
         """
-        Fid the band with an edge closest to x.
+        Fid the region with an edge closest to x.
 
         Parameters
         ----------
@@ -861,55 +865,55 @@ class GIBandModel(object):
 
         Returns
         -------
-        int, float : int band id and float position of other edge or None, None if no bands exist
+        int, float : int region id and float position of other edge or None, None if no regions exist
         """
-        ret_band_id = None
-        ret_band = None
+        ret_region_id = None
+        ret_region = None
         closest = None
-        for band_id, band in self.bands.items():
-            distance = None if band[1] is None else abs(band[1]-x)
+        for region_id, region in self.regions.items():
+            distance = None if region[1] is None else abs(region[1]-x)
             if closest is None or (distance is not None and distance < closest):
-                ret_band_id = band_id
-                ret_band = band[0]
+                ret_region_id = region_id
+                ret_region = region[0]
                 closest = distance
-            distance = None if band[0] is None else abs(band[0] - x)
+            distance = None if region[0] is None else abs(region[0] - x)
             if closest is None or (distance is not None and distance < closest):
-                ret_band_id = band_id
-                ret_band = band[1]
+                ret_region_id = region_id
+                ret_region = region[1]
                 closest = distance
-        return ret_band_id, ret_band
+        return ret_region_id, ret_region
 
     def contains(self, x):
         """
-        Check if any of the bands contains point x
+        Check if any of the regions contains point x
 
         Parameters
         ----------
         x : float
-            point to check for band inclusion
+            point to check for region inclusion
 
         Returns
         -------
-        bool : True if there are no bands defined, or if any band contains x in it's range
+        bool : True if there are no regions defined, or if any region contains x in it's range
         """
-        if len(self.bands.values()) == 0:
+        if len(self.regions.values()) == 0:
             return True
-        for b in self.bands.values():
+        for b in self.regions.values():
             if (b[0] is None or b[0] < x) and (b[1] is None or x < b[1]):
                 return True
         return False
 
     def build_regions(self):
-        def deNone(val):
-            return '' if val is None else val
-        if self.bands is None or len(self.bands.values()) == 0:
+        def deNone(val, offset=0):
+            return '' if val is None else val + offset
+        if self.regions is None or len(self.regions.values()) == 0:
             return None
-        return ','.join(['{}:{}'.format(deNone(b[0]), deNone(b[1])) for b in self.bands.values()])
+        return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in self.regions.values()])
 
 
-class BandHolder(object):
+class RegionHolder(object):
     """
-    Used by `~geminidr.interactive.interactive.GIBandView` to track start/stop
+    Used by `~geminidr.interactive.interactive.GIRegionView` to track start/stop
     independently of the bokeh Annotation since we want to support `None`.
 
     We need to know if the start/stop values are a specific value or `None`
@@ -921,46 +925,46 @@ class BandHolder(object):
         self.stop = stop
 
 
-class GIBandView(GIBandListener):
+class GIRegionView(GIRegionListener):
     """
-    View for the set of bands to show then in a figure.
+    View for the set of regions to show then in a figure.
     """
     def __init__(self, fig, model):
         """
-        Create the view for the set of bands managed in the given model
+        Create the view for the set of regions managed in the given model
         to display them in a figure.
 
         Parameters
         ----------
         fig : :class:`~bokeh.plotting.Figure`
-            the figure to display the bands in
-        model : :class:`~geminidr.interactive.interactive.GIBandModel`
-            the model for the band information (may be shared by multiple
-            :class:`~geminidr.interactive.interactive.GIBandView` instances)
+            the figure to display the regions in
+        model : :class:`~geminidr.interactive.interactive.GIRegionModel`
+            the model for the region information (may be shared by multiple
+            :class:`~geminidr.interactive.interactive.GIRegionView` instances)
         """
         self.fig = fig
         self.model = model
         model.add_listener(self)
-        self.bands = dict()
+        self.regions = dict()
         fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
         fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
 
-    def adjust_band(self, band_id, start, stop):
+    def adjust_region(self, region_id, start, stop):
         """
-        Adjust a band by it's ID.
+        Adjust a region by it's ID.
 
-        This may also be a new band, if it is an ID we haven't
+        This may also be a new region, if it is an ID we haven't
         seen before.  This call will create or adjust the glyphs
         in the figure to reflect the new data.
 
         Parameters
         ----------
-        band_id : int
-            id of band to create or adjust
+        region_id : int
+            id of region to create or adjust
         start : float
-            start of the x range of the band
+            start of the x range of the region
         stop : float
-            end of the x range of the band
+            end of the x range of the region
         """
         def fn():
             draw_start = start
@@ -969,16 +973,16 @@ class GIBandView(GIBandListener):
                 draw_start = self.fig.x_range.start - ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
             if draw_stop is None:
                 draw_stop = self.fig.x_range.end + ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
-            if band_id in self.bands:
-                band = self.bands[band_id]
-                band.start = start
-                band.stop = stop
-                band.annotation.left = draw_start
-                band.annotation.right = draw_stop
+            if region_id in self.regions:
+                region = self.regions[region_id]
+                region.start = start
+                region.stop = stop
+                region.annotation.left = draw_start
+                region.annotation.right = draw_stop
             else:
-                band = BoxAnnotation(left=draw_start, right=draw_stop, fill_alpha=0.1, fill_color='navy')
-                self.fig.add_layout(band)
-                self.bands[band_id] = BandHolder(band, start, stop)
+                region = BoxAnnotation(left=draw_start, right=draw_stop, fill_alpha=0.1, fill_color='navy')
+                self.fig.add_layout(region)
+                self.regions[region_id] = RegionHolder(region, start, stop)
         if self.fig.document is not None:
             self.fig.document.add_next_tick_callback(lambda: fn())
         else:
@@ -996,44 +1000,44 @@ class GIBandView(GIBandListener):
 
         """
         if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
-            for band in self.bands.values():
-                if band.start is None or band.stop is None:
-                    draw_start = band.start
-                    draw_stop = band.stop
+            for region in self.regions.values():
+                if region.start is None or region.stop is None:
+                    draw_start = region.start
+                    draw_stop = region.stop
                     if draw_start is None:
                         draw_start = self.fig.x_range.start - ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
                     if draw_stop is None:
                         draw_stop = self.fig.x_range.end + ((self.fig.x_range.end - self.fig.x_range.start) / 10.0)
-                    band.annotation.left = draw_start
-                    band.annotation.right = draw_stop
+                    region.annotation.left = draw_start
+                    region.annotation.right = draw_stop
 
-    def delete_band(self, band_id):
+    def delete_region(self, region_id):
         """
-        Delete a band by ID.
+        Delete a region by ID.
 
         If the view does not recognize the id, this is a no-op.
         Otherwise, all related glyphs are cleaned up from the figure.
 
         Parameters
         ----------
-        band_id : int
-            ID of band to remove
+        region_id : int
+            ID of region to remove
 
         """
         def fn():
-            if band_id in self.bands:
-                band = self.bands[band_id]
-                band.annotation.left = 0
-                band.annotation.right = 0
-                band.start = 0
-                band.stop = 0
+            if region_id in self.regions:
+                region = self.regions[region_id]
+                region.annotation.left = 0
+                region.annotation.right = 0
+                region.start = 0
+                region.stop = 0
                 # TODO remove it (impossible?)
         # We have to defer this as the delete may come via the keypress URL
         # But we aren't in the PrimitiveVisualizaer so we reference the
         # document and queue it directly
         self.fig.document.add_next_tick_callback(lambda: fn())
 
-    def finish_bands(self):
+    def finish_regions(self):
         pass
 
 
@@ -1375,7 +1379,7 @@ class GIApertureView(object):
     """
     UI elements for displaying the current set of apertures.
 
-    This class manages a set of colored bands on a figure to
+    This class manages a set of colored regions on a figure to
     show where the defined apertures are, along with a numeric
     ID for each.
     """
@@ -1387,7 +1391,7 @@ class GIApertureView(object):
         model : :class:`~geminidr.interactive.interactive.GIApertureModel`
             Model for tracking the apertures, may be shared across multiple views
         fig : :class:`~bokeh.plotting.Figure`
-            bokeh plot for displaying the bands
+            bokeh plot for displaying the regions
         """
         self.aps = list()
         self.ap_sliders = list()
@@ -1478,3 +1482,29 @@ class GIApertureView(object):
             ap_slider.aperture_id = ap_slider.aperture_id-1
             ap_slider.set_title("%s" % ap_slider.aperture_id)
             # ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id
+
+
+class RegionEditor(GIRegionListener):
+    def __init__(self, region_model):
+        self.text_input = TextInput(title="Regions (i.e. 100:500,510:900,950:   press 'Enter' to apply")
+        self.text_input.value = region_model.build_regions()
+        self.region_model = region_model
+        self.region_model.add_listener(self)
+        self.text_input.on_change("value", self.handle_text_value)
+
+    def adjust_region(self, region_id, start, stop):
+        pass
+
+    def delete_region(self, region_id):
+        pass
+
+    def finish_regions(self):
+        self.text_input.value = self.region_model.build_regions()
+
+    def handle_text_value(self, attr, old, new):
+        current = self.region_model.build_regions()
+        if current != new:
+            self.region_model.load_from_string(new)
+
+    def get_widget(self):
+        return self.text_input

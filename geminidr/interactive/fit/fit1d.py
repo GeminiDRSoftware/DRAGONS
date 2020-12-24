@@ -13,7 +13,8 @@ from bokeh.palettes import Category10
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIBandModel, GIApertureModel, connect_figure_extras, GIBandListener
+from geminidr.interactive.interactive import GIRegionModel, GIApertureModel, connect_figure_extras, GIRegionListener, \
+    RegionEditor
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
@@ -599,7 +600,7 @@ class Fit1DPanel:
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
-        class Fit1DBandListener(GIBandListener):
+        class Fit1DRegionListener(GIRegionListener):
             """
             Wrapper class so we can just detect when a bands are finished.
 
@@ -616,21 +617,21 @@ class Fit1DPanel:
                 """
                 self.fn = fn
 
-            def adjust_band(self, band_id, start, stop):
+            def adjust_region(self, region_id, start, stop):
                 pass
 
-            def delete_band(self, band_id):
+            def delete_region(self, region_id):
                 self.fn()
 
-            def finish_bands(self):
+            def finish_regions(self):
                 self.fn()
 
-        self.band_model = GIBandModel()
+        self.band_model = GIRegionModel()
 
         def update_regions():
             self.fit.model.regions = self.band_model.build_regions()
-        self.band_model.add_listener(Fit1DBandListener(update_regions))
-        self.band_model.add_listener(Fit1DBandListener(self.band_model_handler))
+        self.band_model.add_listener(Fit1DRegionListener(update_regions))
+        self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
         connect_figure_extras(p_main, None, self.band_model)
 
@@ -683,6 +684,8 @@ class Fit1DPanel:
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
 
+        region_editor = RegionEditor(self.band_model)
+        fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
         self.component = row(controls, col)

@@ -48,9 +48,9 @@ class Controller(object):
     control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, band_model, helptext, mask_handlers=None):
+    def __init__(self, fig, aperture_model, region_model, helptext, mask_handlers=None):
         """
-        Create a controller to manage the given aperture and band models on the given GIFigure
+        Create a controller to manage the given aperture and region models on the given GIFigure
 
         Parameters
         ----------
@@ -58,8 +58,8 @@ class Controller(object):
             plot to attach controls to
         aperture_model : :class:`GIApertureModel`
             model for apertures for this plot/dataset, or None
-        band_model : :class:`GIBandModel`
-            model for bands for this plot/dataset, or None
+        region_model : :class:`GIRegionModel`
+            model for regions for this plot/dataset, or None
         helptext : :class:`Div`
             div to update text in to provide help to the user
         """
@@ -77,8 +77,8 @@ class Controller(object):
         self.tasks = dict()
         if aperture_model:
             self.tasks['a'] = ApertureTask(aperture_model, helptext)
-        if band_model:
-            self.tasks['r'] = BandTask(band_model, helptext)
+        if region_model:
+            self.tasks['r'] = RegionTask(region_model, helptext)
         self.task = None
         self.x = None
         self.y = None
@@ -515,22 +515,22 @@ class ApertureTask(Task):
                   <b>D</b> to delete the aperture"""
 
 
-class BandTask(Task):
+class RegionTask(Task):
     """
     Task for operating on the regions.
     """
-    def __init__(self, band_model, helptext):
+    def __init__(self, region_model, helptext):
         """
-        Create a region task for the given :class:`GIBandModel`
+        Create a region task for the given :class:`GIRegionModel`
 
         Parameters
         ----------
-        band_model : :class:`GIBandModel`
+        region_model : :class:`GIRegionModel`
             The region model to operate on with this task
         """
-        self.band_model = band_model
-        self.band_edge = None
-        self.band_id = None
+        self.region_model = region_model
+        self.region_edge = None
+        self.region_id = None
         self.helptext_area = helptext
         self.last_x = None
         self.last_y = None
@@ -550,7 +550,7 @@ class BandTask(Task):
         self.last_x = x
         self.last_y = y
 
-    def start_band(self):
+    def start_region(self):
         """
         Start a new region with the current mouse position.
 
@@ -558,37 +558,34 @@ class BandTask(Task):
         """
         x = self.last_x
         y = self.last_y
-        (band_id, start, end) = self.band_model.find_band(x)
-        if band_id is not None:
-            self.band_id = band_id
+        (region_id, start, end) = self.region_model.find_region(x)
+        if region_id is not None:
+            self.region_id = region_id
             if (x-start) < (end-x):
-                self.band_edge = end
+                self.region_edge = end
             else:
-                self.band_edge = start
-            self.band_model.adjust_band(self.band_id, x, self.band_edge)
+                self.region_edge = start
+            self.region_model.adjust_region(self.region_id, x, self.region_edge)
         else:
-            self.band_edge = x
-            self.band_id = self.band_model.band_id
-            self.band_model.band_id += 1
+            self.region_edge = x
+            self.region_id = self.region_model.region_id
+            self.region_model.region_id += 1
 
     def stop(self):
-        if self.band_id is not None:
-            self.stop_band()
+        if self.region_id is not None:
+            self.stop_region()
 
-    def stop_band(self):
+    def stop_region(self):
         """
         Stop modifying the current region.
         """
-        self.band_edge = None
-        self.band_id = None
-        self.band_model.finish_bands()
+        self.region_edge = None
+        self.region_id = None
+        self.region_model.finish_regions()
 
     def handle_key(self, key):
         """
         Handle a key press.
-
-        For now, the band task only responds to 'b', causing it to stop
-        modifying the active band.
 
         Parameters
         ----------
@@ -597,40 +594,40 @@ class BandTask(Task):
 
         """
         if key == 'b' or key == 'r':
-            if self.band_id is None:
-                self.start_band()
+            if self.region_id is None:
+                self.start_region()
                 self.update_help()
                 return False
             else:
-                self.stop_band()
+                self.stop_region()
                 self.update_help()
                 return True
         if key == 'e':
-            if self.band_edge is None:
-                self.band_id, self.band_edge = self.band_model.closest_band(self.last_x)
+            if self.region_edge is None:
+                self.region_id, self.region_edge = self.region_model.closest_region(self.last_x)
             self.update_help()
             return False
         if key == 'd':
-            if self.band_id is not None:
-                self.band_model.delete_band(self.band_id)
+            if self.region_id is not None:
+                self.region_model.delete_region(self.region_id)
                 self.stop()
                 self.update_help()
                 return True
             else:
-                band_id, band_edge = self.band_model.closest_band(self.last_x)
-                if band_id is not None:
-                    self.band_model.delete_band(band_id)
+                region_id, region_edge = self.region_model.closest_region(self.last_x)
+                if region_id is not None:
+                    self.region_model.delete_region(region_id)
                 self.update_help()
                 return True
         if key == '*':
-            if self.band_id is not None and self.band_edge is not None:
-                if self.last_x < self.band_edge:
-                    # we're left of the anchor, so we want [None, band_edge]
-                    self.band_model.adjust_band(self.band_id, None, self.band_edge)
+            if self.region_id is not None and self.region_edge is not None:
+                if self.last_x < self.region_edge:
+                    # we're left of the anchor, so we want [None, region_edge]
+                    self.region_model.adjust_region(self.region_id, None, self.region_edge)
                 else:
-                    # we're right of the anchor, so we want [band_edge, None]
-                    self.band_model.adjust_band(self.band_id, self.band_edge, None)
-                self.stop_band()
+                    # we're right of the anchor, so we want [region_edge, None]
+                    self.region_model.adjust_region(self.region_id, self.region_edge, None)
+                self.stop_region()
                 self.update_help()
 
         return False
@@ -653,11 +650,11 @@ class BandTask(Task):
         """
         self.last_x = x
         self.last_y = y
-        # we are in band mode
-        if self.band_id is not None:
+        # we are in region mode
+        if self.region_id is not None:
             start = x
-            end = self.band_edge
-            self.band_model.adjust_band(self.band_id, start, end)
+            end = self.region_edge
+            self.region_model.adjust_region(self.region_id, start, end)
         return False
 
     def description(self):
@@ -671,14 +668,14 @@ class BandTask(Task):
         return "create a <b>region</b> with edge at cursor"
 
     def update_help(self):
-        if self.band_id is not None:
+        if self.region_id is not None:
             self.helptext_area.text = """Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n
-                  <b>D</b> to delete/cancel the current region
+                  <b>D</b> to delete/cancel the current region<br/>
                   <b>*</b> to extend to maximum on this side
                   """
         else:
-            self.helptext_area.text = """Drag to desired region width.<br/>\n
+            self.helptext_area.text = """<b>Edit Regions:</b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete the nearest region
