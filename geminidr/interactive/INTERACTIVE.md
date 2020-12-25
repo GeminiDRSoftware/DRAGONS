@@ -276,14 +276,14 @@ but Apertures work similarly.
 
 ![Controller/Task UI](docs/ControllerAndTask.png)
 
-First, in the visualizer for each tab a band model is created.  This is a data 
-structure that keeps track of all the bands, can check if a given coordinate is 
-‘selected’ by the bands, and notifies registered listeners whenever the bands 
+First, in the visualizer for each tab a region model is created.  This is a data 
+structure that keeps track of all the regions, can check if a given coordinate is 
+‘selected’ by the regions, and notifies registered listeners whenever the bands 
 change.  This last is used by Fit1DVisualizer to recalculate the masked points 
 and redo the fit, for instance.
 
 ```python
-self.band_model = GIRegionModel()
+self.region_model = GIRegionModel()
 ```
 
 Next, in the UI below the mask/unmask buttons we add a bokeh `Div`.  This `Div` is 
@@ -300,7 +300,7 @@ done with a simple utility function.  The None here refers to an optional
 `GIRegionModel` to multiple `Figure`s (and indeed in this example there are two).
 
 ```python
-connect_figure_extras(figure, None, self.band_model)
+connect_figure_extras(figure, None, self.region_model)
 ```
 
 To get updates on the bands so we know to recalculate the masked points, we add 
@@ -309,7 +309,7 @@ a listener to the `GIRegionModel`.  Note there is a lot of custom code for
 new interfaces.
 
 ```python
-self.band_model.add_listener(some_listener)
+self.region_model.add_listener(some_listener)
 ```
 
 Lastly, we setup a `Controller`.  There is one for the top figure in each of the 
@@ -321,6 +321,11 @@ create the `Controller` and let it manage everything.
 ```python
 Controller(figure, None, self.band_model, controller_div)
 ```
+
+There is also a hempler class called `RegionEditor`.  If you create an instance of 
+this, it will make a text input that is linked to the `GIRegionModel`.  Just call
+`get_widget()` on the `RegionEditor` after you make it to get a widget you can add
+to a bokeh layout.
 
 ## Modules
 
