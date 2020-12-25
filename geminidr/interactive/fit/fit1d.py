@@ -635,10 +635,6 @@ class Fit1DPanel:
 
         connect_figure_extras(p_main, None, self.band_model)
 
-        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
-            region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
-            self.band_model.load_from_tuples(region_tuples)
-
         Controller(p_main, None, self.band_model, controller_div, mask_handlers=(self.mask_button_handler,
                                                                                  self.unmask_button_handler))
         fig_column = [p_main]
@@ -666,6 +662,11 @@ class Fit1DPanel:
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
                             size=5, **self.fit.mask_rendering_kwargs())
+
+        # Initializing regions here ensures the listeners are notified of the region(s)
+        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
+            region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
+            self.band_model.load_from_tuples(region_tuples)
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
                                       size=5, **self.fit.mask_rendering_kwargs())
