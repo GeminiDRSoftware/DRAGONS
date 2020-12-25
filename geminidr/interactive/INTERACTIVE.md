@@ -157,10 +157,8 @@ similar.
 
 ## Custom Approach
 
-If the fit is being done with `fit_1D` then there is a
-feature rich generic UI that you can use for the interactive
-fit.  If you need to do something custom, you can subclass
-`PrimitiveVisualizer`.
+If the fit can't be done with `fit_1D`, you can subclass
+`PrimitiveVisualizer` to do something custom.
 
 ### PrimitiveVisualizer
 
@@ -198,7 +196,7 @@ and block access to the UI.  It takes two parameters, a `widget` and a `message`
 of the popup.  When this `widget` is disabled, the message will be shown.  When the `widget` 
 is re-enabled, the message will be hidden and the user will have access to the UI again.
 
-This roundabout way of showing the popup is necessary due to the design of bokeh.  
+This roundabout way of showing the popup is necessary due to the design of bokeh. 
 Typically, you would tie it to a button that kicks off an operation that you expect to be
 slow.
 
@@ -231,7 +229,7 @@ code in the primitive like so:
 ```python
 config = self.params[self.myself()]
 config.update(**params)
-visualizer.config=config
+# pass this config to the visualizer constructor
 ```
 
 ## Tornado Handlers
