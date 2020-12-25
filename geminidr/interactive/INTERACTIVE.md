@@ -322,7 +322,7 @@ create the `Controller` and let it manage everything.
 Controller(figure, None, self.band_model, controller_div)
 ```
 
-There is also a hempler class called `RegionEditor`.  If you create an instance of 
+There is also a helper class called `RegionEditor`.  If you create an instance of 
 this, it will make a text input that is linked to the `GIRegionModel`.  Just call
 `get_widget()` on the `RegionEditor` after you make it to get a widget you can add
 to a bokeh layout.
