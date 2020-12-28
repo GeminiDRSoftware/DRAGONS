@@ -127,7 +127,6 @@ datasets = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.skip("fit1d issues")
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_for_determine_distortion_using_models_coefficients(
         ad, change_working_dir, ref_ad_factory, request):
@@ -156,10 +155,11 @@ def test_regression_for_determine_distortion_using_models_coefficients(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    for ext, ext_ref in zip(distortion_determined_ad, ref_ad):
-        c = np.ma.masked_invalid(ext.FITCOORD["coefficients"])
-        c_ref = np.ma.masked_invalid(ext_ref.FITCOORD["coefficients"])
-        np.testing.assert_allclose(c, c_ref, atol=2)
+    for ext, ref_ext in zip(distortion_determined_ad, ref_ad):
+        m = ext.wcs.forward_transform[1]
+        m_ref = ref_ext.wcs.forward_transform[1]
+        assert m.__class__.__name__ == m_ref.__class__.__name__ == "Chebyshev2D"
+        np.testing.assert_allclose(m.parameters, m_ref.parameters, atol=2)
         
     if request.config.getoption("--do-plots"):
         do_plots(distortion_determined_ad, ref_ad)
