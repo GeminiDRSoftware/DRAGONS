@@ -19,7 +19,7 @@ from scipy import ndimage
 import astrodata
 import geminidr
 from astropy.modeling import models
-from geminidr.gmos import primitives_gmos_spect
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from gempy.library import astromodels, transform
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
@@ -149,7 +149,7 @@ def test_regression_for_determine_distortion_using_models_coefficients(
     """
     with change_working_dir():
         logutils.config(file_name='log_model_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
@@ -189,7 +189,7 @@ def test_regression_for_determine_distortion_using_fitcoord_table(
     """
     with change_working_dir():
         logutils.config(file_name='log_fitcoord_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
@@ -476,7 +476,7 @@ def create_inputs_recipe():
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = GMOSLongslit([sci_ad])
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
