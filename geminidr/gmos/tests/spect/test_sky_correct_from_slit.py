@@ -28,7 +28,7 @@ ASTROPY_LT_42 = not minversion(astropy, '4.2')
 test_datasets = [
     (
         "N20180508S0021_aperturesTraced.fits",  # B600 720
-        dict(order=5, grow=0),
+        dict(order=5, grow=0, aperture_growth=0),
         'N20180508S0021_ref_1.fits',
     ),
     (
@@ -60,7 +60,6 @@ test_datasets = [
 
 # Tests Definitions -----------------------------------------------------------
 
-@pytest.mark.skip("fit1d issues")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
