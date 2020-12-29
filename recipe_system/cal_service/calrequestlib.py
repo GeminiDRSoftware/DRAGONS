@@ -57,9 +57,10 @@ class CalibrationRequest:
     Request objects are passed to a calibration_search() function
 
     """
-    def __init__(self, ad, caltype=None):
+    def __init__(self, ad, caltype=None, procmode=None):
         self.ad = ad
         self.caltype = caltype
+        self.procmode = procmode
         self.datalabel = ad.data_label()
         self.descriptors = None
         self.filename = ad.filename
@@ -70,6 +71,7 @@ class CalibrationRequest:
         retd.update(
             {'filename'   : self.filename,
              'caltype'    : self.caltype,
+             'procmode'   : self.procmode,
              'datalabel'  : self.datalabel,
              "descriptors": self.descriptors,
              "tags"       : self.tags,
@@ -84,7 +86,7 @@ class CalibrationRequest:
         return tempStr
 
 
-def get_cal_requests(inputs, caltype):
+def get_cal_requests(inputs, caltype, procmode=None):
     """
     Builds a list of :class:`.CalibrationRequest` objects, one for each `ad`
     input.
@@ -111,7 +113,7 @@ def get_cal_requests(inputs, caltype):
     rq_events = []
     for ad in inputs:
         log.stdinfo("Received calibration request for {}".format(ad.filename))
-        rq = CalibrationRequest(ad, caltype)
+        rq = CalibrationRequest(ad, caltype, procmode)
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
         for desc_name in ad.descriptors:
