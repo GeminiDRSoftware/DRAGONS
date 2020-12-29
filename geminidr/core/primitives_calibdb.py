@@ -108,6 +108,13 @@ class CalibDB(PrimitivesBASE):
         log = self.log
         ad_rq = adinputs if refresh else [ad for ad in adinputs
                                           if not self._get_cal(ad, caltype)]
+
+        # TODO refactor Calibrations out if we stick with this
+        # If refresh, clear out the cache so we don't use it
+        if refresh:
+            for ad in ad_rq:
+                del self.calibrations[ad, caltype]
+
         cal_requests = get_cal_requests(ad_rq, caltype, procmode)
         calibration_records = process_cal_requests(cal_requests, howmany=howmany)
         for ad, calfile in calibration_records.items():
