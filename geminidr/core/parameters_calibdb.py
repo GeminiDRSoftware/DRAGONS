@@ -35,6 +35,7 @@ class getCalibrationConfig(config.Config):
                  },
         optional=False
     )
+    procmode = config.Field("Processing mode", str, None)
     refresh = config.Field(
         "Refresh existing calibration associations?", bool, True)
     howmany = config.RangeField(
