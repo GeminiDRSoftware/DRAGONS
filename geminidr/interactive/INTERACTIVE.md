@@ -204,7 +204,7 @@ For this to work properly, the long-running work should be queued up via
 the `do_later` method mentioned previously.  The pattern works like this:
 
 ```python
-self.make_modal(self.button, "<b>This may take 20 seconds")
+self.make_modal(self.button, "<b>This may take 20 seconds</b>")
 ```
 
 ```python
