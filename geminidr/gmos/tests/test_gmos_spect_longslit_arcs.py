@@ -14,9 +14,8 @@ import astrodata
 import gemini_instruments
 import geminidr
 from astrodata import testing
-from geminidr.gmos import primitives_gmos_spect
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
-from gempy.library import astromodels
+from gempy.library import astromodels as am
 from gempy.utils import logutils
 
 # noinspection PyPackageRequirements
@@ -203,7 +202,7 @@ class ConfigTest:
 
     @staticmethod
     def reduce(filename):
-        _p = primitives_gmos_spect.GMOSSpect([astrodata.open(filename)])
+        _p = GMOSLongslit([astrodata.open(filename)])
         _p.viewer = geminidr.dormantViewer(_p, None)
 
         _p.prepare()
@@ -238,7 +237,6 @@ class TestGmosSpectLongslitArcs:
         ad_out = config.ad
 
         for ext in ad_out:
-
             if not hasattr(ext, "WAVECAL"):
                 continue
 
@@ -269,19 +267,14 @@ class TestGmosSpectLongslitArcs:
         ad_ref = astrodata.open(reference)
 
         for ext_out, ext_ref in zip(ad_out, ad_ref):
-            model = astromodels.dict_to_polynomial(
-                dict(zip(ext_out.WAVECAL["name"], ext_out.WAVECAL["coefficients"]))
-            )
-
-            ref_model = astromodels.dict_to_polynomial(
-                dict(zip(ext_ref.WAVECAL["name"], ext_ref.WAVECAL["coefficients"]))
-            )
+            model = am.get_named_submodel(ext_out.wcs.forward_transform, 'WAVE')
+            ref_model = am.get_named_submodel(ext_ref.wcs.forward_transform, 'WAVE')
 
             x = np.arange(ext_out.shape[1])
             y = model(x)
             ref_y = ref_model(x)
 
-            np.testing.assert_allclose(y, ref_y, rtol=1)
+            np.testing.assert_allclose(y, ref_y, atol=1)
 
         del ad_out, ad_ref
 
@@ -331,7 +324,7 @@ class TestGmosSpectLongslitArcs:
         if not os.path.exists(reference):
             pytest.fail("Processed reference file not found: {}".format(reference))
 
-        p = primitives_gmos_spect.GMOSSpect([])
+        p = GMOSLongslit([])
 
         ad_out = astrodata.open(output)
         ad_out_corrected_with_out = p.distortionCorrect([ad_out], arc=output)[0]
@@ -385,7 +378,7 @@ class TestGmosSpectLongslitArcs:
         ff = Config("N20171016S0127.fits")
 
         # Apply full frame roi to central-spect roi
-        p = primitives_gmos_spect.GMOSSpect([])
+        p = GMOSLongslit([])
         cs.ad = p.distortionCorrect(adinputs=[cs.ad], arc=ff.full_name)[0]
         cs.filename = cs.filename.replace(".fits", "_fromFullFrame.fits")
         cs.ad.write(filename=cs.full_name, overwrite=True)
@@ -410,7 +403,7 @@ class TestGmosSpectLongslitArcs:
             pytest.skip("Arc file not found: {}".format(arc_name))
 
         ad_out = config.ad
-        p = primitives_gmos_spect.GMOSSpect([])
+        p = GMOSLongslit([])
 
         ad_out = p.distortionCorrect(adinputs=[ad_out], arc=arc_name)[0]
         filename = ad_out.filename

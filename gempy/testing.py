@@ -3,7 +3,7 @@ import pytest
 
 from astropy.modeling import models
 
-from gempy.library.astromodels import dict_to_polynomial
+from gempy.library.astromodels import get_named_submodel
 from numpy.testing import assert_allclose
 
 
@@ -35,7 +35,7 @@ def assert_have_same_distortion(ad, ad_ref, atol=0, rtol=1e-7):
                         atol=atol, rtol=rtol)
 
 
-def assert_wavelength_solutions_are_close(ad, ad_ref):
+def assert_wavelength_solutions_are_close(ad, ad_ref, atol=0, rtol=1e-7):
     """
     Checks if two :class:`~astrodata.AstroData` (or any subclass) have the
     wavelength solution.
@@ -46,20 +46,14 @@ def assert_wavelength_solutions_are_close(ad, ad_ref):
         AstroData object to be checked.
     ad_ref : :class:`astrodata.AstroData` or any subclass
         AstroData object used as reference
-
+    atol, rtol : float
+        absolute and relative tolerances
     """
     for ext, ext_ref in zip(ad, ad_ref):
-        assert hasattr(ext, "WAVECAL")
-        wcal = dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
-        wcal = dict_to_polynomial(wcal)
-
-        assert hasattr(ext_ref, "WAVECAL")
-        wcal_ref = dict(zip(ad[0].WAVECAL["name"],
-                            ad[0].WAVECAL["coefficients"]))
-        wcal_ref = dict_to_polynomial(wcal_ref)
-
-        assert isinstance(wcal, type(wcal_ref))
-        assert_allclose(wcal.parameters, wcal_ref.parameters)
+        wcal = get_named_submodel(ext.wcs.forward_transform, 'WAVE')
+        wcal_ref = get_named_submodel(ext_ref.wcs.forward_transform, 'WAVE')
+        assert_allclose(wcal.parameters, wcal_ref.parameters,
+                        atol=atol, rtol=rtol)
 
 
 def dict_to_polynomial(model_dict):
