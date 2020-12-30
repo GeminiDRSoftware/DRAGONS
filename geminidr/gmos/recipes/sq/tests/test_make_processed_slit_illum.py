@@ -26,7 +26,6 @@ associated_calibrations = {
 }
 
 
-@pytest.mark.skip("Test coverage difference - unskip later")
 @pytest.mark.gmosls
 @pytest.mark.integration_test
 @pytest.mark.preprocessed_data
