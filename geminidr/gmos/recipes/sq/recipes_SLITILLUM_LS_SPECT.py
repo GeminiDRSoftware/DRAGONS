@@ -11,6 +11,7 @@ Default is "reduce".
 #     p.addDQ(static_bpm=None)
 #     p.addVAR(read_noise=True)
 #     p.overscanCorrect()
+#     p.getProcessedBias()
 #     p.biasCorrect()
 #     p.ADUToElectrons()
 #     p.addVAR(poisson_noise=True)

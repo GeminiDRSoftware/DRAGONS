@@ -20,6 +20,7 @@ def reduce_nostack(p):
     p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(read_noise=True, poisson_noise=True)
+    p.getProcessedFlat()
     p.flatCorrect()
     p.flushPixels()
     p.separateSky()
