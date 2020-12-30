@@ -12,7 +12,6 @@ from astrodata.testing import (assert_same_class, download_from_archive,
                                get_active_git_branch)
 
 
-@pytest.mark.skip("Test coverage difference - unskip later")
 def test_get_active_branch_name(capsys, monkeypatch):
     """
     Just execute and prints out the active branch name.
