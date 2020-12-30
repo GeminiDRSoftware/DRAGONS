@@ -774,6 +774,7 @@ class SpecViewer {
                 yaxis: {
                   label: `Intensity [${intensityUnits}]`,
                   labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                  tickOptions:{formatString:'%.2e'},
                 },
               },
             })
