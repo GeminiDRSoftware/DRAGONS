@@ -5,9 +5,10 @@ Default is "reduce".
 """
 # recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 #
-# from ..ql.recipes_FLAT_LS_SPECT import makeProcessedFlat
+# from ..ql.recipes_FLAT_LS_SPECT import (makeProcessedFlatStack,
+#                                         makeProcessedFlatNoStack)
 #
-# _default = makeProcessedFlat
+# _default = makeProcessedFlatNoStack
 #
 #
 # def makeProcessedSlitIllum(p):
