@@ -418,7 +418,7 @@ class TestGmosSpectLongslitArcs:
         ad_out = p.determineDistortion(adinputs=[ad_out])[0]
 
         for ext in ad_out:
-            assert hasattr(ext, "FITCOORD")
+            assert "distortion_corrected" in ext.wcs.available_frames
 
         ad_out.write(filename=filename, overwrite=True)
 
@@ -435,20 +435,11 @@ class TestGmosSpectLongslitArcs:
         os.rename(filename, os.path.join(config.output_dir, filename))
         # Evaluate them ---
 
-        for ext in ad_out:
-            coefficients = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
-
             # print(coefficients)
         # for ext_out, ext_ref in zip(ad_out, ad_ref):
         #
-        #     model_out = astromodels.dict_to_polynomial(
-        #         dict(zip(
-        #             ext_out.FITCOORD['name'], ext_out.FITCOORD['coefficients'])))
+        #     model_out = ext_out.wcs.get_transform("pixels", "distortion_corrected")[1]
         #
-        #     # model_ref = astromodels.dict_to_polynomial(
-        #     #     dict(zip(
-        #     #         ext_ref.FITCOORD['name'], ext_ref.FITCOORD['coefficients'])))
-        #
-
+        #     model_ref = ext_ref.wcs.get_transform("pixels", "distortion_corrected")[1]
 
 # del ad_out, ad_ref, p

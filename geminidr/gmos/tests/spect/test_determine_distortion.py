@@ -21,6 +21,7 @@ import geminidr
 from astropy.modeling import models
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from gempy.library import transform
+from gempy.testing import assert_have_same_distortion, dict_to_polynomial
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
@@ -155,11 +156,7 @@ def test_regression_for_determine_distortion_using_models_coefficients(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    for ext, ref_ext in zip(distortion_determined_ad, ref_ad):
-        m = get_distortion_model(ext)
-        m_ref = get_distortion_model(ref_ext)
-        assert m.__class__.__name__ == m_ref.__class__.__name__ == "Chebyshev2D"
-        np.testing.assert_allclose(m.parameters, m_ref.parameters, atol=2)
+    assert_have_same_distortion(distortion_determined_ad, ref_ad, atol=1)
         
     if request.config.getoption("--do-plots"):
         do_plots(distortion_determined_ad, ref_ad)
@@ -195,8 +192,9 @@ def test_regression_for_determine_distortion_using_wcs(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    model = get_distortion_model(distortion_determined_ad[0])
-    ref_model = get_distortion_model(ref_ad[0])
+    model = distortion_determined_ad[0].wcs.get_transform(
+        "pixels", "distortion_corrected")[1]
+    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[1]
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
@@ -227,7 +225,8 @@ def test_fitcoord_table_and_gwcs_match(ad, change_working_dir):
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
 
-    model = get_distortion_model(distortion_determined_ad[0])
+    model = distortion_determined_ad[0].wcs.get_transform(
+        "pixels", "distortion_corrected")
 
     fitcoord = distortion_determined_ad[0].FITCOORD
     fitcoord_model = dict_to_polynomial(dict(zip(fitcoord["name"],
@@ -235,7 +234,8 @@ def test_fitcoord_table_and_gwcs_match(ad, change_working_dir):
     fitcoord_inv = dict_to_polynomial(dict(zip(fitcoord["inv_name"],
                                                fitcoord["inv_coefficients"])))
 
-    np.testing.assert_allclose(model.parameters, fitcoord_model.parameters)
+    np.testing.assert_allclose(model[1].parameters, fitcoord_model.parameters)
+    np.testing.assert_allclose(model.inverse[1].parameters, fitcoord_inv.parameters)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
@@ -301,7 +301,7 @@ def do_plots(ad, ad_ref):
 
         X, Y = np.meshgrid(x, y)
 
-        model = get_distortion_model(ext)
+        model = ext.wcs.get_transform("pixels", "distortion_corrected")[1]
         U = X - model(X, Y)
         V = np.zeros_like(U)
 
@@ -415,27 +415,6 @@ def generate_fake_data(shape, dispersion_axis, n_lines=100):
     return data
 
 
-def get_distortion_model(ext):
-    """
-    Helper function to recover the distortion model from the gWCS object.
-
-    Parameters
-    ----------
-    ext : astrodata extension
-        Input astrodata extension which contains a gWCS containing a
-        transform to a "distortion_corrected" frame.
-
-    Returns
-    -------
-    :class:`~astropy.modeling.models.Model`
-        Model that receives 2D data and return a 1D array.
-    """
-    t = ext.wcs.get_transform(ext.wcs.input_frame, "distortion_corrected")
-    for model in t:
-        if model.n_inputs == model.n_outputs + 1 == 2:
-            return model
-
-
 def remap_distortion_model(model, dispersion_axis):
     """
     Remaps the distortion model so it can return a 2D array.
@@ -466,24 +445,6 @@ def remap_distortion_model(model, dispersion_axis):
         m.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & model)
 
     return m
-
-def dict_to_polynomial(model_dict):
-    """
-    Create Chebyshev2D model from dict in FITCOORD table.
-    """
-    model = models.Chebyshev2D(x_degree=int(model_dict.pop("x_degree")),
-                               y_degree=int(model_dict.pop("y_degree")))
-    for k, v in model_dict.items():
-        try:
-            if k.endswith("domain_start"):
-                setattr(model, k.replace("_start", ""),
-                        [float(v), float(model_dict[k.replace("start", "end")])])
-            elif k and not k.endswith("domain_end"):  # ignore k==""
-                setattr(model, k, float(v))
-        except (KeyError, AttributeError):
-            return None
-
-    return model
 
 # -- Recipe to create pre-processed data ---------------------------------------
 def create_inputs_recipe():
