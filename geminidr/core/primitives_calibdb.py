@@ -268,9 +268,11 @@ class CalibDB(PrimitivesBASE):
         Updates filenames, datalabels (if asked) and adds header keyword
         prior to storing AD objects as calibrations
         """
+        proc_suffix = f"_{self.mode}"
         for ad in adinputs:
             if suffix:
-                ad.update_filename(suffix=suffix, strip=True)
+                proc_suffix += suffix
+            ad.update_filename(suffix=proc_suffix, strip=True)
             if update_datalab:
                 _update_datalab(ad, suffix, self.keyword_comments)
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
@@ -358,7 +360,7 @@ class CalibDB(PrimitivesBASE):
 
             if self.mode != 'qa' and self.upload and 'science' in self.upload:
                 old_filename = ad.filename
-                ad.update_filename(suffix=f"_{self.mode}", strip=False)
+                ad.update_filename(suffix=f"_{self.mode}"+suffix, strip=True)
                 ad.write(overwrite=True)
                 try:
                     upload_calibration(ad.filename, is_science=True)
