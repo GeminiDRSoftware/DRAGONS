@@ -2491,17 +2491,12 @@ class Spect(PrimitivesBASE):
 
                     # Recalculate aperture limits after rectification
                     apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
-                    this_aptable["aper_lower"] = aperture["aper_lower"] + (location - np.min(apcoords))
-                    this_aptable["aper_upper"] = aperture["aper_upper"] - (np.max(apcoords) - location)
+                    this_aptable["aper_lower"] = aperture["aper_lower"] + (location - apcoords.min())
+                    this_aptable["aper_upper"] = aperture["aper_upper"] - (apcoords.max() - location)
                     all_tables.append(this_aptable)
 
                 new_aptable = vstack(all_tables, metadata_conflicts="silent")
-                # In order to put these columns at the end
-                aptable.remove_columns(["aper_lower", "aper_upper"])
-                for name in new_aptable.colnames:
-                    aptable[name] = new_aptable[name]
-                # We don't need to reattach the Table because it was a
-                # reference all along!
+                ext.APERTURE = new_aptable
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
