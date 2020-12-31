@@ -12,10 +12,10 @@
 # Shift2D: single model to shift in 2D
 #
 # Functions:
-# polynomial_to_dict / dict_to_polynomial: Turn a Chebyshev model into a dict to
-#                                        assist with reading/writing as a Table
-# make_inverse_chebyshev1d:              make a Chebyshev1D model that provides
-#                                        the inverse of the given model
+# model_to_table / table_to_model: allow certain types of models (including
+#                                  splines) to be converted to/from Tables
+# make_inverse_chebyshev1d:        make a Chebyshev1D model that provides
+#                                  the inverse of the given model
 
 import math
 import re
