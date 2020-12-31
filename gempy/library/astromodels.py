@@ -398,7 +398,10 @@ def polynomial_to_dict(model):
     else:
         return {}
 
-    model_dict = {"model": model_name, "ndim": ndim}
+    model_dict = {"ndim": ndim}
+    # Don't write this because the string nature messes everything up
+    if not model_name.startswith("Chebyshev"):
+        model_dict["model"] = model_name
     for property in properties:
         if "domain" in property:
             domain = getattr(model, property)

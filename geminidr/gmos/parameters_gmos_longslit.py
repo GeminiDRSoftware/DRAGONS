@@ -52,6 +52,9 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0, inclusiveMin=False)
 
+    def setDefaults(self):
+        self.niter = 3
+
 
 class slitIllumCorrectConfig(config.Config):
     do_illum = config.Field("Perform Slit Illumination Correction?",

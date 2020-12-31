@@ -40,8 +40,8 @@ from matplotlib import pyplot as plt
 import astrodata
 import geminidr
 
-from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from gempy.library import astromodels as am
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
@@ -169,7 +169,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 
     with change_working_dir():
         # logutils.config(file_name='log_rms_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(
@@ -185,15 +185,16 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
     if request.config.getoption("--do-plots"):
         do_plots(wcalibrated_ad)
 
-    table = wcalibrated_ad[0].WAVECAL
-    tdict = dict(zip(table['name'], table['coefficients']))
-    rms = tdict['rms']
+    # No longer required since determineWavelengthSolution() does this check
+    #table = wcalibrated_ad[0].WAVECAL
+    #tdict = dict(zip(table['name'], table['coefficients']))
+    #rms = tdict['rms']
 
-    fwidth = tdict['fwidth']
-    dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
-    required_rms = 0.2 * fwidth * dispersion
+    #fwidth = tdict['fwidth']
+    #dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
+    #required_rms = 0.2 * fwidth * dispersion
 
-    np.testing.assert_array_less(rms, required_rms)
+    #np.testing.assert_array_less(rms, required_rms)
 
 
 @pytest.mark.gmosls
@@ -210,7 +211,7 @@ def test_regression_determine_wavelength_solution(
 
     with change_working_dir():
         logutils.config(file_name='log_regress_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(
@@ -224,14 +225,8 @@ def test_regression_determine_wavelength_solution(
                 assert "No acceptable wavelength solution found" not in record.message
 
     ref_ad = ref_ad_factory(wcalibrated_ad.filename)
-    table = wcalibrated_ad[0].WAVECAL
-    table_ref = ref_ad[0].WAVECAL
-
-    model = astromodels.dict_to_polynomial(
-        dict(zip(table["name"], table["coefficients"])))
-
-    ref_model = astromodels.dict_to_polynomial(
-        dict(zip(table_ref["name"], table_ref["coefficients"])))
+    model = am.get_named_submodel(wcalibrated_ad[0].wcs.forward_transform, "WAVE")
+    ref_model = am.get_named_submodel(ref_ad[0].wcs.forward_transform, "WAVE")
 
     x = np.arange(wcalibrated_ad[0].shape[1])
     wavelength = model(x)
@@ -308,10 +303,10 @@ def do_plots(ad):
     grating = ad.disperser(pretty=True)
     bin_x = ad.detector_x_bin()
     bin_y = ad.detector_y_bin()
-    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
+    central_wavelength = ad.central_wavelength(asNanometers=True)
 
-    package_dir = os.path.dirname(primitives_gmos_spect.__file__)
-    arc_table = os.path.join(package_dir, "lookups", "CuAr_GMOS.dat")
+    p = GMOSLongslit([ad])
+    arc_table = os.path.join(p.inst_lookups, "CuAr_GMOS.dat")
     arc_lines = np.loadtxt(arc_table, usecols=[0]) / 10.0
 
     for ext_num, ext in enumerate(ad):
@@ -321,9 +316,7 @@ def do_plots(ad):
 
         peaks = ext.WAVECAL["peaks"] - 1  # ToDo: Refactor peaks to be 0-indexed
         wavelengths = ext.WAVECAL["wavelengths"]
-
-        wavecal_model = astromodels.dict_to_polynomial(
-            dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"])))
+        wavecal_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
 
         middle = ext.data.shape[0] // 2
         sum_size = 10
@@ -467,7 +460,7 @@ def create_inputs_recipe():
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = GMOSLongslit([sci_ad])
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)

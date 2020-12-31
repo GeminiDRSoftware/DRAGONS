@@ -67,6 +67,7 @@ GEMINIDR_MODULES = ['geminidr',
                     'geminidr.f2.lookups',
                     'geminidr.f2.recipes',
                     'geminidr.f2.recipes.qa',
+                    'geminidr.f2.recipes.ql',
                     'geminidr.f2.recipes.sq',
                     'geminidr.gemini',
                     'geminidr.gemini.lookups',
@@ -174,6 +175,18 @@ for inst in instruments:
             PACKAGE_DATA['geminidr'].extend(
                 map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
             )
+
+# Some .dat files are found in the lookup directories
+for inst in instruments:
+    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
+                                                  'lookups')):
+        files = [f for f in files if not (f.endswith('.pyc') or f.endswith('.py'))]
+        if len(files) > 0:
+            # remove the 'geminidr/' part, add to DATA
+            PACKAGE_DATA['geminidr'].extend(
+                map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
+            )
+
 
 # GUI
 rsdir = re.compile('recipe_system/')

@@ -134,6 +134,8 @@ def calibration_search(rq, howmany=1, return_xml=False):
         return (None, calserv_msg)
 
     rqurl = join(CALMGR, rq.caltype)
+    if rq.procmode is not None:
+        rqurl = join(rqurl, rq.procmode)
     log.stdinfo("CENTRAL CALIBRATION SEARCH: {}".format(rqurl))
     rqurl = rqurl + "/{}".format(rq.filename)
     # encode and send request

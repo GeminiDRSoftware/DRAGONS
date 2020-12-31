@@ -1357,8 +1357,8 @@ class Preprocess(PrimitivesBASE):
                 # plane to int64
                 unillum = np.where(((ext.data > upper) | (ext.data < lower)) &
                                    ((ext.mask & DQ.bad_pixel) == 0),
-                                   np.int16(DQ.unilluminated), np.int16(0))
-                ext.mask = unillum if ext.mask is None else ext.mask | unillum
+                                   DQ.unilluminated, 0).astype(DQ.datatype)
+                ext.mask |= unillum
                 log.fullinfo("ThresholdFlatfield set bit '64' for values "
                              "outside the range [{:.2f},{:.2f}]".
                              format(lower, upper))
