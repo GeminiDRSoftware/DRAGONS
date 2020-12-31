@@ -371,119 +371,8 @@ class UnivariateSplineWithOutlierRemoval:
 
 
 # -----------------------------------------------------------------------------
-# MODEL -> DICT FUNCTIONS
+# MODEL <-> TABLE FUNCTIONS
 #
-def polynomial_to_dict(model):
-    """
-    This function turns an instance of a ChebyshevND, LegendreND, or
-    PolynomialND model into a dict of parameter and property names and their
-    values. This allows it to be written as a Table and attached to an
-    AstroData object. A Table is not constructed here because it may have
-    additional rows added to it, and that's inefficient.
-
-    Parameters
-    ----------
-    model: a ChebyshevND model instance
-
-    Returns
-    -------
-    OrderedDict: property names and their values
-    """
-    model_name = model.__class__.__name__
-    ndim = int(model_name[-2])
-    if ndim == 1:
-        properties = ("degree", "domain")
-    elif ndim == 2:
-        properties = ("x_degree", "y_degree", "x_domain", "y_domain")
-    else:
-        return {}
-
-    model_dict = {"ndim": ndim}
-    # Don't write this because the string nature messes everything up
-    if not model_name.startswith("Chebyshev"):
-        model_dict["model"] = model_name
-    for property in properties:
-        if "domain" in property:
-            domain = getattr(model, property)
-            if domain is not None:
-                model_dict[f"{property}_start"] = domain[0]
-                model_dict[f"{property}_end"] = domain[1]
-        else:
-            model_dict[property] = getattr(model, property)
-    for name in model.param_names:
-        model_dict[name] = getattr(model, name).value
-
-    for unit in ("xunit", "yunit"):
-        if unit in model.meta:
-            model_dict[unit] = model.meta[unit]
-
-    return model_dict
-
-
-def dict_to_polynomial(model_dict):
-    """
-    This is the inverse of polynomial_to_dict(), taking a dict of property/
-    parameter names and their values and making a suitable model instance.
-
-    Parameters
-    ----------
-    model_dict: dict
-        Dictionary with pair/value that defines the Chebyshev model.
-
-    Returns
-    -------
-    models.ChebyshevND or None
-        Returns the models if it is parsed successfully. If not, it will return
-        None.
-
-    Examples
-    --------
-
-    .. code-block:: python
-
-        my_model = dict(
-            zip(
-                ad[0].WAVECAL['name'], ad[0].WAVECAL['coefficient']
-            )
-        )
-
-    """
-    try:
-        model_class = model_dict.pop("model")
-        ndim = int(model_class[-2])
-    except KeyError:  # Handle old models (assumed to be Chebyshevs)
-        try:
-            ndim = int(model_dict.pop("ndim"))
-        except KeyError:
-            return None
-        model_class = f"Chebyshev{ndim}D"
-    if "ndim" in model_dict:
-        del model_dict["ndim"]
-
-    cls = getattr(models, model_class)
-
-    if ndim == 1:
-        model = cls(degree=int(model_dict.pop("degree")))
-    elif ndim == 2:
-        model = cls(x_degree=int(model_dict.pop("x_degree")),
-                    y_degree=int(model_dict.pop("y_degree")))
-
-    model.meta["xunit"] = model_dict.pop("xunit", None)
-    model.meta["yunit"] = model_dict.pop("yunit", None)
-
-    for k, v in model_dict.items():
-        try:
-            if k.endswith("domain_start"):
-                setattr(model, k.replace("_start", ""),
-                        [float(v), float(model_dict[k.replace("start", "end")])])
-            elif k and not k.endswith("domain_end"):  # ignore k==""
-                setattr(model, k, float(v))
-        except (KeyError, AttributeError):
-            return None
-
-    return model
-
-
 def model_to_table(model, xunit=None, yunit=None, zunit=None):
     """
     Convert a model instance to a Table, suitable for attaching to an AstroData
@@ -641,7 +530,24 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
         order += 1
     return m_inverse
 
+
 def get_named_submodel(model, name):
+    """
+    Extracts a named submodel from a CompoundModel. astropy allows
+    CompoundModel instances to be indexed by name, but only single Models,
+    whereas a submodel can be a CompoundModel.
+
+    Parameters
+    ----------
+    model : CompoundModel
+        the model containing the required submodel
+    name : str
+        name of the submodel requested
+
+    Returns
+    -------
+    Model : the Model/CompoundModel instance with the requested name
+    """
     if not isinstance(model, CompoundModel):
         raise TypeError("This is not a CompoundModel")
     if model._leaflist is None:
