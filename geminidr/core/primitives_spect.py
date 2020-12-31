@@ -1707,7 +1707,7 @@ class Spect(PrimitivesBASE):
 
                 # Create the correct callable function (we may want to
                 # abstract this in the future)
-                sensfunc = am.table_to_model(ext.SENSFUNC)
+                sensfunc = am.table_to_model(ext_std.SENSFUNC)
                 std_wave_unit = sensfunc.meta["xunit"]
                 std_flux_unit = sensfunc.meta["yunit"]
 
