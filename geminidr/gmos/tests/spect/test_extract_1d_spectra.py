@@ -25,7 +25,7 @@ from recipe_system.testing import ref_ad_factory
 
 # Test parameters --------------------------------------------------------------
 test_datasets = [
-    "N20180508S0021_skyCorrected.fits",  # B600 720
+    "N20180508S0021_aperturesTraced.fits",  # B600 720
     # "N20180509S0010_skyCorrected.fits",  # R400 900
     # "N20180516S0081_skyCorrected.fits",  # R600 860
     # "N20190201S0163_skyCorrected.fits",  # B600 530
