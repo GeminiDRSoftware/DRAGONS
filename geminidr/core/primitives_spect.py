@@ -66,8 +66,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D or 2D spectra. Each extension must have a
-            `.WAVECAL` table.
+            Wavelength calibrated 1D or 2D spectra.
         suffix : str
             Suffix to be added to output files
         method : str ['correlation' | 'offsets']
@@ -363,7 +362,8 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Arc data as 2D spectral images with a WAVECAL table.
+            Arc data as 2D spectral images with the distortion and wavelength
+            solutions encoded in the WCS.
 
         suffix :  str
             Suffix to be added to output files.
@@ -834,11 +834,8 @@ class Spect(PrimitivesBASE):
 
             for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
                 # TODO: remove this; for debugging purposes only
-                if arc is not None:
-                    try:
-                        ad_out[i].WAVECAL = arc[i].WAVECAL
-                    except AttributeError:
-                        pass
+                if arc is not None and hasattr(arc[i], "WAVECAL"):
+                    ad_out[i].WAVECAL = arc[i].WAVECAL
                 sky_model = am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
                 if ext.dispersion_axis() == 1:
                     t = wave_model & sky_model
@@ -1247,7 +1244,7 @@ class Spect(PrimitivesBASE):
         subtracted from the source spectrum.
 
         Each 1D spectrum is stored as a separate extension in a new AstroData
-        object. The `.WAVECAL` table (if it exists) is copied from the parent.
+        object with the wcs copied from the parent.
 
         These new AD objects are placed in a separate stream from the
         parent 2D images, which are returned in the default stream.
@@ -1419,11 +1416,6 @@ class Spect(PrimitivesBASE):
                         kw = ad._keyword_for(descriptor)
                         if kw in ext_spec.hdr:
                             del ext_spec.hdr[kw]
-                    # TODO: remove after testing
-                    try:
-                        ext_spec.WAVECAL = ext_spec.WAVECAL
-                    except AttributeError:
-                        pass
 
             # Don't output a file with no extracted spectra
             if len(ad_spec) > 0:
@@ -1817,8 +1809,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D spectra. Each extension must have a
-            `.WAVECAL` table.
+            Wavelength calibrated 1D spectra.
 
         suffix : str
             Suffix to be added to output files.
@@ -2015,8 +2006,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D or 2D spectra. Each extension must have a
-            `.WAVECAL` table.
+            Wavelength calibrated 1D or 2D spectra.
         suffix : str
             Suffix to be added to output files.
         w1 : float
