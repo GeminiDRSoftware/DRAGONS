@@ -1086,8 +1086,8 @@ class IQReport(QAReport):
                 fwhm, fwhm_std = float(fwhm_data.mean()), float(fwhm_data.std())
             else:
                 fwhm = float(np.average(fwhm_data, weights=weights))
-                fwhm_std = float(np.sqrt(np.average((fwhm_data - fwhm) ** 2),
-                                         weights=weights))
+                fwhm_std = float(np.sqrt(np.average((fwhm_data - fwhm) ** 2,
+                                         weights=weights)))
             results = {"fwhm": fwhm, "fwhm_std": fwhm_std, "nsamples": len(t)}
 
             if self.image_like:
