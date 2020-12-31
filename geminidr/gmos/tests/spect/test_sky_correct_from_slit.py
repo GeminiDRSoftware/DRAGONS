@@ -64,9 +64,9 @@ test_datasets = [
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("filename, params, refname", test_datasets)
-def test_regression_extract_1d_spectra(filename, params, refname,
-                                       change_working_dir, path_to_inputs,
-                                       path_to_refs):
+def test_regression_sky_correct_from_slit(filename, params, refname,
+                                          change_working_dir, path_to_inputs,
+                                          path_to_refs):
 
     func = params.get('function', 'spline')
     if not func.startswith('spline') and ASTROPY_LT_42:
