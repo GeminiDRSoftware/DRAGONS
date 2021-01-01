@@ -490,71 +490,26 @@ class fit_1D:
 
         return fitvals
 
-    def to_dicts(self):
+    @property
+    def model(self):
         """
-        Convert the fitted models to a list of dicts containing the fit parameters.
-        """
-        model_dicts = []
-        astropy_model = isinstance(self._models, Model)
+        Expose the callable instance describing the model fit
 
+        Returns
+        -------
+        callable : a single callable (either an ~astropy.modeling.core.Model`
+                  or `astromodels.UnivariateSplineWithOutlierRemoval:`)
+                  representing the model fit
+        """
+        if len(self._models) > 1:
+            raise ValueError("Cannot provide model property if there are "
+                             "greater than one models.")
+        astropy_model = isinstance(self._models, Model)
         if astropy_model:
-            n_models = len(self._models)
-            domain = self._models.domain
-            model_dict = {"model": self.model_class.__name__,
-                          "ndim": 1, "degree": self._models.degree,
-                          "domain_start": domain[0], "domain_end": domain[1]}
-            for i in range(n_models):
-                for name in self._models.param_names:
-                    model_dict[name] = (getattr(self._models, name).value[i]
-                                        if n_models > 1 else
-                                        getattr(self._models, name).value)
-                model_dicts.append(model_dict.copy())
+            return self._models
         else:
-            for single_model in self._models:
-                knots, coeffs, degree = single_model.tck
-                model_dict = {"model": "Spline", "ndim": 1, "k": degree,
-                              "knots": knots, "coefficients": coeffs}
-                model_dicts.append(model_dict)
+            return self._models[0]
 
-        return model_dicts
-
-    def to_tables(self, xunit=None, yunit=None):
-        """
-        Convert the fitted models to a list of Tables containing the fit parameters.
-
-        Parameters
-        ----------
-        xunit : Unit/None
-            unit of independent variable
-        yunit : Unit/None
-            unit of dependent varaiable
-        """
-        tables = []
-        astropy_model = isinstance(self._models, Model)
-
-        for model_dict in self.to_dicts():
-            if astropy_model:
-                keys = list(model_dict.keys())
-                values = list(model_dict.values())
-                if xunit is not None:
-                    keys.append('xunit')
-                    values.append(str(xunit))
-                if yunit is not None:
-                    keys.append('yunit')
-                    values.append(str(yunit))
-                t = Table([keys, values],
-                          names=('names', 'coefficients'))
-            else:
-                t = Table([model_dict["knots"],
-                           model_dict["coefficients"]],
-                           names=('knots', 'coefficients'),
-                           meta={'header': Header()})
-                t.meta['header']['ORDER'] = (model_dict["k"], 'Order of spline')
-                t['knots'].unit = xunit
-                t['coefficients'].unit = yunit
-            tables.append(t)
-
-        return tables
 
     @staticmethod
     def translate_params(params):

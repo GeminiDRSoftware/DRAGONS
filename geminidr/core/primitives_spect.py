@@ -16,13 +16,12 @@ from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip, sigma_clipped_stats
-from astropy.table import Table
+from astropy.table import Table, vstack
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
 from scipy import spatial, optimize
-from scipy.interpolate import BSpline
 from scipy.signal import correlate
 from specutils import SpectralRegion
 from functools import reduce
@@ -33,9 +32,9 @@ import astrodata
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels, matching, tracing
-from gempy.library import transform
+from gempy.library import astromodels as am
 from gempy.library import astrotools as at
+from gempy.library import transform, matching, tracing
 from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
@@ -67,8 +66,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D or 2D spectra. Each extension must have a
-            `.WAVECAL` table.
+            Wavelength calibrated 1D or 2D spectra.
         suffix : str
             Suffix to be added to output files
         method : str ['correlation' | 'offsets']
@@ -106,7 +104,7 @@ class Spect(PrimitivesBASE):
 
         # Use first image in list as reference
         refad = adinputs[0]
-        ref_sky_model = astromodels.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
+        ref_sky_model = am.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
         ref_sky_model.name = None
         log.stdinfo("Reference image: {}".format(refad.filename))
         refad.phu['SLITOFF'] = 0
@@ -159,7 +157,7 @@ class Spect(PrimitivesBASE):
                     for input_frame, output_frame in zip(frames[:-1], frames[1:]):
                         t = wcs.get_transform(input_frame, output_frame)
                         try:
-                            sky_model = astromodels.get_named_submodel(t, 'SKY')
+                            sky_model = am.get_named_submodel(t, 'SKY')
                         except IndexError:
                             pass
                         else:
@@ -339,8 +337,8 @@ class Spect(PrimitivesBASE):
                 fit1d = fit_1D(zpt.value, points=wave.value,
                                weights=1./zpt_err.value, **fit1d_params,
                                plot=debug_plot)
-                sensfunc = fit1d.to_tables(xunit=wave.unit, yunit=zpt.unit)[0]
-                ext.SENSFUNC = sensfunc
+                ext.SENSFUNC = am.model_to_table(fit1d.model, xunit=wave.unit,
+                                                 yunit=zpt.unit)
                 calculated = True
 
             # Timestamp and update the filename
@@ -364,7 +362,8 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Arc data as 2D spectral images with a WAVECAL table.
+            Arc data as 2D spectral images with the distortion and wavelength
+            solutions encoded in the WCS.
 
         suffix :  str
             Suffix to be added to output files.
@@ -543,15 +542,10 @@ class Spect(PrimitivesBASE):
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
-                columns = []
-                for m in (m_final, m_inverse):
-                    model_dict = astromodels.polynomial_to_dict(m)
-                    columns.append(list(model_dict.keys()))
-                    columns.append(list(model_dict.values()))
-                # If we're genuinely worried about the two models, they might
-                # have different orders and we might need to pad one
-                ext.FITCOORD = Table(columns, names=("name", "coefficients",
-                                                     "inv_name", "inv_coefficients"))
+                # This is all we need for the new FITCOORD table
+                ext.FITCOORD = vstack([am.model_to_table(m_final),
+                                       am.model_to_table(m_inverse)],
+                                      metadata_conflicts="silent")
 
                 # Put this model before the first step if there's an existing WCS
                 if ext.wcs is None:
@@ -676,7 +670,7 @@ class Spect(PrimitivesBASE):
                 distortion_models.append(m_distcorr)
 
                 try:
-                    wave_model = astromodels.get_named_submodel(wcs.forward_transform, 'WAVE')
+                    wave_model = am.get_named_submodel(wcs.forward_transform, 'WAVE')
                 except IndexError:
                     wave_models.append(None)
                 else:
@@ -828,12 +822,9 @@ class Spect(PrimitivesBASE):
 
             for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
                 # TODO: remove this; for debugging purposes only
-                if arc is not None:
-                    try:
-                        ad_out[i].WAVECAL = arc[i].WAVECAL
-                    except AttributeError:
-                        pass
-                sky_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'SKY')
+                if arc is not None and hasattr(arc[i], "WAVECAL"):
+                    ad_out[i].WAVECAL = arc[i].WAVECAL
+                sky_model = am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
                 if ext.dispersion_axis() == 1:
                     t = wave_model & sky_model
                 else:
@@ -1166,7 +1157,7 @@ class Spect(PrimitivesBASE):
 
                 max_rms = 0.2 * rms / abs(dw0)  # in pixels
                 max_dev = 3 * max_rms
-                m_inverse = astromodels.make_inverse_chebyshev1d(m_final, rms=max_rms,
+                m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                                                  max_deviation=max_dev)
                 inv_rms = np.std(m_inverse(m_final(m.input_coords)) - m.input_coords)
                 log.stdinfo("Inverse model has rms = {:.3f} pixels.".format(inv_rms))
@@ -1177,25 +1168,27 @@ class Spect(PrimitivesBASE):
                 # Add 1 to pixel coordinates so they're 1-indexed
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
-                model_dict = astromodels.polynomial_to_dict(m_final)
-                model_dict.update({'rms': rms, 'fwidth': fwidth})
-                # Add information about where the extraction took place
+                temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
+                #### Temporary to ensure all the old stuff is still there
+                # while I refactor tests
+                temptable.add_columns([[1], [order], [m_final.domain[0]], [m_final.domain[1]]],
+                                      names=("ndim", "degree", "domain_start", "domain_end"))
+                temptable.add_columns([[rms], [fwidth]], names=("rms", "fwidth"))
                 if ext.data.ndim > 1:
-                    model_dict[direction] = (extract_slice.start +
+                    temptable[direction] = (extract_slice.start +
                                              extract_slice.stop - 1) // 2
-                    model_dict['nsum'] = nsum
-
-                # Ensure all columns have the same length
-                pad_rows = nmatched - len(model_dict)
+                    temptable["nsum"] = nsum
+                pad_rows = nmatched - len(temptable.colnames)
                 if pad_rows < 0:  # Really shouldn't be the case
                     incoords = list(incoords) + [0] * (-pad_rows)
                     outcoords = list(outcoords) + [0] * (-pad_rows)
                     pad_rows = 0
 
-                fit_table = Table([list(model_dict.keys()) + [''] * pad_rows,
-                                   list(model_dict.values()) + [0] * pad_rows,
+                fit_table = Table([temptable.colnames + [''] * pad_rows,
+                                   list(temptable[0].values()) + [0] * pad_rows,
                                    incoords, outcoords],
-                                  names=("name", "coefficients", "peaks", "wavelengths"))
+                                  names=("name", "coefficients", "peaks", "wavelengths"),
+                                  meta=temptable.meta)
                 fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
                                               'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
@@ -1239,7 +1232,7 @@ class Spect(PrimitivesBASE):
         subtracted from the source spectrum.
 
         Each 1D spectrum is stored as a separate extension in a new AstroData
-        object. The `.WAVECAL` table (if it exists) is copied from the parent.
+        object with the wcs copied from the parent.
 
         These new AD objects are placed in a separate stream from the
         parent 2D images, which are returned in the default stream.
@@ -1315,7 +1308,7 @@ class Spect(PrimitivesBASE):
                     continue
 
                 try:
-                    wave_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
+                    wave_model = am.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
                 except (AttributeError, IndexError):
                     log.warning(f"Cannot find wavelength solution for {extname}")
                     wave_model = None
@@ -1327,11 +1320,10 @@ class Spect(PrimitivesBASE):
                 # We loop twice so we can construct the aperture mask if needed
                 apertures = []
                 for row in aptable:
-                    model_dict = dict(zip(aptable.colnames, row))
-                    trace_model = astromodels.dict_to_polynomial(model_dict)
+                    trace_model = am.table_to_model(row)
                     aperture = tracing.Aperture(trace_model,
-                                                aper_lower=model_dict['aper_lower'],
-                                                aper_upper=model_dict['aper_upper'])
+                                                aper_lower=row['aper_lower'],
+                                                aper_upper=row['aper_upper'])
                     if width is not None:
                         aperture.width = width
                     apertures.append(aperture)
@@ -1412,11 +1404,6 @@ class Spect(PrimitivesBASE):
                         kw = ad._keyword_for(descriptor)
                         if kw in ext_spec.hdr:
                             del ext_spec.hdr[kw]
-                    # TODO: remove after testing
-                    try:
-                        ext_spec.WAVECAL = ext_spec.WAVECAL
-                    except AttributeError:
-                        pass
 
             # Don't output a file with no extracted spectra
             if len(ad_spec) > 0:
@@ -1594,20 +1581,26 @@ class Spect(PrimitivesBASE):
                 all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
                                                 threshold=threshold, method=sizing_method)
 
-                all_model_dicts = []
-                for loc, limits in zip(locations, all_limits):
+                # This is a little convoluted because of the simplicity of the
+                # initial models, but we want to ensure that the APERTURE
+                # table is written in an identical way to other models, and so
+                # we should use the model_to_table() function
+                all_tables = []
+                for i, (loc, limits) in enumerate(zip(locations, all_limits),
+                                                  start=1):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
-                    model_dict = astromodels.polynomial_to_dict(cheb)
+                    aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
-                    model_dict['aper_lower'] = lower
-                    model_dict['aper_upper'] = upper
-                    all_model_dicts.append(model_dict)
+                    aptable["number"] = i
+                    aptable["aper_lower"] = lower
+                    aptable["aper_upper"] = upper
+                    all_tables.append(aptable)
                     log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
 
-                aptable = Table([np.arange(len(locations)) + 1], names=['number'])
-                for name in model_dict.keys():  # Still defined from above loop
-                    aptable[name] = [model_dict.get(name, 0)
-                                     for model_dict in all_model_dicts]
+                aptable = vstack(all_tables, metadata_conflicts="silent")
+                # Move "number" to be the first column
+                new_order = ["number"] + [c for c in aptable.colnames if c != "number"]
+                aptable = aptable[new_order]
                 ext.APERTURE = aptable
 
             # Timestamp and update the filename
@@ -1711,21 +1704,12 @@ class Spect(PrimitivesBASE):
             for index, ext in enumerate(ad):
                 ext_std = std[max(index, len_std-1)]
                 extname = f"{ad.filename} extension {ext.id}"
-                sensfunc = ext_std.SENSFUNC
 
                 # Create the correct callable function (we may want to
                 # abstract this in the future)
-                try:
-                    model_dict = dict(zip(sensfunc['names'], sensfunc['coefficients']))
-                except KeyError:  # it's a spline
-                    order = sensfunc.meta['header'].get('ORDER', 3)
-                    func = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
-                    std_wave_unit = sensfunc['knots'].unit
-                    std_flux_unit = sensfunc['coefficients'].unit
-                else:
-                    func = astromodels.dict_to_polynomial(model_dict)
-                    std_wave_unit = u.Unit(func.meta['xunit'])
-                    std_flux_unit = u.Unit(func.meta['yunit'])
+                sensfunc = am.table_to_model(ext_std.SENSFUNC)
+                std_wave_unit = sensfunc.meta["xunit"]
+                std_flux_unit = sensfunc.meta["yunit"]
 
                 # Try to confirm the science image has the correct units
                 std_physical_unit = (std_flux_unit.physical_unit if
@@ -1769,7 +1753,7 @@ class Spect(PrimitivesBASE):
                 pixel_sizes = abs(np.diff(all_waves[::2]))
 
                 # Reconstruct the spline and evaluate it at every wavelength
-                sens_factor = func(waves.to(std_wave_unit).value) * std_flux_unit
+                sens_factor = sensfunc(waves.to(std_wave_unit).value) * std_flux_unit
                 try:  # conversion from magnitude/logarithmic units
                     sens_factor = sens_factor.physical
                 except AttributeError:
@@ -1813,8 +1797,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D spectra. Each extension must have a
-            `.WAVECAL` table.
+            Wavelength calibrated 1D spectra.
 
         suffix : str
             Suffix to be added to output files.
@@ -2011,8 +1994,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D or 2D spectra. Each extension must have a
-            `.WAVECAL` table.
+            Wavelength calibrated 1D or 2D spectra.
         suffix : str
             Suffix to be added to output files.
         w1 : float
@@ -2336,12 +2318,10 @@ class Spect(PrimitivesBASE):
                     pass
                 else:
                     for row in aptable:
-                        model_dict = dict(zip(aptable.colnames, row))
-                        trace_model = astromodels.dict_to_polynomial(model_dict)
-                        aperture = tracing.Aperture(
-                            trace_model, aper_lower=model_dict['aper_lower'],
-                            aper_upper=model_dict['aper_upper']
-                        )
+                        trace_model = am.table_to_model(row)
+                        aperture = tracing.Aperture(trace_model,
+                                                    aper_lower=row['aper_lower'],
+                                                    aper_upper=row['aper_upper'])
                         sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
 
                 if debug_plot:
@@ -2472,8 +2452,7 @@ class Spect(PrimitivesBASE):
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-                all_column_names = []
-                all_model_dicts = []
+                all_tables = []
                 for aperture in aptable:
                     location = aperture['c0']
                     # Funky stuff to extract the traced coords associated with
@@ -2498,7 +2477,7 @@ class Spect(PrimitivesBASE):
                         # constrain fit. We call fit1d with dummy points to
                         # ensure we get the same type of result as if it had
                         # been successful.
-                        log.warning("Unable to trace aperture {}".format(aperture["number"]))
+                        log.warning(f"Unable to trace aperture {aperture['number']}")
                         fit1d = fit_1D(np.full_like(spectral_coords, c0),
                                        points=spectral_coords,
                                        domain=[0, ext.shape[dispaxis] - 1],
@@ -2508,21 +2487,16 @@ class Spect(PrimitivesBASE):
                             plot_coords = np.array([spectral_coords, fit1d.evaluate(spectral_coords)]).T
                             self.viewer.polygon(plot_coords, closed=False,
                                                 xfirst=(dispaxis == 1), origin=0)
-                    model_dict = fit1d.to_dicts()[0]
-                    del model_dict["model"]
+                    this_aptable = am.model_to_table(fit1d.model)
 
                     # Recalculate aperture limits after rectification
                     apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
-                    model_dict['aper_lower'] = aperture['aper_lower'] + (location - np.min(apcoords))
-                    model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
-                    all_column_names.extend([k for k in model_dict.keys()
-                                             if k not in all_column_names])
-                    all_model_dicts.append(model_dict)
+                    this_aptable["aper_lower"] = aperture["aper_lower"] + (location - apcoords.min())
+                    this_aptable["aper_upper"] = aperture["aper_upper"] - (apcoords.max() - location)
+                    all_tables.append(this_aptable)
 
-                for name in all_column_names:
-                    aptable[name] = [model_dict.get(name, 0) for model_dict in all_model_dicts]
-                # We don't need to reattach the Table because it was a
-                # reference all along!
+                new_aptable = vstack(all_tables, metadata_conflicts="silent")
+                ext.APERTURE = new_aptable
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2937,7 +2911,7 @@ def _extract_model_info(ext):
         wave_model = ext.wcs.forward_transform
     else:
         dispaxis = 2 - ext.dispersion_axis()
-        wave_model = astromodels.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
+        wave_model = am.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
     npix = ext.shape[dispaxis]
     limits = wave_model([0, npix])
     w1, w2 = min(limits), max(limits)
@@ -3048,7 +3022,7 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
         scaling[boundary:] = coeff
     scaled_data = scaling * data
     scaled_weights = 1. / scaling if weights is None else (weights / scaling).astype(np.float64)
-    spline = astromodels.UnivariateSplineWithOutlierRemoval(xpix, scaled_data,
+    spline = am.UnivariateSplineWithOutlierRemoval(xpix, scaled_data,
                                                             order=order, w=scaled_weights, niter=1, grow=0)
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
                                                        scaled_weights)).sum() / (~spline.mask).sum()

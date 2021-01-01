@@ -20,8 +20,8 @@ import astrodata
 import geminidr
 from astropy.modeling import models
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
-from gempy.library import transform
-from gempy.testing import assert_have_same_distortion, dict_to_polynomial
+from gempy.library import transform, astromodels as am
+from gempy.testing import assert_have_same_distortion
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
@@ -229,10 +229,8 @@ def test_fitcoord_table_and_gwcs_match(ad, change_working_dir):
         "pixels", "distortion_corrected")
 
     fitcoord = distortion_determined_ad[0].FITCOORD
-    fitcoord_model = dict_to_polynomial(dict(zip(fitcoord["name"],
-                                                 fitcoord["coefficients"])))
-    fitcoord_inv = dict_to_polynomial(dict(zip(fitcoord["inv_name"],
-                                               fitcoord["inv_coefficients"])))
+    fitcoord_model = am.table_to_model(fitcoord[0])
+    fitcoord_inv = am.table_to_model(fitcoord[1])
 
     np.testing.assert_allclose(model[1].parameters, fitcoord_model.parameters)
     np.testing.assert_allclose(model.inverse[1].parameters, fitcoord_inv.parameters)

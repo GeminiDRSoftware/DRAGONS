@@ -1064,11 +1064,10 @@ def fit_continuum(ad):
                 # No acquisition slits, maybe we've already found apertures?
                 aptable = ext.APERTURE
                 for row in aptable:
-                    model_dict = dict(zip(aptable.colnames, row))
-                    trace_model = astromodels.dict_to_polynomial(model_dict)
+                    trace_model = astromodels.table_to_model(row)
                     aperture = tracing.Aperture(trace_model,
-                                                aper_lower=model_dict['aper_lower'],
-                                                aper_upper=model_dict['aper_upper'])
+                                                aper_lower=row['aper_lower'],
+                                                aper_upper=row['aper_upper'])
                     spatial_slices.append(aperture)
             except AttributeError:
                 # No apertures, so defer source-finding until we iterate
