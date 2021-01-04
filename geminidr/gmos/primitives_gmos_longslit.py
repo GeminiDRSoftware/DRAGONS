@@ -623,10 +623,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
                 except TypeError:  # ext.mask is None
                     pass
-                else:
-                    if is_hamamatsu:
-                        ext.mask[:, :21 // xbin] = 1
-                        ext.mask[:, -21 // xbin:] = 1
 
                 masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
                 weights = np.sqrt(at.divide0(1., ext.variance))
