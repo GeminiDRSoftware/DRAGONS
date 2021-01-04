@@ -510,9 +510,14 @@ class Preprocess(PrimitivesBASE):
 
         Regions must be specified either as a string, separated by semi-colons,
         with the ``regions`` parameter, or with a file (``regions_file``), one
-        region per line. Regions strings must be a comma-separated list of
-        (colon-or-hyphen-separated) pixel ranges, in 1-indexed Cartesian pixel
-        co-ordinates, inclusive of the upper limit.
+        region per line.
+
+        Regions strings must be a comma-separated list of colon-separated pixel
+        ranges, one per axis, in 1-indexed Cartesian pixel co-ordinates,
+        inclusive of the upper limit. Axes are specified in Fortran order
+        (reverse of the Python order). For example, "450,521;430:437,513:533"
+        would specify a single pixel (line 521, column 450) and a vertical
+        region (lines 513 to 533 included, columns 430 to 437).
 
         By default, interpolation is performed across the narrowest dimension
         spanning bad pixels with interpolation along image lines if the two
@@ -527,8 +532,7 @@ class Preprocess(PrimitivesBASE):
         suffix : str
             suffix to be added to output files.
         regions : str
-            List of pixels or regions to fix. Ranges are 1-indexed, inclusive
-            of the upper limit.
+            List of pixels or regions to fix (see description above).
         regions_file : str
             Path to a file containing the regions to fix.
         axis : int

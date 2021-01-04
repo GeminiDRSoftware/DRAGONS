@@ -57,7 +57,19 @@ class dilateObjectMaskConfig(config.Config):
 class fixPixelsConfig(config.Config):
     suffix = config.Field("Filename suffix", dtype=str,
                           default="_pixelsFixed", optional=True)
-    regions = config.Field("Regions to fix", dtype=str, optional=True)
+    regions = config.Field("""Regions to fix.
+
+Regions must be specified either as a string, separated by semi-colons,
+with the ``regions`` parameter, or with a file (``regions_file``), one
+region per line.
+
+Regions strings must be a comma-separated list of colon-separated pixel
+ranges, one per axis, in 1-indexed Cartesian pixel co-ordinates,
+inclusive of the upper limit. Axes are specified in Fortran order
+(reverse of the Python order). For example, "450,521;430:437,513:533"
+would specify a single pixel (line 521, column 450) and a vertical
+region (lines 513 to 533 included, columns 430 to 437).
+    """, dtype=str, optional=True)
     regions_file = config.Field("Path to a file containing the regions to fix",
                                 dtype=str, optional=True)
     axis = config.Field("Axis over which the interpolation is done",
