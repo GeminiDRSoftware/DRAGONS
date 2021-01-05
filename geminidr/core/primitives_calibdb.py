@@ -428,7 +428,15 @@ class CalibDB(PrimitivesBASE):
 def _update_datalab(ad, suffix, keyword_comments_lut):
     # Update the DATALAB. It should end with 'suffix'.  DATALAB will
     # likely already have '_stack' suffix that needs to be replaced.
+
+    # replace the _ with a - to match fitsstore datalabel standard
+    # or add the - if "suffix" doesn't have a leading _
+    if suffix[0] == '_':
+        extension = suffix.replace('_', '-', 1).upper()
+    else:
+        extension = '-'+suffix.upper()
+
     datalab = ad.data_label()
-    new_datalab = re.sub(r'_[a-zA-Z]+$', '', datalab) + suffix
+    new_datalab = re.sub(r'-[a-zA-Z]+$', '', datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return
