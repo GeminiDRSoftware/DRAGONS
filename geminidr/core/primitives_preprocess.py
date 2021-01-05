@@ -513,11 +513,12 @@ class Preprocess(PrimitivesBASE):
         region per line.
 
         Regions strings must be a comma-separated list of colon-separated pixel
-        ranges, one per axis, in 1-indexed Cartesian pixel co-ordinates,
-        inclusive of the upper limit. Axes are specified in Fortran order
-        (reverse of the Python order). For example, "450,521;430:437,513:533"
-        would specify a single pixel (line 521, column 450) and a vertical
-        region (lines 513 to 533 included, columns 430 to 437).
+        coordinates or ranges, one per axis, in 1-indexed Cartesian pixel
+        co-ordinates, inclusive of the upper limit. Axes are specified in
+        Fortran order (reverse of the Python order). For example,
+        "450,521;430:437,513:533" would specify a single pixel (line 521,
+        column 450) and a vertical region (lines 513 to 533 included, columns
+        430 to 437).
 
         By default, interpolation is performed across the narrowest dimension
         spanning bad pixels with interpolation along image lines if the two
