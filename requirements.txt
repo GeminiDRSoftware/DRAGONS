@@ -9,7 +9,6 @@ gwcs>=0.14
 imexam
 matplotlib
 numpy
-photutils
 python-dateutil
 pytest
 scipy
