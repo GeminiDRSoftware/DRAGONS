@@ -25,7 +25,7 @@ from recipe_system.testing import ref_ad_factory
 
 # Test parameters --------------------------------------------------------------
 test_datasets = [
-    "N20180508S0021_skyCorrected.fits",  # B600 720
+    "N20180508S0021_aperturesTraced.fits",  # B600 720
     # "N20180509S0010_skyCorrected.fits",  # R400 900
     # "N20180516S0081_skyCorrected.fits",  # R600 860
     # "N20190201S0163_skyCorrected.fits",  # B600 530
@@ -226,8 +226,8 @@ def create_inputs_recipe():
         temp_ad = _add_aperture_table(temp_ad, aperture_center)
 
         p = primitives_gmos_spect.GMOSSpect([temp_ad])
-        p.traceApertures(trace_order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
         p.skyCorrectFromSlit(order=5, grow=0)
+        p.traceApertures(trace_order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
 
         os.chdir("inputs/")
         _ = p.writeOutputs()[0]
