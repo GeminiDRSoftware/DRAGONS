@@ -438,11 +438,13 @@ def model_to_table(model, xunit=None, yunit=None, zunit=None):
 def table_to_model(table):
     """
     Convert a Table instance, as created by model_to_table(), back into a
-    callable function.
+    callable function. Some backward compatibility has been introduced, so
+    the domain can be specified in the Table, rather than the meta, and a
+    Chebyshev1D model will be assumed if not found in the meta.
 
     Parameters
     ----------
-    table : `~astropy.table.Table`
+    table : `~astropy.table.Table` or `~astropy.table.Row`
         Table describing the model
 
     Returns
@@ -451,7 +453,7 @@ def table_to_model(table):
                `~scipy.interpolate.BSpline` instance
     """
     meta = table.meta["header"]
-    model_class = meta["MODEL"]
+    model_class = meta.get("MODEL", "Chebyshev1D")
     try:
         cls = getattr(models, model_class)
     except:  # it's a spline
@@ -461,7 +463,13 @@ def table_to_model(table):
         setattr(model, "meta", {"xunit": knots.unit,
                                 "yunit": coeffs.unit})
     else:
+        if isinstance(table, Table):
+            if len(table) != 1:
+                raise ValueError("Can only convert single-row Tables to a model")
+            else:
+                table = table[0]  # now a Row
         ndim = int(model_class[-2])
+        table_dict = dict(zip(table.colnames, table))
         if ndim == 1:
             r = re.compile("c([0-9]+)")
             param_names = list(filter(r.match, table.colnames))
@@ -470,24 +478,29 @@ def table_to_model(table):
             # polynomial might be different
             degree = max([int(r.match(p).groups()[0]) for p in param_names
                           if table[p] is not np.ma.masked])
-            domain = [meta.get("DOMAIN_START"), meta.get("DOMAIN_END")]
+            domain = [table_dict.get("domain_start", meta.get("DOMAIN_START", 0)),
+                      table_dict.get("domain_end", meta.get("DOMAIN_END", 1))]
             model = cls(degree=degree, domain=domain)
         elif ndim == 2:
             r = re.compile("c([0-9]+)_([0-9]+)")
             param_names = list(filter(r.match, table.colnames))
             xdegree = max([int(r.match(p).groups()[0]) for p in param_names])
             ydegree = max([int(r.match(p).groups()[1]) for p in param_names])
-            xdomain = [meta.get("XDOMAIN_START"), meta.get("XDOMAIN_END")]
-            ydomain = [meta.get("YDOMAIN_START"), meta.get("YDOMAIN_END")]
+            xdomain = [table_dict.get("xdomain_start", meta.get("XDOMAIN_START", 0)),
+                       table_dict.get("xdomain_end", meta.get("XDOMAIN_END", 1))]
+            ydomain = [table_dict.get("ydomain_start", meta.get("YDOMAIN_START", 0)),
+                       table_dict.get("ydomain_end", meta.get("YDOMAIN_END", 1))]
             model = cls(x_degree=xdegree, y_degree=ydegree,
                         x_domain=xdomain, y_domain=ydomain)
         else:
             raise ValueError(f"Invalid dimensionality of model '{model_class}'")
-        for c in table.colnames:
-            if c in param_names:
-                setattr(model, c, table[c])
-            else:  # other columns go in the meta
-                model.meta[c] = table[c]
+
+        for k, v in table_dict.items():
+            if k in param_names:
+                setattr(model, k, v)
+            elif not ("domain" in k or k in ("ndim", "degree")):
+                # other columns go in the meta
+                model.meta[k] = v
         for unit in ("xunit", "yunit", "zunit"):
             value = meta.get(unit.upper())
             if value:
