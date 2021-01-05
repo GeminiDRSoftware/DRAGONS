@@ -226,8 +226,8 @@ def create_inputs_recipe():
         temp_ad = _add_aperture_table(temp_ad, aperture_center)
 
         p = primitives_gmos_spect.GMOSSpect([temp_ad])
-        p.traceApertures(order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
         p.skyCorrectFromSlit(order=5, grow=0)
+        p.traceApertures(order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)
 
         os.chdir("inputs/")
         _ = p.writeOutputs()[0]
