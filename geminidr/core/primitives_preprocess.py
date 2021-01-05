@@ -599,12 +599,11 @@ class Preprocess(PrimitivesBASE):
                         origdata = ext.data[plot_slices].copy()
 
                     if use_local_median and np.prod(region_shape) == 1:
-                        nd = NDAstroData(data=ext.data,
-                                         mask=np.zeros(ext.shape, dtype=bool))
-                        nd.mask[slices] = 1
-                        ring_median_filter(nd, 3, 5, inplace=True,
-                                           replace_flags=1,
+                        ext.mask[slices] |= 32768
+                        ring_median_filter(ext.nddata, 3, 5, inplace=True,
+                                           replace_flags=32768,
                                            replace_func='median')
+                        ext.mask[slices] ^= 32768
                     else:
                         log.debug(f'Interpolating region {region} on '
                                   f'axis {ndim - use_axis}')
