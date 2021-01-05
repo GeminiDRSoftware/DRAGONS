@@ -2,7 +2,7 @@
 
 This is a guide to using the interactive tools for data reduction.
 For information on developing new interactive interfaces, see
-!(INTERACTIVE.md)
+[INTERACTIVE.md](INTERACTIVE.md)
 
 ## Normalize Flat
 
