@@ -537,8 +537,9 @@ class Preprocess(PrimitivesBASE):
         regions_file : str
             Path to a file containing the regions to fix.
         axis : int
-            Axis over which the interpolation is done. By default the axis is
-            determined from the narrowest dimension of each region.
+            Axis over which the interpolation is done, using the Fortran
+            order. By default the axis is determined from the narrowest
+            dimension of each region.
         use_local_median : bool
             Use a local median filter for single pixels?
         debug : bool
@@ -567,7 +568,9 @@ class Preprocess(PrimitivesBASE):
                         log.warning(f'Failed to parse region: {region}')
                         continue
 
-                    if len(slices) != ext.data.ndim:
+                    ndim = ext.data.ndim
+
+                    if len(slices) != ndim:
                         raise ValueError(f'region {region} does not match '
                                          'array dimension')
 
@@ -581,10 +584,10 @@ class Preprocess(PrimitivesBASE):
                         use_axis = np.where(
                             region_shape == region_shape.min())[0][-1]
                     else:
-                        if axis not in range(ext.data.ndim):
+                        if axis not in range(1, ndim + 1):
                             raise ValueError('axis should specify a dimension '
-                                             f'between 0 and {ext.data.ndim}')
-                        use_axis = axis
+                                             f'between 1 and {ndim + 1}')
+                        use_axis = ndim - axis
 
                     if debug:
                         log.debug(f'Replacing pixel {region} with a '
@@ -604,7 +607,7 @@ class Preprocess(PrimitivesBASE):
                                            replace_func='median')
                     else:
                         log.debug(f'Interpolating region {region} on '
-                                  f'axis {use_axis}')
+                                  f'axis {ndim - use_axis}')
                         # Extract the data corresponding to the region
                         slices_extract = list(slices)
                         slices_extract[use_axis] = slice(None)

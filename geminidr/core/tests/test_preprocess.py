@@ -137,9 +137,12 @@ def test_fixpixels_specify_axis(niriprim):
     ]
 
     with pytest.raises(ValueError):
-        ad = niriprim.fixPixels(regions=';'.join(regions), axis=2)[0]
+        ad = niriprim.fixPixels(regions=';'.join(regions), axis=0)[0]
 
-    ad = niriprim.fixPixels(regions=';'.join(regions), axis=0, debug=DEBUG)[0]
+    with pytest.raises(ValueError):
+        ad = niriprim.fixPixels(regions=';'.join(regions), axis=3)[0]
+
+    ad = niriprim.fixPixels(regions=';'.join(regions), axis=2, debug=DEBUG)[0]
 
     sy, sx = cartesian_regions_to_slices(regions[0])
     assert_almost_equal(ad[0].data[sy, sx].min(), 17.636, decimal=2)
@@ -221,7 +224,7 @@ def test_fixpixels_3D_axis(astrofaker):
     p = Preprocess([ad])
 
     regions = ['2:5,3:4,2:3']
-    ad = p.fixPixels(regions=';'.join(regions), debug=DEBUG, axis=0)[0]
+    ad = p.fixPixels(regions=';'.join(regions), debug=DEBUG, axis=3)[0]
 
     assert_array_equal(refarr, ad[0].data)
 

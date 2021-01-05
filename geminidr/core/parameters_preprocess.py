@@ -61,7 +61,7 @@ class fixPixelsConfig(config.Config):
                            dtype=str, optional=True)
     regions_file = config.Field("Path to a file containing the regions to fix",
                                 dtype=str, optional=True)
-    axis = config.Field("Axis over which the interpolation is done",
+    axis = config.Field("Axis over which the interpolation is done (Fortran order)",
                         dtype=int, optional=True)
     use_local_median = config.Field("Use a local median filter for single pixels?",
                                     dtype=bool, default=False, optional=True)
