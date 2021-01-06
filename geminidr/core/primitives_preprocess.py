@@ -535,7 +535,9 @@ class Preprocess(PrimitivesBASE):
         regions : str
             List of pixels or regions to fix (see description above).
         regions_file : str
-            Path to a file containing the regions to fix.
+            Path to a file containing the regions to fix. If both regions_file
+            and regions are supplied, both will be used and regions_file will
+            be used first.
         axis : int
             Axis over which the interpolation is done, using the Fortran
             order. By default the axis is determined from the narrowest
@@ -550,26 +552,33 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if regions is not None:
-            regions = regions.split(';')
-        elif regions_file is not None:
-            with open(regions_file) as f:
-                regions = f.read().strip().splitlines()
-        else:
+        if regions is None and regions_file is None:
             raise ValueError('regions must be specified either as a string '
                              '(regions) or with a file (regions_file)')
 
+        all_regions = []
+
+        if regions_file is not None:
+            with open(regions_file) as f:
+                all_regions += f.read().strip().splitlines()
+
+        if regions is not None:
+            all_regions += regions.split(';')
+
+        region_slices = []
+        for region in all_regions:
+            try:
+                slices = cartesian_regions_to_slices(region.strip())
+            except ValueError:
+                log.warning(f'Failed to parse region: {region}')
+            else:
+                region_slices.append((region, slices))
+
         for ad in adinputs:
             for ext in ad:
-                for region in regions:
-                    try:
-                        slices = cartesian_regions_to_slices(region.strip())
-                    except ValueError:
-                        log.warning(f'Failed to parse region: {region}')
-                        continue
+                ndim = ext.data.ndim
 
-                    ndim = ext.data.ndim
-
+                for region, slices in region_slices:
                     if len(slices) != ndim:
                         raise ValueError(f'region {region} does not match '
                                          'array dimension')
