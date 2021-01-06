@@ -501,8 +501,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def fixPixels(self, adinputs=None, suffix=None, axis=None, regions=None,
-                  regions_file=None, use_local_median=False, debug=False):
+    def fixPixels(self, adinputs=None, **params):
         """
         This primitive replaces bad pixels by linear interpolation along
         lines or columns using the nearest good pixels, similar to IRAF's
@@ -551,6 +550,13 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        axis = params['axis']
+        debug = params['debug']
+        regions_file = params['regions_file']
+        regions = params['regions']
+        suffix = params['suffix']
+        use_local_median = params['use_local_median']
 
         if regions is None and regions_file is None:
             raise ValueError('regions must be specified either as a string '
