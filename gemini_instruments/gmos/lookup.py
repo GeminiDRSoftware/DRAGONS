@@ -1689,7 +1689,7 @@ gratingeq = (1.629168086997, 1.6150523031634, 1.6004445587539, 1.5853493034291,
 # Names of spectrophotometric standards used in the Gemini OBJECT field,
 # after converting to lowercase and stripping out spaces
 standard_star_names = ('bd+284211', 'cd-329927', 'cd-34241', 'cygob2no9',
-                       'eg81', 'eg131', 'eg274',
+                       'eg21', 'eg81', 'eg131', 'eg274',
                        'feige34', 'feige56', 'feige66', 'feige67', 'feige110',
                        'g191b2b', 'gd108', 'gd140',
                        'hd192281', 'hd217086', 'hiltner600', 'hz14', 'hz44',
