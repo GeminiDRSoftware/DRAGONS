@@ -153,10 +153,8 @@ class InteractiveModel1D(InteractiveModel):
 
         Parameters
         ----------
-        model : `astropy.modeling.models.Chebyshev1D` or ?
-            Model behind the 1-D fit.  Chebyshev or Spline.  This gets wrapped
-            in a helper model like :class:`~geminidr.interactive.fit1d.InteractiveChebyshev1D`
-            or :class:`~geminidr.interactive.fit1d.InteractiveSpline1D`
+        model : :class:`geminidr.interactive.fit.fit1d.InteractiveFit1D`
+            Model behind the 1-D fit.
         x : :class:`~numpy.ndarray`
             list of x coordinate values
         y : :class:`~numpy.ndarray`
@@ -175,7 +173,7 @@ class InteractiveModel1D(InteractiveModel):
             max iterations to do on fit
         section
         """
-        model = InteractiveNewFit1D(fitting_parameters, domain, listeners=listeners)
+        model = InteractiveFit1D(fitting_parameters, domain, listeners=listeners)
         super().__init__(model)
 
         self.user_mask = None
@@ -374,10 +372,10 @@ class InteractiveModel1D(InteractiveModel):
         return self.model(x)
 
 
-class InteractiveNewFit1D:
+class InteractiveFit1D:
     def __init__(self, fitting_parameters, domain, listeners=[]):
         """
-        Create `~InteractiveNewFit1D` wrapper around the new fit1d model.
+        Create `~InteractiveFit1D` wrapper around the new fit1d model.
 
         The models don't like being modified, so this wrapper class handles
         that for us.  We can just keep a reference to this and, when needed,
@@ -455,13 +453,13 @@ class InteractiveNewFit1D:
         """
         Perform the fit, update self.model, parent.fit_mask
 
-        The upper layer is a :class:`~InteractiveModel1D` that calls into
+        The upper layer is a :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D` that calls into
         this method. It passes itself down as `parent` to give access to
         various fields and allow this fit to be saved back up to it.
 
         Parameters
         ----------
-        parent : :class:`~InteractiveModel1D`
+        parent : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
             wrapper model passes itself when it calls into this method
         """
         # Note that band_mask is now handled by passing a region string to fit_1D
@@ -492,7 +490,7 @@ class Fit1DPanel:
 
         Parameters
         ----------
-        visualizer : :class:`~geminidr.interactive.fit.Fit1DVisualizer`
+        visualizer : :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
             visualizer to associate with
         fitting_parameters : dict
             parameters for this fit
@@ -652,7 +650,7 @@ class Fit1DPanel:
             p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
                              title='Fit Residuals',
                              x_axis_label=xlabel, y_axis_label='delta'+ylabel,
-                             tools="pan,wheel_zoom,box_zoom,reset",
+                             tools="pan,box_zoom,reset",
                              output_backend="webgl", x_range=x_range, y_range=None)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
