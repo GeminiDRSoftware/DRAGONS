@@ -26,7 +26,7 @@ curl -O https://archive.gemini.edu/file/N20200520S0141.fits
 ### Step 2: Call `reduce` With `interactive_reduce` Parameter
 
 ```bash
-reduce -p interactive_reduce=True -p do_bias=False N20200520S0141.fits
+reduce -p interactive=True -p do_bias=False N20200520S0141.fits
 ```
 
 This should select the `makeProcessedFlat` recipe.  The `do_bias` parameter
@@ -60,3 +60,60 @@ continue, using the inputs and fit function you specified.
 After finishing, the result of the reduction will be available as 
 `N20200520S0141_flat.fits`
 
+## Calculate Sensitivity
+
+The `calculateSensitivity` primitive has also been set up for interactive
+use.  Here are steps to test it out.
+
+### Step 1: Get Data
+
+For this example, we are going to run the primitive explicitly.  To do this,
+I have pulled out a file from just before this step during reduce.  You can
+get the file at this URL (Google Drive).  You must be logged in to your 
+Gemini account, so a browser is recommended.
+
+<https://drive.google.com/file/d/1P_DpzBWtEye03p8AcZy5YrOYz0BKPdZB/view?usp=sharing>
+
+
+### Step 2: Call `reduce` With `interactive_reduce` And Specify Primitive
+
+```bash
+reduce -p interactive=True -r calculateSensitivity N20201022S0006_align.fits
+```
+
+This should directly call the `calculateSensitivity` primitive.
+The user interface should automatically start in your web browser and will
+look as follows:
+
+### Step 3a: Alter Inputs As Desired
+
+![Calculate Sensitivity Visualizer](docs/CalculateSensitivityCallouts.png)
+
+There are two sets of inputs.  The left-most are applied across all of the
+CCDs.  This is the fit function (i.e. spline) to perform on the data.  
+The inputs to the fit are available per-extension
+and on each tab.
+
+### Step 3b: Alter Regions As Desired
+
+The regions can be specified as well.  This narrows the points used as input
+to the fit.  This can be done interactively, or via the text input below 
+each plot.  Regions are also set per-CCD.
+
+### Step 3c: Mask Arbitrary Points As Desired
+
+This primitive allows the selection of arbitrary points.  This can be done
+by clicking directly on a point, by using the box select tool, or by using the
+lasso free select tool.  Then you either use the 'M' and 'U' keys or the 
+buttons to mask or unmask those points.  This was not feasable for the
+normalize flat UI since it can only show one row at a time.
+
+### Step 4: Submit Parameters
+
+When you hit the *Submit* button, the UI will close and the reduction will
+continue, using the inputs and fit function you specified.
+
+### Step 5: Check Output
+
+After finishing, the result of the reduction will be available as 
+`N20201022S0006_sensitivityCalculated.fits`

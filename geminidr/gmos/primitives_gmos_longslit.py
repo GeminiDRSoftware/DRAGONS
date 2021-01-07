@@ -599,6 +599,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             growth radius for rejected pixels
         threshold : float
             threshold (relative to peak) for flagging unilluminated pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -611,7 +613,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         threshold = params["threshold"]
         spectral_order = params["order"]
         all_fp_init = [fit_1D.translate_params(params)] * 3
-        interactive_reduce = params["interactive_reduce"]
+        interactive_reduce = params["interactive"]
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
