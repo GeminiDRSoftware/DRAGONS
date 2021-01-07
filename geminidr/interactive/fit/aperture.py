@@ -179,10 +179,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         model : :class:`geminidr.interactive.fit.aperture.FindSourceAperturesModel`
             Model to use for tracking the input parameters and recalculating fresh sets as needed
         """
-        super().__init__()
-        # Note that self._fields in the base class is setup with a dictionary mapping conveniently
-        # from field name to the underlying config.Field entry, even though fields just comes in as
-        # an iterable
+        super().__init__(title='Find Source Apertures')
         self.model = model
 
         self.details = None

@@ -23,7 +23,7 @@ Alternatively, on UNIX based systems you can use
 curl -O https://archive.gemini.edu/file/N20200520S0141.fits
 ```
 
-### Step 2: Call `reduce` With `interactive_reduce` Parameter
+### Step 2: Call `reduce` With `interactive` Parameter
 
 ```bash
 reduce -p interactive=True -p do_bias=False N20200520S0141.fits
@@ -75,7 +75,7 @@ Gemini account, so a browser is recommended.
 <https://drive.google.com/file/d/1P_DpzBWtEye03p8AcZy5YrOYz0BKPdZB/view?usp=sharing>
 
 
-### Step 2: Call `reduce` With `interactive_reduce` And Specify Primitive
+### Step 2: Call `reduce` With `interactive` And Specify Primitive
 
 ```bash
 reduce -p interactive=True -r calculateSensitivity N20201022S0006_align.fits
@@ -117,3 +117,47 @@ continue, using the inputs and fit function you specified.
 
 After finishing, the result of the reduction will be available as 
 `N20201022S0006_sensitivityCalculated.fits`
+
+## Find Source Apertures
+
+The `findSourceApertures` primitive has also been set up for interactive
+use.  Here are steps to test it out.
+
+### Step 1: Get Data
+
+For this example, we are going to run the primitive explicitly.  To do this,
+I have pulled out a file from just before this step during reduce.  You can
+get the file at this URL (Google Drive).  You must be logged in to your 
+Gemini account, so a browser is recommended.
+
+<https://drive.google.com/file/d/1nSsTVvEf3OFO46TkK5vbTcjmJsHm6mKs/view?usp=sharing>
+
+
+### Step 2: Call `reduce` With `interactive` And Specify Primitive
+
+```bash
+reduce -p interactive=True -r findSourceApertures S20200201S0031_aperturesTraced.fits
+```
+
+This should directly call the `findSourceApertures` primitive.
+The user interface should automatically start in your web browser and will
+look as follows:
+
+### Step 3: Alter Inputs As Desired
+
+![Find Source Apertures Visualizer](docs/FindSourceAperturesCallouts.png)
+
+The inputs to the primitive are in the top left.  Altering these will cause the
+apertures to be regenerated.  Then, you can modify, add, or delete apertures using
+the controls below.  You can also edit the apertures by hovering the mouse over 
+the plot and using the key commands as described on the bottom left.
+
+### Step 4: Submit Parameters
+
+When you hit the *Submit* button, the UI will close and the reduction will
+continue, using the currently defined apertures.
+
+### Step 5: Check Output
+
+After finishing, the result of the reduction will be available as 
+`S20200201S0031_aperturesFound.fits`
