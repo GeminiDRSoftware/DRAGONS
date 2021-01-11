@@ -9,6 +9,7 @@ timestamp_keys = {
     "addIllumMaskToDQ": "ADILLMSK",
     "addMDF": "ADDMDF",
     "addObjectMaskToDQ": "ADOBJMSK",
+    "addPaddingToDQ":  "ADPAD2DQ",
     "addReferenceCatalog": "ADDRECAT",
     "addVAR": "ADDVAR",
     "adjustWCSToReference": "CORRWCS",
