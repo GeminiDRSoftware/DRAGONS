@@ -24,12 +24,23 @@ def test_add_padding_to_data(ad):
     adp = p.addPaddingToDQ().pop()
 
 
-def test_add_padding_to_tiled_data():
-    pass
+@pytest.mark.parametrize("ad", test_cases, indirect=True)
+def test_add_padding_to_tiled_data(ad):
+    """
+    Test that the input did not have padded columns before calling
+    `p.addPaddingToDQ()` and that the padding was properly added after
+    calling the primitive in data that was not mosaicked nor tiled.
+    """
+    logutils.config(file_name='log_{}.txt'.format(ad.filename.strip('.fits')))
+    p = primitives_gmos.GMOS([ad])
+    adp = p.addPaddingToDQ().pop()
 
 
-def test_add_padding_to_mosaicked_data():
-    pass
+@pytest.mark.parametrize("ad_tiled", test_cases, indirect=True)
+def test_add_padding_to_mosaicked_data(ad_tiled):
+    logutils.config(file_name='log_{}.txt'.format(ad_tiled.filename.strip('.fits')))
+    p = primitives_gmos.GMOS([ad_tiled])
+    adp = p.addPaddingToDQ().pop()
 
 
 @pytest.fixture
@@ -43,6 +54,19 @@ def ad(request, path_to_inputs):
         raise FileNotFoundError(path)
 
     return ad
+
+
+@pytest.fixture
+def ad_tiled(request, path_to_inputs):
+    filename = request.param.replace(".fits", "_tiled.fits")
+    path = os.path.join(path_to_inputs, filename)
+
+    if os.path.exists(path):
+        _ad = astrodata.open(path)
+    else:
+        raise FileNotFoundError(path)
+
+    return _ad
 
 
 def create_inputs_recipe():
