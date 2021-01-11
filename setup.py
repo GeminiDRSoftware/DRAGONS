@@ -96,7 +96,7 @@ setup(name='dragons',
       ],
       extras_require={
           'docs': ['sphinx', 'sphinx_rtd_theme'],
-          'test': ['pytest', 'pytest-remotedata', 'coverage', 'objgraph'],
+          'test': ['pytest', 'coverage', 'objgraph', 'pandas'],
       },
       project_urls={
           'Issue Tracker': 'https://github.com/GeminiDRSoftware/DRAGONS',
