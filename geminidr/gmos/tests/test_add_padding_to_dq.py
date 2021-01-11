@@ -12,6 +12,7 @@ test_cases = [
 ]
 
 
+@pytest.mark.integration_test
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", test_cases, indirect=True)
 def test_add_padding_to_data(ad):
@@ -25,8 +26,9 @@ def test_add_padding_to_data(ad):
     adp = p.addPaddingToDQ().pop()
 
 
+@pytest.mark.integration_test
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad", test_cases, indirect=True)
+@pytest.mark.parametrize("ad_tiled", test_cases, indirect=True)
 def test_add_padding_to_tiled_data(ad_tiled):
     """
     Test that the input did not have padded columns before calling
@@ -34,12 +36,12 @@ def test_add_padding_to_tiled_data(ad_tiled):
     calling the primitive in data that was not mosaicked nor tiled.
     """
     logutils.config(file_name='log_{}.txt'.format(ad.filename.strip('.fits')))
-    p = primitives_gmos.GMOS([ad])
+    p = primitives_gmos.GMOS([ad_tiled])
     adp = p.addPaddingToDQ().pop()
 
 
+@pytest.mark.integration_test
 @pytest.mark.preprocessed_data
-@pytest.mark.integration
 def test_add_padding_to_mosaicked_data():
     """
     ToDO: failed to create input data.

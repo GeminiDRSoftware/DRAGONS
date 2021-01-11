@@ -26,14 +26,14 @@ from recipe_system.testing import ref_ad_factory
 # Test parameters --------------------------------------------------------------
 test_datasets = [
     "N20180508S0021_skyCorrected.fits",  # B600 720
-    # "N20180509S0010_skyCorrected.fits",  # R400 900
-    # "N20180516S0081_skyCorrected.fits",  # R600 860
-    # "N20190201S0163_skyCorrected.fits",  # B600 530
-    # "N20190313S0114_skyCorrected.fits",  # B600 482
-    # "N20190427S0123_skyCorrected.fits",  # R400 525
-    # "N20190427S0126_skyCorrected.fits",  # R400 625
-    # "N20190427S0127_skyCorrected.fits",  # R400 725
-    # "N20190427S0141_skyCorrected.fits",  # R150 660
+    # "N20180509S0010_aperturesTraced.fits",  # R400 900
+    # "N20180516S0081_aperturesTraced.fits",  # R600 860
+    # "N20190201S0163_aperturesTraced.fits",  # B600 530
+    # "N20190313S0114_aperturesTraced.fits",  # B600 482
+    # "N20190427S0123_aperturesTraced.fits",  # R400 525
+    # "N20190427S0126_aperturesTraced.fits",  # R400 625
+    # "N20190427S0127_aperturesTraced.fits",  # R400 725
+    # "N20190427S0141_aperturesTraced.fits",  # R150 660
 ]
 
 
@@ -164,23 +164,23 @@ def create_inputs_recipe():
     from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
 
     associated_info = {
-        "N20180508S0021_skyCorrected.fits": {
+        "N20180508S0021_aperturesTraced.fits": {
             "arc": ["N20180615S0409.fits"], "center": 244},
-        "N20180509S0010_skyCorrected.fits": {
+        "N20180509S0010_aperturesTraced.fits": {
             "arc": ["N20180509S0080.fits"], "center": 259},
-        "N20180516S0081_skyCorrected.fits": {
+        "N20180516S0081_aperturesTraced.fits": {
             "arc": ["N20180516S0214.fits"], "center": 255},
-        "N20190201S0163_skyCorrected.fits": {
+        "N20190201S0163_aperturesTraced.fits": {
             "arc": ["N20190201S0176.fits"], "center": 255},
-        "N20190313S0114_skyCorrected.fits": {
+        "N20190313S0114_aperturesTraced.fits": {
             "arc": ["N20190313S0132.fits"], "center": 254},
-        "N20190427S0123_skyCorrected.fits": {
+        "N20190427S0123_aperturesTraced.fits": {
             "arc": ["N20190427S0266.fits"], "center": 260},
-        "N20190427S0126_skyCorrected.fits": {
+        "N20190427S0126_aperturesTraced.fits": {
             "arc": ["N20190427S0267.fits"], "center": 259},
-        "N20190427S0127_skyCorrected.fits": {
+        "N20190427S0127_aperturesTraced.fits": {
             "arc": ["N20190427S0268.fits"], "center": 258},
-        "N20190427S0141_skyCorrected.fits": {
+        "N20190427S0141_aperturesTraced.fits": {
             "arc": ["N20190427S0270.fits"], "center": 264},
     }
 
@@ -206,6 +206,7 @@ def create_inputs_recipe():
         print('Reducing ARC for {:s}'.format(data_label))
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
         arc_reduce = Reduce()
+        arc_reduce.mode = 'ql'
         arc_reduce.files.extend(arcs_path)
         arc_reduce.runr()
         arc_master = arc_reduce.output_filenames.pop()
