@@ -612,7 +612,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             array_info = gt.array_information(ad)
-            is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
             ad_fitted = astrodata.create(ad.phu)
             for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):

@@ -32,6 +32,57 @@ class GMOS(Gemini, CCD):
         self.inst_lookups = 'geminidr.gmos.lookups'
         self._param_update(parameters_gmos)
 
+    def addPaddingToDQ(self, adinputs=None, pad_size=21):
+        """
+        Masks out the detectors' vertical edges that are usually problematic in
+        different stages of the data reduction.
+
+        Parameters
+        ----------
+        adinputs : None or list
+            Input files that will be prepared. If `None`, it runs on the
+            list of AstroData objects in the main stream.
+        pad_size : int
+            Number of un-binned columns that will be masked out.
+
+        Returns
+        -------
+        list of AstroData : padded data.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        for ad in adinputs:
+            is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
+            is_tiled = ad.phu.get(self.timestamp_keys['tileArrays'])
+            is_mosaicked = ad.phu.get(self.timestamp_keys['mosaicDetectors'])
+
+            if not is_hamamatsu:
+                continue
+
+            if is_mosaicked:
+                log.warning("Skipping padding for mosaicked data.")
+                continue
+
+            for idx, ext in enumerate(ad):
+                x_bin = ext.detector_x_bin()
+
+                if is_tiled:
+                    ext.mask[:, :pad_size // x_bin] = 1
+                    ext.mask[:, -pad_size // x_bin:] = 1
+
+                if not is_tiled:
+                    if idx % 4 == 0:
+                        ext.mask[:, :pad_size // x_bin] = 1
+                    if idx % 4 == 3:
+                        ext.mask[:, -pad_size // x_bin:] = 1
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+
+        return adinputs
+
+
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """
         This primitive is used to make the changes and additions to the
