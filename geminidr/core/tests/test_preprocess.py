@@ -28,6 +28,16 @@ def niriprim():
     return p
 
 
+@pytest.fixture
+def niriprim2():
+    file_path = download_from_archive("N20190120S0287.fits")
+    ad = astrodata.open(file_path)
+    ad.append(ad[0])
+    p = NIRIImage([ad])
+    p.addDQ()
+    return p
+
+
 @pytest.mark.dragons_remote_data
 def test_apply_dq_plane_default(niriprim):
     """Default params: replace masked pixels by median of the image."""
@@ -228,6 +238,37 @@ def test_fixpixels_3D_axis(astrofaker):
     ad = p.fixPixels(regions=';'.join(regions), debug=DEBUG, axis=3)[0]
 
     assert_array_equal(refarr, ad[0].data)
+
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_multiple_ext(niriprim2):
+    regions = [
+        '430:437,513:533',  # vertical region
+        '1/450,521',  # single pixel
+        '2/429:439,136:140',  # horizontal region
+    ]
+    ad = niriprim2.fixPixels(regions=';'.join(regions), debug=DEBUG)[0]
+
+    # for all extensions
+    sy, sx = cartesian_regions_to_slices(regions[0])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 18.555, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 42.888, decimal=2)
+    assert_almost_equal(ad[1].data[sy, sx].min(), 18.555, decimal=2)
+    assert_almost_equal(ad[1].data[sy, sx].max(), 42.888, decimal=2)
+
+    # only ext 1
+    sy, sx = cartesian_regions_to_slices(regions[1][2:])
+    assert_almost_equal(ad[0].data[sy, sx].min(), 24.5, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 24.5, decimal=2)
+    assert_almost_equal(ad[1].data[sy, sx].min(), 2733, decimal=2)
+    assert_almost_equal(ad[1].data[sy, sx].max(), 2733, decimal=2)
+
+    # only ext 2
+    sy, sx = cartesian_regions_to_slices(regions[2][2:])
+    assert_almost_equal(ad[0].data[sy, sx].min(), -125, decimal=2)
+    assert_almost_equal(ad[0].data[sy, sx].max(), 21293, decimal=2)
+    assert_almost_equal(ad[1].data[sy, sx].min(), 37.166, decimal=2)
+    assert_almost_equal(ad[1].data[sy, sx].max(), 60.333, decimal=2)
 
 
 # TODO @bquint: clean up these tests

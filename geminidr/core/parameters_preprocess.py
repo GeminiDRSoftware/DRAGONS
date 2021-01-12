@@ -57,7 +57,7 @@ class dilateObjectMaskConfig(config.Config):
 class fixPixelsConfig(config.Config):
     suffix = config.Field("Filename suffix", dtype=str,
                           default="_pixelsFixed", optional=True)
-    regions = config.Field('Regions to fix, e.g. "450,521;430:437,513:533"',
+    regions = config.Field('Regions to fix, e.g. "450,521; 430:437,513:533"',
                            dtype=str, optional=True)
     regions_file = config.Field("Path to a file containing the regions to fix",
                                 dtype=str, optional=True)

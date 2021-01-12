@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import datetime
 import math
+from collections import defaultdict
 from copy import deepcopy
 from functools import partial
 
@@ -511,13 +512,21 @@ class Preprocess(PrimitivesBASE):
         with the ``regions`` parameter, or with a file (``regions_file``), one
         region per line.
 
-        Regions strings must be a comma-separated list of colon-separated pixel
-        coordinates or ranges, one per axis, in 1-indexed Cartesian pixel
-        co-ordinates, inclusive of the upper limit. Axes are specified in
-        Fortran order (reverse of the Python order). For example,
-        "450,521;430:437,513:533" would specify a single pixel (line 521,
-        column 450) and a vertical region (lines 513 to 533 included, columns
-        430 to 437).
+        Regions strings must be a comma-separated list of colon-separated
+        pixel coordinates or ranges, one per axis, in 1-indexed Cartesian
+        pixel co-ordinates, inclusive of the upper limit. Axes are specified
+        in Fortran order (reverse of the Python order). The extension can
+        be specified at the beginning of the string, separated from the
+        coordinates by a slash. If extension is not specified, the region
+        will be fixed for all extensions.
+
+        Examples::
+
+            450, 521 => single pixel, line 521, column 450
+            430:437, 513:533 => lines 513 to 533, columns 430 to 437
+            10:, 100 => line 100, columns 10 to the end
+            *, 100 => line 100
+            2/429:,100 => for extension 2 only
 
         By default, interpolation is performed across the narrowest dimension
         spanning bad pixels with interpolation along image lines if the two
@@ -571,20 +580,25 @@ class Preprocess(PrimitivesBASE):
         if regions is not None:
             all_regions += regions.split(';')
 
-        region_slices = []
+        region_slices = defaultdict(list)
         for region in all_regions:
-            try:
-                slices = cartesian_regions_to_slices(region.strip())
-            except ValueError:
-                log.warning(f'Failed to parse region: {region}')
+            if '/' in region:
+                ext, reg = region.split('/')
             else:
-                region_slices.append((region, slices))
+                ext, reg = 0, region  # applies to all extensions
+
+            try:
+                slices = cartesian_regions_to_slices(reg.strip())
+            except ValueError:
+                log.warning(f'Failed to parse region: {reg}')
+            else:
+                region_slices[int(ext)].append((region, slices))
 
         for ad in adinputs:
-            for ext in ad:
+            for iext, ext in enumerate(ad, start=1):
                 ndim = ext.data.ndim
 
-                for region, slices in region_slices:
+                for region, slices in region_slices[0] + region_slices[iext]:
                     if len(slices) != ndim:
                         raise ValueError(f'region {region} does not match '
                                          'array dimension')
