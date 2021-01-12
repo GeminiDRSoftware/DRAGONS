@@ -243,9 +243,9 @@ def test_fixpixels_3D_axis(astrofaker):
 @pytest.mark.dragons_remote_data
 def test_fixpixels_multiple_ext(niriprim2):
     regions = [
-        '430:437,513:533',  # vertical region
-        '1/450,521',  # single pixel
-        '2/429:439,136:140',  # horizontal region
+        '430:437, 513:533',  # vertical region
+        '1 / 450,521',  # single pixel
+        '2/429:439, 136:140',  # horizontal region
     ]
     ad = niriprim2.fixPixels(regions=';'.join(regions), debug=DEBUG)[0]
 
@@ -257,7 +257,7 @@ def test_fixpixels_multiple_ext(niriprim2):
     assert_almost_equal(ad[1].data[sy, sx].max(), 42.888, decimal=2)
 
     # only ext 1
-    sy, sx = cartesian_regions_to_slices(regions[1][2:])
+    sy, sx = cartesian_regions_to_slices(regions[1][3:])
     assert_almost_equal(ad[0].data[sy, sx].min(), 24.5, decimal=2)
     assert_almost_equal(ad[0].data[sy, sx].max(), 24.5, decimal=2)
     assert_almost_equal(ad[1].data[sy, sx].min(), 2733, decimal=2)
