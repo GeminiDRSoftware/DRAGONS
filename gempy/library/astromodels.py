@@ -282,12 +282,12 @@ class UnivariateSplineWithOutlierRemoval:
             if order is not None:
                 # Determine actual order to apply based on fraction of unmasked
                 # pixels, and unmask everything if there are too few good pixels
-                this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
+                this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
                 if this_order == 0 and order > 0:
                     full_mask = np.zeros(x.shape, dtype=bool)
                     if w is not None and not all(w == 0):
                         full_mask |= (w == 0)
-                    this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
+                    this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
                     if debug:
                         print("FULL MASK", full_mask)
 
@@ -296,20 +296,20 @@ class UnivariateSplineWithOutlierRemoval:
                 if debug:
                     print(f"Iter {iteration}: epsf loop")
                 xunique, indices = np.unique(xgood, return_index=True)
-                if len(indices) == len(xgood):
+                if indices.size == xgood.size:
                     # All unique x values so continue
                     break
                 if order is None:
                     raise ValueError("Must specify spline order when there are "
                                      "duplicate x values")
-                for i in range(len(xgood)):
+                for i in range(xgood.size):
                     if i not in indices:
                         xgood[i] *= (1.0 + epsf)
 
             # Space knots equally based on density of unique x values
             if order is not None:
                 knots = [xunique[int(xx+0.5)]
-                         for xx in np.linspace(0, len(xunique)-1, this_order+1)[1:-1]]
+                         for xx in np.linspace(0, xunique.size-1, this_order+1)[1:-1]]
                 spline_args = (knots,)
                 if debug:
                     print("KNOTS", knots)
