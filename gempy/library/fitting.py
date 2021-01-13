@@ -5,8 +5,6 @@ from collections.abc import Iterable
 import numpy as np
 from astropy.modeling import Model, models, fitting
 from astropy.stats import sigma_clip
-from astropy.table import Table
-from astropy.io.fits import Header
 
 from .astromodels import UnivariateSplineWithOutlierRemoval
 from . import astrotools as at
@@ -316,6 +314,9 @@ class fit_1D:
                 mask[user_reg] = fitted_mask
 
         else:
+            max_order = len(points) - self.model_args["k"]
+            if self.order is not None and self.order > max_order:
+                self.order = max_order
 
             # If there are no weights, produce a None for every row:
             weights = iter(lambda: None, True) if weights is None else weights
