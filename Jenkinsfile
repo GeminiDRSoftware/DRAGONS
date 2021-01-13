@@ -67,64 +67,35 @@ pipeline {
 //         }
 
         stage('Unit tests') {
-            parallel {
-            // Todo - Add jenkins user for macos machines
-//                 stage('MacOS/Python 3.6') {
-//                     agent{
-//                         label "macos"
-//                     }
-//                     environment {
-//                         PATH = "$CONDA_HOME/bin:$PATH"
-//                     }
-//                     steps {
-//                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-//                         checkout scm
-//                         sh '.jenkins/scripts/setup_agent.sh'
-//                         echo "Running tests with Python 3.6 and older dependencies"
-//                         sh 'tox -e py37-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
-//                         echo "Reportint coverage to CodeCov"
-//                         sh 'tox -e codecov -- -F unit'
-//                     }
-//                     post {
-//                         always {
-//                             junit (
-//                                 allowEmptyResults: true,
-//                                 testResults: 'reports/*_results.xml'
-//                             )
-//                         }
-//                     }
-//                 }
-
-                stage('Linux/Python 3.7') {
-                    agent{
-                        label "centos7"
+            stage('Linux/Python 3.7') {
+                agent{
+                    label "centos7"
+                }
+                environment {
+                    MPLBACKEND = "agg"
+                    PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                    DRAGONS_TEST_OUT = "unit_tests_outputs/"
+                }
+                steps {
+                    echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                    checkout scm
+                    sh '.jenkins/scripts/setup_agent.sh'
+                    echo "Running tests with Python 3.7"
+                    sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
+                    echo "Reportint coverage to CodeCov"
+                    sh 'tox -e codecov -- -F unit'
+                }
+                post {
+                    always {
+                        junit (
+                            allowEmptyResults: true,
+                            testResults: 'reports/*_results.xml'
+                        )
                     }
-                    environment {
-                        MPLBACKEND = "agg"
-                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                        DRAGONS_TEST_OUT = "unit_tests_outputs/"
-                    }
-                    steps {
-                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                        checkout scm
-                        sh '.jenkins/scripts/setup_agent.sh'
-                        echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
-                        echo "Reportint coverage to CodeCov"
-                        sh 'tox -e codecov -- -F unit'
-                    }
-                    post {
-                        always {
-                            junit (
-                                allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
-                            )
-                        }
-                        failure {
-                            echo "Archiving tests results for Unit Tests"
-                            sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+                    failure {
+                        echo "Archiving tests results for Unit Tests"
+                        sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
 //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
-                        }
                     }
                 }
             }
