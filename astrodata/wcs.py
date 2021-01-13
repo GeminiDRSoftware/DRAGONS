@@ -70,7 +70,7 @@ def fitswcs_to_gwcs(hdr):
         except (AttributeError, TypeError):
             # TODO: Replace quick fix as gWCS doesn't recognize GAPPT
             if frame_name == "GAPPT":
-                ref_frame = coord.BaseRADecFrame()
+                ref_frame = coord.FK5()
             else:
                 ref_frame = None
                 axes_names = ('lon', 'lat')
