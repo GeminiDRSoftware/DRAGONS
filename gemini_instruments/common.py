@@ -73,6 +73,7 @@ def build_group_id(ad, desc_list, prettify=(), force_list=(), additional=None):
     # Create and return the final group_id string
     return '_'.join(desc_object_string_list)
 
+
 def section_to_tuple(section):
     """
     Takes a string describing a section in the raw format found on
@@ -89,6 +90,28 @@ def section_to_tuple(section):
     An instance of `Section`
     """
     return Section(*sectionStrToIntList(section))
+
+
+def tuple_to_section(section, pretty=False):
+    """
+    Return a Section tuple either untouched (pretty=False) or as an
+    IRAF-like 1-indexed string.
+
+    Parameters
+    ----------
+    section : tuple
+        the Section tuple to be converted, if requested
+    pretty : bool
+        convert to string?
+
+    Returns
+    -------
+    either the Section tuple or a string representation
+    """
+    if pretty:
+        return f"[{section.x1+1}:{section.x2},{section.y1+1}:{section.y2}]"
+    return section
+
 
 def build_ir_section(ad, pretty=False):
     """
