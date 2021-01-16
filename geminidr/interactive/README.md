@@ -8,7 +8,7 @@ For information on developing new interactive interfaces, see
 
 The step to normalize flats can be done interactively.  This happens
 as part of the `makeProcessedFlat` recipe.  To turn on interactive mode,
-pass the `interactive_reduce` parameter.  Here is an example.
+pass the `interactive` parameter.  Here is an example.
 
 ### Step 1: Get Data
 

@@ -88,7 +88,7 @@ class Controller(object):
         fig.on_event('mouseenter', self.on_mouse_enter)
         fig.on_event('mouseleave', self.on_mouse_leave)
 
-        self.set_help_text("")
+        self.set_help_text(None)
 
     def set_help_text(self, text=None):
         """
@@ -104,14 +104,30 @@ class Controller(object):
             html to display in the div
         """
         if text is not None:
-            ht = text
-        else:
             ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
             if self.enable_user_masking:
                 ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
                     "<b>U</b> - Unmask selected points<br/><br/>"
-            for key, task in sorted(self.tasks.items()):
-                ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
+            ht = ht + text
+        else:
+            # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
+            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+            if self.enable_user_masking:
+                ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
+                    "<b>U</b> - Unmask selected points<br/><br/>"
+            if len(self.tasks) == 1:
+                # for k, v in self.tasks.items():
+                #     self.task = v
+                task = next(iter(self.tasks.values()))
+                if self.enable_user_masking:
+                    ht = "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
+                         "<b>U</b> - Unmask selected points<br/><br/>%s" \
+                         % task.helptext()
+                else:
+                    ht = task.helptext()
+            else:
+                for key, task in sorted(self.tasks.items()):
+                    ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
 
         # This has to be done via a callback.  During the key press, we are outside the context of
         # the widget's bokeh document
@@ -137,9 +153,9 @@ class Controller(object):
         global controller
         controller = self
         if len(self.tasks) == 1:
-            for k, v in self.tasks.items():
-                self.task = v
-            # self.task = self.tasks.values()[0]
+            # for k, v in self.tasks.items():
+            #     self.task = v
+            self.task = next(iter(self.tasks.values()))
             if self.enable_user_masking:
                 ht = "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
                      "<b>U</b> - Unmask selected points<br/><br/>%s"\
@@ -167,7 +183,7 @@ class Controller(object):
         """
         global controller
         if self == controller:
-            self.set_help_text("")
+            self.set_help_text(None)
             if self.task:
                 self.task.stop()
                 self.task = None
@@ -475,34 +491,34 @@ class ApertureTask(Task):
 
     def update_help(self, mode):
         if self.mode == 'width':
-            self.helptext_area.text = """
+            controller.set_help_text("""
               Drag to desired aperture width<br/>
               <b>A</b> to set the aperture<br/>
               <b>[</b> to only edit the left edge (must remain left of the location)<br/>
               <b>]</b> to only edit the right edge (must remain right of the location)<br/>
               <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture"""
+              <b>D</b> to delete the aperture""")
         elif self.mode == 'left':
-            self.helptext_area.text = """
+            controller.set_help_text("""
               Drag left side to desired aperture width<br/>
               <b>A</b> to set the aperture<br/>
               <b>]</b> to only edit the right edge (must remain right of the location)<br/>
               <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture"""
+              <b>D</b> to delete the aperture""")
         elif self.mode == 'right':
-            self.helptext_area.text = """
-                  Drag right side to desired aperture width<br/>
-                  <b>A</b> to set the aperture<br/>
-                  <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-                  <b>L</b> to edit the location<br/>
-                  <b>D</b> to delete the aperture"""
+            controller.set_help_text("""
+              Drag right side to desired aperture width<br/>
+              <b>A</b> to set the aperture<br/>
+              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+              <b>L</b> to edit the location<br/>
+              <b>D</b> to delete the aperture""")
         elif self.mode == 'location':
-            self.helptext_area.text = """
-                      Drag to desired aperture location<br/>
-                      <b>A</b> to set the aperture<br/>
-                      <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-                      <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-                      <b>D</b> to delete the aperture"""
+            controller.set_help_text("""
+              Drag to desired aperture location<br/>
+              <b>A</b> to set the aperture<br/>
+              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+              <b>D</b> to delete the aperture""")
         else:
             self.helptext_area.text = self.helptext()
 
@@ -669,17 +685,27 @@ class RegionTask(Task):
 
     def update_help(self):
         if self.region_id is not None:
-            self.helptext_area.text = """Drag to desired region width.<br/>\n
+            # self.helptext_area.text = """Drag to desired region width.<br/>\n
+            #       <b>R</b> to set the region<br/>\n
+            #       <b>D</b> to delete/cancel the current region<br/>
+            #       <b>*</b> to extend to maximum on this side
+            #       """
+            controller.set_help_text("""Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n
                   <b>D</b> to delete/cancel the current region<br/>
                   <b>*</b> to extend to maximum on this side
-                  """
+                  """)
         else:
-            self.helptext_area.text = """<b>Edit Regions:</b><br/>\n
+            # self.helptext_area.text = """<b>Edit Regions:</b><br/>\n
+            #       <b>R</b> to start a new region<br/>\n
+            #       <b>E</b> to edit nearest region<br/>\n
+            #       <b>D</b> to delete the nearest region
+            #       """
+            controller.set_help_text("""<b>Edit Regions:</b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete the nearest region
-                  """
+                  """)
 
     def helptext(self):
         """

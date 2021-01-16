@@ -160,7 +160,10 @@ similar.
 If the fit can't be done with `fit_1D`, you can subclass
 `PrimitiveVisualizer` to do something custom.
 
-### PrimitiveVisualizer
+An example of this is the `findSourceApertures` primitive which uses
+`geminidr.interactive.fit.aperture` to provide an interactive interface.
+
+## PrimitiveVisualizer
 
 The `PrimitiveVisualizer` constructor expects the primitive `config` and a `title`.
 The `title` is used in the top of the HTML template shown to the user.  The `config`
