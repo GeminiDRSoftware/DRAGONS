@@ -394,39 +394,48 @@ class Spect(PrimitivesBASE):
 
                 all_m_final = visualizer.results()
                 for ext, fit in zip(all_exts, all_m_final):
-                    sensfunc = fit.to_tables()[0]
-                    if "knots" in sensfunc.colnames:
-                        sensfunc["knots"].unit = wave.unit
-                        sensfunc["coefficients"].unit = zpt.unit
-                    ext.SENSFUNC = sensfunc
+                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=wave.unit,
+                                                     yunit=zpt.unit)
             else:
-                # Non-interactive
-                spectrum = Spek1D(ext) / (exptime * u.s)
-                wave, zpt, zpt_err = [], [], []
+                calculated = False
+                for ext in ad:
+                    if len(ext.shape) != 1:
+                        log.warning(f"{ad.filename} extension {ext.id} is not a "
+                                    "1D spectrum")
+                        continue
 
-                # Compute values that are counts / (exptime * flux_density * bandpass)
-                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                    data, mask, variance = spectrum.signal(region)
-                    if mask == 0 and fluxdens > 0:
-                        # Regardless of whether FLUX column is f_nu or f_lambda
-                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                        if data > 0:
-                            wave.append(w0)
-                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                            zpt.append(u.Magnitude(data / flux))
-                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
-                wave = at.array_from_list(wave, unit=u.nm)
-                zpt = at.array_from_list(zpt)
-                zpt_err = at.array_from_list(zpt_err)
-                fitter = fit_1D(zpt.value, points=wave.value,
-                               weights=1./zpt_err.value, **fit1d_params,
-                               plot=debug_plot)
-                ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
-                                                 yunit=zpt.unit)
-                calculated = True
+                    if calculated and 'XD' not in ad.tags:
+                        log.warning("Found additional 1D extensions in non-XD data."
+                                    " Ignoring.")
+                        break
+
+                    # Non-interactive
+                    spectrum = Spek1D(ext) / (exptime * u.s)
+                    wave, zpt, zpt_err = [], [], []
+
+                    # Compute values that are counts / (exptime * flux_density * bandpass)
+                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                        data, mask, variance = spectrum.signal(region)
+                        if mask == 0 and fluxdens > 0:
+                            # Regardless of whether FLUX column is f_nu or f_lambda
+                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                            if data > 0:
+                                wave.append(w0)
+                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                                zpt.append(u.Magnitude(data / flux))
+                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                    wave = at.array_from_list(wave, unit=u.nm)
+                    zpt = at.array_from_list(zpt)
+                    zpt_err = at.array_from_list(zpt_err)
+                    fitter = fit_1D(zpt.value, points=wave.value,
+                                   weights=1./zpt_err.value, **fit1d_params,
+                                   plot=debug_plot)
+                    ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
+                                                     yunit=zpt.unit)
+                    calculated = True
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
