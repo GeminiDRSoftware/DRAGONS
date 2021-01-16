@@ -25,7 +25,7 @@ import astrodata
 # noinspection PyUnresolvedReferences
 import gemini_instruments
 from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels
+from gempy.library import astromodels as am
 from gempy.library import transform
 
 plt.ioff()
@@ -66,61 +66,6 @@ def generate_fake_data(shape, dispersion_axis, n_lines=100):
     data = data + (np.random.random_sample(data.shape) - 0.5) * 10
 
     return data
-
-
-def rebuild_distortion_model(ext):
-    """
-    Helper function to recover the distortion model from the coefficients stored
-    in the `ext.FITCOORD` attribute.
-
-    Parameters
-    ----------
-    ext : astrodata extension
-        Input astrodata extension which contains a `.FITCOORD` with the
-        coefficients that can be used to reconstruct the distortion model.
-
-    Returns
-    -------
-    :class:`~astropy.modeling.models.Model`
-        Model that receives 2D data and return a 1D array.
-    """
-    model = astromodels.dict_to_polynomial(
-        dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
-    )
-
-    return model
-
-
-def remap_distortion_model(model, dispersion_axis):
-    """
-    Remaps the distortion model so it can return a 2D array.
-
-    Parameters
-    ----------
-    model : :class:`~astropy.modeling.models.Model`
-        A model that receives 2D data and returns 1D data.
-
-    dispersion_axis : {0 or 1}
-        Define distortion model along the rows (0) or along the columns (1).
-
-    Returns
-    -------
-    :class:`~astropy.modeling.models.Model`
-        A model that receives and returns 2D data.
-
-    See also
-    --------
-    - https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
-
-    """
-    m = models.Identity(2)
-
-    if dispersion_axis == 0:
-        m.inverse = models.Mapping((0, 1, 1)) | (model & models.Identity(1))
-    else:
-        m.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & model)
-
-    return m
 
 
 class PlotGmosSpectLongslitArcs:
@@ -223,7 +168,7 @@ class PlotGmosSpectLongslitArcs:
 
             X, Y = np.meshgrid(x, y)
 
-            model = rebuild_distortion_model(ext)
+            model = ext.wcs.get_transform("pixels", "distortion_corrected")[1]
             U = X - model(X, Y)
 
             width = 0.75 * np.diff(x).mean()
@@ -446,13 +391,9 @@ class PlotGmosSpectLongslitArcs:
             shape = ext.shape
             data = generate_fake_data(shape, ext.dispersion_axis() - 1)
 
-            model_out = remap_distortion_model(
-                rebuild_distortion_model(ext), ext.dispersion_axis() - 1
-            )
-
-            model_ref = remap_distortion_model(
-                rebuild_distortion_model(ext_ref), ext_ref.dispersion_axis() - 1
-            )
+            model_out = ext.wcs.get_transform("pixels", "distortion_corrected")
+            model_ref = ext_ref.wcs.get_transform("pixels",
+                                                  "distortion_corrected")
 
             transform_out = transform.Transform(model_out)
             transform_ref = transform.Transform(model_ref)
@@ -515,7 +456,7 @@ class PlotGmosSpectLongslitArcs:
 
             X, Y = np.meshgrid(x, y)
 
-            model = rebuild_distortion_model(ext)
+            model = ext.wcs.get_transform("pixels", "distortion_corrected")[1]
             U = X - model(X, Y)
             V = np.zeros_like(U)
 
@@ -575,9 +516,7 @@ class PlotGmosSpectLongslitArcs:
             peaks = ext.WAVECAL["peaks"] - 1  # ToDo: Refactor peaks to be 0-indexed
             wavelengths = ext.WAVECAL["wavelengths"]
 
-            wavecal_model = astromodels.dict_to_polynomial(
-                dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
-            )
+            wavecal_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
 
             middle = ext.data.shape[0] // 2
             sum_size = 10

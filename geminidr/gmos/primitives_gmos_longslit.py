@@ -743,7 +743,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             for ext_fitted in ad_fitted:
                 ext_fitted.mask = np.where(
                     (ext_fitted.data.T / row_max).T < threshold,
-                    DQ.unilluminated, DQ.good)
+                    DQ.unilluminated, DQ.good).astype(DQ.datatype)
 
             for ext_fitted, indices in zip(ad_fitted, array_info.extensions):
                 tiled_arrsec = ext_fitted.array_section()

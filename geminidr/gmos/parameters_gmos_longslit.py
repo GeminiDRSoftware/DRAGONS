@@ -55,6 +55,9 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     debug_plot = config.Field("Create diagnosis plots?",
                               bool, False, optional=True)
 
+    def setDefaults(self):
+        self.niter = 3
+
 
 class slitIllumCorrectConfig(config.Config):
     do_illum = config.Field("Perform Slit Illumination Correction?",

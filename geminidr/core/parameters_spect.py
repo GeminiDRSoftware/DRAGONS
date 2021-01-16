@@ -226,6 +226,7 @@ class resampleToCommonFrameConfig(config.Config):
 
 class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    regions = config.Field("Sample regions", str, None, optional=True)
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
 

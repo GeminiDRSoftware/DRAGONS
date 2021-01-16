@@ -119,12 +119,7 @@ class Controller(object):
                 # for k, v in self.tasks.items():
                 #     self.task = v
                 task = next(iter(self.tasks.values()))
-                if self.enable_user_masking:
-                    ht = "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                         "<b>U</b> - Unmask selected points<br/><br/>%s" \
-                         % task.helptext()
-                else:
-                    ht = task.helptext()
+                ht = ht + task.helptext()
             else:
                 for key, task in sorted(self.tasks.items()):
                     ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
@@ -156,12 +151,7 @@ class Controller(object):
             # for k, v in self.tasks.items():
             #     self.task = v
             self.task = next(iter(self.tasks.values()))
-            if self.enable_user_masking:
-                ht = "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                     "<b>U</b> - Unmask selected points<br/><br/>%s"\
-                    % self.task.helptext()
-            else:
-                ht = self.task.helptext()
+            ht = self.task.helptext()
             self.set_help_text(ht)
             self.task.start(self.x, self.y)
         else:

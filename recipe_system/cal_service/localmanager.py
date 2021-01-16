@@ -253,7 +253,7 @@ class LocalManager:
         # Obtain a calibration manager object instantiated according to the
         # instrument.
         cal_obj = get_cal_object(self.session, filename=None, header=None,
-                                 descriptors=descripts, types=types)
+                                 descriptors=descripts, types=types, procmode=rq.procmode)
 
         caltypes = gmu.cal_types if caltype == '' else [caltype]
 

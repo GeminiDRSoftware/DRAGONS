@@ -8,8 +8,6 @@
 # because we're providing different parameters but need the underlying
 # code and logic.
 
-import imexam
-
 try:
     from .ginga_viewer import gingaViewer
     have_ginga = True
@@ -17,6 +15,7 @@ except (ImportError, AttributeError):
     have_ginga = False
 
 try:
+    import imexam
     from imexam import imexamxpa
     have_xpa = True
     from .ds9_viewer import ds9Viewer
@@ -60,8 +59,9 @@ class Connect:
 
         vwr = viewer.lower()
         if vwr not in _possible_viewers or len(_possible_viewers) == 0:
-            raise NotImplementedError("Unsupported viewer, check your "
-                                      "installed packages")
+            raise NotImplementedError(f"Unsupported viewer {vwr}, check your "
+                                      "installed packages and install imexam "
+                                      "and ginga")
 
         # Here's the DRAGONS-specific stuff
         if 'ds9' in vwr:
@@ -86,7 +86,8 @@ class Connect:
                                    browser=browser)
 
         instance.logfile = 'imexam_log.txt'  # default logfile name
-        instance.log = imexam.util.set_logging()  # points to the package logger
+        if have_xpa:
+            instance.log = imexam.util.set_logging()  # points to the package logger
         instance._current_slice = None
         instance._current_frame = None
 

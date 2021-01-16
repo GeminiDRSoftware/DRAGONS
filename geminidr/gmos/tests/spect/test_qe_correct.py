@@ -78,7 +78,7 @@ gap_local_kw = {
     "N20190427S0126.fits": {'bad_cols': 5, 'order': 3},
     "N20190910S0028.fits": {},
     "S20180919S0139.fits": {'bad_cols': 10, 'order': 4},
-    "S20191005S0051.fits": {'order': 8},
+    "S20191005S0051.fits": {'order': 4, 'med_filt_size': 100},
 }
 
 associated_calibrations = {

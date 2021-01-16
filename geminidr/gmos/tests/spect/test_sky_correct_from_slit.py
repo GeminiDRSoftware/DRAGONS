@@ -28,7 +28,7 @@ ASTROPY_LT_42 = not minversion(astropy, '4.2')
 test_datasets = [
     (
         "N20180508S0021_aperturesTraced.fits",  # B600 720
-        dict(order=5, grow=0),
+        dict(order=5, grow=0, aperture_growth=0),
         'N20180508S0021_ref_1.fits',
     ),
     (
@@ -43,7 +43,7 @@ test_datasets = [
     ),
     (
         "N20180508S0021_aperturesTraced.fits",  # B600 720
-        dict(order=5, function='legendre', lsigma=2, hsigma=2, max_iters=2),
+        dict(order=5, function='chebyshev', lsigma=2, hsigma=2, niter=2),
         'N20180508S0021_ref_4.fits',
     ),
     (
@@ -60,14 +60,13 @@ test_datasets = [
 
 # Tests Definitions -----------------------------------------------------------
 
-
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("filename, params, refname", test_datasets)
-def test_regression_extract_1d_spectra(filename, params, refname,
-                                       change_working_dir, path_to_inputs,
-                                       path_to_refs):
+def test_regression_sky_correct_from_slit(filename, params, refname,
+                                          change_working_dir, path_to_inputs,
+                                          path_to_refs):
 
     func = params.get('function', 'spline')
     if not func.startswith('spline') and ASTROPY_LT_42:

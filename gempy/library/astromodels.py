@@ -12,18 +12,21 @@
 # Shift2D: single model to shift in 2D
 #
 # Functions:
-# polynomial_to_dict / dict_to_polynomial: Turn a Chebyshev model into a dict to
-#                                        assist with reading/writing as a Table
-# make_inverse_chebyshev1d:              make a Chebyshev1D model that provides
-#                                        the inverse of the given model
+# model_to_table / table_to_model: allow certain types of models (including
+#                                  splines) to be converted to/from Tables
+# make_inverse_chebyshev1d:        make a Chebyshev1D model that provides
+#                                  the inverse of the given model
 
 import math
-from collections import OrderedDict
+import re
 
 import numpy as np
 from astropy.modeling import FittableModel, Parameter, fitting, models
-from astropy.modeling.core import CompoundModel
+from astropy.modeling.core import Model, CompoundModel
 from astropy.stats import sigma_clip
+from astropy.table import Table
+from astropy import units as u
+from astropy.io.fits import Header
 from scipy.interpolate import BSpline, LSQUnivariateSpline, UnivariateSpline
 
 # -----------------------------------------------------------------------------
@@ -279,12 +282,12 @@ class UnivariateSplineWithOutlierRemoval:
             if order is not None:
                 # Determine actual order to apply based on fraction of unmasked
                 # pixels, and unmask everything if there are too few good pixels
-                this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
+                this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
                 if this_order == 0 and order > 0:
                     full_mask = np.zeros(x.shape, dtype=bool)
                     if w is not None and not all(w == 0):
                         full_mask |= (w == 0)
-                    this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
+                    this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
                     if debug:
                         print("FULL MASK", full_mask)
 
@@ -293,20 +296,20 @@ class UnivariateSplineWithOutlierRemoval:
                 if debug:
                     print(f"Iter {iteration}: epsf loop")
                 xunique, indices = np.unique(xgood, return_index=True)
-                if len(indices) == len(xgood):
+                if indices.size == xgood.size:
                     # All unique x values so continue
                     break
                 if order is None:
                     raise ValueError("Must specify spline order when there are "
                                      "duplicate x values")
-                for i in range(len(xgood)):
+                for i in range(xgood.size):
                     if i not in indices:
                         xgood[i] *= (1.0 + epsf)
 
             # Space knots equally based on density of unique x values
             if order is not None:
                 knots = [xunique[int(xx+0.5)]
-                         for xx in np.linspace(0, len(xunique)-1, this_order+1)[1:-1]]
+                         for xx in np.linspace(0, xunique.size-1, this_order+1)[1:-1]]
                 spline_args = (knots,)
                 if debug:
                     print("KNOTS", knots)
@@ -368,111 +371,140 @@ class UnivariateSplineWithOutlierRemoval:
 
 
 # -----------------------------------------------------------------------------
-# MODEL -> DICT FUNCTIONS
+# MODEL <-> TABLE FUNCTIONS
 #
-def polynomial_to_dict(model):
+def model_to_table(model, xunit=None, yunit=None, zunit=None):
     """
-    This function turns an instance of a ChebyshevND, LegendreND, or
-    PolynomialND model into a dict of parameter and property names and their
-    values. This allows it to be written as a Table and attached to an
-    AstroData object. A Table is not constructed here because it may have
-    additional rows added to it, and that's inefficient.
+    Convert a model instance to a Table, suitable for attaching to an AstroData
+    object or interrogating.
 
     Parameters
     ----------
-    model: a ChebyshevND model instance
+    model : a callable function , either a `~astropy.modeling.core.Model`
+        or a `~scipy.interpolate.BSpline` instance
+    xunit, yunit, zunit : Unit or None
+        unit of each axis (y axis may be dependent or independent variable)
 
     Returns
     -------
-    OrderedDict: property names and their values
+    Table : a Table describing the model, with some information in the
+        meta["header"] dict
     """
-    model_name = model.__class__.__name__
-    ndim = int(model_name[-2])
-    if ndim == 1:
-        properties = ("degree", "domain")
-    elif ndim == 2:
-        properties = ("x_degree", "y_degree", "x_domain", "y_domain")
-    else:
-        return {}
+    # Override existing model units with new ones if requested
+    meta = getattr(model, "meta", {})
+    if xunit:
+        meta["xunit"] = xunit
+    if yunit:
+        meta["yunit"] = yunit
+    if zunit:
+        meta["zunit"] = zunit
 
-    model_dict = {"model": model_name, "ndim": ndim}
-    for property in properties:
-        if "domain" in property:
-            domain = getattr(model, property)
-            if domain is not None:
-                model_dict[f"{property}_start"] = domain[0]
-                model_dict[f"{property}_end"] = domain[1]
+    model_class = model.__class__.__name__
+    if isinstance(model, Model):
+        header = Header({"MODEL": model_class})
+        ndim = model.n_inputs
+        if ndim == 1:
+            if getattr(model, "domain", None) is not None:
+                header.update({"DOMAIN_START": model.domain[0],
+                               "DOMAIN_END": model.domain[1]})
+        elif ndim == 2:
+            if getattr(model, "x_domain", None) is not None:
+                header.update({"XDOMAIN_START": model.x_domain[0],
+                               "XDOMAIN_END": model.x_domain[1]})
+            if getattr(model, "y_domain", None) is not None:
+                header.update({"YDOMAIN_START": model.y_domain[0],
+                               "YDOMAIN_END": model.y_domain[1]})
         else:
-            model_dict[property] = getattr(model, property)
-    for name in model.param_names:
-        model_dict[name] = getattr(model, name).value
+            raise ValueError(f"Cannot handle model class '{model_class}' "
+                             f"with dimensionality {ndim}")
+        table = Table(model.parameters, names=model.param_names)
+        for unit in ("xunit", "yunit", "zunit"):
+            if unit in meta:
+                header[unit.upper()] = (str(meta[unit]),
+                                        f"Units of {unit[0]} axis")
+    elif isinstance(model, BSpline):
+        knots, coeffs, order = model.tck
+        header = Header({"MODEL": f"spline{order}"})
+        table = Table([knots, coeffs],
+                      names=("knots", "coefficients"),
+                      units=(meta.get("xunit"), meta.get("yunit")))
+    else:
+        raise TypeError(f"Cannot convert object of class '{model_class}'")
 
-    for unit in ("xunit", "yunit"):
-        if unit in model.meta:
-            model_dict[unit] = model.meta[unit]
-
-    return model_dict
+    table.meta["header"] = header
+    return table
 
 
-def dict_to_polynomial(model_dict):
+def table_to_model(table):
     """
-    This is the inverse of polynomial_to_dict(), taking a dict of property/
-    parameter names and their values and making a suitable model instance.
+    Convert a Table instance, as created by model_to_table(), back into a
+    callable function. Some backward compatibility has been introduced, so
+    the domain can be specified in the Table, rather than the meta, and a
+    Chebyshev1D model will be assumed if not found in the meta.
 
     Parameters
     ----------
-    model_dict: dict
-        Dictionary with pair/value that defines the Chebyshev model.
+    table : `~astropy.table.Table` or `~astropy.table.Row`
+        Table describing the model
 
     Returns
     -------
-    models.ChebyshevND or None
-        Returns the models if it is parsed successfully. If not, it will return
-        None.
-
-    Examples
-    --------
-
-    .. code-block:: python
-
-        my_model = dict(
-            zip(
-                ad[0].WAVECAL['name'], ad[0].WAVECAL['coefficient']
-            )
-        )
-
+    callable : either a `~astropy.modeling.core.Model` or a
+               `~scipy.interpolate.BSpline` instance
     """
+    meta = table.meta["header"]
+    model_class = meta.get("MODEL", "Chebyshev1D")
     try:
-        model_class = model_dict.pop("model")
+        cls = getattr(models, model_class)
+    except:  # it's a spline
+        k = int(model_class[-1])
+        knots, coeffs = table["knots"], table["coefficients"]
+        model = BSpline(knots.data, coeffs.data, k)
+        setattr(model, "meta", {"xunit": knots.unit,
+                                "yunit": coeffs.unit})
+    else:
+        if isinstance(table, Table):
+            if len(table) != 1:
+                raise ValueError("Can only convert single-row Tables to a model")
+            else:
+                table = table[0]  # now a Row
         ndim = int(model_class[-2])
-    except KeyError:  # Handle old models (assumed to be Chebyshevs)
-        try:
-            ndim = int(model_dict.pop("ndim"))
-        except KeyError:
-            return None
-        model_class = f"Chebyshev{ndim}D"
-    if "ndim" in model_dict:
-        del model_dict["ndim"]
+        table_dict = dict(zip(table.colnames, table))
+        if ndim == 1:
+            r = re.compile("c([0-9]+)")
+            param_names = list(filter(r.match, table.colnames))
+            # Handle cases (e.g., APERTURE tables) where the number of
+            # columns must be the same for all rows but the degree of
+            # polynomial might be different
+            degree = max([int(r.match(p).groups()[0]) for p in param_names
+                          if table[p] is not np.ma.masked])
+            domain = [table_dict.get("domain_start", meta.get("DOMAIN_START", 0)),
+                      table_dict.get("domain_end", meta.get("DOMAIN_END", 1))]
+            model = cls(degree=degree, domain=domain)
+        elif ndim == 2:
+            r = re.compile("c([0-9]+)_([0-9]+)")
+            param_names = list(filter(r.match, table.colnames))
+            xdegree = max([int(r.match(p).groups()[0]) for p in param_names])
+            ydegree = max([int(r.match(p).groups()[1]) for p in param_names])
+            xdomain = [table_dict.get("xdomain_start", meta.get("XDOMAIN_START", 0)),
+                       table_dict.get("xdomain_end", meta.get("XDOMAIN_END", 1))]
+            ydomain = [table_dict.get("ydomain_start", meta.get("YDOMAIN_START", 0)),
+                       table_dict.get("ydomain_end", meta.get("YDOMAIN_END", 1))]
+            model = cls(x_degree=xdegree, y_degree=ydegree,
+                        x_domain=xdomain, y_domain=ydomain)
+        else:
+            raise ValueError(f"Invalid dimensionality of model '{model_class}'")
 
-    cls = getattr(models, model_class)
-
-    if ndim == 1:
-        model = cls(degree=int(model_dict.pop("degree")))
-    elif ndim == 2:
-        model = cls(x_degree=int(model_dict.pop("x_degree")),
-                    y_degree=int(model_dict.pop("y_degree")))
-
-    model.meta["xunit"] = model_dict.pop("xunit", None)
-    model.meta["yunit"] = model_dict.pop("yunit", None)
-
-    for k, v in model_dict.items():
-        try:
-            if k.endswith("domain_start"):
-                setattr(model, k.replace("_start", ""), [v, model_dict[k.replace("start", "end")]])
-            elif k and not k.endswith("domain_end"):  # ignore k==""
+        for k, v in table_dict.items():
+            if k in param_names:
                 setattr(model, k, v)
-        except (KeyError, AttributeError):
-            return None
+            elif not ("domain" in k or k in ("ndim", "degree")):
+                # other columns go in the meta
+                model.meta[k] = v
+        for unit in ("xunit", "yunit", "zunit"):
+            value = meta.get(unit.upper())
+            if value:
+                model.meta[unit] = u.Unit(value)
 
     return model
 
@@ -511,7 +543,24 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
         order += 1
     return m_inverse
 
+
 def get_named_submodel(model, name):
+    """
+    Extracts a named submodel from a CompoundModel. astropy allows
+    CompoundModel instances to be indexed by name, but only single Models,
+    whereas a submodel can be a CompoundModel.
+
+    Parameters
+    ----------
+    model : CompoundModel
+        the model containing the required submodel
+    name : str
+        name of the submodel requested
+
+    Returns
+    -------
+    Model : the Model/CompoundModel instance with the requested name
+    """
     if not isinstance(model, CompoundModel):
         raise TypeError("This is not a CompoundModel")
     if model._leaflist is None:
