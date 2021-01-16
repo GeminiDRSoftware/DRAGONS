@@ -21,6 +21,7 @@ from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
 
+from scipy.ndimage import distance_transform_edt
 from scipy.special import erf
 
 from ..library import astromodels, tracing, astrotools as at
@@ -1317,6 +1318,76 @@ def fit_continuum(ad):
         good_sources.append(table)
     return good_sources
 
+
+def image_from_descriptor_value(ext, descriptor):
+    """
+
+    Parameters
+    ----------
+    ext : single-slice AstroData object
+        the extension requiring application of a descriptor value
+    descriptor : str
+        name of descriptor
+
+    Returns
+    -------
+    float/ndarray : either a single value (if applicable to all pixels) or
+                    an ndarray of the same shape as ext.nddata, with
+                    appropriate values in each element
+    """
+    log = logutils.get_logger(__name__)
+    if not ext.is_single:
+        raise ValueError("Not a single-slice AstroData object")
+
+    desc_value = getattr(ext, descriptor)()
+    arrsec = ext.array_section()
+    extid = f"{ext.filename}:{ext.hdr['EXTVER']}"
+
+    # Can return a single value if that's all the descriptor gives us, or if
+    # array_section() doesn't tell us how to divide the pixel plane
+    if hasattr(arrsec, "x1") or not isinstance(desc_value, list):
+        if desc_value is None:
+            log.warning(f"  {descriptor} for {extid} = None. Setting to zero")
+            desc_value = 0.0
+        else:
+            log.fullinfo(f"  {descriptor} for {extid} = {desc_value} electrons")
+        return desc_value
+
+    if len(arrsec) != len(desc_value):
+        raise ValueError(f"The number of array sections and {descriptor} "
+                         f"values do not match in {ext.filename}")
+
+    datasec, new_datasec = map_data_sections_to_trimmed_data(ext.data_section())
+    binning = np.array([ext.detector_y_bin(), ext.detector_x_bin()])
+    arrsec_origin = np.array([min(asec.y1 for asec in arrsec),
+                              min(asec.x1 for asec in arrsec)])
+
+    ret_arr = np.full(ext.shape[-2:], np.nan, dtype=np.float32)
+
+    for asec, desc in zip(arrsec, desc_value):
+        # Assuming everything is contiguous, this will be the location in
+        # the reassambled image
+        sec = ((np.array([asec[2:], asec[:2]]).T - arrsec_origin)
+                // binning).T[::-1].flatten()  # x-first
+        for dsec, new_dsec in zip(datasec, new_datasec):
+            if at.section_contains(new_dsec, list(sec)):
+                location = sec - np.array(list(new_dsec)) + np.array(list(dsec))
+                ret_arr[slice(*location[2:]), slice(*location[:2])] = desc
+                log.fullinfo(f"  {descriptor} for {extid} [{location[2]+1}:"
+                             f"{location[3]},{location[0]+1}:{location[1]}]"
+                             f" = {desc}")
+                break
+        else:
+            raise ValueError(f"Could not find a location for {asec}")
+
+    # Pad regions not defined by the array_section() with nearest real value
+    indices = distance_transform_edt(np.isnan(ret_arr), return_distances=False,
+                                     return_indices=True)
+
+    # Grow along third (and higher) dimension(s) if required
+    return np.tile(ret_arr[indices[0], indices[1]], ext.shape[:-2] + (1, 1))
+
+
 def log_message(function=None, name=None, message_type=None):
     """
     Creates a log message describing some function-related fun, e.g.,
@@ -1342,6 +1413,7 @@ def log_message(function=None, name=None, message_type=None):
     elif message_type == 'completed':
         message = 'The {} {} completed successfully'.format(name, function)
     return message
+
 
 def make_lists(*args, **kwargs):
     """
@@ -1395,8 +1467,13 @@ def make_lists(*args, **kwargs):
 
     return ret_value
 
+
 def map_data_sections_to_trimmed_data(datasec):
     """
+    This function describes where individual data sections end up in a
+    final image after all non-data regions have been removed. It was
+    originally intended to work with SCORPIO data when the plan was to have
+    overscan regions interior to the four quadrants.
 
     Parameters
     ----------
