@@ -100,37 +100,16 @@ class Preprocess(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            gain_list = ad.gain()
             # Now multiply the pixel data in each science extension by the gain
             # and the pixel data in each variance extension by the gain squared
             log.status("Converting {} from ADU to electrons by multiplying by "
                        "the gain".format(ad.filename))
-            for ext, gain in zip(ad, gain_list):
-                extver = ext.hdr['EXTVER']
+            for ext in ad:
                 if not ext.is_in_adu():
-                    log.warning(f"  EXTVER {extver} is already in ADU. Continuing.")
+                    log.warning(f"  EXTVER {ext.hdr['EXTVER']} is already in "
+                                "electrons. Continuing.")
                     continue
-                if isinstance(gain, list):
-                    datasec = ext.data_section()
-                    if not (isinstance(datasec, list) and len(datasec) == len(gain)):
-                        raise ValueError(f"  EXTVER {extver} has incompatible "
-                                         "number of gains and data_sections")
-                    oversec = ext.overscan_section()
-                    gain_image = np.ones(ext.shape, dtype=np.float32)
-                    for i, (g, dsec) in enumerate(zip(gain, datasec)):
-                        sections = [dsec]
-                        if isinstance(oversec, list):
-                            sections.append(oversec[i])
-                        elif isinstance(oversec, dict):
-                            sections.extend(sec[i] for sec in oversec.values())
-                        for sec in sections:
-                            gain_image[sec.y1:sec.y2, sec.x1:sec.x2] = g
-                        log.stdinfo(f"  gain for EXTVER {extver} [{dsec.x1+1}:"
-                                    f"{dsec.x2},{dsec.y1+1}:{dsec.y2}] = {g}")
-                    ext.multiply(gain_image)
-                else:
-                    log.stdinfo("  gain for EXTVER {} = {}".format(extver, gain))
-                    ext.multiply(gain)
+                ext.multiply(gt.image_from_descriptor_value(ext, "gain"))
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.

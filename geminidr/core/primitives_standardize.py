@@ -476,8 +476,8 @@ class Standardize(PrimitivesBASE):
                       self.timestamp_keys["subtractOverscan"] not in ad.phu):
             log.warning("It is not recommended to add Poisson noise to the"
                         " variance of data that still contain a bias level")
-        gain_list = ad.gain()
-        for ext, gain in zip(ad, gain_list):
+
+        for ext in ad:
             extver = ext.hdr['EXTVER']
             if 'poisson' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Poisson noise already added for "
@@ -487,7 +487,7 @@ class Standardize(PrimitivesBASE):
             if not ext.is_coadds_summed():
                 var_array /= ext.coadds()
             if ext.is_in_adu():
-                var_array /= ext.gain()
+                var_array /= gt.image_from_descriptor_value(ext, "gain")
             if ext.variance is None:
                 ext.variance = var_array
             else:
@@ -519,47 +519,15 @@ class Standardize(PrimitivesBASE):
         log = self.log
 
         log.fullinfo("Adding read noise to {}".format(ad.filename))
-        gain_list = ad.gain()
-        read_noise_list = ad.read_noise()
-        for ext, gain, read_noise in zip(ad, gain_list, read_noise_list):
+        for ext in ad:
             extver = ext.hdr['EXTVER']
             if 'read' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Read noise already added for "
                             "{}:{}".format(ad.filename, extver))
                 continue
-            if isinstance(read_noise, list):
-                var_array = np.zeros_like(ext.data, dtype=dtype)
-                datasec = ext.data_section()
-                oversec = ext.overscan_section()
-                if not (isinstance(datasec, list) and len(datasec) == len(read_noise)
-                        and (not ext.is_in_adu() or
-                             isinstance(gain, list) and len(gain) == len(read_noise))):
-                    raise ValueError(f"  EXTVER {extver} has incompatible "
-                                     "number of gains, read_noises and data_sections")
-                for i, (rn, dsec) in enumerate(zip(read_noise, datasec)):
-                    log.stdinfo(f"  read noise for EXTVER {extver} [{dsec.x1 + 1}:"
-                                f"{dsec.x2},{dsec.y1 + 1}:{dsec.y2}] = {rn} electrons")
-                    if ext.is_in_adu():
-                        rn /= gain[i]
-                    sections = [dsec]
-                    if isinstance(oversec, list):
-                        sections.append(oversec[i])
-                    elif isinstance(oversec, dict):
-                        sections.extend(sec[i] for sec in oversec.values())
-                    for sec in sections:
-                        var_array[sec.y1:sec.y2, sec.x1:sec.x2] = rn * rn
-            else:
-                if read_noise is None:
-                    log.warning("Read noise for {}:{} = None. Setting to "
-                                "zero".format(ad.filename, extver))
-                    read_noise = 0.0
-                else:
-                    log.fullinfo('Read noise for {}:{} = {} electrons'.
-                                 format(ad.filename, extver, read_noise))
-                if ext.is_in_adu():
-                    read_noise /= gain
-                var_array = np.full_like(ext.data, read_noise * read_noise,
-                                         dtype=dtype)
+            var_array = (gt.image_from_descriptor_value(ext, "read_noise") /
+                         (gt.image_from_descriptor_value(ext, "gain")
+                          if ext.is_in_adu() else 1.0)) ** 2
 
             if ext.variance is None:
                 ext.variance = var_array
