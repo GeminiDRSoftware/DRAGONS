@@ -109,7 +109,7 @@ class Preprocess(PrimitivesBASE):
                     log.warning(f"  EXTVER {ext.hdr['EXTVER']} is already in "
                                 "electrons. Continuing.")
                     continue
-                ext.multiply(gt.image_from_descriptor_value(ext, "gain"))
+                ext.multiply(gt.array_from_descriptor_value(ext, "gain"))
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.

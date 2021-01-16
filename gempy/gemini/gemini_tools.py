@@ -1319,8 +1319,23 @@ def fit_continuum(ad):
     return good_sources
 
 
-def image_from_descriptor_value(ext, descriptor):
+def array_from_descriptor_value(ext, descriptor):
     """
+    This function tries to return an array or value for a descriptor that
+    is suitable for combining with an NDAstroData object. In the simple case
+    that the descriptor returns a single value applicable to all pixels in
+    the NDAstroData object, that value is returned. However, in a more
+    complex case the descriptor will return a list of values corresponding to
+    different regions of the image, with the array_section() descriptor
+    indicating which region each value corresponds to. In this case, a 2D
+    array is constructed where each such region -- after mapping from the
+    array_section() to an appropriate region in data_section() -- has the
+    appropriate value.
+
+    In the case of a 3D or higher-dimension array, this 2D array is repeated
+    along the third (and, if necessary, higher) dimension(s). Furthermore, if
+    there are parts of each 2D slice that are not part of data_section(),
+    these are assigned values corresponding to the closest pixel.
 
     Parameters
     ----------

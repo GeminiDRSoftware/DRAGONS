@@ -487,7 +487,7 @@ class Standardize(PrimitivesBASE):
             if not ext.is_coadds_summed():
                 var_array /= ext.coadds()
             if ext.is_in_adu():
-                var_array /= gt.image_from_descriptor_value(ext, "gain")
+                var_array /= gt.array_from_descriptor_value(ext, "gain")
             if ext.variance is None:
                 ext.variance = var_array
             else:
@@ -525,8 +525,8 @@ class Standardize(PrimitivesBASE):
                 log.warning("Read noise already added for "
                             "{}:{}".format(ad.filename, extver))
                 continue
-            var_array = (gt.image_from_descriptor_value(ext, "read_noise") /
-                         (gt.image_from_descriptor_value(ext, "gain")
+            var_array = (gt.array_from_descriptor_value(ext, "read_noise") /
+                         (gt.array_from_descriptor_value(ext, "gain")
                           if ext.is_in_adu() else 1.0)) ** 2
 
             if ext.variance is None:
