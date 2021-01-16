@@ -489,7 +489,7 @@ class Standardize(PrimitivesBASE):
             if ext.is_in_adu():
                 var_array /= gt.array_from_descriptor_value(ext, "gain")
             if ext.variance is None:
-                ext.variance = var_array
+                ext.variance = np.full_like(ext.data, var_array, dtype=dtype)
             else:
                 ext.variance += var_array
             varnoise = ext.hdr.get('VARNOISE')
@@ -530,7 +530,7 @@ class Standardize(PrimitivesBASE):
                           if ext.is_in_adu() else 1.0)) ** 2
 
             if ext.variance is None:
-                ext.variance = var_array
+                ext.variance = np.full_like(ext.data, var_array, dtype=dtype)
             else:
                 ext.variance += var_array
             varnoise = ext.hdr.get('VARNOISE')
