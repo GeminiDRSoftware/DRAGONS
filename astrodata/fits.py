@@ -588,9 +588,16 @@ def ad_to_hdulist(ad):
                 if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
                     wcs = None  # There's no need to create a WCS extension
 
-        hdul.append(new_imagehdu(ext.data, header, 'SCI'))
+        data_hdu = new_imagehdu(ext.data, header, 'SCI')
+
+        if ext.unit is not None and ext.unit is not u.dimensionless_unscaled:
+            data_hdu.header['BUNIT'] = ext.unit.to_string()
+
+        hdul.append(data_hdu)
+
         if ext.uncertainty is not None:
             hdul.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
+
         if ext.mask is not None:
             hdul.append(new_imagehdu(ext.mask, header, 'DQ'))
 
