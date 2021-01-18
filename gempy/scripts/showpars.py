@@ -25,13 +25,15 @@ def main():
                         version=f"v{__version__}")
     parser.add_argument('filen', help="filename")
     parser.add_argument('primn', help="primitive name")
+    parser.add_argument("-d", "--doc", action="store_true",
+                        help="show the full docstring")
     parser.add_argument('--adpkg', help='Name of the astrodata instrument '
                         'package to use if not gemini_instruments')
     parser.add_argument('--drpkg', help='Name of the DRAGONS instrument '
                         'package to use if not geminidr')
     args = parser.parse_args()
     pobj, tags = get_pars(args.filen, adpkg=args.adpkg, drpkg=args.drpkg)
-    return showpars(pobj, args.primn, tags)
+    return showpars(pobj, args.primn, tags, args.doc)
 
 
 def get_pars(filename, adpkg=None, drpkg=None):
@@ -51,7 +53,7 @@ def get_pars(filename, adpkg=None, drpkg=None):
     return pobj, dtags
 
 
-def showpars(pobj, primname, tags):
+def showpars(pobj, primname, tags, show_docstring):
     print(f"Dataset tagged as {tags}")
     print(f"\nSettable parameters on '{primname}':")
     print("=" * 40)
@@ -62,9 +64,10 @@ def showpars(pobj, primname, tags):
         if not k.startswith("debug"):
             print(f"{k:20s} {v!r:20s} {params.doc(k)}")
 
-    print(f"\nDocstring for '{primname}':")
-    print("=" * 40)
-    print(textwrap.dedent(getattr(pobj, primname).__doc__))
+    if show_docstring:
+        print(f"\nDocstring for '{primname}':")
+        print("=" * 40)
+        print(textwrap.dedent(getattr(pobj, primname).__doc__))
 
 
 if __name__ == '__main__':
