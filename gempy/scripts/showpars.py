@@ -1,48 +1,38 @@
 #!/usr/bin/env python
 #
-#                                                                        DRAGONS
-#                                                                  gempy.scripts
-#                                                                    showpars.py
-# ------------------------------------------------------------------------------
+#                                                                       DRAGONS
+#                                                                 gempy.scripts
+#                                                                   showpars.py
+# -----------------------------------------------------------------------------
 
 import sys
+import textwrap
 from argparse import ArgumentParser
-
 from importlib import import_module
 
 import astrodata
-import gemini_instruments
-
+import gemini_instruments  # noqa
 from gempy import __version__
-
 from recipe_system.mappers import primitiveMapper
-# ------------------------------------------------------------------------------
 
-# ------------------------------------------------------------------------------
-def buildArgs():
+# -----------------------------------------------------------------------------
+
+
+def main():
     parser = ArgumentParser(
-        description="Primitive parameter display, v{}".format(__version__))
-    parser.add_argument(
-        "-v", "--version", action="version", version="v{}".format(__version__))
-    parser.add_argument('filen', nargs=1, help="filename")
-    parser.add_argument('primn', nargs=1, help="primitive name")
-    parser.add_argument('--adpkg', nargs=1,
-                        dest='adpkg', action='store', required=False,
-                        help='Name of the astrodata instrument package to use'
-                             'if not gemini_instruments')
-    parser.add_argument('--drpkg', nargs=1,
-                        dest='drpkg', action='store', required=False,
-                        help='Name of the DRAGONS instrument package to use'
-                             'if not geminidr')
-
+        description=f"Primitive parameter display, v{__version__}")
+    parser.add_argument("-v", "--version", action="version",
+                        version=f"v{__version__}")
+    parser.add_argument('filen', help="filename")
+    parser.add_argument('primn', help="primitive name")
+    parser.add_argument('--adpkg', help='Name of the astrodata instrument '
+                        'package to use if not gemini_instruments')
+    parser.add_argument('--drpkg', help='Name of the DRAGONS instrument '
+                        'package to use if not geminidr')
     args = parser.parse_args()
+    pobj, tags = get_pars(args.filen, adpkg=args.adpkg, drpkg=args.drpkg)
+    return showpars(pobj, args.primn, tags)
 
-    if args.adpkg is not None:
-        args.adpkg = args.adpkg[0]
-    if args.drpkg is not None:
-        args.drpkg = args.drpkg[0]
-
-    return args
 
 def get_pars(filename, adpkg=None, drpkg=None):
     if adpkg is not None:
@@ -57,30 +47,25 @@ def get_pars(filename, adpkg=None, drpkg=None):
     else:
         pm = primitiveMapper.PrimitiveMapper(dtags, instpkg, drpkg=drpkg)
     pclass = pm.get_applicable_primitives()
-    p = pclass([ad])
-    return p.params, dtags
+    pobj = pclass([ad])
+    return pobj, dtags
 
 
 def showpars(pobj, primname, tags):
-    for i in dir(pobj):
-        if i.startswith("_"):
-            continue
+    print(f"Dataset tagged as {tags}")
+    print(f"\nSettable parameters on '{primname}':")
+    print("=" * 40)
+    print(f"{'Name':20s} {'Current setting':20s} Description\n")
 
-    pars = pobj[primname]
-    print("Dataset tagged as {}".format(tags))
-    print("Settable parameters on '{}':".format(primname))
-    print("="*40)
-    print(" Name\t\t\tCurrent setting")
-    print()
-    for k, v in pars.items():
+    params = pobj.params[primname]
+    for k, v in params.items():
         if not k.startswith("debug"):
-            print("{:20s} {:20s} {}".format(k, repr(v), pars.doc(k)))
-    print()
-    return
+            print(f"{k:20s} {v!r:20s} {params.doc(k)}")
+
+    print(f"\nDocstring for '{primname}':")
+    print("=" * 40)
+    print(textwrap.dedent(getattr(pobj, primname).__doc__))
+
 
 if __name__ == '__main__':
-    args = buildArgs()
-    fname = args.filen[0]
-    pname = args.primn[0]
-    paro, tags = get_pars(fname, adpkg=args.adpkg, drpkg=args.drpkg)
-    sys.exit(showpars(paro, pname, tags))
+    sys.exit(main())
