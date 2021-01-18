@@ -3,32 +3,32 @@
 #
 #                                                       primitives_preprocess.py
 # ------------------------------------------------------------------------------
-import math
 import datetime
-import numpy as np
+import math
+from collections import defaultdict
 from copy import deepcopy
 from functools import partial
 
-from scipy.ndimage import binary_dilation, filters
-from astropy.table import Table
-from astropy.convolution import convolve
-
-import astrodata, gemini_instruments
+import astrodata
+import gemini_instruments  # noqa
+import matplotlib.pyplot as plt
+import numpy as np
+from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
-
-from gempy.gemini import gemini_tools as gt
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
+from astropy.table import Table
 from geminidr import PrimitivesBASE
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.gemini import gemini_tools as gt
+from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library.filtering import ring_median_filter
+from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
+from scipy.interpolate import interp1d
+from scipy.ndimage import binary_dilation
+
 from . import parameters_preprocess
 
-from recipe_system.utils.decorators import parameter_override
 
-#import os, psutil
-#def memusage(proc):
-#    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
-# ------------------------------------------------------------------------------
 @parameter_override
 class Preprocess(PrimitivesBASE):
     """
@@ -138,6 +138,7 @@ class Preprocess(PrimitivesBASE):
             outer radius of the cleaning filter
         max_iters: int
             maximum number of cleaning iterations to perform
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -147,11 +148,11 @@ class Preprocess(PrimitivesBASE):
         inner_radius = params["inner"]
         outer_radius = params["outer"]
         max_iters = params["max_iters"]
-        footprint = None
 
-        flag_list = [int(math.pow(2,i)) for i,digit in
-                enumerate(str(bin(replace_flags))[2:][::-1]) if digit=='1']
-        log.stdinfo("The flags {} will be applied".format(flag_list))
+        flag_list = [int(math.pow(2, i))
+                     for i, digit in enumerate(bin(replace_flags)[2:][::-1])
+                     if digit == '1']
+        log.stdinfo(f"The flags {flag_list} will be applied")
 
         for ad in adinputs:
             for ext in ad:
@@ -161,51 +162,19 @@ class Preprocess(PrimitivesBASE):
                                 "cannot be applied")
                     continue
 
-                # We need to know the dimensionality of the data to create the
-                # footprint but, if we've done it once we can avoid creating
-                # it again if the dimensionality of this extension is the same
-                if inner_radius is not None and outer_radius is not None:
-                    ndim = len(ext.shape)
-                    if footprint is None or footprint.ndim != ndim:
-                        size = int(outer_radius)
-                        mgrid = np.array(np.meshgrid(*([np.arange(-size, size+1)] * ndim)))
-                        mgrid *= mgrid
-                        footprint = np.sqrt(np.sum(mgrid, axis=0))
-                        footprint = np.where(np.logical_and(footprint>=inner_radius,
-                                                            footprint<=outer_radius), 1, 0)
-
                 try:
                     rep_value = float(replace_value)
                     log.fullinfo(f"Replacing bad pixels in {ad.filename}"
                                  f"extension {ext.id} with the "
                                  f"user value {rep_value}")
-                except ValueError:  # already validated so must be "mean" or "median"
-                    if footprint is not None:
-                        mask = (ext.mask & replace_flags) > 0
-                        filtered_data = ext.data
-                        iter = 0
-                        while (iter < max_iters and np.any(mask)):
-                            iter += 1
-                            if replace_value == "median":
-                                median_data = filters.median_filter(filtered_data, footprint=footprint)
-                                filtered_data = np.where(mask, median_data, filtered_data)
-                                # If we're median filtering, we can update the mask...
-                                # if more than half the input pixels were bad, the
-                                # output is still bad.
-                                if iter < max_iters:
-                                    mask = filters.median_filter(mask, footprint=footprint)
-                            else:
-                                # "Mean" filtering is just convolution. The astropy
-                                # version handles the mask.
-                                median_data = convolve(filtered_data, footprint,
-                                                       mask=mask, boundary="extend")
-                                filtered_data = np.where(mask, median_data, filtered_data)
-                                # Output pixels are only bad if *all* the pixels in
-                                # the kernel were bad.
-                                if iter < max_iters:
-                                    mask = np.where(convolve(mask, footprint,
-                                                    boundary="extend")>0.9999, True, False)
-                        ext.data = filtered_data
+                except ValueError:
+                    # If replace_value is a string. It was already validated
+                    # so must be "mean" or "median"
+                    if inner_radius is not None and outer_radius is not None:
+                        ring_median_filter(ext, inner_radius, outer_radius,
+                                           max_iters=max_iters, inplace=True,
+                                           replace_flags=replace_flags,
+                                           replace_func=replace_value)
                         continue
                     else:
                         oper = getattr(np, replace_value)
@@ -531,6 +500,178 @@ class Preprocess(PrimitivesBASE):
 
             ad.update_filename(suffix=suffix, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        return adinputs
+
+    def fixPixels(self, adinputs=None, **params):
+        """
+        This primitive replaces bad pixels by linear interpolation along
+        lines or columns using the nearest good pixels, similar to IRAF's
+        fixpix.
+
+        Regions must be specified either as a string, separated by semi-colons,
+        with the ``regions`` parameter, or with a file (``regions_file``), one
+        region per line.
+
+        Regions strings must be a comma-separated list of colon-separated
+        pixel coordinates or ranges, one per axis, in 1-indexed Cartesian
+        pixel co-ordinates, inclusive of the upper limit. Axes are specified
+        in Fortran order (reverse of the Python order). The extension can
+        be specified at the beginning of the string, separated from the
+        coordinates by a slash. If extension is not specified, the region
+        will be fixed for all extensions.
+
+        Examples::
+
+            450, 521 => single pixel, line 521, column 450
+            430:437, 513:533 => lines 513 to 533, columns 430 to 437
+            10:, 100 => line 100, columns 10 to the end
+            *, 100 => line 100
+            2/429:,100 => for extension 2 only
+
+        By default, interpolation is performed across the narrowest dimension
+        spanning bad pixels with interpolation along image lines if the two
+        dimensions are equal (in the 2D case). 3D is also supported with the
+        same behavior. For single pixels it is possible to use a local median
+        filter instead.
+
+        Parameters
+        ----------
+        adinputs : list of `~astrodata.AstroData`
+            List of input files.
+        suffix : str
+            suffix to be added to output files.
+        regions : str
+            List of pixels or regions to fix (see description above).
+        regions_file : str
+            Path to a file containing the regions to fix. If both regions_file
+            and regions are supplied, both will be used and regions_file will
+            be used first.
+        axis : int
+            Axis over which the interpolation is done, using the Fortran
+            order. By default the axis is determined from the narrowest
+            dimension of each region.
+        use_local_median : bool
+            Use a local median filter for single pixels?
+        debug : bool
+            Display regions?
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        axis = params['axis']
+        debug = params['debug']
+        regions_file = params['regions_file']
+        regions = params['regions']
+        suffix = params['suffix']
+        use_local_median = params['use_local_median']
+
+        if regions is None and regions_file is None:
+            raise ValueError('regions must be specified either as a string '
+                             '(regions) or with a file (regions_file)')
+
+        all_regions = []
+
+        if regions_file is not None:
+            with open(regions_file) as f:
+                all_regions += f.read().strip().splitlines()
+
+        if regions is not None:
+            all_regions += regions.split(';')
+
+        region_slices = defaultdict(list)
+        for region in all_regions:
+            if '/' in region:
+                ext, reg = region.split('/')
+            else:
+                ext, reg = 0, region  # applies to all extensions
+
+            try:
+                slices = cartesian_regions_to_slices(reg.strip())
+            except ValueError:
+                log.warning(f'Failed to parse region: {reg}')
+            else:
+                region_slices[int(ext)].append((region, slices))
+
+        for ad in adinputs:
+            for iext, ext in enumerate(ad, start=1):
+                ndim = ext.data.ndim
+
+                for region, slices in region_slices[0] + region_slices[iext]:
+                    if len(slices) != ndim:
+                        raise ValueError(f'region {region} does not match '
+                                         'array dimension')
+
+                    region_shape = np.array([s.stop - s.start for s in slices])
+
+                    # Find the axis that will be used for the interpolation
+                    if axis is None:
+                        # If we have two axis with the same size, we should
+                        # use the deeper one. E.g. for images with a square
+                        # region, interpolation is done on lines.
+                        use_axis = np.where(
+                            region_shape == region_shape.min())[0][-1]
+                    else:
+                        if axis not in range(1, ndim + 1):
+                            raise ValueError('axis should specify a dimension '
+                                             f'between 1 and {ndim + 1}')
+                        use_axis = ndim - axis
+
+                    if debug:
+                        log.debug(f'Replacing pixel {region} with a '
+                                  'local median ')
+                        plot_slices = [slice(sl.start - 10, sl.stop + 10)
+                                       for sl in slices]
+                        if len(plot_slices) > 2:
+                            plot_slices = [Ellipsis] + plot_slices[-2:]
+                        origdata = ext.data[plot_slices].copy()
+
+                    if use_local_median and np.prod(region_shape) == 1:
+                        ext.mask[slices] |= 32768
+                        ring_median_filter(ext.nddata, 3, 5, inplace=True,
+                                           replace_flags=32768,
+                                           replace_func='median')
+                        ext.mask[slices] ^= 32768
+                    else:
+                        log.debug(f'Interpolating region {region} on '
+                                  f'axis {ndim - use_axis}')
+                        # Extract the data corresponding to the region
+                        slices_extract = list(slices)
+                        slices_extract[use_axis] = slice(None)
+                        data = ext.data[tuple(slices_extract)]
+
+                        # Reshape to put the interpolation axis first, and
+                        # flatten the other axes
+                        data = np.rollaxis(data, use_axis)
+                        extracted_shape = data.shape
+                        data = data.reshape(ext.shape[use_axis], -1)
+
+                        # Prepare the data to interpolate, removing the values
+                        # from the region
+                        sl = slices[use_axis]
+                        ind = np.arange(ext.shape[use_axis])
+                        ind = np.delete(ind, sl)
+                        data_in = np.delete(data, sl, axis=0)
+
+                        # Do the interpolation and replace the values
+                        f = interp1d(ind, data_in, kind='linear', axis=0,
+                                     bounds_error=True)
+                        data[sl, :] = f(np.arange(sl.start, sl.stop))
+
+                        # Reshape the other way, and replace the final values
+                        data = data.reshape(extracted_shape)
+                        data = np.rollaxis(data, 0, use_axis + 1)
+                        ext.data[tuple(slices_extract)] = data
+
+                    if debug:
+                        fig, (ax1, ax2) = plt.subplots(1, 2)
+                        ax1.imshow(origdata, vmin=0, vmax=100)
+                        ax2.imshow(ext.data[plot_slices], vmin=0, vmax=100)
+                        plt.show()
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_flat=True):
@@ -1065,7 +1206,10 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        #print "STARTING", memusage(proc)
+        # import os, psutil
+        # def memusage(proc):
+        #     return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
+        # print "STARTING", memusage(proc)
 
         save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
