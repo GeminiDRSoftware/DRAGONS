@@ -8,8 +8,8 @@ import warnings
 from copy import deepcopy
 from functools import reduce
 
+import astropy.units as u
 import numpy as np
-
 from astropy.io.fits import ImageHDU
 from astropy.modeling import Model, models
 from astropy.nddata import (NDArithmeticMixin, NDData, NDSlicingMixin,
@@ -368,6 +368,18 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def variance(self, value):
         self.uncertainty = (ADVarianceUncertainty(value) if value is not None
                             else None)
+
+    # Override unit so that we can add a setter.
+    @property
+    def unit(self):
+        return self._unit
+
+    @unit.setter
+    def unit(self, value):
+        if value is None:
+            self._unit = None
+        else:
+            self._unit = u.Unit(value)
 
     def set_section(self, section, input):
         """
