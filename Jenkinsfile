@@ -141,10 +141,10 @@ pipeline {
                 checkout scm
                 echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
-                echo "Integration tests"
+                echo "Regression tests"
                 sh 'tox -e py37-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml'
                 echo "Reporting coverage"
-                sh 'tox -e codecov -- -F integration'
+                sh 'tox -e codecov -- -F regression'
             } // end steps
             post {
                 always {
