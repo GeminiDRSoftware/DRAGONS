@@ -24,12 +24,13 @@ Notes
     The fitting order was picked up after running the test and analysing the
     shape of the residuals.
 
-    Finally, the min_snr was semi-arbitrary. It had an opposite effect from what
-    I, expected. Sometimes, raising this number caused more peaks to be detected.
+    Finally, the min_snr was semi-arbitrary. It had an opposite effect from
+    what I, expected. Sometimes, raising this number caused more peaks to be
+    detected.
+
 """
 import glob
 import os
-from warnings import warn
 import tarfile
 import logging
 
@@ -156,46 +157,6 @@ input_pars = [
 
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
-def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
-        ad, caplog, change_working_dir, fwidth, min_snr, order, request):
-    """
-    Make sure that the WAVECAL model was fitted with an RMS smaller than 0.2
-    times the FWHM of the arc lines (i.e., less than half of the standard deviation).
-    """
-    caplog.set_level(logging.INFO, logger="geminidr")
-
-    with change_working_dir():
-        # logutils.config(file_name='log_rms_{:s}.txt'.format(ad.data_label()))
-        p = GMOSLongslit([ad])
-        p.viewer = geminidr.dormantViewer(p, None)
-
-        p.determineWavelengthSolution(
-            order=order, min_snr=min_snr, fwidth=fwidth,
-            **determine_wavelength_solution_parameters)
-
-        wcalibrated_ad = p.writeOutputs().pop()
-
-        for record in caplog.records:
-            if record.levelname == "WARNING":
-                assert "No acceptable wavelength solution found" not in record.message
-
-    if request.config.getoption("--do-plots"):
-        do_plots(wcalibrated_ad)
-
-    # No longer required since determineWavelengthSolution() does this check
-    #table = wcalibrated_ad[0].WAVECAL
-    #tdict = dict(zip(table['name'], table['coefficients']))
-    #rms = tdict['rms']
-
-    #fwidth = tdict['fwidth']
-    #dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
-    #required_rms = 0.2 * fwidth * dispersion
-
-    #np.testing.assert_array_less(rms, required_rms)
-
 
 @pytest.mark.slow
 @pytest.mark.gmosls
@@ -203,7 +164,8 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 @pytest.mark.regression
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
 def test_regression_determine_wavelength_solution(
-        ad, fwidth, order, min_snr, caplog, change_working_dir, ref_ad_factory):
+        ad, fwidth, order, min_snr, caplog, change_working_dir,
+        ref_ad_factory, request):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
@@ -240,6 +202,9 @@ def test_regression_determine_wavelength_solution(
 
     tolerance = 0.5 * (slit_size_in_px * dispersion)
     np.testing.assert_allclose(wavelength, ref_wavelength, rtol=tolerance)
+
+    if request.config.getoption("--do-plots"):
+        do_plots(wcalibrated_ad)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
