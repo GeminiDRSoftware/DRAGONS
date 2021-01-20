@@ -3,7 +3,6 @@ import os
 import pytest
 
 from astrodata.testing import download_from_archive
-from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
@@ -22,6 +21,7 @@ datasets = {
 }
 
 
+@pytest.mark.slow
 @pytest.mark.integration_test
 @pytest.mark.gsaoi
 @pytest.mark.dragons_remote_data

@@ -33,6 +33,7 @@ datasets = {
 }
 
 
+@pytest.mark.slow
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("test_case", datasets.keys())

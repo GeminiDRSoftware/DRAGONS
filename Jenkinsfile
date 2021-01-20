@@ -141,10 +141,10 @@ pipeline {
                 checkout scm
                 echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
-                echo "Integration tests"
+                echo "Regression tests"
                 sh 'tox -e py37-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml'
                 echo "Reporting coverage"
-                sh 'tox -e codecov -- -F integration'
+                sh 'tox -e codecov -- -F regression'
             } // end steps
             post {
                 always {
@@ -183,6 +183,33 @@ pipeline {
                 }  // end always
             }  // end post
         }  // end stage
+
+        stage('Slow Tests') {
+            agent { label "master" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "regression_tests_outputs"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                echo "${env.PATH}"
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Slow tests"
+                sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F slow'
+            } // end steps
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/*_results.xml'
+                    )
+                }
+            } // end post
+        }
 
     }
     post {
