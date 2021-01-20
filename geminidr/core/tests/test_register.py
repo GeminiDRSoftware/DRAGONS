@@ -1,14 +1,15 @@
 """
 Tests for primitives_register
 """
-import pytest
 
 import numpy as np
+import pytest
 from astropy.modeling import models
 from geminidr.niri.primitives_niri_image import NIRIImage
 
 # xoffset, yoffset, angle, scale for models
 MODEL_PARMS = ((-8, 12, 1.0, 0.99), (3, -10, -0.15, 1.02))
+
 
 def make_images(astrofaker, mods, nstars=20):
     """
@@ -22,15 +23,19 @@ def make_images(astrofaker, mods, nstars=20):
     for i, m in enumerate(mods, start=1):
         ad = astrofaker.create('NIRI', filename=f'test{i}.fits')
         ad.init_default_extensions()
-        for x, y in zip(*m.inverse(*star_positions)):
-            ad[0].add_star(amplitude=1000, x=x, y=y)
+
+        x, y = m.inverse(*star_positions)
+        ad[0].add_stars(amplitude=1000, x=x, y=y, n_models=nstars)
+
         # Add some extra stars that aren't correlated
         extra_star_positions = np.random.rand(2, int(0.25 * nstars)) * 1024
-        for x, y in zip(*extra_star_positions):
-            ad[0].add_star(amplitude=1000, x=x, y=y)
+        x, y = extra_star_positions
+        ad[0].add_stars(amplitude=1000, x=x, y=y, n_models=len(x))
+
         ad.add_read_noise()
         adinputs.append(ad)
     return adinputs
+
 
 @pytest.mark.parametrize('no_wcs', (False, True))
 @pytest.mark.parametrize('rotate', (False, True))
