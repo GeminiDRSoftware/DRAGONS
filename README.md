@@ -1,12 +1,18 @@
 
 
-<table border="0">
-<tr>
-  <td rowspan="2"><img src="./graphics/DRAGONS-Iconblue.png" width="100" height="100"></td>
-  <td><font size="18">DRAGONS</font></td>
+<table style="border: 0px">
+<tr style="border: 0px">
+  <td style="border: 0px" rowspan="2">
+    <img src="./graphics/DRAGONS-Iconblue.png" width="100" height="100">
+  </td>
+  <td style="border: 0px">
+    <font size="18">DRAGONS</font>
+  </td>
 </tr>
-<tr>
-  <td>Data Reduction for Astronomy <br>from Gemini Observatory North and South</font></td>
+<tr style="border: 0px">
+  <td style="border: 0px">
+    Data Reduction for Astronomy <br>from Gemini Observatory North and South
+  </td>
 </tr>
 </table>
 
