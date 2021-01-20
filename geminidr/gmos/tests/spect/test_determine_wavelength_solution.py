@@ -197,6 +197,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
     #np.testing.assert_array_less(rms, required_rms)
 
 
+@pytest.mark.slow
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
