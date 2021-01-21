@@ -1,3 +1,4 @@
+import shutil
 import tempfile
 from ..utils import logutils
 log = logutils.get_logger(__name__)
@@ -29,3 +30,4 @@ class ETIFile:
 
     def clean(self):
         print("ETIFile clean()")
+        shutil.rmtree(self.directory)
