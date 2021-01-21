@@ -44,5 +44,15 @@ Releases
    releasenotes.rst
    changes.rst
 
+Other
+-----
+
+.. toctree::
+   :maxdepth: 2
+
+   testing_dragons.rst
+   continuous_integration.rst
+
+
 .. todolist::
 
