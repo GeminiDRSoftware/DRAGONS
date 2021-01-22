@@ -18,13 +18,12 @@ pipeline {
 
     triggers {
         // Polls Source Code Manager every four hours
-        pollSCM('H H/4 * * *')
+        pollSCM('*/15 * * * *')
     }
 
     options {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '5'))
-        disableConcurrentBuilds()
         timestamps()
         timeout(time: 4, unit: 'HOURS')
     }
