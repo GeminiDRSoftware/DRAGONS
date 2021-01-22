@@ -229,7 +229,10 @@ on Python 3.7:
     $ tox -e py37-unit -v
 
     # passing additional options to pytest (arguments after the --):
-    $ tox -e py37-unit -- -sv --pdb
+    $ tox -e py37-gmosls -- -sv --pdb
+
+    # running a specific test using tox
+    $ tox -e py37-integ -- geminidr/gmos/recipes/sq/tests/test_make_processed_slit_illum.py::test_make_processed_slit_illum
 
     # specifying the environment with an environment variable:
     $ TOXENV=py37-unit tox
@@ -270,17 +273,25 @@ valid test definition:
 In general, it is considered to be a good practice to write long and descriptive
 names for test functions. Mostly because it allows faster diagnosis when some
 test fails. Acronyms and test numbers usually give lesser information on why
-the tests were failing. The two examples below should be **avoided**:
+the tests were failing. See the examples below:
 
 .. code-block:: python
 
-    def test_cpt():
+    # Yes
+    def test_can_perform_task(_):
         ...
-        assert task_was_performed()
+        assert test_was_performed()
 
+    # No
+    def test_cpt(_):
+        ...
+        assert test_was_performed()
+
+    # NEVER
     def test_1(_):
         ...
-        assert task_was_performed()
+        assert test_was_performed()
+
 
 
 Test plug-ins (fixtures)
