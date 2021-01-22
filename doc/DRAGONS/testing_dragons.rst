@@ -1,7 +1,11 @@
 
 .. _AstroData: https://astrodata-programmer-manual.readthedocs.io/en/v2.1.0/appendices/api_refguide.html#astrodata
 
+.. _`astrodata.testing`: https://github.com/GeminiDRSoftware/DRAGONS/blob/master/astrodata/testing.py
+
 .. _`built-in fixtures`: https://docs.pytest.org/en/latest/fixture.html#pytest-fixtures-explicit-modular-scalable
+
+.. _conftest.py: https://github.com/GeminiDRSoftware/DRAGONS/blob/master/conftest.py
 
 .. _fixtures: https://docs.pytest.org/en/latest/fixture.html
 
@@ -11,7 +15,11 @@
 
 .. _`numpy.testing`: https://docs.scipy.org/doc/numpy/reference/routines.testing.html
 
+.. _`parameterization of tests and fixtures`: https://docs.pytest.org/en/latest/parametrize.html#parametrizing-fixtures-and-test-functions
+
 .. _pytest: https://docs.pytest.org/en/latest/
+
+.. _recipe_system.testing: https://github.com/GeminiDRSoftware/DRAGONS/blob/master/recipe_system/testing.py
 
 .. _tox: https://tox.readthedocs.io/en/latest/
 
@@ -318,32 +326,238 @@ Pytest_ contains several `built-in fixtures`_ that are used in DRAGONS' tests. T
 most commonly used fixtures_ are:
 
 .. list-table::
-   :widths: 50 50
-   :header-rows: 1
+   :align: center
+   :widths: 30 50
 
-    * - capsys
-      - Captures stdout and stderr messages.
-    * - caplog
-      - Capture and handle log messages.
-    * - monkeypatch
-      - Modify objects and environment.
-    * - tmp_path_factory
-      - Returns a function used to access a temporary folder unique for each
-        test session.
-    * - request
-      - Passes information from the test function to within the fixture being
-        called.
+   * - capsys
+     - Captures stdout and stderr messages.
+   * - caplog
+     - Capture and handle log messages.
+   * - monkeypatch
+     - Modify objects and environment.
+   * - tmp_path_factory
+     - Returns a function used to access a temporary folder unique for each
+       test session.
+   * - request
+     - Passes information from the test function to within the fixture being
+       called.
 
 Pytest_ fixtures_ are modular since they can be used by fixtures_. This allowed
 the creation of custom fixtures_ for the DRAGONS Testing Suite.
 
-For example, the ``astrodata.testing`` module contains several fixtures that
+For example, the `astrodata.testing`_ module contains several fixtures_ that
 handle reading/writing/caching data. These fixtures are used directly in tests
 or inside other fixtures just like fixtures are used inside tests (as function
 arguments).
 
 The diagram below shows the hierarchical structure of the main fixtures used for
 data handling in DRAGONS:
+
+.. figure:: _static/img/test_suite_hierarchy.png
+   :width: 50%
+   :align: center
+
+   DRAGONS Test Suite Hierarchy
+
+And here is a very brief description of the fixtures defined in
+`astrodata.testing`_ (marked with :sup:`x`) and in `recipe_system.testing`_
+(marked with :sup:`+`):
+
+.. list-table::
+   :align: center
+   :widths: 40 60
+
+   * - :sup:`x` path_to_test_data
+     - Root directory to local data.
+   * - :sup:`x` path_to_inputs
+     - Absolute directory path to local static input data.
+   * - :sup:`x` path_to_refs
+     - Absolute directory path to local static reference data.
+   * - :sup:`x` path_to_outputs
+     - Absolute directory path to temporary or static output data.
+   * - :sup:`x` change_working_dir
+     - Context manager that allows easily changing working directories.
+   * - :sup:`+` ref_ad_factory
+     - Returns a function that is used to load the reference data.
+
+The lower level tests in DRAGONS are, in general, much simpler since they do not
+require much pre-processing. Higher level tests, like the ones for the
+**geminidr** module, are much more complex and they need a lot of boilerplate
+before actually running the tests. The fixtures_ for **geminidr** usually load
+static input data but they must also contain a recipe to reproduce the data in
+case of losing them.
+
+
+PyTest Configuration File
+-------------------------
+
+Most of pytest_'s setup and customization happens inside a special file named
+**conftest.py**. This file might contain fixtures_ that can be used in tests
+without being imported and custom command line options. The `conftest.py`_ file
+that lives in the top level of the DRAGONS repository adds the options described
+in `Customized command line options`_. The configurations stored in this top
+level **conftest.py** are inherited by the submodules.
+
+
+Parametrization
+---------------
+
+Pytest_ allows `parameterization of tests and fixtures`_. The following sections
+show how to parametrize tests in three different ways. It is important to notice
+that mixing these three kinds of parametrization is allowed and might lead to a
+matrix of parameters. This might or not be the desired effect.
+
+
+Parametrizing tests
+^^^^^^^^^^^^^^^^^^^
+
+Tests can be directly parametrized using the ``@pytest.mark.parametrize``
+decorator.
+
+.. code-block:: python
+
+    list_of_parameters = [
+        ('apple', 3),
+        ('orange', 2),
+    ]
+
+    @pytest.mark.parametrize("fruit,number", list_of_parameters)
+    def test_number_of_fruits(fruit, number):
+        assert fruit in ['apple', 'banana', 'orange']
+        assert isinstance(number, int)
+
+The example above shows that parametrize's first argument should be a string
+containing the name of parameters of the test. The second argument should be a
+list (dictionaries and sets do not work) containing tuples of lists with the
+same number of elements as the number of parameters.
+
+
+Parametrizing fixtures
+^^^^^^^^^^^^^^^^^^^^^^
+
+If your input parameters have to pass through a fixture (e.g., the parameter is
+a file name and the fixture reads and returns this file), you can parametrize
+the fixture itself directly.
+
+The example below shows how to parametrize a fixture using the the **request**
+fixture, which is a built-in fixture in pytest_ that holds information about the
+fixture and the test themselves. Line 08 shows how to pass the parameter to the
+fixture using the **request.param** variable.
+
+If you parametrize more than one fixture, you will end up with a matrix of test
+cases.
+
+.. code-block:: python
+   :linenos:
+
+    input_files = [
+        'N20001231_S001.fits',
+        'N20001231_S002.fits',
+    ]
+
+    @pytest.fixture(params=input_files)
+    def ad(request):
+        filename = request.param
+        return astrodata.open(filename)
+
+    def test_is_astrodata(ad):
+        assert isinstance(ad, AstroData)
+
+
+Indirect Fixture Parametrization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Finally, it is possible to parametrize tests and pass these parameters to a
+fixture using ``indirect=True`` argument in
+``@pytest.mark.parametrize``. This is only required when you want to have
+a single list of parameters and some of these parameters need to pass through a
+fixture. Here is an example:
+
+.. code-block:: python
+   :linenos:
+
+    pars = [
+        # Input File, Expected Value
+        ('N20001231_S001.fits', 5),
+        ('N20001231_S002.fits', 10),
+    ]
+
+    def ad(request):
+        """Open a file"""
+        filename = request.param
+        return astrodata.open(filename)
+
+
+    def numeric_par(request):
+        """Forward parameter"""
+        return request.param
+
+
+    @pytest.mark.parametrize("ad,numeric_par", pars, indirect=True)
+    def test_function_returns_int(ad, numeric_par):
+        assert function_returns_int(ad) == numeric_par
+
+
+This method allows passing one of the input parameters to a fixture while
+preventing the undesired creation of a matrix of test cases. It is also useful
+because the tests reports will show tests with the parameter value instead of
+some cryptic parameter. Note that, when using ``indirect=True``, every parameter
+has to be represented as a fixture, even if it simply forwards the parameter value.
+
+
+Creating inputs for tests
+=========================
+
+Most of the tests for primitives and recipes require partially-processed data.
+This data must be static and, ideally, should be recreated only in rare cases.
+This data should be created using a recipe that lives in the same file as the
+test. For now, all the recipes that create inputs should start with
+``create_``. Inputs for these recipes can be defined within the function itself
+or can come from variables defined in the outer scope.
+
+These functions can be called using the ``--create-inputs`` command option,
+which is implemented simply:
+
+.. code-block:: python
+
+   if __name__ == '__main__':
+       import sys
+       if "--create-inputs" in sys.argv[1:]:
+           create_inputs_for_my_test()
+       else:
+           pytest.main()
+
+Ideally, these recipes should write the created inputs inside
+./dragons_tests_inputs/ folder following the same directory structure inside
+$DRAGONS_TEST.
+
+
+Test markers
+============
+
+Pytest also allows custom markers that can be used to select tests or to add
+custom behaviour. These custom markers are applied using
+``@pytest.mark.(mark_name)``, where ``(mark_name)`` is replaced by any values in
+the table below:
+
+.. list-table::
+   :align: center
+   :widths: 40 60
+   :header-rows: 1
+
+   * - Marker Name
+     - Description
+   * - dragons_remote_data
+     - Tests that require data that can be downloaded from the Archive. Require ``--dragons-remote-data`` and
+       ``$DRAGONS_TEST`` to run.
+   * - integtest
+     - Long tests using ``Reduce(...)``. Only used for test selection.
+   * - gmosls
+     - GMOS Long-slit Tests. Only used for test selection.
+   * - preprocess_data
+     - Tests that require preprocessed data. If input files are not found, they
+       raise a ``FileNotFoundError`` error. If you need to create inputs, see
+       `Creating inputs for tests`_ above.
 
 
 

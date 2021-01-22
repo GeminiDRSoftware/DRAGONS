@@ -274,9 +274,7 @@ todo_include_todos = True
 
 
 def setup(app):
-   app.add_css_file('todo-styles.css')
-   app.add_css_file('rtd_theme_overrides.css')
-   app.add_css_file('css/rtd_theme_overrides_references.css')
-   app.add_css_file('fonts.css')
-
-
+    app.add_css_file('todo-styles.css')
+    app.add_css_file('rtd_theme_overrides.css')
+    app.add_css_file('css/rtd_theme_overrides_references.css')
+    app.add_css_file('fonts.css')

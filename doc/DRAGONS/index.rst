@@ -50,6 +50,7 @@ Other
 .. toctree::
    :maxdepth: 2
 
+   contributing.rst
    testing_dragons.rst
    continuous_integration.rst
 
