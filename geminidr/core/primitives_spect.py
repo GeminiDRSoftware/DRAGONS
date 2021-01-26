@@ -29,22 +29,36 @@ from itertools import product as cart_product
 from bisect import bisect
 
 import astrodata
+import geminidr.interactive.server
+from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astromodels, matching, tracing
+from gempy.library import transform
+from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library.astrotools import array_from_list, boxcar
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import transform, matching, tracing
 from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
+from gempy.library import tracing, astrotools as at
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_spect
 
 import matplotlib
+
+from ..interactive.fit import fit1d
+
+from geminidr.interactive.fit.aperture import interactive_find_source_apertures
+
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
 # ------------------------------------------------------------------------------
+
+
 @parameter_override
 class Spect(PrimitivesBASE):
     """
@@ -235,6 +249,9 @@ class Spect(PrimitivesBASE):
             default bandpass width (in nm) to use if not present in the
             spectrophotometric data table (default: 5.)
 
+        interactive: bool, optional
+            Run the interactive UI for selecting the fit parameters
+
         individual : bool - TODO - Not in calculateSensitivityConfig
             Calculate sensitivity for each AD spectrum individually?
 
@@ -253,6 +270,7 @@ class Spect(PrimitivesBASE):
         datafile = params["filename"]
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
+        interactive = params["interactive"]
         fit1d_params = fit_1D.translate_params(params)
 
         # We're going to look in the generic (gemini) module as well as the
@@ -307,39 +325,117 @@ class Spect(PrimitivesBASE):
                                 "1D spectrum")
                     continue
 
-                if calculated and 'XD' not in ad.tags:
-                    log.warning("Found additional 1D extensions in non-XD data."
-                                " Ignoring.")
-                    break
+            if interactive:
+                all_exts = list()
+                all_shapes = list()
+                all_pixels = list()
+                all_masked_data = list()
+                all_weights = list()
+                all_fp_init = list()
 
-                spectrum = Spek1D(ext) / (exptime * u.s)
-                wave, zpt, zpt_err = [], [], []
+                for ext in ad:
+                    if len(ext.shape) != 1:
+                        log.warning("{}:{} is not a 1D spectrum".
+                                    format(ad.filename, ext.hdr['EXTVER']))
+                        continue
 
-                # Compute values that are counts / (exptime * flux_density * bandpass)
-                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                    data, mask, variance = spectrum.signal(region)
-                    if mask == 0 and fluxdens > 0:
-                        # Regardless of whether FLUX column is f_nu or f_lambda
-                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                        if data > 0:
-                            wave.append(w0)
-                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                            zpt.append(u.Magnitude(data / flux))
-                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                    if calculated and 'XD' not in ad.tags:
+                        log.warning("Found additional 1D extensions in non-XD data."
+                                    " Ignoring.")
+                        break
 
-                # TODO: Abstract to interactive fitting
-                wave = at.array_from_list(wave, unit=u.nm)
-                zpt = at.array_from_list(zpt)
-                zpt_err = at.array_from_list(zpt_err)
-                fit1d = fit_1D(zpt.value, points=wave.value,
-                               weights=1./zpt_err.value, **fit1d_params,
-                               plot=debug_plot)
-                ext.SENSFUNC = am.model_to_table(fit1d.model, xunit=wave.unit,
-                                                 yunit=zpt.unit)
-                calculated = True
+                    spectrum = Spek1D(ext) / (exptime * u.s)
+                    wave, zpt, zpt_err = [], [], []
+
+                    # Compute values that are counts / (exptime * flux_density * bandpass)
+                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                        data, mask, variance = spectrum.signal(region)
+                        if mask == 0 and fluxdens > 0:
+                            # Regardless of whether FLUX column is f_nu or f_lambda
+                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                            if data > 0:
+                                wave.append(w0)
+                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                                zpt.append(u.Magnitude(data / flux))
+                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+
+                    # TODO: Abstract to interactive fitting
+                    wave = array_from_list(wave, unit=u.nm)
+
+                    zpt = array_from_list(zpt)
+                    zpt_err = array_from_list(zpt_err)
+
+                    all_exts.append(ext)
+                    all_shapes.append(ext.shape[0])
+                    all_pixels.append(wave.value)
+                    all_masked_data.append(zpt.value)
+                    all_weights.append(1./zpt_err.value)
+                    all_fp_init.append(fit_1D.translate_params(params))
+
+                    calculated = True
+
+                # ******************************************************************************************
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                # Hacking this out?
+                visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
+                                                   fitting_parameters=all_fp_init,
+                                                   config=config,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x', ylabel='y',
+                                                   reinit_live=True,
+                                                   domains=all_shapes,
+                                                   title="Calculate Sensitivity")
+                geminidr.interactive.server.interactive_fitter(visualizer)
+
+                all_m_final = visualizer.results()
+                for ext, fit in zip(all_exts, all_m_final):
+                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=wave.unit,
+                                                     yunit=zpt.unit)
+            else:
+                calculated = False
+                for ext in ad:
+                    if len(ext.shape) != 1:
+                        log.warning(f"{ad.filename} extension {ext.id} is not a "
+                                    "1D spectrum")
+                        continue
+
+                    if calculated and 'XD' not in ad.tags:
+                        log.warning("Found additional 1D extensions in non-XD data."
+                                    " Ignoring.")
+                        break
+
+                    # Non-interactive
+                    spectrum = Spek1D(ext) / (exptime * u.s)
+                    wave, zpt, zpt_err = [], [], []
+
+                    # Compute values that are counts / (exptime * flux_density * bandpass)
+                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                        data, mask, variance = spectrum.signal(region)
+                        if mask == 0 and fluxdens > 0:
+                            # Regardless of whether FLUX column is f_nu or f_lambda
+                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                            if data > 0:
+                                wave.append(w0)
+                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                                zpt.append(u.Magnitude(data / flux))
+                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                    wave = at.array_from_list(wave, unit=u.nm)
+                    zpt = at.array_from_list(zpt)
+                    zpt_err = at.array_from_list(zpt_err)
+                    fitter = fit_1D(zpt.value, points=wave.value,
+                                   weights=1./zpt_err.value, **fit1d_params,
+                                   plot=debug_plot)
+                    ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
+                                                     yunit=zpt.unit)
+                    calculated = True
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -506,8 +602,8 @@ class Spect(PrimitivesBASE):
                 # of the data, so it could be used as a gWCS object
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
-                                            x_domain=[0, ext.shape[1] - 1],
-                                            y_domain=[0, ext.shape[0] - 1])
+                                            x_domain=[0, ext.shape[1]],
+                                            y_domain=[0, ext.shape[0]])
                 # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
                 # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
                 # Find model to transform actual (x,y) locations to the
@@ -1249,7 +1345,9 @@ class Spect(PrimitivesBASE):
             Width of extraction aperture in pixels.
         grow : float
             Avoidance region around each source aperture if a sky aperture
-            is required.
+            is required. Default: 10.
+        interactive: bool
+            Perform extraction interactively
         subtract_sky : bool
             Extract and subtract sky spectra from object spectra if the 2D
             spectral image has not been sky subtracted?
@@ -1464,6 +1562,8 @@ class Spect(PrimitivesBASE):
             the aperture.
         sizing_method : str ("peak" or "integral")
             which method to use
+        interactive : bool
+            Show interactive controls for fine tuning source aperture detection
 
         Returns
         -------
@@ -1486,6 +1586,7 @@ class Spect(PrimitivesBASE):
         use_snr = params["use_snr"]
         threshold = params["threshold"]
         sizing_method = params["sizing_method"]
+        interactive = params["interactive"]
 
         sec_regions = []
         if section:
@@ -1553,33 +1654,45 @@ class Spect(PrimitivesBASE):
                         profile = np.nanmean(masked_data, axis=1)
                 prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
 
-                # TODO: find_peaks might not be best considering we have no
-                #   idea whether sources will be extended or not
-                widths = np.arange(3, 20)
-                # Send variance=1 since "profile" is already the S/N
-                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                    variance=1.0, reject_bad=False,
-                                                    min_snr=3, min_frac=0.2)
+                if interactive:
+                    locations, all_limits = interactive_find_source_apertures(ext, profile, prof_mask,
+                                                                              threshold, sizing_method,
+                                                                              max_apertures)
+                    if locations is None or len(locations) == 0:
+                        log.warning("Found no sources")
+                        # Delete existing APERTURE table
+                        try:
+                            del ext.APERTURE
+                        except AttributeError:
+                            pass
+                        continue
+                else:
+                    # TODO: find_peaks might not be best considering we have no
+                    #   idea whether sources will be extended or not
+                    widths = np.arange(3, 20)
+                    peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
+                                                        variance=1.0, reject_bad=False,
+                                                        min_snr=3, min_frac=0.2)
 
-                if peaks_and_snrs.size == 0:
-                    log.warning("Found no sources")
-                    # Delete existing APERTURE table
-                    try:
-                        del ext.APERTURE
-                    except AttributeError:
-                        pass
-                    continue
+                    if peaks_and_snrs.size == 0:
+                        log.warning("Found no sources")
+                        # Delete existing APERTURE table
+                        try:
+                            del ext.APERTURE
+                        except AttributeError:
+                            pass
+                        continue
 
-                # Reverse-sort by SNR and return only the locations
-                locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                            reverse=True)[:max_apertures]).T[0]
-                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
+                    # Reverse-sort by SNR and return only the locations
+                    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                                reverse=True)[:max_apertures]).T[0]
+                    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+                    log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
 
-                if np.isnan(profile[prof_mask==0]).any():
-                    log.warning("There are unmasked NaNs in the spatial profile")
-                all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
-                                                threshold=threshold, method=sizing_method)
+                    if np.isnan(profile[prof_mask==0]).any():
+                        log.warning("There are unmasked NaNs in the spatial profile")
+                    all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
+                                                    threshold=threshold, method=sizing_method)
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -2351,6 +2464,8 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+
+
     def traceApertures(self, adinputs=None, **params):
         """
         Traces apertures listed in the `.APERTURE` table along the dispersion
@@ -2748,6 +2863,7 @@ class Spect(PrimitivesBASE):
                     fits_to_do.append((p_hi, arc_line, dw))
             dc0 = 5 * abs(dw)
         return matches
+
 
 # -----------------------------------------------------------------------------
 def _average_along_slit(ext, center=None, nsum=None):

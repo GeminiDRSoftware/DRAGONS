@@ -51,6 +51,9 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
                                   (int, str), 20, check=flat_order_check)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0, inclusiveMin=False)
+    interactive = config.Field("Interactive fitting?", bool, False)
+    debug_plot = config.Field("Create diagnosis plots?",
+                              bool, False, optional=True)
 
     def setDefaults(self):
         self.niter = 3
