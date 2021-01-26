@@ -47,8 +47,6 @@ class FindSourceAperturesModel(GIApertureModel):
         self.locations = None
         self.all_limits = None
 
-        self.recalc_listeners = list()
-
     def find_closest(self, x):
         aperture_id = None
         location = None
@@ -60,18 +58,6 @@ class FindSourceAperturesModel(GIApertureModel):
                 location = loc
                 delta = new_delta
         return aperture_id, location, self.all_limits[aperture_id-1][0], self.all_limits[aperture_id-1][1]
-
-    def add_recalc_listener(self, listener):
-        """
-        Add a listener function to call when the apertures get recalculated
-
-        Parameters
-        ----------
-        listener : function
-            Function taking two arguments - a list of locations and a list of tuple ranges
-        """
-        # listener should be fn(locations, all_limits)
-        self.recalc_listeners.append(listener)
 
     def recalc_apertures(self):
         """
@@ -100,20 +86,19 @@ class FindSourceAperturesModel(GIApertureModel):
                                       reverse=True)[:max_apertures]).T[0]
             self.all_limits = tracing.get_limits(np.nan_to_num(self.profile), self.prof_mask, peaks=self.locations,
                                                  threshold=self.threshold, method=self.sizing_method)
-        for listener in self.recalc_listeners:
-            listener(self.locations, self.all_limits)
-        for l in self.listeners:
+
+        for listener in self.listeners:
             for i, loclim in enumerate(zip(self.locations, self.all_limits)):
                 loc = loclim[0]
                 lim = loclim[1]
-                l.handle_aperture(i+1, loc, lim[0], lim[1])
+                listener.handle_aperture(i+1, loc, lim[0], lim[1])
 
     def add_aperture(self, location, start, end):
         aperture_id = len(self.locations)+1
         np.append(self.locations, location)
         np.append(self.all_limits, (start, end))
-        for l in self.listeners:
-            l.handle_aperture(aperture_id, location, start, end)
+        for listener in self.listeners:
+            listener.handle_aperture(aperture_id, location, start, end)
         return aperture_id
 
     def adjust_aperture(self, aperture_id, location, start, end):
@@ -137,8 +122,8 @@ class FindSourceAperturesModel(GIApertureModel):
             raise ValueError("Location of aperture must be between start and end")
         self.locations[aperture_id-1] = location
         self.all_limits[aperture_id-1] = [start, end]
-        for l in self.listeners:
-            l.handle_aperture(aperture_id, location, start, end)
+        for listener in self.listeners:
+            listener.handle_aperture(aperture_id, location, start, end)
 
     def delete_aperture(self, aperture_id):
         """
