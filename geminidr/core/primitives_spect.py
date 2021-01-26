@@ -7,52 +7,46 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from importlib import import_module
 import warnings
+from bisect import bisect
+from functools import reduce
+from importlib import import_module
+from itertools import product as cart_product
 
+import matplotlib
 import numpy as np
 from astropy import units as u
-from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
-from astropy.modeling import models, fitting, Model
+from astropy.io.registry import IORegistryError
+from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table, vstack
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
-from scipy import spatial, optimize
+from scipy import optimize, spatial
 from scipy.signal import correlate
 from specutils import SpectralRegion
-from functools import reduce
-from itertools import product as cart_product
-from bisect import bisect
 
 import astrodata
 import geminidr.interactive.server
-from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
-from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr.gemini.lookups import extinction_data as extinct
+from geminidr.interactive.fit import fit1d
+from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels, matching, tracing
-from gempy.library import transform
-from gempy.library.astrotools import cartesian_regions_to_slices
-from gempy.library.astrotools import array_from_list, boxcar
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
-from gempy.library import transform, matching, tracing
+from gempy.library import matching, tracing, transform
+from gempy.library.astrotools import array_from_list
 from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
-from gempy.library import tracing, astrotools as at
 from recipe_system.utils.decorators import parameter_override
+
 from . import parameters_spect
-
-import matplotlib
-
-from ..interactive.fit import fit1d
-
-from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
