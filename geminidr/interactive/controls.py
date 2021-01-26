@@ -436,8 +436,13 @@ class ApertureTask(Task):
             self.update_help(self.mode)
             return False
         if key == 'd':
-            if self.aperture_center is not None:
-                self.aperture_model.delete_aperture(self.aperture_id)
+            if self.aperture_center is None:
+                # get closest one
+                self.aperture_id, self.aperture_center, self.left, self.right \
+                    = self.aperture_model.find_closest(self.last_x)
+                if self.aperture_id is None:
+                    return False
+            self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
             return True
         return False
