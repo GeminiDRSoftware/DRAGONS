@@ -247,10 +247,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     Returns
     -------
         :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
+
     """
-    is_float = True
-    if isinstance(value, int):
-        is_float = False
+    is_float = not isinstance(value, int)
 
     start = min(value, min_value) if min_value else min(value, 0)
     end = max(value, max_value) if max_value else max(10, value*2)
@@ -263,13 +262,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         slider = Slider(start=start, end=end, value=value, step=step, title=title)
     slider.width = 256
 
-    text_input = TextInput()
-    text_input.width = 64
-    text_input.value = str(value)
+    text_input = TextInput(width=64, value=str(value))
     component = row(slider, text_input)
-
-    slider = slider
-    text_input = text_input
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type

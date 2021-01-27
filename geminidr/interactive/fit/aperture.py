@@ -1,6 +1,6 @@
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import Button, Div, TextInput
+from bokeh.models import Button, Div, Spinner, TextInput, Spacer
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive, server
@@ -10,6 +10,14 @@ from geminidr.interactive.interactive import (GIApertureModel, GIApertureView,
 from gempy.library.tracing import find_apertures
 
 __all__ = ["interactive_find_source_apertures", ]
+
+
+def TextInputLine(title, value, handler):
+    spinner = Spinner(value=value, width=64)
+    spinner.on_change("value", handler)
+    return row([Div(text=title, align='end'),
+                Spacer(width_policy='max'),
+                spinner])
 
 
 class FindSourceAperturesModel(GIApertureModel):
@@ -32,9 +40,6 @@ class FindSourceAperturesModel(GIApertureModel):
         self.threshold = aper_params['threshold']
         self.sizing_method = aper_params['sizing_method']
         self.max_apertures = aper_params['max_apertures']
-
-        if self.max_apertures is None:
-            self.max_apertures = 50
 
         self.recalc_apertures()
 
@@ -61,9 +66,8 @@ class FindSourceAperturesModel(GIApertureModel):
         and N limits.
 
         """
-        max_apertures = self.max_apertures
-        if not isinstance(max_apertures, int):
-            max_apertures = int(max_apertures)
+        if self.max_apertures is not None:
+            self.max_apertures = int(self.max_apertures)
 
         self.locations, self.all_limits, self.profile = find_apertures(
             self.masked_data, self.prof_mask, self.percentile,
@@ -185,17 +189,16 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                  disabled=True,
                                  background='white')
 
-        max_apertures_slider = build_text_slider(
-            title="Max Apertures",
+        def _maxaper_handler(attr, old, new):
+            self.model.max_apertures = new
+            self.clear_and_recalc()
+
+        max_apertures_widget = TextInputLine(
+            title="Max Apertures (no limit by default)",
             value=self.model.max_apertures,
-            step=1,
-            min_value=1,
-            max_value=20,
-            obj=self.model,
-            attr="max_apertures",
-            handler=self.clear_and_recalc,
-            throttled=True
+            handler=_maxaper_handler
         )
+
         percentile_slider = build_text_slider(
             title="Percentile",
             value=self.model.percentile or 95,
@@ -242,7 +245,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         helptext = Div()
         controls = column(children=[current_file,
-                                    max_apertures_slider,
+                                    max_apertures_widget,
                                     percentile_slider,
                                     threshold_slider,
                                     aperture_view.controls,
