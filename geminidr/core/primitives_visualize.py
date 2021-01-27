@@ -584,13 +584,15 @@ class Visualize(PrimitivesBASE):
                 w_units = str(ext.wcs.output_frame.unit[0])
 
                 # Clean up bad data
-                good_pixels = np.logical_and(
-                    ext.mask == 0,
-                    np.logical_not(np.ma.masked_invalid(data).mask))
+                bad_pixels = np.logical_and(
+                    ext.mask > 0,
+                    np.ma.masked_invalid(data).mask)
 
-                wavelength = wavelength[good_pixels]
-                data = data[good_pixels].astype(float)
-                stddev = stddev[good_pixels].astype(float)
+                data[bad_pixels] = -10
+                stddev[bad_pixels] = -10
+
+                data = data.astype(float)
+                stddev = stddev.astype(float)
 
                 # Round and convert data/stddev to int to minimize data transfer load
                 wavelength = np.round(wavelength, decimals=3)
