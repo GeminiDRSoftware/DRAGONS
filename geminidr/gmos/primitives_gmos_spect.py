@@ -12,6 +12,7 @@ from functools import reduce
 from copy import deepcopy
 
 from astropy.modeling import models, Model
+from astropy import table
 from astropy import units as u
 from scipy.interpolate import UnivariateSpline
 
@@ -23,9 +24,13 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups import geometry_conf as geotable
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import transform
+from gempy.library import astromodels, astrotools, fitting, tracing, transform
 
 from recipe_system.utils.decorators import parameter_override
+
+from ..interactive import server as iserver
+from ..interactive.fit import fit1d as ifit1d
+
 
 # Put this here for now!
 def qeModel(ext, use_iraf=False):
@@ -450,3 +455,162 @@ class GMOSSpect(Spect, GMOS):
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
         wavelengths = np.loadtxt(filename, usecols=[0])
         return wavelengths, None
+
+    def traceApertures(self, adinputs=None, **params):
+        """
+        Traces apertures listed in the `.APERTURE` table along the dispersion
+        direction, and estimates the optimal extraction aperture size from the
+        spatial profile of each source.
+
+        This primitive is now designed to run on tiled and mosaicked data so
+        normal longslit spectra will be in a single extension. We keep the loop
+        over extensions to allow the possibility of expanding it to cases where
+        we have multiple extensions (e.g. Multi-Object Spectroscopy).
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images with a `.APERTURE` table attached
+            to one or more of its extensions.
+        suffix : str
+            Suffix to be added to output files.
+        order : int
+            Fitting order along spectrum. Default: 2
+        step : int
+            Step size for sampling along dispersion direction. Default: 10
+        nsum : int
+            Number of rows/columns to combine at each step. Default: 10
+        max_missed : int
+            Maximum number of interactions without finding line before line is
+            considered lost forever. Default: 5
+        max_shift : float
+            Maximum perpendicular shift (in pixels) from pixel to pixel.
+            Default: 0.05
+        debug: bool
+            draw aperture traces on image display window?
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images with the `.APERTURE` the updated
+            to contain its upper and lower limits.
+
+        See Also
+        --------
+        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        step = params["step"]
+        nsum = params["nsum"]
+        max_missed = params["max_missed"]
+        max_shift = params["max_shift"]
+        debug = params["debug"]
+        fit1d_params = fitting.fit_1D.translate_params(
+            {**params, "function": "chebyshev"})
+
+        # pop "order" seing we may need to call fit_1D with a different value
+        order = fit1d_params.pop("order")
+
+        for ad in adinputs:
+            for ext in ad:
+                try:
+                    aptable = ext.APERTURE
+                    locations = aptable['c0'].data
+                except (AttributeError, KeyError):
+                    log.warning("Could not find aperture locations in "
+                                f"{ad.filename} extension {ext.id} - continuing")
+                    continue
+
+                if debug:
+                    self.viewer.display_image(ext, wcs=False)
+                    self.viewer.width = 2
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+
+                # For efficiency, we would like to trace all sources
+                # simultaneously (like we do with arc lines), but we need to
+                # start somewhere the source is bright enough, and there may
+                # not be a single location where that is true for all sources
+                for i, loc in enumerate(locations):
+                    c0 = int(loc + 0.5)
+                    spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+                    start = np.argmax(astrotools.boxcar(spectrum, size=3))
+
+                    # The coordinates are always returned as (x-coords, y-coords)
+                    ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                                start=start, initial=[loc],
+                                                                rwidth=None, cwidth=5, step=step,
+                                                                nsum=nsum, max_missed=max_missed,
+                                                                initial_tolerance=None,
+                                                                max_shift=max_shift,
+                                                                viewer=self.viewer if debug else None)
+                    if i:
+                        all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+                        all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+                    else:
+                        all_ref_coords = ref_coords
+                        all_in_coords = in_coords
+
+                self.viewer.color = "blue"
+                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
+                all_tables = []
+                for aperture in aptable:
+                    location = aperture['c0']
+                    # Funky stuff to extract the traced coords associated with
+                    # each aperture (there's just a big list of all the coords
+                    # from all the apertures) and sort them by coordinate
+                    # along the spectrum
+                    coords = np.array([list(c1) + list(c2)
+                                       for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
+                                       if c1[dispaxis] == location])
+                    values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
+                    ref_coords, in_coords = values[:2], values[2:]
+
+                    # Find model to transform actual (x,y) locations to the
+                    # value of the reference pixel along the dispersion axis
+                    try:
+                        fit1d = fitting.fit_1D(
+                            in_coords[dispaxis],
+                            domain=[0, ext.shape[dispaxis] - 1],
+                            order=order,
+                            points=in_coords[1 - dispaxis],
+                            **fit1d_params)
+
+                    # This hides a multitude of sins, including no points
+                    # returned by the trace, or insufficient points to
+                    # constrain fit. We call fit1d with dummy points to
+                    # ensure we get the same type of result as if it had
+                    # been successful.
+                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        log.warning(f"Unable to trace aperture {aperture['number']}")
+                        fit1d = fitting.fit_1D(
+                            np.full_like(spectral_coords, c0),
+                            domain=[0, ext.shape[dispaxis] - 1],
+                            order=0,
+                            points=spectral_coords,
+                            **fit1d_params)
+
+                    else:
+                        if debug:
+                            plot_coords = np.array([spectral_coords, fit1d.evaluate(spectral_coords)]).T
+                            self.viewer.polygon(plot_coords, closed=False,
+                                                xfirst=(dispaxis == 1), origin=0)
+
+                    this_aptable = astromodels.model_to_table(fit1d.model)
+
+                    # Recalculate aperture limits after rectification
+                    apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
+                    this_aptable["aper_lower"] = aperture["aper_lower"] + (location - apcoords.min())
+                    this_aptable["aper_upper"] = aperture["aper_upper"] - (apcoords.max() - location)
+                    all_tables.append(this_aptable)
+
+                new_aptable = table.vstack(all_tables, metadata_conflicts="silent")
+                ext.APERTURE = new_aptable
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+        return adinputs
