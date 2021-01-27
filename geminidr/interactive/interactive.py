@@ -218,8 +218,8 @@ class PrimitiveVisualizer(ABC):
         return widgets
 
 
-def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
-                      throttled=False):
+def build_text_slider(title, value, step, min_value, max_value, obj=None,
+                      attr=None, handler=None, throttled=False):
     """
     Make a slider widget to use in the bokeh interface.
 

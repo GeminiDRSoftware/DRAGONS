@@ -180,33 +180,69 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        max_apertures_slider = build_text_slider("Max Apertures", self.model.max_apertures, 1, 1, 20,
-                                                 self.model, "max_apertures", self.clear_and_recalc,
-                                                 throttled=True)
-        threshold_slider = build_text_slider("Threshold", self.model.threshold, 0.01, 0, 1,
-                                             self.model, "threshold", self.clear_and_recalc,
-                                             throttled=True)
+        max_apertures_slider = build_text_slider(
+            title="Max Apertures",
+            value=self.model.max_apertures,
+            step=1,
+            min_value=1,
+            max_value=20,
+            obj=self.model,
+            attr="max_apertures",
+            handler=self.clear_and_recalc,
+            throttled=True
+        )
+        percentile_slider = build_text_slider(
+            title="Percentile",
+            value=self.model.percentile or 95,
+            step=1,
+            min_value=0,
+            max_value=100,
+            obj=self.model,
+            attr="percentile",
+            handler=self.clear_and_recalc,
+            throttled=True
+        )
+        threshold_slider = build_text_slider(
+            title="Threshold",
+            value=self.model.threshold,
+            step=0.01,
+            min_value=0,
+            max_value=1,
+            obj=self.model,
+            attr="threshold",
+            handler=self.clear_and_recalc,
+            throttled=True
+        )
 
         # Create a blank figure with labels
-        self.fig = figure(# plot_width=600,
-                          plot_height=500,
-                          title='Source Apertures',
-                          tools="pan,wheel_zoom,box_zoom,reset",
-                          x_range=(0, self.model.profile.shape[0]))
+        self.fig = figure(
+            # plot_width=600,
+            plot_height=500,
+            title='Source Apertures',
+            tools="pan,wheel_zoom,box_zoom,reset",
+            x_range=(0, self.model.profile.shape[0])
+        )
         self.fig.height_policy = 'fixed'
         self.fig.width_policy = 'fit'
 
         aperture_view = GIApertureView(self.model, self.fig)
         self.model.add_listener(self)
 
-        self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
+        self.fig.line(x=range(self.model.profile.shape[0]),
+                      y=self.model.profile,
+                      color="black")
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
         helptext = Div()
-        controls = column(children=[max_apertures_slider, threshold_slider,
-                          aperture_view.controls, add_button, self.submit_button, helptext])
+        controls = column(children=[max_apertures_slider,
+                                    percentile_slider,
+                                    threshold_slider,
+                                    aperture_view.controls,
+                                    add_button,
+                                    self.submit_button,
+                                    helptext])
 
         self.details = Div(text="")
         self.model.recalc_apertures()
