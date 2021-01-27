@@ -1,6 +1,6 @@
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import Button, Div
+from bokeh.models import Button, Div, TextInput
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive, server
@@ -180,6 +180,11 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         """
         super().visualize(doc)
 
+        current_file = TextInput(title="Current file:",
+                                 value=self.model.ext.filename,
+                                 disabled=True,
+                                 background='white')
+
         max_apertures_slider = build_text_slider(
             title="Max Apertures",
             value=self.model.max_apertures,
@@ -236,7 +241,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         add_button.on_click(self.add_aperture)
 
         helptext = Div()
-        controls = column(children=[max_apertures_slider,
+        controls = column(children=[current_file,
+                                    max_apertures_slider,
                                     percentile_slider,
                                     threshold_slider,
                                     aperture_view.controls,
