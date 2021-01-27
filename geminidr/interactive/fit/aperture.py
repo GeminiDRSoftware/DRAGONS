@@ -1,12 +1,11 @@
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import Button, Div, Spinner, TextInput, Spacer
+from bokeh.models import Button, Div, Slider, Spacer, Spinner, TextInput
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive, server
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import (GIApertureModel, GIApertureView,
-                                              build_text_slider)
+from geminidr.interactive.interactive import GIApertureModel, GIApertureView
 from gempy.library.tracing import find_apertures
 
 __all__ = ["interactive_find_source_apertures", ]
@@ -16,6 +15,31 @@ def TextInputLine(title, value, handler):
     spinner = Spinner(value=value, width=64)
     spinner.on_change("value", handler)
     return row([Div(text=title, align='end'),
+                Spacer(width_policy='max'),
+                spinner])
+
+
+def TextSlider(title, value, start, end, step, handler, is_float=False):
+    spinner = Spinner(value=value, width=64, step=step)
+    slider = Slider(start=start, end=end, value=value, step=step,
+                    title=title, width=256)
+    in_update = False
+
+    def _handler(attr, old, new):
+        nonlocal in_update
+        if in_update:
+            # To avoid triggering the handler with both spinner and slider
+            return
+        in_update = True
+        spinner.value = new
+        slider.value = new
+        handler(attr, old, new)
+        in_update = False
+
+    spinner.on_change("value", _handler)
+    slider.on_change("value", _handler)
+
+    return row([slider,
                 Spacer(width_policy='max'),
                 spinner])
 
@@ -199,27 +223,27 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
             handler=_maxaper_handler
         )
 
-        percentile_slider = build_text_slider(
-            title="Percentile",
-            value=self.model.percentile or 95,
-            step=1,
-            min_value=0,
-            max_value=100,
-            obj=self.model,
-            attr="percentile",
-            handler=self.clear_and_recalc,
-            throttled=True
+        def _percentile_handler(attr, old, new):
+            self.model.percentile = new
+            self.clear_and_recalc()
+
+        percentile_slider = TextSlider(
+            title="Percentile (use mean if no value)",
+            value=self.model.percentile,
+            start=0, end=100, step=1,
+            handler=_percentile_handler
         )
-        threshold_slider = build_text_slider(
+
+        def _threshold_handler(attr, old, new):
+            self.model.threshold = new
+            self.clear_and_recalc()
+
+        threshold_slider = TextSlider(
             title="Threshold",
             value=self.model.threshold,
-            step=0.01,
-            min_value=0,
-            max_value=1,
-            obj=self.model,
-            attr="threshold",
-            handler=self.clear_and_recalc,
-            throttled=True
+            start=0, end=1, step=0.01,
+            handler=_threshold_handler,
+            is_float=True
         )
 
         # Create a blank figure with labels
