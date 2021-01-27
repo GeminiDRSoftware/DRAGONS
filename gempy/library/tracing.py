@@ -15,12 +15,14 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
-import numpy as np
 import warnings
-from scipy import signal, interpolate, optimize
-from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip, sigma_clipped_stats
 
+import numpy as np
+from astropy.modeling import fitting, models
+from astropy.stats import sigma_clip, sigma_clipped_stats
+from scipy import interpolate, optimize, signal
+
+from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
@@ -28,12 +30,10 @@ from gempy.utils import logutils
 from . import astrotools as at
 from .astrotools import divide0
 
-from astrodata import NDAstroData
-
 log = logutils.get_logger(__name__)
 
 
-################################################################################
+###############################################################################
 class Aperture:
     """
     A class describing an aperture. It has the following attributes:
@@ -346,7 +346,7 @@ class Aperture:
         return ndd
 
 
-################################################################################
+###############################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
 def estimate_peak_width(data, mask=None):
@@ -384,6 +384,7 @@ def estimate_peak_width(data, mask=None):
         goodpix[lo:hi] = False
         niters += 1
     return sigma_clip(widths).mean()
+
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
                min_frac=0.25, reject_bad=True):
@@ -784,7 +785,7 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
     return optimize.bisect(func, limit, peak)
 
 
-################################################################################
+###############################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
 def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum=10,
@@ -994,3 +995,65 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis
     return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
+
+
+def find_apertures(masked_data, prof_mask, percentile, max_apertures,
+                   threshold, sizing_method, direction):
+    """
+    Finds sources in 2D spectral images and compute aperture sizes. Used by
+    findSourceApertures as well as by the interactive code.
+
+    Parameters
+    ----------
+    max_apertures : int
+        Maximum number of apertures expected to be found.
+    percentile : float (0 - 100) / None
+        percentile to use when collapsing along the dispersion direction
+        to obtain a slit profile / None => take mean
+    threshold : float (0 - 1)
+        parameter describing either the height above background (relative
+        to peak) or the integral under the spectrum (relative to the
+        integral to the next minimum) at which to define the edges of
+        the aperture.
+    sizing_method : str ("peak" or "integral")
+        which method to use
+
+    """
+    log = logutils.get_logger(__name__)
+    # Need to catch warnings for rows full of NaNs
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='All-NaN slice')
+        warnings.filterwarnings('ignore', message='Mean of empty slice')
+        if percentile:
+            profile = np.nanpercentile(masked_data, percentile, axis=1)
+        else:
+            profile = np.nanmean(masked_data, axis=1)
+
+    # TODO: find_peaks might not be best considering we have no
+    #   idea whether sources will be extended or not
+    widths = np.arange(3, 20)
+    peaks_and_snrs = find_peaks(profile, widths,
+                                mask=prof_mask & DQ.not_signal,
+                                variance=1.0, reject_bad=False,
+                                min_snr=3, min_frac=0.2)
+
+    if peaks_and_snrs.size == 0:
+        log.warning("Found no sources")
+        return [], []
+
+    # Reverse-sort by SNR and return only the locations
+    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                reverse=True)[:max_apertures]).T[0]
+    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+    log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
+
+    if np.isnan(profile[prof_mask == 0]).any():
+        log.warning("There are unmasked NaNs in the spatial profile")
+
+    all_limits = get_limits(np.nan_to_num(profile),
+                            prof_mask,
+                            peaks=locations,
+                            threshold=threshold,
+                            method=sizing_method)
+
+    return locations, all_limits, profile

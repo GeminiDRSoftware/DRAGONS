@@ -7,7 +7,6 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-import warnings
 from bisect import bisect
 from functools import reduce
 from importlib import import_module
@@ -1524,8 +1523,8 @@ class Spect(PrimitivesBASE):
         from which sources are identified using a peak-finding algorithm.
 
         The widths of the apertures are determined by calculating a threshold
-        level relative to the peak, or an integrated flux relative to the
-        total between the minima on either side and determining where a smoothed
+        level relative to the peak, or an integrated flux relative to the total
+        between the minima on either side and determining where a smoothed
         version of the source profile reaches this threshold.
 
         Parameters
@@ -1573,13 +1572,9 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        max_apertures = params["max_apertures"]
-        percentile = params["percentile"]
         section = params["section"]
         min_sky_pix = params["min_sky_region"]
         use_snr = params["use_snr"]
-        threshold = params["threshold"]
-        sizing_method = params["sizing_method"]
         interactive = params["interactive"]
 
         sec_regions = []
@@ -1603,17 +1598,17 @@ class Spect(PrimitivesBASE):
                 # with spectra dispersed horizontally
                 data, mask, variance = _transpose_if_needed(ext.data, ext.mask,
                                                             ext.variance, transpose=dispaxis == 0)
-                direction = "column" if dispaxis == 0 else "row"
 
                 # Collapse image along spatial direction to find noisy regions
                 # (caused by sky lines, regardless of whether image has been
                 # sky-subtracted or not)
-                data1d, mask1d, var1d = NDStacker.mean(data, mask=mask,
-                                                       variance=variance)
+                _, mask1d, var1d = NDStacker.mean(data, mask=mask,
+                                                  variance=variance)
                 # Very light sigma-clipping to remove bright sky lines
-                var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_pix // 2)
-                mean, median, std = sigma_clipped_stats(var_excess, mask=mask1d,
-                                                        sigma=5.0, maxiters=1)
+                var_excess = var1d - at.boxcar(var1d, np.median,
+                                               size=min_sky_pix // 2)
+                _, _, std = sigma_clipped_stats(var_excess, mask=mask1d,
+                                                sigma=5.0, maxiters=1)
 
                 # Mask sky-line regions and find clumps of unmasked pixels
                 mask1d[var_excess > 5 * std] = 1
@@ -1636,22 +1631,20 @@ class Spect(PrimitivesBASE):
 
                 signal = (data if (variance is None or not use_snr) else
                           np.divide(data, np.sqrt(variance),
-                                    out=np.zeros_like(data), where=variance>0))
-                masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
-                # Need to catch warnings for rows full of NaNs
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('ignore', message='All-NaN slice')
-                    warnings.filterwarnings('ignore', message='Mean of empty slice')
-                    if percentile:
-                        profile = np.nanpercentile(masked_data, percentile, axis=1)
-                    else:
-                        profile = np.nanmean(masked_data, axis=1)
+                                    out=np.zeros_like(data), where=variance > 0))
+                masked_data = np.where(np.logical_or(full_mask, variance == 0),
+                                       np.nan, signal)
                 prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
 
+                aper_params = {key: params[key] for key in (
+                    'percentile', 'max_apertures', 'threshold', 'sizing_method'
+                )}
+                aper_params['direction'] = "column" if dispaxis == 0 else "row"
+
                 if interactive:
-                    locations, all_limits = interactive_find_source_apertures(ext, profile, prof_mask,
-                                                                              threshold, sizing_method,
-                                                                              max_apertures)
+                    locations, all_limits = interactive_find_source_apertures(
+                        ext, masked_data, prof_mask, **aper_params)
+
                     if locations is None or len(locations) == 0:
                         log.warning("Found no sources")
                         # Delete existing APERTURE table
@@ -1661,32 +1654,14 @@ class Spect(PrimitivesBASE):
                             pass
                         continue
                 else:
-                    # TODO: find_peaks might not be best considering we have no
-                    #   idea whether sources will be extended or not
-                    widths = np.arange(3, 20)
-                    peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                        variance=1.0, reject_bad=False,
-                                                        min_snr=3, min_frac=0.2)
+                    locations, all_limits, _ = tracing.find_apertures(
+                        masked_data, prof_mask, **aper_params)
 
-                    if peaks_and_snrs.size == 0:
-                        log.warning("Found no sources")
+                    if not locations:
                         # Delete existing APERTURE table
-                        try:
+                        if 'APERTURE' in ext.tables:
                             del ext.APERTURE
-                        except AttributeError:
-                            pass
                         continue
-
-                    # Reverse-sort by SNR and return only the locations
-                    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                                reverse=True)[:max_apertures]).T[0]
-                    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                    log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
-
-                    if np.isnan(profile[prof_mask==0]).any():
-                        log.warning("There are unmasked NaNs in the spatial profile")
-                    all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
-                                                    threshold=threshold, method=sizing_method)
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1702,7 +1677,8 @@ class Spect(PrimitivesBASE):
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
-                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
+                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})"
+                              .format(loc, lower, upper))
 
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
@@ -2457,8 +2433,6 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
-
 
     def traceApertures(self, adinputs=None, **params):
         """

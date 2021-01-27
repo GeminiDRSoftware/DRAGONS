@@ -399,7 +399,8 @@ class ApertureTask(Task):
                 return True
         if key == 'f':
             if self.aperture_center is None:
-                peaks = pinpoint_peaks(self.aperture_model.get_profile(), None, [self.last_x, ], halfwidth=20,
+                peaks = pinpoint_peaks(self.aperture_model.profile, None,
+                                       [self.last_x, ], halfwidth=20,
                                        threshold=0)
                 if len(peaks) > 0:
                     self.start_aperture(peaks[0], self.last_y)

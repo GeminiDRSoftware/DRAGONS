@@ -1,51 +1,42 @@
 import numpy as np
-from bokeh.layouts import row, column
-from bokeh.models import Div, Button
+from bokeh.layouts import column, row
+from bokeh.models import Button, Div
 from bokeh.plotting import figure
 
-from geminidr.interactive import server, interactive
+from geminidr.interactive import interactive, server
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_text_slider
-from gempy.library import tracing
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
+from geminidr.interactive.interactive import (GIApertureModel, GIApertureView,
+                                              build_text_slider)
+from gempy.library.tracing import find_apertures
 
 __all__ = ["interactive_find_source_apertures", ]
 
 
 class FindSourceAperturesModel(GIApertureModel):
-    def __init__(self, ext, profile, prof_mask, threshold, sizing_method, max_apertures):
+    def __init__(self, ext, masked_data, prof_mask, **aper_params):
         """
         Create an aperture model with the given initial set of inputs.
 
-        This creates an aperture model that we can use to do the aperture fitting.
-        This model allows us to tweak the various inputs using the UI and then
-        recalculate the fit as often as desired.
+        This creates an aperture model that we can use to do the aperture
+        fitting.  This model allows us to tweak the various inputs using the
+        UI and then recalculate the fit as often as desired.
 
-        Parameters
-        ----------
-        ext : :class:`~astrodata.core.AstroData`
-            extension this model should fit against
-        profile : :class:`~numpy.ndarray`
-        prof_mask : :class:`~numpy.ndarray`
-        threshold : float
-            threshold for detection
-        sizing_method : str
-            for example, 'peak'
-        max_apertures : int
-            maximum number of apertures to detect
         """
         super().__init__()
-
         self.ext = ext
-        self.profile = profile
+        self.masked_data = masked_data
         self.prof_mask = prof_mask
-        self.threshold = threshold
-        self.sizing_method = sizing_method
-        self.max_apertures = max_apertures
 
-        self.locations = None
-        self.all_limits = None
+        self.direction = aper_params['direction']
+        self.percentile = aper_params['percentile']
+        self.threshold = aper_params['threshold']
+        self.sizing_method = aper_params['sizing_method']
+        self.max_apertures = aper_params['max_apertures']
+
+        if self.max_apertures is None:
+            self.max_apertures = 50
+
+        self.recalc_apertures()
 
     def find_closest(self, x):
         aperture_id = None
@@ -57,35 +48,27 @@ class FindSourceAperturesModel(GIApertureModel):
                 aperture_id = i+1
                 location = loc
                 delta = new_delta
-        return aperture_id, location, self.all_limits[aperture_id-1][0], self.all_limits[aperture_id-1][1]
+        return (aperture_id, location,
+                self.all_limits[aperture_id-1][0],
+                self.all_limits[aperture_id-1][1])
 
     def recalc_apertures(self):
         """
         Recalculate the apertures based on the current set of fitter inputs.
 
-        This will redo the aperture detection.  Then it calls to each registered
-        listener function and calls it with a list of N locations and N limits.
+        This will redo the aperture detection.  Then it calls to each
+        registered listener function and calls it with a list of N locations
+        and N limits.
+
         """
         max_apertures = self.max_apertures
         if not isinstance(max_apertures, int):
             max_apertures = int(max_apertures)
 
-        # TODO: find_peaks might not be best considering we have no
-        #   idea whether sources will be extended or not
-        widths = np.arange(3, 20)
-        peaks_and_snrs = tracing.find_peaks(self.profile, widths, mask=self.prof_mask & DQ.not_signal,
-                                            variance=1.0, reject_bad=False,
-                                            min_snr=3, min_frac=0.2)
-
-        if peaks_and_snrs.size == 0:
-            self.locations = []
-            self.all_limits = []
-        else:
-            # Reverse-sort by SNR and return only the locations
-            self.locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                      reverse=True)[:max_apertures]).T[0]
-            self.all_limits = tracing.get_limits(np.nan_to_num(self.profile), self.prof_mask, peaks=self.locations,
-                                                 threshold=self.threshold, method=self.sizing_method)
+        self.locations, self.all_limits, self.profile = find_apertures(
+            self.masked_data, self.prof_mask, self.percentile,
+            self.max_apertures, self.threshold, self.sizing_method,
+            self.direction)
 
         for listener in self.listeners:
             for i, loclim in enumerate(zip(self.locations, self.all_limits)):
@@ -148,9 +131,6 @@ class FindSourceAperturesModel(GIApertureModel):
                 listener.delete_aperture(iap)
         self.locations = []
         self.all_limits = []
-
-    def get_profile(self):
-        return self.profile
 
 
 class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
@@ -308,35 +288,20 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         return self.model.locations, self.model.all_limits
 
 
-def interactive_find_source_apertures(ext, profile, prof_mask, threshold, sizing_method, max_apertures):
+def interactive_find_source_apertures(ext, masked_data, prof_mask, **kwargs):
     """
-    Perform an interactive find of source apertures with the given initial parameters.
+    Perform an interactive find of source apertures with the given initial
+    parameters.
 
-    This will do all the bokeh initialization and display a UI for interactively modifying
-    parameters from their initial values.  The user can also interact directly with the
-    found aperutres as desired.  When the user hits the `Submit` button, this method will
-    return the results of the find to the caller.
+    This will do all the bokeh initialization and display a UI for
+    interactively modifying parameters from their initial values.  The user can
+    also interact directly with the found aperutres as desired.  When the user
+    hits the `Submit` button, this method will return the results of the find
+    to the caller.
 
-    Parameters
-    ----------
-    ext : :class:`~astrodata.core.AstroData`
-        extension this model should fit against
-    profile : :class:`~numpy.ndarray`
-    prof_mask : :class:`~numpy.ndarray`
-    threshold : float
-        threshold for detection
-    sizing_method : str
-        for example, 'peak'
-    max_apertures : int
-        maximum number of apertures to detect
     """
-    if max_apertures is None:
-        max_apertures = 50
-    model = FindSourceAperturesModel(ext, profile, prof_mask, threshold, sizing_method,
-                                     max_apertures)
+    model = FindSourceAperturesModel(ext, masked_data, prof_mask, **kwargs)
     fsav = FindSourceAperturesVisualizer(model)
     server.set_visualizer(fsav)
-
     server.start_server()
-
     return fsav.result()

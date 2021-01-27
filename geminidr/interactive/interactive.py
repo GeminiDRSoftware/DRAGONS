@@ -1132,10 +1132,6 @@ class GIApertureModel(ABC):
         pass
 
     @abstractmethod
-    def get_profile(self):
-        pass
-
-    @abstractmethod
     def find_closest(self, x):
         pass
 
