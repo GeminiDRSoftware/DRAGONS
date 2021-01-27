@@ -23,6 +23,9 @@ const plotOptions = {
     },
     shadow: false,
     renderer: $.jqplot.LineRenderer,
+    rendererOptions: {
+      smooth: false,
+    }
   },
 
   series: [{
