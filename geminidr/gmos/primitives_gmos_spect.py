@@ -536,6 +536,7 @@ class GMOSSpect(Spect, GMOS):
                     self.viewer.color = "blue"
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
+                all_aperture_tables = []
 
                 if is_interactive:
 
@@ -570,22 +571,13 @@ class GMOSSpect(Spect, GMOS):
                             _start = np.argmax(
                                 astrotools.boxcar(_spectrum, size=3))
 
-                            # _, _in_coords = tracing.trace_lines(
-                            #     ext, axis=dispaxis, cwidth=5,
-                            #     initial=[_loc], initial_tolerance=None,
-                            #     max_missed=extra['max_missed'],
-                            #     max_shift=extra['max_shift'],
-                            #     nsum=extra['nsum'], rwidth=None, start=_start,
-                            #     step=extra['step'],
-                            #     viewer=self.viewer if debug else None)
-
                             _, _in_coords = tracing.trace_lines(
                                 ext, axis=dispaxis, cwidth=5,
                                 initial=[_loc], initial_tolerance=None,
-                                max_missed=max_missed,
-                                max_shift=max_shift,
-                                nsum=nsum, rwidth=None, start=_start,
-                                step=step,
+                                max_missed=extra['max_missed'],
+                                max_shift=extra['max_shift'],
+                                nsum=extra['nsum'], rwidth=None, start=_start,
+                                step=extra['step'],
                                 viewer=self.viewer if debug else None)
 
                             _in_coords = np.ma.masked_array(_in_coords)
@@ -631,6 +623,23 @@ class GMOSSpect(Spect, GMOS):
 
                     iserver.interactive_fitter(visualizer)
 
+                    all_final_models = visualizer.results()
+
+                    print(all_final_models)
+
+                    for final_model, ap in zip(all_final_models, ext.APERTURE):
+                        location = ap['c0']
+                        this_aptable = astromodels.model_to_table(final_model.model)
+
+                        # Recalculate aperture limits after rectification
+                        apcoords = final_model.evaluate(np.arange(ext.shape[dispaxis]))
+                        this_aptable["aper_lower"] = ap["aper_lower"] + (
+                                location - apcoords.min())
+                        this_aptable["aper_upper"] = ap["aper_upper"] - (
+                                apcoords.max() - location)
+
+                        all_aperture_tables.append(this_aptable)
+
                 else:
                     # pop "order" seeing we may need to call fit_1D with a
                     #  different value
@@ -662,7 +671,7 @@ class GMOSSpect(Spect, GMOS):
                             all_in_coords = in_coords
 
                     spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-                    all_tables = []
+
                     for aperture in aptable:
                         location = aperture['c0']
                         # Funky stuff to extract the traced coords associated with
@@ -711,9 +720,11 @@ class GMOSSpect(Spect, GMOS):
                         apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
                         this_aptable["aper_lower"] = aperture["aper_lower"] + (location - apcoords.min())
                         this_aptable["aper_upper"] = aperture["aper_upper"] - (apcoords.max() - location)
-                        all_tables.append(this_aptable)
+                        all_aperture_tables.append(this_aptable)
 
-                new_aptable = table.vstack(all_tables, metadata_conflicts="silent")
+                new_aptable = table.vstack(all_aperture_tables,
+                                           metadata_conflicts="silent")
+
                 ext.APERTURE = new_aptable
 
             # Timestamp and update the filename
