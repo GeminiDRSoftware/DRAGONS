@@ -19,3 +19,30 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
 
     def setDefaults(self):
         self.order = 3
+
+
+class traceAperturesConfig(config.Config):
+
+    debug = config.Field("Draw aperture traces on image display?",
+                         bool, False)
+    interactive = config.Field("Run primitive interactively?",
+                               bool, False)
+    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
+                                   int, 5, min=0)
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.05, min=0.001, max=0.1)
+    niter = config.RangeField("Maximum number of rejection iterations",
+                              int, None, min=0, optional=True)
+    nsum = config.RangeField("Number of lines to sum",
+                             int, 10, min=1)
+    order = config.RangeField("Order of fitting function",
+                              int, 2, min=1)
+    sigma = config.RangeField("Rejection in sigma of fit",
+                              float, 3, min=0, optional=True)
+    step = config.RangeField("Step in rows/columns for tracing",
+                             int, 10, min=1)
+    suffix = config.Field("Filename suffix",
+                          str, "_aperturesTraced", optional=True)
+
+    def setDefaults(self):
+        self.order = 2
