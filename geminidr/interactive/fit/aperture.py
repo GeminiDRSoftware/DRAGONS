@@ -1,7 +1,7 @@
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import (Button, CheckboxGroup, Div, Slider, Spacer, Spinner,
-                          TextInput)
+from bokeh.models import (Button, CheckboxGroup, Div, Select, Slider, Spacer,
+                          Spinner, TextInput)
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive, server
@@ -52,6 +52,14 @@ def CheckboxLine(title, value, handler):
     return row([Div(text=title, align='end'),
                 Spacer(width_policy='max'),
                 checkbox])
+
+
+def SelectLine(title, value, handler):
+    select = Select(value=value, options=["peak", "integral"], width=128)
+    select.on_change("value", handler)
+    return row([Div(text=title, align='end'),
+                Spacer(width_policy='max'),
+                select])
 
 
 class FindSourceAperturesModel(GIApertureModel):
@@ -272,6 +280,16 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
             is_float=True
         )
 
+        def _sizing_handler(attr, old, new):
+            self.model.sizing_method = new
+            self.clear_and_recalc()
+
+        sizing_widget = SelectLine(
+            title="Sizing method",
+            value=self.model.sizing_method,
+            handler=_sizing_handler
+        )
+
         # Create a blank figure with labels
         self.fig = figure(
             # plot_width=600,
@@ -300,6 +318,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                     min_sky_region_widget,
                                     use_snr_widget,
                                     threshold_slider,
+                                    sizing_widget,
                                     aperture_view.controls,
                                     add_button,
                                     self.submit_button,
