@@ -7,7 +7,7 @@ import numpy as np
 from bokeh import models as bm, transform as bt
 from bokeh.io import curdoc
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d
+from bokeh.models import Div, Select, Range1d, Spacer
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
@@ -45,9 +45,9 @@ def build_fit_1D(fit1d_params, data, points, weights):
 
 
 class InteractiveModel(ABC):
-    MASK_TYPE = ['band', 'user', 'good', 'fit']
-    MARKERS = ['circle', 'circle', 'triangle', 'square']
-    PALETTE = Category10[4]
+    MASK_TYPE = ['excluded', 'user', 'good', 'sigma']
+    MARKERS = ['triangle', 'triangle', 'circle', 'square']
+    PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')  # Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -133,9 +133,9 @@ class InteractiveModel(ABC):
         new_mask = ['good'] * len(self.data.data['mask'])
         for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
             if fm:
-                new_mask[i] = 'fit'
+                new_mask[i] = 'sigma'
             if bdm:
-                new_mask[i] = 'band'
+                new_mask[i] = 'excluded'
             if um:
                 new_mask[i] = 'user'
         self.data.data['mask'] = new_mask
@@ -480,14 +480,88 @@ class InteractiveFit1D:
 
 
 class FittingParametersUI:
-    def __init__(self, fitting_parameters):
-        pass
+    def __init__(self, fit, fitting_parameters, min_order, max_order):
+        self.fit = fit
+        self.saved_sigma_clip = self.fit.sigma_clip
+        self.fitting_parameters = fitting_parameters
+        self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
+
+        self.order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
+                                                          fit, "order", fit.perform_fit, throttled=True)
+        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
+                                                                0.01, 1, 10,
+                                                                fitting_parameters, "sigma_upper",
+                                                                self.sigma_slider_handler,
+                                                                throttled=True)
+        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
+                                                                0.01, 1, 10,
+                                                                fitting_parameters, "sigma_lower",
+                                                                self.sigma_slider_handler,
+                                                                throttled=True)
+        self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
+                                                          1, 0, 10,
+                                                          fitting_parameters, "niter",
+                                                          fit.perform_fit)
+        self.grow_slider = interactive.build_text_slider("Grow", fitting_parameters["grow"],
+                                                         1, 0, 10,
+                                                         fitting_parameters, "grow",
+                                                         fit.perform_fit)
+        self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
+        self.sigma_button.on_change('active', self.sigma_button_handler)
+        self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
+                                self.niter_slider, self.grow_slider]
 
     def reset_ui(self):
-        pass
+        self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
+        for slider, key in [(self.order_slider, "order"),
+                            (self.sigma_upper_slider, "sigma_upper"),
+                            (self.sigma_lower_slider, "sigma_lower"),
+                            (self.niter_slider, "niter"),
+                            (self.grow_slider, "grow")
+                            ]:
+            slider.children[0].value = self.fitting_parameters[key]
+            slider.children[1].value = str(self.fitting_parameters[key])
+        self.sigma_button.active = [0] if self.saved_sigma_clip else []
+        self.fit.perform_fit()
 
     def get_bokeh_components(self):
-        return []
+        return self.controls_column
+
+    def sigma_button_handler(self, attr, old, new):
+        """
+        Handle the sigma clipping being turned on or off.
+
+        This will also trigger a fit since the result may
+        change.
+
+        Parameters
+        ----------
+        attr : Any
+            unused
+        old : str
+            old value of the toggle button
+        new : str
+            new value of the toggle button
+        """
+        self.fit.sigma_clip = bool(new)
+        if self.fit.sigma_clip:
+            self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
+            self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
+        else:
+            self.fitting_parameters["sigma_upper"] = None
+            self.fitting_parameters["sigma_lower"] = None
+        self.fit.perform_fit()
+
+    def sigma_slider_handler(self, val):
+        """
+        Handle the sigma clipping being adjusted.
+
+        This will trigger a fit since the result may
+        change.
+        """
+        # If we're not sigma-clipping, we don't need to refit the model if sigma changes
+        if self.fit.sigma_clip:
+            self.fit.perform_fit()
 
 
 class Fit1DPanel:
@@ -542,29 +616,8 @@ class Fit1DPanel:
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
 
         fit = self.fit
-        order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
-                                                     fit, "order", fit.perform_fit, throttled=True)
-        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
-                                                                0.01, 1, 10,
-                                                                fitting_parameters, "sigma_upper",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True)
-        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
-                                                                0.01, 1, 10,
-                                                                fitting_parameters, "sigma_lower",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True)
-        sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
-        sigma_button.on_change('active', self.sigma_button_handler)
-        controls_column = [order_slider, sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
-                           interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                         1, 0, 10,
-                                                         fitting_parameters, "niter",
-                                                         fit.perform_fit),
-                           interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                         1, 0, 10,
-                                                         fitting_parameters, "grow",
-                                                         fit.perform_fit)]
+        self.fitting_parameters_ui = FittingParametersUI(fit, self.fitting_parameters, min_order, max_order)
+        controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
         mask_button = bm.Button(label="Mask", align='center', button_type='primary', width_policy='min')
         mask_button.on_click(self.mask_button_handler)
@@ -572,14 +625,19 @@ class Fit1DPanel:
         unmask_button = bm.Button(label="Unmask", align='center', button_type='primary', width_policy='min')
         unmask_button.on_click(self.unmask_button_handler)
 
+        reset_button = bm.Button(label="Reset", align='end', button_type='primary', width_policy='min')
+        reset_button.on_click(self.fitting_parameters_ui.reset_ui)
+
         controller_div = Div()
         self.info_div = Div()
 
         if enable_user_masking:
             controls = column(*controls_column,
-                              row(mask_button, unmask_button), controller_div)  #, self.info_div)
+                              row(mask_button, unmask_button, Spacer(), reset_button),
+                              controller_div)
         else:
-            controls = column(*controls_column, controller_div)  #, self.info_div)
+            reset_button.align = 'center'
+            controls = column(*controls_column, reset_button, controller_div)
 
         # Now the figures
         x_range = None
@@ -696,42 +754,6 @@ class Fit1DPanel:
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
         self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
-
-    def sigma_slider_handler(self, val):
-        """
-        Handle the sigma clipping being adjusted.
-
-        This will trigger a fit since the result may
-        change.
-        """
-        # If we're not sigma-clipping, we don't need to refit the model if sigma changes
-        if self.fit.sigma_clip:
-            self.fit.perform_fit()
-
-    def sigma_button_handler(self, attr, old, new):
-        """
-        Handle the sigma clipping being turned on or off.
-
-        This will also trigger a fit since the result may
-        change.
-
-        Parameters
-        ----------
-        attr : Any
-            unused
-        old : str
-            old value of the toggle button
-        new : str
-            new value of the toggle button
-        """
-        self.fit.sigma_clip = bool(new)
-        if self.fit.sigma_clip:
-            self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
-            self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
-        else:
-            self.fitting_parameters["sigma_upper"] = None
-            self.fitting_parameters["sigma_lower"] = None
-        self.fit.perform_fit()
 
     def mask_button_handler(self, stuff=None):
         """
