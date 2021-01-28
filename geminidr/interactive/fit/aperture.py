@@ -232,7 +232,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
             self.clear_and_recalc()
 
         max_apertures_widget = TextInputLine(
-            title="Max Apertures (no limit by default)",
+            title="Max Apertures (empty means no limit)",
             value=self.model.max_apertures,
             handler=_maxaper_handler
         )
