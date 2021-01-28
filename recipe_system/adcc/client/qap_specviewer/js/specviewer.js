@@ -28,17 +28,17 @@ const plotOptions = {
     }
   },
 
-  series: [{
-      color: 'rgba(46, 134, 193, 1.0)',
-      label: 'Intensity',
-      shadow: false,
-    },
-    {
-      color: 'rgba(211, 96, 0, 0.2)',
-      label: 'Standard Deviation',
-      shadow: false,
-    },
-  ],
+  // series: [{
+  //     color: 'rgba(46, 134, 193, 1.0)',
+  //     label: 'Intensity',
+  //     shadow: false,
+  //   },
+  //   {
+  //     color: 'rgba(211, 96, 0, 0.2)',
+  //     label: 'Standard Deviation',
+  //     shadow: false,
+  //   },
+  // ],
 
   grid: {
     background: 'white',
@@ -371,6 +371,19 @@ function isInApertureList(aperture, pixelScale, listOfApertures) {
 
 }
 
+
+/**
+ * Removes duplicated rows in the legend
+ *
+ * @param {number} idx - Aperture index
+ */
+function remove_extra_items_from_legend(idx) {
+  let legend_items = $(`table.jqplot-table-legend:eq(${idx}) tr`);
+  for (let j = legend_items.length-1; j > 0; j--) {
+    if (j != legend_items.length / 2) { legend_items[j].remove(); }}
+}
+
+
 /**
  * Main component for SpecViewer.
  *
@@ -626,6 +639,9 @@ class SpecViewer {
           sleep(250);
         }
       );
+
+      remove_extra_items_from_legend(i);
+
   } //
 
   /**
@@ -715,12 +731,19 @@ class SpecViewer {
 
       let intensity = data.apertures[apIdx].intensity;
       let stddev = data.apertures[apIdx].stddev;
+      let slices = data.apertures[apIdx].slices;
       let intensityUnits = data.apertures[apIdx].intensity_units;
       let wavelengthUnits = data.apertures[apIdx].wavelength_units;
 
       let stackTitle = `Aperture ${i + 1} - Stack Frame - Stack size: ${this.stackSize}`;
       let lastTitle = `Aperture ${i+1} - Last Frame - ${this.dataLabel}`;
       let plotTitle = (data.is_stack) ? stackTitle:lastTitle;
+
+      let sliced_intensities = slices.map(function (s) {
+        return intensity.slice(s[0], s[1])});
+
+      let sliced_stddev = slices.map(function (s) {
+        return stddev.slice(s[0], s[1])});
 
       $(`#aperture${apertureId} .apertureInfo`).html(
         getApertureInfo(data.apertures[apIdx])
@@ -745,9 +768,12 @@ class SpecViewer {
 
           console.log('Refresh plots');
 
+          slices.map(function (s, idx) {
+            this[`${type}Plots`][i].series[idx].data = intensity.slice(s[0], s[1]);
+            this[`${type}Plots`][i].series[idx + slices.length].data = stddev.slice(s[0], s[1]);
+          })
+
           this[`${type}Plots`][i].title.text = plotTitle;
-          this[`${type}Plots`][i].series[0].data = intensity;
-          this[`${type}Plots`][i].series[1].data = stddev;
           this[`${type}Plots`][i].resetAxesScale();
 
           // Refresh only on active tab
@@ -766,8 +792,23 @@ class SpecViewer {
 
           console.log('Create new plots');
 
+          let options_for_intensity = sliced_intensities.map(
+            function () {
+              return {
+                color: 'rgba(46, 134, 193, 1.0)',
+                label: 'Intensity',
+              }});
+
+          let options_for_stddev = sliced_stddev.map(
+            function () {
+              return {
+                color: 'rgba(211, 96, 0, 0.2)',
+                label: 'Standard Deviation',
+              }});
+
           this[`${type}Plots`][i] = $.jqplot(
-            plotId, [intensity, stddev], $.extend(plotOptions, {
+            plotId, sliced_intensities.concat(sliced_stddev),
+            $.extend(plotOptions, {
               title: plotTitle,
               axes: {
                 xaxis: {
@@ -780,8 +821,11 @@ class SpecViewer {
                   tickOptions:{formatString:'%.2e'},
                 },
               },
+              series: options_for_intensity.concat(options_for_stddev),
             })
           );
+
+          remove_extra_items_from_legend(i);
 
         } else {
           $(`#${plotId}`).html(noData);
@@ -830,6 +874,8 @@ class SpecViewer {
         plotInstance.replot({ resetAxes: true }
         );
       }
+
+      remove_extra_items_from_legend(index);
 
     }
 
