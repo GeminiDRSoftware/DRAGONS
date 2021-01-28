@@ -1518,9 +1518,10 @@ class Spect(PrimitivesBASE):
         The primitive operates by first collapsing the 2D spectral image in
         the spatial direction to identify sky lines as regions of high
         pixel-to-pixel variance, and the regions between the sky lines which
-        consist of at least `min_sky_pix` pixels are selected. These are then
-        collapsed in the dispersion direction to produce a 1D spatial profile,
-        from which sources are identified using a peak-finding algorithm.
+        consist of at least `min_sky_region` pixels are selected. These are
+        then collapsed in the dispersion direction to produce a 1D spatial
+        profile, from which sources are identified using a peak-finding
+        algorithm.
 
         The widths of the apertures are determined by calculating a threshold
         level relative to the peak, or an integrated flux relative to the total
@@ -1543,7 +1544,7 @@ class Spect(PrimitivesBASE):
             indicating the region(s) over which the spectral signal should be
             used. The first and last values can be blank, indicating to
             continue to the end of the data
-        min_sky_pregion : int
+        min_sky_region : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
         use_snr : bool
@@ -1571,10 +1572,8 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
+        suffix = params["suffix"]
         section = params["section"]
-        min_sky_pix = params["min_sky_region"]
-        use_snr = params["use_snr"]
         interactive = params["interactive"]
 
         sec_regions = []
@@ -1583,10 +1582,15 @@ class Spect(PrimitivesBASE):
                 sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
                                          None if x2 == '' else int(x2)))
 
+        aper_params = {key: params[key] for key in (
+            'max_apertures', 'min_sky_region', 'percentile',
+            'sizing_method', 'threshold', 'use_snr')}
+        aper_params['sec_regions'] = sec_regions
+
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning("{} has not been distortion corrected".
-                            format(ad.filename))
+                log.warning(f"{ad.filename} has not been distortion corrected")
+
             for ext in ad:
                 log.stdinfo(f"Searching for sources in {ad.filename} "
                             f"extension {ext.id}")
@@ -1596,72 +1600,23 @@ class Spect(PrimitivesBASE):
 
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
-                data, mask, variance = _transpose_if_needed(ext.data, ext.mask,
-                                                            ext.variance, transpose=dispaxis == 0)
+                if dispaxis == 0:
+                    ext = ext.transpose()
 
-                # Collapse image along spatial direction to find noisy regions
-                # (caused by sky lines, regardless of whether image has been
-                # sky-subtracted or not)
-                _, mask1d, var1d = NDStacker.mean(data, mask=mask,
-                                                  variance=variance)
-                # Very light sigma-clipping to remove bright sky lines
-                var_excess = var1d - at.boxcar(var1d, np.median,
-                                               size=min_sky_pix // 2)
-                _, _, std = sigma_clipped_stats(var_excess, mask=mask1d,
-                                                sigma=5.0, maxiters=1)
-
-                # Mask sky-line regions and find clumps of unmasked pixels
-                mask1d[var_excess > 5 * std] = 1
-                slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
-                sky_regions = [slice_ for slice_ in slices
-                               if slice_.stop - slice_.start >= min_sky_pix]
-                if not sky_regions:  # make sure we have something!
-                    sky_regions = [slice(None)]
-
-                sky_mask = np.ones_like(mask1d, dtype=bool)
-                for reg in sky_regions:
-                    sky_mask[reg] = False
-                if sec_regions:
-                    sec_mask = np.ones_like(mask1d, dtype=bool)
-                    for reg in sec_regions:
-                        sec_mask[reg] = False
-                else:
-                    sec_mask = False
-                full_mask = (mask > 0) | sky_mask | sec_mask
-
-                signal = (data if (variance is None or not use_snr) else
-                          np.divide(data, np.sqrt(variance),
-                                    out=np.zeros_like(data), where=variance > 0))
-                masked_data = np.where(np.logical_or(full_mask, variance == 0),
-                                       np.nan, signal)
-                prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
-
-                aper_params = {key: params[key] for key in (
-                    'percentile', 'max_apertures', 'threshold', 'sizing_method'
-                )}
                 aper_params['direction'] = "column" if dispaxis == 0 else "row"
 
                 if interactive:
                     locations, all_limits = interactive_find_source_apertures(
-                        ext, masked_data, prof_mask, **aper_params)
-
-                    if locations is None or len(locations) == 0:
-                        log.warning("Found no sources")
-                        # Delete existing APERTURE table
-                        try:
-                            del ext.APERTURE
-                        except AttributeError:
-                            pass
-                        continue
+                        ext, **aper_params)
                 else:
                     locations, all_limits, _ = tracing.find_apertures(
-                        masked_data, prof_mask, **aper_params)
+                        ext, **aper_params)
 
-                    if not locations:
-                        # Delete existing APERTURE table
-                        if 'APERTURE' in ext.tables:
-                            del ext.APERTURE
-                        continue
+                if not locations:
+                    # Delete existing APERTURE table
+                    if 'APERTURE' in ext.tables:
+                        del ext.APERTURE
+                    continue
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1683,12 +1638,11 @@ class Spect(PrimitivesBASE):
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
                 new_order = ["number"] + [c for c in aptable.colnames if c != "number"]
-                aptable = aptable[new_order]
-                ext.APERTURE = aptable
+                ext.APERTURE = aptable[new_order]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def fluxCalibrate(self, adinputs=None, **params):

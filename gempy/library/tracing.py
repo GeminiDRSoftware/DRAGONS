@@ -997,29 +997,52 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
 
 
-def find_apertures(masked_data, prof_mask, percentile, max_apertures,
-                   threshold, sizing_method, direction):
+def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
+                   sizing_method, threshold, sec_regions, use_snr):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
-    findSourceApertures as well as by the interactive code.
-
-    Parameters
-    ----------
-    max_apertures : int
-        Maximum number of apertures expected to be found.
-    percentile : float (0 - 100) / None
-        percentile to use when collapsing along the dispersion direction
-        to obtain a slit profile / None => take mean
-    threshold : float (0 - 1)
-        parameter describing either the height above background (relative
-        to peak) or the integral under the spectrum (relative to the
-        integral to the next minimum) at which to define the edges of
-        the aperture.
-    sizing_method : str ("peak" or "integral")
-        which method to use
-
+    findSourceApertures as well as by the interactive code. See
+    findSourceApertures' docstring for details on the parameters.
     """
     log = logutils.get_logger(__name__)
+
+    # Collapse image along spatial direction to find noisy regions
+    # (caused by sky lines, regardless of whether image has been
+    # sky-subtracted or not)
+    _, mask1d, var1d = NDStacker.mean(ext.data, mask=ext.mask,
+                                      variance=ext.variance)
+
+    # Very light sigma-clipping to remove bright sky lines
+    var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
+    _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
+                                    maxiters=1)
+
+    # Mask sky-line regions and find clumps of unmasked pixels
+    mask1d[var_excess > 5 * std] = 1
+    slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
+    sky_regions = [slice_ for slice_ in slices
+                   if slice_.stop - slice_.start >= min_sky_region]
+    if not sky_regions:  # make sure we have something!
+        sky_regions = [slice(None)]
+
+    sky_mask = np.ones_like(mask1d, dtype=bool)
+    for reg in sky_regions:
+        sky_mask[reg] = False
+    if sec_regions:
+        sec_mask = np.ones_like(mask1d, dtype=bool)
+        for reg in sec_regions:
+            sec_mask[reg] = False
+    else:
+        sec_mask = False
+    full_mask = (ext.mask > 0) | sky_mask | sec_mask
+
+    signal = (ext.data if (ext.variance is None or not use_snr) else
+              np.divide(ext.data, np.sqrt(ext.variance),
+                        out=np.zeros_like(ext.data), where=ext.variance > 0))
+    masked_data = np.where(np.logical_or(full_mask, ext.variance == 0),
+                           np.nan, signal)
+    prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
+
     # Need to catch warnings for rows full of NaNs
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', message='All-NaN slice')

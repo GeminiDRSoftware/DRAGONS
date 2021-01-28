@@ -37,7 +37,7 @@ def TextSlider(title, value, start, end, step, handler, is_float=False):
         in_update = False
 
     spinner.on_change("value", _handler)
-    slider.on_change("value", _handler)
+    slider.on_change("value_throttled", _handler)
 
     return row([slider,
                 Spacer(width_policy='max'),
@@ -45,7 +45,7 @@ def TextSlider(title, value, start, end, step, handler, is_float=False):
 
 
 class FindSourceAperturesModel(GIApertureModel):
-    def __init__(self, ext, masked_data, prof_mask, **aper_params):
+    def __init__(self, ext, **aper_params):
         """
         Create an aperture model with the given initial set of inputs.
 
@@ -56,16 +56,17 @@ class FindSourceAperturesModel(GIApertureModel):
         """
         super().__init__()
         self.ext = ext
-        self.masked_data = masked_data
-        self.prof_mask = prof_mask
-
-        self.direction = aper_params['direction']
-        self.percentile = aper_params['percentile']
-        self.threshold = aper_params['threshold']
-        self.sizing_method = aper_params['sizing_method']
-        self.max_apertures = aper_params['max_apertures']
-
+        self._aper_param_names = (
+            'direction', 'max_apertures', 'min_sky_region', 'percentile',
+            'sec_regions', 'sizing_method', 'threshold', 'use_snr')
+        # We need proper attributes for params but they will be set by widgets
+        for name in self._aper_param_names:
+            setattr(self, name, aper_params[name])
         self.recalc_apertures()
+
+    @property
+    def aper_params(self):
+        return {name: getattr(self, name) for name in self._aper_param_names}
 
     def find_closest(self, x):
         aperture_id = None
@@ -90,13 +91,8 @@ class FindSourceAperturesModel(GIApertureModel):
         and N limits.
 
         """
-        if self.max_apertures is not None:
-            self.max_apertures = int(self.max_apertures)
-
         self.locations, self.all_limits, self.profile = find_apertures(
-            self.masked_data, self.prof_mask, self.percentile,
-            self.max_apertures, self.threshold, self.sizing_method,
-            self.direction)
+            self.ext, **self.aper_params)
 
         for listener in self.listeners:
             for i, loclim in enumerate(zip(self.locations, self.all_limits)):
@@ -169,12 +165,12 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         Parameters
         ----------
-        model : :class:`geminidr.interactive.fit.aperture.FindSourceAperturesModel`
-            Model to use for tracking the input parameters and recalculating fresh sets as needed
+        model : :class:`FindSourceAperturesModel`
+            Model to use for tracking the input parameters and recalculating
+            fresh sets as needed
         """
         super().__init__(title='Find Source Apertures')
         self.model = model
-
         self.details = None
         self.fig = None
 
@@ -214,7 +210,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                  background='white')
 
         def _maxaper_handler(attr, old, new):
-            self.model.max_apertures = new
+            self.model.max_apertures = int(new) if new is not None else None
             self.clear_and_recalc()
 
         max_apertures_widget = TextInputLine(
@@ -351,13 +347,14 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         Returns
         -------
-            list of float, list of tuple : list of locations and list of the limits as tuples
+            list of float, list of tuple :
+                list of locations and list of the limits as tuples
 
         """
         return self.model.locations, self.model.all_limits
 
 
-def interactive_find_source_apertures(ext, masked_data, prof_mask, **kwargs):
+def interactive_find_source_apertures(ext, **kwargs):
     """
     Perform an interactive find of source apertures with the given initial
     parameters.
@@ -369,7 +366,7 @@ def interactive_find_source_apertures(ext, masked_data, prof_mask, **kwargs):
     to the caller.
 
     """
-    model = FindSourceAperturesModel(ext, masked_data, prof_mask, **kwargs)
+    model = FindSourceAperturesModel(ext, **kwargs)
     fsav = FindSourceAperturesVisualizer(model)
     server.set_visualizer(fsav)
     server.start_server()
