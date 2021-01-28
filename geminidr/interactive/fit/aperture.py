@@ -1,6 +1,7 @@
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import Button, Div, Slider, Spacer, Spinner, TextInput
+from bokeh.models import (Button, CheckboxGroup, Div, Slider, Spacer, Spinner,
+                          TextInput)
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive, server
@@ -42,6 +43,15 @@ def TextSlider(title, value, start, end, step, handler, is_float=False):
     return row([slider,
                 Spacer(width_policy='max'),
                 spinner])
+
+
+def CheckboxLine(title, value, handler):
+    checkbox = CheckboxGroup(labels=[""], active=[0] if value else [],
+                             width=40, width_policy='fixed', align='center')
+    checkbox.on_click(handler)
+    return row([Div(text=title, align='end'),
+                Spacer(width_policy='max'),
+                checkbox])
 
 
 class FindSourceAperturesModel(GIApertureModel):
@@ -230,6 +240,26 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
             handler=_percentile_handler
         )
 
+        def _min_sky_region_handler(attr, old, new):
+            self.model.min_sky_region = new
+            self.clear_and_recalc()
+
+        min_sky_region_widget = TextInputLine(
+            title="Min sky region",
+            value=self.model.min_sky_region,
+            handler=_min_sky_region_handler
+        )
+
+        def _use_snr_handler(new):
+            self.model.use_snr = 0 in new
+            self.clear_and_recalc()
+
+        use_snr_widget = CheckboxLine(
+            title="Use S/N ratio ?",
+            value=self.model.use_snr,
+            handler=_use_snr_handler
+        )
+
         def _threshold_handler(attr, old, new):
             self.model.threshold = new
             self.clear_and_recalc()
@@ -267,6 +297,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         controls = column(children=[current_file,
                                     max_apertures_widget,
                                     percentile_slider,
+                                    min_sky_region_widget,
+                                    use_snr_widget,
                                     threshold_slider,
                                     aperture_view.controls,
                                     add_button,

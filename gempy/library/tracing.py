@@ -1006,6 +1006,10 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     """
     log = logutils.get_logger(__name__)
 
+    for p in ('max_apertures', 'min_sky_region', 'percentile',
+              'sizing_method', 'threshold', 'sec_regions', 'use_snr'):
+        print(f'{p:20s} : {locals()[p]}')
+
     # Collapse image along spatial direction to find noisy regions
     # (caused by sky lines, regardless of whether image has been
     # sky-subtracted or not)
