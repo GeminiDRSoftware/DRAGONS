@@ -782,7 +782,6 @@ class SpecViewer {
           console.log('Refresh plots');
 
           slices.map(function (s, idx) {
-            console.log(s);
             sViewer[`${type}Plots`][i].series[idx].data = intensity.slice(s[0], s[1]);
             sViewer[`${type}Plots`][i].series[idx + slices.length].data = stddev.slice(s[0], s[1]);
           })
