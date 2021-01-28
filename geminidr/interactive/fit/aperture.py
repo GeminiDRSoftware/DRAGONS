@@ -25,19 +25,17 @@ class CustomWidget:
 
     def handler(self, attr, old, new):
         print(f'Calling handler for {self.__class__.__name__}, {self.attr}, '
-              f'{attr}, {new}\n')
+              f'{attr}, {new}')
         if self._handler is not None:
             self._handler(new)
         else:
             setattr(self.model, self.attr, new)
-        self.model.clear_apertures()
-        self.model.recalc_apertures()
 
 
 class TextInputLine(CustomWidget):
     def build(self):
         self.spinner = Spinner(value=self.value, width=64)
-        self.spinner.on_change("value_throttled", self.handler)
+        self.spinner.on_change("value", self.handler)
         return row([Div(text=self.title, align='end'),
                     Spacer(width_policy='max'),
                     self.spinner])
@@ -52,8 +50,8 @@ class TextSlider(CustomWidget):
         self.spinner = Spinner(value=self.value, width=64, step=step)
         self.slider = Slider(start=start, end=end, value=self.value, step=step,
                              title=self.title, width=256)
-        self.spinner.on_change("value_throttled", self.handler)
-        self.slider.on_change("value_throttled", self.handler)
+        self.spinner.on_change("value", self.handler)
+        self.slider.on_change("value", self.handler)
 
         return row([self.slider,
                     Spacer(width_policy='max'),
@@ -323,8 +321,12 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                 widget.reset()
             self.clear_and_recalc()
 
-        reset_button = Button(label="Reset")
+        reset_button = Button(label="Reset", default_size=200)
         reset_button.on_click(_reset_handler)
+
+        find_button = Button(label="Find apertures", button_type='success',
+                             default_size=200)
+        find_button.on_click(self.clear_and_recalc)
 
         helptext = Div()
         controls = column(children=[
@@ -335,7 +337,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
             use_snr_widget.build(),
             threshold_slider.build(start=0, end=1, step=0.01),
             sizing_widget.build(),
-            reset_button,
+            row([reset_button, find_button]),
             aperture_view.controls,
             add_button,
             self.submit_button,
