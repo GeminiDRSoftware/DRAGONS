@@ -12,54 +12,97 @@ from gempy.library.tracing import find_apertures
 __all__ = ["interactive_find_source_apertures", ]
 
 
-def TextInputLine(title, value, handler):
-    spinner = Spinner(value=value, width=64)
-    spinner.on_change("value", handler)
-    return row([Div(text=title, align='end'),
-                Spacer(width_policy='max'),
-                spinner])
+class CustomWidget:
+    def __init__(self, title, model, attr, handler=None):
+        self.title = title
+        self.attr = attr
+        self.model = model
+        self._handler = handler
+
+    @property
+    def value(self):
+        return getattr(self.model, self.attr)
+
+    def handler(self, attr, old, new):
+        print(f'Calling handler for {self.__class__.__name__}, {self.attr}, '
+              f'{attr}, {new}\n')
+        if self._handler is not None:
+            self._handler(new)
+        else:
+            setattr(self.model, self.attr, new)
+        self.model.clear_apertures()
+        self.model.recalc_apertures()
 
 
-def TextSlider(title, value, start, end, step, handler, is_float=False):
-    spinner = Spinner(value=value, width=64, step=step)
-    slider = Slider(start=start, end=end, value=value, step=step,
-                    title=title, width=256)
-    in_update = False
+class TextInputLine(CustomWidget):
+    def build(self):
+        self.spinner = Spinner(value=self.value, width=64)
+        self.spinner.on_change("value_throttled", self.handler)
+        return row([Div(text=self.title, align='end'),
+                    Spacer(width_policy='max'),
+                    self.spinner])
 
-    def _handler(attr, old, new):
-        nonlocal in_update
-        if in_update:
+    def reset(self):
+        self.spinner.value = self.value
+
+
+class TextSlider(CustomWidget):
+    def build(self, start, end, step):
+        self.in_update = False
+        self.spinner = Spinner(value=self.value, width=64, step=step)
+        self.slider = Slider(start=start, end=end, value=self.value, step=step,
+                             title=self.title, width=256)
+        self.spinner.on_change("value_throttled", self.handler)
+        self.slider.on_change("value_throttled", self.handler)
+
+        return row([self.slider,
+                    Spacer(width_policy='max'),
+                    self.spinner])
+
+    def reset(self):
+        self.spinner.value = self.value
+        self.slider.value = self.value
+
+    def handler(self, attr, old, new):
+        if self.in_update:
             # To avoid triggering the handler with both spinner and slider
             return
-        in_update = True
-        spinner.value = new
-        slider.value = new
-        handler(attr, old, new)
-        in_update = False
-
-    spinner.on_change("value", _handler)
-    slider.on_change("value_throttled", _handler)
-
-    return row([slider,
-                Spacer(width_policy='max'),
-                spinner])
+        self.in_update = True
+        self.spinner.value = new
+        self.slider.value = new
+        super().handler(attr, old, new)
+        self.in_update = False
 
 
-def CheckboxLine(title, value, handler):
-    checkbox = CheckboxGroup(labels=[""], active=[0] if value else [],
-                             width=40, width_policy='fixed', align='center')
-    checkbox.on_click(handler)
-    return row([Div(text=title, align='end'),
-                Spacer(width_policy='max'),
-                checkbox])
+class CheckboxLine(CustomWidget):
+    def build(self):
+        self.checkbox = CheckboxGroup(labels=[""],
+                                      active=[0] if self.value else [],
+                                      width=40, width_policy='fixed',
+                                      align='center')
+        self.checkbox.on_click(self.handler)
+        return row([Div(text=self.title, align='end'),
+                    Spacer(width_policy='max'),
+                    self.checkbox])
+
+    def reset(self):
+        self.checkbox.active = [0] if self.value else []
+
+    def handler(self, new):
+        super().handler(None, None, new)
 
 
-def SelectLine(title, value, handler):
-    select = Select(value=value, options=["peak", "integral"], width=128)
-    select.on_change("value", handler)
-    return row([Div(text=title, align='end'),
-                Spacer(width_policy='max'),
-                select])
+class SelectLine(CustomWidget):
+    def build(self):
+        self.select = Select(value=self.value, options=["peak", "integral"],
+                             width=128)
+        self.select.on_change("value", self.handler)
+        return row([Div(text=self.title, align='end'),
+                    Spacer(width_policy='max'),
+                    self.select])
+
+    def reset(self):
+        self.select.value = self.value
 
 
 class FindSourceAperturesModel(GIApertureModel):
@@ -74,17 +117,19 @@ class FindSourceAperturesModel(GIApertureModel):
         """
         super().__init__()
         self.ext = ext
-        self._aper_param_names = (
-            'direction', 'max_apertures', 'min_sky_region', 'percentile',
-            'sec_regions', 'sizing_method', 'threshold', 'use_snr')
-        # We need proper attributes for params but they will be set by widgets
-        for name in self._aper_param_names:
-            setattr(self, name, aper_params[name])
+        self._aper_params = aper_params.copy()
+        self.reset()
         self.recalc_apertures()
 
     @property
     def aper_params(self):
-        return {name: getattr(self, name) for name in self._aper_param_names}
+        """Return the actual param dict from the instance attributes."""
+        return {name: getattr(self, name) for name in self._aper_params.keys()}
+
+    def reset(self):
+        """Reset model to its initial values."""
+        for name, value in self._aper_params.items():
+            setattr(self, name, value)
 
     def find_closest(self, x):
         aperture_id = None
@@ -192,10 +237,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.details = None
         self.fig = None
 
-    def clear_and_recalc(self, *args):
-        """
-        Clear apertures and recalculate a new set.
-        """
+    def clear_and_recalc(self):
+        """Clear apertures and recalculate a new set."""
         self.model.clear_apertures()
         self.model.recalc_apertures()
 
@@ -227,68 +270,30 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                  disabled=True,
                                  background='white')
 
-        def _maxaper_handler(attr, old, new):
+        def _maxaper_handler(new):
             self.model.max_apertures = int(new) if new is not None else None
-            self.clear_and_recalc()
 
-        max_apertures_widget = TextInputLine(
-            title="Max Apertures (empty means no limit)",
-            value=self.model.max_apertures,
-            handler=_maxaper_handler
-        )
+        maxaper_input = TextInputLine("Max Apertures (empty means no limit)",
+                                      self.model, attr="max_apertures",
+                                      handler=_maxaper_handler)
 
-        def _percentile_handler(attr, old, new):
-            self.model.percentile = new
-            self.clear_and_recalc()
+        percentile_slider = TextSlider("Percentile (use mean if no value)",
+                                       self.model, attr="percentile")
 
-        percentile_slider = TextSlider(
-            title="Percentile (use mean if no value)",
-            value=self.model.percentile,
-            start=0, end=100, step=1,
-            handler=_percentile_handler
-        )
-
-        def _min_sky_region_handler(attr, old, new):
-            self.model.min_sky_region = new
-            self.clear_and_recalc()
-
-        min_sky_region_widget = TextInputLine(
-            title="Min sky region",
-            value=self.model.min_sky_region,
-            handler=_min_sky_region_handler
-        )
+        minsky_input = TextInputLine("Min sky region", self.model,
+                                     attr="min_sky_region")
 
         def _use_snr_handler(new):
             self.model.use_snr = 0 in new
-            self.clear_and_recalc()
 
-        use_snr_widget = CheckboxLine(
-            title="Use S/N ratio ?",
-            value=self.model.use_snr,
-            handler=_use_snr_handler
-        )
+        use_snr_widget = CheckboxLine("Use S/N ratio ?", self.model,
+                                      attr="use_snr", handler=_use_snr_handler)
 
-        def _threshold_handler(attr, old, new):
-            self.model.threshold = new
-            self.clear_and_recalc()
+        threshold_slider = TextSlider("Threshold", self.model,
+                                      attr="threshold")
 
-        threshold_slider = TextSlider(
-            title="Threshold",
-            value=self.model.threshold,
-            start=0, end=1, step=0.01,
-            handler=_threshold_handler,
-            is_float=True
-        )
-
-        def _sizing_handler(attr, old, new):
-            self.model.sizing_method = new
-            self.clear_and_recalc()
-
-        sizing_widget = SelectLine(
-            title="Sizing method",
-            value=self.model.sizing_method,
-            handler=_sizing_handler
-        )
+        sizing_widget = SelectLine("Sizing method", self.model,
+                                   attr="sizing_method")
 
         # Create a blank figure with labels
         self.fig = figure(
@@ -311,18 +316,31 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
+        def _reset_handler():
+            self.model.reset()
+            for widget in (maxaper_input, minsky_input, use_snr_widget,
+                           threshold_slider, percentile_slider, sizing_widget):
+                widget.reset()
+            self.clear_and_recalc()
+
+        reset_button = Button(label="Reset")
+        reset_button.on_click(_reset_handler)
+
         helptext = Div()
-        controls = column(children=[current_file,
-                                    max_apertures_widget,
-                                    percentile_slider,
-                                    min_sky_region_widget,
-                                    use_snr_widget,
-                                    threshold_slider,
-                                    sizing_widget,
-                                    aperture_view.controls,
-                                    add_button,
-                                    self.submit_button,
-                                    helptext])
+        controls = column(children=[
+            current_file,
+            maxaper_input.build(),
+            percentile_slider.build(start=0, end=100, step=1),
+            minsky_input.build(),
+            use_snr_widget.build(),
+            threshold_slider.build(start=0, end=1, step=0.01),
+            sizing_widget.build(),
+            reset_button,
+            aperture_view.controls,
+            add_button,
+            self.submit_button,
+            helptext,
+        ])
 
         self.details = Div(text="")
         self.model.recalc_apertures()

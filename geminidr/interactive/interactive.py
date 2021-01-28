@@ -706,7 +706,7 @@ class GIRegionListener(ABC):
         pass
 
 
-class GIRegionModel(object):
+class GIRegionModel:
     """
     Model for tracking a set of regions.
     """
@@ -905,7 +905,7 @@ class GIRegionModel(object):
         return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in self.regions.values()])
 
 
-class RegionHolder(object):
+class RegionHolder:
     """
     Used by `~geminidr.interactive.interactive.GIRegionView` to track start/stop
     independently of the bokeh Annotation since we want to support `None`.
@@ -1130,7 +1130,7 @@ class GIApertureModel(ABC):
         pass
 
 
-class GISingleApertureView(object):
+class GISingleApertureView:
     def __init__(self, fig, aperture_id, location, start, end):
         """
         Create a visible glyph-set to show the existance
@@ -1278,7 +1278,7 @@ class GISingleApertureView(object):
         self.location.visible=False
 
 
-class GIApertureSliders(object):
+class GIApertureSliders:
     def __init__(self, fig, model, aperture_id, location, start, end):
         """
         Create range sliders for an aperture.
@@ -1365,7 +1365,7 @@ class GIApertureSliders(object):
             self.model.adjust_aperture(self.aperture_id, self.location, self.start, self.end)
 
 
-class GIApertureView(object):
+class GIApertureView:
     """
     UI elements for displaying the current set of apertures.
 

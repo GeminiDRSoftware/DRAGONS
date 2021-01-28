@@ -13,7 +13,7 @@ from bokeh.palettes import Category10
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIRegionModel, GIApertureModel, connect_figure_extras, GIRegionListener, \
+from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
