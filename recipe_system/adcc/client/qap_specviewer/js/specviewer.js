@@ -389,8 +389,8 @@ function isInApertureList(aperture, pixelScale, listOfApertures) {
  *
  * @param {number} idx - Aperture index
  */
-function remove_extra_items_from_legend(idx) {
-  let legend_items = $(`table.jqplot-table-legend:eq(${idx}) tr`);
+function remove_extra_items_from_legend(plotId) {
+  let legend_items = $(`#${plotId} table.jqplot-table-legend tr`);
   for (let j = legend_items.length-1; j > 0; j--) {
     if (j != legend_items.length / 2) { legend_items[j].remove(); }}
 }
@@ -635,6 +635,7 @@ class SpecViewer {
 
       let sViewer = this;
       let apId = sViewer.aperturesId[i];
+      let plotId = `${type}Plot_${apId}`;
 
       function sleep (miliseconds) {
         return new Promise(resolve => setTimeout(resolve, miliseconds));
@@ -648,7 +649,7 @@ class SpecViewer {
         async function() {
           console.log(`Reset zoom of ${type} plot #${i}.`);
           p.resetZoom();
-          remove_extra_items_from_legend(i);
+          remove_extra_items_from_legend(plotId);
           sleep(250);
         }
       );
@@ -733,6 +734,7 @@ class SpecViewer {
 
     for (let i = 0; i < this.aperturesId.length; i++) {
 
+      let sViewer = this;
       let apertureId = this.aperturesId[i];
       let plotId = `${type}Plot_${apertureId}`;
       let activeTabIndex = $(`#${this.id}`).tabs('option', 'active');
@@ -780,8 +782,9 @@ class SpecViewer {
           console.log('Refresh plots');
 
           slices.map(function (s, idx) {
-            this[`${type}Plots`][i].series[idx].data = intensity.slice(s[0], s[1]);
-            this[`${type}Plots`][i].series[idx + slices.length].data = stddev.slice(s[0], s[1]);
+            console.log(s);
+            sViewer[`${type}Plots`][i].series[idx].data = intensity.slice(s[0], s[1]);
+            sViewer[`${type}Plots`][i].series[idx + slices.length].data = stddev.slice(s[0], s[1]);
           })
 
           this[`${type}Plots`][i].title.text = plotTitle;
@@ -837,16 +840,15 @@ class SpecViewer {
           );
 
           // Clean up the legend
-          remove_extra_items_from_legend(i);
+          remove_extra_items_from_legend(plotId);
 
           // Customize doZoom to clean up the legend after zooming.
           let sViewer = this;
           let originalDoZoom = this[`${type}Plots`][i].plugins.cursor.doZoom;
 
           this[`${type}Plots`][i].plugins.cursor.doZoom = function (gridpos, datapos, plot, cursor) {
-            let activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
             originalDoZoom(gridpos, datapos, plot, cursor);
-            remove_extra_items_from_legend(activeTabIndex);
+            remove_extra_items_from_legend(plotId);
           }
 
         } else {
@@ -879,6 +881,7 @@ class SpecViewer {
     function resizePlotArea(index, type) {
       let apId = sViewer.aperturesId[index];
       let plotInstance = sViewer[`${type}Plots`][index];
+      let plotId = `${type}Plot_${apId}`;
       let plotTarget = $(`#${type}Plot_${apId}`);
       let resizableArea = $(`#aperture${apId} .resizable.${type}`);
 
@@ -897,7 +900,7 @@ class SpecViewer {
         );
       }
 
-      remove_extra_items_from_legend(index);
+      remove_extra_items_from_legend(plotId);
 
     }
 
