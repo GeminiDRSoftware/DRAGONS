@@ -479,6 +479,17 @@ class InteractiveFit1D:
             ll(self.fit)
 
 
+class FittingParametersUI:
+    def __init__(self, fitting_parameters):
+        pass
+
+    def reset_ui(self):
+        pass
+
+    def get_bokeh_components(self):
+        return []
+
+
 class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
                  weights=None,
@@ -545,16 +556,15 @@ class Fit1DPanel:
                                                                 throttled=True)
         sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         sigma_button.on_change('active', self.sigma_button_handler)
-        controls_column = [order_slider, row(self.sigma_upper_slider, sigma_button)]
-        controls_column.append(self.sigma_lower_slider)
-        controls_column.append(interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                             1, 0, 10,
-                                                             fitting_parameters, "niter",
-                                                             fit.perform_fit))
-        controls_column.append(interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                             1, 0, 10,
-                                                             fitting_parameters, "grow",
-                                                             fit.perform_fit))
+        controls_column = [order_slider, sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
+                           interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
+                                                         1, 0, 10,
+                                                         fitting_parameters, "niter",
+                                                         fit.perform_fit),
+                           interactive.build_text_slider("Grow", fitting_parameters["grow"],
+                                                         1, 0, 10,
+                                                         fitting_parameters, "grow",
+                                                         fit.perform_fit)]
 
         mask_button = bm.Button(label="Mask", align='center', button_type='primary', width_policy='min')
         mask_button.on_click(self.mask_button_handler)
@@ -567,9 +577,9 @@ class Fit1DPanel:
 
         if enable_user_masking:
             controls = column(*controls_column,
-                              row(mask_button, unmask_button), controller_div, self.info_div)
+                              row(mask_button, unmask_button), controller_div)  #, self.info_div)
         else:
-            controls = column(*controls_column, controller_div, self.info_div)
+            controls = column(*controls_column, controller_div)  #, self.info_div)
 
         # Now the figures
         x_range = None
@@ -579,7 +589,7 @@ class Fit1DPanel:
                 x_min = min(self.fit.data.data['x'])
                 x_max = max(self.fit.data.data['x'])
                 x_pad = (x_max-x_min)*0.1
-                x_range = Range1d(x_min-x_pad, x_max+x_pad)
+                x_range = Range1d(x_min-x_pad, x_max+x_pad*2)
             if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
                 y_min = min(self.fit.data.data['y'])
                 y_max = max(self.fit.data.data['y'])
@@ -635,23 +645,15 @@ class Fit1DPanel:
 
         Controller(p_main, None, self.band_model, controller_div, mask_handlers=(self.mask_button_handler,
                                                                                  self.unmask_button_handler))
-        fig_column = [p_main]
+        fig_column = [p_main, self.info_div]
 
         if plot_residuals:
-            x_range = None
-            try:
-                if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                    x_min = min(self.fit.data.data['x'])
-                    x_max = max(self.fit.data.data['x'])
-                    x_pad = (x_max-x_min)*0.1
-                    x_range = Range1d(x_min-x_pad, x_max+x_pad)
-            except:
-                pass  # ok, we don't *need* ranges...
+            # x_range is linked to the main plot so that zooming tracks between them
             p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
                              title='Fit Residuals',
-                             x_axis_label=xlabel, y_axis_label='delta'+ylabel,
+                             x_axis_label=xlabel, y_axis_label='Delta',
                              tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=x_range, y_range=None)
+                             output_backend="webgl", x_range=p_main.x_range, y_range=None)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             connect_figure_extras(p_resid, None, self.band_model)
@@ -659,7 +661,7 @@ class Fit1DPanel:
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                            size=5, **self.fit.mask_rendering_kwargs())
+                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
@@ -667,7 +669,7 @@ class Fit1DPanel:
             self.band_model.load_from_tuples(region_tuples)
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
-                                      size=5, **self.fit.mask_rendering_kwargs())
+                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
@@ -817,7 +819,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
-                 domains=None, function=None, title=None, **kwargs):
+                 domains=None, function=None, title=None, primitive_name=None, filename_info=None,
+                 **kwargs):
         """
         Parameters
         ----------
@@ -854,11 +857,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         title : str
             Title for UI (Interactive <Title>)
         """
-        super().__init__(config=config, title=title)
-
-        # title_div = None
-        # if title is not None:
-        #     title_div = Div(text='<h2>%s</h2>' % title)
+        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info)
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -887,7 +886,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         else:
             if function is None:
                 function = 'chebyshev'
-            self.function=Div(text='Function: %s' % function)
+            self.function = Div(text='Function: %s' % function)
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
@@ -998,7 +997,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
-        layout = column(row(self.reinit_panel, col), self.submit_button, sizing_mode="stretch_width")
+        layout = column(self.submit_button,
+                        row(column(self.reinit_panel,
+                                   ), col),
+                        sizing_mode="stretch_width")
         doc.add_root(layout)
 
     def reconstruct_points(self):

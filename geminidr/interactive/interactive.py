@@ -12,7 +12,7 @@ from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title=''):
+    def __init__(self, config=None, title='', primitive_name='', filename_info=''):
         """
         Initialize a visualizer.
 
@@ -23,6 +23,8 @@ class PrimitiveVisualizer(ABC):
         top level call you are visualizing from.
         """
         self.title = title
+        self.filename_info = filename_info if filename_info else ''
+        self.primitive_name = primitive_name if primitive_name else ''
         self.extras = dict()
         if config is None:
             self.config = None
@@ -31,7 +33,7 @@ class PrimitiveVisualizer(ABC):
 
         self.user_satisfied = False
 
-        self.submit_button = Button(label="Submit", align='center', button_type='success', width_policy='min')
+        self.submit_button = Button(label="Accept", align='center', button_type='success', width_policy='min')
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
             window.close();
@@ -146,7 +148,8 @@ class PrimitiveVisualizer(ABC):
         extras : dict
             Dictionary of additional field definitions for anything not included in the primitive configuration
         reinit_live : bool
-            True if recalcuating points is cheap, in which case we don't need a button and do it on any change
+            True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
+            Currently only viable for text-slider style inputs
 
         Returns
         -------
@@ -1496,7 +1499,7 @@ class RegionEditor(GIRegionListener):
         pass
 
     def delete_region(self, region_id):
-        pass
+        self.text_input.value = self.region_model.build_regions()
 
     def finish_regions(self):
         self.text_input.value = self.region_model.build_regions()

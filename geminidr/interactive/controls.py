@@ -48,7 +48,7 @@ class Controller(object):
     control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, helptext, mask_handlers=None):
+    def __init__(self, fig, aperture_model, region_model, helptext, mask_handlers=None, showing_residuals=True):
         """
         Create a controller to manage the given aperture and region models on the given GIFigure
 
@@ -63,6 +63,7 @@ class Controller(object):
         helptext : :class:`Div`
             div to update text in to provide help to the user
         """
+        self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
         self.helptext = helptext
         self.enable_user_masking = True if mask_handlers else False
@@ -104,14 +105,20 @@ class Controller(object):
             html to display in the div
         """
         if text is not None:
-            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+            if self.showing_residuals:
+                ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
+            else:
+                ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
             if self.enable_user_masking:
                 ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
                     "<b>U</b> - Unmask selected points<br/><br/>"
             ht = ht + text
         else:
             # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
-            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+            if self.showing_residuals:
+                ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
+            else:
+                ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
             if self.enable_user_masking:
                 ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
                     "<b>U</b> - Unmask selected points<br/><br/>"

@@ -16,13 +16,52 @@ body {
     width: 128px;
 }
 
-#top-title {
+#top-banner {
+    height: 76px;
     background-color: #5384a5;
     font: helvetica;
     font-style: italic;
-    font-size: 64px;
     color: white;
-    padding-left: 140px;
+}
+
+#top-primitive-info {
+    position: absolute;
+    float: left;
+    padding-left: 72px;
+    padding-right: 256px;
+}
+
+#top-title {
+    font-size: 48px;
+    font: helvetica;
+    font-style: italic;
+    color: white;
+}
+
+#top-primitive-name {
+    font-size: 16px;
+    font: helvetica;
+    font-style: italic;
+    color: white;
+}
+
+#filename-info {
+    font-size: 16px;
+    width: 256px;
+    float: right;
+    text-alight: right;
+    height: 64px;
+    margin-top: 48px;
+    float: right;
+    font: helvetica;
+    font-style: italic;
+    color: white;
+}
+
+.submit-info {
+    border: 2px solid black;
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 #top {
