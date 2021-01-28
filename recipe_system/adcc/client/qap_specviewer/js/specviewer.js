@@ -28,18 +28,6 @@ const plotOptions = {
     }
   },
 
-  // series: [{
-  //     color: 'rgba(46, 134, 193, 1.0)',
-  //     label: 'Intensity',
-  //     shadow: false,
-  //   },
-  //   {
-  //     color: 'rgba(211, 96, 0, 0.2)',
-  //     label: 'Standard Deviation',
-  //     shadow: false,
-  //   },
-  // ],
-
   grid: {
     background: 'white',
     drawBorder: false,
@@ -636,11 +624,10 @@ class SpecViewer {
         async function() {
           console.log(`Reset zoom of ${type} plot #${i}.`);
           p.resetZoom();
+          remove_extra_items_from_legend(i);
           sleep(250);
         }
       );
-
-      remove_extra_items_from_legend(i);
 
   } //
 
