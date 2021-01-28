@@ -52,6 +52,7 @@ const plotOptions = {
 
 };
 
+
 /**
  * Adds a count down in the footer to let user know when the server was queried.
  * @param {object} sViewer - An initialized version of SpecViewer.
@@ -83,6 +84,7 @@ function addCountDown(sViewer) {
   } // end updateCountdown
   setInterval(updateCountdown, 1000);
 }  // end addCountDown
+
 
 /**
  * Add the settings button and the hidden form to the webpage.
@@ -133,6 +135,7 @@ function addSettings(sViewer) {
   function showSettings () {
     console.log("Clicked on settings button.");
     settingsModal.css("display", "block");
+    queryFreq.focus();
   };
 
   function saveSettings () {
@@ -146,6 +149,7 @@ function addSettings(sViewer) {
   function cancel() {
     settingsModal.css("display", "none");
     queryFreq.val(sViewer.delay / 1000);
+    console.log(` Discarding changes.`);
   };
 
   // Add functionality to buttons
@@ -154,14 +158,29 @@ function addSettings(sViewer) {
   $( '#cancelBtn' ).unbind("click").on( "click", cancel );
   $( '.close' ).unbind("click").on( "click", cancel );
 
+  // Add keybinding
+  $(document).keypress(function(event) {
+    if (settingsModal.css("display") === "block") {
+
+      // Accept settings if Enter pressed
+      if (event.key === "Enter") { saveSettings(); }
+
+      // Cancel if Esc pressed
+      if (event.key === "Escape") { cancel(); }
+
+    }
+  });
+
   // Close settings if clicked outside
   window.onclick = function(event) {
     if (event.target.id == "settings") {
       cancel();
     }
+
   }
 
 }
+
 
 /**
  * Makes sure that every incoming aperture is unique.
@@ -185,6 +204,7 @@ function assureUniqueApertures(apertures) {
   return uniqueApertures;
 
 } // end assureUniqueApertures
+
 
 /**
  * Returns the Aperture Info div element using a template.
@@ -210,6 +230,7 @@ function getApertureInfo(aperture) {
 
 }
 
+
 /**
  * Get element value inside `list` that is the nearest to the `target` value.
  * @param  {number} target - Target value
@@ -227,6 +248,7 @@ function getNearest(target, list) {
   return nearest;
 
 }
+
 
 /**
  * Returns the index of the element inside `list` that is the nearest tho the
@@ -308,6 +330,7 @@ function getStackInfo(filename, programId) {
   `;
 }
 
+
 /**
  * Convert input units to be used as label to the x-axis.
  * @param {string} units
@@ -335,6 +358,7 @@ function getWavelengthUnits(units) {
   }
 
 }
+
 
 /**
  * Gets the nearest aperture id value inside `listOfApertures` and verify
@@ -812,7 +836,18 @@ class SpecViewer {
             })
           );
 
+          // Clean up the legend
           remove_extra_items_from_legend(i);
+
+          // Customize doZoom to clean up the legend after zooming.
+          let sViewer = this;
+          let originalDoZoom = this[`${type}Plots`][i].plugins.cursor.doZoom;
+
+          this[`${type}Plots`][i].plugins.cursor.doZoom = function (gridpos, datapos, plot, cursor) {
+            let activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
+            originalDoZoom(gridpos, datapos, plot, cursor);
+            remove_extra_items_from_legend(activeTabIndex);
+          }
 
         } else {
           $(`#${plotId}`).html(noData);
