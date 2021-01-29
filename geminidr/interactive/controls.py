@@ -314,7 +314,9 @@ class ApertureTask(Task):
         aperture_model : :class:`GIApertureModel`
             The aperture model to operate on
         """
-        self.mode = "location"  # location, width, left, right for placing location, width (both) or left/right side
+        # location, width, left, right for placing location, width (both)
+        # or left/right side
+        self.mode = "location"
         self.aperture_model = aperture_model
         self.aperture_center = None
         self.left = None
@@ -323,6 +325,7 @@ class ApertureTask(Task):
         self.last_x = None
         self.last_y = None
         self.helptext_area = helptext
+        self.helptext_area.text = self.helptext()
 
     def start(self, x, y):
         self.last_x = x
@@ -361,7 +364,6 @@ class ApertureTask(Task):
         self.right = x
         self.aperture_id = self.aperture_model.add_aperture(x, x, x)
         self.mode = "width"
-        self.update_help(self.mode)
 
     def stop_aperture(self):
         """
@@ -373,13 +375,13 @@ class ApertureTask(Task):
         self.aperture_center = None
         self.aperture_id = None
         self.mode = ""
-        self.update_help(self.mode)
 
     def handle_key(self, key):
         """
         Handle a key press.
 
-        This will listen for a press of 'a' to tell the task to stop updating the aperture.
+        This will listen for a press of 'a' to tell the task to stop updating
+        the aperture.
 
         Parameters
         ----------
@@ -388,7 +390,8 @@ class ApertureTask(Task):
 
         Returns
         -------
-            True if the task is finished and the controller should take over, False if we are not done with the Task
+            True if the task is finished and the controller should take over,
+            False if we are not done with the Task
         """
         if key == 'a':
             if self.aperture_center is None:
@@ -414,7 +417,6 @@ class ApertureTask(Task):
                 if self.aperture_id is None:
                     return False
             self.mode = 'left'
-            self.update_help(self.mode)
             return False
         if key == ']':
             if self.aperture_center is None:
@@ -424,7 +426,6 @@ class ApertureTask(Task):
                 if self.aperture_id is None:
                     return False
             self.mode = 'right'
-            self.update_help(self.mode)
             return False
         if key == 'l':
             if self.aperture_center is None:
@@ -434,7 +435,6 @@ class ApertureTask(Task):
                 if self.aperture_id is None:
                     return False
             self.mode = 'location'
-            self.update_help(self.mode)
             return False
         if key == 'd':
             if self.aperture_center is None:
@@ -476,7 +476,9 @@ class ApertureTask(Task):
                 self.aperture_center = x
                 self.right = max(self.right, x)
                 self.left = min(self.left, x)
-            self.aperture_model.adjust_aperture(self.aperture_id, self.aperture_center, self.left, self.right)
+            self.aperture_model.adjust_aperture(self.aperture_id,
+                                                self.aperture_center,
+                                                self.left, self.right)
 
         self.last_x = x
         self.last_y = y
@@ -485,46 +487,15 @@ class ApertureTask(Task):
     def description(self):
         return "Edit <b>apertures</b> interactively"
 
-    def update_help(self, mode):
-        if self.mode == 'width':
-            controller.set_help_text("""
-              Drag to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'left':
-            controller.set_help_text("""
-              Drag left side to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'right':
-            controller.set_help_text("""
-              Drag right side to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'location':
-            controller.set_help_text("""
-              Drag to desired aperture location<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>D</b> to delete the aperture""")
-        else:
-            self.helptext_area.text = self.helptext()
-
     def helptext(self):
-        return """<b>A</b> to start the aperture<br/>
-                  <b>F</b> to find a nearby peak to the cursor to start with<br/>
-                  <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-                  <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-                  <b>L</b> to edit the location<br/>
-                  <b>D</b> to delete the aperture"""
+        return """
+        <b>A</b> to start the aperture or set the value<br/>
+        <b>F</b> to find a nearby peak to the cursor to start with<br/>
+        <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+        <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+        <b>L</b> to edit the location<br/>
+        <b>D</b> to delete the aperture
+        """
 
 
 class RegionTask(Task):
