@@ -5,7 +5,7 @@ body {
     font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
     margin: auto;
     max-width: 1040px;
-    padding: 0;
+    padding: 10px;
 }
 
 /* Fix the highlighting on jqplots that happens when double-clicked
@@ -159,8 +159,18 @@ span.problem {
 }
 .link-buttom a:hover {
     background-color: black;
+    border: 1px solid white;
     color: white;
-    box-shadow: 0 2px 3px rgba(1, 1, 1, 0.25);
+    -moz-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.5);
+}
+.link-buttom a:active {
+    background-color: DarkGray;
+    color: white;
+    -moz-box-shadow: 0 2px 3px rgba(1, 1, 1, 0);
+    -webkit-box-shadow: 0 2px 3px rgba(1, 1, 1, 0);
+    box-shadow: 0 2px 3px rgba(1, 1, 1, 0);
 }
 .msg_problem_icon {
     position: absolute;
@@ -364,7 +374,7 @@ span.problem {
     height: 32px;
     margin: 0px;
     padding: 0px;
-    width: 1024px;
+
     position: relative;
 }
 #date_wrapper {
@@ -466,7 +476,7 @@ span.problem {
     clear: both;
     height: 40px;
     padding: 0px;
-    width: 1024px;
+
     position: relative;
 }
 #plot_wrapper {
@@ -480,7 +490,7 @@ span.problem {
     clear: both;
     height: 340px;
     padding: 10px 0px 0px 0px;
-    width: 1024px;
+
 }
 #problem_overlay {
     -moz-box-shadow: 0 0 4px 4px #CE0000;
@@ -488,7 +498,7 @@ span.problem {
     box-shadow: 0 0 4px 4px #CE0000;
     display: none;
     height: 40px;
-    width: 1024px;
+
     padding: 0px;
     z-index: 0;
 }
@@ -505,7 +515,7 @@ span.problem {
     clear: both;
     height: 340px;
     overflow: hidden;
-    width: 1024px;
+
 }
 #warning_overlay {
     -moz-box-shadow: 0 0 4px 4px #FF9E00;
@@ -513,7 +523,7 @@ span.problem {
     box-shadow: 0 0 4px 4px #FF9E00;
     display: none;
     height: 40px;
-    width: 1024px;
+
     padding: 0px;
     z-index: 0;
 }
