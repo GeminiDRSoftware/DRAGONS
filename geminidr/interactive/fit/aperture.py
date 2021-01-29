@@ -307,9 +307,9 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         aperture_view = GIApertureView(self.model, self.fig)
         self.model.add_listener(self)
 
-        self.fig.line(x=range(self.model.profile.shape[0]),
+        self.fig.step(x=range(self.model.profile.shape[0]),
                       y=self.model.profile,
-                      color="black")
+                      color="black", mode="center")
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
