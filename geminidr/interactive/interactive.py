@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from copy import copy
 
-from bokeh.layouts import row, column
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, \
-    Dropdown, RangeSlider, Span, NumeralTickFormatter
+from bokeh.layouts import column, row
+from bokeh.models import (BoxAnnotation, Button, ColumnDataSource, CustomJS,
+                          Div, Dropdown, Label, NumeralTickFormatter,
+                          RangeSlider, Slider, Span, Spinner, TextInput)
 
 from geminidr.interactive import server
 from gempy.library.astrotools import cartesian_regions_to_slices
-
 from gempy.library.config import FieldValidationError
 
 
@@ -1278,65 +1278,66 @@ class GISingleApertureView:
         self.location.visible=False
 
 
-class GIApertureSliders:
-    def __init__(self, fig, model, aperture_id, location, start, end):
-        """
-        Create range sliders for an aperture.
-
-        This creates a range slider and a pair of linked text
-        entry boxes for the start and end of an aperture.
+class GIApertureLineView:
+    def __init__(self, model, aperture_id, location, start, end):
+        """ Create text inputs for the start, location and end of an aperture.
 
         Parameters
         ----------
-        fig : :class:`~bokeh.plotting.Figure`
-            The bokeh figure being plotted in, for handling zoom in/out
         model : :class:`~geminidr.interactive.interactive.GIApertureModel`
             The model that tracks the apertures and their ranges
         aperture_id : int
             The ID of the aperture
-        start : float
-            The start of the aperture
-        end : float
-            The end of the aperture
+        start, location, end : float
+            The start, location and end of the aperture
+
         """
-        # self.view = view
         self.model = model
         self.aperture_id = aperture_id
         self.location = location
         self.start = start
         self.end = end
 
-        slider_start = fig.x_range.start
-        slider_end = fig.x_range.end
+        def _del_button_handler():
+            self.model.delete_aperture(self.aperture_id)
 
-        self.slider = build_range_slider("%s" % aperture_id, location, start, end, 0.01, slider_start, slider_end,
-                                         obj=self, location_attr="location", start_attr="start", end_attr="end",
-                                         handler=self.do_update)
-        button = Button(label="Del")
-        button.on_click(self.delete_from_model)
-        button.width = 48
+        button = Button(label="Del", width=48)
+        button.on_click(_del_button_handler)
 
-        self.component = row(self.slider, button)
+        start_input = Spinner(width=96, value=start)
+        location_input = Spinner(width=96, value=location)
+        end_input = Spinner(width=96, value=end)
 
-    def set_title(self, title):
-        self.slider.children[0].title = title
+        def _inputs_handler(attr, old, new):
+            self.location = location_input.value
+            self.start = min(start_input.value, end_input.value)
+            self.end = max(start_input.value, end_input.value)
+            self.model.adjust_aperture(self.aperture_id, self.location,
+                                       self.start, self.end)
 
-    def delete_from_model(self):
-        """
-        Delete this aperture from the model
-        """
-        self.model.delete_aperture(self.aperture_id)
+        start_input.on_change("value", _inputs_handler)
+        location_input.on_change("value", _inputs_handler)
+        end_input.on_change("value", _inputs_handler)
+
+        self.component = row([Div(align='end'),
+                              start_input,
+                              location_input,
+                              end_input,
+                              button])
+        self.update_title()
+
+    def update_title(self):
+        self.component.children[0].text = f"Aperture {self.aperture_id}"
 
     def update_viewport(self, start, end):
         """
         Respond to a viewport update.
 
-        This checks the visible range of the viewport against
-        the current range of this aperture.  If the aperture
-        is not fully contained within the new visible area,
-        all UI elements are disabled.  If the aperture is in
-        range, the start and stop values for the slider are
-        capped to the visible range.
+        This checks the visible range of the viewport against the current range
+        of this aperture.  If the aperture is not fully contained within the
+        new visible area, all UI elements are disabled.  If the aperture is in
+        range, the start and stop values for the slider are capped to the
+        visible range.
 
         Parameters
         ----------
@@ -1346,23 +1347,11 @@ class GIApertureSliders:
             Visible end of x axis
         """
         if self.start < start or self.end > end:
-            self.slider.children[0].disabled = True
-            self.slider.children[1].disabled = True
-            self.slider.children[2].disabled = True
-            self.slider.children[3].disabled = True
+            self.component.disabled = True
         else:
-            self.slider.children[0].disabled = False
-            self.slider.children[1].disabled = False
-            self.slider.children[2].disabled = False
-            self.slider.children[3].disabled = False
-            self.slider.children[0].start = start
-            self.slider.children[0].end = end
-
-    def do_update(self):
-        if self.start > self.end:
-            self.model.adjust_aperture(self.aperture_id, self.location, self.end, self.start)
-        else:
-            self.model.adjust_aperture(self.aperture_id, self.location, self.start, self.end)
+            self.component.disabled = False
+            # self.slider.children[0].start = start
+            # self.slider.children[0].end = end
 
 
 class GIApertureView:
@@ -1408,16 +1397,10 @@ class GIApertureView:
     def update_viewport(self, start, end):
         """
         Handle a change in the view.
-
         We will adjust the slider ranges and/or disable them.
-
-        Parameters
-        ----------
-        start
-        end
         """
-        # Bokeh docs provide no indication of the datatype or orientation of the start/end
-        # tuples, so I have left the doc blank for now
+        # Bokeh docs provide no indication of the datatype or orientation of
+        # the start/end tuples, so I have left the doc blank for now
         self.view_start = start
         self.view_end = end
         for ap_slider in self.ap_sliders:
@@ -1444,10 +1427,14 @@ class GIApertureView:
             ap = self.aps[aperture_id-1]
             ap.update(location, start, end)
         else:
-            ap = GISingleApertureView(self.fig, aperture_id, location, start, end)
+            ap = GISingleApertureView(self.fig, aperture_id, location,
+                                      start, end)
             self.aps.append(ap)
-            slider = GIApertureSliders(self.fig, self.model, aperture_id, location, start, end)
+
+            slider = GIApertureLineView(self.model, aperture_id, location,
+                                        start, end)
             self.ap_sliders.append(slider)
+
             self.inner_controls.children.append(slider.component)
 
     def delete_aperture(self, aperture_id):
@@ -1470,7 +1457,7 @@ class GIApertureView:
             ap.label.text = "%s" % ap.aperture_id
         for ap_slider in self.ap_sliders[aperture_id-1:]:
             ap_slider.aperture_id = ap_slider.aperture_id-1
-            ap_slider.set_title("%s" % ap_slider.aperture_id)
+            ap_slider.update_title()
             # ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id
 
 
