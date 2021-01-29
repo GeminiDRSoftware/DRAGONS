@@ -60,8 +60,7 @@ def _bkapp(doc):
         primitive_name = _visualizer.primitive_name
         template = f.read()
         template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
-                .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;')) \
-                .replace('{{ filename_info }}', filename_info)
+                .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
 
         t = Template(template)
         doc.template = t

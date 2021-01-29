@@ -617,6 +617,12 @@ class Fit1DPanel:
 
         fit = self.fit
         self.fitting_parameters_ui = FittingParametersUI(fit, self.fitting_parameters, min_order, max_order)
+
+        controls_ls = list()
+
+        if self.visualizer.filename_info:
+            controls_ls.append(Div(text='<b>Filename:</b> %s<br/>' % self.visualizer.filename_info))
+
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
         mask_button = bm.Button(label="Mask", align='center', button_type='primary', width_policy='min')
@@ -625,19 +631,25 @@ class Fit1DPanel:
         unmask_button = bm.Button(label="Unmask", align='center', button_type='primary', width_policy='min')
         unmask_button.on_click(self.unmask_button_handler)
 
-        reset_button = bm.Button(label="Reset", align='end', button_type='primary', width_policy='min')
+        reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
         reset_button.on_click(self.fitting_parameters_ui.reset_ui)
 
         controller_div = Div()
         self.info_div = Div()
 
-        if enable_user_masking:
-            controls = column(*controls_column,
-                              row(mask_button, unmask_button, Spacer(), reset_button),
-                              controller_div)
-        else:
-            reset_button.align = 'center'
-            controls = column(*controls_column, reset_button, controller_div)
+        controls_ls.extend(controls_column)
+        # per KL remove mask/unmask buttons
+        # if enable_user_masking:
+        #     controls_ls.append(row(mask_button, unmask_button, Spacer(sizing_mode='stretch_width'), reset_button))
+        # else:
+        #     reset_button.align = 'center'
+        #     controls_ls.append(reset_button)
+
+        reset_button.align = 'center'
+        controls_ls.append(reset_button)
+        controls_ls.append(controller_div)
+
+        controls = column(*controls_ls)
 
         # Now the figures
         x_range = None
