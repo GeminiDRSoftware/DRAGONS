@@ -1,10 +1,20 @@
+@keyframes flash-animation {
+    from { background: #007FFF }
+    to   { background: #ddd; }
+}
+
+@-webkit-keyframes flash-animation {
+    from { background: #007FFF}
+    to   { background: #ddd; }
+}
+
 body {
   background-color: #F2F2F2;
   color: black;
   font: normal normal 16px Verdana, Geneva, Arial, Helvetica, sans-serif;
-  padding: 10px;
   max-width: 1040px;
   margin: auto;
+  padding: 10px;
 }
 
 button.settings {
@@ -159,14 +169,8 @@ img.settings {
   display: table-cell;
 }
 
-@keyframes flash-animation {
-    from { background: #007FFF }
-    to   { background: #ddd; }
-}
-
-@-webkit-keyframes flash-animation {
-    from { background: #007FFF}
-    to   { background: #ddd; }
+.d-table-cell.settings {
+    width: 36px;
 }
 
 .flash {
@@ -211,6 +215,33 @@ img.settings {
 
 .jqplot-grid-canvas {
   height: inherit;
+}
+
+.link-buttom a {
+    background-color: whitesmoke;
+    border: 1px solid darkgray;
+    border-radius: 20px;
+    color: darkgray;
+    font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
+    padding: 5px 20px 5px 20px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.link-buttom a:hover {
+    background-color: white;
+    color: black;
+    -moz-box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+    -webkit-box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.link-buttom a:active {
+    background-color: gainsboro;
+    color: black;
+    -moz-box-shadow: 0 2px 3px rgba(0, 0, 0, 0);
+    -webkit-box-shadow: 0 2px 3px rgba(0, 0, 0, 0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0);
 }
 
 .loading {
