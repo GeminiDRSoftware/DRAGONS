@@ -3,6 +3,8 @@ body {
   color: black;
   font: normal normal 16px Verdana, Geneva, Arial, Helvetica, sans-serif;
   padding: 10px;
+  max-width: 1040px;
+  margin: auto;
 }
 
 button.settings {
