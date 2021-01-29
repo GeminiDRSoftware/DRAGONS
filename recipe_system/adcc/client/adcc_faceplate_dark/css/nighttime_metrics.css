@@ -3,7 +3,8 @@ body {
     background-color: #272B30;
     color: #DEDEDE;
     font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
-    margin: 10px;
+    margin: auto;
+    max-width: 1040px;
     padding: 0;
 }
 
@@ -202,7 +203,7 @@ canvas.jqplot-xaxis-label {
  to zoom out*/
 div.jqplot-target div::selection, div.jqplot-target canvas::selection, div.jqplot-axis jqplot-yaxis canvas::selection, div.jqplot-axis jqplot-xaxis canvas::selection {
     background: rgba(0, 0, 0, 0);
-} 
+}
 div.jqplot-target div::-moz-selection, div.jqplot-target canvas::-moz-selection, div.jqplot-axis jqplot-yaxis canvas::-moz-selection, div.jqplot-axis jqplot-xaxis canvas::-moz-selection {
     background: rgba(0, 0, 0, 0);
 }
@@ -519,5 +520,3 @@ span.problem {
     border-radius: 7px;
     -webkit-box-shadow: inset 0 0 8px rgba(0,0,0,.5);
 }
-
-

@@ -2,96 +2,54 @@ body {
     background-color: #F2F2F2;
     color: black;
     font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
-    margin: 10px;
+    margin: auto;
+    max-width: 1040px;
     padding: 0;
 }
 
-#message_wrapper {
-    background-color: white;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    clear: both;
-    height: 30px;
-    padding: 0px;
-    width: 1024px;
-    position: relative;
-    padding-bottom: 20px;
+canvas.jqplot-xaxis-label {
+    left:auto!important;
+    right:0px!important;
 }
-#message_box {
-    height: 10px;
-    padding-left: 17px;
-    position: absolute;
-    top: 50%;
-    margin-top: -22px;
+
+/* Fix the highlighting on jqplots that happens when double-clicked
+   to zoom out*/
+div.jqplot-target div::selection, div.jqplot-target canvas::selection, div.jqplot-axis jqplot-yaxis canvas::selection, div.jqplot-axis jqplot-xaxis canvas::selection {
+    background: rgba(0, 0, 0, 0);
 }
-#message_target,#message_window {
+
+div.jqplot-target div::-moz-selection, div.jqplot-target canvas::-moz-selection, div.jqplot-axis jqplot-yaxis canvas::-moz-selection, div.jqplot-axis jqplot-xaxis canvas::-moz-selection {
+    background: rgba(0, 0, 0, 0);
+}
+/* ---- */
+div.label {
     float:left;
-}
-#problem_overlay {
-    -moz-box-shadow: 0 0 4px 4px #CE0000;
-    -webkit-box-shadow: 0 0 4px 4px #CE0000;
-    box-shadow: 0 0 4px 4px #CE0000;
-    display: none;
-    height: 50px;
-    width: 1024px;
-    padding: 0px;
-    z-index: 0;
-}
-#warning_overlay {
-    -moz-box-shadow: 0 0 4px 4px #FF9E00;
-    -webkit-box-shadow: 0 0 4px 4px #FF9E00;
-    box-shadow: 0 0 4px 4px #FF9E00;
-    display: none;
-    height: 50px;
-    width: 1024px;
-    padding: 0px;
-    z-index: 0;
-}
-
-#table_wrapper {
-    background-color: white;
-    border: 1px solid black;
-    border-top-right-radius: 6px;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    clear: both;
-    height: 340px;
-    overflow: hidden;
-    width: 1024px;
-}
-
-thead.fixed_header tr {
-    border-bottom: 1px solid black;
-}
-
-thead.fixed_header th {
-    padding: 2px 1px 2px 1px;
-    text-align: center;
 }
 
 tbody.scroll_body {
     background-color: white;
     border-bottom: 1px solid #B0B0B0;
 }
-
 tbody.scroll_body td {
     text-align: center;
     padding: 2px 1px 2px 1px;
 }
-
 tbody.scroll_body td.hover {
     background-color: #B0DBFF;
 }
 
-tfoot.fixed_footer tr {
-    position: relative;
+td.jqplot-series-hidden div.jqplot-table-legend-swatch {
+    opacity: 0.4;
+    filter:alpha(opacity=40);
 }
 
+td.ui-draggable-dragging {
+    background-color: #DDD;
+}
+
+tfoot.fixed_footer input.filter {
+    width: 150px;
+}
 tfoot.fixed_footer td.filter {
     position: absolute;
     height: 22px;
@@ -99,46 +57,21 @@ tfoot.fixed_footer td.filter {
     margin-top: -11px;
     right: 16px;
 }
-
 tfoot.fixed_footer td.filter_message {
     padding-left: 14px;
 }
-
-tfoot.fixed_footer input.filter {
-    width: 150px;
+tfoot.fixed_footer tr {
+    position: relative;
 }
 
-.no_input {
-    color: #707070;
-}
-
-#date_wrapper {
-    background-color: #D3EBFF;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-top: 1px solid black;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    padding: 4px;
+thead.fixed_header th {
+    padding: 2px 1px 2px 1px;
     text-align: center;
-    width: 180px;
+}
+thead.fixed_header tr {
+    border-bottom: 1px solid black;
 }
 
-.label {
-    font-weight: bold;
-}
-div.label {
-    float:left;
-}
-.highlight {
-    background-color: #86C7FF!important;
-}
-.even {
-    background-color: #D3EBFF;
-}
 th.ui-draggable {
     cursor: move;
 }
@@ -148,73 +81,59 @@ th.ui-draggable-dragging {
     opacity: 0.85;
     filter:alpha(opacity=85);
 }
-td.ui-draggable-dragging {
-    background-color: #DDD;
-}
 th.ui-droppable.hover {
     background-color: #B0DBFF;
 }
 
-#plot_wrapper {
-    background-color: white;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    clear: both;
-    height: 340px;
-    padding: 10px 0px 0px 0px;
-    width: 1024px;
+span.problem {
+    color: #CE0000;
+}
+span.warning {
+    color: #FF9E00;
 }
 
-#iqplot {
-    float: left;
-    margin: 10px;
-    width: 320px;
+.close_icon {
+    cursor: pointer;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-image: url(../images/close.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 12px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 12px;
 }
-#ccplot {
-    float: left;
-    margin: 10px;
-    width: 320px;
+.d-table {
+  display: table;
 }
-#bgplot {
-    float: left;
-    margin: 10px;
-    width: 320px;
+.d-table-cell {
+  display: table-cell;
 }
-
-
-.jqplot-title {
-    left:57px!important;
-    width:253px!important;
-    color: black;
+.even {
+    background-color: #D3EBFF;
 }
-canvas.jqplot-xaxis-label {
-    left:auto!important;
-    right:0px!important;
+.expand_icon {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: -8px;
+    margin-top: -5px;
+    background-image: url(../images/yellow_triangle_e.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 11px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 6px;
 }
-
-/* Fix the highlighting on jqplots that happens when double-clicked
- to zoom out*/
-div.jqplot-target div::selection, div.jqplot-target canvas::selection, div.jqplot-axis jqplot-yaxis canvas::selection, div.jqplot-axis jqplot-xaxis canvas::selection {
-    background: rgba(0, 0, 0, 0);
+.header {
+  margin: 0px;
+  line-height: 0.5;
 }
-div.jqplot-target div::-moz-selection, div.jqplot-target canvas::-moz-selection, div.jqplot-axis jqplot-yaxis canvas::-moz-selection, div.jqplot-axis jqplot-xaxis canvas::-moz-selection {
-    background: rgba(0, 0, 0, 0);
-}
-
-td.jqplot-series-hidden div.jqplot-table-legend-swatch {
-    opacity: 0.4;
-    filter:alpha(opacity=40);
-}
-
-.tooltip,.jqplot-highlighter-tooltip {
-    background-color: #FFFFD0!important;
-    border: 1px solid #B0B0B0!important;
-    padding: 2px!important;
-    z-index: 90;
+.highlight {
+    background-color: #86C7FF!important;
 }
 .jqplot-canvasOverlay-tooltip {
     border: 0px;
@@ -222,157 +141,28 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     background: rgba(256,256,256,0);
     padding: 0px;
 }
-
-#controls_wrapper {
-    background-color: #D3EBFF;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    -moz-box-shadow: 2px 2px 2px #888;
-    -webkit-box-shadow: 2px 2px 2px #888;
-    box-shadow: 2px 2px 2px #888;
-    clear: both;
-    height: 32px;
-    margin: 0px;
-    padding: 0px;
-    width: 1024px;
-    position: relative;
+.jqplot-title {
+    left:57px!important;
+    width:253px!important;
+    color: black;
 }
-#controls {
-    margin: 0px;
-    left: 0px;
-    padding: 0px;
-    position: absolute;
+.label {
+    font-weight: bold;
 }
-#controls li {
+.link-buttom a {
+    background-color: whitesmoke;
+    border: 1px solid darkgray;
+    border-radius: 20px;
+    color: darkgray;
+    font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
+    padding: 5px 20px 5px 20px;
+    text-decoration: none;
+    transition: all 0.5s;
+}
+.link-buttom a:hover {
     background-color: white;
-    border: 1px solid #888;
-    border-radius: 6px;
-    -moz-box-shadow: 1px 1px 1px #888;
-    -webkit-box-shadow: 1px 1px 1px #888;
-    box-shadow: 1px 1px 1px #888;
-    float: left;
-    list-style-type: none;
-    margin: 4px;
-    padding: 3px;
-    text-align: center;
-}
-#controls li.selected {
-    background-color: #B0DBFF;
-}
-#reset, #status {
-    cursor: pointer;
-}
-#help {
-    cursor: help;
-}
-
-#lightbox_background {
-    background-color: black;
-    display: none;
-    filter:alpha(opacity=70);
-    opacity: 0.7;
-    position: fixed;
-    left: 0px;
-    top: 0px;
-    min-width: 100%;
-    min-height: 100%;
-    z-index: 99;
-}
-#lightbox_window {
-    display: none;
-    background-color: white;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    margin-left: -250px;
-    margin-top: -150px;
-    height: 190px;
-    width: 400px;
-    padding: 10px 15px 10px 15px;
-    border: 1px solid black;
-    z-index: 100;
-    -moz-box-shadow: 3px 3px 3px black;
-    -webkit-box-shadow: 3px 3px 3px black;
-    box-shadow: 3px 3px 3px black;
-    border-radius: 6px;
-}
-#lightbox_window h2 {
-    color:#CE0000;
-}
-#lightbox_message {
-    height: 110px;
-    width: 100%;
-    overflow: auto;
-}
-
-#help_window {
-    background-color: #FFFFD0;
-    border: 1px solid black;
-    border-radius: 6px;
-    -moz-box-shadow: 3px 3px 3px #888;
-    -webkit-box-shadow: 3px 3px 3px #888;
-    box-shadow: 3px 3px 3px #888;
-    height: 200px;
-    left: 50%;
-    margin-left: -200px;
-    margin-top: -200px;
-    overflow: hidden;
-    padding: 0px;
-    position: absolute;
-    top: 50%;
-    width: 400px;
-    z-index: 98;
-}
-#accordion_wrapper {
-    height: 90%;
-    margin-bottom: 20px;
-    margin-top: 20px;
-    overflow-y: auto;
-    padding-left: 18px;
-    padding-right: 18px;
-}
-#accordion {
-    padding-left: 12px;
-}
-#accordion h3 {
-    position: relative;
-}
-
-span.warning {
-    color: #FF9E00;
-}
-span.problem {
-    color: #CE0000;
-}
-.outer {
-    position: relative;
-}
-.problem_icon {
-    position: absolute;
-    top: -2px;
-    right: -1px;
-    background-image: url(../images/red_triangle_ne.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 7px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 7px;
-}
-.warn_icon {
-    position: absolute;
-    top: -2px;
-    right: -1px;
-    background-image: url(../images/yellow_triangle_ne.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 7px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 7px;
+    color: black;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 .msg_problem_icon {
     position: absolute;
@@ -400,33 +190,24 @@ span.problem {
     text-indent: -99999px;
     width: 6px;
 }
-.swap_icon {
-    cursor: pointer;
+.no_input {
+    color: #707070;
+}
+.outer {
+    position: relative;
+}
+.problem_icon {
     position: absolute;
-    bottom: 0px;
-    background-image: url(../images/swap.png);
+    top: -2px;
+    right: -1px;
+    background-image: url(../images/red_triangle_ne.png);
     background-repeat: no-repeat;
     display: inline-block;
-    height: 9px;
+    height: 7px;
     overflow: hidden;
     text-indent: -99999px;
-    width: 11px;
+    width: 7px;
 }
-
-.close_icon {
-    cursor: pointer;
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background-image: url(../images/close.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 12px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 12px;
-}
-
 .search_icon {
     position: absolute;
     left: -12px;
@@ -440,35 +221,24 @@ span.problem {
     text-indent: -99999px;
     width: 10px;
 }
-.expand_icon {
+.swap_icon {
     cursor: pointer;
     position: absolute;
-    top: 50%;
-    left: -8px;
-    margin-top: -5px;
-    background-image: url(../images/yellow_triangle_e.png);
+    bottom: 0px;
+    background-image: url(../images/swap.png);
     background-repeat: no-repeat;
     display: inline-block;
-    height: 11px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 6px;
-}
-.unexpand_icon {
-    cursor: pointer;
-    position: absolute;
-    top: 50%;
-    left: -12px;
-    margin-top: -3px;
-    background-image: url(../images/yellow_triangle_s.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 6px;
+    height: 9px;
     overflow: hidden;
     text-indent: -99999px;
     width: 11px;
 }
-
+.stack_link {
+    color: #0000EE;
+}
+.stack_link:hover {
+    text-decoration: underline;
+}
 .stack_window {
     background-color: #FFFFD0;
     border: 1px solid black;
@@ -495,11 +265,252 @@ span.problem {
     padding-left: 18px;
     padding-right: 18px;
 }
-.stack_link {
-    color: #0000EE;
+.tar {
+  text-align: right;
 }
-.stack_link:hover {
-    text-decoration: underline;
+.tooltip,.jqplot-highlighter-tooltip {
+    background-color: #FFFFD0!important;
+    border: 1px solid #B0B0B0!important;
+    padding: 2px!important;
+    z-index: 90;
+}
+.unexpand_icon {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: -12px;
+    margin-top: -3px;
+    background-image: url(../images/yellow_triangle_s.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 6px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 11px;
+}
+.w-100 {
+  width: 100%;
+}
+.warn_icon {
+    position: absolute;
+    top: -2px;
+    right: -1px;
+    background-image: url(../images/yellow_triangle_ne.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 7px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 7px;
+}
+
+#accordion {
+    padding-left: 12px;
+}
+#accordion h3 {
+    position: relative;
+}
+#accordion_wrapper {
+    height: 90%;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    overflow-y: auto;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+#bgplot {
+    float: left;
+    margin: 10px;
+    width: 320px;
+}
+#ccplot {
+    float: left;
+    margin: 10px;
+    width: 320px;
+}
+#controls {
+    margin: 0px;
+    left: 0px;
+    padding: 0px;
+    position: absolute;
+}
+#controls li {
+    background-color: white;
+    border: 1px solid #888;
+    border-radius: 6px;
+    -moz-box-shadow: 1px 1px 1px #888;
+    -webkit-box-shadow: 1px 1px 1px #888;
+    box-shadow: 1px 1px 1px #888;
+    float: left;
+    list-style-type: none;
+    margin: 4px;
+    padding: 3px;
+    text-align: center;
+}
+#controls li.selected {
+    background-color: #B0DBFF;
+}
+#controls_wrapper {
+    background-color: #D3EBFF;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    -moz-box-shadow: 2px 2px 2px #888;
+    -webkit-box-shadow: 2px 2px 2px #888;
+    box-shadow: 2px 2px 2px #888;
+    clear: both;
+    height: 32px;
+    margin: 0px;
+    padding: 0px;
+    position: relative;
+}
+#date_wrapper {
+    background-color: #D3EBFF;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-top: 1px solid black;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    padding: 4px;
+    text-align: center;
+    width: 180px;
+}
+#help {
+    cursor: help;
+}
+#help_window {
+    background-color: #FFFFD0;
+    border: 1px solid black;
+    border-radius: 6px;
+    -moz-box-shadow: 3px 3px 3px #888;
+    -webkit-box-shadow: 3px 3px 3px #888;
+    box-shadow: 3px 3px 3px #888;
+    height: 200px;
+    left: 50%;
+    margin-left: -200px;
+    margin-top: -200px;
+    overflow: hidden;
+    padding: 0px;
+    position: absolute;
+    top: 50%;
+    width: 400px;
+    z-index: 98;
+}
+#iqplot {
+    float: left;
+    margin: 10px;
+    width: 320px;
+}
+#lightbox_background {
+    background-color: black;
+    display: none;
+    filter:alpha(opacity=70);
+    opacity: 0.7;
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: 99;
+}
+#lightbox_message {
+    height: 110px;
+    width: 100%;
+    overflow: auto;
+}
+#lightbox_window {
+    display: none;
+    background-color: white;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-left: -250px;
+    margin-top: -150px;
+    height: 190px;
+    width: 400px;
+    padding: 10px 15px 10px 15px;
+    border: 1px solid black;
+    z-index: 100;
+    -moz-box-shadow: 3px 3px 3px black;
+    -webkit-box-shadow: 3px 3px 3px black;
+    box-shadow: 3px 3px 3px black;
+    border-radius: 6px;
+}
+#lightbox_window h2 {
+    color:#CE0000;
+}
+#message_box {
+    height: 10px;
+    padding-left: 17px;
+    position: absolute;
+    top: 50%;
+    margin-top: -22px;
+}
+#message_target,#message_window {
+    float:left;
+}
+#message_wrapper {
+    background-color: white;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    clear: both;
+    height: 30px;
+    padding: 0px;
+    position: relative;
+    padding-bottom: 20px;
+}
+#plot_wrapper {
+    background-color: white;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    clear: both;
+    height: 340px;
+    padding: 10px 0px 0px 0px;
+}
+#problem_overlay {
+    -moz-box-shadow: 0 0 4px 4px #CE0000;
+    -webkit-box-shadow: 0 0 4px 4px #CE0000;
+    box-shadow: 0 0 4px 4px #CE0000;
+    display: none;
+    height: 50px;
+    padding: 0px;
+    z-index: 0;
+}
+#reset, #status {
+    cursor: pointer;
+}
+#table_wrapper {
+    background-color: white;
+    border: 1px solid black;
+    border-top-right-radius: 6px;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    clear: both;
+    height: 340px;
+    overflow: hidden;
+}
+#warning_overlay {
+    -moz-box-shadow: 0 0 4px 4px #FF9E00;
+    -webkit-box-shadow: 0 0 4px 4px #FF9E00;
+    box-shadow: 0 0 4px 4px #FF9E00;
+    display: none;
+    height: 50px;
+    padding: 0px;
+    z-index: 0;
 }
 
 /*Force visible scrollbar for Lion*/
@@ -515,5 +526,3 @@ span.problem {
     border-radius: 7px;
     -webkit-box-shadow: inset 0 0 8px rgba(0,0,0,.5);
 }
-
-
