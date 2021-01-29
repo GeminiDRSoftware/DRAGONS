@@ -1347,10 +1347,9 @@ class GIApertureLineView:
         end : float
             Visible end of x axis
         """
-        if self.start < start or self.end > end:
-            self.component.disabled = True
-        else:
-            self.component.disabled = False
+        disabled = self.start < start or self.end > end
+        for child in self.component.children:
+            child.disabled = disabled
             # self.slider.children[0].start = start
             # self.slider.children[0].end = end
 
