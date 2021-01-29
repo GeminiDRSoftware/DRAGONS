@@ -645,14 +645,10 @@ def hamburger_helper(title, widget):
     # TODO Hamburger icon
     button = Button(label=title, css_classes=['hamburger_helper',])
 
-    top = button
-
     def burger_action():
         if widget.visible:
-            # button.label = "HamburgerHamburgerHamburger"
             widget.visible = False
         else:
-            # button.label = "CheeseburgerCheeseburgerCheeseburger"
             widget.visible = True
             # try to force resizing, bokeh bug workaround
             if hasattr(widget, "children") and widget.children:
@@ -661,7 +657,7 @@ def hamburger_helper(title, widget):
                 widget.children.append(last_child)
 
     button.on_click(burger_action)
-    return column(top, widget)
+    return column(button, widget)
 
 
 class GIRegionListener(ABC):
@@ -1130,24 +1126,24 @@ class GIApertureModel(ABC):
         pass
 
 
-class GISingleApertureView:
-    def __init__(self, fig, aperture_id, location, start, end):
-        """
-        Create a visible glyph-set to show the existance
-        of an aperture on the given figure.  This display
-        will update as needed in response to panning/zooming.
+class GIAperturePlotView:
+    """
+    Create a visible glyph-set to show the existance
+    of an aperture on the given figure.  This display
+    will update as needed in response to panning/zooming.
 
-        Parameters
-        ----------
-        gifig : :class:`~bokeh.plotting.Figure`
-            Bokeh Figure to attach to
-        aperture_id : int
-            ID of the aperture (for displaying)
-        start : float
-            Start of the x-range for the aperture
-        end : float
-            End of the x-range for the aperture
-        """
+    Parameters
+    ----------
+    fig : :class:`~bokeh.plotting.Figure`
+        Bokeh Figure to attach to
+    aperture_id : int
+        ID of the aperture (for displaying)
+    start : float
+        Start of the x-range for the aperture
+    end : float
+        End of the x-range for the aperture
+    """
+    def __init__(self, fig, aperture_id, location, start, end):
         self.aperture_id = aperture_id
         self.box = None
         self.label = None
@@ -1159,8 +1155,10 @@ class GISingleApertureView:
         self.line = None
         self.location = None
         self.fig = None
+
         if fig.document:
-            fig.document.add_next_tick_callback(lambda: self.build_ui(fig, aperture_id, location, start, end))
+            fig.document.add_next_tick_callback(
+                lambda: self.build_ui(fig, aperture_id, location, start, end))
         else:
             self.build_ui(fig, aperture_id, location, start, end)
 
@@ -1193,22 +1191,27 @@ class GISingleApertureView:
             ytop = ymid + 0.05*(ymax-ymin)
             ybottom = ymid - 0.05*(ymax-ymin)
         else:
-            ymin=0
-            ymax=0
-            ymid=0
-            ytop=0
-            ybottom=0
-        self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
+            ymin = 0
+            ymax = 0
+            ymid = 0
+            ytop = 0
+            ybottom = 0
+
+        self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1,
+                                 fill_color='green')
         fig.add_layout(self.box)
+
         self.label = Label(x=location+2, y=ymid, text="%s" % aperture_id)
         fig.add_layout(self.label)
+
         self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
         self.left = fig.line(x='x', y='y', source=self.left_source, color="purple")
         self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
         self.right = fig.line(x='x', y='y', source=self.right_source, color="purple")
         self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
         self.line = fig.line(x='x', y='y', source=self.line_source, color="purple")
-        self.location = Span(location=location, dimension='height', line_color='green', line_dash='dashed',
+        self.location = Span(location=location, dimension='height',
+                             line_color='green', line_dash='dashed',
                              line_width=1)
         fig.add_layout(self.location)
 
@@ -1264,15 +1267,13 @@ class GISingleApertureView:
         self.label.x = location+2
 
     def delete(self):
-        """
-        Delete this aperture from it's view.
-        """
+        """Delete this aperture from it's view."""
         self.fig.renderers.remove(self.line)
         self.fig.renderers.remove(self.left)
         self.fig.renderers.remove(self.right)
         # TODO removing causes problems, because bokeh, sigh
-        # TODO could create a list of disabled labels/boxes to reuse instead of making new ones
-        #  (if we have one to recycle)
+        # TODO could create a list of disabled labels/boxes to reuse instead
+        # of making new ones (if we have one to recycle)
         self.label.text = ""
         self.box.fill_alpha = 0.0
         self.location.visible=False
@@ -1361,23 +1362,25 @@ class GIApertureView:
     This class manages a set of colored regions on a figure to
     show where the defined apertures are, along with a numeric
     ID for each.
+
+    Parameters
+    ----------
+    model : :class:`~geminidr.interactive.interactive.GIApertureModel`
+        Model for tracking the apertures, may be shared across multiple views
+    fig : :class:`~bokeh.plotting.Figure`
+        bokeh plot for displaying the regions
+
     """
     def __init__(self, model, fig):
-        """
-
-        Parameters
-        ----------
-        model : :class:`~geminidr.interactive.interactive.GIApertureModel`
-            Model for tracking the apertures, may be shared across multiple views
-        fig : :class:`~bokeh.plotting.Figure`
-            bokeh plot for displaying the regions
-        """
-        self.aps = list()
-        self.ap_sliders = list()
+        # The list of GIAperturePlotView widget (aperture plots)
+        self.aperture_plots = []
+        # The list of GIApertureLineView widget (text inputs)
+        self.aperture_lines = []
 
         self.fig = fig
-        self.controls = column()
-        self.controls.height_policy = "auto"
+
+        # The hamburger menu, which needs to have access to the aperture line
+        # widgets (inner_controls)
         self.inner_controls = column()
         self.inner_controls.height_policy = "auto"
         self.controls = hamburger_helper("Apertures", self.inner_controls)
@@ -1391,74 +1394,68 @@ class GIApertureView:
         # listen here because ap sliders can come and go, and we don't have to
         # convince the figure to release those references since it just ties to
         # this top-level container
-        fig.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
-        fig.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
+        fig.x_range.on_change('start', lambda attr, old, new:
+                              self.update_viewport(new, self.view_end))
+        fig.x_range.on_change('end', lambda attr, old, new:
+                              self.update_viewport(self.view_start, new))
 
     def update_viewport(self, start, end):
-        """
-        Handle a change in the view.
-        We will adjust the slider ranges and/or disable them.
-        """
+        """Handle a change in the view to enable/disable aperture lines."""
         # Bokeh docs provide no indication of the datatype or orientation of
         # the start/end tuples, so I have left the doc blank for now
         self.view_start = start
         self.view_end = end
-        for ap_slider in self.ap_sliders:
-            ap_slider.update_viewport(start, end)
+        for apline in self.aperture_lines:
+            apline.update_viewport(start, end)
 
     def handle_aperture(self, aperture_id, location, start, end):
-        """
-        Handle an updated or added aperture.
-
-        We either update an existing aperture if we recognize the `aperture_id`
-        or we create a new one.
+        """Handle an updated or added aperture.
 
         Parameters
         ----------
         aperture_id : int
             ID of the aperture to update or create in the view
-        start : float
-            Start of the aperture in x coordinates
-        end : float
-            End of the aperture in x coordinates
+        location, start, end : float
+            Location, start and end of the aperture in x coordinates
 
         """
-        if aperture_id <= len(self.aps):
-            ap = self.aps[aperture_id-1]
+        if aperture_id <= len(self.aperture_plots):
+            ap = self.aperture_plots[aperture_id-1]
             ap.update(location, start, end)
         else:
-            ap = GISingleApertureView(self.fig, aperture_id, location,
-                                      start, end)
-            self.aps.append(ap)
+            ap = GIAperturePlotView(self.fig, aperture_id, location,
+                                    start, end)
+            self.aperture_plots.append(ap)
 
-            slider = GIApertureLineView(self.model, aperture_id, location,
+            apline = GIApertureLineView(self.model, aperture_id, location,
                                         start, end)
-            self.ap_sliders.append(slider)
+            self.aperture_lines.append(apline)
 
-            self.inner_controls.children.append(slider.component)
+            self.inner_controls.children.append(apline.component)
 
     def delete_aperture(self, aperture_id):
-        """
-        Remove an aperture by ID.  If the ID is not recognized, do nothing.
+        """Remove an aperture by ID. If the ID is not recognized, do nothing.
 
         Parameters
         ----------
         aperture_id : int
             ID of the aperture to remove
         """
-        if aperture_id <= len(self.aps):
-            ap = self.aps[aperture_id-1]
-            ap.delete()
-            self.inner_controls.children.remove(self.ap_sliders[aperture_id-1].component)
-            del self.aps[aperture_id-1]
-            del self.ap_sliders[aperture_id-1]
-        for ap in self.aps[aperture_id-1:]:
-            ap.aperture_id = ap.aperture_id-1
+        idx = aperture_id-1
+        if aperture_id <= len(self.aperture_plots):
+            self.aperture_plots[idx].delete()
+            self.inner_controls.children.remove(
+                self.aperture_lines[idx].component)
+            del self.aperture_plots[idx]
+            del self.aperture_lines[idx]
+
+        for ap in self.aperture_plots[idx:]:
+            ap.aperture_id -= 1
             ap.label.text = "%s" % ap.aperture_id
-        for ap_slider in self.ap_sliders[aperture_id-1:]:
-            ap_slider.aperture_id = ap_slider.aperture_id-1
-            ap_slider.update_title()
-            # ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id
+
+        for ap in self.aperture_lines[idx:]:
+            ap.aperture_id -= 1
+            ap.update_title()
 
 
 class RegionEditor(GIRegionListener):
