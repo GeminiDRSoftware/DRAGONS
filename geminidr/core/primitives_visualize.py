@@ -558,12 +558,16 @@ class Visualize(PrimitivesBASE):
                 w_dispersion = np.abs(wavelength[-1] - wavelength[0]) / (data.size - 1)
                 w_units = str(ext.wcs.output_frame.unit[0])
 
-                # Clean up bad data
-                mask = np.logical_not(np.ma.masked_invalid(data).mask)
+                # Create mask for bad data
+                mask = np.ma.masked_array(
+                    np.zeros_like(wavelength),
+                    mask=np.logical_or(
+                        ext.mask > 0, np.ma.masked_invalid(data).mask))
 
-                wavelength = wavelength[mask]
-                data = data[mask].astype(float)
-                stddev = stddev[mask].astype(float)
+                # Retrieve unmasked clump slices
+                _slices = [
+                    [int(s.start), int(s.stop)]
+                    for s in np.ma.clump_unmasked(mask)]
 
                 # Round and convert data/stddev to int to minimize data transfer load
                 wavelength = np.round(wavelength, decimals=3)
@@ -591,6 +595,7 @@ class Visualize(PrimitivesBASE):
                     "id": np.round(center + offset),
                     "intensity": _intensity,
                     "intensity_units": _units,
+                    "slices": _slices,
                     "stddev": _stddev,
                 }
 
