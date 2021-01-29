@@ -152,19 +152,20 @@ class FindSourceAperturesModel(GIApertureModel):
         and N limits.
 
         """
-        self.locations, self.all_limits, self.profile = find_apertures(
+        locations, self.all_limits, self.profile = find_apertures(
             self.ext, **self.aper_params)
+        self.locations = list(locations)
 
         for listener in self.listeners:
-            for i, loclim in enumerate(zip(self.locations, self.all_limits)):
-                loc = loclim[0]
-                lim = loclim[1]
-                listener.handle_aperture(i+1, loc, lim[0], lim[1])
+            for i, (loc, limits) in enumerate(
+                    zip(self.locations, self.all_limits), start=1):
+                listener.handle_aperture(i, loc, limits[0], limits[1])
 
     def add_aperture(self, location, start, end):
         aperture_id = len(self.locations)+1
-        np.append(self.locations, location)
-        np.append(self.all_limits, (start, end))
+        self.locations.append(location)
+        self.all_limits.append((start, end))
+
         for listener in self.listeners:
             listener.handle_aperture(aperture_id, location, start, end)
         return aperture_id
@@ -189,7 +190,7 @@ class FindSourceAperturesModel(GIApertureModel):
         if location < start or location > end:
             raise ValueError("Location of aperture must be between start and end")
         self.locations[aperture_id-1] = location
-        self.all_limits[aperture_id-1] = [start, end]
+        self.all_limits[aperture_id-1] = (start, end)
         for listener in self.listeners:
             listener.handle_aperture(aperture_id, location, start, end)
 
@@ -202,15 +203,14 @@ class FindSourceAperturesModel(GIApertureModel):
         aperture_id : int
             Aperture id to delete
         """
-        np.delete(self.locations, aperture_id-1)
-        np.delete(self.all_limits, aperture_id-1)
+        del self.locations[aperture_id-1]
+        del self.all_limits[aperture_id-1]
+
         for listener in self.listeners:
             listener.delete_aperture(aperture_id)
 
     def clear_apertures(self):
-        """
-        Remove all apertures, calling delete on the listeners for each.
-        """
+        """Remove all apertures, calling delete on the listeners for each."""
         for iap in range(len(self.locations), 1, -1):
             for listener in self.listeners:
                 listener.delete_aperture(iap)
@@ -357,44 +357,9 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         doc.add_root(layout)
 
     def handle_aperture(self, aperture_id, location, start, end):
-        """
-        Handle updated aperture information.
-
-        This is called when a given aperture has a change
-        to it's start and end location.  The model is
-        updated and then the text describing the apertures
-        is updated
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to add/update
-        location : float
-            new location of aperture
-        start : float
-            new start of aperture
-        end : float
-            new end of aperture
-        """
-        if aperture_id == len(self.model.locations)+1:
-            self.model.locations = np.append(self.model.locations, location)
-            self.model.all_limits.append((start, end))
-        else:
-            self.model.locations[aperture_id-1] = location
-            self.model.all_limits[aperture_id-1] = (start, end)
         self.update_details()
 
     def delete_aperture(self, aperture_id):
-        """
-        Delete an aperture by ID
-
-        Parameters
-        ----------
-        aperture_id : int
-            `int` id of the aperture to delete
-        """
-        self.model.locations = np.delete(self.model.locations, aperture_id-1)
-        del self.model.all_limits[aperture_id-1]
         self.update_details()
 
     def update_details(self):
