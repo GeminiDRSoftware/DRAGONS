@@ -398,18 +398,13 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.update_details()
 
     def update_details(self):
-        """
-        Update the details text area with the latest aperture data.
-
-        """
+        """Update the details text area with the latest aperture data."""
         text = ""
-        for loc, limits in zip(self.model.locations, self.model.all_limits):
-            text = text + """
-                <b>Location:</b> %s<br/>
-                <b>Lower Limit:</b> %s<br/>
-                <b>Upper Limit:</b> %s<br/>
-                <br/>
-            """ % (loc, limits[0], limits[1])
+        for i, (loc, limits) in enumerate(
+                zip(self.model.locations, self.model.all_limits), start=1):
+            text += (f"Aperture #{i}\t <b>Location:</b> {loc:.2f}"
+                     f" <b>Lower Limit:</b> {limits[0]:.2f}"
+                     f" <b>Upper Limit:</b> {limits[1]:.2f}<br/>")
         self.details.text = text
 
     def result(self):
