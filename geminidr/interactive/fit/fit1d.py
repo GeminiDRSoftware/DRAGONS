@@ -317,28 +317,28 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.lsigma = self.hsigma = float(value)
 
-    @property
-    def order(self):
-        """
-        Maps the order attribute to the underlying model
-
-        Returns
-        -------
-        int : order value from model
-        """
-        return self.model.order
-
-    @order.setter
-    def order(self, value):
-        """
-        Maps sets to the order attribute to the contained model
-
-        Parameters
-        ----------
-        value : int
-            new vlaue for order
-        """
-        self.model.order = value
+    # @property
+    # def order(self):
+    #     """
+    #     Maps the order attribute to the underlying model
+    #
+    #     Returns
+    #     -------
+    #     int : order value from model
+    #     """
+    #     return self.model.order
+    #
+    # @order.setter
+    # def order(self, value):
+    #     """
+    #     Maps sets to the order attribute to the contained model
+    #
+    #     Parameters
+    #     ----------
+    #     value : int
+    #         new vlaue for order
+    #     """
+    #     self.model.order = value
 
     @property
     def domain(self):
@@ -398,31 +398,31 @@ class InteractiveFit1D:
     def set_function(self, fn):
         self.fitting_parameters["function"] = fn
 
-    @property
-    def order(self):
-        """
-        Get the order of the fitter.
-
-        Returns
-        -------
-        int : `order` of the model we are wrapping
-        """
-        return self.fitting_parameters["order"]
-
-    @order.setter
-    def order(self, order):
-        """
-        Set the order in this fitter.
-
-        This sets the order, cleaning it if necessary into an `int`.  It also
-        recreates the model in the same type as it currently is.
-
-        Parameters
-        ----------
-        order : int
-            order to use in the fit
-        """
-        self.fitting_parameters["order"] = int(order)  # fix if TextInput
+    # @property
+    # def order(self):
+    #     """
+    #     Get the order of the fitter.
+    #
+    #     Returns
+    #     -------
+    #     int : `order` of the model we are wrapping
+    #     """
+    #     return self.fitting_parameters["order"]
+    #
+    # @order.setter
+    # def order(self, order):
+    #     """
+    #     Set the order in this fitter.
+    #
+    #     This sets the order, cleaning it if necessary into an `int`.  It also
+    #     recreates the model in the same type as it currently is.
+    #
+    #     Parameters
+    #     ----------
+    #     order : int
+    #         order to use in the fit
+    #     """
+    #     self.fitting_parameters["order"] = int(order)  # fix if TextInput
 
     @property
     def regions(self):
@@ -431,7 +431,7 @@ class InteractiveFit1D:
 
         Returns
         -------
-        int : `order` of the model we are wrapping
+        tuple of tuples : `regions` of the model we are wrapping
         """
         return self.fitting_parameters["regions"]
 
@@ -444,7 +444,7 @@ class InteractiveFit1D:
 
         Parameters
         ----------
-        regions : str
+        regions : tuple of tuples
             regions to use in the fit
         """
         self.fitting_parameters["regions"] = regions
@@ -486,8 +486,8 @@ class FittingParametersUI:
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        self.order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
-                                                          fit, "order", fit.perform_fit, throttled=True)
+        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], 1, min_order, max_order,
+                                                          fitting_parameters, "order", fit.perform_fit, throttled=True)
         self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
                                                                 0.01, 1, 10,
                                                                 fitting_parameters, "sigma_upper",
