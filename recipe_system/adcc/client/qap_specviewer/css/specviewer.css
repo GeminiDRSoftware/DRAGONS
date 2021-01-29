@@ -12,7 +12,9 @@ body {
   background-color: #F2F2F2;
   color: black;
   font: normal normal 16px Verdana, Geneva, Arial, Helvetica, sans-serif;
-  padding: 10px;
+  max-width: 1040px;
+  margin: auto;
+  padding: 10px;  
 }
 
 button.settings {
@@ -227,6 +229,12 @@ img.settings {
 }
 
 .link-buttom a:hover {
+    background-color: white;
+    color: black;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.link-buttom a:active {
     background-color: white;
     color: black;
     box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
