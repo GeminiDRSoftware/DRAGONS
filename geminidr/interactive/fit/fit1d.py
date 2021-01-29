@@ -1019,10 +1019,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
-        layout = column(self.submit_button,
-                        row(column(self.reinit_panel,
-                                   ), col),
-                        sizing_mode="stretch_width")
+        if len(self.reinit_panel.children) <= 1:
+            layout = column(self.submit_button, row(self.reinit_panel), col, sizing_mode="stretch_width")
+        else:
+            layout = column(self.submit_button,
+                            row(column(self.reinit_panel,
+                                       ), col),
+                            sizing_mode="stretch_width")
         doc.add_root(layout)
 
     def reconstruct_points(self):
