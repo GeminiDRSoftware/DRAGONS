@@ -1516,11 +1516,15 @@ class RegionEditor(GIRegionListener):
 class OKCancelDialog(object):
     def __init__(self):
         self.message = Div(text="placeholder")
-        self.ok = Button(label="OK", width_policy="min")
-        self.cancel = Button(label="Cancel", width_policy="min")
-        self.layout = column(self.message, row(self.ok, self.cancel), name="ok_cancel_dialog",
-                             css_classes=['ok_cancel_dialog'],)
+        self.ok = Button(label="OK", width_policy="min", align='center', button_type='success')
+        self.cancel = Button(label="Cancel", width_policy="min", align='center', button_type='danger')
+        self.layout = column(column(self.message, row(self.ok, self.cancel, align='center'),
+                                    css_classes=['ok_cancel_dialog']),
+                             name="ok_cancel_dialog",
+                             css_classes=['ok_cancel_dialog_screen'],)
         self.layout.visible = False
+        js_hide_callback = CustomJS(code="""$('#main_div').toggle();""")
+        self.layout.js_on_change('visible', js_hide_callback)
         self.callback = None
         self.ok.on_click(self.ok_callback)
         self.cancel.on_click(self.cancel_callback)

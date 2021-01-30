@@ -121,17 +121,39 @@ body {
 }
 
 .ok_cancel_dialog {
-    position: absolute !important;
-    height: 100% !important;
+    position: relative !important;
+    margin: auto !important;
+}
+
+.ok_cancel_dialog_screen {
     width: 100% !important;
+}
+/* saving in case I want to go through this hell again
+.ok_cancel_dialog {
+    position: relative !important;
+    height: 400px !important;
+    width: 400px !important;
+    z-index: 200 !important;
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    margin: auto;
-    background-color: #8888aa88;
-    z-index: 20 !important;
+    background-color: white;
     text-align: center;
     font-size: 32px;
     font-family: sans-serif;
-    padding-top: 300px;
+    overflow: visible !important;
 }
+
+.ok_cancel_dialog_screen {
+    position: fixed !important;
+    height: 100% !important;
+    width: 100% !important;
+    z-index: 20 !important;
+    background-color: #8888aa88;
+    text-align: center;
+    font-size: 32px;
+    font-family: sans-serif;
+    overflow: visible !important;
+}
+*/

@@ -529,7 +529,7 @@ class FittingParametersUI:
 
     def reset_ui(self):
         # hide main UI and show dialog
-        self.vis.layout.visible = False
+        # self.vis.layout.visible = False
         self.vis.ok_cancel_dialog('Reset will change all inputs for this tab back to their original values.  Proceed?',
                                   self._reset_ui_callback)
 
