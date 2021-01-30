@@ -480,7 +480,8 @@ class InteractiveFit1D:
 
 
 class FittingParametersUI:
-    def __init__(self, fit, fitting_parameters, min_order, max_order):
+    def __init__(self, vis, fit, fitting_parameters, min_order, max_order):
+        self.vis = vis
         self.fit = fit
         self.saved_sigma_clip = self.fit.sigma_clip
         self.fitting_parameters = fitting_parameters
@@ -511,18 +512,26 @@ class FittingParametersUI:
         self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
                                 self.niter_slider, self.grow_slider]
 
+    def _reset_ui_callback(self, ok_cancel):
+        self.vis.layout.visible = True
+        if ok_cancel:
+            self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
+            for slider, key in [(self.order_slider, "order"),
+                                (self.sigma_upper_slider, "sigma_upper"),
+                                (self.sigma_lower_slider, "sigma_lower"),
+                                (self.niter_slider, "niter"),
+                                (self.grow_slider, "grow")
+                                ]:
+                slider.children[0].value = self.fitting_parameters[key]
+                slider.children[1].value = str(self.fitting_parameters[key])
+            self.sigma_button.active = [0] if self.saved_sigma_clip else []
+            self.fit.perform_fit()
+
     def reset_ui(self):
-        self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
-        for slider, key in [(self.order_slider, "order"),
-                            (self.sigma_upper_slider, "sigma_upper"),
-                            (self.sigma_lower_slider, "sigma_lower"),
-                            (self.niter_slider, "niter"),
-                            (self.grow_slider, "grow")
-                            ]:
-            slider.children[0].value = self.fitting_parameters[key]
-            slider.children[1].value = str(self.fitting_parameters[key])
-        self.sigma_button.active = [0] if self.saved_sigma_clip else []
-        self.fit.perform_fit()
+        # hide main UI and show dialog
+        self.vis.layout.visible = False
+        self.vis.ok_cancel_dialog('Reset will change all inputs for this tab back to their original values.  Proceed?',
+                                  self._reset_ui_callback)
 
     def get_bokeh_components(self):
         return self.controls_column
@@ -616,7 +625,8 @@ class Fit1DPanel:
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
 
         fit = self.fit
-        self.fitting_parameters_ui = FittingParametersUI(fit, self.fitting_parameters, min_order, max_order)
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters,
+                                                         min_order, max_order)
 
         controls_ls = list()
 
@@ -892,6 +902,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             Title for UI (Interactive <Title>)
         """
         super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info)
+        self.layout = None
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -1032,12 +1043,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
         if len(self.reinit_panel.children) <= 1:
-            layout = column(self.submit_button, row(self.reinit_panel), col, sizing_mode="stretch_width")
+            layout = column(self.submit_button, row(self.reinit_panel), col, sizing_mode="stretch_width", name='main')
         else:
             layout = column(self.submit_button,
                             row(column(self.reinit_panel,
                                        ), col),
-                            sizing_mode="stretch_width")
+                            sizing_mode="stretch_width", name='main')
+        self.layout = layout
         doc.add_root(layout)
 
     def reconstruct_points(self):

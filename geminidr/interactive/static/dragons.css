@@ -119,3 +119,19 @@ body {
     border: none;
     text-align: left;
 }
+
+.ok_cancel_dialog {
+    position: absolute !important;
+    height: 100% !important;
+    width: 100% !important;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    background-color: #8888aa88;
+    z-index: 20 !important;
+    text-align: center;
+    font-size: 32px;
+    font-family: sans-serif;
+    padding-top: 300px;
+}

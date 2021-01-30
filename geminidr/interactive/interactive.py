@@ -3,7 +3,7 @@ from copy import copy
 
 from bokeh.layouts import row, column
 from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, \
-    Dropdown, RangeSlider, Span, NumeralTickFormatter
+    Dropdown, RangeSlider, Span, NumeralTickFormatter, Div
 
 from geminidr.interactive import server
 from gempy.library.astrotools import cartesian_regions_to_slices
@@ -39,7 +39,11 @@ class PrimitiveVisualizer(ABC):
             window.close();
         """)
         self.submit_button.js_on_click(callback)
+        self._ok_cancel_dlg = OKCancelDialog()
         self.doc = None
+
+    def ok_cancel_dialog(self, message, callback):
+        self._ok_cancel_dlg.show_dialog(message, callback)
 
     def submit_button_handler(self, stuff):
         """
@@ -76,6 +80,9 @@ class PrimitiveVisualizer(ABC):
         """
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
+
+        doc.add_root(self._ok_cancel_dlg.layout)
+        # Add an OK/Cancel dialog we can tap into later
 
     def do_later(self, fn):
         """
@@ -1504,3 +1511,31 @@ class RegionEditor(GIRegionListener):
 
     def get_widget(self):
         return self.text_input
+
+
+class OKCancelDialog(object):
+    def __init__(self):
+        self.message = Div(text="placeholder")
+        self.ok = Button(label="OK", width_policy="min")
+        self.cancel = Button(label="Cancel", width_policy="min")
+        self.layout = column(self.message, row(self.ok, self.cancel), name="ok_cancel_dialog",
+                             css_classes=['ok_cancel_dialog'],)
+        self.layout.visible = False
+        self.callback = None
+        self.ok.on_click(self.ok_callback)
+        self.cancel.on_click(self.cancel_callback)
+
+    def ok_callback(self):
+        self.layout.visible = False
+        if self.callback:
+            self.callback(True)
+
+    def cancel_callback(self):
+        self.layout.visible = False
+        if self.callback:
+            self.callback(False)
+
+    def show_dialog(self, message, callback):
+        self.callback = callback
+        self.message.text = message
+        self.layout.visible = True
