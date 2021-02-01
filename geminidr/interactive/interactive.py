@@ -3,8 +3,8 @@ from copy import copy
 
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, ColumnDataSource, CustomJS,
-                          Div, Dropdown, Label, NumeralTickFormatter,
-                          RangeSlider, Slider, Span, Spinner, TextInput)
+                          Div, Dropdown, LabelSet, NumeralTickFormatter,
+                          RangeSlider, Span, Spinner, TextInput, Whisker)
 
 from geminidr.interactive import server
 from gempy.library.astrotools import cartesian_regions_to_slices
@@ -1145,24 +1145,34 @@ class GIAperturePlotView:
     """
     def __init__(self, fig, aperture_id, location, start, end):
         self.aperture_id = aperture_id
-        self.box = None
-        self.label = None
-        self.left_source = None
-        self.left = None
-        self.right_source = None
-        self.right = None
-        self.line_source = None
-        self.line = None
-        self.location = None
-        self.fig = None
+
+        self.source = ColumnDataSource({
+            'id': [str(aperture_id)],
+            'end': [end],
+            'location': [location],
+            'start': [start],
+            'whisker_y': [0],
+        })
 
         if fig.document:
             fig.document.add_next_tick_callback(
-                lambda: self.build_ui(fig, aperture_id, location, start, end))
+                lambda: self.build_ui(fig))
         else:
-            self.build_ui(fig, aperture_id, location, start, end)
+            self.build_ui(fig)
 
-    def build_ui(self, fig, aperture_id, location, start, end):
+    def compute_ymid(self, fig):
+        if fig.y_range.start is not None and fig.y_range.end is not None:
+            ymin = fig.y_range.start
+            ymax = fig.y_range.end
+            return (ymax - ymin)*.8 + ymin
+        else:
+            return 0
+
+    def update_id(self, aperture_id):
+        self.aperture_id = aperture_id
+        self.source.data['id'] = [aperture_id]
+
+    def build_ui(self, fig):
         """
         Build the view in the figure.
 
@@ -1174,58 +1184,41 @@ class GIAperturePlotView:
         ----------
         fig : :class:`~bokeh.plotting.Figure`
             bokeh figure to attach glyphs to
-        aperture_id : int
-            ID of this aperture, displayed
-        location : float
-            Location of the aperture
-        start : float
-            Start of x-range of aperture
-        end : float
-            End of x-range of aperture
 
         """
-        if fig.y_range.start is not None and fig.y_range.end is not None:
-            ymin = fig.y_range.start
-            ymax = fig.y_range.end
-            ymid = (ymax-ymin)*.8+ymin
-            ytop = ymid + 0.05*(ymax-ymin)
-            ybottom = ymid - 0.05*(ymax-ymin)
-        else:
-            ymin = 0
-            ymax = 0
-            ymid = 0
-            ytop = 0
-            ybottom = 0
+        ymid = self.compute_ymid(fig)
 
-        self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1,
+        self.box = BoxAnnotation(left=self.source.data['start'][0],
+                                 right=self.source.data['end'][0],
+                                 fill_alpha=0.1,
                                  fill_color='green')
         fig.add_layout(self.box)
 
-        self.label = Label(x=location+2, y=ymid, text="%s" % aperture_id)
+        self.label = LabelSet(source=self.source, x="location", y=ymid,
+                              y_offset=2, text="id")
         fig.add_layout(self.label)
 
-        self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
-        self.left = fig.line(x='x', y='y', source=self.left_source, color="purple")
+        self.whisker = Whisker(source=self.source, base="whisker_y",
+                               lower="start", upper="end", dimension='width',
+                               line_color="purple")
+        fig.add_layout(self.whisker)
 
-        self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
-        self.right = fig.line(x='x', y='y', source=self.right_source, color="purple")
-
-        self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
-        self.line = fig.line(x='x', y='y', source=self.line_source, color="purple")
-
-        self.location = Span(location=location, dimension='height',
-                             line_color='green', line_dash='dashed',
-                             line_width=1)
+        self.location = Span(location=self.source.data['location'][0],
+                             dimension='height', line_color='green',
+                             line_dash='dashed', line_width=1)
         fig.add_layout(self.location)
 
         self.fig = fig
 
-        fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
-        fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
+        fig.y_range.on_change(
+            'start', lambda attr, old, new: self.update_viewport())
+        fig.y_range.on_change(
+            'end', lambda attr, old, new: self.update_viewport())
 
-        # feels like I need this to convince the aperture lines to update on zoom
-        fig.y_range.js_on_change('end', CustomJS(args=dict(plot=fig),
-                                                 code="plot.properties.renderers.change.emit()"))
+        # convince the aperture lines to update on zoom
+        fig.y_range.js_on_change(
+            'end', CustomJS(args=dict(plot=fig),
+                            code="plot.properties.renderers.change.emit()"))
 
     def update_viewport(self):
         """
@@ -1237,16 +1230,10 @@ class GIAperturePlotView:
         Y axis.
 
         """
-        if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
-            ymin = self.fig.y_range.start
-            ymax = self.fig.y_range.end
-            ymid = (ymax-ymin)*.8+ymin
-            ytop = ymid + 0.05*(ymax-ymin)
-            ybottom = ymid - 0.05*(ymax-ymin)
-            self.left_source.data = {'x': self.left_source.data['x'], 'y': [ybottom, ytop]}
-            self.right_source.data = {'x': self.right_source.data['x'], 'y': [ybottom, ytop]}
-            self.line_source.data = {'x':  self.line_source.data['x'], 'y': [ymid, ymid]}
+        ymid = self.compute_ymid(self.fig)
+        if ymid:
             self.label.y = ymid
+            self.source.data['whisker_y'] = [ymid]
 
     def update(self, location, start, end):
         """
@@ -1264,23 +1251,21 @@ class GIAperturePlotView:
         """
         self.box.left = start
         self.box.right = end
-        self.left_source.data = {'x': [start, start], 'y': self.left_source.data['y']}
-        self.right_source.data = {'x': [end, end], 'y': self.right_source.data['y']}
-        self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
+        self.source.data['start'] = [start]
+        self.source.data['end'] = [end]
+        self.source.data['location'] = [location]
         self.location.location = location
-        self.label.x = location+2
+        # self.label.x = location+2
 
     def delete(self):
         """Delete this aperture from it's view."""
-        self.fig.renderers.remove(self.line)
-        self.fig.renderers.remove(self.left)
-        self.fig.renderers.remove(self.right)
         # TODO removing causes problems, because bokeh, sigh
         # TODO could create a list of disabled labels/boxes to reuse instead
         # of making new ones (if we have one to recycle)
         self.label.visible = False
         self.box.visible = False
         self.location.visible = False
+        self.whisker.visible = False
 
 
 class GIApertureLineView:
@@ -1453,8 +1438,7 @@ class GIApertureView:
             del self.aperture_lines[idx]
 
         for ap in self.aperture_plots[idx:]:
-            ap.aperture_id -= 1
-            ap.label.text = "%s" % ap.aperture_id
+            ap.update_id(ap.aperture_id - 1)
 
         for ap in self.aperture_lines[idx:]:
             ap.aperture_id -= 1

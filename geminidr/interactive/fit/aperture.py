@@ -1,7 +1,7 @@
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import (Button, CheckboxGroup, Div, Select, Slider, Spacer,
-                          Spinner, TextInput)
+from bokeh.models import (Button, CheckboxGroup, Div, Range1d, Select, Slider,
+                          Spacer, Spinner, TextInput)
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive, server
@@ -294,22 +294,22 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                    attr="sizing_method")
 
         # Create a blank figure with labels
-        self.fig = figure(
+        self.fig = fig = figure(
             # plot_width=600,
             plot_height=500,
             title='Source Apertures',
             tools="pan,wheel_zoom,box_zoom,reset",
             x_range=(0, self.model.profile.shape[0])
         )
-        self.fig.height_policy = 'fixed'
-        self.fig.width_policy = 'fit'
+        fig.height_policy = 'fixed'
+        fig.width_policy = 'fit'
 
-        aperture_view = GIApertureView(self.model, self.fig)
+        aperture_view = GIApertureView(self.model, fig)
         self.model.add_listener(self)
 
-        self.fig.step(x=range(self.model.profile.shape[0]),
-                      y=self.model.profile,
-                      color="black", mode="center")
+        fig.step(x=range(self.model.profile.shape[0]),
+                 y=self.model.profile,
+                 color="black", mode="center")
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
@@ -348,11 +348,11 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.recalc_apertures()
         self.update_details()
 
-        col = column(self.fig, self.details)
+        col = column(fig, self.details)
         col.sizing_mode = 'scale_width'
         layout = row(controls, col)
 
-        Controller(self.fig, self.model, None, helptext)
+        Controller(fig, self.model, None, helptext)
 
         doc.add_root(layout)
 
