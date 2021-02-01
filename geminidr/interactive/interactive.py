@@ -1206,10 +1206,13 @@ class GIAperturePlotView:
 
         self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
         self.left = fig.line(x='x', y='y', source=self.left_source, color="purple")
+
         self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
         self.right = fig.line(x='x', y='y', source=self.right_source, color="purple")
+
         self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
         self.line = fig.line(x='x', y='y', source=self.line_source, color="purple")
+
         self.location = Span(location=location, dimension='height',
                              line_color='green', line_dash='dashed',
                              line_width=1)
@@ -1219,6 +1222,7 @@ class GIAperturePlotView:
 
         fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
         fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
+
         # feels like I need this to convince the aperture lines to update on zoom
         fig.y_range.js_on_change('end', CustomJS(args=dict(plot=fig),
                                                  code="plot.properties.renderers.change.emit()"))
@@ -1274,9 +1278,9 @@ class GIAperturePlotView:
         # TODO removing causes problems, because bokeh, sigh
         # TODO could create a list of disabled labels/boxes to reuse instead
         # of making new ones (if we have one to recycle)
-        self.label.text = ""
-        self.box.fill_alpha = 0.0
-        self.location.visible=False
+        self.label.visible = False
+        self.box.visible = False
+        self.location.visible = False
 
 
 class GIApertureLineView:
