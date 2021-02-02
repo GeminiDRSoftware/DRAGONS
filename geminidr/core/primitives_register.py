@@ -38,37 +38,24 @@ class Register(PrimitivesBASE):
     def adjustWCSToReference(self, adinputs=None, **params):
         """
         This primitive registers images to a reference image by correcting
-        the relative error in their world coordinate systems. The function
-        uses points of reference common to the reference image and the
-        input images to fit the input WCS to the reference one. The fit
-        is done by a least-squares minimization of the difference between
-        the reference points in the input image pixel coordinate system.
-        This function is intended to be followed by the
-        align_to_reference_image function, which applies the relative
-        transformation encoded in the WCS to transform input images into the
-        reference image pixel coordinate system.
+        the relative error in their world coordinate systems. This is
+        preferably done via alignment of sources common to the reference
+        and input images but a fallback method that uses the header offsets
+        is also available, if there are too few sources to provide a robust
+        alignment, or if the initial WCSs are incorrect.
 
-        The primary registration method is intended to be by direct mapping
-        of sources in the image frame to correlated sources in the reference
-        frame. This method fails when there are no correlated sources in the
-        field, or when the WCSs are very far off to begin with. As a back-up
-        method, the user can try correcting the WCS by the shifts indicated
-        in the POFFSET and QOFFSET header keywords (option fallback='header'),
-        By default, only the direct method is
-        attempted, as it is expected that the relative WCS will generally be
-        more correct than either indirect method. If the user prefers not to
-        attempt direct mapping at all, they may set method to 'header'.
+        The alignment of sources is done via the KDTreeFitter, which does
+        not require a direct one-to-one mapping of sources between the
+        images. The alignment is performed in the pixel frame of each input
+        image, with sources in the reference image being transformed into
+        that frame via the existing WCS transforms. Therefore, whatever
+        transformation is required can simply be placed at the start of each
+        input image's WCS pipeline.
 
         In order to use the direct mapping method, sources must have been
         detected in the frame and attached to the AstroData instance in an
         OBJCAT extension. This can be accomplished via the detectSources
-        primitive. Running time is optimal, and sometimes the solution is
-        more robust, when there are not too many sources in the OBJCAT. Try
-        running detectSources with threshold=20. The solution may also be
-        more robust if sub-optimal sources are rejected from the set of
-        correlated sources (use option cull_sources=True). This option may
-        substantially increase the running time if there are many sources in
-        the OBJCAT.
+        primitive.
 
         It is expected that the relative difference between the WCSs of
         images to be combined should be quite small, so it may not be necessary
@@ -79,9 +66,6 @@ class Register(PrimitivesBASE):
         images. Significant rotation and scaling of the images themselves
         will generally already be encoded in the WCS, and will be corrected for
         when the images are aligned.
-
-        The WCS keywords in the headers of the output images are updated
-        to contain the optimal registration solution.
 
         Parameters
         ----------
@@ -94,6 +78,8 @@ class Register(PrimitivesBASE):
             backup method, if the primary one fails
         first_pass: float
             search radius (arcsec) for the initial alignment matching
+        match_radius: float
+            search radius (arcsec) for source-to-source correlation matching
         min_sources: int
             minimum number of matched sources required to apply a WCS shift
         cull_sources: bool
@@ -113,7 +99,7 @@ class Register(PrimitivesBASE):
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
-                        "input images are required for matchWCSToReference")
+                        "input images are required for adjustWCSToReference")
             return adinputs
 
         if not all(len(ad) == 1 for ad in adinputs):
@@ -122,6 +108,7 @@ class Register(PrimitivesBASE):
         method = params["method"]
         fallback = params["fallback"]
         first_pass = params["first_pass"]
+        match_radius = params["match_radius"]
         min_sources = params["min_sources"]
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
@@ -129,7 +116,7 @@ class Register(PrimitivesBASE):
 
         # Use first image in list as reference
         adref = adinputs[0]
-        log.stdinfo("Reference image: {}".format(adref.filename))
+        log.stdinfo(f"Reference image: {adref.filename}")
         # Create a dummy WCS to facilitate future operations
         if adref[0].wcs is None:
             adref[0].wcs = gWCS([(cf.Frame2D(name="pixels"), models.Identity(len(adref[0].shape))),
@@ -168,8 +155,10 @@ class Register(PrimitivesBASE):
                 log.warning(f'Cannot determine pixel scale for {ad.filename}. '
                             f'Using a search radius of {first_pass} pixels.')
                 firstpasspix = first_pass
+                matchpix = match_radius
             else:
                 firstpasspix = first_pass / pixscale
+                matchpix = match_radius / pixscale
 
             # GNIRS WCS is dubious, so update WCS by using the ref
             # image's WCS and the telescope offsets
@@ -180,20 +169,21 @@ class Register(PrimitivesBASE):
             # The code used to start with a translation-only model, but this
             # isn't helpful if there's a sizeable rotation or scaling, so
             # let's just try to do the whole thing and see what happens.
-            obj_list, transform = align_images_from_wcs(ad, adref,
-                    search_radius=firstpasspix, min_sources=min_sources,
-                    cull_sources=cull_sources, full_wcs=True,
-                    rotate=rotate, scale=scale, return_matches=True)
+            obj_list, transform = align_images_from_wcs(
+                ad, adref, search_radius=firstpasspix, match_radius=matchpix,
+                min_sources=min_sources, cull_sources=cull_sources,
+                full_wcs=True, rotate=rotate, scale=scale,
+                return_matches=True)
 
             n_corr = len(obj_list[0])
-            if n_corr < min_sources + rotate + scale:
+            if (n_corr < min_sources + rotate + scale) and (rotate or scale):
                 log.warning(f"Too few correlated objects ({n_corr}). "
                             "Setting rotate=False, scale=False")
-                obj_list, transform = align_images_from_wcs(ad, adref,
-                                                  search_radius=firstpasspix,
-                                                  cull_sources=cull_sources,
-                                                  full_wcs=True, rotate=False,
-                                                  scale=False, return_matches=True)
+                obj_list, transform = align_images_from_wcs(
+                    ad, adref, search_radius=firstpasspix,
+                    match_radius=matchpix, cull_sources=cull_sources,
+                    full_wcs=True, rotate=False, scale=False,
+                    return_matches=True)
                 n_corr = len(obj_list[0])
 
             log.fullinfo("Number of correlated sources: {}".format(n_corr))
