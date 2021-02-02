@@ -807,11 +807,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     """
 
     def __init__(self, data_source, fitting_parameters, config,
-                 reinit_params=None, reinit_extras=None, reinit_live=False,
+                 reinit_params=None, reinit_extras=None,
+                 modal_message=None,
+                 modal_button_label=None,
                  order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, function=None, title=None, primitive_name=None, filename_info=None,
+                 template="fit1d.html",
                  **kwargs):
         """
         Parameters
@@ -831,9 +834,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         reinit_extras :
             Extra parameters to show on the left side that can affect the output of `data_source` but
             are not part of the primitive configuration.  Should not be passed if `data_source` is not a function.
-        reinit_live :
-            If False, supplies a button to call the `data_source` function and doesn't do so automatically when inputs
-            are adjusted.  If `data_source` is known to be inexpensive, you can set this to `True`
+        modal_message : str
+            If set, datapoint calculation is expected to be expensive and a 'recalculate' button will be shown
+            below the reinit inputs rather than doing it live.
+        modal_button_label : str
+            If set and if modal_message was set, this will be used for the label on the recalculate button.  It is
+            not required.
         order_param : str
             Name of the parameter this primitive uses for `order`, to infer the min/max suggested values
         tab_name_fmt : str
@@ -849,7 +855,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         title : str
             Title for UI (Interactive <Title>)
         """
-        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info)
+        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
+                         template=template)
         self.layout = None
 
         # Make the widgets accessible from external code so we can update
@@ -883,13 +890,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, reinit_live)
+            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
 
             # This should really go in the parent class, like submit_button
-            if not reinit_live:
-                self.reinit_button = bm.Button(label="Reconstruct points")
+            if modal_message:
+                self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
                 self.reinit_button.on_click(self.reconstruct_points)
-                self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
+                self.make_modal(self.reinit_button, modal_message)
                 reinit_widgets.append(self.reinit_button)
 
             self.reinit_panel = column(self.function, *reinit_widgets)

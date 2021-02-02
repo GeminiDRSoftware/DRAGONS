@@ -13,7 +13,7 @@ from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title='', primitive_name='', filename_info=''):
+    def __init__(self, config=None, title='', primitive_name='', filename_info='', template=None):
         """
         Initialize a visualizer.
 
@@ -26,6 +26,7 @@ class PrimitiveVisualizer(ABC):
         self.title = title
         self.filename_info = filename_info if filename_info else ''
         self.primitive_name = primitive_name if primitive_name else ''
+        self.template = template
         self.extras = dict()
         if config is None:
             self.config = None
@@ -64,16 +65,11 @@ class PrimitiveVisualizer(ABC):
             console.log('OK/Cancel Result: ' + confirmed);
             if (confirmed) {
                 $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
-                // cb_obj.name = 'confirmed';
-                //cb_obj.origin.css_classes.add('dragonsint_confirmed');
             } else {
                 $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
-                // cb_obj.name = 'rejected';
-                //cb_obj.origin.css_classes.add('dragonsint_rejected');
             }
             """ % (message, callback_name))
         btn.js_on_click(js_confirm_callback)
-
 
     def submit_button_handler(self, stuff):
         """

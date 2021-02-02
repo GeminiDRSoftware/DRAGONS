@@ -10,7 +10,7 @@ import tornado
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
-from jinja2 import Template
+from jinja2 import Template, Environment, FileSystemLoader
 
 from geminidr.interactive import controls
 
@@ -119,7 +119,12 @@ def _bkapp(doc):
     """
     global _visualizer
 
-    with open('%s/templates/index.html' % pathlib.Path(__file__).parent.absolute()) as f:
+    template = "index.html"
+    if _visualizer.template:
+        template = _visualizer.template
+    print("file is at %s" % pathlib.Path(__file__))
+    template_path = '%s/templates/' % pathlib.Path(__file__).parent.absolute()
+    with open('%s/templates/%s' % (pathlib.Path(__file__).parent.absolute(), template)) as f:
         # Because Bokeh has broken templating...
         title = _visualizer.title
         if not title:
@@ -128,9 +133,10 @@ def _bkapp(doc):
         primitive_name = _visualizer.primitive_name
         template = f.read()
         template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
-                .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
-
-        t = Template(template)
+                           .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
+        print(template)
+        # t = Template(template)
+        t = Environment(loader=FileSystemLoader(template_path)).from_string(template)
         doc.template = t
     _visualizer.visualize(doc)
 

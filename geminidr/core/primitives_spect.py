@@ -394,7 +394,6 @@ class Spect(PrimitivesBASE):
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='Wavelength (nm)',
                                                    ylabel='Sensitivity (mag cm^2 electron / erg)',
-                                                   reinit_live=True,
                                                    domains=all_shapes,
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
