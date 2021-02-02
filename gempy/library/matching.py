@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from functools import partial
 
 import astropy
 from astropy.modeling.fitting import (_validate_model,
@@ -720,7 +721,7 @@ def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
 def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
                           initial_shift = (0,0), min_sources=1, rotate=False,
                           scale=False, full_wcs=False, refine=False,
-                          tolerance=0.1, return_matches=False):
+                          match_radius=2, tolerance=0.1, return_matches=False):
     """
     This function takes two images (an input image, and a reference image) and
     works out the modifications needed to the WCS of the input images so that
@@ -756,8 +757,10 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
     refine: bool
         only do a simplex fit to refine an existing transformation?
         (requires full_wcs=True). Also ignores return_matches
-    tolerance: float
+    match_radius: float
         matching requirement (in pixels)
+    tolerance: float
+        minimization tolerance (in pixels)
     return_matches: bool
         return a list of matched objects?
 
@@ -793,7 +796,8 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
     # convert reference positions to sky coordinates
     ra2, dec2 = WCS(adref[0].hdr).all_pix2world(x2, y2, 1)
 
-    func = match_catalogs if return_matches else align_catalogs
+    func = (partial(match_catalogs, match_radius=match_radius)
+            if return_matches else align_catalogs)
 
     if full_wcs:
         # Set up the (inverse) Pix2Sky transform with appropriate scalings

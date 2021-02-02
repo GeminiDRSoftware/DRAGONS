@@ -89,6 +89,8 @@ class Register(PrimitivesBASE):
             backup method, if the primary one fails
         first_pass: float
             search radius (arcsec) for the initial alignment matching
+        match_radius: float
+            search radius (arcsec) for source-to-source correlation matching
         min_sources: int
             minimum number of matched sources required to apply a WCS shift
         cull_sources: bool
@@ -115,6 +117,7 @@ class Register(PrimitivesBASE):
         method = params["method"]
         fallback = params["fallback"]
         first_pass = params["first_pass"]
+        match_radius = params["match_radius"]
         min_sources = params["min_sources"]
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
@@ -175,13 +178,14 @@ class Register(PrimitivesBASE):
                         log.stdinfo("Recomputing WCS for GNIRS from offsets")
                         ad = _create_wcs_from_offsets(ad, ref_image)
                     firstpasspix = first_pass / ad.pixel_scale()
+                    matchpix = match_radius / ad.pixel_scale()
 
                     # Calculate the offsets quickly using only a translation
                     obj_list, transform = align_images_from_wcs(ad, ref_image,
                             first_pass=firstpasspix, min_sources=min_sources,
                             cull_sources=cull_sources, full_wcs=False,
                             rotate=False, scale=False, tolerance=0.001,
-                            return_matches=True)
+                            return_matches=True, match_radius=matchpix)
 
                     n_corr = len(obj_list[0])
                     if n_corr==0:
