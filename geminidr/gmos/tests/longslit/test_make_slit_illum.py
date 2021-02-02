@@ -36,6 +36,7 @@ mosaicked_datasets = [d.split('.')[0] + "_mosaickedTwilight.fits" for d in datas
 multiext_datasets = [d.split('.')[0] + "_twilight.fits" for d in datasets]
 
 
+@pytest.mark.slow
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", mosaicked_datasets, indirect=True)
@@ -106,6 +107,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
             os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
 
 
+@pytest.mark.slow
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", multiext_datasets, indirect=True)

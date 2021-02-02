@@ -53,7 +53,7 @@ def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
         logutils.config(file_name="log_regression_{}.txt".format(ad.data_label()))
         p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        p.traceApertures()
+        p.traceApertures(niter=5)
         aperture_traced_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(aperture_traced_ad.filename)

@@ -71,16 +71,15 @@ class Spek1D(Spectrum1D, NDAstroData):
                 else:
                     spec_unit = u.Unit(spectrum.hdr.get('CUNIT1', 'nm'))
                     try:
-                        wavecal = dict(zip(spectrum.WAVECAL["name"],
-                                           spectrum.WAVECAL["coefficients"]))
-                    except (AttributeError, KeyError):  # make a Model from the FITS WCS info
+                        det2wave = am.table_to_model(spectrum.WAVECAL)
+                    except AttributeError:
+                        # make a Model from the FITS WCS info
                         det2wave = (models.Shift(1 - spectrum.hdr['CRPIX1']) |
                                     models.Scale(spectrum.hdr['CD1_1']) |
                                     models.Shift(spectrum.hdr['CRVAL1']))
                     else:
-                        det2wave = am.dict_to_polynomial(wavecal)
                         det2wave.inverse = am.make_inverse_chebyshev1d(det2wave, sampling=1)
-                        spec_unit = u.nm
+                        spec_unit = det2wave.meta["yunit"]
                     detector_frame = cf.CoordinateFrame(1, axes_type='SPATIAL',
                                     axes_order=(0,), unit=u.pix, axes_names='x')
                     spec_frame = cf.SpectralFrame(unit=spec_unit, name='lambda')

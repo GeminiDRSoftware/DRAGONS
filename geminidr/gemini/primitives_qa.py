@@ -1086,8 +1086,8 @@ class IQReport(QAReport):
                 fwhm, fwhm_std = float(fwhm_data.mean()), float(fwhm_data.std())
             else:
                 fwhm = float(np.average(fwhm_data, weights=weights))
-                fwhm_std = float(np.sqrt(np.average((fwhm_data - fwhm) ** 2),
-                                         weights=weights))
+                fwhm_std = float(np.sqrt(np.average((fwhm_data - fwhm) ** 2,
+                                         weights=weights)))
             results = {"fwhm": fwhm, "fwhm_std": fwhm_std, "nsamples": len(t)}
 
             if self.image_like:
@@ -1216,7 +1216,7 @@ class IQReport(QAReport):
         else:
             body.append(('(Requested IQ could not be determined)', ''))
 
-        if results.get("elip", 0) > 0.1:
+        if results.get("elip", 0) is not None and results.get("elip") > 0.1:
             body.append(('', 'WARNING: high ellipticity'))
             self.comments.append('High ellipticity')
             if 'NON_SIDEREAL' in self.ad_tags:

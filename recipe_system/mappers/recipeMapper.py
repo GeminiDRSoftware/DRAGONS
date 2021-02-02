@@ -32,7 +32,11 @@ class RecipeMapper(Mapper):
 
     """
     def get_applicable_recipe(self):
-        recipefn = find_user_recipe(self.recipename)
+        if callable(self.recipename):
+            recipefn = self.recipename
+        else:
+            recipefn = find_user_recipe(self.recipename)
+
         if recipefn is None:
             tag_match, recipefn = self._retrieve_recipe()
 

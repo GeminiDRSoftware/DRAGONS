@@ -82,8 +82,8 @@ class CalibDB(PrimitivesBASE):
             self.calibrations[ad, caltype] = calfile
         return adinputs
 
-    def getCalibration(self, adinputs=None, caltype=None, refresh=True,
-                       howmany=None):
+    def getCalibration(self, adinputs=None, caltype=None, procmode=None,
+                       refresh=True, howmany=None):
         """
         Uses the calibration manager to population the Calibrations dict for
         all frames, updating any existing entries
@@ -108,52 +108,78 @@ class CalibDB(PrimitivesBASE):
         log = self.log
         ad_rq = adinputs if refresh else [ad for ad in adinputs
                                           if not self._get_cal(ad, caltype)]
-        cal_requests = get_cal_requests(ad_rq, caltype)
+
+        # TODO refactor Calibrations out if we stick with this
+        # If refresh, clear out the cache so we don't use it
+        if refresh:
+            for ad in ad_rq:
+                del self.calibrations[ad, caltype]
+
+        cal_requests = get_cal_requests(ad_rq, caltype, procmode)
         calibration_records = process_cal_requests(cal_requests, howmany=howmany)
         for ad, calfile in calibration_records.items():
             self.calibrations[ad, caltype] = calfile
         return adinputs
 
     def getProcessedArc(self, adinputs=None, **params):
+        # if we are working in 'sq' mode, must retrieve 'sq' calibrations.
+        # for self.mode ql and qa, just get the best matched processed
+        # calibration whether it is of ql or sq quality.
+
+        procmode = 'sq' if self.mode == 'sq' else None
+
         caltype = "processed_arc"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self.getCalibration(adinputs, caltype=caltype, procmode=procmode,
+                            refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedBias(self, adinputs=None, **params):
+        procmode = 'sq' if self.mode == 'sq' else None
         caltype = "processed_bias"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self.getCalibration(adinputs, caltype=caltype, procmode=procmode,
+                            refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedDark(self, adinputs=None, **params):
+        procmode = 'sq' if self.mode == 'sq' else None
         caltype = "processed_dark"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self.getCalibration(adinputs, caltype=caltype, procmode=procmode,
+                            refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedFlat(self, adinputs=None, **params):
+        procmode = 'sq' if self.mode == 'sq' else None
         caltype = "processed_flat"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self.getCalibration(adinputs, caltype=caltype, procmode=procmode,
+                            refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedFringe(self, adinputs=None, **params):
+        procmode = 'sq' if self.mode == 'sq' else None
         caltype = "processed_fringe"
         log = self.log
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self.getCalibration(adinputs, caltype=caltype, procmode=procmode,
+                            refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedStandard(self, adinputs=None, **params):
+        procmode = 'sq' if self.mode == 'sq' else None
         caltype = "processed_standard"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self.getCalibration(adinputs, caltype=caltype, procmode=procmode,
+                            refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedSlitIllum(self, adinputs=None, **params):
+        procmode = 'sq' if self.mode == 'sq' else None
         caltype = "processed_slitillum"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self.getCalibration(adinputs, caltype=caltype, procmode=procmode,
+                            refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
@@ -242,12 +268,15 @@ class CalibDB(PrimitivesBASE):
         Updates filenames, datalabels (if asked) and adds header keyword
         prior to storing AD objects as calibrations
         """
+        proc_suffix = f"_{self.mode}"
         for ad in adinputs:
             if suffix:
-                ad.update_filename(suffix=suffix, strip=True)
+                proc_suffix += suffix
+            ad.update_filename(suffix=proc_suffix, strip=True)
             if update_datalab:
                 _update_datalab(ad, suffix, self.keyword_comments)
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
+            ad.phu.set('PROCMODE', self.mode)
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, suffix=None, force=False):
@@ -325,12 +354,13 @@ class CalibDB(PrimitivesBASE):
             return adinputs
 
         for ad in adinputs:
-            ad.phu.set('PROCSCI', self.mode)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCSCI")
             ad.update_filename(suffix=suffix, strip=True)
+            ad.phu.set('PROCMODE', self.mode)
 
             if self.mode != 'qa' and self.upload and 'science' in self.upload:
                 old_filename = ad.filename
-                ad.update_filename(suffix=f"_{self.mode}", strip=False)
+                ad.update_filename(suffix=f"_{self.mode}"+suffix, strip=True)
                 ad.write(overwrite=True)
                 try:
                     upload_calibration(ad.filename, is_science=True)

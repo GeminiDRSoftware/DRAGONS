@@ -28,7 +28,7 @@ from gempy.library import transform
 from recipe_system.utils.decorators import parameter_override
 
 # Put this here for now!
-def qeModel(ext):
+def qeModel(ext, use_iraf=False):
     """
     This function returns a callable object that returns the QE of a CCD
     (relative to CCD2) as a function of wavelength(s) in nm. The QE data is
@@ -36,16 +36,15 @@ def qeModel(ext):
     The value is either a list (interpreted as polynomial coefficients) or a
     dict describing a spline.
 
-    NB. Spline objects defined in the dict return the decimal logarithm of
-    the relative QE, while polynomials simply return the relative QE.
-
     In addition, if the model changes, the value can be a dict keyed by the
     earliest UT date at which each model should be applied.
 
     Parameters
     ----------
-    ext: single-slice AstroData object
+    ext : single-slice AstroData object
         the extension to calculate the QE coefficients for
+    use_iraf : bool
+        use IRAF fits rather than DRAGONS ones?
 
     Returns
     -------
@@ -58,44 +57,56 @@ def qeModel(ext):
         "EEV_9273-20-03": [9.699E-1, 1.330E-4, -2.082E-7, 1.206E-10],
         # GMOS-N Hamamatsu CCD1 and 3
         "BI13-20-4k-1": {"order": 3,
-                         "knots": [366.5, 413.500044, 435.500048, 465.000052, 478.500054,
-                                   507.500058, 693.000014, 1062.000039],
+                         "knots": [366.5, 413.5, 435.5, 465., 478.5, 507.5, 693., 1062.],
                          "coeffs": [1.20848283, 1.59132929, 1.58317142, 1.25123198, 1.14410563,
                                     0.98095206, 0.83416436, 1.03247587, 1.15355675, 1.10176507]},
         "BI13-18-4k-2": {"order": 3,
-                         "knots": [341.750054, 389.500062, 414.000067, 447.500006, 493.000079,
-                                   592.000013, 694.500021, 1057.000048],
+                         "knots": [341.75, 389.5, 414., 447.5, 493., 592., 694.5, 1057.],
                          "coeffs": [0.90570141, 0.99834392, 1.6311227 , 1.47271364, 1.13843214,
                                     0.91170917, 0.88454097, 1.06456595, 1.16684561, 1.10476059]},
         # IRAF coefficients
-        #"BI13-20-4k-1": [-2.45481760e+03, 3.24130657e+01, -1.87380500e-01,
-        #                 6.23494400e-04, -1.31713482e-06, 1.83308885e-09,
-        #                 -1.68145852e-12, 9.80603592e-16, -3.30016761e-19,
-        #                 4.88466076e-23],
-        #"BI13-18-4k-2": [3.48333720e+03, -5.27904605e+01, 3.48210500e-01,
-        #                 -1.31286828e-03, 3.12154994e-06, -4.85949692e-09,
-        #                 4.95886638e-12, -3.20198283e-15, 1.18833302e-18,
-        #                 -1.93303639e-22],
+        ("BI13-20-4k-1", "IRAF"): [-2.45481760e+03, 3.24130657e+01, -1.87380500e-01,
+                                   6.23494400e-04, -1.31713482e-06, 1.83308885e-09,
+                                   -1.68145852e-12, 9.80603592e-16, -3.30016761e-19,
+                                   4.88466076e-23],
+        ("BI13-18-4k-2", "IRAF"): [3.48333720e+03, -5.27904605e+01, 3.48210500e-01,
+                                   -1.31286828e-03, 3.12154994e-06, -4.85949692e-09,
+                                   4.95886638e-12, -3.20198283e-15, 1.18833302e-18,
+                                   -1.93303639e-22],
         # GMOS-S EEV CCD1 and 3
         "EEV_2037-06-03": {"1900-01-01": [2.8197, -8.101e-3, 1.147e-5, -5.270e-9],
                            "2006-08-31": [2.225037, -4.441856E-3, 5.216792E-6, -1.977506E-9]},
         "EEV_8261-07-04": {"1900-01-01": [1.3771, -1.863e-3, 2.559e-6, -1.0289e-9],
                            "2006-08-31": [8.694583E-1, 1.021462E-3, -2.396927E-6, 1.670948E-9]},
         # GMOS-S Hamamatsu CCD1 and 3
-        "BI5-36-4k-2": [-6.00810046e+02,  6.74834788e+00, -3.26251680e-02,
-                        8.87677395e-05, -1.48699188e-07, 1.57120033e-10,
-                        -1.02326999e-13, 3.75794380e-17, -5.96238257e-21],
-        "BI12-34-4k-1": [7.44793105e+02, -1.22941630e+01, 8.83657074e-02,
-                         -3.62949805e-04, 9.40246850e-07, -1.59549327e-09,
-                         1.77557909e-12, -1.25086490e-15, 5.06582071e-19,
-                         -8.99166534e-23]
-     }
+        "BI5-36-4k-2": {"order": 3,
+                        "knots": [374., 409., 451., 523.5, 584.5, 733.5, 922., 1070.75],
+                        "coeffs": [1.04722893, 0.87968707, 0.70533794, 0.67657144, 0.71217743,
+                                   0.82421959, 0.94903734, 1.00847771, 0.98158784, 0.90798127]},
+        "BI12-34-4k-1": {"order": 3,
+                         "knots": [340.25, 377.5, 406., 439., 511.5, 601., 746., 916.5, 1070.],
+                         "coeffs": [0.7433304, 1.07041859, 1.51006315, 1.43997471, 1.03126307,
+                                    0.84984109, 0.8944949, 1.02806209, 1.11960524, 1.12224211,
+                                    0.95279761]},
+        # IRAF coefficients
+        ("BI5-36-4k-2", "IRAF"): [-6.00810046e+02,  6.74834788e+00, -3.26251680e-02,
+                                  8.87677395e-05, -1.48699188e-07, 1.57120033e-10,
+                                  -1.02326999e-13, 3.75794380e-17, -5.96238257e-21],
+        ("BI12-34-4k-1", "IRAF"): [7.44793105e+02, -1.22941630e+01, 8.83657074e-02,
+                                   -3.62949805e-04, 9.40246850e-07, -1.59549327e-09,
+                                   1.77557909e-12, -1.25086490e-15, 5.06582071e-19,
+                                   -8.99166534e-23]
+    }
 
     array_name = ext.array_name().split(',')[0]
+    key = (array_name, "IRAF") if use_iraf else array_name
     try:
-        data = qeData[array_name]
+        data = qeData[key]
     except KeyError:
-        return None
+        try:  # fallback for older CCDs where the IRAF solution isn't labelled
+            data = qeData[array_name]
+        except KeyError:
+            return None
 
     # Deal with date-dependent changes
     if isinstance(data, dict) and 'knots' not in data:
@@ -156,6 +167,7 @@ class GMOSSpect(Spect, GMOS):
 
         sfx = params["suffix"]
         arc = params["arc"]
+        use_iraf = params["use_iraf"]
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
@@ -292,7 +304,8 @@ class GMOSSpect(Spect, GMOS):
                 taper[waves > taper_hicut] = np.exp(-((waves[waves > taper_hicut]
                                                        - taper_hicut) / taper_hisig) ** 2)
                 try:
-                    qe_correction = (qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value).astype(
+                    qe_correction = (qeModel(ext, use_iraf=use_iraf)(
+                        (waves / u.nm).to(u.dimensionless_unscaled).value).astype(
                         np.float32) - 1) * taper + 1
                 except TypeError:  # qeModel() returns None
                     msg = f"No QE correction found for {ad.filename} extension {ext.id}"

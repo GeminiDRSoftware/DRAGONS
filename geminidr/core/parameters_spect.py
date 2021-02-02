@@ -39,6 +39,10 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     regions = config.Field("Sample regions", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
+    interactive_spline = config.Field("Interactive spline selection?", bool, False)
+    niter = config.RangeField("Maximum number of clipping iterations to perform of spline fit", int, 3, min=1)
+    grow = config.RangeField("Radius to reject pixels adjacent to masked pixels of spline fit", int, 0, min=0)
+    interactive = config.Field("Display interactive fitter?", bool, False)
 
     def setDefaults(self):
         del self.grow
@@ -58,6 +62,7 @@ class determineDistortionConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Display line traces on image display?", bool, False)
+    interactive = config.Field("Display interactive fitter?", bool, False)
 
 
 def min_lines_check(value):
@@ -105,8 +110,9 @@ class extract1DSpectraConfig(config.Config):
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
+    interactive = config.Field("Perform extraction interactively", bool, False)
     subtract_sky = config.Field("Subtract sky spectra if the data have not been sky corrected?", bool, True)
-    debug = config.Field("Draw extraction apertures on image display?", bool, False)
+    debug = config.Field("Draw extraction apertures on image display? (not used with interactive)", bool, False)
 
 
 def check_section(value):
@@ -149,6 +155,7 @@ class findSourceAperturesConfig(config.Config):
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
                                        default="peak")
+    interactive = config.Field("Use interactive interface", bool, False)
 
 
 def flux_units_check(value):
@@ -219,6 +226,7 @@ class resampleToCommonFrameConfig(config.Config):
 
 class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    regions = config.Field("Sample regions", str, None, optional=True)
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
 

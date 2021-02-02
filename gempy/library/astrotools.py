@@ -143,6 +143,7 @@ def cartesian_regions_to_slices(regions):
 
     return tuple(slices)
 
+
 def parse_user_regions(regions, dtype=int, allow_step=False):
     """
     Parse a string containing a list of sections into a list of tuples
@@ -171,13 +172,14 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
         dtype = getattr(np, dtype.name)
 
     ranges = []
-    for range in regions.strip("[]").split(","):
-        if range == "*":
+    for range_ in regions.strip("[]").split(","):
+        range_ = range_.strip()
+        if range_ == "*":
             ranges.append((None, None))
             continue
         try:
             values = [dtype(x) if x else None
-                      for x in range.replace("-", ":", 1).split(":")]
+                      for x in range_.replace("-", ":", 1).split(":")]
             assert len(values) in (1, 2, 2+allow_step)
         except (ValueError, AssertionError):
             raise ValueError(f"Failed to parse sample regions '{regions}'")

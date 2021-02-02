@@ -7,7 +7,10 @@
 from copy import copy, deepcopy
 from importlib import import_module
 
+from gempy.library.config import RangeField
+
 import astrodata
+import geminidr
 import numpy as np
 from scipy.signal import correlate
 
@@ -29,8 +32,11 @@ from gwcs.wcs import WCS as gWCS
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from gempy.library.fitting import fit_1D
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
+from .parameters_gmos_longslit import normalizeFlatConfig
 
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
@@ -38,6 +44,9 @@ from . import parameters_gmos_longslit
 
 
 # ------------------------------------------------------------------------------
+from ..interactive.fit import fit1d
+
+
 @parameter_override
 class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
     """
@@ -590,6 +599,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             growth radius for rejected pixels
         threshold : float
             threshold (relative to peak) for flagging unilluminated pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -601,13 +612,17 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         suffix = params["suffix"]
         threshold = params["threshold"]
         spectral_order = params["order"]
-        fit1d_params = fit_1D.translate_params(params)
+        all_fp_init = [fit_1D.translate_params(params)] * 3
+        interactive_reduce = params["interactive"]
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
             orders = [int(x) for x in spectral_order]
         except TypeError:
             orders = [spectral_order] * 3
+        # capture the per extension order into the fit parameters
+        for order, fp_init in zip(orders, all_fp_init):
+            fp_init["order"] = order
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
@@ -615,10 +630,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
             ad_fitted = astrodata.create(ad.phu)
-            for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
-                fit1d_params["order"] = order
-                # If the entire row is unilluminated, we want to fit
-                # the pixels but still keep the edges masked
+            all_fp_init = []
+
+            # If the entire row is unilluminated, we want to fit
+            # the pixels but still keep the edges masked
+            for ext in ad_tiled:
                 try:
                     ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
                 except TypeError:  # ext.mask is None
@@ -628,14 +644,93 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         ext.mask[:, :21 // xbin] = 1
                         ext.mask[:, -21 // xbin:] = 1
 
-                masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
-                weights = np.sqrt(at.divide0(1., ext.variance))
+                all_fp_init.append(fit_1D.translate_params(params))
 
-                fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
-                                     axis=1).evaluate()
+            # Parameter validation should ensure we get an int or a list of 3 ints
+            try:
+                orders = [int(x) for x in spectral_order]
+            except TypeError:
+                orders = [spectral_order] * 3
+            # capture the per extension order into the fit parameters
+            for order, fp_init in zip(orders, all_fp_init):
+                fp_init["order"] = order
 
-                # Copy header so we have the _section() descriptors
-                ad_fitted.append(fitted_data, header=ext.hdr)
+            # Interactive or not
+            if interactive_reduce:
+                # all_X arrays are used to track appropriate inputs for each of the N extensions
+                all_pixels = []
+                all_domains = []
+                nrows = ad_tiled[0].shape[0]
+                for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
+                    pixels = np.arange(ext.shape[1])
+
+                    all_pixels.append(pixels)
+                    dispaxis = 2 - ext.dispersion_axis()
+                    all_domains.append([0, ext.shape[dispaxis] - 1])
+
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                # Create a 'row' parameter to add to the UI so the user can select the row they
+                # want to fit.
+                reinit_params = ["row", ]
+                reinit_extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
+
+                # This function is used by the interactive fitter to generate the x,y,weights to use
+                # for each fit.  We only want to fit a single row of data interactively, so that we can
+                # be responsive in the UI.  The 'row' extra parameter defined above will create a
+                # slider for the user and we will have access to the selected value in the 'extras'
+                # dictionary passed in here.
+                def reconstruct_points(conf, extras):
+                    r = min(0, extras['row'] - 1)
+                    all_coords = []
+                    for rppixels, rpext in zip(all_pixels, ad_tiled):
+                        masked_data = np.ma.masked_array(rpext.data[r],
+                                                         mask=None if rpext.mask is None else rpext.mask[r])
+                        if rpext.variance is None:
+                            weights = None
+                        else:
+                            weights = np.sqrt(at.divide0(1., rpext.variance[r]))
+                        all_coords.append([rppixels, masked_data, weights])
+                    return all_coords
+
+                visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
+                                                   config=config,
+                                                   reinit_params=reinit_params,
+                                                   reinit_extras=reinit_extras,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x', ylabel='y',
+                                                   reinit_live=True,
+                                                   domains=all_domains,
+                                                   title="Normalize Flat",
+                                                   enable_user_masking=False)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+
+                # The fit models were done on a single row, so we need to
+                # get the parameters that were used in the final fit for
+                # each one, and then rerun it on the full data for that
+                # extension.
+                all_m_final = visualizer.results()
+                for m_final, ext in zip(all_m_final, ad_tiled):
+                    masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
+                    weights = np.sqrt(at.divide0(1., ext.variance))
+
+                    fit1d_params = m_final.extract_params()
+                    fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
+                                         axis=1).evaluate()
+
+                    # Copy header so we have the _section() descriptors
+                    ad_fitted.append(fitted_data, header=ext.hdr)
+            else:
+                for ext, indices, fit1d_params in zip(ad_tiled, array_info.extensions, all_fp_init):
+                    masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
+                    weights = np.sqrt(at.divide0(1., ext.variance))
+
+                    fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
+                                         axis=1).evaluate()
+
+                    # Copy header so we have the _section() descriptors
+                    ad_fitted.append(fitted_data, header=ext.hdr)
 
             # Find the largest spline value for each row across all extensions
             # and mask pixels below the requested fraction of the peak
@@ -648,7 +743,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             for ext_fitted in ad_fitted:
                 ext_fitted.mask = np.where(
                     (ext_fitted.data.T / row_max).T < threshold,
-                    DQ.unilluminated, DQ.good)
+                    DQ.unilluminated, DQ.good).astype(DQ.datatype)
 
             for ext_fitted, indices in zip(ad_fitted, array_info.extensions):
                 tiled_arrsec = ext_fitted.array_section()

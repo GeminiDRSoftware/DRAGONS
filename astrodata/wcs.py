@@ -63,13 +63,17 @@ def fitswcs_to_gwcs(hdr):
 
     if coordinate_outputs.issubset(outputs):
         frame_name = wcs_info["RADESYS"]  # FK5, etc.
+        axes_names = None
         try:
             ref_frame = getattr(coord, frame_name)()
-            axes_names = None
             # TODO? Work out how to stuff EQUINOX and OBS-TIME into the frame
         except (AttributeError, TypeError):
-            ref_frame = None
-            axes_names = ('lon', 'lat')
+            # TODO: Replace quick fix as gWCS doesn't recognize GAPPT
+            if frame_name == "GAPPT":
+                ref_frame = coord.FK5()
+            else:
+                ref_frame = None
+                axes_names = ('lon', 'lat')
         axes_order = (outputs.index('alpha_C'), outputs.index('delta_C'))
 
         # Call it 'world' if there are no other axes, otherwise 'sky'
