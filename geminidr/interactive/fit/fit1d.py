@@ -1,15 +1,13 @@
-import collections
+
 from abc import ABC, abstractmethod
 
 
 import numpy as np
 
 from bokeh import models as bm, transform as bt
-from bokeh.io import curdoc
 from bokeh.layouts import row, column
 from bokeh.models import Div, Select, Range1d, Spacer
 from bokeh.plotting import figure
-from bokeh.palettes import Category10
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
@@ -317,29 +315,6 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.lsigma = self.hsigma = float(value)
 
-    # @property
-    # def order(self):
-    #     """
-    #     Maps the order attribute to the underlying model
-    #
-    #     Returns
-    #     -------
-    #     int : order value from model
-    #     """
-    #     return self.model.order
-    #
-    # @order.setter
-    # def order(self, value):
-    #     """
-    #     Maps sets to the order attribute to the contained model
-    #
-    #     Parameters
-    #     ----------
-    #     value : int
-    #         new vlaue for order
-    #     """
-    #     self.model.order = value
-
     @property
     def domain(self):
         """
@@ -397,32 +372,6 @@ class InteractiveFit1D:
 
     def set_function(self, fn):
         self.fitting_parameters["function"] = fn
-
-    # @property
-    # def order(self):
-    #     """
-    #     Get the order of the fitter.
-    #
-    #     Returns
-    #     -------
-    #     int : `order` of the model we are wrapping
-    #     """
-    #     return self.fitting_parameters["order"]
-    #
-    # @order.setter
-    # def order(self, order):
-    #     """
-    #     Set the order in this fitter.
-    #
-    #     This sets the order, cleaning it if necessary into an `int`.  It also
-    #     recreates the model in the same type as it currently is.
-    #
-    #     Parameters
-    #     ----------
-    #     order : int
-    #         order to use in the fit
-    #     """
-    #     self.fitting_parameters["order"] = int(order)  # fix if TextInput
 
     @property
     def regions(self):
@@ -512,26 +461,18 @@ class FittingParametersUI:
         self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
                                 self.niter_slider, self.grow_slider]
 
-    def _reset_ui_callback(self, ok_cancel):
-        self.vis.layout.visible = True
-        if ok_cancel:
-            self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
-            for slider, key in [(self.order_slider, "order"),
-                                (self.sigma_upper_slider, "sigma_upper"),
-                                (self.sigma_lower_slider, "sigma_lower"),
-                                (self.niter_slider, "niter"),
-                                (self.grow_slider, "grow")
-                                ]:
-                slider.children[0].value = self.fitting_parameters[key]
-                slider.children[1].value = str(self.fitting_parameters[key])
-            self.sigma_button.active = [0] if self.saved_sigma_clip else []
-            self.fit.perform_fit()
-
     def reset_ui(self):
-        # hide main UI and show dialog
-        # self.vis.layout.visible = False
-        self.vis.ok_cancel_dialog('Reset will change all inputs for this tab back to their original values.  Proceed?',
-                                  self._reset_ui_callback)
+        self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
+        for slider, key in [(self.order_slider, "order"),
+                            (self.sigma_upper_slider, "sigma_upper"),
+                            (self.sigma_lower_slider, "sigma_lower"),
+                            (self.niter_slider, "niter"),
+                            (self.grow_slider, "grow")
+                            ]:
+            slider.children[0].value = self.fitting_parameters[key]
+            slider.children[1].value = str(self.fitting_parameters[key])
+        self.sigma_button.active = [0] if self.saved_sigma_clip else []
+        self.fit.perform_fit()
 
     def get_bokeh_components(self):
         return self.controls_column
@@ -642,7 +583,14 @@ class Fit1DPanel:
         unmask_button.on_click(self.unmask_button_handler)
 
         reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
-        reset_button.on_click(self.fitting_parameters_ui.reset_ui)
+
+        def reset_dialog_handler(result):
+            if result:
+                self.fitting_parameters_ui.reset_ui()
+        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
+                                                                  'Reset will change all inputs for this tab back '
+                                                                  'to their original values.  Proceed?',
+                                                                  reset_dialog_handler)
 
         controller_div = Div()
         self.info_div = Div()
@@ -1043,12 +991,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
         if len(self.reinit_panel.children) <= 1:
-            layout = column(self.submit_button, row(self.reinit_panel), col, sizing_mode="stretch_width", name='main')
+            layout = column(self.submit_button, row(self.reinit_panel), col, sizing_mode="stretch_width")
         else:
             layout = column(self.submit_button,
                             row(column(self.reinit_panel,
                                        ), col),
-                            sizing_mode="stretch_width", name='main')
+                            sizing_mode="stretch_width")
         self.layout = layout
         doc.add_root(layout)
 

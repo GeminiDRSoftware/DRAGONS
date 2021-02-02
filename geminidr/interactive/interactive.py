@@ -6,6 +6,7 @@ from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, But
     Dropdown, RangeSlider, Span, NumeralTickFormatter, Div
 
 from geminidr.interactive import server
+from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import cartesian_regions_to_slices
 
 from gempy.library.config import FieldValidationError
@@ -39,11 +40,40 @@ class PrimitiveVisualizer(ABC):
             window.close();
         """)
         self.submit_button.js_on_click(callback)
-        self._ok_cancel_dlg = OKCancelDialog()
         self.doc = None
 
-    def ok_cancel_dialog(self, message, callback):
-        self._ok_cancel_dlg.show_dialog(message, callback)
+    def make_ok_cancel_dialog(self, btn, message, callback):
+        # This is a bit hacky, but bokeh makes it very difficult to bridge the python-js gap.
+        def _internal_handler(args):
+            if callback:
+                if args['result'] == [b'confirmed']:
+                    result = True
+                else:
+                    result = False
+                self.do_later(lambda: callback(result))
+
+        callback_name = register_callback(_internal_handler)
+
+        js_confirm_callback = CustomJS(code="""
+            console.log('in confirm callback');
+            console.log('element disabled, showing ok/cancel');
+            debugger;
+            cb_obj.name = '';
+            var confirmed = confirm('%s');
+            var cbid = '%s';
+            console.log('OK/Cancel Result: ' + confirmed);
+            if (confirmed) {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+                // cb_obj.name = 'confirmed';
+                //cb_obj.origin.css_classes.add('dragonsint_confirmed');
+            } else {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+                // cb_obj.name = 'rejected';
+                //cb_obj.origin.css_classes.add('dragonsint_rejected');
+            }
+            """ % (message, callback_name))
+        btn.js_on_click(js_confirm_callback)
+
 
     def submit_button_handler(self, stuff):
         """
@@ -81,7 +111,7 @@ class PrimitiveVisualizer(ABC):
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
 
-        doc.add_root(self._ok_cancel_dlg.layout)
+        # doc.add_root(self._ok_cancel_dlg.layout)
         # Add an OK/Cancel dialog we can tap into later
 
     def do_later(self, fn):
@@ -1511,35 +1541,3 @@ class RegionEditor(GIRegionListener):
 
     def get_widget(self):
         return self.text_input
-
-
-class OKCancelDialog(object):
-    def __init__(self):
-        self.message = Div(text="placeholder")
-        self.ok = Button(label="OK", width_policy="min", align='center', button_type='success')
-        self.cancel = Button(label="Cancel", width_policy="min", align='center', button_type='danger')
-        self.layout = column(column(self.message, row(self.ok, self.cancel, align='center'),
-                                    css_classes=['ok_cancel_dialog']),
-                             name="ok_cancel_dialog",
-                             css_classes=['ok_cancel_dialog_screen'],)
-        self.layout.visible = False
-        js_hide_callback = CustomJS(code="""$('#main_div').toggle();""")
-        self.layout.js_on_change('visible', js_hide_callback)
-        self.callback = None
-        self.ok.on_click(self.ok_callback)
-        self.cancel.on_click(self.cancel_callback)
-
-    def ok_callback(self):
-        self.layout.visible = False
-        if self.callback:
-            self.callback(True)
-
-    def cancel_callback(self):
-        self.layout.visible = False
-        if self.callback:
-            self.callback(False)
-
-    def show_dialog(self, message, callback):
-        self.callback = callback
-        self.message.text = message
-        self.layout.visible = True
