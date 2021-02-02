@@ -141,6 +141,24 @@ def test_fixpixels_median(niriprim):
 
 
 @pytest.mark.dragons_remote_data
+def test_fixpixels_column(niriprim):
+    regions = ['433,*']
+    ad = niriprim.fixPixels(regions=';'.join(regions),
+                            use_local_median=True, debug=DEBUG)[0]
+    assert_almost_equal(ad[0].data[500:527, 432].min(), 18.5, decimal=2)
+    assert_almost_equal(ad[0].data[500:527, 432].max(), 43, decimal=2)
+
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_line(niriprim):
+    regions = ['*, 533']
+    ad = niriprim.fixPixels(regions=';'.join(regions),
+                            use_local_median=True, debug=DEBUG)[0]
+    assert_almost_equal(ad[0].data[532, 430:435].min(), 22, decimal=2)
+    assert_almost_equal(ad[0].data[532, 430:435].max(), 38.5, decimal=2)
+
+
+@pytest.mark.dragons_remote_data
 def test_fixpixels_specify_axis(niriprim):
     regions = [
         '430:437,513:533',  # vertical region

@@ -596,6 +596,7 @@ class Preprocess(PrimitivesBASE):
 
         for ad in adinputs:
             for iext, ext in enumerate(ad, start=1):
+                shape = ext.data.shape
                 ndim = ext.data.ndim
 
                 for region, slices in region_slices[0] + region_slices[iext]:
@@ -603,7 +604,10 @@ class Preprocess(PrimitivesBASE):
                         raise ValueError(f'region {region} does not match '
                                          'array dimension')
 
-                    region_shape = np.array([s.stop - s.start for s in slices])
+                    region_shape = np.array([
+                        (s.stop or shape[i]) - (s.start or 0)
+                        for i, s in enumerate(slices)
+                    ])
 
                     # Find the axis that will be used for the interpolation
                     if axis is None:
