@@ -598,12 +598,18 @@ class Preprocess(PrimitivesBASE):
             for iext, ext in enumerate(ad, start=1):
                 ndim = ext.data.ndim
 
+                if ext.mask is None:
+                    ext.mask = np.zeros(ext.shape, dtype=DQ.datatype)
+
                 for region, slices in region_slices[0] + region_slices[iext]:
                     if len(slices) != ndim:
                         raise ValueError(f'region {region} does not match '
                                          'array dimension')
 
-                    region_shape = np.array([s.stop - s.start for s in slices])
+                    region_shape = np.array([
+                        (s.stop or ext.shape[i]) - (s.start or 0)
+                        for i, s in enumerate(slices)
+                    ])
 
                     # Find the axis that will be used for the interpolation
                     if axis is None:
@@ -663,6 +669,9 @@ class Preprocess(PrimitivesBASE):
                         data = data.reshape(extracted_shape)
                         data = np.rollaxis(data, 0, use_axis + 1)
                         ext.data[tuple(slices_extract)] = data
+
+                    # Mark the interpolated pixels as no_data
+                    ext.mask[slices] = DQ.no_data
 
                     if debug:
                         fig, (ax1, ax2) = plt.subplots(1, 2)

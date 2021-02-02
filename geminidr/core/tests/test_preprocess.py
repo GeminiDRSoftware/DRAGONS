@@ -114,6 +114,10 @@ def test_fixpixels(niriprim):
     ]
     ad = niriprim.fixPixels(regions=';'.join(regions), debug=DEBUG)[0]
 
+    for region in regions:
+        sy, sx = cartesian_regions_to_slices(region)
+        assert_array_equal(ad[0].mask[sy, sx], DQ.no_data)
+
     sy, sx = cartesian_regions_to_slices(regions[0])
     assert_almost_equal(ad[0].data[sy, sx].min(), 18.555, decimal=2)
     assert_almost_equal(ad[0].data[sy, sx].max(), 42.888, decimal=2)
@@ -136,8 +140,27 @@ def test_fixpixels_median(niriprim):
                             use_local_median=True, debug=DEBUG)[0]
 
     sy, sx = cartesian_regions_to_slices(regions[0])
+    assert_array_equal(ad[0].mask[sy, sx], DQ.no_data)
     assert_almost_equal(ad[0].data[sy, sx].min(), 28, decimal=2)
     assert_almost_equal(ad[0].data[sy, sx].max(), 28, decimal=2)
+
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_column(niriprim):
+    regions = ['433,*']
+    ad = niriprim.fixPixels(regions=';'.join(regions),
+                            use_local_median=True, debug=DEBUG)[0]
+    assert_almost_equal(ad[0].data[500:527, 432].min(), 18.5, decimal=2)
+    assert_almost_equal(ad[0].data[500:527, 432].max(), 43, decimal=2)
+
+
+@pytest.mark.dragons_remote_data
+def test_fixpixels_line(niriprim):
+    regions = ['*, 533']
+    ad = niriprim.fixPixels(regions=';'.join(regions),
+                            use_local_median=True, debug=DEBUG)[0]
+    assert_almost_equal(ad[0].data[532, 430:435].min(), 22, decimal=2)
+    assert_almost_equal(ad[0].data[532, 430:435].max(), 38.5, decimal=2)
 
 
 @pytest.mark.dragons_remote_data
@@ -155,6 +178,7 @@ def test_fixpixels_specify_axis(niriprim):
     ad = niriprim.fixPixels(regions=';'.join(regions), axis=2, debug=DEBUG)[0]
 
     sy, sx = cartesian_regions_to_slices(regions[0])
+    assert_array_equal(ad[0].mask[sy, sx], DQ.no_data)
     assert_almost_equal(ad[0].data[sy, sx].min(), 17.636, decimal=2)
     assert_almost_equal(ad[0].data[sy, sx].max(), 38.863, decimal=2)
 

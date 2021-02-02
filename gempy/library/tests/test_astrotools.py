@@ -95,5 +95,12 @@ def test_cartesian_regions_to_slices():
     assert cart('1:10,20:30') == (slice(19, 30), slice(0, 10))
     assert cart('[:,:10]') == (slice(None, 10), slice(None))
 
+    assert cart('100,*') == (slice(None), slice(99, 100))
+    assert cart('100, *') == (slice(None), slice(99, 100))
+    assert cart(':100,*') == (slice(None), slice(100))
+
+    assert cart('*,12') == (slice(11, 12), slice(None))
+    assert cart('*, 12:') == (slice(11, None), slice(None))
+
     with pytest.raises(TypeError):
         cart(12)
