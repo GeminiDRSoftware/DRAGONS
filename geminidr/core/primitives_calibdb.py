@@ -268,8 +268,8 @@ class CalibDB(PrimitivesBASE):
         Updates filenames, datalabels (if asked) and adds header keyword
         prior to storing AD objects as calibrations
         """
-        proc_suffix = f"_{self.mode}"
         for ad in adinputs:
+            proc_suffix = f"_{self.mode}"
             if suffix:
                 proc_suffix += suffix
             ad.update_filename(suffix=proc_suffix, strip=True)
