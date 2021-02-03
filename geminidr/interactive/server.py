@@ -122,7 +122,6 @@ def _bkapp(doc):
     template = "index.html"
     if _visualizer.template:
         template = _visualizer.template
-    print("file is at %s" % pathlib.Path(__file__))
     template_path = '%s/templates/' % pathlib.Path(__file__).parent.absolute()
     with open('%s/templates/%s' % (pathlib.Path(__file__).parent.absolute(), template)) as f:
         # Because Bokeh has broken templating...
@@ -134,7 +133,6 @@ def _bkapp(doc):
         template = f.read()
         template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
                            .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
-        print(template)
         # t = Template(template)
         t = Environment(loader=FileSystemLoader(template_path)).from_string(template)
         doc.template = t

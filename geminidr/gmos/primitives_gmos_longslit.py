@@ -705,8 +705,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    reinit_extras=reinit_extras,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x (pixels)', ylabel='counts',
-                                                   modal_message="<b>Recalculating Points</b><br/>This may take 20 seconds...",
-                                                   modal_button_label="Recalc Flat Inputs",
                                                    domains=all_domains,
                                                    title="Normalize Flat",
                                                    primitive_name="normalizeFlat",
