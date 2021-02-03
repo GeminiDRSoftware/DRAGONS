@@ -24,6 +24,7 @@ class CustomWidget:
 
     @property
     def value(self):
+        """The value from the model."""
         return getattr(self.model, self.attr)
 
     def handler(self, attr, old, new):
@@ -48,11 +49,18 @@ class TextInputLine(CustomWidget):
 
 
 class TextSlider(CustomWidget):
-    def build(self, start, end, step):
+    def __init__(self, title, model, attr, handler=None, start=None, end=None,
+                 step=None):
+        super().__init__(title, model, attr, handler=handler)
+        self.start = start
+        self.end = end
+        self.step = step
+
+    def build(self):
         self.in_update = False
-        self.spinner = Spinner(value=self.value, width=64, step=step)
-        self.slider = Slider(start=start, end=end, value=self.value, step=step,
-                             title=self.title, width=256)
+        self.spinner = Spinner(value=self.value, width=64, step=self.step)
+        self.slider = Slider(start=self.start, end=self.end, value=self.value,
+                             step=self.step, title=self.title, width=256)
         self.spinner.on_change("value", self.handler)
         self.slider.on_change("value", self.handler)
 
@@ -516,6 +524,56 @@ class ApertureView:
             ap.update_title()
 
 
+def parameters_view(model, recalc_handler):
+
+    def _maxaper_handler(new):
+        model.max_apertures = int(new) if new is not None else None
+
+    maxaper = TextInputLine("Max Apertures (empty means no limit)",
+                            model, attr="max_apertures",
+                            handler=_maxaper_handler)
+
+    percentile = TextSlider("Percentile (use mean if no value)", model,
+                            attr="percentile", start=0, end=100, step=1)
+
+    minsky = TextInputLine("Min sky region", model, attr="min_sky_region")
+
+    def _use_snr_handler(new):
+        model.use_snr = 0 in new
+
+    use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
+                           handler=_use_snr_handler)
+
+    threshold = TextSlider("Threshold", model, attr="threshold",
+                           start=0, end=1, step=0.01)
+
+    sizing = SelectLine("Sizing method", model, attr="sizing_method")
+
+    def _reset_handler():
+        model.reset()
+        for widget in (maxaper, minsky, use_snr,
+                       threshold, percentile, sizing):
+            widget.reset()
+        recalc_handler()
+
+    reset_button = Button(label="Reset", default_size=200)
+    reset_button.on_click(_reset_handler)
+
+    find_button = Button(label="Find apertures", button_type='success',
+                         default_size=200)
+    find_button.on_click(recalc_handler)
+
+    return column([
+        maxaper.build(),
+        percentile.build(),
+        minsky.build(),
+        use_snr.build(),
+        threshold.build(),
+        sizing.build(),
+        row([reset_button, find_button]),
+    ])
+
+
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
     def __init__(self, model):
         """
@@ -566,30 +624,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                  disabled=True,
                                  background='white')
 
-        def _maxaper_handler(new):
-            self.model.max_apertures = int(new) if new is not None else None
-
-        maxaper_input = TextInputLine("Max Apertures (empty means no limit)",
-                                      self.model, attr="max_apertures",
-                                      handler=_maxaper_handler)
-
-        percentile_slider = TextSlider("Percentile (use mean if no value)",
-                                       self.model, attr="percentile")
-
-        minsky_input = TextInputLine("Min sky region", self.model,
-                                     attr="min_sky_region")
-
-        def _use_snr_handler(new):
-            self.model.use_snr = 0 in new
-
-        use_snr_widget = CheckboxLine("Use S/N ratio ?", self.model,
-                                      attr="use_snr", handler=_use_snr_handler)
-
-        threshold_slider = TextSlider("Threshold", self.model,
-                                      attr="threshold")
-
-        sizing_widget = SelectLine("Sizing method", self.model,
-                                   attr="sizing_method")
+        params = parameters_view(self.model, self.clear_and_recalc)
 
         # Create a blank figure with labels
         self.fig = fig = figure(
@@ -612,30 +647,10 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
-        def _reset_handler():
-            self.model.reset()
-            for widget in (maxaper_input, minsky_input, use_snr_widget,
-                           threshold_slider, percentile_slider, sizing_widget):
-                widget.reset()
-            self.clear_and_recalc()
-
-        reset_button = Button(label="Reset", default_size=200)
-        reset_button.on_click(_reset_handler)
-
-        find_button = Button(label="Find apertures", button_type='success',
-                             default_size=200)
-        find_button.on_click(self.clear_and_recalc)
-
         helptext = Div()
         controls = column(children=[
             current_file,
-            maxaper_input.build(),
-            percentile_slider.build(start=0, end=100, step=1),
-            minsky_input.build(),
-            use_snr_widget.build(),
-            threshold_slider.build(start=0, end=1, step=0.01),
-            sizing_widget.build(),
-            row([reset_button, find_button]),
+            params,
             aperture_view.controls,
             add_button,
             self.submit_button,
