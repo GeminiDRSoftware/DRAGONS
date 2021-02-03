@@ -271,7 +271,12 @@ class CalibDB(PrimitivesBASE):
         prior to storing AD objects as calibrations
         """
         for ad in adinputs:
-            proc_suffix = f"_{self.mode}"
+            # if user mode: not uploading and sq, don't add mode.
+            if self.mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+                proc_suffix = f""
+            else:
+                proc_suffix = f"_{self.mode}"
+
             if suffix:
                 proc_suffix += suffix
             ad.update_filename(suffix=proc_suffix, strip=True)
