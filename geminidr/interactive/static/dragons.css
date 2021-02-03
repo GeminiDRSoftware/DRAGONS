@@ -1,0 +1,82 @@
+/* https://codepen.io/KanatSahanov/pen/raGXXa */
+
+body {
+    margin: 0px;
+}
+
+#plot_div {
+    margin: 8px;
+}
+
+#top-icon {
+    background-image: url('DRAGONS.png');
+    background-repeat: no-repeat;
+    float: left;
+    height: 128px;
+    width: 128px;
+}
+
+#top-title {
+    background-color: #5384a5;
+    font: helvetica;
+    font-style: italic;
+    font-size: 64px;
+    color: white;
+    padding-left: 140px;
+}
+
+#top {
+    height: 128px;
+    width: 100%;
+}
+
+#footer {
+    background-color: #5384a5;
+    font: helvetica;
+    font-style: italic;
+    font-size: 14px;
+    color: white;
+    text-align: right;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-right: 12px;
+}
+#footer a {
+    color: white;
+}
+
+.modal_overlay {
+    visibility: hidden;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #8888aa88;
+    z-index: 2;
+    text-align: center;
+    font-size: 32px;
+    font-family: sans-serif;
+    padding-top: 200px;
+}
+
+.hamburger_helper button.bk-btn {
+    background-image: url('hamburger.svg');
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    vertical-align: 5px;
+    padding-left: 20px;
+    appearance: none;
+    border: none;
+    text-align: left;
+}

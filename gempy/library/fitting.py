@@ -512,6 +512,25 @@ class fit_1D:
             return self._models[0]
 
 
+    def extract_params(self):
+        """
+        Stand-in method by ooberdorf pending something from Chris or James.
+
+        Convert the state of this fit_1D model into a dictionary.  This can be used
+        to create a fresh fit.
+
+        Returns
+        -------
+
+        """
+        retval = dict()
+        terms = ["function", "order", "sigma_lower", "sigma_upper", "niter", "grow", "regions"]
+        for term in terms:
+            val = getattr(self, term, None)
+            if val is not None:
+                retval[term] = val
+        return retval
+
     @staticmethod
     def translate_params(params):
         """

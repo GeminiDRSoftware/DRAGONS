@@ -1,98 +1,51 @@
 
 body {
-    background-color: #272B30;
+    background-color: DimGray;
     color: #DEDEDE;
     font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
-    margin: 10px;
-    padding: 0;
+    margin: auto;
+    max-width: 1040px;
+    padding: 10px;
 }
 
-#message_wrapper {
-    background-color: #272B30;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    clear: both;
-    height: 40px;
-    padding: 0px;
-    width: 1024px;
-    position: relative;
+/* Fix the highlighting on jqplots that happens when double-clicked
+ to zoom out*/
+div.jqplot-target div::selection, div.jqplot-target canvas::selection, div.jqplot-axis jqplot-yaxis canvas::selection, div.jqplot-axis jqplot-xaxis canvas::selection {
+    background: rgba(0, 0, 0, 0);
 }
-#message_box {
-    height: 10px;
-    padding-left: 17px;
-    position: absolute;
-    top: 50%;
-    margin-top: -8px;
+div.jqplot-target div::-moz-selection, div.jqplot-target canvas::-moz-selection, div.jqplot-axis jqplot-yaxis canvas::-moz-selection, div.jqplot-axis jqplot-xaxis canvas::-moz-selection {
+    background: rgba(0, 0, 0, 0);
 }
-#message_target,#message_window {
+
+div.label {
     float:left;
-}
-#problem_overlay {
-    -moz-box-shadow: 0 0 4px 4px #CE0000;
-    -webkit-box-shadow: 0 0 4px 4px #CE0000;
-    box-shadow: 0 0 4px 4px #CE0000;
-    display: none;
-    height: 40px;
-    width: 1024px;
-    padding: 0px;
-    z-index: 0;
-}
-#warning_overlay {
-    -moz-box-shadow: 0 0 4px 4px #FF9E00;
-    -webkit-box-shadow: 0 0 4px 4px #FF9E00;
-    box-shadow: 0 0 4px 4px #FF9E00;
-    display: none;
-    height: 40px;
-    width: 1024px;
-    padding: 0px;
-    z-index: 0;
-}
-
-#table_wrapper {
-    background-color: #272B30;
-    border: 1px solid black;
-    border-top-right-radius: 6px;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    clear: both;
-    height: 340px;
-    overflow: hidden;
-    width: 1024px;
-}
-
-thead.fixed_header tr {
-    border-bottom: 1px solid black;
-}
-
-thead.fixed_header th {
-    padding: 2px 1px 2px 1px;
-    text-align: center;
 }
 
 tbody.scroll_body {
     background-color: #272B30;
     border-bottom: 1px solid #B0B0B0;
 }
-
 tbody.scroll_body td {
     text-align: center;
     padding: 2px 1px 2px 1px;
 }
-
 tbody.scroll_body td.hover {
     background-color: #c8c8c8;
     color:black;
 }
 
+td.jqplot-series-hidden div.jqplot-table-legend-swatch {
+    opacity: 0.4;
+    filter:alpha(opacity=40);
+}
+
+td.ui-draggable-dragging {
+    background-color: #DDD;
+}
+
 tfoot.fixed_footer tr {
     position: relative;
 }
-
 tfoot.fixed_footer td.filter {
     position: absolute;
     height: 22px;
@@ -100,47 +53,21 @@ tfoot.fixed_footer td.filter {
     margin-top: -11px;
     right: 16px;
 }
-
 tfoot.fixed_footer td.filter_message {
     padding-left: 14px;
 }
-
 tfoot.fixed_footer input.filter {
     width: 150px;
 }
 
-.no_input {
-    color: #707070;
+thead.fixed_header tr {
+    border-bottom: 1px solid black;
 }
-
-#date_wrapper {
-    background-color: #272B30;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-top: 1px solid black;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    padding: 4px;
+thead.fixed_header th {
+    padding: 2px 1px 2px 1px;
     text-align: center;
-    width: 180px;
 }
 
-.label {
-    font-weight: bold;
-}
-div.label {
-    float:left;
-}
-.highlight {
-    background-color: #000000!important;
-    color: #00FF00!important;
-}
-.even {
-    background-color: #555555;
-}
 th.ui-draggable {
     cursor: move;
 }
@@ -150,28 +77,257 @@ th.ui-draggable-dragging {
     opacity: 0.85;
     filter:alpha(opacity=85);
 }
-td.ui-draggable-dragging {
-    background-color: #DDD;
-}
 th.ui-droppable.hover {
     background-color: #B0DBFF;
 }
 
-#plot_wrapper {
-    background-color: #272B30;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-    -moz-box-shadow: 2px 0px 2px #888;
-    -webkit-box-shadow: 2px 0px 2px #888;
-    box-shadow: 2px 0px 2px #888;
-    clear: both;
-    height: 340px;
-    padding: 10px 0px 0px 0px;
-    width: 1024px;
+span.warning {
+    color: #FF9E00;
+}
+span.problem {
+    color: #CE0000;
 }
 
-#iqplot {
+.close_icon {
+    cursor: pointer;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-image: url(../images/close.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 12px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 12px;
+}
+.d-table {
+  display: table;
+}
+.d-table-cell {
+  display: table-cell;
+}
+.even {
+    background-color: #555555;
+}
+.expand_icon {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: -8px;
+    margin-top: -5px;
+    background-image: url(../images/yellow_triangle_e.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 11px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 6px;
+}
+.header {
+  color: white;
+  margin: 0px;
+  line-height: 0.5;
+}
+.highlight {
+    background-color: #000000!important;
+    color: #00FF00!important;
+}
+.jqplot-title {
+    left:57px!important;
+    width:253px!important;
+    color: #00FC00;
+}
+.jqplot-canvasOverlay-tooltip {
+    border: 0px;
+    font-size: 0.75em;
+    background: rgba(256,256,256,0);
+    padding: 0px;
+}
+.label {
+    font-weight: bold;
+}
+.link-buttom a {
+    background-color: DimGray;
+    border: 1px solid lightgray;
+    border-radius: 20px;
+    color: lightgray;
+    font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
+    padding: 5px 20px 5px 20px;
+    text-decoration: none;
+    transition: all 0.5s;
+}
+.link-buttom a:hover {
+    background-color: black;
+    border: 1px solid white;
+    color: white;
+    -moz-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.5);
+}
+.link-buttom a:active {
+    background-color: DarkGray;
+    color: white;
+    -moz-box-shadow: 0 2px 3px rgba(1, 1, 1, 0);
+    -webkit-box-shadow: 0 2px 3px rgba(1, 1, 1, 0);
+    box-shadow: 0 2px 3px rgba(1, 1, 1, 0);
+}
+.msg_problem_icon {
+    position: absolute;
+    top: 50%;
+    left: 0px;
+    margin-top: -5px;
+    background-image: url(../images/red_triangle_e.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 11px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 6px;
+}
+.msg_warn_icon {
+    position: absolute;
+    top: 50%;
+    left: 0px;
+    margin-top: -5px;
+    background-image: url(../images/yellow_triangle_e.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 11px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 6px;
+}
+.no_input {
+    color: #707070;
+}
+.outer {
+    position: relative;
+}
+.problem_icon {
+    position: absolute;
+    top: -2px;
+    right: -1px;
+    background-image: url(../images/red_triangle_ne.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 7px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 7px;
+}
+.search_icon {
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    margin-top: -5px;
+    background-image: url(../images/search.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 9px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 10px;
+}
+.stack_link {
+    color: #0000EE;
+}
+.stack_link:hover {
+    text-decoration: underline;
+}
+.stack_window {
+    background-color: #808080;
+    border: 1px solid black;
+    border-radius: 6px;
+    -moz-box-shadow: 3px 3px 3px #888;
+    -webkit-box-shadow: 3px 3px 3px #888;
+    box-shadow: 3px 3px 3px #888;
+    height: 400px;
+    left: 50%;
+    margin-left: -200px;
+    margin-top: -200px;
+    overflow: hidden;
+    padding: 0px;
+    position: absolute;
+    top: 50%;
+    width: 250px;
+    z-index: 98;
+}
+.stack_wrapper {
+    height: 90%;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    overflow-y: auto;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+.swap_icon {
+    cursor: pointer;
+    position: absolute;
+    bottom: 0px;
+    background-image: url(../images/swap.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 9px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 11px;
+}
+.unexpand_icon {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: -12px;
+    margin-top: -3px;
+    background-image: url(../images/yellow_triangle_s.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 6px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 11px;
+}
+.tar {
+  text-align: right;
+}
+.tooltip,.jqplot-highlighter-tooltip {
+    background-color: #E0E0DE!important;
+    color:#005DFC!important;
+    border: 1px solid #B0B0B0!important;
+    padding: 2px!important;
+    z-index: 90;
+}
+.warn_icon {
+    position: absolute;
+    top: -2px;
+    right: -1px;
+    background-image: url(../images/yellow_triangle_ne.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 7px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 7px;
+}
+.w-100 {
+  width: 100%;
+}
+
+#accordion {
+    padding-left: 12px;
+}
+#accordion h3 {
+    position: relative;
+}
+#accordion_wrapper {
+    height: 90%;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    overflow-y: auto;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+#bgplot {
     float: left;
     margin: 10px;
     width: 320px;
@@ -180,68 +336,6 @@ th.ui-droppable.hover {
     float: left;
     margin: 10px;
     width: 320px;
-}
-#bgplot {
-    float: left;
-    margin: 10px;
-    width: 320px;
-}
-
-
-.jqplot-title {
-    left:57px!important;
-    width:253px!important;
-    color: #00FC00;
-}
-canvas.jqplot-xaxis-label {
-    left:auto!important;
-    right:0px!important;
-}
-
-/* Fix the highlighting on jqplots that happens when double-clicked
- to zoom out*/
-div.jqplot-target div::selection, div.jqplot-target canvas::selection, div.jqplot-axis jqplot-yaxis canvas::selection, div.jqplot-axis jqplot-xaxis canvas::selection {
-    background: rgba(0, 0, 0, 0);
-} 
-div.jqplot-target div::-moz-selection, div.jqplot-target canvas::-moz-selection, div.jqplot-axis jqplot-yaxis canvas::-moz-selection, div.jqplot-axis jqplot-xaxis canvas::-moz-selection {
-    background: rgba(0, 0, 0, 0);
-}
-
-td.jqplot-series-hidden div.jqplot-table-legend-swatch {
-    opacity: 0.4;
-    filter:alpha(opacity=40);
-}
-
-.tooltip,.jqplot-highlighter-tooltip {
-    background-color: #E0E0DE!important;
-    color:#005DFC!important;
-    border: 1px solid #B0B0B0!important;
-    padding: 2px!important;
-    z-index: 90;
-}
-.jqplot-canvasOverlay-tooltip {
-    border: 0px;
-    font-size: 0.75em;
-    background: rgba(256,256,256,0);
-    padding: 0px;
-}
-
-#controls_wrapper {
-    background-color: #c8c8c8;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    -moz-box-shadow: 2px 2px 2px #888;
-    -webkit-box-shadow: 2px 2px 2px #888;
-    box-shadow: 2px 2px 2px #888;
-    clear: both;
-    height: 32px;
-    margin: 0px;
-    padding: 0px;
-    width: 1024px;
-    position: relative;
 }
 #controls {
     margin: 0px;
@@ -266,13 +360,63 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
 #controls li.selected {
     background-color: #B0DBFF;
 }
-#reset, #status {
-    cursor: pointer;
+#controls_wrapper {
+    background-color: #c8c8c8;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    -moz-box-shadow: 2px 2px 2px #888;
+    -webkit-box-shadow: 2px 2px 2px #888;
+    box-shadow: 2px 2px 2px #888;
+    clear: both;
+    height: 32px;
+    margin: 0px;
+    padding: 0px;
+
+    position: relative;
+}
+#date_wrapper {
+    background-color: #272B30;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-top: 1px solid black;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    padding: 4px;
+    text-align: center;
+    width: 180px;
 }
 #help {
     cursor: help;
 }
-
+#help_window {
+    background-color: #FFFFD0;
+    border: 1px solid black;
+    border-radius: 6px;
+    -moz-box-shadow: 3px 3px 3px #888;
+    -webkit-box-shadow: 3px 3px 3px #888;
+    box-shadow: 3px 3px 3px #888;
+    height: 200px;
+    left: 50%;
+    margin-left: -200px;
+    margin-top: -200px;
+    overflow: hidden;
+    padding: 0px;
+    position: absolute;
+    top: 50%;
+    width: 400px;
+    z-index: 98;
+}
+#iqplot {
+    float: left;
+    margin: 10px;
+    width: 320px;
+}
 #lightbox_background {
     background-color: black;
     display: none;
@@ -311,199 +455,77 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     width: 100%;
     overflow: auto;
 }
-
-#help_window {
-    background-color: #FFFFD0;
-    border: 1px solid black;
-    border-radius: 6px;
-    -moz-box-shadow: 3px 3px 3px #888;
-    -webkit-box-shadow: 3px 3px 3px #888;
-    box-shadow: 3px 3px 3px #888;
-    height: 200px;
-    left: 50%;
-    margin-left: -200px;
-    margin-top: -200px;
-    overflow: hidden;
-    padding: 0px;
+#message_box {
+    height: 10px;
+    padding-left: 17px;
     position: absolute;
     top: 50%;
-    width: 400px;
-    z-index: 98;
+    margin-top: -8px;
 }
-#accordion_wrapper {
-    height: 90%;
-    margin-bottom: 20px;
-    margin-top: 20px;
-    overflow-y: auto;
-    padding-left: 18px;
-    padding-right: 18px;
+#message_target,#message_window {
+    float:left;
 }
-#accordion {
-    padding-left: 12px;
-}
-#accordion h3 {
+#message_wrapper {
+    background-color: #272B30;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    clear: both;
+    height: 40px;
+    padding: 0px;
+
     position: relative;
 }
+#plot_wrapper {
+    background-color: #272B30;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    clear: both;
+    height: 340px;
+    padding: 10px 0px 0px 0px;
 
-span.warning {
-    color: #FF9E00;
 }
-span.problem {
-    color: #CE0000;
-}
-.outer {
-    position: relative;
-}
-.problem_icon {
-    position: absolute;
-    top: -2px;
-    right: -1px;
-    background-image: url(../images/red_triangle_ne.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 7px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 7px;
-}
-.warn_icon {
-    position: absolute;
-    top: -2px;
-    right: -1px;
-    background-image: url(../images/yellow_triangle_ne.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 7px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 7px;
-}
-.msg_problem_icon {
-    position: absolute;
-    top: 50%;
-    left: 0px;
-    margin-top: -5px;
-    background-image: url(../images/red_triangle_e.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 11px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 6px;
-}
-.msg_warn_icon {
-    position: absolute;
-    top: 50%;
-    left: 0px;
-    margin-top: -5px;
-    background-image: url(../images/yellow_triangle_e.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 11px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 6px;
-}
-.swap_icon {
-    cursor: pointer;
-    position: absolute;
-    bottom: 0px;
-    background-image: url(../images/swap.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 9px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 11px;
-}
+#problem_overlay {
+    -moz-box-shadow: 0 0 4px 4px #CE0000;
+    -webkit-box-shadow: 0 0 4px 4px #CE0000;
+    box-shadow: 0 0 4px 4px #CE0000;
+    display: none;
+    height: 40px;
 
-.close_icon {
-    cursor: pointer;
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background-image: url(../images/close.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 12px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 12px;
-}
-
-.search_icon {
-    position: absolute;
-    left: -12px;
-    top: 50%;
-    margin-top: -5px;
-    background-image: url(../images/search.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 9px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 10px;
-}
-.expand_icon {
-    cursor: pointer;
-    position: absolute;
-    top: 50%;
-    left: -8px;
-    margin-top: -5px;
-    background-image: url(../images/yellow_triangle_e.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 11px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 6px;
-}
-.unexpand_icon {
-    cursor: pointer;
-    position: absolute;
-    top: 50%;
-    left: -12px;
-    margin-top: -3px;
-    background-image: url(../images/yellow_triangle_s.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 6px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 11px;
-}
-
-.stack_window {
-    background-color: #808080;
-    border: 1px solid black;
-    border-radius: 6px;
-    -moz-box-shadow: 3px 3px 3px #888;
-    -webkit-box-shadow: 3px 3px 3px #888;
-    box-shadow: 3px 3px 3px #888;
-    height: 400px;
-    left: 50%;
-    margin-left: -200px;
-    margin-top: -200px;
-    overflow: hidden;
     padding: 0px;
-    position: absolute;
-    top: 50%;
-    width: 250px;
-    z-index: 98;
+    z-index: 0;
 }
-.stack_wrapper {
-    height: 90%;
-    margin-bottom: 20px;
-    margin-top: 20px;
-    overflow-y: auto;
-    padding-left: 18px;
-    padding-right: 18px;
+#reset, #status {
+    cursor: pointer;
 }
-.stack_link {
-    color: #0000EE;
+#table_wrapper {
+    background-color: #272B30;
+    border: 1px solid black;
+    border-top-right-radius: 6px;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
+    clear: both;
+    height: 340px;
+    overflow: hidden;
+
 }
-.stack_link:hover {
-    text-decoration: underline;
+#warning_overlay {
+    -moz-box-shadow: 0 0 4px 4px #FF9E00;
+    -webkit-box-shadow: 0 0 4px 4px #FF9E00;
+    box-shadow: 0 0 4px 4px #FF9E00;
+    display: none;
+    height: 40px;
+
+    padding: 0px;
+    z-index: 0;
 }
 
 /*Force visible scrollbar for Lion*/
@@ -519,5 +541,3 @@ span.problem {
     border-radius: 7px;
     -webkit-box-shadow: inset 0 0 8px rgba(0,0,0,.5);
 }
-
-

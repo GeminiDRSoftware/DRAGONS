@@ -82,3 +82,5 @@ class SExtractorETIFile(ETIFile):
             os.remove(self._catalog_file)
         if self._objmask_file and os.path.isfile(self._objmask_file):
             os.remove(self._objmask_file)
+
+        super().clean()
