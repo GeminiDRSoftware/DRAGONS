@@ -69,10 +69,12 @@ class CalibDB(PrimitivesBASE):
         return caloutputs if isinstance(adinput, list) else caloutputs[0]
 
     def _assert_calibrations(self, adinputs, caltype):
+        log = self.log
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)  # from cache
             if not calurl and "sq" in self.mode:
-                raise OSError(self._not_found.format(ad.filename))
+                log.warning(self._not_found.format(ad.filename))
+                #raise OSError(self._not_found.format(ad.filename))
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
