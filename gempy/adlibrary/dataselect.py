@@ -82,6 +82,9 @@ def expr_parser(expression, strict=False):
             elif descriptor == 'filter_name' and not strict:
                 codified_item = \
                     re.sub(pattern, r'\1(pretty=True)\3\4', item)
+            elif descriptor == 'detector_name' and not strict:
+                codified_item = \
+                    re.sub(pattern, r'\1(pretty=True)\3\4', item)
             else:
                 codified_item = item
 
