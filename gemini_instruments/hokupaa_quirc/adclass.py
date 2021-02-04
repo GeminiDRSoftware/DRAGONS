@@ -48,7 +48,7 @@ class AstroDataHokupaaQUIRC(AstroDataGemini):
         return self.phu.get(self._keyword_for('airmass'))
 
     @astro_data_descriptor
-    def detector_name(self):
+    def detector_name(self, pretty=False):
         """
         Returns the name of the detector. For HOKUPAA+QUIRC, this is always
         'QUIRC'

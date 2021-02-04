@@ -326,7 +326,11 @@ class Stack(PrimitivesBASE):
             ad_out.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
 
         # Add suffix to datalabel to distinguish from the reference frame
-        ad_out.phu.set('DATALAB', "{}{}".format(ad_out.data_label(), sfx),
+        if sfx[0] == '_':
+            extension = sfx.replace('_', '-', 1).upper()
+        else:
+            extension = '-' + sfx.upper()
+        ad_out.phu.set('DATALAB', "{}{}".format(ad_out.data_label(), extension),
                        self.keyword_comments['DATALAB'])
 
         # Add other keywords to the PHU about the stacking inputs

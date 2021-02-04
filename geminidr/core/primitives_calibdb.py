@@ -69,10 +69,12 @@ class CalibDB(PrimitivesBASE):
         return caloutputs if isinstance(adinput, list) else caloutputs[0]
 
     def _assert_calibrations(self, adinputs, caltype):
+        log = self.log
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)  # from cache
             if not calurl and "sq" in self.mode:
-                raise OSError(self._not_found.format(ad.filename))
+                log.warning(self._not_found.format(ad.filename))
+                #raise OSError(self._not_found.format(ad.filename))
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
@@ -268,8 +270,13 @@ class CalibDB(PrimitivesBASE):
         Updates filenames, datalabels (if asked) and adds header keyword
         prior to storing AD objects as calibrations
         """
-        proc_suffix = f"_{self.mode}"
         for ad in adinputs:
+            # if user mode: not uploading and sq, don't add mode.
+            if self.mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+                proc_suffix = f""
+            else:
+                proc_suffix = f"_{self.mode}"
+
             if suffix:
                 proc_suffix += suffix
             ad.update_filename(suffix=proc_suffix, strip=True)
@@ -428,7 +435,15 @@ class CalibDB(PrimitivesBASE):
 def _update_datalab(ad, suffix, keyword_comments_lut):
     # Update the DATALAB. It should end with 'suffix'.  DATALAB will
     # likely already have '_stack' suffix that needs to be replaced.
+
+    # replace the _ with a - to match fitsstore datalabel standard
+    # or add the - if "suffix" doesn't have a leading _
+    if suffix[0] == '_':
+        extension = suffix.replace('_', '-', 1).upper()
+    else:
+        extension = '-'+suffix.upper()
+
     datalab = ad.data_label()
-    new_datalab = re.sub(r'_[a-zA-Z]+$', '', datalab) + suffix
+    new_datalab = re.sub(r'-[a-zA-Z]+$', '', datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return
