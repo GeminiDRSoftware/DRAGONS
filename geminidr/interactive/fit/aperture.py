@@ -17,11 +17,12 @@ __all__ = ["interactive_find_source_apertures", ]
 class CustomWidget:
     """Defines a default handler that set the value on the model."""
 
-    def __init__(self, title, model, attr, handler=None):
+    def __init__(self, title, model, attr, handler=None, **kwargs):
         self.title = title
         self.attr = attr
         self.model = model
         self._handler = handler
+        self.kwargs = kwargs
 
     @property
     def value(self):
@@ -39,7 +40,7 @@ class CustomWidget:
 
 class TextInputLine(CustomWidget):
     def build(self):
-        self.spinner = Spinner(value=self.value, width=64)
+        self.spinner = Spinner(value=self.value, width=64, **self.kwargs)
         self.spinner.on_change("value", self.handler)
         return row([Div(text=self.title, align='end'),
                     Spacer(width_policy='max'),
@@ -50,18 +51,16 @@ class TextInputLine(CustomWidget):
 
 
 class TextSlider(CustomWidget):
-    def __init__(self, title, model, attr, handler=None, start=None, end=None,
-                 step=None):
-        super().__init__(title, model, attr, handler=handler)
-        self.start = start
-        self.end = end
-        self.step = step
-
     def build(self):
         self.in_update = False
-        self.spinner = Spinner(value=self.value, width=64, step=self.step)
-        self.slider = Slider(start=self.start, end=self.end, value=self.value,
-                             step=self.step, title=self.title, width=256)
+        self.spinner = Spinner(value=self.value, width=64,
+                               step=self.kwargs.get('step'),
+                               low=self.kwargs.get('start'),
+                               high=self.kwargs.get('end'))
+        self.slider = Slider(start=self.kwargs.get('start'),
+                             end=self.kwargs.get('end'),
+                             step=self.kwargs.get('step'),
+                             value=self.value, title=self.title, width=256)
         self.spinner.on_change("value", self.handler)
         self.slider.on_change("value", self.handler)
 
@@ -586,12 +585,13 @@ def parameters_view(model, recalc_handler):
 
     maxaper = TextInputLine("Max Apertures (empty means no limit)",
                             model, attr="max_apertures",
-                            handler=_maxaper_handler)
+                            handler=_maxaper_handler, low=0)
 
     percentile = TextSlider("Percentile (use mean if no value)", model,
                             attr="percentile", start=0, end=100, step=1)
 
-    minsky = TextInputLine("Min sky region", model, attr="min_sky_region")
+    minsky = TextInputLine("Min sky region", model, attr="min_sky_region",
+                           low=0)
 
     def _use_snr_handler(new):
         model.use_snr = 0 in new
