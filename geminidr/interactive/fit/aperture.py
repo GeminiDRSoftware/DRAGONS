@@ -9,7 +9,7 @@ from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import (PrimitiveVisualizer,
                                               hamburger_helper)
-from gempy.library.tracing import find_apertures
+from gempy.library.tracing import find_apertures, find_apertures_peaks
 
 __all__ = ["interactive_find_source_apertures", ]
 
@@ -125,13 +125,21 @@ class FindSourceAperturesModel:
         UI and then recalculate the fit as often as desired.
 
         """
-        self.aperture_id = 1
         self.listeners = list()
         self.ext = ext
         self.profile_shape = self.ext.shape[0]
+
+        # keep the initial parameters
         self._aper_params = aper_params.copy()
-        self.profile = ColumnDataSource({'x': np.arange(self.profile_shape),
-                                         'y': np.zeros(self.profile_shape)})
+
+        # parameters used to compute the current profile
+        self.profile_params = None
+        self.profile_source = ColumnDataSource({
+            'x': np.arange(self.profile_shape),
+            'y': np.zeros(self.profile_shape),
+        })
+
+        # initial parameters are set as attributes
         self.reset()
 
     @property
@@ -171,11 +179,32 @@ class FindSourceAperturesModel:
         and N limits.
 
         """
-        locations, self.all_limits, profile = find_apertures(
-            self.ext, **self.aper_params)
+        if self.profile_params is None:
+            self.profile_params = self.aper_params.copy()
+            recompute_profile = True
+        else:
+            # Find if parameters that would change the profile have
+            # been modified
+            recompute_profile = False
+            for name in ('min_sky_region', 'percentile', 'sec_regions',
+                         'use_snr'):
+                if self.profile_params[name] != self.aper_params[name]:
+                    recompute_profile = True
+                    break
+            self.profile_params = self.aper_params.copy()
+
+        if recompute_profile:
+            # if any of those parameters changed we must recompute the profile
+            locations, self.all_limits, self.profile, self.prof_mask = \
+                find_apertures(self.ext, **self.aper_params)
+            self.profile_source.patch({'y': [(slice(None), self.profile)]})
+        else:
+            # otherwise we can redo only the peak detection
+            locations, self.all_limits = find_apertures_peaks(
+                self.profile, self.prof_mask, self.max_apertures,
+                self.direction, self.threshold, self.sizing_method)
 
         self.locations = list(locations)
-        self.profile.patch({'y': [(slice(None), profile)]})
 
         for listener in self.listeners:
             for i, (loc, limits) in enumerate(
@@ -666,7 +695,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         aperture_view = ApertureView(self.model, fig)
         self.model.add_listener(self)
 
-        fig.step(x='x', y='y', source=self.model.profile,
+        fig.step(x='x', y='y', source=self.model.profile_source,
                  color="black", mode="center")
 
         add_button = Button(label="Add Aperture")

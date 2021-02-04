@@ -1609,7 +1609,7 @@ class Spect(PrimitivesBASE):
                     locations, all_limits = interactive_find_source_apertures(
                         ext, **aper_params)
                 else:
-                    locations, all_limits, _ = tracing.find_apertures(
+                    locations, all_limits, _, _ = tracing.find_apertures(
                         ext, **aper_params)
 
                 if not locations:

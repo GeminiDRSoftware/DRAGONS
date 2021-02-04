@@ -1056,6 +1056,15 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
         else:
             profile = np.nanmean(masked_data, axis=1)
 
+    locations, all_limits = find_apertures_peaks(profile, prof_mask,
+                                                 max_apertures, direction,
+                                                 threshold, sizing_method)
+
+    return locations, all_limits, profile, prof_mask
+
+
+def find_apertures_peaks(profile, prof_mask, max_apertures, direction,
+                         threshold, sizing_method):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
     widths = np.arange(3, 20)
@@ -1083,4 +1092,4 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
                             threshold=threshold,
                             method=sizing_method)
 
-    return locations, all_limits, profile
+    return locations, all_limits
