@@ -128,15 +128,16 @@ def _bkapp(doc):
         title = _visualizer.title
         if not title:
             title = 'Interactive'
-        filename_info = _visualizer.filename_info
         primitive_name = _visualizer.primitive_name
         template = f.read()
-        template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
-                           .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
-        # t = Template(template)
+        # template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
+        #                    .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
         t = Environment(loader=FileSystemLoader(template_path)).from_string(template)
         doc.template = t
+        doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
+        doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
     _visualizer.visualize(doc)
+    doc.title = title
 
 
 def set_visualizer(visualizer):

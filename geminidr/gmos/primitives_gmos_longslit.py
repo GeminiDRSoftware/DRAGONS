@@ -709,8 +709,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    title="Normalize Flat",
                                                    primitive_name="normalizeFlat",
                                                    filename_info=filename_info,
-                                                   enable_user_masking=False)
+                                                   enable_user_masking=False,
+                                                   enable_regions=False)
                 geminidr.interactive.server.interactive_fitter(visualizer)
+                log.info('Interactive Parameters retrieved, performing flat normalization...')
 
                 # The fit models were done on a single row, so we need to
                 # get the parameters that were used in the final fit for

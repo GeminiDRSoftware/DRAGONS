@@ -519,7 +519,7 @@ class Fit1DPanel:
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True,
-                 enable_user_masking=True):
+                 enable_user_masking=True, enable_regions=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -571,16 +571,7 @@ class Fit1DPanel:
 
         controls_ls = list()
 
-        if self.visualizer.filename_info:
-            controls_ls.append(Div(text='<b>Filename:</b> %s<br/>' % self.visualizer.filename_info))
-
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
-
-        mask_button = bm.Button(label="Mask", align='center', button_type='primary', width_policy='min')
-        mask_button.on_click(self.mask_button_handler)
-
-        unmask_button = bm.Button(label="Unmask", align='center', button_type='primary', width_policy='min')
-        unmask_button.on_click(self.unmask_button_handler)
 
         reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
 
@@ -596,12 +587,6 @@ class Fit1DPanel:
         self.info_div = Div()
 
         controls_ls.extend(controls_column)
-        # per KL remove mask/unmask buttons
-        # if enable_user_masking:
-        #     controls_ls.append(row(mask_button, unmask_button, Spacer(sizing_mode='stretch_width'), reset_button))
-        # else:
-        #     reset_button.align = 'center'
-        #     controls_ls.append(reset_button)
 
         reset_button.align = 'center'
         controls_ls.append(reset_button)
@@ -630,54 +615,62 @@ class Fit1DPanel:
         else:
             tools = "pan,wheel_zoom,box_zoom,reset"
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
+                        min_width=400,
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                         tools=tools,
                         output_backend="webgl", x_range=x_range, y_range=y_range)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
-        class Fit1DRegionListener(GIRegionListener):
-            """
-            Wrapper class so we can just detect when a bands are finished.
-
-            We don't want to do an expensive recalc as a user is dragging
-            a band around.
-            """
-            def __init__(self, fn):
+        if enable_regions:
+            class Fit1DRegionListener(GIRegionListener):
                 """
-                Create a band listener that just updates on `finished`
-                Parameters
-                ----------
-                fn : function
-                    function to call when band is finished.
+                Wrapper class so we can just detect when a bands are finished.
+
+                We don't want to do an expensive recalc as a user is dragging
+                a band around.
                 """
-                self.fn = fn
+                def __init__(self, fn):
+                    """
+                    Create a band listener that just updates on `finished`
+                    Parameters
+                    ----------
+                    fn : function
+                        function to call when band is finished.
+                    """
+                    self.fn = fn
 
-            def adjust_region(self, region_id, start, stop):
-                pass
+                def adjust_region(self, region_id, start, stop):
+                    pass
 
-            def delete_region(self, region_id):
-                self.fn()
+                def delete_region(self, region_id):
+                    self.fn()
 
-            def finish_regions(self):
-                self.fn()
+                def finish_regions(self):
+                    self.fn()
 
-        self.band_model = GIRegionModel()
+            self.band_model = GIRegionModel()
 
-        def update_regions():
-            self.fit.model.regions = self.band_model.build_regions()
-        self.band_model.add_listener(Fit1DRegionListener(update_regions))
-        self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+            def update_regions():
+                self.fit.model.regions = self.band_model.build_regions()
+            self.band_model.add_listener(Fit1DRegionListener(update_regions))
+            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
-        connect_figure_extras(p_main, None, self.band_model)
+            connect_figure_extras(p_main, None, self.band_model)
 
-        Controller(p_main, None, self.band_model, controller_div, mask_handlers=(self.mask_button_handler,
-                                                                                 self.unmask_button_handler))
+            mask_handlers = (self.mask_button_handler,
+                             self.unmask_button_handler)
+        else:
+            self.band_model = None
+            mask_handlers = None
+
+        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
         fig_column = [p_main, self.info_div]
 
         if plot_residuals:
             # x_range is linked to the main plot so that zooming tracks between them
             p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
+                             min_width=400,
                              title='Fit Residuals',
                              x_axis_label=xlabel, y_axis_label='Delta',
                              tools="pan,box_zoom,reset",
@@ -705,7 +698,7 @@ class Fit1DPanel:
         # state of the band model (which used to be always empty)
         x_data = self.fit.data.data['x']
         for i in np.arange(len(x_data)):
-            if self.band_model.contains(x_data[i]):
+            if not self.band_model or self.band_model.contains(x_data[i]):
                 self.fit.band_mask[i] = 0
             else:
                 self.fit.band_mask[i] = 1
@@ -713,8 +706,9 @@ class Fit1DPanel:
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
 
-        region_editor = RegionEditor(self.band_model)
-        fig_column.append(region_editor.get_widget())
+        if self.band_model:
+            region_editor = RegionEditor(self.band_model)
+            fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
         self.component = row(controls, col)
@@ -997,15 +991,19 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
+
+        layout_ls = list()
+        if self.filename_info:
+            layout_ls.append(Div(text='<b>Filename:</b> %s<br/>' % self.filename_info))
+        layout_ls.append(self.submit_button)
         if len(self.reinit_panel.children) <= 1:
-            layout = column(self.submit_button, row(self.reinit_panel), col, sizing_mode="stretch_width")
+            layout_ls.append(row(self.reinit_panel))
+            layout_ls.append(Spacer(height=10))
+            layout_ls.append(col)
         else:
-            layout = column(self.submit_button,
-                            row(column(self.reinit_panel,
-                                       ), col),
-                            sizing_mode="stretch_width")
-        self.layout = layout
-        doc.add_root(layout)
+            layout_ls.append(row(column(self.reinit_panel), col))
+        self.layout = column(*layout_ls, sizing_mode="stretch_width")
+        doc.add_root(self.layout)
 
     def reconstruct_points(self):
         """
