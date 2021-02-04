@@ -85,9 +85,10 @@ class Controller(object):
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        fig.on_event('mousemove', self.on_mouse_move)
-        fig.on_event('mouseenter', self.on_mouse_enter)
-        fig.on_event('mouseleave', self.on_mouse_leave)
+        if aperture_model or region_model:
+            fig.on_event('mousemove', self.on_mouse_move)
+            fig.on_event('mouseenter', self.on_mouse_enter)
+            fig.on_event('mouseleave', self.on_mouse_leave)
 
         self.set_help_text(None)
 
@@ -114,22 +115,25 @@ class Controller(object):
                     "<b>U</b> - Unmask selected points<br/><br/>"
             ht = ht + text
         else:
-            # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
-            if self.showing_residuals:
-                ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
+            if self.tasks or self.enable_user_masking:
+                # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
+                if self.showing_residuals:
+                    ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
+                else:
+                    ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+                if self.enable_user_masking:
+                    ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
+                        "<b>U</b> - Unmask selected points<br/><br/>"
+                if len(self.tasks) == 1:
+                    # for k, v in self.tasks.items():
+                    #     self.task = v
+                    task = next(iter(self.tasks.values()))
+                    ht = ht + task.helptext()
+                else:
+                    for key, task in sorted(self.tasks.items()):
+                        ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
             else:
-                ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
-            if self.enable_user_masking:
-                ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                    "<b>U</b> - Unmask selected points<br/><br/>"
-            if len(self.tasks) == 1:
-                # for k, v in self.tasks.items():
-                #     self.task = v
-                task = next(iter(self.tasks.values()))
-                ht = ht + task.helptext()
-            else:
-                for key, task in sorted(self.tasks.items()):
-                    ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
+                ht = ""
 
         # This has to be done via a callback.  During the key press, we are outside the context of
         # the widget's bokeh document
