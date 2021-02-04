@@ -1,3 +1,4 @@
+import numpy as np
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CheckboxGroup,
                           ColumnDataSource, CustomJS, Div, LabelSet, Select,
@@ -127,9 +128,11 @@ class FindSourceAperturesModel:
         self.aperture_id = 1
         self.listeners = list()
         self.ext = ext
+        self.profile_shape = self.ext.shape[0]
         self._aper_params = aper_params.copy()
+        self.profile = ColumnDataSource({'x': np.arange(self.profile_shape),
+                                         'y': np.zeros(self.profile_shape)})
         self.reset()
-        self.recalc_apertures()
 
     @property
     def aper_params(self):
@@ -168,9 +171,11 @@ class FindSourceAperturesModel:
         and N limits.
 
         """
-        locations, self.all_limits, self.profile = find_apertures(
+        locations, self.all_limits, profile = find_apertures(
             self.ext, **self.aper_params)
+
         self.locations = list(locations)
+        self.profile.patch({'y': [(slice(None), profile)]})
 
         for listener in self.listeners:
             for i, (loc, limits) in enumerate(
@@ -653,7 +658,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             plot_height=500,
             title='Source Apertures',
             tools="pan,wheel_zoom,box_zoom,reset",
-            x_range=(0, self.model.profile.shape[0])
+            x_range=(0, self.model.profile_shape)
         )
         fig.height_policy = 'fixed'
         fig.width_policy = 'fit'
@@ -661,8 +666,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         aperture_view = ApertureView(self.model, fig)
         self.model.add_listener(self)
 
-        fig.step(x=range(self.model.profile.shape[0]),
-                 y=self.model.profile,
+        fig.step(x='x', y='y', source=self.model.profile,
                  color="black", mode="center")
 
         add_button = Button(label="Add Aperture")
