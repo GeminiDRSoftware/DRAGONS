@@ -222,6 +222,33 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                              self.model, "threshold", self.clear_and_recalc,
                                              throttled=True)
 
+        # Datashader sandbox
+        import numpy as np, datashader as ds, xarray as xr
+        from datashader import transfer_functions as tf, reductions as rd
+        from datashader.bokeh_ext import InteractiveImage
+        import holoviews as hv
+        hv.extension('bokeh')
+
+        da = xr.DataArray(
+            [[1, 2, 3],
+             [4, 5, 6],
+             [7, 8, 9]],
+            coords=[('y', [1, 6, 7]),
+                    ('x', [1, 2, 7])],
+            name='Z')
+
+        canvas = ds.Canvas()
+        tf.shade(canvas.quadmesh(da, x='x', y='y'))
+        # self.figds = figure(# plot_width=600,
+        #                   plot_height=500,
+        #                   title='Source Apertures',
+        #                   tools="pan,wheel_zoom,box_zoom,reset",
+        #                   x_range=(0, self.model.profile.shape[0]))
+        # self.figds.height_policy = 'fixed'
+        # self.figds.width_policy = 'fit'
+        # InteractiveImage(self.figds, canvas)
+        self.hvimage = hv.render(hv.Image(tf.shade(canvas.quadmesh(da, x='x', y='y'))))
+
         # Create a blank figure with labels
         self.fig = figure(# plot_width=600,
                           plot_height=500,
@@ -247,7 +274,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.recalc_apertures()
         self.update_details()
 
-        col = column(self.fig, self.details)
+        col = column(self.hvimage, self.fig, self.details)
         col.sizing_mode = 'scale_width'
         layout = row(controls, col)
 
