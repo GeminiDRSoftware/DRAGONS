@@ -81,18 +81,27 @@ def divide0(numerator, denominator):
         is_int = np.issubdtype(denominator.dtype, np.integer)
     except AttributeError:
         # denominator is a scalar
-        try:
-            is_int = np.issubdtype(numerator.dtype, np.integer)
-        except AttributeError:
-            # numerator is also a scalar
-            return 0 if denominator == 0 else numerator / denominator
+        if denominator == 0:
+            try:
+                return np.zeros(numerator.shape)
+            except AttributeError:
+                # numerator is also a scalar
+                return 0
         else:
-            dtype = np.float32 if is_int else numerator.dtype
-            return np.divide(numerator, denominator, out=np.zeros(numerator.shape, dtype=dtype),
-                             where=abs(denominator) > np.finfo(dtype).tiny)
+            return numerator / denominator
     else:
         dtype = np.float32 if is_int else denominator.dtype
-        return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype),
+        try:
+            out_shape = numerator.shape
+        except:
+            out_shape = denominator.shape
+        else:
+            # both are arrays so the final shape will be the one with the
+            # higher dimensionality (if they're broadcastable)
+            if len(out_shape) < len(denominator.shape):
+                out_shape = denominator.shape
+
+        return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
 
 def rasextodec(string):

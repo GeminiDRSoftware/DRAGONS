@@ -32,6 +32,7 @@ def test_array_from_list():
 def test_divide0():
     ones = np.array([1, 1, 1])
     zeros = np.array([0, 0, 0])
+    twod = np.arange(12).reshape(4, 3)
 
     # scalar / scalar
     assert at.divide0(1, 0) == 0
@@ -41,6 +42,10 @@ def test_divide0():
     np.testing.assert_array_equal(at.divide0(1, zeros), zeros)
     # array / array
     np.testing.assert_array_equal(at.divide0(ones, zeros), zeros)
+
+    # 2d array / 1d array
+    np.testing.assert_array_equal(at.divide0(twod, ones), twod)
+    np.testing.assert_array_equal(at.divide0(twod, zeros), np.zeros_like(twod))
 
 
 def test_rasextodec():
