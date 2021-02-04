@@ -9,6 +9,7 @@ class biasCorrectConfig(config.Config):
                             optional=True, single=True)
     do_bias = config.Field("Perform bias subtraction?", bool, True)
 
+
 class subtractOverscanConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_overscanSubtracted", optional=True)
     function = config.ChoiceField("Fitting function", str,
@@ -28,8 +29,10 @@ class subtractOverscanConfig(config.core_1Dfitting_config):
         if self.function == "spline" and self.order == 0:
             raise ValueError("Must specify a positive spline order, or None")
 
+
 class trimOverscanConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_overscanTrimmed", optional=True)
+
 
 class overscanCorrectConfig(subtractOverscanConfig, trimOverscanConfig):
     def setDefaults(self):

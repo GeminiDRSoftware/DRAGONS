@@ -137,7 +137,7 @@ class CCD(PrimitivesBASE):
         nbiascontam: int/None
             number of columns adjacent to the illuminated region to reject
         function: str/None
-            function to fit ("poly" | "spline" | "none")
+            function to fit ("chebyshev" | "spline" | "none")
         order: int/None
             order of polynomial fit or number of spline pieces
         """
@@ -208,7 +208,7 @@ class CCD(PrimitivesBASE):
                                    points=pixels,
                                    weights=np.full_like(data, 1. / sigma),
                                    function=function, **fit1d_params)
-                    bias = fit1d.evaluate(np.arange(ext.data.shape[axis]))
+                    bias = fit1d.evaluate(np.arange(ext.data.shape[1-axis]))
                     sigma = fit1d.rms
 
                 # using "-=" won't change from int to float
