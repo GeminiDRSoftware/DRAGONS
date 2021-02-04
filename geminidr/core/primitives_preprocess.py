@@ -606,6 +606,9 @@ class Preprocess(PrimitivesBASE):
                         raise ValueError(f'region {region} does not match '
                                          'array dimension')
 
+                    if ext.data[slices].size == 0:
+                        raise ValueError(f'region {region} out of bound')
+
                     region_shape = np.array([
                         (s.stop or ext.shape[i]) - (s.start or 0)
                         for i, s in enumerate(slices)
@@ -659,6 +662,15 @@ class Preprocess(PrimitivesBASE):
                         ind = np.arange(ext.shape[use_axis])
                         ind = np.delete(ind, sl)
                         data_in = np.delete(data, sl, axis=0)
+
+                        if ind.size == 0:
+                            if axis is None:
+                                raise ValueError(
+                                    'no good data left for the interpolation')
+                            else:
+                                raise ValueError(
+                                    'no good data left for the interpolation '
+                                    'along the chosen axis')
 
                         # Do the interpolation and replace the values
                         f = interp1d(ind, data_in, kind='linear', axis=0,

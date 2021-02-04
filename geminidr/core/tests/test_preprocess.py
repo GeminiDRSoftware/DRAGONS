@@ -132,6 +132,20 @@ def test_fixpixels(niriprim):
 
 
 @pytest.mark.dragons_remote_data
+def test_fixpixels_errors(niriprim):
+    with pytest.raises(ValueError, match="region .* out of bound"):
+        niriprim.fixPixels(regions='4300,*')[0]
+
+    with pytest.raises(ValueError,
+                       match="no good data left for the interpolation"):
+        niriprim.fixPixels(regions='*,*')[0]
+
+    with pytest.raises(ValueError, match="no good data left for the "
+                       "interpolation along the chosen axis"):
+        niriprim.fixPixels(regions='430,*', axis=2)[0]
+
+
+@pytest.mark.dragons_remote_data
 def test_fixpixels_median(niriprim):
     regions = [
         '450,521',  # single pixel

@@ -78,6 +78,8 @@ class Register(PrimitivesBASE):
             backup method, if the primary one fails
         first_pass: float
             search radius (arcsec) for the initial alignment matching
+        match_radius: float
+            search radius (arcsec) for source-to-source correlation matching
         min_sources: int
             minimum number of matched sources required to apply a WCS shift
         cull_sources: bool
@@ -106,6 +108,7 @@ class Register(PrimitivesBASE):
         method = params["method"]
         fallback = params["fallback"]
         first_pass = params["first_pass"]
+        match_radius = params["match_radius"]
         min_sources = params["min_sources"]
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
@@ -164,8 +167,10 @@ class Register(PrimitivesBASE):
                 log.warning(f'Cannot determine pixel scale for {ad.filename}. '
                             f'Using a search radius of {first_pass} pixels.')
                 firstpasspix = first_pass
+                matchpix = match_radius
             else:
                 firstpasspix = first_pass / pixscale
+                matchpix = match_radius / pixscale
 
             incoords = (objcat['X_IMAGE'].data - 1, objcat['Y_IMAGE'].data - 1)
             refcoords = (ref_objcat['X_IMAGE'].data - 1, ref_objcat['Y_IMAGE'].data - 1)
@@ -179,6 +184,10 @@ class Register(PrimitivesBASE):
                     incoords = (good_src1["x"] - 1, good_src1["y"] - 1)
                     refcoords = (good_src2["x"] - 1, good_src2["y"] - 1)
 
+            # So what we're doing here is working out where on the input
+            # image the sources on the reference image should be if both WCSs
+            # were correct. We then work out how to move the sources on the
+            # input image so they lie in those positions.
             try:
                 t_init = adref[0].wcs.forward_transform | ad[0].wcs.backward_transform
             except AttributeError:  # for cases with no defined WCS
@@ -190,19 +199,19 @@ class Register(PrimitivesBASE):
             # isn't helpful if there's a sizeable rotation or scaling, so
             # let's just try to do the whole thing (if the user asks) and
             # see what happens.
-            transform, obj_list = find_alignment_transform(incoords, refcoords,
-                    transform=None, shape=ad[0].shape,
-                    search_radius=firstpasspix, rotate=rotate, scale=scale,
-                    return_matches=True)
+            transform, obj_list = find_alignment_transform(
+                incoords, refcoords, transform=None, shape=ad[0].shape,
+                search_radius=firstpasspix, match_radius=matchpix,
+                rotate=rotate, scale=scale, return_matches=True)
 
             n_corr = len(obj_list[0])
-            if n_corr < min_sources + rotate + scale:
+            if (n_corr < min_sources + rotate + scale) and (rotate or scale):
                 log.warning(f"Too few correlated objects ({n_corr}). "
                             "Setting rotate=False, scale=False")
-                transform, obj_list = find_alignment_transform(incoords, refcoords,
-                        transform=None, shape=ad[0].shape,
-                        search_radius=firstpasspix, rotate=False, scale=False,
-                        return_matches=True)
+                transform, obj_list = find_alignment_transform(
+                    incoords, refcoords, transform=None, shape=ad[0].shape,
+                    search_radius=firstpasspix, match_radius=matchpix,
+                    rotate=False, scale=False, return_matches=True)
                 n_corr = len(obj_list[0])
 
             log.stdinfo(f"Number of correlated sources: {n_corr}")
