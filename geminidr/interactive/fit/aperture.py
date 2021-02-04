@@ -379,16 +379,37 @@ class ApertureLineView:
         location_input = Spinner(width=96, value=location)
         end_input = Spinner(width=96, value=end)
 
-        def _inputs_handler(attr, old, new):
-            self.location = location_input.value
-            self.start = min(start_input.value, end_input.value)
-            self.end = max(start_input.value, end_input.value)
+        def _start_handler(attr, old, new):
+            if new > self.location:
+                print('start cannot be > location')
+                start_input.value = self.start
+            else:
+                self.start = start_input.value
+            print(f'adjust {attr} {self.start:.2f} {self.location:.2f} {self.end:.2f}')
             self.model.adjust_aperture(self.aperture_id, self.location,
                                        self.start, self.end)
 
-        start_input.on_change("value", _inputs_handler)
-        location_input.on_change("value", _inputs_handler)
-        end_input.on_change("value", _inputs_handler)
+        def _end_handler(attr, old, new):
+            if new < self.location:
+                print('end cannot be < location')
+                end_input.value = self.end
+            else:
+                self.end = end_input.value
+            print(f'adjust {attr} {self.start:.2f} {self.location:.2f} {self.end:.2f}')
+            self.model.adjust_aperture(self.aperture_id, self.location,
+                                       self.start, self.end)
+
+        def _location_handler(attr, old, new):
+            self.location = location_input.value
+            self.start = start_input.value = start_input.value + new - old
+            self.end = end_input.value = end_input.value + new - old
+            print(f'adjust {attr} {self.start:.2f} {self.location:.2f} {self.end:.2f}')
+            self.model.adjust_aperture(self.aperture_id, self.location,
+                                       self.start, self.end)
+
+        start_input.on_change("value", _start_handler)
+        location_input.on_change("value", _location_handler)
+        end_input.on_change("value", _end_handler)
 
         self.component = row([Div(align='end'),
                               start_input,
@@ -695,7 +716,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 list of locations and list of the limits as tuples
 
         """
-        return self.model.locations, self.model.all_limits
+        return np.array(self.model.locations), self.model.all_limits
 
 
 def interactive_find_source_apertures(ext, **kwargs):

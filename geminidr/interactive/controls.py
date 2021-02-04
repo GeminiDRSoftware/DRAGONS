@@ -464,18 +464,16 @@ class ApertureTask(Task):
         """
         # we are in aperture mode
         if self.aperture_center:
-            width = abs(self.aperture_center - x)
-            if self.mode == 'width':
-                self.left = self.aperture_center-width
-                self.right = self.aperture_center+width
-            elif self.mode == 'left':
+            if self.mode == 'left':
                 self.left = min(self.aperture_center, x)
             elif self.mode == 'right':
                 self.right = max(self.aperture_center, x)
             elif self.mode == 'location':
+                self.right += x - self.aperture_center
+                self.left += x - self.aperture_center
                 self.aperture_center = x
-                self.right = max(self.right, x)
-                self.left = min(self.left, x)
+
+            print(f'handle_mouse {self.left:.2f} {self.aperture_center:.2f} {self.right:.2f}')
             self.aperture_model.adjust_aperture(self.aperture_id,
                                                 self.aperture_center,
                                                 self.left, self.right)
