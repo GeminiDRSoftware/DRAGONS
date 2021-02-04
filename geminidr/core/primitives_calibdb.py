@@ -69,10 +69,12 @@ class CalibDB(PrimitivesBASE):
         return caloutputs if isinstance(adinput, list) else caloutputs[0]
 
     def _assert_calibrations(self, adinputs, caltype):
+        log = self.log
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)  # from cache
             if not calurl and "sq" in self.mode:
-                raise OSError(self._not_found.format(ad.filename))
+                log.warning(self._not_found.format(ad.filename))
+                #raise OSError(self._not_found.format(ad.filename))
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
@@ -268,8 +270,13 @@ class CalibDB(PrimitivesBASE):
         Updates filenames, datalabels (if asked) and adds header keyword
         prior to storing AD objects as calibrations
         """
-        proc_suffix = f"_{self.mode}"
         for ad in adinputs:
+            # if user mode: not uploading and sq, don't add mode.
+            if self.mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+                proc_suffix = f""
+            else:
+                proc_suffix = f"_{self.mode}"
+
             if suffix:
                 proc_suffix += suffix
             ad.update_filename(suffix=proc_suffix, strip=True)

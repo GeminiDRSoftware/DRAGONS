@@ -581,7 +581,7 @@ class AstroDataGemini(AstroDataFits):
                                           stripID, pretty)
 
     @astro_data_descriptor
-    def detector_name(self):
+    def detector_name(self, pretty=False):
         """
         Returns the name of the detector
 
