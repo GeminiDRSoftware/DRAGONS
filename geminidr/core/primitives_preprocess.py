@@ -624,7 +624,7 @@ class Preprocess(PrimitivesBASE):
                     else:
                         if axis not in range(1, ndim + 1):
                             raise ValueError('axis should specify a dimension '
-                                             f'between 1 and {ndim + 1}')
+                                             f'between 1 and {ndim}')
                         use_axis = ndim - axis
 
                     if debug:
