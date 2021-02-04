@@ -209,7 +209,7 @@ class Aperture:
                 profile_models.append(m_final(pixels))
             profile_model_spectrum = np.array([np.where(pm < 0, 0, pm) for pm in profile_models])
             sums = profile_model_spectrum.sum(axis=0)
-            model_profile = divide0(profile_model_spectrum, sums, like_num=True)
+            model_profile = divide0(profile_model_spectrum, sums)
 
             # Step 6: revise variance estimates
             var = np.where(var_mask | mask & BAD_BITS, var, var_model(abs(model_profile * spectrum)))
