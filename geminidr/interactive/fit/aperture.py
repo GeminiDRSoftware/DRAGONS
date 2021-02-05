@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 from bokeh.layouts import row, column
-from bokeh.models import Div, Button
+from bokeh.models import Div, Button, Title, Range, Range1d
 from bokeh.plotting import figure
 
 from geminidr.interactive import server, interactive
@@ -193,6 +193,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         self.details = None
         self.fig = None
+        self.hvimage = None
 
     def clear_and_recalc(self, *args):
         """
@@ -284,73 +285,36 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                              self.model, "threshold", self.clear_and_recalc,
                                              throttled=True)
 
-        # da = xr.DataArray(
-        #     [[1, 2, 3],
-        #      [4, 5, 6],
-        #      [7, 8, 9]],
-        #     coords=[('y', [1, 6, 7]),
-        #             ('x', [1, 2, 7])],
-        #     name='Z')
-        # da = xr.DataArray(
-        #     [[0, 1, 0, 1, 0, 0],
-        #      [0, 1, 0, 1, 0, 0]],
-        #     coords=[('y', [0, 1500]),
-        #             ('x', [0, 100, 200, 600, 700, 1000])],
-        #     name='Z')
-
-        # self.figds = figure(# plot_width=600,
-        #                   plot_height=500,
-        #                   title='Source Apertures',
-        #                   tools="pan,wheel_zoom,box_zoom,reset",
-        #                   x_range=(0, self.model.profile.shape[0]))
-        # self.figds.height_policy = 'fixed'
-        # self.figds.width_policy = 'fit'
-        # InteractiveImage(self.figds, canvas)
-
-        # Create a blank figure with labels
-        self.fig = figure(plot_width=600,
-                          plot_height=500,
-                          title='Source Apertures',
-                          tools="pan,wheel_zoom,box_zoom,reset",
-                          x_range=(0, self.model.profile.shape[0]))
-        self.fig.height_policy = 'fixed'
-        # self.fig.width_policy = 'fit'
-
-
-        aperture_view = GIApertureView(self.model, self.fig)
+        self.model.recalc_apertures()
         self.model.add_listener(self)
 
-        self.fig.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
+        ymax = np.nanmax(self.model.profile)*1.05
+        self.hvimage = self._make_holoviews_image_quadmapped(self.model, self.model.profile.shape[0], math.ceil(ymax))
+
+        self.hvimage.width = 600
+        self.hvimage.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
+        self.hvimage.y_range = Range1d(start=0, end=ymax, bounds=(0, None))
+
+        self.hvimage.title = Title(text='Source Apertures')
+        self.hvimage.plot_height = 500
+        # aperture_view = GIApertureView(self.model, self.fig)
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
         helptext = Div()
         controls = column(children=[max_apertures_slider, threshold_slider,
-                          aperture_view.controls, add_button, self.submit_button, helptext])
+                                    #aperture_view.controls,
+                                    add_button, self.submit_button, helptext])
 
         self.details = Div(text="")
-        self.model.recalc_apertures()
         self.update_details()
 
-        # da = self._make_data_array(self.model, self.model.profile.shape[0], 150)
-        # canvas = ds.Canvas()
-        # cmap = ['#ffffff', '#999999']
-        # qm = canvas.quadmesh(da, x='x', y='y')
-        # sh = tf.shade(qm)
-        # img = hv.Image(sh, cmap=cmap)
-        # self.hvimage = hv.render(img)
-
-        self.hvimage = self._make_holoviews_image_quadmapped(self.model, self.model.profile.shape[0], 150)
-
-        self.hvimage.width = 600
-        self.hvimage.x_range = self.fig.x_range
-
-        col = column(self.hvimage, self.fig, self.details)
+        col = column(self.hvimage, self.details)
         col.sizing_mode = 'scale_width'
         layout = row(controls, col)
 
-        Controller(self.fig, self.model, None, helptext, showing_residuals=False)
+        Controller(self.hvimage, self.model, None, helptext, showing_residuals=False)
 
         doc.add_root(layout)
 
