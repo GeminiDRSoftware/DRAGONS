@@ -114,6 +114,27 @@ class SelectLine(CustomWidget):
         self.select.value = self.value
 
 
+class ApertureModel:
+    def __init__(self, aperture_id, location, start, end, parent):
+        self.aperture_id = aperture_id
+        self.source = ColumnDataSource({
+            'id': [aperture_id],
+            'location': [location],
+            'start': [start],
+            'end': [end],
+        })
+        self.parent = parent
+
+    def delete(self):
+        self.parent.delete_aperture(self.aperture_id)
+
+    def update_values(self, **kwargs):
+        data = {field: [(0, value)] for field, value in kwargs.items()}
+        self.source.patch(data)
+        print(f'adjust {self.source.data}')
+        self.parent.adjust_aperture(self.aperture_id)
+
+
 class FindSourceAperturesModel:
     def __init__(self, ext, **aper_params):
         """
@@ -127,6 +148,7 @@ class FindSourceAperturesModel:
         self.listeners = list()
         self.ext = ext
         self.profile_shape = self.ext.shape[0]
+        self.aperture_models = {}
 
         # keep the initial parameters
         self._aper_params = aper_params.copy()
@@ -156,18 +178,9 @@ class FindSourceAperturesModel:
             setattr(self, name, value)
 
     def find_closest(self, x):
-        aperture_id = None
-        location = None
-        delta = None
-        for i, loc in enumerate(self.locations):
-            new_delta = abs(loc-x)
-            if delta is None or new_delta < delta:
-                aperture_id = i+1
-                location = loc
-                delta = new_delta
-        return (aperture_id, location,
-                self.all_limits[aperture_id-1][0],
-                self.all_limits[aperture_id-1][1])
+        model = min(self.aperture_models.values(),
+                    key=lambda m: abs(m.source.data['location'][0] - x))
+        return model.source.data['id'][0]
 
     def recalc_apertures(self):
         """
@@ -178,6 +191,8 @@ class FindSourceAperturesModel:
         and N limits.
 
         """
+        self.clear_apertures()
+
         if self.profile_params is None:
             self.profile_params = self.aper_params.copy()
             recompute_profile = True
@@ -194,55 +209,53 @@ class FindSourceAperturesModel:
 
         if recompute_profile:
             # if any of those parameters changed we must recompute the profile
-            locations, self.all_limits, self.profile, self.prof_mask = \
+            locations, all_limits, self.profile, self.prof_mask = \
                 find_apertures(self.ext, **self.aper_params)
             self.profile_source.patch({'y': [(slice(None), self.profile)]})
         else:
             # otherwise we can redo only the peak detection
-            locations, self.all_limits = find_apertures_peaks(
+            locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
                 self.direction, self.threshold, self.sizing_method)
 
-        self.locations = list(locations)
+        self.aperture_models.clear()
 
-        for listener in self.listeners:
-            for i, (loc, limits) in enumerate(
-                    zip(self.locations, self.all_limits), start=1):
-                listener.handle_aperture(i, loc, limits[0], limits[1])
+        for aperture_id, (location, limits) in enumerate(
+                zip(locations, all_limits), start=1):
+
+            model = ApertureModel(aperture_id, location, limits[0],
+                                  limits[1], self)
+            self.aperture_models[aperture_id] = model
+
+            for listener in self.listeners:
+                listener.handle_aperture(aperture_id, model)
 
     def add_aperture(self, location, start, end):
-        aperture_id = len(self.locations)+1
-        self.locations.append(location)
-        self.all_limits.append((start, end))
+        aperture_id = max(self.aperture_models) + 1
+        model = ApertureModel(aperture_id, location, start, end, self)
+        self.aperture_models[aperture_id] = model
 
         for listener in self.listeners:
-            listener.handle_aperture(aperture_id, location, start, end)
+            listener.handle_aperture(aperture_id, model)
         return aperture_id
 
-    def adjust_aperture(self, aperture_id, location, start, end):
+    def adjust_aperture(self, aperture_id):
         """Adjust an existing aperture by ID to a new range."""
-        if location < start or location > end:
-            raise ValueError("Location of aperture must be between start and end")
-        self.locations[aperture_id-1] = location
-        self.all_limits[aperture_id-1] = (start, end)
         for listener in self.listeners:
-            listener.handle_aperture(aperture_id, location, start, end)
+            listener.handle_aperture(aperture_id,
+                                     self.aperture_models[aperture_id])
 
     def delete_aperture(self, aperture_id):
         """Delete an aperture by ID."""
-        del self.locations[aperture_id-1]
-        del self.all_limits[aperture_id-1]
-
         for listener in self.listeners:
             listener.delete_aperture(aperture_id)
+        del self.aperture_models[aperture_id]
 
     def clear_apertures(self):
         """Remove all apertures, calling delete on the listeners for each."""
-        for iap in range(len(self.locations), 1, -1):
+        for iap in self.aperture_models.keys():
             for listener in self.listeners:
                 listener.delete_aperture(iap)
-        self.locations = []
-        self.all_limits = []
 
 
 class AperturePlotView:
@@ -262,36 +275,27 @@ class AperturePlotView:
     end : float
         End of the x-range for the aperture
     """
-    def __init__(self, fig, aperture_id, location, start, end):
-        self.aperture_id = aperture_id
-
-        self.source = ColumnDataSource({
-            'id': [str(aperture_id)],
-            'end': [end],
-            'location': [location],
-            'start': [start],
-            'whisker_y': [0],
-        })
+    def __init__(self, fig, aperture_id, model):
+        self.model = model
+        self.fig = fig
 
         if fig.document:
-            fig.document.add_next_tick_callback(
-                lambda: self.build_ui(fig))
+            fig.document.add_next_tick_callback(self.build_ui)
         else:
-            self.build_ui(fig)
+            self.build_ui()
 
-    def compute_ymid(self, fig):
-        if fig.y_range.start is not None and fig.y_range.end is not None:
-            ymin = fig.y_range.start
-            ymax = fig.y_range.end
+    def compute_ymid(self):
+        if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
+            ymin = self.fig.y_range.start
+            ymax = self.fig.y_range.end
             return (ymax - ymin)*.8 + ymin
         else:
             return 0
 
     def update_id(self, aperture_id):
-        self.aperture_id = aperture_id
-        self.source.data['id'] = [aperture_id]
+        self.model.update_values(aperture_id=aperture_id)
 
-    def build_ui(self, fig):
+    def build_ui(self):
         """
         Build the view in the figure.
 
@@ -305,29 +309,29 @@ class AperturePlotView:
             bokeh figure to attach glyphs to
 
         """
-        ymid = self.compute_ymid(fig)
+        fig = self.fig
+        source = self.model.source
+        ymid = self.compute_ymid()
 
-        self.box = BoxAnnotation(left=self.source.data['start'][0],
-                                 right=self.source.data['end'][0],
+        self.box = BoxAnnotation(left=source.data['start'][0],
+                                 right=source.data['end'][0],
                                  fill_alpha=0.1,
                                  fill_color='green')
         fig.add_layout(self.box)
 
-        self.label = LabelSet(source=self.source, x="location", y=ymid,
+        self.label = LabelSet(source=source, x="location", y=ymid,
                               y_offset=2, text="id")
         fig.add_layout(self.label)
 
-        self.whisker = Whisker(source=self.source, base="whisker_y",
-                               lower="start", upper="end", dimension='width',
+        self.whisker = Whisker(source=source, base=0, lower="start",
+                               upper="end", dimension='width',
                                line_color="purple")
         fig.add_layout(self.whisker)
 
-        self.location = Span(location=self.source.data['location'][0],
+        self.location = Span(location=source.data['location'][0],
                              dimension='height', line_color='green',
                              line_dash='dashed', line_width=1)
         fig.add_layout(self.location)
-
-        self.fig = fig
 
         fig.y_range.on_change(
             'start', lambda attr, old, new: self.update_viewport())
@@ -345,12 +349,12 @@ class AperturePlotView:
         display area of the view.  By redrawing, we ensure the lines and axis
         label are in view, at 80% of the way up the visible Y axis.
         """
-        ymid = self.compute_ymid(self.fig)
+        ymid = self.compute_ymid()
         if ymid:
             self.label.y = ymid
-            self.source.data['whisker_y'] = [ymid]
+            self.whisker.base = ymid
 
-    def update(self, location, start, end):
+    def update(self):
         """
         Alter the coordinate range for this aperture. This will adjust the
         shaded area and the arrows/label for this aperture as displayed on
@@ -363,12 +367,11 @@ class AperturePlotView:
         end : float
             new ending x coordinate
         """
-        self.box.left = start
-        self.box.right = end
-        self.source.data['start'] = [start]
-        self.source.data['end'] = [end]
-        self.source.data['location'] = [location]
-        self.location.location = location
+        source = self.model.source
+        print(f'update: {source.data}')
+        self.box.left = source.data['start'][0]
+        self.box.right = source.data['end'][0]
+        self.location.location = source.data['location'][0]
         # self.label.x = location+2
 
     def delete(self):
@@ -383,7 +386,7 @@ class AperturePlotView:
 
 
 class ApertureLineView:
-    def __init__(self, model, aperture_id, location, start, end):
+    def __init__(self, aperture_id, model):
         """ Create text inputs for the start, location and end of an aperture.
 
         Parameters
@@ -398,47 +401,35 @@ class ApertureLineView:
         """
         self.model = model
         self.aperture_id = aperture_id
-        self.location = location
-        self.start = start
-        self.end = end
-
-        def _del_button_handler():
-            self.model.delete_aperture(self.aperture_id)
 
         button = Button(label="Del", width=48)
-        button.on_click(_del_button_handler)
+        button.on_click(self.model.delete)
 
-        start_input = Spinner(width=96, value=start)
-        location_input = Spinner(width=96, value=location)
-        end_input = Spinner(width=96, value=end)
+        source = model.source
+        start_input = Spinner(width=96, low=0, value=source.data['start'][0])
+        location_input = Spinner(width=96, low=0, value=source.data['location'][0])
+        end_input = Spinner(width=96, low=0, value=source.data['end'][0])
 
         def _start_handler(attr, old, new):
-            if new > self.location:
+            if new > source.data['location'][0]:
                 print('start cannot be > location')
-                start_input.value = self.start
+                start_input.value = old
             else:
-                self.start = start_input.value
-            print(f'adjust {attr} {self.start:.2f} {self.location:.2f} {self.end:.2f}')
-            self.model.adjust_aperture(self.aperture_id, self.location,
-                                       self.start, self.end)
+                self.model.update_values(start=start_input.value)
 
         def _end_handler(attr, old, new):
-            if new < self.location:
+            if new < source.data['location'][0]:
                 print('end cannot be < location')
-                end_input.value = self.end
+                end_input.value = old
             else:
-                self.end = end_input.value
-            print(f'adjust {attr} {self.start:.2f} {self.location:.2f} {self.end:.2f}')
-            self.model.adjust_aperture(self.aperture_id, self.location,
-                                       self.start, self.end)
+                self.model.update_values(end=end_input.value)
 
         def _location_handler(attr, old, new):
-            self.location = location_input.value
-            self.start = start_input.value = start_input.value + new - old
-            self.end = end_input.value = end_input.value + new - old
-            print(f'adjust {attr} {self.start:.2f} {self.location:.2f} {self.end:.2f}')
-            self.model.adjust_aperture(self.aperture_id, self.location,
-                                       self.start, self.end)
+            start_input.value += new - old
+            end_input.value += new - old
+            self.model.update_values(location=location_input.value,
+                                     start=start_input.value,
+                                     end=end_input.value)
 
         start_input.on_change("value", _start_handler)
         location_input.on_change("value", _location_handler)
@@ -471,7 +462,8 @@ class ApertureLineView:
         end : float
             Visible end of x axis
         """
-        disabled = self.start < start or self.end > end
+        disabled = (self.model.source.data['start'][0] < start or
+                    self.model.source.data['end'][0] > end)
         for child in self.component.children:
             child.disabled = disabled
             # self.slider.children[0].start = start
@@ -496,9 +488,9 @@ class ApertureView:
     """
     def __init__(self, model, fig):
         # The list of AperturePlotView widget (aperture plots)
-        self.aperture_plots = []
+        self.aperture_plots = {}
         # The list of ApertureLineView widget (text inputs)
-        self.aperture_lines = []
+        self.aperture_lines = {}
 
         self.fig = fig
 
@@ -528,54 +520,37 @@ class ApertureView:
         # the start/end tuples, so I have left the doc blank for now
         self.view_start = start
         self.view_end = end
-        for apline in self.aperture_lines:
+        for apline in self.aperture_lines.values():
             apline.update_viewport(start, end)
 
-    def handle_aperture(self, aperture_id, location, start, end):
-        """Handle an updated or added aperture.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to update or create in the view
-        location, start, end : float
-            Location, start and end of the aperture in x coordinates
-
-        """
-        if aperture_id <= len(self.aperture_plots):
-            ap = self.aperture_plots[aperture_id-1]
-            ap.update(location, start, end)
+    def handle_aperture(self, aperture_id, model):
+        """Handle an updated or added aperture."""
+        if aperture_id in self.aperture_plots:
+            self.aperture_plots[aperture_id].update()
         else:
-            ap = AperturePlotView(self.fig, aperture_id, location, start, end)
-            self.aperture_plots.append(ap)
+            ap = AperturePlotView(self.fig, aperture_id, model)
+            self.aperture_plots[aperture_id] = ap
 
-            ap = ApertureLineView(self.model, aperture_id, location, start,
-                                  end)
-            self.aperture_lines.append(ap)
+            ap = ApertureLineView(aperture_id, model)
+            self.aperture_lines[aperture_id] = ap
             self.inner_controls.children.append(ap.component)
 
     def delete_aperture(self, aperture_id):
         """Remove an aperture by ID. If the ID is not recognized, do nothing.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to remove
         """
-        idx = aperture_id-1
-        if aperture_id <= len(self.aperture_plots):
-            self.aperture_plots[idx].delete()
+        if aperture_id in self.aperture_plots:
+            self.aperture_plots[aperture_id].delete()
             self.inner_controls.children.remove(
-                self.aperture_lines[idx].component)
-            del self.aperture_plots[idx]
-            del self.aperture_lines[idx]
+                self.aperture_lines[aperture_id].component)
+            del self.aperture_plots[aperture_id]
+            del self.aperture_lines[aperture_id]
 
-        for ap in self.aperture_plots[idx:]:
-            ap.update_id(ap.aperture_id - 1)
+        # for ap in self.aperture_plots[idx:]:
+        #     ap.update_id(ap.aperture_id - 1)
 
-        for ap in self.aperture_lines[idx:]:
-            ap.aperture_id -= 1
-            ap.update_title()
+        # for ap in self.aperture_lines[idx:]:
+        #     ap.aperture_id -= 1
+        #     ap.update_title()
 
 
 def parameters_view(model, recalc_handler):
@@ -646,11 +621,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.details = None
         self.fig = None
 
-    def clear_and_recalc(self):
-        """Clear apertures and recalculate a new set."""
-        self.model.clear_apertures()
-        self.model.recalc_apertures()
-
     def add_aperture(self):
         """
         Add a new aperture in the middle of the current display area.
@@ -679,7 +649,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                  disabled=True,
                                  background='white')
 
-        params = parameters_view(self.model, self.clear_and_recalc)
+        params = parameters_view(self.model, self.model.recalc_apertures)
 
         # Create a blank figure with labels
         self.fig = fig = figure(
@@ -723,7 +693,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         doc.add_root(layout)
 
-    def handle_aperture(self, aperture_id, location, start, end):
+    def handle_aperture(self, aperture_id, model):
         self.update_details()
 
     def delete_aperture(self, aperture_id):
@@ -732,11 +702,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
     def update_details(self):
         """Update the details text area with the latest aperture data."""
         text = ""
-        for i, (loc, limits) in enumerate(
-                zip(self.model.locations, self.model.all_limits), start=1):
-            text += (f"Aperture #{i}\t <b>Location:</b> {loc:.2f}"
-                     f" <b>Lower Limit:</b> {limits[0]:.2f}"
-                     f" <b>Upper Limit:</b> {limits[1]:.2f}<br/>")
+        # for i, (loc, limits) in enumerate(
+        #         zip(self.model.locations, self.model.all_limits), start=1):
+        #     text += (f"Aperture #{i}\t <b>Location:</b> {loc:.2f}"
+        #              f" <b>Lower Limit:</b> {limits[0]:.2f}"
+        #              f" <b>Upper Limit:</b> {limits[1]:.2f}<br/>")
         self.details.text = text
 
     def result(self):
