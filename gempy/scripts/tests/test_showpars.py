@@ -20,7 +20,7 @@ Name                 Current setting      Description
 suffix               '_pixelsFixed'       Filename suffix
 regions              None                 Regions to fix, e.g. "450,521; 430:437,513:533"
 regions_file         None                 Path to a file containing the regions to fix
-axis                 None                 Axis over which the interpolation is done (Fortran order)
+axis                 None                 Interpolation axis. 1 is x-axis, 2 is y-axis, 3 is z-axis. If left undefined, use the narrowest region dimension.
 use_local_median     False                Use a local median filter for single pixels?
 """
 
@@ -44,7 +44,7 @@ Name                 Current setting      Description
 suffix               '_pixelsFixed'       Filename suffix
 regions              None                 Regions to fix, e.g. "450,521; 430:437,513:533"
 regions_file         None                 Path to a file containing the regions to fix
-axis                 None                 Axis over which the interpolation is done (Fortran order)
+axis                 None                 Interpolation axis. 1 is x-axis, 2 is y-axis, 3 is z-axis. If left undefined, use the narrowest region dimension.
 use_local_median     False                Use a local median filter for single pixels?
 
 Docstring for 'fixPixels':
