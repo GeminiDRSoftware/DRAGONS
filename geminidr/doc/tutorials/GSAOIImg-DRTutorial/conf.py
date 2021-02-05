@@ -13,7 +13,6 @@
 #
 
 import os
-import sys
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
@@ -23,9 +22,9 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 #
 # import astrodata
 
-print('\n Printing current working directory for debugging:')
-print((' Current working directory: {}'.format(os.getcwd())))
-print((' Dragons path: {}\n'.format(dragons_path)))
+# print('\n Printing current working directory for debugging:')
+# print((' Current working directory: {}'.format(os.getcwd())))
+# print((' Dragons path: {}\n'.format(dragons_path)))
 
 
 # -- Project information -----------------------------------------------------
