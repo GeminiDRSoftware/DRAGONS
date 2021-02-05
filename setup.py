@@ -10,16 +10,13 @@ In this package:
     gempy
     recipe_system
 
-Usage:
-    python setup.py install --prefix=/astro/iraf/URlocal-v1.5.2/pkgs/gemini_python-v2.0.0
-    python setup.py
+Usage: pip install [-e] .
+
 """
 
 import os
 
 from setuptools import setup, find_packages, Extension
-
-VERSION='3.1.0-dev'
 
 try:
     from Cython.Build import cythonize
@@ -27,6 +24,8 @@ except ImportError:
     use_cython = False
 else:
     use_cython = True
+
+VERSION = '3.1.0-dev'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages('.', exclude=['*tests*'])
