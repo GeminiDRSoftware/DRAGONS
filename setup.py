@@ -19,7 +19,7 @@ import os
 
 from setuptools import setup, find_packages, Extension
 
-from astrodata._version import version
+VERSION='3.1.0-dev'
 
 try:
     from Cython.Build import cythonize
@@ -54,7 +54,7 @@ if use_cython:
     EXTENSIONS = cythonize(EXTENSIONS)
 
 setup(name='dragons',
-      version=version(),
+      version=VERSION,
       description='Gemini Data Processing Python Package',
       author='Gemini Data Processing Software Group',
       author_email='sus_inquiries@gemini.edu',
