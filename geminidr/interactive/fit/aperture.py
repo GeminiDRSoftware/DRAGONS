@@ -264,7 +264,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
             name='Z')
 
         cmap = ['#ffffff', 'green']
-        img = hv.Image(da).options(cmap=cmap)
+        img = hv.Image(da)
         return hv.render(img, cmap=cmap)
 
     def visualize(self, doc):
