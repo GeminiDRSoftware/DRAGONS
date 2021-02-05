@@ -1,8 +1,9 @@
 import numpy as np
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CheckboxGroup,
-                          ColumnDataSource, CustomJS, Div, LabelSet, Select,
-                          Slider, Spacer, Span, Spinner, TextInput, Whisker)
+                          ColumnDataSource, CustomJS, Div, LabelSet,
+                          NumeralTickFormatter, Select, Slider, Spacer, Span,
+                          Spinner, TextInput, Whisker)
 from bokeh.plotting import figure
 
 from geminidr.interactive import server
@@ -406,11 +407,12 @@ class ApertureLineView:
         button.on_click(self.model.delete)
 
         source = model.source
-        self.start_input = Spinner(width=96, low=0,
+        fmt = NumeralTickFormatter(format='0.00')
+        self.start_input = Spinner(width=96, low=0, format=fmt,
                                    value=source.data['start'][0])
-        self.location_input = Spinner(width=96, low=0,
+        self.location_input = Spinner(width=96, low=0, format=fmt,
                                       value=source.data['location'][0])
-        self.end_input = Spinner(width=96, low=0,
+        self.end_input = Spinner(width=96, low=0, format=fmt,
                                  value=source.data['end'][0])
 
         self.in_update = False
