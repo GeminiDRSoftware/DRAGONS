@@ -503,8 +503,8 @@ class ApertureView:
 
         # The hamburger menu, which needs to have access to the aperture line
         # widgets (inner_controls)
-        self.inner_controls = column()
-        self.inner_controls.height_policy = "auto"
+        self.inner_controls = column(max_height=300, height_policy='auto',
+                                     css_classes=['scrollable'])
         self.controls = hamburger_helper("Apertures", self.inner_controls)
 
         self.model = model

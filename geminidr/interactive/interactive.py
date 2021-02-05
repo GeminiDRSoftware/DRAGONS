@@ -638,8 +638,9 @@ def hamburger_helper(title, widget):
     if widget.css_classes:
         widget.css_classes.append('hamburger_helper_%s' % _hamburger_order_number)
     else:
-        widget.css_classes = list('hamburger_helper_%s' % _hamburger_order_number)
-    _hamburger_order_number = _hamburger_order_number+1
+        widget.css_classes = ['hamburger_helper_%s' % _hamburger_order_number]
+
+    _hamburger_order_number += 1
 
     # TODO Hamburger icon
     button = Button(label=title, css_classes=['hamburger_helper',])

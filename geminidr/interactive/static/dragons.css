@@ -80,3 +80,7 @@ body {
     border: none;
     text-align: left;
 }
+
+div.scrollable {
+  overflow-y: auto;
+}
