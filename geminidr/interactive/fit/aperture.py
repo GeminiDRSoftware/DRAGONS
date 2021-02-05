@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from bokeh.layouts import row, column
 from bokeh.models import Div, Button
@@ -9,6 +11,13 @@ from geminidr.interactive.interactive import GIApertureModel, GIApertureView, bu
 from gempy.library import tracing
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
+# Datashader sandbox
+import numpy as np, datashader as ds, xarray as xr
+from datashader import transfer_functions as tf, reductions as rd
+from datashader.bokeh_ext import InteractiveImage
+import holoviews as hv
+
+hv.extension('bokeh')
 
 __all__ = ["interactive_find_source_apertures", ]
 
@@ -204,6 +213,59 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.add_aperture(x, x, x)
         self.update_details()
 
+    def _make_data_array(self, aperture_model, x_max, y_max):
+        MINI = 0.01
+
+
+        da1 = [0, ]
+        da2 = [0, ]
+        y = [0, y_max]
+        x = [0, ]
+        ranges = list()
+        for i, loclim in enumerate(zip(aperture_model.locations, aperture_model.all_limits)):
+            lim = loclim[1]
+            ranges.append((lim[0], lim[1]))
+        ranges.sort(key=lambda x: x[0])
+        print(ranges)
+        for range in ranges:
+            x.extend((range[0]-MINI, range[0], range[1], range[1] + MINI))
+            da1.extend((0, 1, 1, 0))
+            da2.extend((0, 1, 1, 0))
+        x.append(x_max)
+        da1.append(0)
+        da2.append(0)
+        return xr.DataArray(
+            [da1, da2,],
+            coords=[('y', y),
+                    ('x', x)],
+            name='Z')
+
+    def _make_holoviews_image_quadmapped(self, aperture_model, x_max, y_max):
+        da = self._make_data_array(aperture_model, x_max, y_max)
+        canvas = ds.Canvas()
+        cmap = ['#d1efd1', '#ffffff']
+        qm = canvas.quadmesh(da, x='x', y='y')
+        sh = tf.shade(qm)
+        img = hv.Image(sh).options(cmap=cmap)
+        return hv.render(img)
+
+    def _make_holoviews_image(self, aperture_model, x_max, y_max):
+        x = np.zeros(x_max)
+        for i, loclim in enumerate(zip(aperture_model.locations, aperture_model.all_limits)):
+            lim = loclim[1]
+            x[math.floor(lim[0]):math.ceil(lim[1])] = 1
+        dat = [x] * y_max
+        dat = np.swapaxes(dat, 0, 1)
+        da = xr.DataArray(
+            dat,
+            coords=[('y', np.arange(x_max)),
+                    ('x', np.arange(y_max))],
+            name='Z')
+
+        cmap = ['#ffffff', 'green']
+        img = hv.Image(da).options(cmap=cmap)
+        return hv.render(img, cmap=cmap)
+
     def visualize(self, doc):
         """
         Build the visualization in bokeh in the given browser document.
@@ -222,23 +284,20 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                              self.model, "threshold", self.clear_and_recalc,
                                              throttled=True)
 
-        # Datashader sandbox
-        import numpy as np, datashader as ds, xarray as xr
-        from datashader import transfer_functions as tf, reductions as rd
-        from datashader.bokeh_ext import InteractiveImage
-        import holoviews as hv
-        hv.extension('bokeh')
+        # da = xr.DataArray(
+        #     [[1, 2, 3],
+        #      [4, 5, 6],
+        #      [7, 8, 9]],
+        #     coords=[('y', [1, 6, 7]),
+        #             ('x', [1, 2, 7])],
+        #     name='Z')
+        # da = xr.DataArray(
+        #     [[0, 1, 0, 1, 0, 0],
+        #      [0, 1, 0, 1, 0, 0]],
+        #     coords=[('y', [0, 1500]),
+        #             ('x', [0, 100, 200, 600, 700, 1000])],
+        #     name='Z')
 
-        da = xr.DataArray(
-            [[1, 2, 3],
-             [4, 5, 6],
-             [7, 8, 9]],
-            coords=[('y', [1, 6, 7]),
-                    ('x', [1, 2, 7])],
-            name='Z')
-
-        canvas = ds.Canvas()
-        tf.shade(canvas.quadmesh(da, x='x', y='y'))
         # self.figds = figure(# plot_width=600,
         #                   plot_height=500,
         #                   title='Source Apertures',
@@ -247,16 +306,16 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         # self.figds.height_policy = 'fixed'
         # self.figds.width_policy = 'fit'
         # InteractiveImage(self.figds, canvas)
-        self.hvimage = hv.render(hv.Image(tf.shade(canvas.quadmesh(da, x='x', y='y'))))
 
         # Create a blank figure with labels
-        self.fig = figure(# plot_width=600,
+        self.fig = figure(plot_width=600,
                           plot_height=500,
                           title='Source Apertures',
                           tools="pan,wheel_zoom,box_zoom,reset",
                           x_range=(0, self.model.profile.shape[0]))
         self.fig.height_policy = 'fixed'
-        self.fig.width_policy = 'fit'
+        # self.fig.width_policy = 'fit'
+
 
         aperture_view = GIApertureView(self.model, self.fig)
         self.model.add_listener(self)
@@ -273,6 +332,19 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.details = Div(text="")
         self.model.recalc_apertures()
         self.update_details()
+
+        # da = self._make_data_array(self.model, self.model.profile.shape[0], 150)
+        # canvas = ds.Canvas()
+        # cmap = ['#ffffff', '#999999']
+        # qm = canvas.quadmesh(da, x='x', y='y')
+        # sh = tf.shade(qm)
+        # img = hv.Image(sh, cmap=cmap)
+        # self.hvimage = hv.render(img)
+
+        self.hvimage = self._make_holoviews_image_quadmapped(self.model, self.model.profile.shape[0], 150)
+
+        self.hvimage.width = 600
+        self.hvimage.x_range = self.fig.x_range
 
         col = column(self.hvimage, self.fig, self.details)
         col.sizing_mode = 'scale_width'
