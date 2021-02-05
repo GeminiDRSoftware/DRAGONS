@@ -17,11 +17,11 @@ import sys
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-relative_path = './../../../../'
-dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
-sys.path.append(dragons_path)
-
-import astrodata
+# relative_path = './../../../../'
+# dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
+# sys.path.append(dragons_path)
+#
+# import astrodata
 
 print('\n Printing current working directory for debugging:')
 print((' Current working directory: {}'.format(os.getcwd())))
@@ -35,10 +35,12 @@ copyright = '2020, Association of Universities for Research in Astronomy'
 author = 'Bruno C. Quint, Kathleen Labrie'
 
 # The short X.Y version
-version = astrodata.version(short=True)
+#version = astrodata.version(short=True)
+version = '3.1'
 
 # The full version, including alpha/beta/rc tags
-release = astrodata.version()
+#release = astrodata.version()
+release = '3.1.0-dev'
 
 
 # -- General configuration ---------------------------------------------------
