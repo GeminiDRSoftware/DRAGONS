@@ -4,6 +4,7 @@ import numpy as np
 from bokeh.layouts import row, column
 from bokeh.models import Div, Button, Title, Range, Range1d
 from bokeh.plotting import figure
+from holoviews.streams import Pipe
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
@@ -247,25 +248,28 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         cmap = ['#d1efd1', '#ffffff']
         qm = canvas.quadmesh(da, x='x', y='y')
         sh = tf.shade(qm)
-        img = hv.Image(sh).options(cmap=cmap)
-        return hv.render(img)
 
-    def _make_holoviews_image(self, aperture_model, x_max, y_max):
-        x = np.zeros(x_max)
-        for i, loclim in enumerate(zip(aperture_model.locations, aperture_model.all_limits)):
-            lim = loclim[1]
-            x[math.floor(lim[0]):math.ceil(lim[1])] = 1
-        dat = [x] * y_max
-        dat = np.swapaxes(dat, 0, 1)
-        da = xr.DataArray(
-            dat,
-            coords=[('y', np.arange(x_max)),
-                    ('x', np.arange(y_max))],
-            name='Z')
+        self.aperture_pipe = Pipe(data=[])
+        self.image_dmap = hv.DynamicMap(hv.Image, streams=[self.aperture_pipe])
+        self.image_dmap.opts(cmap=cmap)
 
-        cmap = ['#ffffff', 'green']
-        img = hv.Image(da)
-        return hv.render(img, cmap=cmap)
+        self.aperture_pipe.send(sh)
+
+        return hv.render(self.image_dmap)
+
+        # img = hv.Image(sh).options(cmap=cmap)
+        # return hv.render(img)
+
+    def _reload_apertures(self):
+        x_max = self.model.profile.shape[0]
+        y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
+
+        da = self._make_data_array(self.model, x_max, y_max)
+        canvas = ds.Canvas()
+        qm = canvas.quadmesh(da, x='x', y='y')
+        sh = tf.shade(qm)
+
+        self.aperture_pipe.send(sh)
 
     def visualize(self, doc):
         """
@@ -344,6 +348,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         else:
             self.model.locations[aperture_id-1] = location
             self.model.all_limits[aperture_id-1] = (start, end)
+        self._reload_apertures()
         self.update_details()
 
     def delete_aperture(self, aperture_id):
@@ -357,6 +362,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         """
         self.model.locations = np.delete(self.model.locations, aperture_id-1)
         del self.model.all_limits[aperture_id-1]
+        self._reload_apertures()
         self.update_details()
 
     def update_details(self):
