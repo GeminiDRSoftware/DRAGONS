@@ -378,7 +378,8 @@ class ApertureTask(Task):
             else:
                 self.stop_aperture()
                 return True
-        if key == 'f':
+
+        elif key == 'f':
             if self.aperture_id is None:
                 peaks = pinpoint_peaks(self.aperture_model.profile, None,
                                        [self.last_x, ], halfwidth=20,
@@ -387,36 +388,23 @@ class ApertureTask(Task):
                     self.start_aperture(peaks[0], self.last_y)
                 else:
                     self.start_aperture(self.last_x, self.last_y)
-        if key == '[':
+
+        if key in '[ld]' and self.aperture_id is None:
+            # get closest one
+            self.aperture_id = self.aperture_model.find_closest(self.last_x)
             if self.aperture_id is None:
-                # get closest one
-                self.aperture_id = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
+                return False
+
+        if key == '[':
             self.mode = 'left'
             return False
-        if key == ']':
-            if self.aperture_id is None:
-                # get closest one
-                self.aperture_id = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
+        elif key == ']':
             self.mode = 'right'
             return False
-        if key == 'l':
-            if self.aperture_id is None:
-                # get closest one
-                self.aperture_id = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
+        elif key == 'l':
             self.mode = 'location'
             return False
-        if key == 'd':
-            if self.aperture_id is None:
-                # get closest one
-                self.aperture_id = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
+        elif key == 'd':
             self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
             return True
@@ -424,32 +412,30 @@ class ApertureTask(Task):
 
     def handle_mouse(self, x, y):
         """
-        Handle a mouse movement.
-
-        We respond to the mouse by continuously updating the active aperture
-        around it's center point to a width to match the mouse position.
+        Handle a mouse movement.  We respond to the mouse by continuously
+        updating the active aperture around it's center point to a width to
+        match the mouse position.
 
         Parameters
         ----------
-        x : float
-            mouse x coordinate in data space
-        y : float
-            mouse y coordinate in data space
+        x, y : float
+            mouse x, y coordinate in data space
         """
         # we are in aperture mode
         if self.aperture_id:
             model = self.aperture_model.aperture_models[self.aperture_id]
             location = model.source.data['location'][0]
-            print(f'handle_mouse {x:.2f}')
 
             if self.mode == 'width':
                 width = abs(location - x)
                 model.update_values(start=location - width,
                                     end=location + width)
             elif self.mode == 'left':
-                model.update_values(start=min(location, x))
+                if x < location:
+                    model.update_values(start=x)
             elif self.mode == 'right':
-                model.update_values(end=max(location, x))
+                if x > location:
+                    model.update_values(end=x)
             elif self.mode == 'location':
                 diff = x - location
                 model.update_values(location=x,

@@ -359,20 +359,11 @@ class AperturePlotView:
         Alter the coordinate range for this aperture. This will adjust the
         shaded area and the arrows/label for this aperture as displayed on
         the figure.
-
-        Parameters
-        ----------
-        start : float
-            new starting x coordinate
-        end : float
-            new ending x coordinate
         """
         source = self.model.source
-        print(f'update: {source.data}')
         self.box.left = source.data['start'][0]
         self.box.right = source.data['end'][0]
         self.location.location = source.data['location'][0]
-        # self.label.x = location+2
 
     def delete(self):
         """Delete this aperture from it's view."""
@@ -385,18 +376,27 @@ class AperturePlotView:
         self.whisker.visible = False
 
 
+def avoid_multiple_update(func):
+    def wrapper(self, attr, old, new):
+        if self.in_update:
+            return
+
+        self.in_update = True
+        func(self, attr, old, new)
+        self.in_update = False
+    return wrapper
+
+
 class ApertureLineView:
     def __init__(self, aperture_id, model):
         """ Create text inputs for the start, location and end of an aperture.
 
         Parameters
         ----------
-        model : :class:`ApertureModel`
-            The model that tracks the apertures and their ranges
         aperture_id : int
             The ID of the aperture
-        start, location, end : float
-            The start, location and end of the aperture
+        model : :class:`ApertureModel`
+            The model that tracks the apertures and their ranges
 
         """
         self.model = model
@@ -406,44 +406,51 @@ class ApertureLineView:
         button.on_click(self.model.delete)
 
         source = model.source
-        start_input = Spinner(width=96, low=0, value=source.data['start'][0])
-        location_input = Spinner(width=96, low=0, value=source.data['location'][0])
-        end_input = Spinner(width=96, low=0, value=source.data['end'][0])
+        self.start_input = Spinner(width=96, low=0,
+                                   value=source.data['start'][0])
+        self.location_input = Spinner(width=96, low=0,
+                                      value=source.data['location'][0])
+        self.end_input = Spinner(width=96, low=0,
+                                 value=source.data['end'][0])
 
-        def _start_handler(attr, old, new):
-            if new > source.data['location'][0]:
-                print('start cannot be > location')
-                start_input.value = old
-            else:
-                self.model.update_values(start=start_input.value)
+        self.in_update = False
 
-        def _end_handler(attr, old, new):
-            if new < source.data['location'][0]:
-                print('end cannot be < location')
-                end_input.value = old
-            else:
-                self.model.update_values(end=end_input.value)
-
-        def _location_handler(attr, old, new):
-            start_input.value += new - old
-            end_input.value += new - old
-            self.model.update_values(location=location_input.value,
-                                     start=start_input.value,
-                                     end=end_input.value)
-
-        start_input.on_change("value", _start_handler)
-        location_input.on_change("value", _location_handler)
-        end_input.on_change("value", _end_handler)
+        self.start_input.on_change("value", self._start_handler)
+        self.location_input.on_change("value", self._location_handler)
+        self.end_input.on_change("value", self._end_handler)
 
         self.component = row([Div(align='end'),
-                              start_input,
-                              location_input,
-                              end_input,
+                              self.start_input,
+                              self.location_input,
+                              self.end_input,
                               button])
         self.update_title()
 
+    @avoid_multiple_update
+    def _start_handler(self, attr, old, new):
+        self.model.update_values(start=self.start_input.value)
+
+    @avoid_multiple_update
+    def _end_handler(self, attr, old, new):
+        self.model.update_values(end=self.end_input.value)
+
+    @avoid_multiple_update
+    def _location_handler(self, attr, old, new):
+        self.start_input.value += new - old
+        self.end_input.value += new - old
+        self.model.update_values(location=self.location_input.value,
+                                 start=self.start_input.value,
+                                 end=self.end_input.value)
+
     def update_title(self):
         self.component.children[0].text = f"Aperture {self.aperture_id}"
+
+    @avoid_multiple_update
+    def update(self):
+        source = self.model.source
+        self.start_input.value = source.data['start'][0]
+        self.location_input.value = source.data['location'][0]
+        self.end_input.value = source.data['end'][0]
 
     def update_viewport(self, start, end):
         """
@@ -466,8 +473,6 @@ class ApertureLineView:
                     self.model.source.data['end'][0] > end)
         for child in self.component.children:
             child.disabled = disabled
-            # self.slider.children[0].start = start
-            # self.slider.children[0].end = end
 
 
 class ApertureView:
@@ -527,6 +532,7 @@ class ApertureView:
         """Handle an updated or added aperture."""
         if aperture_id in self.aperture_plots:
             self.aperture_plots[aperture_id].update()
+            self.aperture_lines[aperture_id].update()
         else:
             ap = AperturePlotView(self.fig, aperture_id, model)
             self.aperture_plots[aperture_id] = ap
