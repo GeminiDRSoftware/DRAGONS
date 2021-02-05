@@ -22,9 +22,9 @@ from geminidr.core.primitives_spect import _transpose_if_needed
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels, transform, tracing
-from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
+from gempy.library import astromodels, transform
+from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
 from gwcs.wcs import WCS as gWCS
@@ -33,10 +33,8 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from gempy.library.fitting import fit_1D
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
-from .parameters_gmos_longslit import normalizeFlatConfig
 
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
@@ -83,7 +81,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         offset_dict = {("GMOS-N", "Hamamatsu-N"): 1.5,
                        ("GMOS-N", "e2vDD"): -0.2,
                        ("GMOS-N", "EEV"): 0.7,
-                       ("GMOS-S", "Hamamatsu-S"): 6.0,
+                       ("GMOS-S", "Hamamatsu-S"): 5.5,
                        ("GMOS-S", "EEV"): 3.8}
 
         log = self.log
@@ -96,6 +94,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     'already been processed by addIllumMaskToDQ'.
                             format(ad.filename))
                 continue
+
+            ybin = ad.detector_y_bin()
+            for ext in ad:
+                if ext.mask is None:
+                    ext.mask = np.zeros_like(ext.data).astype(DQ.datatype)
 
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
@@ -113,7 +116,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         # Ensure we're only adding the unilluminated bit
                         iext = np.where(illum_ext.data > 0, DQ.unilluminated,
                                         0).astype(DQ.datatype)
-                        ext.mask = iext if ext.mask is None else ext.mask | iext
+                        ext.mask |= iext
             elif not no_bridges:   # i.e. there are bridges.
                 try:
                     mdf = ad.MDF
@@ -126,8 +129,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # bright (even for an arc)
                 # The max is intended to handle R150 data, where many of
                 # the extensions are unilluminated
-                row_medians = np.max(np.array([np.percentile(ext.data, 95, axis=1)
-                                                      for ext in ad]), axis=0)
+                row_medians = np.max(np.array([np.percentile(
+                    ext.data - np.median(ext.data), 95, axis=1)
+                    for ext in ad]), axis=0)
 
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
@@ -143,23 +147,27 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
                             1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
                     model[yccd[0]:yccd[1]+1] = 1
-
+                    log.stdinfo("Expected slit location from pixels "
+                                 f"{yccd[0]+1} to {yccd[1]+1}")
                 if shift is None:
-                    mshift = max_shift // ad.detector_y_bin()
+                    mshift = max_shift // ybin + 2
                     # model[] indexing avoids reduction in signal as slit
                     # is shifted off the top of the image
                     xcorr = correlate(row_medians, model[mshift:-mshift],
                                       mode='same')[model.size // 2 - mshift:
                                                    model.size // 2 + mshift]
-                    yshift = xcorr.argmax() - mshift
-                    xcorr_width = tracing.estimate_peak_width(xcorr)
-                    if not (4 < xcorr_width < 10):
+                    xspline = fit_1D(xcorr, function="spline3", order=None).evaluate()
+                    yshift = xspline.argmax() - mshift
+                    maxima = np.logical_and(np.diff(xspline[:-1]) > 0,
+                                            np.diff(xspline[1:]) < 0)
+                    if maxima.sum() > 1 or abs(yshift // ybin) > max_shift:
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
                         yshift = None
                 else:
                     yshift = shift
+
                 if yshift is not None:
                     log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
                     row_mask = np.ones_like(model, dtype=int)
@@ -170,10 +178,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     else:
                         row_mask[:] = 1 - model
                     for ext in ad:
-                        ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
+                        ext.mask |= (row_mask * DQ.unilluminated).astype(
+                            DQ.datatype)[:, np.newaxis]
 
             if has_48rows:
-                actual_rows = 48 // ad.detector_y_bin()
+                actual_rows = 48 // ybin
                 for ext in ad:
                     ext.mask[:actual_rows] |= DQ.unilluminated
 
