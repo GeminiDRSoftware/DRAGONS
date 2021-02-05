@@ -546,10 +546,10 @@ class Preprocess(PrimitivesBASE):
             Path to a file containing the regions to fix. If both regions_file
             and regions are supplied, both will be used and regions_file will
             be used first.
-        axis : int
-            Axis over which the interpolation is done, using the Fortran
-            order. By default the axis is determined from the narrowest
-            dimension of each region.
+        axis : int  [None or 1 - 3]
+            Axis over which the interpolation is done, 1 is along the x-axis,
+            2 is along the y-axis, 3 is the z-axis.  If None (default), the
+            axis is determined from the narrowest dimension of each region.
         use_local_median : bool
             Use a local median filter for single pixels?
         debug : bool
@@ -624,7 +624,7 @@ class Preprocess(PrimitivesBASE):
                     else:
                         if axis not in range(1, ndim + 1):
                             raise ValueError('axis should specify a dimension '
-                                             f'between 1 and {ndim + 1}')
+                                             f'between 1 and {ndim}')
                         use_axis = ndim - axis
 
                     if debug:

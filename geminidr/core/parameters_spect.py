@@ -105,7 +105,6 @@ class extract1DSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
     method = config.ChoiceField("Extraction method", str,
                                 allowed={"standard": "no weighting",
-                                         "weighted": "inverse-variance weighted",
                                          "optimal": "optimal extraction"},
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
