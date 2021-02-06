@@ -12,12 +12,20 @@ datasets_and_locations = [("S20200122S0020.fits", 747),
                           ("S20201208S0021.fits", 748),
                           ("S20100108S0052.fits", 1611)]
 
+
+def ad(request):
+    file_on_disk = download_from_archive(request.param)
+    return astrodata.open(file_on_disk)
+
+
+def start(request):
+    return request.param
+
+
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
-@pytest.mark.parametrize("filename,start", datasets_and_locations, indirect=True)
-def test_add_illum_mask_position(filename, start):
-    file_on_disk = download_from_archive(filename)
-    ad = astrodata.open(file_on_disk)
+@pytest.mark.parametrize("ad,start", datasets_and_locations, indirect=True)
+def test_add_illum_mask_position(ad, start):
     p = GMOSLongslit([ad])
     p.prepare()
     ad = p.addIllumMaskToDQ().pop()
