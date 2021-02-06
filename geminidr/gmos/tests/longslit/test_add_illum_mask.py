@@ -14,7 +14,7 @@ datasets_and_locations = [("S20200122S0020.fits", 747),
 
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
-@pytest.mark.parametrize("filename, start", datasets_and_locations, indirect=True)
+@pytest.mark.parametrize("filename,start", datasets_and_locations, indirect=True)
 def test_add_illum_mask_position(filename, start):
     file_on_disk = download_from_archive(filename)
     ad = astrodata.open(file_on_disk)
