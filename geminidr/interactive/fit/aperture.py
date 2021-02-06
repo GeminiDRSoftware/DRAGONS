@@ -1,26 +1,96 @@
 import math
 
 import numpy as np
+from bokeh.io import curdoc
 from bokeh.layouts import row, column
-from bokeh.models import Div, Button, Title, Range, Range1d
+from bokeh.models import Div, Button, Title, Range, Range1d, Column, Label, CustomJS
 from bokeh.plotting import figure
-from holoviews.streams import Pipe
+from holoviews.streams import Pipe, Stream
 
 from geminidr.interactive import server, interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_text_slider
+from geminidr.interactive.interactive import GIApertureModel, GIApertureView, build_text_slider, build_range_slider, \
+    GIApertureSliders
 from gempy.library import tracing
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 # Datashader sandbox
 import numpy as np, datashader as ds, xarray as xr
-from datashader import transfer_functions as tf, reductions as rd
-from datashader.bokeh_ext import InteractiveImage
+from datashader import transfer_functions as tf
 import holoviews as hv
 
 hv.extension('bokeh')
 
+renderer = hv.renderer('bokeh')
+
+
 __all__ = ["interactive_find_source_apertures", ]
+
+
+# I want a standalone aperture control panel to work with the bokeh/datashader
+# streaming visualization of the model.  This is towards supporting a high number
+# of apertures concurrently.
+# TODO dynamically adjust the control panel when dealing with large aperture counts
+# i.e. >10, move to a select box for aperture number and single slider, perhaps
+# or activate single slider for aperture closest to mouse click, etc.
+class ApertureControlPanel:
+    def __init__(self, fig, model):
+        self.fig = fig
+        self.model = model
+        self.controls = column(Div(text='Controls go here'))
+        self._sliders = dict()
+        self.model.add_listener(self)
+        self.view_start = self.fig.x_range.start
+        self.view_end = self.fig.x_range.end
+        fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport(self.fig.x_range.start, self.view_end))
+        fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, self.fig.x_range.end))
+        # feels like I need this to convince the aperture lines to update on zoom
+        fig.y_range.js_on_change('end', CustomJS(args=dict(plot=fig),
+                                                 code="plot.properties.renderers.change.emit()"))
+        for idx, loclims in enumerate(zip(self.model.locations, self.model.all_limits)):
+            loc = loclims[0]
+            lims = loclims[1]
+            self.handle_aperture(idx, loc, lims[0], lims[1])
+
+    def handle_aperture(self, idx, loc, start, end):
+        # TODO hack for now, just so I can stress test on 700 apertures
+        if idx >= 10:
+            return
+
+        slider = self._sliders.get(idx, None)
+        if slider:
+            pass
+        else:
+            slider = GIApertureSliders(self.fig, self.model, idx, loc, start, end)
+            self._sliders[idx] = slider
+            self.controls.children.append(slider.component)
+
+    def delete_aperture(self, idx):
+        slider = self._sliders.get(idx, None)
+        if slider:
+            self.controls.children.remove(slider.component)
+            del self._sliders[idx]
+
+    def do_update(self, *args, **kwargs):
+        pass
+
+    def update_viewport(self, start, end):
+        """
+        Handle a change in the view.
+
+        We will adjust the slider ranges and/or disable them.
+
+        Parameters
+        ----------
+        start
+        end
+        """
+        # Bokeh docs provide no indication of the datatype or orientation of the start/end
+        # tuples, so I have left the doc blank for now
+        self.view_start = start
+        self.view_end = end
+        for ap_slider in self._sliders.values():
+            ap_slider.update_viewport(start, end)
 
 
 class FindSourceAperturesModel(GIApertureModel):
@@ -54,8 +124,8 @@ class FindSourceAperturesModel(GIApertureModel):
         self.sizing_method = sizing_method
         self.max_apertures = max_apertures
 
-        self.locations = None
-        self.all_limits = None
+        self.locations = []
+        self.all_limits = np.reshape([], (-1, 2))
 
         self.recalc_listeners = list()
 
@@ -104,6 +174,7 @@ class FindSourceAperturesModel(GIApertureModel):
         if peaks_and_snrs.size == 0:
             self.locations = []
             self.all_limits = []
+            self.all_limits = np.reshape([], (-1, 2))
         else:
             # Reverse-sort by SNR and return only the locations
             self.locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
@@ -120,8 +191,10 @@ class FindSourceAperturesModel(GIApertureModel):
 
     def add_aperture(self, location, start, end):
         aperture_id = len(self.locations)+1
-        np.append(self.locations, location)
-        np.append(self.all_limits, (start, end))
+        self.locations = np.append(self.locations, location)
+        self.all_limits = np.append(self.all_limits, (start, end))
+        # TODO make this cleaner, having issues with new flow in hv refactor
+        self.all_limits = np.reshape(self.all_limits, (-1, 2))
         for l in self.listeners:
             l.handle_aperture(aperture_id, location, start, end)
         return aperture_id
@@ -192,6 +265,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         super().__init__(title='Find Source Apertures', filename_info=filename_info)
         self.model = model
 
+        self.aperture_control_panel = None
         self.details = None
         self.fig = None
         self.hvimage = None
@@ -215,61 +289,122 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.add_aperture(x, x, x)
         self.update_details()
 
-    def _make_data_array(self, aperture_model, x_max, y_max):
+    # def _make_data_array_for_datashader(self, aperture_model, x_max, y_max):
+    #     MINI = 0.01
+    #
+    #     da1 = [0, ]
+    #     da2 = [0, ]
+    #     y = [0, y_max]
+    #     x = [0, ]
+    #     ranges = list()
+    #     for i, loclim in enumerate(zip(aperture_model.locations, aperture_model.all_limits)):
+    #         lim = loclim[1]
+    #         ranges.append((lim[0], lim[1]))
+    #     ranges.sort(key=lambda x: x[0])
+    #     # print(ranges)
+    #     for range in ranges:
+    #         x.extend((range[0]-MINI, range[0], range[1], range[1] + MINI))
+    #         da1.extend((0, 1, 1, 0))
+    #         da2.extend((0, 1, 1, 0))
+    #     x.append(x_max)
+    #     da1.append(0)
+    #     da2.append(0)
+    #     return xr.DataArray(
+    #         [da1, da2,],
+    #         coords=[('y', y),
+    #                 ('x', x)],
+    #         name='Z')
+
+    def _make_data_array_for_holoviews(self, aperture_model, x_max, y_max, as_data_array=True):
         MINI = 0.01
 
-
-        da1 = [0, ]
-        da2 = [0, ]
+        # da1 = [0, ]
+        # da2 = [0, ]
         y = [0, y_max]
         x = [0, ]
+        datarr = [(0,0)]
         ranges = list()
         for i, loclim in enumerate(zip(aperture_model.locations, aperture_model.all_limits)):
             lim = loclim[1]
             ranges.append((lim[0], lim[1]))
         ranges.sort(key=lambda x: x[0])
-        print(ranges)
+        # print(ranges)
         for range in ranges:
             x.extend((range[0]-MINI, range[0], range[1], range[1] + MINI))
-            da1.extend((0, 1, 1, 0))
-            da2.extend((0, 1, 1, 0))
+            datarr.append((0,0))
+            datarr.append((1,1))
+            datarr.append((1,1))
+            datarr.append((0,0))
+            # da1.extend((0, 1, 1, 0))
+            # da2.extend((0, 1, 1, 0))
         x.append(x_max)
-        da1.append(0)
-        da2.append(0)
-        return xr.DataArray(
-            [da1, da2,],
-            coords=[('y', y),
-                    ('x', x)],
-            name='Z')
+        # da1.append(0)
+        # da2.append(0)
+        datarr.append((0,0))
+        if as_data_array:
+            return xr.DataArray(
+                datarr,  #[da1, da2,],
+                coords=[('x', x), ('y', y)],
+                # coords=[('y', y),
+                #         ('x', x)],
+                name='Z')
+        else:
+            return x, y, datarr
 
-    def _make_holoviews_image_quadmapped(self, aperture_model, x_max, y_max):
-        da = self._make_data_array(aperture_model, x_max, y_max)
-        canvas = ds.Canvas()
-        cmap = ['#d1efd1', '#ffffff']
-        qm = canvas.quadmesh(da, x='x', y='y')
-        sh = tf.shade(qm)
+    # def _make_holoviews_image_quadmeshed(self, aperture_model, x_max, y_max):
+    #     da = self._make_data_array_for_datashader(aperture_model, x_max, y_max)
+    #     canvas = ds.Canvas()
+    #     cmap = ['#d1efd1', '#ffffff']
+    #     qm = canvas.quadmesh(da, x='x', y='y')
+    #     sh = tf.shade(qm)
+    #
+    #     self.aperture_pipe = Pipe(data=[])
+    #     self.image_dmap = hv.DynamicMap(hv.Image, streams=[self.aperture_pipe])
+    #     self.image_dmap.opts(cmap=cmap)
+    #
+    #     self.aperture_pipe.send(sh)
+    #
+    #     return hv.render(self.image_dmap)
 
-        self.aperture_pipe = Pipe(data=[])
-        self.image_dmap = hv.DynamicMap(hv.Image, streams=[self.aperture_pipe])
-        self.image_dmap.opts(cmap=cmap)
+    # def _reload_apertures_image_quadmeshed(self):
+    #     x_max = self.model.profile.shape[0]
+    #     y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
+    #
+    #     da = self._make_data_array_for_datashader(self.model, x_max, y_max)
+    #     canvas = ds.Canvas()
+    #     qm = canvas.quadmesh(da, x='x', y='y')
+    #     sh = tf.shade(qm)
+    #
+    #     self.aperture_pipe.send(sh)
 
-        self.aperture_pipe.send(sh)
+    def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
+        da = self._make_data_array_for_holoviews(aperture_model, x_max, y_max)
+        cmap = ['#ffffff', '#d1efd1']
 
-        return hv.render(self.image_dmap)
+        # self.aperture_pipe = Pipe(data=[])
+        # self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[self.aperture_pipe])
+        xyz = Stream.define('XYZ', data=da)
+        self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
+        self.qm_dmap.opts(cmap=cmap)
+        # self.aperture_pipe.send(da)
 
-        # img = hv.Image(sh).options(cmap=cmap)
-        # return hv.render(img)
+        return hv.render(self.qm_dmap)
+        # self.qm_renderer = renderer.get_plot(self.qm_dmap, curdoc())
+        # return self.qm_renderer
 
-    def _reload_apertures(self):
+        # self.quad_mesh = hv.QuadMesh(da)
+        # return hv.render(self.quad_mesh)
+
+    def _reload_apertures_quadmeshed(self):
         x_max = self.model.profile.shape[0]
         y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
 
-        da = self._make_data_array(self.model, x_max, y_max)
-        canvas = ds.Canvas()
-        qm = canvas.quadmesh(da, x='x', y='y')
-        sh = tf.shade(qm)
+        da = self._make_data_array_for_holoviews(self.model, x_max, y_max)
 
-        self.aperture_pipe.send(sh)
+        # self.aperture_pipe.send(da)
+        self.qm_dmap.event(data=da)
+        # self.qm_renderer.refresh()
+        print("reloaded")
 
     def visualize(self, doc):
         """
@@ -281,6 +416,14 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
             Bokeh provided document to add visual elements to
         """
         super().visualize(doc)
+        self.details = Div(text="")
+
+        self.model.recalc_apertures()
+        # for i in range(1, 700, 1):
+        #     loc = float(i)*3.0
+        #     start = loc-1.0
+        #     end = loc+1.0
+        #     self.model.add_aperture(loc, start, end)
 
         max_apertures_slider = build_text_slider("Max Apertures", self.model.max_apertures, 1, 1, 20,
                                                  self.model, "max_apertures", self.clear_and_recalc,
@@ -289,11 +432,8 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
                                              self.model, "threshold", self.clear_and_recalc,
                                              throttled=True)
 
-        self.model.recalc_apertures()
-        self.model.add_listener(self)
-
         ymax = np.nanmax(self.model.profile)*1.05
-        self.hvimage = self._make_holoviews_image_quadmapped(self.model, self.model.profile.shape[0], math.ceil(ymax))
+        self.hvimage = self._make_holoviews_quadmeshed(self.model, self.model.profile.shape[0], math.ceil(ymax))
 
         self.hvimage.width = 600
         self.hvimage.line(x=range(self.model.profile.shape[0]), y=self.model.profile, color="black")
@@ -301,17 +441,19 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
 
         self.hvimage.title = Title(text='Source Apertures')
         self.hvimage.plot_height = 500
-        # aperture_view = GIApertureView(self.model, self.fig)
+
+        self.aperture_control_panel = ApertureControlPanel(self.hvimage, self.model)
+
+        self.model.add_listener(self)
 
         add_button = Button(label="Add Aperture")
         add_button.on_click(self.add_aperture)
 
         helptext = Div()
         controls = column(children=[max_apertures_slider, threshold_slider,
-                                    #aperture_view.controls,
+                                    self.aperture_control_panel.controls,
                                     add_button, self.submit_button, helptext])
 
-        self.details = Div(text="")
         self.update_details()
 
         col = column(self.hvimage, self.details)
@@ -348,7 +490,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         else:
             self.model.locations[aperture_id-1] = location
             self.model.all_limits[aperture_id-1] = (start, end)
-        self._reload_apertures()
+        self._reload_apertures_quadmeshed()
         self.update_details()
 
     def delete_aperture(self, aperture_id):
@@ -362,7 +504,7 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         """
         self.model.locations = np.delete(self.model.locations, aperture_id-1)
         del self.model.all_limits[aperture_id-1]
-        self._reload_apertures()
+        self._reload_apertures_quadmeshed()
         self.update_details()
 
     def update_details(self):
