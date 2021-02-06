@@ -156,10 +156,12 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     xcorr = correlate(row_medians, model[mshift:-mshift],
                                       mode='same')[model.size // 2 - mshift:
                                                    model.size // 2 + mshift]
-                    xspline = fit_1D(xcorr, function="spline3", order=None).evaluate()
+                    std = 0.5 * abs(np.diff(xcorr)).std()
+                    xspline = fit_1D(xcorr, function="spline3", order=None,
+                                     weights=np.full(len(xcorr), 1. / std)).evaluate()
                     yshift = xspline.argmax() - mshift
-                    maxima = np.logical_and(np.diff(xspline[:-1]) > 0,
-                                            np.diff(xspline[1:]) < 0)
+                    maxima = np.logical_and(np.diff(xspline[:-1]) > 0.1 * std,
+                                            np.diff(xspline[1:]) < -0.1 * std)
                     if maxima.sum() > 1 or abs(yshift // ybin) > max_shift:
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
