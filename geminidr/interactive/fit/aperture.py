@@ -95,8 +95,6 @@ class CustomWidget:
         return getattr(self.model, self.attr)
 
     def handler(self, attr, old, new):
-        print(f'Calling handler for {self.__class__.__name__}, {self.attr}, '
-              f'{attr}, {new}')
         if self._handler is not None:
             self._handler(new)
         else:
@@ -187,6 +185,7 @@ class ApertureModel:
             'location': [location],
             'start': [start],
             'end': [end],
+            'label_position': [0],
         })
         self.parent = parent
 
@@ -353,7 +352,8 @@ class AperturePlotView:
             self.build_ui()
 
     def compute_ymid(self):
-        if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
+        if (self.fig.y_range.start is not None and
+                self.fig.y_range.end is not None):
             ymin = self.fig.y_range.start
             ymax = self.fig.y_range.end
             return (ymax - ymin)*.8 + ymin
@@ -379,7 +379,6 @@ class AperturePlotView:
         """
         fig = self.fig
         source = self.model.source
-        ymid = self.compute_ymid()
 
         self.box = BoxAnnotation(left=source.data['start'][0],
                                  right=source.data['end'][0],
@@ -387,12 +386,12 @@ class AperturePlotView:
                                  fill_color='green')
         fig.add_layout(self.box)
 
-        self.label = LabelSet(source=source, x="location", y=ymid,
+        self.label = LabelSet(source=source, x="location", y="label_position",
                               y_offset=2, text="id")
         fig.add_layout(self.label)
 
-        self.whisker = Whisker(source=source, base=0, lower="start",
-                               upper="end", dimension='width',
+        self.whisker = Whisker(source=source, base="label_position",
+                               lower="start", upper="end", dimension='width',
                                line_color="purple")
         fig.add_layout(self.whisker)
 
@@ -419,8 +418,7 @@ class AperturePlotView:
         """
         ymid = self.compute_ymid()
         if ymid:
-            self.label.y = ymid
-            self.whisker.base = ymid
+            self.model.update_values(label_position=ymid)
 
     def update(self):
         """
