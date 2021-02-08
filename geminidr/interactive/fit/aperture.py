@@ -198,6 +198,10 @@ class ApertureModel:
         self.source.patch(data)
         self.parent.adjust_aperture(self.aperture_id)
 
+    def result(self):
+        data = self.source.data
+        return data['location'][0], (data['start'][0], data['end'][0])
+
 
 class FindSourceAperturesModel:
     def __init__(self, ext, **aper_params):
@@ -779,7 +783,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 list of locations and list of the limits as tuples
 
         """
-        return np.array(self.model.locations), self.model.all_limits
+        res = (model.result() for model in self.model.aperture_models.values())
+        locations, limits = zip(*res)
+        return np.array(locations), limits
 
 
 def interactive_find_source_apertures(ext, **kwargs):

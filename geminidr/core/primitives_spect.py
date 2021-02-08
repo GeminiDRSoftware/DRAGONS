@@ -1612,7 +1612,7 @@ class Spect(PrimitivesBASE):
                     locations, all_limits, _, _ = tracing.find_apertures(
                         ext, **aper_params)
 
-                if not locations:
+                if locations is None or len(locations) == 0:
                     # Delete existing APERTURE table
                     if 'APERTURE' in ext.tables:
                         del ext.APERTURE
