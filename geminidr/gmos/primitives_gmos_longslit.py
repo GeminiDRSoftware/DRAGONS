@@ -129,8 +129,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # bright (even for an arc)
                 # The max is intended to handle R150 data, where many of
                 # the extensions are unilluminated
-                row_medians = np.max(np.array([np.percentile(
-                    ext.data - np.median(ext.data), 95, axis=1)
+                row_medians = np.prod(np.array([np.percentile(
+                    ext.data, 95, axis=1)
                     for ext in ad]), axis=0)
 
                 # Construct a model of the slit illumination from the MDF
@@ -151,12 +151,17 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                  f"{yccd[0]+1} to {yccd[1]+1}")
                 if shift is None:
                     mshift = max_shift // ybin + 2
+                    edges = 50 // ybin  # try to eliminate issues at the very edges
+                    mshift2 = mshift + edges
                     # model[] indexing avoids reduction in signal as slit
                     # is shifted off the top of the image
-                    xcorr = correlate(row_medians, model[mshift:-mshift],
-                                      mode='same')[model.size // 2 - mshift:
-                                                   model.size // 2 + mshift]
-                    std = 0.5 * abs(np.diff(xcorr)).std()
+                    xcorr = correlate(row_medians[edges:-edges], model[mshift2:-mshift2],
+                                      mode='same')[model.size // 2 - edges - mshift:
+                                                   model.size // 2 - edges + mshift]
+                    # This calculates the offsets of each point from the
+                    # straight line between its neighbours
+                    std = (xcorr[1:-1] - 0.5 *
+                           (xcorr + np.roll(xcorr, 2))[2:]).std()
                     xspline = fit_1D(xcorr, function="spline3", order=None,
                                      weights=np.full(len(xcorr), 1. / std)).evaluate()
                     yshift = xspline.argmax() - mshift

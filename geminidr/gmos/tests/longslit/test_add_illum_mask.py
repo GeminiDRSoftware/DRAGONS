@@ -6,11 +6,11 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 
 # The location is the lowest row (0-indexed) of the first bridge
 datasets_and_locations = [("S20200122S0020.fits", 747),
-                          ("N20200909S0259.fits", 719),
-                          ("N20201010S0122.fits", 718),
-                          ("S20201112S0034.fits", 751),
+                          ("N20190601S0285.fits", 721),
+                          ("N20190325S0388.fits", 721),
+                          ("S20191202S0064.fits", 748),
                           ("S20201208S0021.fits", 748),
-                          ("S20100108S0052.fits", 1611)]
+                          ]
 
 
 @pytest.mark.dragons_remote_data
@@ -27,5 +27,5 @@ def test_add_illum_mask_position(filename, start_row):
     # Chop off the bottom 200 rows because of the bias issue
     # and the bottom of the longslit mask for pre-Hamamatsu data
     # (larger CCDs) and  choose a middle column in case of edge effects
-    actual_start_row = ad[0].mask[200:,100].argmax() + 200
+    actual_start_row = (ad[0].mask[200:,100] & 64).argmax() + 200
     assert abs(start_row - actual_start_row) <= 2
