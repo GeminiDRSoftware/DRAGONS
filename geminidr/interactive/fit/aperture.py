@@ -691,7 +691,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().__init__(title='Find Source Apertures')
         self.model = model
-        self.details = None
         self.fig = None
 
     def add_aperture(self):
@@ -753,10 +752,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             helptext,
         ])
 
-        self.details = Div(text=DETAILED_HELP, css_classes=['detailed_help'])
+        def _details_handler():
+            details.visible = not details.visible
+
+        details = Div(text=DETAILED_HELP, css_classes=['detailed_help'],
+                      visible=False)
+        details_button = Button(label="Show detailed help")
+        details_button.on_click(_details_handler)
         self.model.recalc_apertures()
 
-        col = column(fig, self.details)
+        col = column(fig, details_button, details)
         col.sizing_mode = 'scale_width'
         layout = row(controls, col)
 
