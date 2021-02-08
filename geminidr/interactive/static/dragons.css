@@ -84,3 +84,7 @@ body {
 div.scrollable {
   overflow-y: auto;
 }
+
+.detailed_help dt {
+  font-weight: bold;
+}

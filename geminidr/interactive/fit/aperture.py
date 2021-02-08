@@ -15,6 +15,70 @@ from gempy.library.tracing import find_apertures, find_apertures_peaks
 __all__ = ["interactive_find_source_apertures", ]
 
 
+DETAILED_HELP = """
+
+<h2>Help</h2>
+
+<p>Finds sources in 2D spectral images and store them in an APERTURE table for
+each extension. Each table will, then, be used in later primitives to perform
+aperture extraction.</p>
+
+<p>The primitive operates by first collapsing the 2D spectral image in the
+spatial direction to identify sky lines as regions of high pixel-to-pixel
+variance, and the regions between the sky lines which consist of at least
+`min_sky_region` pixels are selected. These are then collapsed in the
+dispersion direction to produce a 1D spatial profile, from which sources are
+identified using a peak-finding algorithm.</p>
+
+<p>The widths of the apertures are determined by calculating a threshold level
+relative to the peak, or an integrated flux relative to the total between the
+minima on either side and determining where a smoothed version of the source
+profile reaches this threshold.</p>
+
+<dl>
+<dt>Max Apertures</dt>
+<dd>
+    Maximum number of apertures expected to be found. By default it is
+    None so all apertures are returned.
+</dd>
+<dt>Percentile</dt>
+<dd>
+    Percentile to determine signal for each spatial pixel. Uses when
+    collapsing along the dispersion direction to obtain a slit profile.
+    If None, the mean is used instead.
+</dd>
+<dt>Min sky region</dt>
+<dd>
+    Minimum number of contiguous pixels between sky lines for a region
+    to be added to the spectrum before collapsing to 1D.
+</dd>
+<dt>Use S/N ratio</dt>
+<dd>
+    Convert data to SNR per pixel before collapsing and peak-finding?
+</dd>
+<dt>Threshold</dt>
+<dd>
+    Parameter describing either the height above background (relative
+    to peak) or the integral under the spectrum (relative to the
+    integral to the next minimum) at which to define the edges of
+    the aperture.
+</dd>
+<dt>Sizing method</dt>
+<dd>
+    Method for automatic width determination: <i>peak</i> for the height
+    relative to peak, or <i>integral</i> for the integrated flux.
+</dd>
+<dt>Section</dt>
+<dd>
+    Comma-separated list of colon-separated pixel coordinate pairs
+    indicating the region(s) over which the spectral signal should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data
+</dd>
+</dl>
+"""
+
+
 class CustomWidget:
     """Defines a default handler that set the value on the model."""
 
@@ -640,7 +704,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         x = (self.fig.x_range.start + self.fig.x_range.end) / 2
         self.model.add_aperture(x, x, x)
-        self.update_details()
 
     def visualize(self, doc):
         """
@@ -672,7 +735,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         fig.width_policy = 'fit'
 
         aperture_view = ApertureView(self.model, fig)
-        self.model.add_listener(self)
+        # self.model.add_listener(self)
 
         fig.step(x='x', y='y', source=self.model.profile_source,
                  color="black", mode="center")
@@ -690,9 +753,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             helptext,
         ])
 
-        self.details = Div(text="")
+        self.details = Div(text=DETAILED_HELP, css_classes=['detailed_help'])
         self.model.recalc_apertures()
-        self.update_details()
 
         col = column(fig, self.details)
         col.sizing_mode = 'scale_width'
@@ -701,22 +763,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         Controller(fig, self.model, None, helptext)
 
         doc.add_root(layout)
-
-    def handle_aperture(self, aperture_id, model):
-        self.update_details()
-
-    def delete_aperture(self, aperture_id):
-        self.update_details()
-
-    def update_details(self):
-        """Update the details text area with the latest aperture data."""
-        text = ""
-        # for i, (loc, limits) in enumerate(
-        #         zip(self.model.locations, self.model.all_limits), start=1):
-        #     text += (f"Aperture #{i}\t <b>Location:</b> {loc:.2f}"
-        #              f" <b>Lower Limit:</b> {limits[0]:.2f}"
-        #              f" <b>Upper Limit:</b> {limits[1]:.2f}<br/>")
-        self.details.text = text
 
     def result(self):
         """
