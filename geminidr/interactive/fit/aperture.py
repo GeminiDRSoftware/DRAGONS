@@ -132,7 +132,6 @@ class ApertureModel:
     def update_values(self, **kwargs):
         data = {field: [(0, value)] for field, value in kwargs.items()}
         self.source.patch(data)
-        print(f'adjust {self.source.data}')
         self.parent.adjust_aperture(self.aperture_id)
 
 
@@ -448,7 +447,9 @@ class ApertureLineView:
         self.component.children[0].text = f"Aperture {self.aperture_id}"
 
     @avoid_multiple_update
-    def update(self):
+    def update(self, attr, old, new):
+        # Because Bokeh checks the handler signatures we need the same
+        # argument names for the decorator...
         source = self.model.source
         self.start_input.value = source.data['start'][0]
         self.location_input.value = source.data['location'][0]
@@ -534,7 +535,7 @@ class ApertureView:
         """Handle an updated or added aperture."""
         if aperture_id in self.aperture_plots:
             self.aperture_plots[aperture_id].update()
-            self.aperture_lines[aperture_id].update()
+            self.aperture_lines[aperture_id].update(None, None, None)
         else:
             ap = AperturePlotView(self.fig, aperture_id, model)
             self.aperture_plots[aperture_id] = ap
