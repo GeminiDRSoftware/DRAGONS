@@ -151,13 +151,15 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                  f"{yccd[0]+1} to {yccd[1]+1}")
                 if shift is None:
                     mshift = max_shift // ybin + 2
-                    edges = 50 // ybin  # try to eliminate issues at the very edges
+                    edges = 50  # try to eliminate issues at the very edges
                     mshift2 = mshift + edges
                     # model[] indexing avoids reduction in signal as slit
                     # is shifted off the top of the image
                     xcorr = correlate(row_medians[edges:-edges], model[mshift2:-mshift2],
                                       mode='same')[model.size // 2 - edges - mshift:
                                                    model.size // 2 - edges + mshift]
+                    # This line avoids numerical errors in the spline fit
+                    xcorr -= np.median(xcorr)
                     # This calculates the offsets of each point from the
                     # straight line between its neighbours
                     std = (xcorr[1:-1] - 0.5 *
