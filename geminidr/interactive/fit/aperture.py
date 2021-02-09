@@ -486,7 +486,7 @@ class ApertureLineView:
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
 
-        self.component = row([Div(align='end'),
+        self.component = row([Div(align='end', width=96),
                               self.start_input,
                               self.location_input,
                               self.end_input,
@@ -573,6 +573,15 @@ class ApertureView:
         self.inner_controls = column(max_height=300, height_policy='auto',
                                      css_classes=['scrollable'])
         self.controls = hamburger_helper("Apertures", self.inner_controls)
+
+        self.inner_controls.children.append(
+            row([
+                Div(text="", width=96),
+                Div(text="<b>Start</b>", width=96, align="center"),
+                Div(text="<b>Location</b>", width=96, align="center"),
+                Div(text="<b>End</b>", width=96, align="center"),
+            ])
+        )
 
         self.model = model
         model.add_listener(self)
