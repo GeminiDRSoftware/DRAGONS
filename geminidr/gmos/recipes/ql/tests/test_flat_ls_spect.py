@@ -75,7 +75,6 @@ def test_processed_flat_has_small_std(processed_flat):
 @pytest.mark.gmosls
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 @pytest.mark.preprocessed_data
-@pytest.mark.skip("needs new refs")
 def test_regression_processed_flat(processed_flat, ref_ad_factory):
     """
     Regression tests for the standard makeProcessedFlat recipe.
