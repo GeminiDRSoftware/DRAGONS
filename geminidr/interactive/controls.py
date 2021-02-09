@@ -28,6 +28,7 @@ Controller instances will set this to listen to key presses.  The bokeh server w
 it recieves from the clients.  Everyone else should leave it alone!
 """
 controller = None
+_pending_handle_mouse = False
 
 
 class Controller(object):
@@ -264,8 +265,16 @@ class Controller(object):
         """
         self.x = x
         self.y = y
+        global _pending_handle_mouse
+        if not _pending_handle_mouse:
+            _pending_handle_mouse = True
+            self.helptext.document.add_timeout_callback(self.handle_mouse_callback, 100)
+
+    def handle_mouse_callback(self):
+        global _pending_handle_mouse
+        _pending_handle_mouse = False
         if self.task:
-            if self.task.handle_mouse(x, y):
+            if self.task.handle_mouse(self.x, self.y):
                 self.task = None
                 self.set_help_text()
 

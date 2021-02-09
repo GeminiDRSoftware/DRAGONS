@@ -289,122 +289,39 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         self.model.add_aperture(x, x, x)
         self.update_details()
 
-    # def _make_data_array_for_datashader(self, aperture_model, x_max, y_max):
-    #     MINI = 0.01
-    #
-    #     da1 = [0, ]
-    #     da2 = [0, ]
-    #     y = [0, y_max]
-    #     x = [0, ]
-    #     ranges = list()
-    #     for i, loclim in enumerate(zip(aperture_model.locations, aperture_model.all_limits)):
-    #         lim = loclim[1]
-    #         ranges.append((lim[0], lim[1]))
-    #     ranges.sort(key=lambda x: x[0])
-    #     # print(ranges)
-    #     for range in ranges:
-    #         x.extend((range[0]-MINI, range[0], range[1], range[1] + MINI))
-    #         da1.extend((0, 1, 1, 0))
-    #         da2.extend((0, 1, 1, 0))
-    #     x.append(x_max)
-    #     da1.append(0)
-    #     da2.append(0)
-    #     return xr.DataArray(
-    #         [da1, da2,],
-    #         coords=[('y', y),
-    #                 ('x', x)],
-    #         name='Z')
-
-    def _make_data_array_for_holoviews(self, aperture_model, x_max, y_max, as_data_array=True):
-        MINI = 0.01
-
-        # da1 = [0, ]
-        # da2 = [0, ]
+    def _make_aperture_qm_data_for_holoviews(self, aperture_model, x_max, y_max):
         y = [0, y_max]
         x = [0, ]
-        datarr = [(0,0)]
+        datarr = [0,]
         ranges = list()
         for i, loclim in enumerate(zip(aperture_model.locations, aperture_model.all_limits)):
             lim = loclim[1]
             ranges.append((lim[0], lim[1]))
         ranges.sort(key=lambda x: x[0])
-        # print(ranges)
         for range in ranges:
-            x.extend((range[0]-MINI, range[0], range[1], range[1] + MINI))
-            datarr.append((0,0))
-            datarr.append((1,1))
-            datarr.append((1,1))
-            datarr.append((0,0))
-            # da1.extend((0, 1, 1, 0))
-            # da2.extend((0, 1, 1, 0))
+            x.extend((range[0], range[1]))
+            datarr.append(1)
+            datarr.append(0)
         x.append(x_max)
-        # da1.append(0)
-        # da2.append(0)
-        datarr.append((0,0))
-        if as_data_array:
-            return xr.DataArray(
-                datarr,  #[da1, da2,],
-                coords=[('x', x), ('y', y)],
-                # coords=[('y', y),
-                #         ('x', x)],
-                name='Z')
-        else:
-            return x, y, datarr
 
-    # def _make_holoviews_image_quadmeshed(self, aperture_model, x_max, y_max):
-    #     da = self._make_data_array_for_datashader(aperture_model, x_max, y_max)
-    #     canvas = ds.Canvas()
-    #     cmap = ['#d1efd1', '#ffffff']
-    #     qm = canvas.quadmesh(da, x='x', y='y')
-    #     sh = tf.shade(qm)
-    #
-    #     self.aperture_pipe = Pipe(data=[])
-    #     self.image_dmap = hv.DynamicMap(hv.Image, streams=[self.aperture_pipe])
-    #     self.image_dmap.opts(cmap=cmap)
-    #
-    #     self.aperture_pipe.send(sh)
-    #
-    #     return hv.render(self.image_dmap)
-
-    # def _reload_apertures_image_quadmeshed(self):
-    #     x_max = self.model.profile.shape[0]
-    #     y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
-    #
-    #     da = self._make_data_array_for_datashader(self.model, x_max, y_max)
-    #     canvas = ds.Canvas()
-    #     qm = canvas.quadmesh(da, x='x', y='y')
-    #     sh = tf.shade(qm)
-    #
-    #     self.aperture_pipe.send(sh)
+        return x, y, [datarr, ]
 
     def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
-        da = self._make_data_array_for_holoviews(aperture_model, x_max, y_max)
+        da = self._make_aperture_qm_data_for_holoviews(aperture_model, x_max, y_max)
         cmap = ['#ffffff', '#d1efd1']
-
-        # self.aperture_pipe = Pipe(data=[])
-        # self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[self.aperture_pipe])
         xyz = Stream.define('XYZ', data=da)
         self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
         self.qm_dmap.opts(cmap=cmap)
-        # self.aperture_pipe.send(da)
 
         return hv.render(self.qm_dmap)
-        # self.qm_renderer = renderer.get_plot(self.qm_dmap, curdoc())
-        # return self.qm_renderer
-
-        # self.quad_mesh = hv.QuadMesh(da)
-        # return hv.render(self.quad_mesh)
 
     def _reload_apertures_quadmeshed(self):
         x_max = self.model.profile.shape[0]
         y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
 
-        da = self._make_data_array_for_holoviews(self.model, x_max, y_max)
+        da = self._make_aperture_qm_data_for_holoviews(self.model, x_max, y_max)
 
-        # self.aperture_pipe.send(da)
         self.qm_dmap.event(data=da)
-        # self.qm_renderer.refresh()
-        print("reloaded")
 
     def visualize(self, doc):
         """
@@ -418,12 +335,12 @@ class FindSourceAperturesVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         self.details = Div(text="")
 
-        self.model.recalc_apertures()
-        # for i in range(1, 700, 1):
-        #     loc = float(i)*3.0
-        #     start = loc-1.0
-        #     end = loc+1.0
-        #     self.model.add_aperture(loc, start, end)
+        # self.model.recalc_apertures()
+        for i in range(1, 700, 1):
+            loc = float(i)*3.0
+            start = loc-1.0
+            end = loc+1.0
+            self.model.add_aperture(loc, start, end)
 
         max_apertures_slider = build_text_slider("Max Apertures", self.model.max_apertures, 1, 1, 20,
                                                  self.model, "max_apertures", self.clear_and_recalc,
