@@ -121,7 +121,8 @@ body {
 }
 
 div.scrollable {
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 .detailed_help dt {
