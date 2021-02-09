@@ -320,9 +320,10 @@ class FindSourceAperturesModel:
 
     def clear_apertures(self):
         """Remove all apertures, calling delete on the listeners for each."""
-        for iap in self.aperture_models.keys():
+        for aperture_id in self.aperture_models.keys():
             for listener in self.listeners:
-                listener.delete_aperture(iap)
+                listener.delete_aperture(aperture_id)
+        self.aperture_models.clear()
 
 
 class AperturePlotView:
