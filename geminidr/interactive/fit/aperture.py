@@ -690,7 +690,7 @@ def parameters_view(model, recalc_handler):
 
 
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
-    def __init__(self, model):
+    def __init__(self, model, filename_info=''):
         """
         Create a view for finding apertures with the given
         :class:`FindSourceAperturesModel`
@@ -701,7 +701,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             Model to use for tracking the input parameters and recalculating
             fresh sets as needed
         """
-        super().__init__(title='Find Source Apertures')
+        super().__init__(title='Find Source Apertures', filename_info=filename_info)
         self.model = model
         self.fig = None
 
@@ -777,7 +777,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         col.sizing_mode = 'scale_width'
         layout = row(controls, col)
 
-        Controller(fig, self.model, None, helptext)
+        Controller(fig, self.model, None, helptext, showing_residuals=False)
 
         doc.add_root(layout)
 

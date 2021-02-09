@@ -3,15 +3,16 @@ from copy import copy
 
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, TextInput)
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput)
 
 from geminidr.interactive import server
+from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title=''):
+    def __init__(self, config=None, title='', primitive_name='', filename_info='', template=None):
         """
         Initialize a visualizer.
 
@@ -22,6 +23,9 @@ class PrimitiveVisualizer(ABC):
         top level call you are visualizing from.
         """
         self.title = title
+        self.filename_info = filename_info if filename_info else ''
+        self.primitive_name = primitive_name if primitive_name else ''
+        self.template = template
         self.extras = dict()
         if config is None:
             self.config = None
@@ -30,13 +34,41 @@ class PrimitiveVisualizer(ABC):
 
         self.user_satisfied = False
 
-        self.submit_button = Button(label="Submit", align='center', button_type='success', width_policy='min')
+        self.submit_button = Button(label="Accept", align='center', button_type='success', width_policy='min')
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
             window.close();
         """)
         self.submit_button.js_on_click(callback)
         self.doc = None
+
+    def make_ok_cancel_dialog(self, btn, message, callback):
+        # This is a bit hacky, but bokeh makes it very difficult to bridge the python-js gap.
+        def _internal_handler(args):
+            if callback:
+                if args['result'] == [b'confirmed']:
+                    result = True
+                else:
+                    result = False
+                self.do_later(lambda: callback(result))
+
+        callback_name = register_callback(_internal_handler)
+
+        js_confirm_callback = CustomJS(code="""
+            console.log('in confirm callback');
+            console.log('element disabled, showing ok/cancel');
+            debugger;
+            cb_obj.name = '';
+            var confirmed = confirm('%s');
+            var cbid = '%s';
+            console.log('OK/Cancel Result: ' + confirmed);
+            if (confirmed) {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+            } else {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+            }
+            """ % (message, callback_name))
+        btn.js_on_click(js_confirm_callback)
 
     def submit_button_handler(self, stuff):
         """
@@ -74,12 +106,8 @@ class PrimitiveVisualizer(ABC):
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
 
-        # curdoc().template_variables["primitive_name"] = 'Cheeeeeze'  # self.title
-
-        # callback = CustomJS(code="""
-        #     setVersion('2.2.1');
-        # """)
-        # self.doc.add_next_tick_callback(callback)
+        # doc.add_root(self._ok_cancel_dlg.layout)
+        # Add an OK/Cancel dialog we can tap into later
 
     def do_later(self, fn):
         """
@@ -145,7 +173,8 @@ class PrimitiveVisualizer(ABC):
         extras : dict
             Dictionary of additional field definitions for anything not included in the primitive configuration
         reinit_live : bool
-            True if recalcuating points is cheap, in which case we don't need a button and do it on any change
+            True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
+            Currently only viable for text-slider style inputs
 
         Returns
         -------
@@ -1043,7 +1072,7 @@ class RegionEditor(GIRegionListener):
         pass
 
     def delete_region(self, region_id):
-        pass
+        self.text_input.value = self.region_model.build_regions()
 
     def finish_regions(self):
         self.text_input.value = self.region_model.build_regions()

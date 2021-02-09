@@ -1,3 +1,5 @@
+import uuid
+
 from bokeh.io import curdoc
 
 from astrodata import version
@@ -8,7 +10,7 @@ import tornado
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
-from jinja2 import Template
+from jinja2 import Template, Environment, FileSystemLoader
 
 from geminidr.interactive import controls
 
@@ -22,14 +24,80 @@ __version__ = version()
 
 
 class VersionHandler(tornado.web.RequestHandler):
+    """
+    Handler for geting the DRAGONS version.
+    """
     def get(self):
         self.write(__version__)
 
 
 def _handle_key(doc):
+    """
+    Web endpoint for telling the bokeh python a key was pressed.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        Document reference for the user's browser tab to hold the user interface.
+
+    Returns
+    -------
+    none
+    """
     key = doc.session_context.request.arguments['key'][0].decode('utf-8')
     if controls.controller:
         controls.controller.handle_key(key)
+
+
+# to store the mapping from ID to callable for the registered web callbacks
+_callbacks = dict()
+
+
+def register_callback(fn):
+    """
+    Register a function with the `callback` web endpoint.
+
+    This will register a function to respond to calls to the `callback`
+    web endpoint.  It will assign the function a unique UUID and return it
+    to the caller as a string.  This ID should be passed in the web calls
+    as the query argument `callback`.
+
+    Parameters
+    ----------
+    fn : callable
+        Function to call when callback is accessed via the URL.  It will be passed the web call arguments.
+
+    Returns
+    -------
+    str : Unique ID for the callback, to be passed in the URL
+    """
+    name = str(uuid.uuid1())
+    _callbacks[name] = fn
+    return name
+
+
+def _handle_callback(doc):
+    """
+    Web handler for 'callback' urls.
+
+    This handler is for functions registered as callbacks for the javascript.
+    This allows us to write javascript logic that calls back down into the python
+    via this endpoint.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        Document reference for the user's browser tab to hold the user interface.
+
+    Returns
+    -------
+    none
+    """
+    cb = doc.session_context.request.arguments['callback'][0].decode('utf-8')
+    args = doc.session_context.request.arguments
+    callback = _callbacks.get(cb)
+    if callback is not None:
+        callback(args)
 
 
 def _bkapp(doc):
@@ -51,17 +119,25 @@ def _bkapp(doc):
     """
     global _visualizer
 
-    with open('%s/templates/index.html' % pathlib.Path(__file__).parent.absolute()) as f:
+    template = "index.html"
+    if _visualizer.template:
+        template = _visualizer.template
+    template_path = '%s/templates/' % pathlib.Path(__file__).parent.absolute()
+    with open('%s/templates/%s' % (pathlib.Path(__file__).parent.absolute(), template)) as f:
         # Because Bokeh has broken templating...
         title = _visualizer.title
         if not title:
             title = 'Interactive'
+        primitive_name = _visualizer.primitive_name
         template = f.read()
-        template = template.replace('{{ primitive_name }}', title)
-
-        t = Template(template)
+        # template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
+        #                    .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
+        t = Environment(loader=FileSystemLoader(template_path)).from_string(template)
         doc.template = t
+        doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
+        doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
     _visualizer.visualize(doc)
+    doc.title = title
 
 
 def set_visualizer(visualizer):
@@ -102,6 +178,7 @@ def start_server():
         while port < 5701 and _bokeh_server is None:
             try:
                 _bokeh_server = Server({'/': _bkapp, '/dragons': static_app, '/handle_key': _handle_key,
+                                        '/handle_callback': _handle_callback,
                                         }, num_procs=1, extra_patterns=[('/version', VersionHandler),], port=port)
             except OSError:
                 port = port+1

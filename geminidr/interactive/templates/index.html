@@ -44,12 +44,26 @@
 
 <div id="top">
     <div id="top-icon"></div>
-    <div id="top-title">{{ primitive_name }}</div>
+    <div id="top-banner">
+        <div id="top-primitive-info">
+            <div id="top-title">{{ primitive_title }}</div>
+            <div id="top-primitive-name">{{ primitive_name }}</div>
+        </div>
+        <!-- <div id="filename-info">{{ filename_info }}</div></div> -->
+    </div>
 </div>
 <div id="plot_div" style="border: 0px solid">
     <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
-<!-- I'm a little teapot. -->
-    {{ super() }}
+    <div id="main_div">
+        {% block main_div %}
+            {% for doc in docs %}
+            {{ embed(doc) if doc.elementid }}
+            {% for root in doc.roots %}
+                {{ embed(root) | indent(10) }}
+            {% endfor %}
+            {% endfor %}
+        {% endblock %}
+    </div>
 </div>
 <script type="text/javascript">
     // $("#plot_div").keydown(function(event) {

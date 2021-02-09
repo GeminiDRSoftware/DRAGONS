@@ -220,6 +220,27 @@ def fn():
 self.do_later(fn)
 ```
 
+### make_ok_cancel_dialog
+
+There is a helper method called `make_ok_cancel_dialog`.  This is called on a bokeh
+`Button`, typically right after creating it.  The helper method also takes the message
+to display in the ok/cancel dialog and a callback function.  The callback function should
+take a single boolean argument, which will be `True` if the user chose "OK" and `False`
+if they chose "Cancel".  The helper calls the callback from inside the UI thread, so you 
+don't have to add a `do_later` layer of your own.
+
+Here is an example from the 1-D fitter:
+
+```python
+def reset_dialog_handler(result):
+    if result:
+        self.fitting_parameters_ui.reset_ui()
+self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
+                                                          'Reset will change all inputs for this tab back '
+                                                          'to their original values.  Proceed?',
+                                                          reset_dialog_handler)
+```
+
 ### make_widgets_from_config
 
 The `PrimitiveVisualizer` has a `make_widgets_from_config` helper method.  For the 
@@ -250,6 +271,24 @@ Server constructor.
 ```python
 extra_patterns=[('/version', VersionHandler),]
 ```
+
+## Custom Callbacks
+
+There is a dedicated web endpoint setup to handle custom web calls as a convenience.
+You can register a method for access via web callbacks by using
+
+```python
+callback_id = register_callback(fn)
+```
+
+Later in some javascript code, such as a `CustomJS`:
+
+```javascript
+$.ajax('/handle_callback?callback=' + cbid + '&...more_args...');
+```
+
+The function will be passed the incoming arguments to the web endpoint.  This
+is generally a dictionary where the values are arrays of bytes.
 
 ## Key Passing
 

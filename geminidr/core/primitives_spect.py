@@ -375,14 +375,22 @@ class Spect(PrimitivesBASE):
                 config.update(**params)
 
                 # Hacking this out?
+                if ad.orig_filename:
+                    filename_info = ad.orig_filename
+                elif ad.filename:
+                    filename_info = ad.filename
+                else:
+                    filename_info = ''
                 visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
                                                    tab_name_fmt="CCD {}",
-                                                   xlabel='x', ylabel='y',
-                                                   reinit_live=True,
+                                                   xlabel='Wavelength (nm)',
+                                                   ylabel='Sensitivity (mag cm^2 electron / erg)',
                                                    domains=all_shapes,
-                                                   title="Calculate Sensitivity")
+                                                   title="Calculate Sensitivity",
+                                                   primitive_name="calculateSensitivity",
+                                                   filename_info=filename_info)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()

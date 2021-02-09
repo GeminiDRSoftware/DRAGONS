@@ -1,15 +1,13 @@
-import collections
+
 from abc import ABC, abstractmethod
 
 
 import numpy as np
 
 from bokeh import models as bm, transform as bt
-from bokeh.io import curdoc
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d
+from bokeh.models import Div, Select, Range1d, Spacer
 from bokeh.plotting import figure
-from bokeh.palettes import Category10
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
@@ -45,9 +43,9 @@ def build_fit_1D(fit1d_params, data, points, weights):
 
 
 class InteractiveModel(ABC):
-    MASK_TYPE = ['band', 'user', 'good', 'fit']
-    MARKERS = ['circle', 'circle', 'triangle', 'square']
-    PALETTE = Category10[4]
+    MASK_TYPE = ['excluded', 'user', 'good', 'sigma']
+    MARKERS = ['triangle', 'triangle', 'circle', 'square']
+    PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')  # Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -133,9 +131,9 @@ class InteractiveModel(ABC):
         new_mask = ['good'] * len(self.data.data['mask'])
         for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
             if fm:
-                new_mask[i] = 'fit'
+                new_mask[i] = 'sigma'
             if bdm:
-                new_mask[i] = 'band'
+                new_mask[i] = 'excluded'
             if um:
                 new_mask[i] = 'user'
         self.data.data['mask'] = new_mask
@@ -318,29 +316,6 @@ class InteractiveModel1D(InteractiveModel):
         self.lsigma = self.hsigma = float(value)
 
     @property
-    def order(self):
-        """
-        Maps the order attribute to the underlying model
-
-        Returns
-        -------
-        int : order value from model
-        """
-        return self.model.order
-
-    @order.setter
-    def order(self, value):
-        """
-        Maps sets to the order attribute to the contained model
-
-        Parameters
-        ----------
-        value : int
-            new vlaue for order
-        """
-        self.model.order = value
-
-    @property
     def domain(self):
         """
         Maps requests for the domain to the contained model
@@ -399,39 +374,13 @@ class InteractiveFit1D:
         self.fitting_parameters["function"] = fn
 
     @property
-    def order(self):
-        """
-        Get the order of the fitter.
-
-        Returns
-        -------
-        int : `order` of the model we are wrapping
-        """
-        return self.fitting_parameters["order"]
-
-    @order.setter
-    def order(self, order):
-        """
-        Set the order in this fitter.
-
-        This sets the order, cleaning it if necessary into an `int`.  It also
-        recreates the model in the same type as it currently is.
-
-        Parameters
-        ----------
-        order : int
-            order to use in the fit
-        """
-        self.fitting_parameters["order"] = int(order)  # fix if TextInput
-
-    @property
     def regions(self):
         """
         Get the regions of the fitter.
 
         Returns
         -------
-        int : `order` of the model we are wrapping
+        tuple of tuples : `regions` of the model we are wrapping
         """
         return self.fitting_parameters["regions"]
 
@@ -444,7 +393,7 @@ class InteractiveFit1D:
 
         Parameters
         ----------
-        regions : str
+        regions : tuple of tuples
             regions to use in the fit
         """
         self.fitting_parameters["regions"] = regions
@@ -479,12 +428,98 @@ class InteractiveFit1D:
             ll(self.fit)
 
 
+class FittingParametersUI:
+    def __init__(self, vis, fit, fitting_parameters, min_order, max_order):
+        self.vis = vis
+        self.fit = fit
+        self.saved_sigma_clip = self.fit.sigma_clip
+        self.fitting_parameters = fitting_parameters
+        self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
+
+        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], 1, min_order, max_order,
+                                                          fitting_parameters, "order", fit.perform_fit, throttled=True)
+        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
+                                                                0.01, 1, 10,
+                                                                fitting_parameters, "sigma_upper",
+                                                                self.sigma_slider_handler,
+                                                                throttled=True)
+        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
+                                                                0.01, 1, 10,
+                                                                fitting_parameters, "sigma_lower",
+                                                                self.sigma_slider_handler,
+                                                                throttled=True)
+        self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
+                                                          1, 0, 10,
+                                                          fitting_parameters, "niter",
+                                                          fit.perform_fit)
+        self.grow_slider = interactive.build_text_slider("Grow", fitting_parameters["grow"],
+                                                         1, 0, 10,
+                                                         fitting_parameters, "grow",
+                                                         fit.perform_fit)
+        self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
+        self.sigma_button.on_change('active', self.sigma_button_handler)
+        self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
+                                self.niter_slider, self.grow_slider]
+
+    def reset_ui(self):
+        self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
+        for slider, key in [(self.order_slider, "order"),
+                            (self.sigma_upper_slider, "sigma_upper"),
+                            (self.sigma_lower_slider, "sigma_lower"),
+                            (self.niter_slider, "niter"),
+                            (self.grow_slider, "grow")
+                            ]:
+            slider.children[0].value = self.fitting_parameters[key]
+            slider.children[1].value = str(self.fitting_parameters[key])
+        self.sigma_button.active = [0] if self.saved_sigma_clip else []
+        self.fit.perform_fit()
+
+    def get_bokeh_components(self):
+        return self.controls_column
+
+    def sigma_button_handler(self, attr, old, new):
+        """
+        Handle the sigma clipping being turned on or off.
+
+        This will also trigger a fit since the result may
+        change.
+
+        Parameters
+        ----------
+        attr : Any
+            unused
+        old : str
+            old value of the toggle button
+        new : str
+            new value of the toggle button
+        """
+        self.fit.sigma_clip = bool(new)
+        if self.fit.sigma_clip:
+            self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
+            self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
+        else:
+            self.fitting_parameters["sigma_upper"] = None
+            self.fitting_parameters["sigma_lower"] = None
+        self.fit.perform_fit()
+
+    def sigma_slider_handler(self, val):
+        """
+        Handle the sigma clipping being adjusted.
+
+        This will trigger a fit since the result may
+        change.
+        """
+        # If we're not sigma-clipping, we don't need to refit the model if sigma changes
+        if self.fit.sigma_clip:
+            self.fit.perform_fit()
+
+
 class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True,
-                 enable_user_masking=True):
+                 enable_user_masking=True, enable_regions=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -531,45 +566,33 @@ class Fit1DPanel:
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
 
         fit = self.fit
-        order_slider = interactive.build_text_slider("Order", fit.order, 1, min_order, max_order,
-                                                     fit, "order", fit.perform_fit, throttled=True)
-        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
-                                                                0.01, 1, 10,
-                                                                fitting_parameters, "sigma_upper",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True)
-        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
-                                                                0.01, 1, 10,
-                                                                fitting_parameters, "sigma_lower",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True)
-        sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
-        sigma_button.on_change('active', self.sigma_button_handler)
-        controls_column = [order_slider, row(self.sigma_upper_slider, sigma_button)]
-        controls_column.append(self.sigma_lower_slider)
-        controls_column.append(interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                             1, 0, 10,
-                                                             fitting_parameters, "niter",
-                                                             fit.perform_fit))
-        controls_column.append(interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                             1, 0, 10,
-                                                             fitting_parameters, "grow",
-                                                             fit.perform_fit))
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters,
+                                                         min_order, max_order)
 
-        mask_button = bm.Button(label="Mask", align='center', button_type='primary', width_policy='min')
-        mask_button.on_click(self.mask_button_handler)
+        controls_ls = list()
 
-        unmask_button = bm.Button(label="Unmask", align='center', button_type='primary', width_policy='min')
-        unmask_button.on_click(self.unmask_button_handler)
+        controls_column = self.fitting_parameters_ui.get_bokeh_components()
+
+        reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
+
+        def reset_dialog_handler(result):
+            if result:
+                self.fitting_parameters_ui.reset_ui()
+        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
+                                                                  'Reset will change all inputs for this tab back '
+                                                                  'to their original values.  Proceed?',
+                                                                  reset_dialog_handler)
 
         controller_div = Div()
         self.info_div = Div()
 
-        if enable_user_masking:
-            controls = column(*controls_column,
-                              row(mask_button, unmask_button), controller_div, self.info_div)
-        else:
-            controls = column(*controls_column, controller_div, self.info_div)
+        controls_ls.extend(controls_column)
+
+        reset_button.align = 'center'
+        controls_ls.append(reset_button)
+        controls_ls.append(controller_div)
+
+        controls = column(*controls_ls)
 
         # Now the figures
         x_range = None
@@ -579,7 +602,7 @@ class Fit1DPanel:
                 x_min = min(self.fit.data.data['x'])
                 x_max = max(self.fit.data.data['x'])
                 x_pad = (x_max-x_min)*0.1
-                x_range = Range1d(x_min-x_pad, x_max+x_pad)
+                x_range = Range1d(x_min-x_pad, x_max+x_pad*2)
             if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
                 y_min = min(self.fit.data.data['y'])
                 y_max = max(self.fit.data.data['y'])
@@ -592,66 +615,66 @@ class Fit1DPanel:
         else:
             tools = "pan,wheel_zoom,box_zoom,reset"
         p_main = figure(plot_width=plot_width, plot_height=plot_height,
+                        min_width=400,
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                         tools=tools,
                         output_backend="webgl", x_range=x_range, y_range=y_range)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
-        class Fit1DRegionListener(GIRegionListener):
-            """
-            Wrapper class so we can just detect when a bands are finished.
-
-            We don't want to do an expensive recalc as a user is dragging
-            a band around.
-            """
-            def __init__(self, fn):
+        if enable_regions:
+            class Fit1DRegionListener(GIRegionListener):
                 """
-                Create a band listener that just updates on `finished`
-                Parameters
-                ----------
-                fn : function
-                    function to call when band is finished.
+                Wrapper class so we can just detect when a bands are finished.
+
+                We don't want to do an expensive recalc as a user is dragging
+                a band around.
                 """
-                self.fn = fn
+                def __init__(self, fn):
+                    """
+                    Create a band listener that just updates on `finished`
+                    Parameters
+                    ----------
+                    fn : function
+                        function to call when band is finished.
+                    """
+                    self.fn = fn
 
-            def adjust_region(self, region_id, start, stop):
-                pass
+                def adjust_region(self, region_id, start, stop):
+                    pass
 
-            def delete_region(self, region_id):
-                self.fn()
+                def delete_region(self, region_id):
+                    self.fn()
 
-            def finish_regions(self):
-                self.fn()
+                def finish_regions(self):
+                    self.fn()
 
-        self.band_model = GIRegionModel()
+            self.band_model = GIRegionModel()
 
-        def update_regions():
-            self.fit.model.regions = self.band_model.build_regions()
-        self.band_model.add_listener(Fit1DRegionListener(update_regions))
-        self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+            def update_regions():
+                self.fit.model.regions = self.band_model.build_regions()
+            self.band_model.add_listener(Fit1DRegionListener(update_regions))
+            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
-        connect_figure_extras(p_main, None, self.band_model)
+            connect_figure_extras(p_main, None, self.band_model)
 
-        Controller(p_main, None, self.band_model, controller_div, mask_handlers=(self.mask_button_handler,
-                                                                                 self.unmask_button_handler))
-        fig_column = [p_main]
+            mask_handlers = (self.mask_button_handler,
+                             self.unmask_button_handler)
+        else:
+            self.band_model = None
+            mask_handlers = None
+
+        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
+        fig_column = [p_main, self.info_div]
 
         if plot_residuals:
-            x_range = None
-            try:
-                if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                    x_min = min(self.fit.data.data['x'])
-                    x_max = max(self.fit.data.data['x'])
-                    x_pad = (x_max-x_min)*0.1
-                    x_range = Range1d(x_min-x_pad, x_max+x_pad)
-            except:
-                pass  # ok, we don't *need* ranges...
+            # x_range is linked to the main plot so that zooming tracks between them
             p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
+                             min_width=400,
                              title='Fit Residuals',
-                             x_axis_label=xlabel, y_axis_label='delta'+ylabel,
+                             x_axis_label=xlabel, y_axis_label='Delta',
                              tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=x_range, y_range=None)
+                             output_backend="webgl", x_range=p_main.x_range, y_range=None)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             connect_figure_extras(p_resid, None, self.band_model)
@@ -659,7 +682,7 @@ class Fit1DPanel:
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                            size=5, **self.fit.mask_rendering_kwargs())
+                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
@@ -667,7 +690,7 @@ class Fit1DPanel:
             self.band_model.load_from_tuples(region_tuples)
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
-                                      size=5, **self.fit.mask_rendering_kwargs())
+                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
@@ -675,7 +698,7 @@ class Fit1DPanel:
         # state of the band model (which used to be always empty)
         x_data = self.fit.data.data['x']
         for i in np.arange(len(x_data)):
-            if self.band_model.contains(x_data[i]):
+            if not self.band_model or self.band_model.contains(x_data[i]):
                 self.fit.band_mask[i] = 0
             else:
                 self.fit.band_mask[i] = 1
@@ -683,8 +706,9 @@ class Fit1DPanel:
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
 
-        region_editor = RegionEditor(self.band_model)
-        fig_column.append(region_editor.get_widget())
+        if self.band_model:
+            region_editor = RegionEditor(self.band_model)
+            fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
         self.component = row(controls, col)
@@ -694,42 +718,6 @@ class Fit1DPanel:
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
         self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
-
-    def sigma_slider_handler(self, val):
-        """
-        Handle the sigma clipping being adjusted.
-
-        This will trigger a fit since the result may
-        change.
-        """
-        # If we're not sigma-clipping, we don't need to refit the model if sigma changes
-        if self.fit.sigma_clip:
-            self.fit.perform_fit()
-
-    def sigma_button_handler(self, attr, old, new):
-        """
-        Handle the sigma clipping being turned on or off.
-
-        This will also trigger a fit since the result may
-        change.
-
-        Parameters
-        ----------
-        attr : Any
-            unused
-        old : str
-            old value of the toggle button
-        new : str
-            new value of the toggle button
-        """
-        self.fit.sigma_clip = bool(new)
-        if self.fit.sigma_clip:
-            self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
-            self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
-        else:
-            self.fitting_parameters["sigma_upper"] = None
-            self.fitting_parameters["sigma_lower"] = None
-        self.fit.perform_fit()
 
     def mask_button_handler(self, stuff=None):
         """
@@ -813,11 +801,15 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     """
 
     def __init__(self, data_source, fitting_parameters, config,
-                 reinit_params=None, reinit_extras=None, reinit_live=False,
+                 reinit_params=None, reinit_extras=None,
+                 modal_message=None,
+                 modal_button_label=None,
                  order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
-                 domains=None, function=None, title=None, **kwargs):
+                 domains=None, function=None, title=None, primitive_name=None, filename_info=None,
+                 template="fit1d.html",
+                 **kwargs):
         """
         Parameters
         ----------
@@ -836,9 +828,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         reinit_extras :
             Extra parameters to show on the left side that can affect the output of `data_source` but
             are not part of the primitive configuration.  Should not be passed if `data_source` is not a function.
-        reinit_live :
-            If False, supplies a button to call the `data_source` function and doesn't do so automatically when inputs
-            are adjusted.  If `data_source` is known to be inexpensive, you can set this to `True`
+        modal_message : str
+            If set, datapoint calculation is expected to be expensive and a 'recalculate' button will be shown
+            below the reinit inputs rather than doing it live.
+        modal_button_label : str
+            If set and if modal_message was set, this will be used for the label on the recalculate button.  It is
+            not required.
         order_param : str
             Name of the parameter this primitive uses for `order`, to infer the min/max suggested values
         tab_name_fmt : str
@@ -854,11 +849,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         title : str
             Title for UI (Interactive <Title>)
         """
-        super().__init__(config=config, title=title)
-
-        # title_div = None
-        # if title is not None:
-        #     title_div = Div(text='<h2>%s</h2>' % title)
+        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
+                         template=template)
+        self.layout = None
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -887,17 +880,17 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         else:
             if function is None:
                 function = 'chebyshev'
-            self.function=Div(text='Function: %s' % function)
+            self.function = Div(text='Function: %s' % function)
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, reinit_live)
+            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
 
             # This should really go in the parent class, like submit_button
-            if not reinit_live:
-                self.reinit_button = bm.Button(label="Reconstruct points")
+            if modal_message:
+                self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
                 self.reinit_button.on_click(self.reconstruct_points)
-                self.make_modal(self.reinit_button, "<b>Recalculating Points</b><br/>This may take 20 seconds")
+                self.make_modal(self.reinit_button, modal_message)
                 reinit_widgets.append(self.reinit_button)
 
             self.reinit_panel = column(self.function, *reinit_widgets)
@@ -998,8 +991,19 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(self.tabs,)
         col.sizing_mode = 'scale_width'
-        layout = column(row(self.reinit_panel, col), self.submit_button, sizing_mode="stretch_width")
-        doc.add_root(layout)
+
+        layout_ls = list()
+        if self.filename_info:
+            layout_ls.append(Div(text='<b>Filename:</b> %s<br/>' % self.filename_info))
+        layout_ls.append(self.submit_button)
+        if len(self.reinit_panel.children) <= 1:
+            layout_ls.append(row(self.reinit_panel))
+            layout_ls.append(Spacer(height=10))
+            layout_ls.append(col)
+        else:
+            layout_ls.append(row(column(self.reinit_panel), col))
+        self.layout = column(*layout_ls, sizing_mode="stretch_width")
+        doc.add_root(self.layout)
 
     def reconstruct_points(self):
         """

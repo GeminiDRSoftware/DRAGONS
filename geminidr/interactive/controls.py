@@ -48,7 +48,7 @@ class Controller(object):
     control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, helptext, mask_handlers=None):
+    def __init__(self, fig, aperture_model, region_model, helptext, mask_handlers=None, showing_residuals=True):
         """
         Create a controller to manage the given aperture and region models on the given GIFigure
 
@@ -63,6 +63,7 @@ class Controller(object):
         helptext : :class:`Div`
             div to update text in to provide help to the user
         """
+        self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
         self.helptext = helptext
         self.enable_user_masking = True if mask_handlers else False
@@ -84,9 +85,10 @@ class Controller(object):
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        fig.on_event('mousemove', self.on_mouse_move)
-        fig.on_event('mouseenter', self.on_mouse_enter)
-        fig.on_event('mouseleave', self.on_mouse_leave)
+        if aperture_model or region_model:
+            fig.on_event('mousemove', self.on_mouse_move)
+            fig.on_event('mouseenter', self.on_mouse_enter)
+            fig.on_event('mouseleave', self.on_mouse_leave)
 
         self.set_help_text(None)
 
@@ -104,25 +106,34 @@ class Controller(object):
             html to display in the div
         """
         if text is not None:
-            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+            if self.showing_residuals:
+                ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
+            else:
+                ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
             if self.enable_user_masking:
                 ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
                     "<b>U</b> - Unmask selected points<br/><br/>"
             ht = ht + text
         else:
-            # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
-            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
-            if self.enable_user_masking:
-                ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                    "<b>U</b> - Unmask selected points<br/><br/>"
-            if len(self.tasks) == 1:
-                # for k, v in self.tasks.items():
-                #     self.task = v
-                task = next(iter(self.tasks.values()))
-                ht = ht + task.helptext()
+            if self.tasks or self.enable_user_masking:
+                # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
+                if self.showing_residuals:
+                    ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
+                else:
+                    ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+                if self.enable_user_masking:
+                    ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
+                        "<b>U</b> - Unmask selected points<br/><br/>"
+                if len(self.tasks) == 1:
+                    # for k, v in self.tasks.items():
+                    #     self.task = v
+                    task = next(iter(self.tasks.values()))
+                    ht = ht + task.helptext()
+                else:
+                    for key, task in sorted(self.tasks.items()):
+                        ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
             else:
-                for key, task in sorted(self.tasks.items()):
-                    ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
+                ht = ""
 
         # This has to be done via a callback.  During the key press, we are outside the context of
         # the widget's bokeh document
