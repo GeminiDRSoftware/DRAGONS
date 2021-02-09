@@ -701,7 +701,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             Model to use for tracking the input parameters and recalculating
             fresh sets as needed
         """
-        super().__init__(title='Find Source Apertures', filename_info=filename_info)
+        super().__init__(title='Find Source Apertures',
+                         filename_info=filename_info)
         self.model = model
         self.fig = None
 
@@ -727,11 +728,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        current_file = TextInput(title="Current file:",
-                                 value=self.model.ext.filename,
-                                 disabled=True,
-                                 background='white')
-
         params = parameters_view(self.model, self.model.recalc_apertures)
 
         # Create a blank figure with labels
@@ -756,12 +752,10 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         helptext = Div()
         controls = column(children=[
-            current_file,
             params,
+            helptext,
             aperture_view.controls,
             add_button,
-            self.submit_button,
-            helptext,
         ])
 
         def _details_handler():
@@ -769,13 +763,19 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         details = Div(text=DETAILED_HELP, css_classes=['detailed_help'],
                       visible=False)
-        details_button = Button(label="Show detailed help")
+        details_button = Button(label="Show detailed help",
+                                button_type='success', width=200)
         details_button.on_click(_details_handler)
         self.model.recalc_apertures()
 
         col = column(fig, details_button, details)
         col.sizing_mode = 'scale_width'
-        layout = row(controls, col)
+        layout = column(
+            Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
+            self.submit_button,
+            row(controls, col)
+        )
+        layout.sizing_mode = 'scale_width'
 
         Controller(fig, self.model, None, helptext, showing_residuals=False)
 
@@ -809,7 +809,7 @@ def interactive_find_source_apertures(ext, **kwargs):
 
     """
     model = FindSourceAperturesModel(ext, **kwargs)
-    fsav = FindSourceAperturesVisualizer(model)
+    fsav = FindSourceAperturesVisualizer(model, filename_info=ext.filename)
     server.set_visualizer(fsav)
     server.start_server()
     return fsav.result()
