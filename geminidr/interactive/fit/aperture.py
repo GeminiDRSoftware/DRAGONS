@@ -105,7 +105,7 @@ class TextInputLine(CustomWidget):
     def build(self):
         self.spinner = Spinner(value=self.value, width=64, **self.kwargs)
         self.spinner.on_change("value", self.handler)
-        return row([Div(text=self.title, align='end'),
+        return row([Div(text=self.title, align='center'),
                     Spacer(width_policy='max'),
                     self.spinner])
 
@@ -153,7 +153,7 @@ class CheckboxLine(CustomWidget):
                                       width=40, width_policy='fixed',
                                       align='center')
         self.checkbox.on_click(self.handler)
-        return row([Div(text=self.title, align='end'),
+        return row([Div(text=self.title, align='center'),
                     Spacer(width_policy='max'),
                     self.checkbox])
 
@@ -169,7 +169,7 @@ class SelectLine(CustomWidget):
         self.select = Select(value=self.value, options=["peak", "integral"],
                              width=128)
         self.select.on_change("value", self.handler)
-        return row([Div(text=self.title, align='end'),
+        return row([Div(text=self.title, align='center'),
                     Spacer(width_policy='max'),
                     self.select])
 
