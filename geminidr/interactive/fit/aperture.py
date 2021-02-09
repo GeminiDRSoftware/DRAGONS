@@ -411,6 +411,8 @@ class AperturePlotView:
             'end', CustomJS(args=dict(plot=fig),
                             code="plot.properties.renderers.change.emit()"))
 
+        self.update_viewport()
+
     def update_viewport(self):
         """
         Update the view in the figure whenever we detect a change in the
@@ -765,7 +767,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         details = Div(text=DETAILED_HELP, css_classes=['detailed_help'],
                       visible=False)
         details_button = Button(label="Show detailed help",
-                                button_type='success', width=200)
+                                button_type='success', max_width=200,
+                                width_policy='max')
         details_button.on_click(_details_handler)
         self.model.recalc_apertures()
 
