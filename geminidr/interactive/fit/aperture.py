@@ -36,11 +36,6 @@ minima on either side and determining where a smoothed version of the source
 profile reaches this threshold.</p>
 
 <dl>
-<dt>Max Apertures</dt>
-<dd>
-    Maximum number of apertures expected to be found. By default it is
-    None so all apertures are returned.
-</dd>
 <dt>Percentile</dt>
 <dd>
     Percentile to determine signal for each spatial pixel. Uses when
@@ -55,6 +50,11 @@ profile reaches this threshold.</p>
 <dt>Use S/N ratio</dt>
 <dd>
     Convert data to SNR per pixel before collapsing and peak-finding?
+</dd>
+<dt>Max Apertures</dt>
+<dd>
+    Maximum number of apertures expected to be found. By default it is
+    None so all apertures are returned.
 </dd>
 <dt>Threshold</dt>
 <dd>
@@ -485,8 +485,8 @@ class ApertureLineView:
 
         self.in_update = False
 
-        self.aperture_name = Div(text=f"Ap. {self.aperture_id}",
-                                 align='center', width=48)
+        self.aperture_name = Div(text=f"# {self.aperture_id}",
+                                 align='center', width=24)
         self.start_input.on_change("value", self._start_handler)
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
@@ -575,7 +575,7 @@ class ApertureView:
         # The hamburger menu, which needs to have access to the aperture line
         # widgets (inner_controls)
         self.inner_controls = column(max_height=300, height_policy='auto',
-                                     width=450, css_classes=['scrollable'])
+                                     width=440, css_classes=['scrollable'])
         self.controls = hamburger_helper("Apertures", self.inner_controls)
 
         self.inner_controls.children.append(
@@ -646,26 +646,8 @@ def parameters_view(model, recalc_handler):
     def _maxaper_handler(new):
         model.max_apertures = int(new) if new is not None else None
 
-    maxaper = TextInputLine("Max Apertures (empty means no limit)",
-                            model, attr="max_apertures",
-                            handler=_maxaper_handler, low=0)
-
-    percentile = TextSlider("Percentile (use mean if no value)", model,
-                            attr="percentile", start=0, end=100, step=1)
-
-    minsky = TextInputLine("Min sky region", model, attr="min_sky_region",
-                           low=0)
-
     def _use_snr_handler(new):
         model.use_snr = 0 in new
-
-    use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
-                           handler=_use_snr_handler)
-
-    threshold = TextSlider("Threshold", model, attr="threshold",
-                           start=0, end=1, step=0.01)
-
-    sizing = SelectLine("Sizing method", model, attr="sizing_method")
 
     def _reset_handler():
         model.reset()
@@ -674,6 +656,22 @@ def parameters_view(model, recalc_handler):
             widget.reset()
         recalc_handler()
 
+    # Profile parameters
+    percentile = TextSlider("Percentile (use mean if no value)", model,
+                            attr="percentile", start=0, end=100, step=1)
+    minsky = TextInputLine("Min sky region", model, attr="min_sky_region",
+                           low=0)
+    use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
+                           handler=_use_snr_handler)
+
+    # Peak finding parameters
+    maxaper = TextInputLine("Max Apertures (empty means no limit)",
+                            model, attr="max_apertures",
+                            handler=_maxaper_handler, low=0)
+    threshold = TextSlider("Threshold", model, attr="threshold",
+                           start=0, end=1, step=0.01)
+    sizing = SelectLine("Sizing method", model, attr="sizing_method")
+
     reset_button = Button(label="Reset", default_size=200)
     reset_button.on_click(_reset_handler)
 
@@ -681,15 +679,18 @@ def parameters_view(model, recalc_handler):
                          default_size=200)
     find_button.on_click(recalc_handler)
 
-    return column([
-        maxaper.build(),
+    return column(
+        Div(text="Parameters to compute the profile:",
+            css_classes=['param_section']),
         percentile.build(),
         minsky.build(),
         use_snr.build(),
+        Div(text="Parameters to find peaks:", css_classes=['param_section']),
+        maxaper.build(),
         threshold.build(),
         sizing.build(),
         row([reset_button, find_button]),
-    ])
+    )
 
 
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
