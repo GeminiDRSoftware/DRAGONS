@@ -482,16 +482,17 @@ class ApertureLineView:
 
         self.in_update = False
 
+        self.aperture_name = Div(text=f"Ap. {self.aperture_id}",
+                                 align='center', width=48)
         self.start_input.on_change("value", self._start_handler)
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
 
-        self.component = row([Div(align='end', width=96),
+        self.component = row([self.aperture_name,
                               self.start_input,
                               self.location_input,
                               self.end_input,
                               button])
-        self.update_title()
 
     @avoid_multiple_update
     def _start_handler(self, attr, old, new):
@@ -510,7 +511,7 @@ class ApertureLineView:
                                  end=self.end_input.value)
 
     def update_title(self):
-        self.component.children[0].text = f"Aperture {self.aperture_id}"
+        self.aperture_name.text = f"Aperture {self.aperture_id}"
 
     @avoid_multiple_update
     def update(self, attr, old, new):
@@ -576,7 +577,7 @@ class ApertureView:
 
         self.inner_controls.children.append(
             row([
-                Div(text="", width=96),
+                Div(text="", width=48),
                 Div(text="<b>Start</b>", width=96, align="center"),
                 Div(text="<b>Location</b>", width=96, align="center"),
                 Div(text="<b>End</b>", width=96, align="center"),
