@@ -768,8 +768,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         details_button.on_click(_details_handler)
         self.model.recalc_apertures()
 
-        col = column(fig, details_button, details)
-        col.sizing_mode = 'scale_width'
+        col = column(children=[fig, details_button, details],
+                     sizing_mode='scale_width')
+
         layout = column(
             Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
             self.submit_button,
