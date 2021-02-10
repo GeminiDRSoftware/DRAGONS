@@ -14,13 +14,15 @@ from urllib.parse import urlparse
 from gempy.utils import logutils
 
 from geminidr import set_caches
-from recipe_system.cal_service import cal_search_factory, handle_returns_factory
+
+from .transport_request import handle_returns
+#from recipe_system.cal_service import cal_search_factory, handle_returns_factory
 from .file_getter import get_file_iterator, GetterError
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 # Currently delivers transport_request.calibration_search fn.
-calibration_search = cal_search_factory()
+#calibration_search = cal_search_factory()
 # ------------------------------------------------------------------------------
 def get_request(url, filename):
     iterator = get_file_iterator(url)
@@ -86,7 +88,7 @@ class CalibrationRequest:
         return tempStr
 
 
-def get_cal_requests(inputs, caltype, procmode=None):
+def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
     """
     Builds a list of :class:`.CalibrationRequest` objects, one for each `ad`
     input.
@@ -108,7 +110,7 @@ def get_cal_requests(inputs, caltype, procmode=None):
     """
     options = {'central_wavelength': {'asMicrometers': True}}
 
-    _handle_returns = handle_returns_factory()
+    _handle_returns = lambda x: x if is_local else _handle_returns
 
     rq_events = []
     for ad in inputs:
