@@ -641,59 +641,6 @@ class ApertureView:
         #     ap.update_title()
 
 
-def parameters_view(model, recalc_handler):
-
-    def _maxaper_handler(new):
-        model.max_apertures = int(new) if new is not None else None
-
-    def _use_snr_handler(new):
-        model.use_snr = 0 in new
-
-    def _reset_handler():
-        model.reset()
-        for widget in (maxaper, minsky, use_snr,
-                       threshold, percentile, sizing):
-            widget.reset()
-        recalc_handler()
-
-    # Profile parameters
-    percentile = TextSlider("Percentile (use mean if no value)", model,
-                            attr="percentile", start=0, end=100, step=1)
-    minsky = TextInputLine("Min sky region", model, attr="min_sky_region",
-                           low=0)
-    use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
-                           handler=_use_snr_handler)
-
-    # Peak finding parameters
-    maxaper = TextInputLine("Max Apertures (empty means no limit)",
-                            model, attr="max_apertures",
-                            handler=_maxaper_handler, low=0)
-    threshold = TextSlider("Threshold", model, attr="threshold",
-                           start=0, end=1, step=0.01)
-    sizing = SelectLine("Sizing method", model, attr="sizing_method")
-
-    reset_button = Button(label="Reset", button_type='danger',
-                          default_size=200)
-    reset_button.on_click(_reset_handler)
-
-    find_button = Button(label="Find apertures", button_type='primary',
-                         default_size=200)
-    find_button.on_click(recalc_handler)
-
-    return column(
-        Div(text="Parameters to compute the profile:",
-            css_classes=['param_section']),
-        percentile.build(),
-        minsky.build(),
-        use_snr.build(),
-        Div(text="Parameters to find peaks:", css_classes=['param_section']),
-        maxaper.build(),
-        threshold.build(),
-        sizing.build(),
-        row([reset_button, find_button]),
-    )
-
-
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
     def __init__(self, model, filename_info=''):
         """
@@ -722,6 +669,73 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         x = (self.fig.x_range.start + self.fig.x_range.end) / 2
         self.model.add_aperture(x, x, x)
 
+    def parameters_view(self):
+        model = self.model
+
+        def _maxaper_handler(new):
+            model.max_apertures = int(new) if new is not None else None
+
+        def _use_snr_handler(new):
+            model.use_snr = 0 in new
+
+        def _reset_handler(result):
+            if result:
+                model.reset()
+                for widget in (maxaper, minsky, use_snr,
+                               threshold, percentile, sizing):
+                    widget.reset()
+                self.model.recalc_apertures()
+
+        def _find_handler(result):
+            if result:
+                self.model.recalc_apertures()
+
+        # Profile parameters
+        percentile = TextSlider("Percentile (use mean if no value)", model,
+                                attr="percentile", start=0, end=100, step=1)
+        minsky = TextInputLine("Min sky region", model, attr="min_sky_region",
+                               low=0)
+        use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
+                               handler=_use_snr_handler)
+
+        # Peak finding parameters
+        maxaper = TextInputLine("Max Apertures (empty means no limit)",
+                                model, attr="max_apertures",
+                                handler=_maxaper_handler, low=0)
+        threshold = TextSlider("Threshold", model, attr="threshold",
+                               start=0, end=1, step=0.01)
+        sizing = SelectLine("Sizing method", model, attr="sizing_method")
+
+        reset_button = Button(label="Reset", button_type='danger',
+                              default_size=200)
+
+        self.make_ok_cancel_dialog(reset_button,
+                                   'Reset will change all inputs for this tab '
+                                   'back to their original values.  Proceed?',
+                                   _reset_handler)
+
+        find_button = Button(label="Find apertures", button_type='primary',
+                             default_size=200)
+
+        self.make_ok_cancel_dialog(find_button,
+                                   'All apertures will be recomputed and '
+                                   'changes will be lost. Proceed?',
+                                   _find_handler)
+
+        return column(
+            Div(text="Parameters to compute the profile:",
+                css_classes=['param_section']),
+            percentile.build(),
+            minsky.build(),
+            use_snr.build(),
+            Div(text="Parameters to find peaks:",
+                css_classes=['param_section']),
+            maxaper.build(),
+            threshold.build(),
+            sizing.build(),
+            row([reset_button, find_button]),
+        )
+
     def visualize(self, doc):
         """
         Build the visualization in bokeh in the given browser document.
@@ -733,7 +747,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        params = parameters_view(self.model, self.model.recalc_apertures)
+        params = self.parameters_view()
 
         # Create a blank figure with labels
         self.fig = fig = figure(
