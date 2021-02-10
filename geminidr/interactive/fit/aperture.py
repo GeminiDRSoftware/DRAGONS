@@ -672,10 +672,11 @@ def parameters_view(model, recalc_handler):
                            start=0, end=1, step=0.01)
     sizing = SelectLine("Sizing method", model, attr="sizing_method")
 
-    reset_button = Button(label="Reset", default_size=200)
+    reset_button = Button(label="Reset", button_type='danger',
+                          default_size=200)
     reset_button.on_click(_reset_handler)
 
-    find_button = Button(label="Find apertures", button_type='success',
+    find_button = Button(label="Find apertures", button_type='primary',
                          default_size=200)
     find_button.on_click(recalc_handler)
 
@@ -751,13 +752,12 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         fig.step(x='x', y='y', source=self.model.profile_source,
                  color="black", mode="center")
 
-        add_button = Button(label="Add Aperture")
+        add_button = Button(label="Add Aperture", button_type='primary')
         add_button.on_click(self.add_aperture)
 
-        helptext = Div()
+        helptext = Div(margin=(0, 0, 0, 20), sizing_mode='scale_width')
         controls = column(children=[
             params,
-            helptext,
             aperture_view.controls,
             add_button,
         ])
@@ -766,20 +766,28 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             details.visible = not details.visible
 
         details = Div(text=DETAILED_HELP, css_classes=['detailed_help'],
-                      visible=False)
+                      visible=False, width=440)
         details_button = Button(label="Show detailed help",
-                                button_type='success', max_width=200,
+                                button_type='primary', max_width=200,
                                 width_policy='max')
         details_button.on_click(_details_handler)
         self.model.recalc_apertures()
 
-        col = column(children=[fig, details_button, details],
-                     sizing_mode='scale_width')
+        col = column(children=[fig, helptext], sizing_mode='scale_width')
+        toolbar = row(
+            children=[
+                Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
+                Spacer(sizing_mode='scale_width'),
+                self.submit_button,
+                Spacer(sizing_mode='scale_width'),
+                details_button,
+            ],
+            sizing_mode='stretch_width',
+        )
 
         layout = column(
-            Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
-            self.submit_button,
-            row(controls, col)
+            toolbar,
+            row(controls, col, details)
         )
         layout.sizing_mode = 'scale_width'
 
