@@ -298,7 +298,7 @@ class FindSourceAperturesModel:
                 listener.handle_aperture(aperture_id, model)
 
     def add_aperture(self, location, start, end):
-        aperture_id = max(self.aperture_models) + 1
+        aperture_id = max(self.aperture_models, default=0) + 1
         model = ApertureModel(aperture_id, location, start, end, self)
         self.aperture_models[aperture_id] = model
 
