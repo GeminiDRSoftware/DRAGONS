@@ -35,6 +35,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
+from geminidr.interactive.fit.tracing import interactive_trace_apertures
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
@@ -46,9 +47,6 @@ from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
-
-from ..interactive import server as iserver
-from ..interactive.fit import fit1d as ifit1d
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -2406,7 +2404,7 @@ class Spect(PrimitivesBASE):
         spatial profile of each source.
 
         This primitive is now designed to run on tiled and mosaicked data so
-        normal longslit spectra will be in a single extension. We keep the loop
+        normal long-slit spectra will be in a single extension. We keep the loop
         over extensions to allow the possibility of expanding it to cases where
         we have multiple extensions (e.g. Multi-Object Spectroscopy).
 
@@ -2445,6 +2443,8 @@ class Spect(PrimitivesBASE):
         :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
 
         """
+        from gempy.library.config import RangeField
+
         # Setup log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -2452,14 +2452,14 @@ class Spect(PrimitivesBASE):
 
         # Parse parameters
         debug = params["debug"]
-        is_interactive = params["interactive"]
+        interactive = params["interactive"]
         max_missed = params["max_missed"]
         max_shift = params["max_shift"]
         nsum = params["nsum"]
         sfx = params["suffix"]
         step = params["step"]
 
-        fit1d_params = fitting.fit_1D.translate_params(
+        fit1d_params = fit_1D.translate_params(
             {**params, "function": "chebyshev"})
 
         # Main Loop
@@ -2480,112 +2480,17 @@ class Spect(PrimitivesBASE):
                     self.viewer.width = 2
                     self.viewer.color = "blue"
 
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
-                all_aperture_tables = []
-
-                if is_interactive:
-
-                    all_initial_fitting_pars = list()
-                    all_domain = list()
-                    for ap in ext.APERTURE:
-                        all_initial_fitting_pars.append(fit1d_params)
-                        all_domain.append([ap['domain_start'], ap['domain_end']])
-
-                    def _get_tracing_knots(conf, extra):
-                        """
-                        This function is used by the interactive fitter to
-                        generate the x,y,weights to use for each fit.
-
-                        Parameters
-                        ----------
-                        conf : ???
-                            ???
-                        extra : ???
-                            ???
-
-                        Returns
-                        -------
-                        """
-                        all_tracing_knots = list()
-
-                        for _i, _loc in enumerate(locations):
-                            _c0 = int(_loc + 0.5)
-
-                            _spectrum = ext.data[_c0] \
-                                if dispaxis == 1 else ext.data[:, c0]
-                            _start = np.argmax(
-                                astrotools.boxcar(_spectrum, size=3))
-
-                            _, _in_coords = tracing.trace_lines(
-                                ext, axis=dispaxis, cwidth=5,
-                                initial=[_loc], initial_tolerance=None,
-                                max_missed=extra['max_missed'],
-                                max_shift=extra['max_shift'],
-                                nsum=extra['nsum'], rwidth=None, start=_start,
-                                step=extra['step'],
-                                viewer=self.viewer if debug else None)
-
-                            _in_coords = np.ma.masked_array(_in_coords)
-
-                            # ToDo: This should not be required
-                            _in_coords.mask = np.zeros_like(_in_coords)
-
-                            spectral_tracing_knots = _in_coords[1 - dispaxis]
-                            spatial_tracing_knots = _in_coords[dispaxis]
-
-                            all_tracing_knots.append([spectral_tracing_knots,
-                                                      spatial_tracing_knots])
-
-                        return all_tracing_knots
-
+                if interactive:
                     # Pass the primitive configuration to the interactive object.
                     _config = self.params[self.myself()]
                     _config.update(**params)
-
-                    # Create parameters to add to the UI
-                    reinit_params = ["max_missed", "max_shift", "nsum", "step"]
-                    reinit_extras = {
-                        "max_missed": config.RangeField("Max Missed", int, 5, min=0),
-                        "max_shift": config.RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
-                        "nsum": config.RangeField("Number of lines to sum", int, 10, min=1),
-                        "step": config.RangeField("Tracing step: ", int, 10, min=1),
-                    }
-
-                    # ToDo: Fit1DVisualizer breaks if reinit_extras is None and
-                    #  reinit_params is not.
-                    visualizer = ifit1d.Fit1DVisualizer(
-                        _get_tracing_knots,
-                        config=_config,
-                        fitting_parameters=all_initial_fitting_pars,
-                        tab_name_fmt="Aperture {}",
-                        xlabel='x',
-                        ylabel='y',
-                        reinit_live=True,
-                        reinit_params=reinit_params,
-                        reinit_extras=reinit_extras,
-                        domains=all_domain,
-                        title="Trace Apertures")
-
-                    iserver.interactive_fitter(visualizer)
-
-                    all_final_models = visualizer.results()
-
-                    print(all_final_models)
-
-                    for final_model, ap in zip(all_final_models, ext.APERTURE):
-                        location = ap['c0']
-                        this_aptable = astromodels.model_to_table(final_model.model)
-
-                        # Recalculate aperture limits after rectification
-                        apcoords = final_model.evaluate(np.arange(ext.shape[dispaxis]))
-                        this_aptable["aper_lower"] = ap["aper_lower"] + (
-                                location - apcoords.min())
-                        this_aptable["aper_upper"] = ap["aper_upper"] - (
-                                apcoords.max() - location)
-
-                        all_aperture_tables.append(this_aptable)
+                    ext.APERTURE = interactive_trace_apertures(
+                        ext, _config, fit1d_params)
 
                 else:
+                    dispaxis = 2 - ext.dispersion_axis()  # python sense
+                    all_aperture_tables = []
+
                     # pop "order" seeing we may need to call fit_1D with a
                     #  different value
                     order = fit1d_params.pop("order")
@@ -2598,7 +2503,7 @@ class Spect(PrimitivesBASE):
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(astrotools.boxcar(spectrum, size=3))
+                        start = np.argmax(am.boxcar(spectrum, size=3))
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
@@ -2632,7 +2537,7 @@ class Spect(PrimitivesBASE):
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
                         try:
-                            fit1d = fitting.fit_1D(
+                            _fit_1d = fitting.fit1D(
                                 in_coords[dispaxis],
                                 domain=[0, ext.shape[dispaxis] - 1],
                                 order=order,
@@ -2645,8 +2550,10 @@ class Spect(PrimitivesBASE):
                         # ensure we get the same type of result as if it had
                         # been successful.
                         except (IndexError, np.linalg.linalg.LinAlgError):
-                            log.warning(f"Unable to trace aperture {aperture['number']}")
-                            fit1d = fitting.fit_1D(
+                            log.warning(
+                                f"Unable to trace aperture {aperture['number']}")
+
+                            _fit_1d = fitting.fit_1D(
                                 np.full_like(spectral_coords, c0),
                                 domain=[0, ext.shape[dispaxis] - 1],
                                 order=0,
@@ -2655,22 +2562,24 @@ class Spect(PrimitivesBASE):
 
                         else:
                             if debug:
-                                plot_coords = np.array([spectral_coords, fit1d.evaluate(spectral_coords)]).T
+                                plot_coords = np.array(
+                                    [spectral_coords,
+                                     _fit_1d.evaluate(spectral_coords)]).T
                                 self.viewer.polygon(plot_coords, closed=False,
                                                     xfirst=(dispaxis == 1), origin=0)
 
-                        this_aptable = astromodels.model_to_table(fit1d.model)
+                        this_aptable = am.model_to_table(_fit_1d.model)
 
                         # Recalculate aperture limits after rectification
-                        apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
-                        this_aptable["aper_lower"] = aperture["aper_lower"] + (location - apcoords.min())
-                        this_aptable["aper_upper"] = aperture["aper_upper"] - (apcoords.max() - location)
+                        apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
+                        this_aptable["aper_lower"] = \
+                            aperture["aper_lower"] + (location - apcoords.min())
+                        this_aptable["aper_upper"] = \
+                            aperture["aper_upper"] - (apcoords.max() - location)
                         all_aperture_tables.append(this_aptable)
 
-                new_aptable = table.vstack(all_aperture_tables,
-                                           metadata_conflicts="silent")
-
-                ext.APERTURE = new_aptable
+                    ext.APERTURE = vstack(all_aperture_tables,
+                                          metadata_conflicts="silent")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
