@@ -1,13 +1,11 @@
 import math
 
-import numpy as np
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import (BoxAnnotation, Button, CheckboxGroup,
-                          ColumnDataSource, CustomJS, Div, LabelSet,
+from bokeh.models import (Button, CheckboxGroup,
+                          ColumnDataSource, Div, LabelSet,
                           NumeralTickFormatter, Select, Slider, Spacer, Span,
-                          Spinner, TextInput, Whisker)
-from bokeh.plotting import figure
+                          Spinner, Whisker)
 
 from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
@@ -15,10 +13,9 @@ from geminidr.interactive.interactive import (PrimitiveVisualizer,
                                               hamburger_helper)
 from gempy.library.tracing import find_apertures, find_apertures_peaks
 
-# Datashader sandbox
-from holoviews.streams import Pipe, Stream
-import numpy as np, datashader as ds, xarray as xr
-from datashader import transfer_functions as tf
+# Holoviews
+from holoviews.streams import Stream
+import numpy as np
 import holoviews as hv
 
 hv.extension('bokeh')
@@ -398,12 +395,6 @@ class AperturePlotView:
         """
         fig = self.fig
         source = self.model.source
-
-        # self.box = BoxAnnotation(left=source.data['start'][0],
-        #                          right=source.data['end'][0],
-        #                          fill_alpha=0.1,
-        #                          fill_color='green')
-        # fig.add_layout(self.box)
 
         self.label = LabelSet(source=source, x="location", y="label_position",
                               y_offset=2, y_units="screen", text="id")
