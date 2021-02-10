@@ -40,7 +40,7 @@ def pytest_configure(config):
                                        "mark will download a large volume of "
                                        "data and run")
     config.addinivalue_line("markers", "preprocessed_data: tests with this "
-                                       "download anr preprocess the data if it "
+                                       "download and preprocess the data if it "
                                        "does not exist in the cache folder.")
 
 
