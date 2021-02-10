@@ -203,7 +203,7 @@ class ApertureModel:
             'location': [location],
             'start': [start],
             'end': [end],
-            'label_position': [0],
+            'label_position': [380],
         })
         self.parent = parent
 
@@ -422,11 +422,12 @@ class AperturePlotView:
         fig.add_layout(self.box)
 
         self.label = LabelSet(source=source, x="location", y="label_position",
-                              y_offset=2, text="id")
+                              y_offset=2, y_units="screen", text="id")
         fig.add_layout(self.label)
 
         self.whisker = Whisker(source=source, base="label_position",
                                lower="start", upper="end", dimension='width',
+                               base_units="screen",
                                line_color="purple")
         fig.add_layout(self.whisker)
 
@@ -435,27 +436,10 @@ class AperturePlotView:
                              line_dash='dashed', line_width=1)
         fig.add_layout(self.location)
 
-        fig.y_range.on_change(
-            'start', lambda attr, old, new: self.update_viewport())
-        fig.y_range.on_change(
-            'end', lambda attr, old, new: self.update_viewport())
-
-        # convince the aperture lines to update on zoom
-        fig.y_range.js_on_change(
-            'end', CustomJS(args=dict(plot=fig),
-                            code="plot.properties.renderers.change.emit()"))
-
-        self.update_viewport()
-
-    def update_viewport(self):
-        """
-        Update the view in the figure whenever we detect a change in the
-        display area of the view.  By redrawing, we ensure the lines and axis
-        label are in view, at 80% of the way up the visible Y axis.
-        """
-        ymid = self.compute_ymid()
-        if ymid:
-            self.model.update_values(label_position=ymid)
+        # leaving this here for now in case I need it again.
+        # fig.y_range.js_on_change(
+        #     'end', CustomJS(args=dict(plot=fig),
+        #                     code="plot.properties.renderers.change.emit()"))
 
     def update(self):
         """
