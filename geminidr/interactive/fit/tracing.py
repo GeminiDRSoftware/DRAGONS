@@ -1,3 +1,6 @@
+"""
+Interactive function and helper functions used to trace apertures.
+"""
 import numpy as np
 from astropy import table
 
@@ -6,7 +9,7 @@ from gempy.library import astromodels, astrotools, config, tracing
 from .fit1d import Fit1DVisualizer
 from .. import server
 
-__all__ = []
+__all__ = ["interactive_trace_apertures", ]
 
 
 def interactive_trace_apertures(ext, _config, _fit1d_params):
@@ -17,15 +20,14 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
     ----------
     ext : AstroData
         Single extension extracted from an AstroData object.
+    _config : dict
+        Dictionary containing the parameters from traceApertures().
+    _fit1d_params : dict
+        Dictionary containing initial parameters for fitting a model.
 
     Returns
     -------
     """
-    ap_table = ext.APERTURE
-    fit_par_list = [_fit1d_params] * len(ap_table)
-    dispaxis = 2 - ext.dispersion_axis()  # python sense
-    domain_list = [[ap['domain_start'], ap['domain_end']] for ap in ap_table]
-
     def _get_tracing_knots(conf, extra):
         """
         This function is used by the interactive fitter to
@@ -42,6 +44,8 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
         -------
         """
         all_tracing_knots = []
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+        print(conf)
 
         for _i, _loc in enumerate(ext.APERTURE['c0'].data):
             _c0 = int(_loc + 0.5)
@@ -69,26 +73,29 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
 
         return all_tracing_knots
 
+    ap_table = ext.APERTURE
+    fit_par_list = [_fit1d_params] * len(ap_table)
+    domain_list = [[ap['domain_start'], ap['domain_end']] for ap in ap_table]
+
     # Create parameters to add to the UI
-    reinit_params = []
     reinit_extras = {
-        "max_missed": config.RangeField("Max Missed", int, 5, min=0),
-        "max_shift": config.RangeField("Max Shifted", float, 0.05,
-                                min=0.001, max=0.1),
-        "nsum": config.RangeField("Number of lines to sum", int, 10,
-                           min=1),
-        "step": config.RangeField("Tracing step: ", int, 10, min=1),
+        "max_missed": config.RangeField(
+            "Max Missed", int, 5, min=0),
+        "max_shift": config.RangeField(
+            "Max Shifted", float, 0.05, min=0.001, max=0.1),
+        "nsum": config.RangeField(
+            "Number of lines to sum", int, 10, min=1),
+        "step": config.RangeField(
+            "Tracing step: ", int, 10, min=1),
     }
 
-    # ToDo: Fit1DVisualizer breaks if reinit_extras is None and
-    #  reinit_params is not.
     visualizer = Fit1DVisualizer(_get_tracing_knots,
                                  config=_config,
                                  fitting_parameters=fit_par_list,
                                  tab_name_fmt="Aperture {}",
                                  xlabel='x',
                                  ylabel='y',
-                                 reinit_params=reinit_params,
+                                 reinit_params=[],
                                  reinit_extras=reinit_extras,
                                  domains=domain_list,
                                  title="Trace Apertures")
@@ -97,6 +104,7 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
 
     list_of_final_models = visualizer.results()
     all_aperture_tables = []
+    dispaxis = 2 - ext.dispersion_axis()  # python sense
 
     for final_model, ap in zip(list_of_final_models, ext.APERTURE):
         location = ap['c0']
