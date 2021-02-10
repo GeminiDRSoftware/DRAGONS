@@ -84,7 +84,7 @@ class AstroDataIgrins(AstroDataGemini):
         return aim
 
     @astro_data_descriptor
-    def detector_name(self):
+    def detector_name(self, pretty=False):
         """
         Returns the name of the detector
 

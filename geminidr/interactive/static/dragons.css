@@ -5,7 +5,7 @@ body {
 }
 
 #plot_div {
-    margin: 8px;
+    margin: 8px 8px 30px 8px;
 }
 
 #top-icon {
@@ -118,4 +118,13 @@ body {
     appearance: none;
     border: none;
     text-align: left;
+}
+
+div.scrollable {
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+.detailed_help dt {
+  font-weight: bold;
 }

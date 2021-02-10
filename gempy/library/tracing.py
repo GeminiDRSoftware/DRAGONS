@@ -15,12 +15,14 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
-import numpy as np
 import warnings
-from scipy import signal, interpolate, optimize
-from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip, sigma_clipped_stats
 
+import numpy as np
+from astropy.modeling import fitting, models
+from astropy.stats import sigma_clip, sigma_clipped_stats
+from scipy import interpolate, optimize, signal
+
+from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
@@ -28,12 +30,10 @@ from gempy.utils import logutils
 from . import astrotools as at
 from .astrotools import divide0
 
-from astrodata import NDAstroData
-
 log = logutils.get_logger(__name__)
 
 
-################################################################################
+###############################################################################
 class Aperture:
     """
     A class describing an aperture. It has the following attributes:
@@ -206,7 +206,7 @@ class Aperture:
                 profile_models.append(m_final(pixels))
             profile_model_spectrum = np.array([np.where(pm < 0, 0, pm) for pm in profile_models])
             sums = profile_model_spectrum.sum(axis=0)
-            model_profile = divide0(profile_model_spectrum, sums, like_num=True)
+            model_profile = divide0(profile_model_spectrum, sums)
 
             # Step 6: revise variance estimates
             var = np.where(var_mask | mask & BAD_BITS, var, var_model(abs(model_profile * spectrum)))
@@ -346,7 +346,7 @@ class Aperture:
         return ndd
 
 
-################################################################################
+###############################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
 def estimate_peak_width(data, mask=None):
@@ -384,6 +384,7 @@ def estimate_peak_width(data, mask=None):
         goodpix[lo:hi] = False
         niters += 1
     return sigma_clip(widths).mean()
+
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
                min_frac=0.25, reject_bad=True):
@@ -784,7 +785,7 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
     return optimize.bisect(func, limit, peak)
 
 
-################################################################################
+###############################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
 def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum=10,
@@ -994,3 +995,96 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis
     return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
+
+
+def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
+                   sizing_method, threshold, sec_regions, use_snr):
+    """
+    Finds sources in 2D spectral images and compute aperture sizes. Used by
+    findSourceApertures as well as by the interactive code. See
+    findSourceApertures' docstring for details on the parameters.
+    """
+
+    # Collapse image along spatial direction to find noisy regions
+    # (caused by sky lines, regardless of whether image has been
+    # sky-subtracted or not)
+    _, mask1d, var1d = NDStacker.mean(ext.data, mask=ext.mask,
+                                      variance=ext.variance)
+
+    # Very light sigma-clipping to remove bright sky lines
+    var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
+    _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
+                                    maxiters=1)
+
+    # Mask sky-line regions and find clumps of unmasked pixels
+    mask1d[var_excess > 5 * std] = 1
+    slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
+    sky_regions = [slice_ for slice_ in slices
+                   if slice_.stop - slice_.start >= min_sky_region]
+    if not sky_regions:  # make sure we have something!
+        sky_regions = [slice(None)]
+
+    sky_mask = np.ones_like(mask1d, dtype=bool)
+    for reg in sky_regions:
+        sky_mask[reg] = False
+    if sec_regions:
+        sec_mask = np.ones_like(mask1d, dtype=bool)
+        for reg in sec_regions:
+            sec_mask[reg] = False
+    else:
+        sec_mask = False
+    full_mask = (ext.mask > 0) | sky_mask | sec_mask
+
+    signal = (ext.data if (ext.variance is None or not use_snr) else
+              np.divide(ext.data, np.sqrt(ext.variance),
+                        out=np.zeros_like(ext.data), where=ext.variance > 0))
+    masked_data = np.where(np.logical_or(full_mask, ext.variance == 0),
+                           np.nan, signal)
+    prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
+
+    # Need to catch warnings for rows full of NaNs
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='All-NaN slice')
+        warnings.filterwarnings('ignore', message='Mean of empty slice')
+        if percentile:
+            profile = np.nanpercentile(masked_data, percentile, axis=1)
+        else:
+            profile = np.nanmean(masked_data, axis=1)
+
+    locations, all_limits = find_apertures_peaks(profile, prof_mask,
+                                                 max_apertures, direction,
+                                                 threshold, sizing_method)
+
+    return locations, all_limits, profile, prof_mask
+
+
+def find_apertures_peaks(profile, prof_mask, max_apertures, direction,
+                         threshold, sizing_method):
+    # TODO: find_peaks might not be best considering we have no
+    #   idea whether sources will be extended or not
+    widths = np.arange(3, 20)
+    peaks_and_snrs = find_peaks(profile, widths,
+                                mask=prof_mask & DQ.not_signal,
+                                variance=1.0, reject_bad=False,
+                                min_snr=3, min_frac=0.2)
+
+    if peaks_and_snrs.size == 0:
+        log.warning("Found no sources")
+        return [], []
+
+    # Reverse-sort by SNR and return only the locations
+    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                reverse=True)[:max_apertures]).T[0]
+    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+    log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
+
+    if np.isnan(profile[prof_mask == 0]).any():
+        log.warning("There are unmasked NaNs in the spatial profile")
+
+    all_limits = get_limits(np.nan_to_num(profile),
+                            prof_mask,
+                            peaks=locations,
+                            threshold=threshold,
+                            method=sizing_method)
+
+    return locations, all_limits

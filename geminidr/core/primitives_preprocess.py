@@ -546,10 +546,10 @@ class Preprocess(PrimitivesBASE):
             Path to a file containing the regions to fix. If both regions_file
             and regions are supplied, both will be used and regions_file will
             be used first.
-        axis : int
-            Axis over which the interpolation is done, using the Fortran
-            order. By default the axis is determined from the narrowest
-            dimension of each region.
+        axis : int  [None or 1 - 3]
+            Axis over which the interpolation is done, 1 is along the x-axis,
+            2 is along the y-axis, 3 is the z-axis.  If None (default), the
+            axis is determined from the narrowest dimension of each region.
         use_local_median : bool
             Use a local median filter for single pixels?
         debug : bool
@@ -598,12 +598,21 @@ class Preprocess(PrimitivesBASE):
             for iext, ext in enumerate(ad, start=1):
                 ndim = ext.data.ndim
 
+                if ext.mask is None:
+                    ext.mask = np.zeros(ext.shape, dtype=DQ.datatype)
+
                 for region, slices in region_slices[0] + region_slices[iext]:
                     if len(slices) != ndim:
                         raise ValueError(f'region {region} does not match '
                                          'array dimension')
 
-                    region_shape = np.array([s.stop - s.start for s in slices])
+                    if ext.data[slices].size == 0:
+                        raise ValueError(f'region {region} out of bound')
+
+                    region_shape = np.array([
+                        (s.stop or ext.shape[i]) - (s.start or 0)
+                        for i, s in enumerate(slices)
+                    ])
 
                     # Find the axis that will be used for the interpolation
                     if axis is None:
@@ -615,7 +624,7 @@ class Preprocess(PrimitivesBASE):
                     else:
                         if axis not in range(1, ndim + 1):
                             raise ValueError('axis should specify a dimension '
-                                             f'between 1 and {ndim + 1}')
+                                             f'between 1 and {ndim}')
                         use_axis = ndim - axis
 
                     if debug:
@@ -654,6 +663,15 @@ class Preprocess(PrimitivesBASE):
                         ind = np.delete(ind, sl)
                         data_in = np.delete(data, sl, axis=0)
 
+                        if ind.size == 0:
+                            if axis is None:
+                                raise ValueError(
+                                    'no good data left for the interpolation')
+                            else:
+                                raise ValueError(
+                                    'no good data left for the interpolation '
+                                    'along the chosen axis')
+
                         # Do the interpolation and replace the values
                         f = interp1d(ind, data_in, kind='linear', axis=0,
                                      bounds_error=True)
@@ -663,6 +681,9 @@ class Preprocess(PrimitivesBASE):
                         data = data.reshape(extracted_shape)
                         data = np.rollaxis(data, 0, use_axis + 1)
                         ext.data[tuple(slices_extract)] = data
+
+                    # Mark the interpolated pixels as no_data
+                    ext.mask[slices] = DQ.no_data
 
                     if debug:
                         fig, (ax1, ax2) = plt.subplots(1, 2)

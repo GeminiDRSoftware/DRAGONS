@@ -20,6 +20,7 @@ def test_array_from_list():
 def test_divide0():
     ones = np.array([1, 1, 1])
     zeros = np.array([0, 0, 0])
+    twod = np.arange(12).reshape(4, 3)
 
     # scalar / scalar
     assert at.divide0(1, 0) == 0
@@ -29,6 +30,10 @@ def test_divide0():
     np.testing.assert_array_equal(at.divide0(1, zeros), zeros)
     # array / array
     np.testing.assert_array_equal(at.divide0(ones, zeros), zeros)
+
+    # 2d array / 1d array
+    np.testing.assert_array_equal(at.divide0(twod, ones), twod)
+    np.testing.assert_array_equal(at.divide0(twod, zeros), np.zeros_like(twod))
 
 
 def test_rasextodec():
@@ -94,6 +99,13 @@ def test_cartesian_regions_to_slices():
     assert cart('1-10:2')[0] == slice(0, 10, 2)
     assert cart('1:10,20:30') == (slice(19, 30), slice(0, 10))
     assert cart('[:,:10]') == (slice(None, 10), slice(None))
+
+    assert cart('100,*') == (slice(None), slice(99, 100))
+    assert cart('100, *') == (slice(None), slice(99, 100))
+    assert cart(':100,*') == (slice(None), slice(100))
+
+    assert cart('*,12') == (slice(11, 12), slice(None))
+    assert cart('*, 12:') == (slice(11, None), slice(None))
 
     with pytest.raises(TypeError):
         cart(12)

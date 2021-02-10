@@ -7,52 +7,45 @@
 # ------------------------------------------------------------------------------
 import os
 import re
+from bisect import bisect
+from functools import reduce
 from importlib import import_module
-import warnings
+from itertools import product as cart_product
 
+import matplotlib
 import numpy as np
 from astropy import units as u
-from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
-from astropy.modeling import models, fitting, Model
+from astropy.io.registry import IORegistryError
+from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table, vstack
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
-from scipy import spatial, optimize
+from scipy import optimize, spatial
 from scipy.signal import correlate
 from specutils import SpectralRegion
-from functools import reduce
-from itertools import product as cart_product
-from bisect import bisect
 
 import astrodata
 import geminidr.interactive.server
-from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
-from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr.gemini.lookups import extinction_data as extinct
+from geminidr.interactive.fit import fit1d
+from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels, matching, tracing
-from gempy.library import transform
-from gempy.library.astrotools import cartesian_regions_to_slices
-from gempy.library.astrotools import array_from_list, boxcar
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
-from gempy.library import transform, matching, tracing
+from gempy.library import matching, tracing, transform
+from gempy.library.astrotools import array_from_list
 from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
-from gempy.library import tracing, astrotools as at
 from recipe_system.utils.decorators import parameter_override
+
 from . import parameters_spect
-
-import matplotlib
-
-from ..interactive.fit import fit1d
-
-from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -1533,13 +1526,14 @@ class Spect(PrimitivesBASE):
         The primitive operates by first collapsing the 2D spectral image in
         the spatial direction to identify sky lines as regions of high
         pixel-to-pixel variance, and the regions between the sky lines which
-        consist of at least `min_sky_pix` pixels are selected. These are then
-        collapsed in the dispersion direction to produce a 1D spatial profile,
-        from which sources are identified using a peak-finding algorithm.
+        consist of at least `min_sky_region` pixels are selected. These are
+        then collapsed in the dispersion direction to produce a 1D spatial
+        profile, from which sources are identified using a peak-finding
+        algorithm.
 
         The widths of the apertures are determined by calculating a threshold
-        level relative to the peak, or an integrated flux relative to the
-        total between the minima on either side and determining where a smoothed
+        level relative to the peak, or an integrated flux relative to the total
+        between the minima on either side and determining where a smoothed
         version of the source profile reaches this threshold.
 
         Parameters
@@ -1558,7 +1552,7 @@ class Spect(PrimitivesBASE):
             indicating the region(s) over which the spectral signal should be
             used. The first and last values can be blank, indicating to
             continue to the end of the data
-        min_sky_pregion : int
+        min_sky_region : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
         use_snr : bool
@@ -1586,14 +1580,8 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        max_apertures = params["max_apertures"]
-        percentile = params["percentile"]
+        suffix = params["suffix"]
         section = params["section"]
-        min_sky_pix = params["min_sky_region"]
-        use_snr = params["use_snr"]
-        threshold = params["threshold"]
-        sizing_method = params["sizing_method"]
         interactive = params["interactive"]
 
         sec_regions = []
@@ -1602,10 +1590,15 @@ class Spect(PrimitivesBASE):
                 sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
                                          None if x2 == '' else int(x2)))
 
+        aper_params = {key: params[key] for key in (
+            'max_apertures', 'min_sky_region', 'percentile',
+            'sizing_method', 'threshold', 'use_snr')}
+        aper_params['sec_regions'] = sec_regions
+
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning("{} has not been distortion corrected".
-                            format(ad.filename))
+                log.warning(f"{ad.filename} has not been distortion corrected")
+
             for ext in ad:
                 log.stdinfo(f"Searching for sources in {ad.filename} "
                             f"extension {ext.id}")
@@ -1615,92 +1608,23 @@ class Spect(PrimitivesBASE):
 
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
-                data, mask, variance = _transpose_if_needed(ext.data, ext.mask,
-                                                            ext.variance, transpose=dispaxis == 0)
-                direction = "column" if dispaxis == 0 else "row"
+                if dispaxis == 0:
+                    ext = ext.transpose()
 
-                # Collapse image along spatial direction to find noisy regions
-                # (caused by sky lines, regardless of whether image has been
-                # sky-subtracted or not)
-                data1d, mask1d, var1d = NDStacker.mean(data, mask=mask,
-                                                       variance=variance)
-                # Very light sigma-clipping to remove bright sky lines
-                var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_pix // 2)
-                mean, median, std = sigma_clipped_stats(var_excess, mask=mask1d,
-                                                        sigma=5.0, maxiters=1)
-
-                # Mask sky-line regions and find clumps of unmasked pixels
-                mask1d[var_excess > 5 * std] = 1
-                slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
-                sky_regions = [slice_ for slice_ in slices
-                               if slice_.stop - slice_.start >= min_sky_pix]
-                if not sky_regions:  # make sure we have something!
-                    sky_regions = [slice(None)]
-
-                sky_mask = np.ones_like(mask1d, dtype=bool)
-                for reg in sky_regions:
-                    sky_mask[reg] = False
-                if sec_regions:
-                    sec_mask = np.ones_like(mask1d, dtype=bool)
-                    for reg in sec_regions:
-                        sec_mask[reg] = False
-                else:
-                    sec_mask = False
-                full_mask = (mask > 0) | sky_mask | sec_mask
-
-                signal = (data if (variance is None or not use_snr) else
-                          np.divide(data, np.sqrt(variance),
-                                    out=np.zeros_like(data), where=variance>0))
-                masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
-                # Need to catch warnings for rows full of NaNs
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('ignore', message='All-NaN slice')
-                    warnings.filterwarnings('ignore', message='Mean of empty slice')
-                    if percentile:
-                        profile = np.nanpercentile(masked_data, percentile, axis=1)
-                    else:
-                        profile = np.nanmean(masked_data, axis=1)
-                prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
+                aper_params['direction'] = "column" if dispaxis == 0 else "row"
 
                 if interactive:
-                    locations, all_limits = interactive_find_source_apertures(ext, profile, prof_mask,
-                                                                              threshold, sizing_method,
-                                                                              max_apertures)
-                    if locations is None or len(locations) == 0:
-                        log.warning("Found no sources")
-                        # Delete existing APERTURE table
-                        try:
-                            del ext.APERTURE
-                        except AttributeError:
-                            pass
-                        continue
+                    locations, all_limits = interactive_find_source_apertures(
+                        ext, **aper_params)
                 else:
-                    # TODO: find_peaks might not be best considering we have no
-                    #   idea whether sources will be extended or not
-                    widths = np.arange(3, 20)
-                    peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                        variance=1.0, reject_bad=False,
-                                                        min_snr=3, min_frac=0.2)
+                    locations, all_limits, _, _ = tracing.find_apertures(
+                        ext, **aper_params)
 
-                    if peaks_and_snrs.size == 0:
-                        log.warning("Found no sources")
-                        # Delete existing APERTURE table
-                        try:
-                            del ext.APERTURE
-                        except AttributeError:
-                            pass
-                        continue
-
-                    # Reverse-sort by SNR and return only the locations
-                    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                                reverse=True)[:max_apertures]).T[0]
-                    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                    log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
-
-                    if np.isnan(profile[prof_mask==0]).any():
-                        log.warning("There are unmasked NaNs in the spatial profile")
-                    all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
-                                                    threshold=threshold, method=sizing_method)
+                if locations is None or len(locations) == 0:
+                    # Delete existing APERTURE table
+                    if 'APERTURE' in ext.tables:
+                        del ext.APERTURE
+                    continue
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1716,17 +1640,17 @@ class Spect(PrimitivesBASE):
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
-                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
+                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})"
+                              .format(loc, lower, upper))
 
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
                 new_order = ["number"] + [c for c in aptable.colnames if c != "number"]
-                aptable = aptable[new_order]
-                ext.APERTURE = aptable
+                ext.APERTURE = aptable[new_order]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def fluxCalibrate(self, adinputs=None, **params):
@@ -2471,8 +2395,6 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
-
 
     def traceApertures(self, adinputs=None, **params):
         """

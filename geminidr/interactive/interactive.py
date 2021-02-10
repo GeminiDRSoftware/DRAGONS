@@ -1,14 +1,13 @@
 from abc import ABC, abstractmethod
 from copy import copy
 
-from bokeh.layouts import row, column
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, \
-    Dropdown, RangeSlider, Span, NumeralTickFormatter, Div
+from bokeh.layouts import column, row
+from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput)
 
 from geminidr.interactive import server
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import cartesian_regions_to_slices
-
 from gempy.library.config import FieldValidationError
 
 
@@ -247,8 +246,8 @@ class PrimitiveVisualizer(ABC):
         return widgets
 
 
-def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
-                      throttled=False):
+def build_text_slider(title, value, step, min_value, max_value, obj=None,
+                      attr=None, handler=None, throttled=False):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -276,10 +275,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     Returns
     -------
         :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
+
     """
-    is_float = True
-    if isinstance(value, int):
-        is_float = False
+    is_float = not isinstance(value, int)
 
     start = min(value, min_value) if min_value else min(value, 0)
     end = max(value, max_value) if max_value else max(10, value*2)
@@ -292,13 +290,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
         slider = Slider(start=start, end=end, value=value, step=step, title=title)
     slider.width = 256
 
-    text_input = TextInput()
-    text_input.width = 64
-    text_input.value = str(value)
+    text_input = TextInput(width=64, value=str(value))
     component = row(slider, text_input)
-
-    slider = slider
-    text_input = text_input
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
@@ -674,20 +667,17 @@ def hamburger_helper(title, widget):
     if widget.css_classes:
         widget.css_classes.append('hamburger_helper_%s' % _hamburger_order_number)
     else:
-        widget.css_classes = list('hamburger_helper_%s' % _hamburger_order_number)
-    _hamburger_order_number = _hamburger_order_number+1
+        widget.css_classes = ['hamburger_helper_%s' % _hamburger_order_number]
+
+    _hamburger_order_number += 1
 
     # TODO Hamburger icon
     button = Button(label=title, css_classes=['hamburger_helper',])
 
-    top = button
-
     def burger_action():
         if widget.visible:
-            # button.label = "HamburgerHamburgerHamburger"
             widget.visible = False
         else:
-            # button.label = "CheeseburgerCheeseburgerCheeseburger"
             widget.visible = True
             # try to force resizing, bokeh bug workaround
             if hasattr(widget, "children") and widget.children:
@@ -696,7 +686,7 @@ def hamburger_helper(title, widget):
                 widget.children.append(last_child)
 
     button.on_click(burger_action)
-    return column(top, widget)
+    return column(button, widget)
 
 
 class GIRegionListener(ABC):
@@ -741,7 +731,7 @@ class GIRegionListener(ABC):
         pass
 
 
-class GIRegionModel(object):
+class GIRegionModel:
     """
     Model for tracking a set of regions.
     """
@@ -940,7 +930,7 @@ class GIRegionModel(object):
         return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in self.regions.values()])
 
 
-class RegionHolder(object):
+class RegionHolder:
     """
     Used by `~geminidr.interactive.interactive.GIRegionView` to track start/stop
     independently of the bokeh Annotation since we want to support `None`.
@@ -1068,449 +1058,6 @@ class GIRegionView(GIRegionListener):
 
     def finish_regions(self):
         pass
-
-
-class GIApertureModel(ABC):
-    """
-    Model for tracking the Apertures.
-
-    This tracks the apertures and a list of subscribers
-    to notify when there are any changes.
-    """
-    def __init__(self):
-        self.aperture_id = 1
-        self.listeners = list()
-        # spare_ids holds any IDs that were returned to
-        # us via a delete, so we can re-use them for
-        # new apertures
-        self.spare_ids = list()
-
-    def add_listener(self, listener):
-        """
-        Add a listener for update to the apertures.
-
-        Parameters
-        ----------
-        listener : :class:`~geminidr.interactive.interactive.GIApertureView`
-            The listener to notify if there are any updates
-        """
-        self.listeners.append(listener)
-
-    @abstractmethod
-    def add_aperture(self, start, end):
-        """
-        Add a new aperture, using the next available ID
-
-        Parameters
-        ----------
-        start : float
-            x coordinate the aperture starts at
-        end : float
-            x coordinate the aperture ends at
-
-        Returns
-        -------
-            int id of the aperture
-        """
-        pass
-
-    @abstractmethod
-    def adjust_aperture(self, aperture_id, location, start, end):
-        """
-        Adjust an existing aperture by ID to a new range.
-        This will alert all subscribed listeners.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to adjust
-        location : float
-            X coordinate of the location of the aperture
-        start : float
-            X coordinate of the new start of range
-        end : float
-            X coordinate of the new end of range
-        """
-        pass
-
-    @abstractmethod
-    def delete_aperture(self, aperture_id):
-        """
-        Delete an aperture by ID.
-
-        This will notify all subscribers of the removal
-        of this aperture and return it's ID to the available
-        pool.
-
-        Parameters
-        ----------
-        aperture_id : int
-            The ID of the aperture to delete
-
-        Returns
-        -------
-
-        """
-        pass
-
-    @abstractmethod
-    def clear_apertures(self):
-        """
-        Remove all apertures, calling delete on the listeners for each.
-        """
-        pass
-
-    @abstractmethod
-    def get_profile(self):
-        pass
-
-    @abstractmethod
-    def find_closest(self, x):
-        pass
-
-
-class GISingleApertureView(object):
-    def __init__(self, fig, aperture_id, location, start, end):
-        """
-        Create a visible glyph-set to show the existance
-        of an aperture on the given figure.  This display
-        will update as needed in response to panning/zooming.
-
-        Parameters
-        ----------
-        gifig : :class:`~bokeh.plotting.Figure`
-            Bokeh Figure to attach to
-        aperture_id : int
-            ID of the aperture (for displaying)
-        start : float
-            Start of the x-range for the aperture
-        end : float
-            End of the x-range for the aperture
-        """
-        self.aperture_id = aperture_id
-        self.box = None
-        self.label = None
-        self.left_source = None
-        self.left = None
-        self.right_source = None
-        self.right = None
-        self.line_source = None
-        self.line = None
-        self.location = None
-        self.fig = None
-        if fig.document:
-            fig.document.add_next_tick_callback(lambda: self.build_ui(fig, aperture_id, location, start, end))
-        else:
-            self.build_ui(fig, aperture_id, location, start, end)
-
-    def build_ui(self, fig, aperture_id, location, start, end):
-        """
-        Build the view in the figure.
-
-        This call creates the UI elements for this aperture in the
-        parent figure.  It also wires up event listeners to adjust
-        the displayed glyphs as needed when the view changes.
-
-        Parameters
-        ----------
-        fig : :class:`~bokeh.plotting.Figure`
-            bokeh figure to attach glyphs to
-        aperture_id : int
-            ID of this aperture, displayed
-        location : float
-            Location of the aperture
-        start : float
-            Start of x-range of aperture
-        end : float
-            End of x-range of aperture
-
-        """
-        if fig.y_range.start is not None and fig.y_range.end is not None:
-            ymin = fig.y_range.start
-            ymax = fig.y_range.end
-            ymid = (ymax-ymin)*.8+ymin
-            ytop = ymid + 0.05*(ymax-ymin)
-            ybottom = ymid - 0.05*(ymax-ymin)
-        else:
-            ymin=0
-            ymax=0
-            ymid=0
-            ytop=0
-            ybottom=0
-        self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
-        fig.add_layout(self.box)
-        self.label = Label(x=location+2, y=ymid, text="%s" % aperture_id)
-        fig.add_layout(self.label)
-        self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
-        self.left = fig.line(x='x', y='y', source=self.left_source, color="purple")
-        self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
-        self.right = fig.line(x='x', y='y', source=self.right_source, color="purple")
-        self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
-        self.line = fig.line(x='x', y='y', source=self.line_source, color="purple")
-        self.location = Span(location=location, dimension='height', line_color='green', line_dash='dashed',
-                             line_width=1)
-        fig.add_layout(self.location)
-
-        self.fig = fig
-
-        fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
-        fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
-        # feels like I need this to convince the aperture lines to update on zoom
-        fig.y_range.js_on_change('end', CustomJS(args=dict(plot=fig),
-                                                 code="plot.properties.renderers.change.emit()"))
-
-    def update_viewport(self):
-        """
-        Update the view in the figure.
-
-        This call is made whenever we detect a change in the display
-        area of the view.  By redrawing, we ensure the lines and
-        axis label are in view, at 80% of the way up the visible
-        Y axis.
-
-        """
-        if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
-            ymin = self.fig.y_range.start
-            ymax = self.fig.y_range.end
-            ymid = (ymax-ymin)*.8+ymin
-            ytop = ymid + 0.05*(ymax-ymin)
-            ybottom = ymid - 0.05*(ymax-ymin)
-            self.left_source.data = {'x': self.left_source.data['x'], 'y': [ybottom, ytop]}
-            self.right_source.data = {'x': self.right_source.data['x'], 'y': [ybottom, ytop]}
-            self.line_source.data = {'x':  self.line_source.data['x'], 'y': [ymid, ymid]}
-            self.label.y = ymid
-
-    def update(self, location, start, end):
-        """
-        Alter the coordinate range for this aperture.
-
-        This will adjust the shaded area and the arrows/label for this aperture
-        as displayed on the figure.
-
-        Parameters
-        ----------
-        start : float
-            new starting x coordinate
-        end : float
-            new ending x coordinate
-        """
-        self.box.left = start
-        self.box.right = end
-        self.left_source.data = {'x': [start, start], 'y': self.left_source.data['y']}
-        self.right_source.data = {'x': [end, end], 'y': self.right_source.data['y']}
-        self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
-        self.location.location = location
-        self.label.x = location+2
-
-    def delete(self):
-        """
-        Delete this aperture from it's view.
-        """
-        self.fig.renderers.remove(self.line)
-        self.fig.renderers.remove(self.left)
-        self.fig.renderers.remove(self.right)
-        # TODO removing causes problems, because bokeh, sigh
-        # TODO could create a list of disabled labels/boxes to reuse instead of making new ones
-        #  (if we have one to recycle)
-        self.label.text = ""
-        self.box.fill_alpha = 0.0
-        self.location.visible=False
-
-
-class GIApertureSliders(object):
-    def __init__(self, fig, model, aperture_id, location, start, end):
-        """
-        Create range sliders for an aperture.
-
-        This creates a range slider and a pair of linked text
-        entry boxes for the start and end of an aperture.
-
-        Parameters
-        ----------
-        fig : :class:`~bokeh.plotting.Figure`
-            The bokeh figure being plotted in, for handling zoom in/out
-        model : :class:`~geminidr.interactive.interactive.GIApertureModel`
-            The model that tracks the apertures and their ranges
-        aperture_id : int
-            The ID of the aperture
-        start : float
-            The start of the aperture
-        end : float
-            The end of the aperture
-        """
-        # self.view = view
-        self.model = model
-        self.aperture_id = aperture_id
-        self.location = location
-        self.start = start
-        self.end = end
-
-        slider_start = fig.x_range.start
-        slider_end = fig.x_range.end
-
-        self.slider = build_range_slider("%s" % aperture_id, location, start, end, 0.01, slider_start, slider_end,
-                                         obj=self, location_attr="location", start_attr="start", end_attr="end",
-                                         handler=self.do_update)
-        button = Button(label="Del")
-        button.on_click(self.delete_from_model)
-        button.width = 48
-
-        self.component = row(self.slider, button)
-
-    def set_title(self, title):
-        self.slider.children[0].title = title
-
-    def delete_from_model(self):
-        """
-        Delete this aperture from the model
-        """
-        self.model.delete_aperture(self.aperture_id)
-
-    def update_viewport(self, start, end):
-        """
-        Respond to a viewport update.
-
-        This checks the visible range of the viewport against
-        the current range of this aperture.  If the aperture
-        is not fully contained within the new visible area,
-        all UI elements are disabled.  If the aperture is in
-        range, the start and stop values for the slider are
-        capped to the visible range.
-
-        Parameters
-        ----------
-        start : float
-            Visible start of x axis
-        end : float
-            Visible end of x axis
-        """
-        if self.start < start or self.end > end:
-            self.slider.children[0].disabled = True
-            self.slider.children[1].disabled = True
-            self.slider.children[2].disabled = True
-            self.slider.children[3].disabled = True
-        else:
-            self.slider.children[0].disabled = False
-            self.slider.children[1].disabled = False
-            self.slider.children[2].disabled = False
-            self.slider.children[3].disabled = False
-            self.slider.children[0].start = start
-            self.slider.children[0].end = end
-
-    def do_update(self):
-        if self.start > self.end:
-            self.model.adjust_aperture(self.aperture_id, self.location, self.end, self.start)
-        else:
-            self.model.adjust_aperture(self.aperture_id, self.location, self.start, self.end)
-
-
-class GIApertureView(object):
-    """
-    UI elements for displaying the current set of apertures.
-
-    This class manages a set of colored regions on a figure to
-    show where the defined apertures are, along with a numeric
-    ID for each.
-    """
-    def __init__(self, model, fig):
-        """
-
-        Parameters
-        ----------
-        model : :class:`~geminidr.interactive.interactive.GIApertureModel`
-            Model for tracking the apertures, may be shared across multiple views
-        fig : :class:`~bokeh.plotting.Figure`
-            bokeh plot for displaying the regions
-        """
-        self.aps = list()
-        self.ap_sliders = list()
-
-        self.fig = fig
-        self.controls = column()
-        self.controls.height_policy = "auto"
-        self.inner_controls = column()
-        self.inner_controls.height_policy = "auto"
-        self.controls = hamburger_helper("Apertures", self.inner_controls)
-
-        self.model = model
-        model.add_listener(self)
-
-        self.view_start = fig.x_range.start
-        self.view_end = fig.x_range.end
-
-        # listen here because ap sliders can come and go, and we don't have to
-        # convince the figure to release those references since it just ties to
-        # this top-level container
-        fig.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
-        fig.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
-
-    def update_viewport(self, start, end):
-        """
-        Handle a change in the view.
-
-        We will adjust the slider ranges and/or disable them.
-
-        Parameters
-        ----------
-        start
-        end
-        """
-        # Bokeh docs provide no indication of the datatype or orientation of the start/end
-        # tuples, so I have left the doc blank for now
-        self.view_start = start
-        self.view_end = end
-        for ap_slider in self.ap_sliders:
-            ap_slider.update_viewport(start, end)
-
-    def handle_aperture(self, aperture_id, location, start, end):
-        """
-        Handle an updated or added aperture.
-
-        We either update an existing aperture if we recognize the `aperture_id`
-        or we create a new one.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to update or create in the view
-        start : float
-            Start of the aperture in x coordinates
-        end : float
-            End of the aperture in x coordinates
-
-        """
-        if aperture_id <= len(self.aps):
-            ap = self.aps[aperture_id-1]
-            ap.update(location, start, end)
-        else:
-            ap = GISingleApertureView(self.fig, aperture_id, location, start, end)
-            self.aps.append(ap)
-            slider = GIApertureSliders(self.fig, self.model, aperture_id, location, start, end)
-            self.ap_sliders.append(slider)
-            self.inner_controls.children.append(slider.component)
-
-    def delete_aperture(self, aperture_id):
-        """
-        Remove an aperture by ID.  If the ID is not recognized, do nothing.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to remove
-        """
-        if aperture_id <= len(self.aps):
-            ap = self.aps[aperture_id-1]
-            ap.delete()
-            self.inner_controls.children.remove(self.ap_sliders[aperture_id-1].component)
-            del self.aps[aperture_id-1]
-            del self.ap_sliders[aperture_id-1]
-        for ap in self.aps[aperture_id-1:]:
-            ap.aperture_id = ap.aperture_id-1
-            ap.label.text = "%s" % ap.aperture_id
-        for ap_slider in self.ap_sliders[aperture_id-1:]:
-            ap_slider.aperture_id = ap_slider.aperture_id-1
-            ap_slider.set_title("%s" % ap_slider.aperture_id)
-            # ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id
 
 
 class RegionEditor(GIRegionListener):

@@ -11,8 +11,10 @@ class adjustWCSToReferenceConfig(config.Config):
     fallback = config.ChoiceField("Fallback method", str,
                                   allowed={"offsets": "Use telescope offsets"},
                                   default="offsets", optional=True)
-    first_pass = config.RangeField("Search radius for source matching (arcseconds)",
-                              float, 5., min=0)
+    first_pass = config.RangeField("Search radius for image alignment (arcseconds)",
+                              float, 5., min=0, inclusiveMin=False)
+    match_radius = config.RangeField("Search radius for source matching (arcseconds)",
+                                     float, 0.5, min=0, inclusiveMin=False)
     min_sources = config.RangeField("Minimum number of sources required to use source matching",
                                int, 3, min=1)
     cull_sources = config.Field("Use only point sources for alignment?", bool, False)

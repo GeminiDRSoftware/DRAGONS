@@ -23,19 +23,10 @@ const plotOptions = {
     },
     shadow: false,
     renderer: $.jqplot.LineRenderer,
+    rendererOptions: {
+      smooth: false,
+    }
   },
-
-  series: [{
-      color: 'rgba(46, 134, 193, 1.0)',
-      label: 'Intensity',
-      shadow: false,
-    },
-    {
-      color: 'rgba(211, 96, 0, 0.2)',
-      label: 'Standard Deviation',
-      shadow: false,
-    },
-  ],
 
   grid: {
     background: 'white',
@@ -60,6 +51,7 @@ const plotOptions = {
   },
 
 };
+
 
 /**
  * Adds a count down in the footer to let user know when the server was queried.
@@ -92,6 +84,7 @@ function addCountDown(sViewer) {
   } // end updateCountdown
   setInterval(updateCountdown, 1000);
 }  // end addCountDown
+
 
 /**
  * Add the settings button and the hidden form to the webpage.
@@ -142,6 +135,7 @@ function addSettings(sViewer) {
   function showSettings () {
     console.log("Clicked on settings button.");
     settingsModal.css("display", "block");
+    queryFreq.focus();
   };
 
   function saveSettings () {
@@ -155,6 +149,7 @@ function addSettings(sViewer) {
   function cancel() {
     settingsModal.css("display", "none");
     queryFreq.val(sViewer.delay / 1000);
+    console.log(` Discarding changes.`);
   };
 
   // Add functionality to buttons
@@ -163,14 +158,29 @@ function addSettings(sViewer) {
   $( '#cancelBtn' ).unbind("click").on( "click", cancel );
   $( '.close' ).unbind("click").on( "click", cancel );
 
+  // Add keybinding
+  $(document).keypress(function(event) {
+    if (settingsModal.css("display") === "block") {
+
+      // Accept settings if Enter pressed
+      if (event.key === "Enter") { saveSettings(); }
+
+      // Cancel if Esc pressed
+      if (event.key === "Escape") { cancel(); }
+
+    }
+  });
+
   // Close settings if clicked outside
   window.onclick = function(event) {
     if (event.target.id == "settings") {
       cancel();
     }
+
   }
 
 }
+
 
 /**
  * Makes sure that every incoming aperture is unique.
@@ -194,6 +204,7 @@ function assureUniqueApertures(apertures) {
   return uniqueApertures;
 
 } // end assureUniqueApertures
+
 
 /**
  * Returns the Aperture Info div element using a template.
@@ -219,6 +230,7 @@ function getApertureInfo(aperture) {
 
 }
 
+
 /**
  * Get element value inside `list` that is the nearest to the `target` value.
  * @param  {number} target - Target value
@@ -236,6 +248,7 @@ function getNearest(target, list) {
   return nearest;
 
 }
+
 
 /**
  * Returns the index of the element inside `list` that is the nearest tho the
@@ -317,6 +330,7 @@ function getStackInfo(filename, programId) {
   `;
 }
 
+
 /**
  * Convert input units to be used as label to the x-axis.
  * @param {string} units
@@ -345,6 +359,7 @@ function getWavelengthUnits(units) {
 
 }
 
+
 /**
  * Gets the nearest aperture id value inside `listOfApertures` and verify
  *  if the absolute difference between this nearest value and the expected
@@ -367,6 +382,19 @@ function isInApertureList(aperture, pixelScale, listOfApertures) {
   return matches;
 
 }
+
+
+/**
+ * Removes duplicated rows in the legend
+ *
+ * @param {number} idx - Aperture index
+ */
+function remove_extra_items_from_legend(plotId) {
+  let legend_items = $(`#${plotId} table.jqplot-table-legend tr`);
+  for (let j = legend_items.length-1; j > 0; j--) {
+    if (j != legend_items.length / 2) { legend_items[j].remove(); }}
+}
+
 
 /**
  * Main component for SpecViewer.
@@ -607,6 +635,7 @@ class SpecViewer {
 
       let sViewer = this;
       let apId = sViewer.aperturesId[i];
+      let plotId = `${type}Plot_${apId}`;
 
       function sleep (miliseconds) {
         return new Promise(resolve => setTimeout(resolve, miliseconds));
@@ -620,9 +649,11 @@ class SpecViewer {
         async function() {
           console.log(`Reset zoom of ${type} plot #${i}.`);
           p.resetZoom();
+          remove_extra_items_from_legend(plotId);
           sleep(250);
         }
       );
+
   } //
 
   /**
@@ -703,6 +734,7 @@ class SpecViewer {
 
     for (let i = 0; i < this.aperturesId.length; i++) {
 
+      let sViewer = this;
       let apertureId = this.aperturesId[i];
       let plotId = `${type}Plot_${apertureId}`;
       let activeTabIndex = $(`#${this.id}`).tabs('option', 'active');
@@ -712,12 +744,19 @@ class SpecViewer {
 
       let intensity = data.apertures[apIdx].intensity;
       let stddev = data.apertures[apIdx].stddev;
+      let slices = data.apertures[apIdx].slices;
       let intensityUnits = data.apertures[apIdx].intensity_units;
       let wavelengthUnits = data.apertures[apIdx].wavelength_units;
 
       let stackTitle = `Aperture ${i + 1} - Stack Frame - Stack size: ${this.stackSize}`;
       let lastTitle = `Aperture ${i+1} - Last Frame - ${this.dataLabel}`;
       let plotTitle = (data.is_stack) ? stackTitle:lastTitle;
+
+      let sliced_intensities = slices.map(function (s) {
+        return intensity.slice(s[0], s[1])});
+
+      let sliced_stddev = slices.map(function (s) {
+        return stddev.slice(s[0], s[1])});
 
       $(`#aperture${apertureId} .apertureInfo`).html(
         getApertureInfo(data.apertures[apIdx])
@@ -742,9 +781,12 @@ class SpecViewer {
 
           console.log('Refresh plots');
 
+          slices.map(function (s, idx) {
+            sViewer[`${type}Plots`][i].series[idx].data = intensity.slice(s[0], s[1]);
+            sViewer[`${type}Plots`][i].series[idx + slices.length].data = stddev.slice(s[0], s[1]);
+          })
+
           this[`${type}Plots`][i].title.text = plotTitle;
-          this[`${type}Plots`][i].series[0].data = intensity;
-          this[`${type}Plots`][i].series[1].data = stddev;
           this[`${type}Plots`][i].resetAxesScale();
 
           // Refresh only on active tab
@@ -763,8 +805,23 @@ class SpecViewer {
 
           console.log('Create new plots');
 
+          let options_for_intensity = sliced_intensities.map(
+            function () {
+              return {
+                color: 'rgba(46, 134, 193, 1.0)',
+                label: 'Intensity',
+              }});
+
+          let options_for_stddev = sliced_stddev.map(
+            function () {
+              return {
+                color: 'rgba(211, 96, 0, 0.2)',
+                label: 'Standard Deviation',
+              }});
+
           this[`${type}Plots`][i] = $.jqplot(
-            plotId, [intensity, stddev], $.extend(plotOptions, {
+            plotId, sliced_intensities.concat(sliced_stddev),
+            $.extend(plotOptions, {
               title: plotTitle,
               axes: {
                 xaxis: {
@@ -777,8 +834,21 @@ class SpecViewer {
                   tickOptions:{formatString:'%.2e'},
                 },
               },
+              series: options_for_intensity.concat(options_for_stddev),
             })
           );
+
+          // Clean up the legend
+          remove_extra_items_from_legend(plotId);
+
+          // Customize doZoom to clean up the legend after zooming.
+          let sViewer = this;
+          let originalDoZoom = this[`${type}Plots`][i].plugins.cursor.doZoom;
+
+          this[`${type}Plots`][i].plugins.cursor.doZoom = function (gridpos, datapos, plot, cursor) {
+            originalDoZoom(gridpos, datapos, plot, cursor);
+            remove_extra_items_from_legend(plotId);
+          }
 
         } else {
           $(`#${plotId}`).html(noData);
@@ -810,6 +880,7 @@ class SpecViewer {
     function resizePlotArea(index, type) {
       let apId = sViewer.aperturesId[index];
       let plotInstance = sViewer[`${type}Plots`][index];
+      let plotId = `${type}Plot_${apId}`;
       let plotTarget = $(`#${type}Plot_${apId}`);
       let resizableArea = $(`#aperture${apId} .resizable.${type}`);
 
@@ -827,6 +898,8 @@ class SpecViewer {
         plotInstance.replot({ resetAxes: true }
         );
       }
+
+      remove_extra_items_from_legend(plotId);
 
     }
 

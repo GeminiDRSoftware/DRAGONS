@@ -81,18 +81,27 @@ def divide0(numerator, denominator):
         is_int = np.issubdtype(denominator.dtype, np.integer)
     except AttributeError:
         # denominator is a scalar
-        try:
-            is_int = np.issubdtype(numerator.dtype, np.integer)
-        except AttributeError:
-            # numerator is also a scalar
-            return 0 if denominator == 0 else numerator / denominator
+        if denominator == 0:
+            try:
+                return np.zeros(numerator.shape)
+            except AttributeError:
+                # numerator is also a scalar
+                return 0
         else:
-            dtype = np.float32 if is_int else numerator.dtype
-            return np.divide(numerator, denominator, out=np.zeros(numerator.shape, dtype=dtype),
-                             where=abs(denominator) > np.finfo(dtype).tiny)
+            return numerator / denominator
     else:
         dtype = np.float32 if is_int else denominator.dtype
-        return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype),
+        try:
+            out_shape = numerator.shape
+        except:
+            out_shape = denominator.shape
+        else:
+            # both are arrays so the final shape will be the one with the
+            # higher dimensionality (if they're broadcastable)
+            if len(out_shape) < len(denominator.shape):
+                out_shape = denominator.shape
+
+        return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
 
 def section_str_to_tuple(section, log=None):
@@ -143,6 +152,7 @@ def cartesian_regions_to_slices(regions):
 
     return tuple(slices)
 
+
 def parse_user_regions(regions, dtype=int, allow_step=False):
     """
     Parse a string containing a list of sections into a list of tuples
@@ -171,13 +181,14 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
         dtype = getattr(np, dtype.name)
 
     ranges = []
-    for range in regions.strip("[]").split(","):
-        if range == "*":
+    for range_ in regions.strip("[]").split(","):
+        range_ = range_.strip()
+        if range_ == "*":
             ranges.append((None, None))
             continue
         try:
             values = [dtype(x) if x else None
-                      for x in range.replace("-", ":", 1).split(":")]
+                      for x in range_.replace("-", ":", 1).split(":")]
             assert len(values) in (1, 2, 2+allow_step)
         except (ValueError, AssertionError):
             raise ValueError(f"Failed to parse sample regions '{regions}'")

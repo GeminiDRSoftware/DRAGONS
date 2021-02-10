@@ -334,32 +334,22 @@ class ApertureTask(Task):
         aperture_model : :class:`GIApertureModel`
             The aperture model to operate on
         """
-        self.mode = "location"  # location, width, left, right for placing location, width (both) or left/right side
+        # location, width, left, right for placing location, width (both)
+        # or left/right side
+        self.mode = ""
         self.aperture_model = aperture_model
-        self.aperture_center = None
-        self.left = None
-        self.right = None
         self.aperture_id = None
         self.last_x = None
         self.last_y = None
         self.helptext_area = helptext
+        self.helptext_area.text = self.helptext()
 
     def start(self, x, y):
         self.last_x = x
         self.last_y = y
-        self.aperture_center = None
-        self.left = None
-        self.right = None
         self.aperture_id = None
-        self.mode = "location"
 
     def stop(self):
-        """
-        Stop updating the current aperture.
-
-        This causes the interactivity to end.
-
-        """
         self.stop_aperture()
 
     def start_aperture(self, x, y):
@@ -371,35 +361,25 @@ class ApertureTask(Task):
 
         Parameters
         ----------
-        x : float
-            x coordinate in data space
-        y : float
-            y coordinate in data space (unused)
+        x, y : float
+            x, y coordinate in data space
         """
-        self.aperture_center = x
-        self.left = x
-        self.right = x
         self.aperture_id = self.aperture_model.add_aperture(x, x, x)
         self.mode = "width"
-        self.update_help(self.mode)
 
     def stop_aperture(self):
+        """Stop updating the current aperture. This causes the interactivity
+        to end.
         """
-        Stop updating the current aperture.
-
-        This causes the interactivity to end.
-
-        """
-        self.aperture_center = None
         self.aperture_id = None
         self.mode = ""
-        self.update_help(self.mode)
 
     def handle_key(self, key):
         """
         Handle a key press.
 
-        This will listen for a press of 'a' to tell the task to stop updating the aperture.
+        This will listen for a press of 'a' to tell the task to stop updating
+        the aperture.
 
         Parameters
         ----------
@@ -408,89 +388,79 @@ class ApertureTask(Task):
 
         Returns
         -------
-            True if the task is finished and the controller should take over, False if we are not done with the Task
+            True if the task is finished and the controller should take over,
+            False if we are not done with the Task
         """
         if key == 'a':
-            if self.aperture_center is None:
+            if self.aperture_id is None:
                 self.start_aperture(self.last_x, self.last_y)
                 return False
             else:
                 self.stop_aperture()
                 return True
-        if key == 'f':
-            if self.aperture_center is None:
-                peaks = pinpoint_peaks(self.aperture_model.get_profile(), None, [self.last_x, ], halfwidth=20,
+
+        elif key == 'f':
+            if self.aperture_id is None:
+                peaks = pinpoint_peaks(self.aperture_model.profile, None,
+                                       [self.last_x, ], halfwidth=20,
                                        threshold=0)
                 if len(peaks) > 0:
                     self.start_aperture(peaks[0], self.last_y)
                 else:
                     self.start_aperture(self.last_x, self.last_y)
+
+        if key in '[ld]' and self.aperture_id is None:
+            # get closest one
+            self.aperture_id = self.aperture_model.find_closest(self.last_x)
+            if self.aperture_id is None:
+                return False
+
         if key == '[':
-            if self.aperture_center is None:
-                # get closest one
-                self.aperture_id, self.aperture_center, self.left, self.right \
-                    = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
             self.mode = 'left'
-            self.update_help(self.mode)
             return False
-        if key == ']':
-            if self.aperture_center is None:
-                # get closest one
-                self.aperture_id, self.aperture_center, self.left, self.right \
-                    = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
+        elif key == ']':
             self.mode = 'right'
-            self.update_help(self.mode)
             return False
-        if key == 'l':
-            if self.aperture_center is None:
-                # get closest one
-                self.aperture_id, self.aperture_center, self.left, self.right \
-                    = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
+        elif key == 'l':
             self.mode = 'location'
-            self.update_help(self.mode)
             return False
-        if key == 'd':
-            if self.aperture_center is not None:
-                self.aperture_model.delete_aperture(self.aperture_id)
+        elif key == 'd':
+            self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
             return True
         return False
 
     def handle_mouse(self, x, y):
         """
-        Handle a mouse movement.
-
-        We respond to the mouse by continuously updating the active aperture
-        around it's center point to a width to match the mouse position.
+        Handle a mouse movement.  We respond to the mouse by continuously
+        updating the active aperture around it's center point to a width to
+        match the mouse position.
 
         Parameters
         ----------
-        x : float
-            mouse x coordinate in data space
-        y : float
-            mouse y coordinate in data space
+        x, y : float
+            mouse x, y coordinate in data space
         """
         # we are in aperture mode
-        if self.aperture_center:
-            width = abs(self.aperture_center - x)
+        if self.aperture_id:
+            model = self.aperture_model.aperture_models[self.aperture_id]
+            location = model.source.data['location'][0]
+
             if self.mode == 'width':
-                self.left = self.aperture_center-width
-                self.right = self.aperture_center+width
+                width = abs(location - x)
+                model.update_values(start=location - width,
+                                    end=location + width)
             elif self.mode == 'left':
-                self.left = min(self.aperture_center, x)
+                if x < location:
+                    model.update_values(start=x)
             elif self.mode == 'right':
-                self.right = max(self.aperture_center, x)
+                if x > location:
+                    model.update_values(end=x)
             elif self.mode == 'location':
-                self.aperture_center = x
-                self.right = max(self.right, x)
-                self.left = min(self.left, x)
-            self.aperture_model.adjust_aperture(self.aperture_id, self.aperture_center, self.left, self.right)
+                diff = x - location
+                model.update_values(location=x,
+                                    start=model.source.data['start'][0] + diff,
+                                    end=model.source.data['end'][0] + diff)
 
         self.last_x = x
         self.last_y = y
@@ -499,46 +469,15 @@ class ApertureTask(Task):
     def description(self):
         return "Edit <b>apertures</b> interactively"
 
-    def update_help(self, mode):
-        if self.mode == 'width':
-            controller.set_help_text("""
-              Drag to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'left':
-            controller.set_help_text("""
-              Drag left side to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'right':
-            controller.set_help_text("""
-              Drag right side to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'location':
-            controller.set_help_text("""
-              Drag to desired aperture location<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>D</b> to delete the aperture""")
-        else:
-            self.helptext_area.text = self.helptext()
-
     def helptext(self):
-        return """<b>A</b> to start the aperture<br/>
-                  <b>F</b> to find a nearby peak to the cursor to start with<br/>
-                  <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-                  <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-                  <b>L</b> to edit the location<br/>
-                  <b>D</b> to delete the aperture"""
+        return """
+        <b>A</b> to start the aperture or set the value<br/>
+        <b>F</b> to find a nearby peak to the cursor to start with<br/>
+        <b>[</b> to only edit the left edge (must remain left of the location)<br/>
+        <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+        <b>L</b> to edit the location<br/>
+        <b>D</b> to delete the aperture
+        """
 
 
 class RegionTask(Task):
