@@ -36,7 +36,7 @@ class PrimitiveVisualizer(ABC):
 
         self.submit_button = Button(
             label="Accept (click here if you are done)",
-            align='center', button_type='success', width=200
+            button_type='success',
         )
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""

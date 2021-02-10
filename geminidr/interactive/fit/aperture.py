@@ -768,8 +768,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         details = Div(text=DETAILED_HELP, css_classes=['detailed_help'],
                       visible=False, width=440)
         details_button = Button(label="Show detailed help",
-                                button_type='primary', max_width=200,
-                                width_policy='max')
+                                button_type='primary')
         details_button.on_click(_details_handler)
         self.model.recalc_apertures()
 
@@ -782,7 +781,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 Spacer(sizing_mode='scale_width'),
                 details_button,
             ],
-            sizing_mode='stretch_width',
         )
 
         layout = column(
