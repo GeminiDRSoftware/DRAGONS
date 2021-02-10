@@ -2415,22 +2415,24 @@ class Spect(PrimitivesBASE):
         adinputs : list of :class:`~astrodata.AstroData`
             Science data as 2D spectral images with a `.APERTURE` table attached
             to one or more of its extensions.
-        suffix : str
-            Suffix to be added to output files.
-        order : int
-            Fitting order along spectrum. Default: 2
-        step : int
-            Step size for sampling along dispersion direction. Default: 10
-        nsum : int
-            Number of rows/columns to combine at each step. Default: 10
-        max_missed : int
+        debug: bool, optional
+            draw aperture traces on image display window? Default: False
+        interactive: bool, optional
+            Run primitive interactively? Default: False
+        max_missed : int, optional
             Maximum number of interactions without finding line before line is
             considered lost forever. Default: 5
-        max_shift : float
+        max_shift : float, optional
             Maximum perpendicular shift (in pixels) from pixel to pixel.
             Default: 0.05
-        debug: bool
-            draw aperture traces on image display window?
+        nsum : int, optional
+            Number of rows/columns to combine at each step. Default: 10
+        order : int, optional
+            Fitting order along spectrum. Default: 2
+        step : int, optional
+            Step size for sampling along dispersion direction. Default: 10
+        suffix : str, optional
+            Suffix to be added to output files. Default: "_aperturesTraced".
 
         Returns
         -------
