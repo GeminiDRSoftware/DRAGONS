@@ -75,7 +75,7 @@ class Controller(object):
             self.unmask_handler = None
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model, helptext)
+            self.tasks['a'] = ApertureTask(aperture_model, helptext, fig)
         if region_model:
             self.tasks['r'] = RegionTask(region_model, helptext)
         self.task = None
@@ -314,7 +314,7 @@ class ApertureTask(Task):
     """
     Task for controlling apertures.
     """
-    def __init__(self, aperture_model, helptext):
+    def __init__(self, aperture_model, helptext, fig):
         """
         Create aperture task for the given model.
 
@@ -330,6 +330,7 @@ class ApertureTask(Task):
         self.aperture_id = None
         self.last_x = None
         self.last_y = None
+        self.fig = fig
         self.helptext_area = helptext
         self.helptext_area.text = self.helptext()
 
@@ -385,7 +386,8 @@ class ApertureTask(Task):
         def _handle_key():
             if self.aperture_id is None:
                 # get closest one
-                self.aperture_id = self.aperture_model.find_closest(self.last_x)
+                self.aperture_id = self.aperture_model.find_closest(
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
                 if self.aperture_id is None:
                     return False
                 self.mode = keymodes[key]
@@ -410,7 +412,8 @@ class ApertureTask(Task):
         elif key == 'd':
             if self.aperture_id is None:
                 # get closest one
-                self.aperture_id = self.aperture_model.find_closest(self.last_x)
+                self.aperture_id = self.aperture_model.find_closest(
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
                 if self.aperture_id is None:
                     return False
             self.aperture_model.delete_aperture(self.aperture_id)

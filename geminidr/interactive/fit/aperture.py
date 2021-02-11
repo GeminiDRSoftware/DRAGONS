@@ -262,10 +262,11 @@ class FindSourceAperturesModel:
         for name, value in self._aper_params.items():
             setattr(self, name, value)
 
-    def find_closest(self, x):
+    def find_closest(self, x, x_start, x_end):
         model = min(self.aperture_models.values(),
                     key=lambda m: abs(m.source.data['location'][0] - x))
-        return model.source.data['id'][0]
+        if x_start < model.source.data['location'][0] < x_end:
+            return model.source.data['id'][0]
 
     def find_peak(self, x):
         # Find local maximum to help pinpoint_peaks
