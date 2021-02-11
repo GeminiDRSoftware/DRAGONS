@@ -382,14 +382,29 @@ class ApertureTask(Task):
             True if the task is finished and the controller should take over,
             False if we are not done with the Task
         """
-        if key == 'a':
+        keymodes = {'[': 'left', ']': 'right', 'l': 'location'}
+
+        def _handle_key():
+            if self.aperture_id is None:
+                # get closest one
+                self.aperture_id = self.aperture_model.find_closest(self.last_x)
+                if self.aperture_id is None:
+                    return False
+                self.mode = keymodes[key]
+                return False
+            else:
+                self.stop_aperture()
+                return True
+
+        if key in '[l]':
+            return _handle_key()
+        elif key == 'a':
             if self.aperture_id is None:
                 self.start_aperture(self.last_x, self.last_y)
                 return False
             else:
                 self.stop_aperture()
                 return True
-
         elif key == 'f':
             if self.aperture_id is None:
                 peaks = pinpoint_peaks(self.aperture_model.profile, None,
@@ -399,22 +414,9 @@ class ApertureTask(Task):
                     self.start_aperture(peaks[0], self.last_y)
                 else:
                     self.start_aperture(self.last_x, self.last_y)
-
-        if key in '[ld]' and self.aperture_id is None:
-            # get closest one
-            self.aperture_id = self.aperture_model.find_closest(self.last_x)
-            if self.aperture_id is None:
-                return False
-
-        if key == '[':
-            self.mode = 'left'
-            return False
-        elif key == ']':
-            self.mode = 'right'
-            return False
-        elif key == 'l':
-            self.mode = 'location'
-            return False
+            else:
+                self.stop_aperture()
+                return True
         elif key == 'd':
             self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
