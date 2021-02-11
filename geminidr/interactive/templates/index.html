@@ -130,6 +130,20 @@
         //  break;
         }
      });
+     var help_popup = null;
+     function openHelpPopup() {
+       if (help_popup == null || help_popup.closed) {
+         help_popup = window.open(window.location + "help",
+                                  "Find Source Apertures Help",
+                                  "resizable=yes,scrollbars=yes,status=yes");
+       }
+       else {
+         help_popup.focus();
+       };
+     };
+     window.onbeforeunload = function() {
+       help_popup.close();
+     };
 </script>
 <div id="footer">
 Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;

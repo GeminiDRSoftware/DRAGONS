@@ -657,6 +657,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                          filename_info=filename_info)
         self.model = model
         self.fig = None
+        self.help_text = DETAILED_HELP
 
     def add_aperture(self):
         """
@@ -776,14 +777,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             add_button,
         ])
 
-        def _details_handler():
-            details.visible = not details.visible
-
-        details = Div(text=DETAILED_HELP, css_classes=['detailed_help'],
-                      visible=False, width=440)
         details_button = Button(label="Show detailed help",
                                 button_type='primary')
-        details_button.on_click(_details_handler)
+        details_button.js_on_click(CustomJS(code="openHelpPopup();"))
         self.model.recalc_apertures()
 
         col = column(children=[fig, helptext], sizing_mode='scale_width')
@@ -797,10 +793,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             ],
         )
 
-        layout = column(
-            toolbar,
-            row(controls, col, details)
-        )
+        layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'
 
         Controller(fig, self.model, None, helptext, showing_residuals=False)

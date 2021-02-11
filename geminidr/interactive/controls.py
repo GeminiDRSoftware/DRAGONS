@@ -467,7 +467,7 @@ class ApertureTask(Task):
         <b>[</b> to only edit the left edge (must remain left of the location)<br/>
         <b>]</b> to only edit the right edge (must remain right of the location)<br/>
         <b>L</b> to edit the location<br/>
-        <b>D</b> to delete the aperture
+        <b>D</b> to delete the closest aperture
         """
 
 
