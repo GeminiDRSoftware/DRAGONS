@@ -4,15 +4,17 @@
 
 from os.path import basename, expanduser
 
-from .caldb import CalDB, CalReturn, cascade
+from .caldb import CalDB, CalReturn
 from .localmanager import LocalManager
 from .calrequestlib import get_cal_requests, generate_md5_digest
 
 
 class LocalDB(CalDB):
     def __init__(self, dbfile, name=None, valid_caltypes=None,
-                 autostore=False, log=None):
-        super().__init__(name=name or dbfile, autostore=autostore, log=log,
+                 get=True, store=True, log=None):
+        if name is None:
+            name = dbfile
+        super().__init__(name=name or dbfile, get=get, store=store, log=log,
                          valid_caltypes=valid_caltypes)
         self._mgr = LocalManager(expanduser(dbfile))
 
@@ -42,11 +44,10 @@ class LocalDB(CalDB):
         return CalReturn([None if cal is None else (cal, self.name)
                           for cal in cals])
 
-    @cascade
-    def _store_calibrations(self, calfiles, caltype=None):
-        if self.autostore:
-            for calfile in calfiles:
-                self._mgr.ingest_file(calfile)
+    def _store_calibration(self, cal, caltype=None):
+        """Store the calibration. The LocalDB is not interested in science"""
+        if caltype and "science" not in caltype:
+            self._mgr.ingest_file(cal)
 
     # The following methods provide an API to modify the database, by
     # initializing it, removing a named calibration, and listing the files
@@ -73,6 +74,9 @@ class LocalDB(CalDB):
             If the file exists and `wipe` was `False`
         """
         return self._mgr.init_database(wipe=wipe)
+
+    def add_cal(self, calfile):
+        self._store_calibration(calfile)
 
     def remove_calibration(self, calfile):
         """

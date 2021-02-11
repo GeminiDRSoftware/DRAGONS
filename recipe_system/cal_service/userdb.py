@@ -2,13 +2,13 @@
 
 import pickle
 
-from .caldb import CalDB, CalReturn, cascade
+from .caldb import CalDB, CalReturn
 
 
 class UserDB(CalDB):
     def __init__(self, name=None, user_cals=None, valid_caltypes=None,
                  log=None):
-        super().__init__(name=name, autostore=False, log=log,
+        super().__init__(name=name, store=True, log=log,
                          valid_caltypes=valid_caltypes)
         self.cachefile = "calibrations/calindex.pkl"
 
@@ -37,7 +37,7 @@ class UserDB(CalDB):
         with open(self.cachefile, "wb") as fp:
             pickle.dump(self.user_cache, fp)
 
-    def _get_calibrations(self, adinputs, caltype=None):
+    def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         # Return a list as long as adinputs if this calibration type is in
         # the user_cals
         if caltype in self.user_cals:
@@ -54,8 +54,7 @@ class UserDB(CalDB):
                 cals.append(None)
         return CalReturn(cals)
 
-    @cascade
-    def _store_calibrations(self, calfile, caltype=None):
+    def _store_calibration(self, cal, caltype=None):
         # Method has no meaning for the manual overrides, "set" is used instead
         pass
 

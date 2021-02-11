@@ -33,11 +33,13 @@ def cascade(fn):
 
 
 class CalDB(metaclass=abc.ABCMeta):
-    def __init__(self, name=None, autostore=False,
+    def __init__(self, name=None, get=True, store=False,
                  valid_caltypes=None, log=None):
         self._valid_caltypes = valid_caltypes or VALID_CALTYPES
+        self.caldir = CALDIR
         self.name = name
-        self.autostore = autostore
+        self.get = get
+        self.store = store
         self.nextdb = None
         self.log = log or logutils.get_logger(__name__)
 
@@ -92,8 +94,11 @@ class CalDB(metaclass=abc.ABCMeta):
         if caltype not in self._valid_caltypes:
             raise ValueError("Calibration type {!r} not recognized".
                              format(caltype))
-        cal_ret = self._get_calibrations(adinputs, caltype=caltype,
-                                         procmode=procmode)
+        if self.get:
+            cal_ret = self._get_calibrations(adinputs, caltype=caltype,
+                                             procmode=procmode)
+        else:
+            cal_ret = CalReturn([None] * len(adinputs))
 
         if cal_ret.files.count(None) and self.nextdb:
             # Pass adinputs without calibrations to next database (with
@@ -148,41 +153,52 @@ class CalDB(metaclass=abc.ABCMeta):
         """
         self._clear_calibrations()
 
-    def store_calibrations(self, adinputs, caltype=None):
+    def store_calibration(self, cal, caltype=None):
         """
-        Stores a single calibration in the database, if autostore is set.
-        If autostore is not set, no action is performed.
+        Handle storage of calibrations. For all types of calibration
+        (NOT processed_science) this saves the file to disk in the
+        appropriate calibrations/ subdirectory (if store=True) and
+        then passes the filename down the chain. For processed_science
+        files, it passes the AstroData object.
 
         Parameters
         ----------
-        calfile : str
-            filename (including path) of calibration
+        cals : str/AstroData
+            the calibration or its filename
         caltype : str
             type of calibration
         """
-        # Create storage directory if it doesn't exist
-        if not os.path.exists(os.path.join(CALDIR, caltype)):
-            os.makedirs(os.path.join(CALDIR, caltype))
+        # Create storage directory if it doesn't exist and we've got an AD
+        # object. This will only happen with the first CalDB to store,
+        # since the calibration will be forwarded as a filename.
+        if self.store and not (isinstance(cal, str) or "science" in caltype):
+            if not os.path.exists(os.path.join(self.caldir, caltype)):
+                os.makedirs(os.path.join(self.caldir, caltype))
 
-        required_tags = REQUIRED_TAG_DICT[caltype]
-        calfiles = []
-        for ad in adinputs:
-            if not ad.tags.issuperset(required_tags):
-                self.log.warning(f"File {ad.filename} is not recognized as a"
-                                 f" {caltype}. Not storing as a calibration.")
-                continue
-            fname = os.path.join(CALDIR, caltype, os.path.basename(ad.filename))
-            ad.write(fname, overwrite=True)
-            calfiles.append(fname)
+            required_tags = REQUIRED_TAG_DICT[caltype]
+            if cal.tags.issuperset(required_tags):
+                fname = os.path.join(self.caldir, caltype,
+                                     os.path.basename(cal.filename))
+                cal.write(fname, overwrite=True)
+            else:
+                self.log.warning(
+                    f"File {cal.filename} is not recognized as a"
+                    f" {caltype}. Not storing as a calibration.")
+            cal = fname
+            self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
+            self._store_calibrations(cal, caltype=caltype)
+        else:
+            self.log.stdinfo(f"{self.name}: NOT storing {cal} as {caltype}")
 
-        self._store_calibrations(calfiles, caltype=caltype)
+        if self.nextdb is not None:
+            self.nextdb.store_calibrations(cal, caltype=caltype)
 
     @abc.abstractmethod
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         pass
 
     @abc.abstractmethod
-    def _store_calibrations(self, calfiles, caltype=None):
+    def _store_calibrations(self, cals, caltype=None):
         pass
 
     def _set_calibrations(self, adinputs, caltype=None, calfile=None):
