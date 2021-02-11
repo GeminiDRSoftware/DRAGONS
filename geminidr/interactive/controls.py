@@ -20,8 +20,6 @@ from bokeh.events import PointEvent
 
 __all__ = ["controller", "Controller"]
 
-from gempy.library.tracing import pinpoint_peaks
-
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
 Controller instances will set this to listen to key presses.  The bokeh server will use this to send keys
@@ -407,15 +405,7 @@ class ApertureTask(Task):
                 return True
         elif key == 'f':
             if self.aperture_id is None:
-                peaks = pinpoint_peaks(self.aperture_model.profile, None,
-                                       [self.last_x, ], halfwidth=20,
-                                       threshold=0)
-                if len(peaks) > 0:
-                    self.start_aperture(peaks[0], self.last_y)
-                else:
-                    self.start_aperture(self.last_x, self.last_y)
-            else:
-                self.stop_aperture()
+                self.aperture_model.find_peak(self.last_x)
                 return True
         elif key == 'd':
             if self.aperture_id is None:

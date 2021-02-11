@@ -10,10 +10,13 @@ from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import (PrimitiveVisualizer,
                                               hamburger_helper)
-from gempy.library.tracing import find_apertures, find_apertures_peaks
+from gempy.library.tracing import (find_apertures, find_apertures_peaks,
+                                   get_limits, pinpoint_peaks)
+from gempy.utils import logutils
 
 __all__ = ["interactive_find_source_apertures", ]
 
+log = logutils.get_logger(__name__)
 
 DETAILED_HELP = """
 
@@ -263,6 +266,18 @@ class FindSourceAperturesModel:
         model = min(self.aperture_models.values(),
                     key=lambda m: abs(m.source.data['location'][0] - x))
         return model.source.data['id'][0]
+
+    def find_peak(self, x):
+        peaks = pinpoint_peaks(self.profile, self.prof_mask, [x],
+                               halfwidth=20, threshold=0)
+        if len(peaks) > 0:
+            limits = get_limits(np.nan_to_num(self.profile),
+                                self.prof_mask,
+                                peaks=peaks,
+                                threshold=self.threshold,
+                                method=self.sizing_method)
+            log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
+            self.add_aperture(peaks[0], *limits[0])
 
     def recalc_apertures(self):
         """
