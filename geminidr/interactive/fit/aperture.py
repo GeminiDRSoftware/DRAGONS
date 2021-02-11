@@ -22,19 +22,19 @@ DETAILED_HELP = """
 <p>Finds sources in 2D spectral images and store them in an APERTURE table for
 each extension. Each table will, then, be used in later primitives to perform
 aperture extraction.</p>
-
 <p>The primitive operates by first collapsing the 2D spectral image in the
 spatial direction to identify sky lines as regions of high pixel-to-pixel
 variance, and the regions between the sky lines which consist of at least
 `min_sky_region` pixels are selected. These are then collapsed in the
 dispersion direction to produce a 1D spatial profile, from which sources are
 identified using a peak-finding algorithm.</p>
-
 <p>The widths of the apertures are determined by calculating a threshold level
 relative to the peak, or an integrated flux relative to the total between the
 minima on either side and determining where a smoothed version of the source
 profile reaches this threshold.</p>
 
+<h3>Profile parameters</h3>
+<p>Those parameters applies to the computation of the 1D profile.</p>
 <dl>
 <dt>Percentile</dt>
 <dd>
@@ -51,6 +51,16 @@ profile reaches this threshold.</p>
 <dd>
     Convert data to SNR per pixel before collapsing and peak-finding?
 </dd>
+<dt>Section</dt>
+<dd>
+    Comma-separated list of colon-separated pixel coordinate pairs
+    indicating the region(s) over which the spectral signal should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data
+</dd>
+
+<h3>Peak finding parameters</h3>
+<p>Those parameters applies to the detection of peaks in the 1D profile.</p>
 <dt>Max Apertures</dt>
 <dd>
     Maximum number of apertures expected to be found. By default it is
@@ -67,13 +77,6 @@ profile reaches this threshold.</p>
 <dd>
     Method for automatic width determination: <i>peak</i> for the height
     relative to peak, or <i>integral</i> for the integrated flux.
-</dd>
-<dt>Section</dt>
-<dd>
-    Comma-separated list of colon-separated pixel coordinate pairs
-    indicating the region(s) over which the spectral signal should be
-    used. The first and last values can be blank, indicating to
-    continue to the end of the data
 </dd>
 </dl>
 """
@@ -101,7 +104,7 @@ class CustomWidget:
             setattr(self.model, self.attr, new)
 
 
-class TextInputLine(CustomWidget):
+class SpinnerInputLine(CustomWidget):
     def build(self):
         self.spinner = Spinner(value=self.value, width=64, **self.kwargs)
         self.spinner.on_change("value", self.handler)
@@ -111,6 +114,18 @@ class TextInputLine(CustomWidget):
 
     def reset(self):
         self.spinner.value = self.value
+
+
+class TextInputLine(CustomWidget):
+    def build(self):
+        self.text_input = TextInput(value=self.value, width=256, **self.kwargs)
+        self.text_input.on_change("value", self.handler)
+        return row([Div(text=self.title, align='center'),
+                    Spacer(width_policy='max'),
+                    self.text_input])
+
+    def reset(self):
+        self.text_input.value = self.value
 
 
 class TextSlider(CustomWidget):
@@ -267,8 +282,7 @@ class FindSourceAperturesModel:
             # Find if parameters that would change the profile have
             # been modified
             recompute_profile = False
-            for name in ('min_sky_region', 'percentile', 'sec_regions',
-                         'use_snr'):
+            for name in ('min_sky_region', 'percentile', 'section', 'use_snr'):
                 if self.profile_params[name] != self.aper_params[name]:
                     recompute_profile = True
                     break
@@ -694,15 +708,17 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # Profile parameters
         percentile = TextSlider("Percentile (use mean if no value)", model,
                                 attr="percentile", start=0, end=100, step=1)
-        minsky = TextInputLine("Min sky region", model, attr="min_sky_region",
-                               low=0)
+        minsky = SpinnerInputLine("Min sky region", model,
+                                  attr="min_sky_region", low=0)
         use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
                                handler=_use_snr_handler)
+        sections = TextInputLine("Sections", model, attr="section",
+                                 placeholder="e.g. 100:900,1500:2000")
 
         # Peak finding parameters
-        maxaper = TextInputLine("Max Apertures (empty means no limit)",
-                                model, attr="max_apertures",
-                                handler=_maxaper_handler, low=0)
+        maxaper = SpinnerInputLine("Max Apertures (empty means no limit)",
+                                   model, attr="max_apertures",
+                                   handler=_maxaper_handler, low=0)
         threshold = TextSlider("Threshold", model, attr="threshold",
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
@@ -729,6 +745,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             percentile.build(),
             minsky.build(),
             use_snr.build(),
+            sections.build(),
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
             maxaper.build(),

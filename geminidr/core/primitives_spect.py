@@ -1581,19 +1581,11 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
-        section = params["section"]
         interactive = params["interactive"]
-
-        sec_regions = []
-        if section:
-            for x1, x2 in (s.split(':') for s in section.split(',')):
-                sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
-                                         None if x2 == '' else int(x2)))
 
         aper_params = {key: params[key] for key in (
             'max_apertures', 'min_sky_region', 'percentile',
-            'sizing_method', 'threshold', 'use_snr')}
-        aper_params['sec_regions'] = sec_regions
+            'section', 'sizing_method', 'threshold', 'use_snr')}
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
