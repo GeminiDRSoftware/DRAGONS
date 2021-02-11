@@ -15,6 +15,13 @@ from .userdb import UserDB
 from .localdb import LocalDB
 from .remotedb import RemoteDB
 
+try:
+    from . import localmanager
+    localmanager_available = True
+except ImportError as e:
+    localmanager_available = False
+    import_error = str(e)
+
 # ------------------------------------------------------------------------------
 # BEGIN Setting up the calibs section for config files
 CONFIG_SECTION = 'calibs'
