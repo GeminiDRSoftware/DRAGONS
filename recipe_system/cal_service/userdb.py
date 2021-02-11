@@ -2,7 +2,7 @@
 
 import pickle
 
-from .caldb import CalDB, CalReturn
+from .caldb import CalDB, CalReturn, cascade
 
 
 class UserDB(CalDB):
@@ -54,7 +54,8 @@ class UserDB(CalDB):
                 cals.append(None)
         return CalReturn(cals)
 
-    def _store_calibration(self, calfile, caltype=None):
+    @cascade
+    def _store_calibrations(self, calfile, caltype=None):
         # Method has no meaning for the manual overrides, "set" is used instead
         pass
 

@@ -1,12 +1,23 @@
 import abc
+import os
 from functools import partial
 
 from gempy.utils import logutils
 
-# List of valid calibration types (to be preceded with "processed_")
-VALID_CALTYPES = ("arc", "bias", "dark", "flat", "fringe", "slitillum",
-                  "standard")
+# Subdirectory in which to store processed calibrations
+CALDIR = "calibrations"
 
+REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
+                     'processed_bias': ['PROCESSED', 'BIAS'],
+                     'processed_dark': ['PROCESSED', 'DARK'],
+                     'processed_flat': ['PROCESSED', 'FLAT'],
+                     'processed_fringe': ['PROCESSED', 'FRINGE'],
+                     'processed_standard': ['PROCESSED', 'STANDARD'],
+                     'processed_slitillum': ['PROCESSED', 'SLITILLUM'],
+                     'bpm': ['BPM'],
+                     }
+
+VALID_CALTYPES = REQUIRED_TAG_DICT.keys()
 
 def cascade(fn):
     """
@@ -24,10 +35,7 @@ def cascade(fn):
 class CalDB(metaclass=abc.ABCMeta):
     def __init__(self, name=None, autostore=False,
                  valid_caltypes=None, log=None):
-        if valid_caltypes is None:
-            valid_caltypes = VALID_CALTYPES
-        self._valid_caltypes = [f"processed_{caltype}"
-                                for caltype in valid_caltypes]
+        self._valid_caltypes = valid_caltypes or VALID_CALTYPES
         self.name = name
         self.autostore = autostore
         self.nextdb = None
@@ -140,7 +148,7 @@ class CalDB(metaclass=abc.ABCMeta):
         """
         self._clear_calibrations()
 
-    def store_calibration(self, calfile, caltype=None):
+    def store_calibrations(self, adinputs, caltype=None):
         """
         Stores a single calibration in the database, if autostore is set.
         If autostore is not set, no action is performed.
@@ -152,17 +160,29 @@ class CalDB(metaclass=abc.ABCMeta):
         caltype : str
             type of calibration
         """
-        if self.autostore:
-            self._store_calibration(calfile, caltype=caltype)
-        #if self.nextdb is not None:
-        #    self.nextdb.store_calibrations(adinputs)
+        # Create storage directory if it doesn't exist
+        if not os.path.exists(os.path.join(CALDIR, caltype)):
+            os.makedirs(os.path.join(CALDIR, caltype))
+
+        required_tags = REQUIRED_TAG_DICT[caltype]
+        calfiles = []
+        for ad in adinputs:
+            if not ad.tags.issuperset(required_tags):
+                self.log.warning(f"File {ad.filename} is not recognized as a"
+                                 f" {caltype}. Not storing as a calibration.")
+                continue
+            fname = os.path.join(CALDIR, caltype, os.path.basename(ad.filename))
+            ad.write(fname, overwrite=True)
+            calfiles.append(fname)
+
+        self._store_calibrations(calfiles, caltype=caltype)
 
     @abc.abstractmethod
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         pass
 
     @abc.abstractmethod
-    def _store_calibration(self, calfile, caltype=None):
+    def _store_calibrations(self, calfiles, caltype=None):
         pass
 
     def _set_calibrations(self, adinputs, caltype=None, calfile=None):

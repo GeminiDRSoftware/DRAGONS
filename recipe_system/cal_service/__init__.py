@@ -66,29 +66,6 @@ def get_calconf():
 
 
 
-def cal_search_factory():
-    """
-    This function returns the proper calibration search function, depending on
-    the user settings.
-
-    Defaults to `prsproxyutil.calibration_search` if there is missing calibs
-    setup, or if the `[calibs]`.`standalone` option is turned off.
-
-    Returns
-    -------
-    calibration_search: <func>
-        The appropriate (local or fitsstore) search function indicated by
-        a given configuration.
-
-    """
-
-    return (
-        localmanager.LocalManager(get_calconf().database_dir).calibration_search
-        if is_local() else
-        transport_request.calibration_search
-    )
-
-
 def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
     """
     Update the calibration service global configuration stored in

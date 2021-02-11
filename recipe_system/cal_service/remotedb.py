@@ -3,9 +3,10 @@
 
 from os.path import basename
 
-from .caldb import CalDB, CalReturn
+from .caldb import CalDB, CalReturn, cascade
 from .calrequestlib import get_cal_requests, generate_md5_digest
 from .calurl_dict import calurl_dict
+from .transport_request import upload_calibration
 
 
 class RemoteDB(CalDB):
@@ -21,6 +22,8 @@ class RemoteDB(CalDB):
         for rq in cal_requests:
             pass
 
-    def _store_calibration(self, calfile, caltype=None):
-        url = (calurl_dict.UPLOADSCIENCE if is_science else
-               calurl_dict.UPLOADPROCCAL)
+    @cascade
+    def _store_calibrations(self, calfiles, caltype=None):
+        if self.autostore:
+            for calfile in calfiles:
+                upload_calibration(calfile)

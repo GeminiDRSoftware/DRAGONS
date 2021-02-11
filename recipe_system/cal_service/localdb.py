@@ -4,7 +4,7 @@
 
 from os.path import basename, expanduser
 
-from .caldb import CalDB, CalReturn
+from .caldb import CalDB, CalReturn, cascade
 from .localmanager import LocalManager
 from .calrequestlib import get_cal_requests, generate_md5_digest
 
@@ -42,8 +42,11 @@ class LocalDB(CalDB):
         return CalReturn([None if cal is None else (cal, self.name)
                           for cal in cals])
 
-    def _store_calibration(self, calfile, caltype=None):
-        self._mgr.ingest_file(calfile)
+    @cascade
+    def _store_calibrations(self, calfiles, caltype=None):
+        if self.autostore:
+            for calfile in calfiles:
+                self._mgr.ingest_file(calfile)
 
     # The following methods provide an API to modify the database, by
     # initializing it, removing a named calibration, and listing the files
