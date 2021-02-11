@@ -20,10 +20,9 @@ from recipe_system.utils.reduce_utils import normalize_args
 from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
 
-from recipe_system.utils.rs_utilities import log_traceback
+from recipe_system.config import globalConf
 
-from recipe_system.cal_service import set_calservice
-from recipe_system.cal_service import localmanager_available
+from recipe_system.utils.rs_utilities import log_traceback
 # ------------------------------------------------------------------------------
 def main(args):
     """
@@ -81,9 +80,9 @@ def main(args):
     except AssertionError:
         pass
 
-    # Config local calibration manager with passed args object
-    if localmanager_available:
-        set_calservice(local_db_dir=args.local_db_dir)
+    # Override config
+    if args.config:
+        globalConf.load(args.config)
 
     log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
     log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))

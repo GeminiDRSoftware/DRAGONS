@@ -39,6 +39,7 @@ from .gemini.lookups.source_detection import sextractor_dict
 
 from recipe_system.cal_service import calurl_dict
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.config import globalConf
 
 import atexit
 # ------------------------------ caches ---------------------------------------
@@ -202,6 +203,12 @@ class PrimitivesBASE:
     tagset = None
 
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None):
+        # This is a general config file so we should load it now. The user may
+        # have specified an override on the reduce command line, so don't load
+        # the default if we already have something in it.
+        if not globalConf._sections:
+            globalConf.load()
+
         self.streams          = {'main': adinputs}
         self.mode             = mode
         self.params           = {}

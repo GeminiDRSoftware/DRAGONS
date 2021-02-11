@@ -19,7 +19,11 @@ from collections import defaultdict
 from configparser import ConfigParser
 
 DEFAULT_DIRECTORY = '~/.geminidr'
-STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
+
+try:
+    STANDARD_REDUCTION_CONF = os.environ["DRAGONSRC"]
+except KeyError:
+    STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 
 class ConfigObject:
@@ -84,7 +88,8 @@ class ConfigObject:
                 # The option was not defined...
                 pass
 
-    def load(self, filenames, defaults=None, env_override=False):
+    def load(self, filenames=STANDARD_REDUCTION_CONF, defaults=None,
+             env_override=False):
         """
         Loads all or some entries from the specified section in a config file.
         The extracted values are set as environment variables, so that they are

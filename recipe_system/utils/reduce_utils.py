@@ -159,12 +159,11 @@ def buildParser(version):
                         "calibration types. "
                         "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
-    if localmanager_available:
-        parser.add_argument("--local_db_dir", dest='local_db_dir', default=None,
-                            nargs="*", action=UnitaryArgumentAction,
-                            help="Point to a directory where the local database "
-                            "for calibration association can be found. Default "
-                            "is to look it up in the config file (if any).")
+    parser.add_argument("-c", "--config", dest='config', default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Load a specific config file, overriding the "
+                             "~/.geminidr/rsys.cfg file and the $DRAGONSRC "
+                             "environment variable.")
     return parser
 
 
@@ -278,9 +277,8 @@ def normalize_args(args):
         args.drpkg = args.drpkg[0]
     if isinstance(args.recipename, list):
         args.recipename = args.recipename[0]
-    if localmanager_available:
-        if isinstance(args.local_db_dir, list):
-            args.local_db_dir = args.local_db_dir[0]
+    if isinstance(args.config, list):
+        args.config = args.config[0]
     if isinstance(args.logmode, list):
         args.logmode = args.logmode[0]
     if isinstance(args.logfile, list):
