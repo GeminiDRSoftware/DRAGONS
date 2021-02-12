@@ -80,6 +80,12 @@ def test_reduce_ls_spect(change_working_dir, keep_data, test_case):
         # Reducing science
         if "sci" in datasets[test_case]:
 
+            std_fname = [c.replace("processed_standard:", "")
+                         for c in cals if "processed_standard" in c].pop()
+
+            datasets[test_case]["user_pars"] += \
+                [("fluxCalibrate:standard", std_fname)]
+
             sci_filenames = datasets[test_case]["sci"]
             sci_paths = [download_from_archive(f) for f in sci_filenames]
             _ = reduce(sci_paths, f"sci_{test_case}", cals,
@@ -120,6 +126,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
 
     logutils.get_logger().info("\n\n\n")
     logutils.config(file_name=f"test_image_{label}.log")
+
     r = Reduce()
     r.files = file_list
     r.ucals = normalize_ucals(r.files, calib_files)
