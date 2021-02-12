@@ -1668,8 +1668,13 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         if kw in header:
             del ad_out.hdr[kw]
 
-    # Now let's worry about the tables. Top-level ones first
-    for table_name in ad.tables:
+    # Now let's worry about the tables. Only transfer top-level ones, since
+    # we may be combining extensions so it's not clear generally how to merge.
+    # If the calling code needs to do some propagation it has to handle that
+    # itself. We have to use the private attribute here since the public one
+    # doesn't distinguish between top-level and extension-level tables if the
+    # AD object is a single slice.
+    for table_name in ad._tables:
         setattr(ad_out, table_name, getattr(ad, table_name).copy())
         log.fullinfo("Copying {}".format(table_name))
 
