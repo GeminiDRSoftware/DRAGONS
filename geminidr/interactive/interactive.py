@@ -180,6 +180,8 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
+        extras = [] if extras is None else extras
+        params = [] if params is None else params
         widgets = []
         if self.config is None:
             self.log.warn("No config, unable to make widgets")
