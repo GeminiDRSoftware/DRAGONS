@@ -143,11 +143,13 @@ def _helpapp(doc):
         template = f.read()
 
     title = _visualizer.title or 'Interactive'
+    primitive_name = _visualizer.primitive_name
     t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
     doc.template = t
     doc.template_variables.update({
         'help_text': _visualizer.help_text,
         'primitive_title': title.replace(' ', '&nbsp;'),
+        'primitive_name': primitive_name.replace(' ', '&nbsp;'),
     })
     doc.title = title
 
