@@ -3,7 +3,7 @@
 #
 #                                                                    cal_service
 # ------------------------------------------------------------------------------
-from os.path import expanduser
+from os import path
 
 from ..config import globalConf
 from ..config import STANDARD_REDUCTION_CONF
@@ -50,7 +50,7 @@ def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
             defaults = {
                 CONFIG_SECTION: {
                     'standalone': False,
-                    'database_dir': expanduser(DEFAULT_DIRECTORY)
+                    'database_dir': path.expanduser(DEFAULT_DIRECTORY)
                     }
                 })
 
@@ -88,7 +88,7 @@ def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
         Name of the configuration file that will be loaded.
 
     """
-    globalConf.load(expanduser(config_file))
+    globalConf.load(path.expanduser(config_file))
 
     if localmanager_available:
         if local_db_dir is None:
@@ -96,11 +96,37 @@ def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
 
         globalConf.update(
             CONFIG_SECTION, dict(
-                database_dir=expanduser(local_db_dir),
-                config_file=expanduser(config_file)
+                database_dir=path.expanduser(local_db_dir),
+                config_file=path.expanduser(config_file)
             )
         )
 
     globalConf.export_section(CONFIG_SECTION)
 
 
+def init_calibration_databases(ucals, default_dbname="cal_manager.db"):
+    caldb = UserDB(name="the darn pickle", user_cals=ucals)
+    databases = globalConf["calibs"].databases.splitlines()
+    for line in databases:
+        kwargs = {"get": True,
+                  "store": False}
+        if not line:  # handle blank lines
+            continue
+        db, *flags = line.split()
+        for flag in flags:
+            if flag == "store":
+                kwargs["store"] = True
+            elif flag == "noget":
+                kwargs["get"] = False
+            else:
+                raise ValueError("{}: Unknown flag {!r}".format(db, flag))
+            if path.isdir(db):
+                db = path.join(db, default_dbname)
+                cls = LocalDB
+            elif path.isfile(db):
+                cls = LocalDB
+            else:  # does not check
+                cls = RemoteDB
+            caldb.add_database(cls(db, name=db, **kwargs))
+
+    return caldb

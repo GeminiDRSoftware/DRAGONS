@@ -10,8 +10,6 @@ from importlib import import_module
 from gempy.gemini import gemini_tools as gt
 
 from recipe_system.cal_service.calrequestlib import get_cal_requests
-from recipe_system.cal_service.calrequestlib import process_cal_requests
-from recipe_system.cal_service.transport_request import upload_calibration
 
 from geminidr import PrimitivesBASE
 from . import parameters_calibdb

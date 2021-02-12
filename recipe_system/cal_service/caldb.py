@@ -198,7 +198,7 @@ class CalDB(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def _store_calibrations(self, cals, caltype=None):
+    def _store_calibration(self, cals, caltype=None):
         pass
 
     def _set_calibrations(self, adinputs, caltype=None, calfile=None):

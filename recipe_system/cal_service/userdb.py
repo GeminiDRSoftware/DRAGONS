@@ -1,5 +1,5 @@
 # Defines the UserDB class for calibration returns
-
+import os
 import pickle
 
 from .caldb import CalDB, CalReturn
@@ -10,7 +10,7 @@ class UserDB(CalDB):
                  log=None):
         super().__init__(name=name, store=True, log=log,
                          valid_caltypes=valid_caltypes)
-        self.cachefile = "calibrations/calindex.pkl"
+        self.cachefile = os.path.join(self.caldir, "calindex.pkl")
 
         self.user_cals = {}
         if user_cals:
