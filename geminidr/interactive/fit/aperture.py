@@ -85,6 +85,18 @@ profile reaches this threshold.</p>
 """
 
 
+def avoid_multiple_update(func):
+    """Decorator to prevent handlers to update multiple times."""
+    def wrapper(self, attr, old, new):
+        if self.in_update:
+            return
+
+        self.in_update = True
+        func(self, attr, old, new)
+        self.in_update = False
+    return wrapper
+
+
 class CustomWidget:
     """Defines a default handler that set the value on the model."""
 
@@ -153,15 +165,11 @@ class TextSlider(CustomWidget):
         self.spinner.value = self.value
         self.slider.value = self.value
 
+    @avoid_multiple_update
     def handler(self, attr, old, new):
-        if self.in_update:
-            # To avoid triggering the handler with both spinner and slider
-            return
-        self.in_update = True
         self.spinner.value = new
         self.slider.value = new
         super().handler(attr, old, new)
-        self.in_update = False
 
 
 class CheckboxLine(CustomWidget):
@@ -203,7 +211,6 @@ class ApertureModel:
             'location': [location],
             'start': [start],
             'end': [end],
-            'label_position': [380],
         })
         self.parent = parent
 
@@ -230,7 +237,7 @@ class FindSourceAperturesModel:
         UI and then recalculate the fit as often as desired.
 
         """
-        self.listeners = list()
+        self.listeners = []
         self.ext = ext
         self.profile_shape = self.ext.shape[0]
         self.aperture_models = {}
@@ -421,14 +428,13 @@ class AperturePlotView:
                                  fill_color='green')
         fig.add_layout(self.box)
 
-        self.label = LabelSet(source=source, x="location", y="label_position",
+        self.label = LabelSet(source=source, x="location", y=380,
                               y_offset=2, y_units="screen", text="id")
         fig.add_layout(self.label)
 
-        self.whisker = Whisker(source=source, base="label_position",
-                               lower="start", upper="end", dimension='width',
-                               base_units="screen",
-                               line_color="purple")
+        self.whisker = Whisker(source=source, base=380, lower="start",
+                               upper="end", dimension='width',
+                               base_units="screen", line_color="purple")
         fig.add_layout(self.whisker)
 
         self.location = Span(location=source.data['location'][0],
@@ -461,17 +467,6 @@ class AperturePlotView:
         self.box.visible = False
         self.location.visible = False
         self.whisker.visible = False
-
-
-def avoid_multiple_update(func):
-    def wrapper(self, attr, old, new):
-        if self.in_update:
-            return
-
-        self.in_update = True
-        func(self, attr, old, new)
-        self.in_update = False
-    return wrapper
 
 
 class ApertureLineView:
@@ -589,6 +584,8 @@ class ApertureView:
         self.aperture_lines = {}
 
         self.fig = fig
+        self.model = model
+        model.add_listener(self)
 
         # The hamburger menu, which needs to have access to the aperture line
         # widgets (inner_controls)
@@ -605,26 +602,18 @@ class ApertureView:
             ])
         )
 
-        self.model = model
-        model.add_listener(self)
-
-        self.view_start = fig.x_range.start
-        self.view_end = fig.x_range.end
-
         # listen here because ap sliders can come and go, and we don't have to
         # convince the figure to release those references since it just ties to
         # this top-level container
         fig.x_range.on_change('start', lambda attr, old, new:
-                              self.update_viewport(new, self.view_end))
+                              self.update_viewport(start=new))
         fig.x_range.on_change('end', lambda attr, old, new:
-                              self.update_viewport(self.view_start, new))
+                              self.update_viewport(end=new))
 
-    def update_viewport(self, start, end):
+    def update_viewport(self, start=None, end=None):
         """Handle a change in the view to enable/disable aperture lines."""
-        # Bokeh docs provide no indication of the datatype or orientation of
-        # the start/end tuples, so I have left the doc blank for now
-        self.view_start = start
-        self.view_end = end
+        start = start or self.fig.x_range.start
+        end = end or self.fig.x_range.end
         for apline in self.aperture_lines.values():
             apline.update_viewport(start, end)
 
@@ -650,13 +639,6 @@ class ApertureView:
                 self.aperture_lines[aperture_id].component)
             del self.aperture_plots[aperture_id]
             del self.aperture_lines[aperture_id]
-
-        # for ap in self.aperture_plots[idx:]:
-        #     ap.update_id(ap.aperture_id - 1)
-
-        # for ap in self.aperture_lines[idx:]:
-        #     ap.aperture_id -= 1
-        #     ap.update_title()
 
 
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
@@ -827,8 +809,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         Returns
         -------
-            list of float, list of tuple :
-                list of locations and list of the limits as tuples
+        list of float, list of tuple :
+            list of locations and list of the limits as tuples
 
         """
         res = (model.result() for model in self.model.aperture_models.values())
