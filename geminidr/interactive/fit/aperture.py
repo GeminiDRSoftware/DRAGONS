@@ -205,7 +205,6 @@ class SelectLine(CustomWidget):
 
 class ApertureModel:
     def __init__(self, aperture_id, location, start, end, parent):
-        self.aperture_id = aperture_id
         self.source = ColumnDataSource({
             'id': [aperture_id],
             'location': [location],
@@ -215,12 +214,12 @@ class ApertureModel:
         self.parent = parent
 
     def delete(self):
-        self.parent.delete_aperture(self.aperture_id)
+        self.parent.delete_aperture(self.source.data['id'][0])
 
     def update_values(self, **kwargs):
         data = {field: [(0, value)] for field, value in kwargs.items()}
         self.source.patch(data)
-        self.parent.adjust_aperture(self.aperture_id)
+        self.parent.adjust_aperture(self.source.data['id'][0])
 
     def result(self):
         data = self.source.data
@@ -372,19 +371,8 @@ class AperturePlotView:
     Create a visible glyph-set to show the existance
     of an aperture on the given figure.  This display
     will update as needed in response to panning/zooming.
-
-    Parameters
-    ----------
-    fig : :class:`~bokeh.plotting.Figure`
-        Bokeh Figure to attach to
-    aperture_id : int
-        ID of the aperture (for displaying)
-    start : float
-        Start of the x-range for the aperture
-    end : float
-        End of the x-range for the aperture
     """
-    def __init__(self, fig, aperture_id, model):
+    def __init__(self, fig, model):
         self.model = model
         self.fig = fig
 
@@ -401,9 +389,6 @@ class AperturePlotView:
             return (ymax - ymin)*.8 + ymin
         else:
             return 0
-
-    def update_id(self, aperture_id):
-        self.model.update_values(aperture_id=aperture_id)
 
     def build_ui(self):
         """
@@ -470,19 +455,16 @@ class AperturePlotView:
 
 
 class ApertureLineView:
-    def __init__(self, aperture_id, model):
+    def __init__(self, model):
         """ Create text inputs for the start, location and end of an aperture.
 
         Parameters
         ----------
-        aperture_id : int
-            The ID of the aperture
         model : :class:`ApertureModel`
             The model that tracks the apertures and their ranges
 
         """
         self.model = model
-        self.aperture_id = aperture_id
 
         button = Button(label="Del", width=48)
         button.on_click(self.model.delete)
@@ -498,7 +480,7 @@ class ApertureLineView:
 
         self.in_update = False
 
-        self.aperture_name = Div(text=f"# {self.aperture_id}",
+        self.aperture_name = Div(text=f"# {source.data['id'][0]}",
                                  align='center', width=24)
         self.start_input.on_change("value", self._start_handler)
         self.location_input.on_change("value", self._location_handler)
@@ -526,9 +508,6 @@ class ApertureLineView:
                                  start=self.start_input.value,
                                  end=self.end_input.value)
 
-    def update_title(self):
-        self.aperture_name.text = f"Aperture {self.aperture_id}"
-
     @avoid_multiple_update
     def update(self, attr, old, new):
         # Because Bokeh checks the handler signatures we need the same
@@ -537,6 +516,7 @@ class ApertureLineView:
         self.start_input.value = source.data['start'][0]
         self.location_input.value = source.data['location'][0]
         self.end_input.value = source.data['end'][0]
+        self.aperture_name.text = f"# {source.data['id'][0]}"
 
     def update_viewport(self, start, end):
         """
@@ -623,10 +603,10 @@ class ApertureView:
             self.aperture_plots[aperture_id].update()
             self.aperture_lines[aperture_id].update(None, None, None)
         else:
-            ap = AperturePlotView(self.fig, aperture_id, model)
+            ap = AperturePlotView(self.fig, model)
             self.aperture_plots[aperture_id] = ap
 
-            ap = ApertureLineView(aperture_id, model)
+            ap = ApertureLineView(model)
             self.aperture_lines[aperture_id] = ap
             self.inner_controls.children.append(ap.component)
 

@@ -463,9 +463,9 @@ class ApertureTask(Task):
     def helptext(self):
         return """
         <b>A</b> to start the aperture or set the value<br/>
-        <b>F</b> to find a nearby peak to the cursor to start with<br/>
-        <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-        <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+        <b>F</b> to find a peak close to the cursor (+/- 20 pixels)<br/>
+        <b>[</b> to edit the left edge<br/>
+        <b>]</b> to edit the right edge<br/>
         <b>L</b> to edit the location<br/>
         <b>D</b> to delete the closest aperture
         """
