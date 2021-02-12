@@ -807,7 +807,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         add_button = Button(label="Add Aperture", button_type='primary')
         add_button.on_click(self.add_aperture)
 
-        helptext = Div(margin=(0, 0, 0, 20), sizing_mode='scale_width')
+        helptext = Div(margin=(20, 0, 0, 35), sizing_mode='scale_width')
         controls = column(children=[
             params,
             aperture_view.controls,
