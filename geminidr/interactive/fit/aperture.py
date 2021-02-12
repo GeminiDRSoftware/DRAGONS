@@ -216,10 +216,11 @@ class ApertureModel:
     def delete(self):
         self.parent.delete_aperture(self.source.data['id'][0])
 
-    def update_values(self, **kwargs):
+    def update_values(self, notify=True, **kwargs):
         data = {field: [(0, value)] for field, value in kwargs.items()}
         self.source.patch(data)
-        self.parent.adjust_aperture(self.source.data['id'][0])
+        if notify:
+            self.parent.adjust_aperture(self.source.data['id'][0])
 
     def result(self):
         data = self.source.data
@@ -257,7 +258,7 @@ class FindSourceAperturesModel:
     @property
     def aper_params(self):
         """Return the actual param dict from the instance attributes."""
-        return {name: getattr(self, name) for name in self._aper_params.keys()}
+        return {name: getattr(self, name) for name in self._aper_params}
 
     def add_listener(self, listener):
         """Add a listener for update to the apertures."""
@@ -335,7 +336,7 @@ class FindSourceAperturesModel:
             self.aperture_models[aperture_id] = model
 
             for listener in self.listeners:
-                listener.handle_aperture(aperture_id, model)
+                listener.add_aperture(aperture_id, model)
 
     def add_aperture(self, location, start, end):
         aperture_id = max(self.aperture_models, default=0) + 1
@@ -343,14 +344,13 @@ class FindSourceAperturesModel:
         self.aperture_models[aperture_id] = model
 
         for listener in self.listeners:
-            listener.handle_aperture(aperture_id, model)
+            listener.add_aperture(aperture_id, model)
         return aperture_id
 
     def adjust_aperture(self, aperture_id):
         """Adjust an existing aperture by ID to a new range."""
         for listener in self.listeners:
-            listener.handle_aperture(aperture_id,
-                                     self.aperture_models[aperture_id])
+            listener.update_aperture(aperture_id)
 
     def delete_aperture(self, aperture_id):
         """Delete an aperture by ID."""
@@ -360,10 +360,24 @@ class FindSourceAperturesModel:
 
     def clear_apertures(self):
         """Remove all apertures, calling delete on the listeners for each."""
-        for aperture_id in self.aperture_models.keys():
+        for aperture_id in self.aperture_models:
             for listener in self.listeners:
                 listener.delete_aperture(aperture_id)
         self.aperture_models.clear()
+
+    def renumber_apertures(self):
+        new_models = {}
+        for new_id, model in enumerate(self.aperture_models.values(), start=1):
+            model.update_values(id=new_id, notify=False)
+            new_models[new_id] = model
+        self.aperture_models.clear()
+        self.aperture_models.update(new_models)
+
+        for listener in self.listeners:
+            listener.renumber_apertures()
+            # now we can tell widgets to update
+            for aperture_id in self.aperture_models:
+                listener.update_aperture(aperture_id)
 
 
 class AperturePlotView:
@@ -558,10 +572,8 @@ class ApertureView:
 
     """
     def __init__(self, model, fig):
-        # The list of AperturePlotView widget (aperture plots)
-        self.aperture_plots = {}
-        # The list of ApertureLineView widget (text inputs)
-        self.aperture_lines = {}
+        # The widgets (AperturePlotView, ApertureLineView) for each aperture
+        self.widgets = {}
 
         self.fig = fig
         self.model = model
@@ -594,31 +606,36 @@ class ApertureView:
         """Handle a change in the view to enable/disable aperture lines."""
         start = start or self.fig.x_range.start
         end = end or self.fig.x_range.end
-        for apline in self.aperture_lines.values():
-            apline.update_viewport(start, end)
+        for widget in self.widgets.values():
+            widget[1].update_viewport(start, end)
 
-    def handle_aperture(self, aperture_id, model):
+    def update_aperture(self, aperture_id):
         """Handle an updated or added aperture."""
-        if aperture_id in self.aperture_plots:
-            self.aperture_plots[aperture_id].update()
-            self.aperture_lines[aperture_id].update(None, None, None)
-        else:
-            ap = AperturePlotView(self.fig, model)
-            self.aperture_plots[aperture_id] = ap
+        plot, line = self.widgets[aperture_id]
+        plot.update()
+        line.update(None, None, None)
 
-            ap = ApertureLineView(model)
-            self.aperture_lines[aperture_id] = ap
-            self.inner_controls.children.append(ap.component)
+    def add_aperture(self, aperture_id, model):
+        plot = AperturePlotView(self.fig, model)
+        line = ApertureLineView(model)
+        self.widgets[aperture_id] = (plot, line)
+        self.inner_controls.children.append(line.component)
 
     def delete_aperture(self, aperture_id):
-        """Remove an aperture by ID. If the ID is not recognized, do nothing.
-        """
-        if aperture_id in self.aperture_plots:
-            self.aperture_plots[aperture_id].delete()
-            self.inner_controls.children.remove(
-                self.aperture_lines[aperture_id].component)
-            del self.aperture_plots[aperture_id]
-            del self.aperture_lines[aperture_id]
+        """Remove an aperture by ID."""
+        if aperture_id in self.widgets:
+            plot, line = self.widgets[aperture_id]
+            plot.delete()
+            self.inner_controls.children.remove(line.component)
+            del self.widgets[aperture_id]
+
+    def renumber_apertures(self):
+        new_widgets = {}
+        for plot, line in self.widgets.values():
+            aperture_id = plot.model.source.data['id'][0]
+            new_widgets[aperture_id] = (plot, line)
+        self.widgets.clear()
+        self.widgets.update(new_widgets)
 
 
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
@@ -745,19 +762,23 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         fig.width_policy = 'fit'
 
         aperture_view = ApertureView(self.model, fig)
-        # self.model.add_listener(self)
 
         fig.step(x='x', y='y', source=self.model.profile_source,
                  color="black", mode="center")
 
-        add_button = Button(label="Add Aperture", button_type='primary')
+        add_button = Button(label="Add Aperture", button_type='primary',
+                            default_size=200)
         add_button.on_click(self.add_aperture)
+
+        renumber_button = Button(label="Renumber apertures",
+                                 button_type='primary', default_size=200)
+        renumber_button.on_click(self.model.renumber_apertures)
 
         helptext = Div(margin=(20, 0, 0, 35), sizing_mode='scale_width')
         controls = column(children=[
             params,
             aperture_view.controls,
-            add_button,
+            row(renumber_button, add_button),
         ])
 
         details_button = Button(label="Show detailed help",
