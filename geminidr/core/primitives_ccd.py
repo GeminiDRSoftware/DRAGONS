@@ -55,7 +55,7 @@ class CCD(PrimitivesBASE):
             log.warning("Bias correction has been turned off.")
             return adinputs
 
-        bias_list = bias or self.caldb.get_processed_bias(adinputs)
+        bias_list = bias or self.caldb.get_processed_bias(adinputs).files
 
         # Provide a bias AD object for every science frame
         for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):

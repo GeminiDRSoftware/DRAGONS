@@ -5,6 +5,8 @@
 # ------------------------------------------------------------------------------
 from os import path
 
+from importlib import import_module
+
 from ..config import globalConf
 from ..config import STANDARD_REDUCTION_CONF
 from ..config import DEFAULT_DIRECTORY
@@ -71,8 +73,20 @@ def get_calconf():
         pass
 
 
-def init_calibration_databases(ucals, default_dbname="cal_manager.db"):
-    caldb = UserDB(name="the darn pickle", user_cals=ucals)
+def init_calibration_databases(inst_lookups=None, ucals=None,
+                               default_dbname="cal_manager.db"):
+    try:
+        masks = import_module('.maskdb', inst_lookups)
+        mdf_dict = getattr(masks, 'mdf_dict')
+    except (ImportError, TypeError, AttributeError):
+        mdf_dict = None
+    else:
+        for k, v in mdf_dict.items():
+            mdf_dict[k] = path.join(path.dirname(masks.__file__),
+                                    'MDF', v)
+
+    caldb = UserDB(name="the darn pickle", mdf_dict=mdf_dict,
+                   user_cals=ucals)
     databases = globalConf["calibs"].databases.splitlines()
     for line in databases:
         kwargs = {"get": True,

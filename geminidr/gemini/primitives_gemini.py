@@ -54,11 +54,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if mdf is None:
-            self.getMDF(adinputs)
-            mdf_list = [self._get_cal(ad, 'mask') for ad in adinputs]
-        else:
-            mdf_list = mdf
+        mdf_list = mdf or self.caldb.get_calibrations(adinputs, caltype="mask").files
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
             if ad.phu.get(timestamp_key):

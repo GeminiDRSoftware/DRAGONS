@@ -1,4 +1,9 @@
-# Defines the UserDB class for calibration returns
+# Defines the UserDB class for calibration returns. The UserDB handles the
+# following things:
+#   - the user_cals provided to the Reduce() object
+#   - any manually-assigned calibrations in the pickle
+#   - standard MDFs
+
 import os
 import pickle
 
@@ -6,11 +11,14 @@ from .caldb import CalDB, CalReturn
 
 
 class UserDB(CalDB):
-    def __init__(self, name=None, user_cals=None, valid_caltypes=None,
-                 log=None):
+    def __init__(self, name=None, mdf_dict=None, user_cals=None,
+                 valid_caltypes=None, log=None):
         super().__init__(name=name, store=True, log=log,
                          valid_caltypes=valid_caltypes)
         self.cachefile = os.path.join(self.caldir, "calindex.pkl")
+        self.mdf_dict = mdf_dict
+        if self.mdf_dict:
+            self.log.debug(f"Read {len(mdf_dict)} standard MDFs.")
 
         self.user_cals = {}
         if user_cals:
@@ -23,8 +31,8 @@ class UserDB(CalDB):
 
         self.user_cache = self.load_cache()
         if self.user_cache:
-            self.log.debug(f"Found {len(self.user_cache)} manual calibrations"
-                           " in user cache file.")
+            self.log.stdinfo(f"Found {len(self.user_cache)} manual "
+                             "calibrations in user cache file.")
 
     def load_cache(self):
         try:
@@ -45,14 +53,24 @@ class UserDB(CalDB):
             return CalReturn([(self.user_cals[caltype], "user_cals")] *
                              len(adinputs))
 
-        # Go through the list one-by-one, looking in the user_cache
         cals = []
-        for ad in adinputs:
-            try:
-                cals.append((self.user_cache[ad.calibration_key(),
-                                             caltype], self.name))
-            except KeyError:
-                cals.append(None)
+        if caltype == "mask" and self.mdf_dict is not None:
+            for ad in adinputs:
+                key = '{}_{}'.format(ad.instrument(), ad.focal_plane_mask())
+                try:
+                    mdf_file = self.mdf_dict[key]
+                except KeyError:
+                    cals.append(None)
+                else:
+                    cals.append((mdf_file, "standard masks"))
+        else:
+            # Go through the list one-by-one, looking in the user_cache
+            for ad in adinputs:
+                try:
+                    cals.append((self.user_cache[ad.calibration_key(),
+                                                 caltype], self.name))
+                except KeyError:
+                    cals.append(None)
         return CalReturn(cals)
 
     def _store_calibration(self, cal, caltype=None):

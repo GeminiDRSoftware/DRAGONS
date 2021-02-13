@@ -37,7 +37,7 @@ class LocalDB(CalDB):
             if md5 == cached_md5:
                 cals.append(calfile)
             else:
-                self.log.warning(f"md5 checksum of {calfile} does not match."
+                self.log.warning(f"md5 checksum of {calfile} does not match. "
                                  "Not returning this calibration")
                 cals.append(None)
 

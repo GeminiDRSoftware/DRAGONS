@@ -408,7 +408,7 @@ class Preprocess(PrimitivesBASE):
             log.warning("Dark correction has been turned off.")
             return adinputs
 
-        dark_list = dark or self.caldb.get_processed_dark(adinputs)
+        dark_list = dark or self.caldb.get_processed_dark(adinputs).files
 
         # Provide a dark AD object for every science frame
         for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
@@ -721,7 +721,7 @@ class Preprocess(PrimitivesBASE):
             log.warning("Flat correction has been turned off.")
             return adinputs
 
-        flat_list = flat or self.caldb.get_processed_flat(adinputs)
+        flat_list = flat or self.caldb.get_processed_flat(adinputs).files
 
         # Provide a flatfield AD object for every science frame
         for ad, flat in zip(*gt.make_lists(adinputs, flat_list,

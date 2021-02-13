@@ -15,6 +15,7 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'processed_standard': ['PROCESSED', 'STANDARD'],
                      'processed_slitillum': ['PROCESSED', 'SLITILLUM'],
                      'bpm': ['BPM'],
+                     'mask': [],
                      }
 
 VALID_CALTYPES = REQUIRED_TAG_DICT.keys()

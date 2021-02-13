@@ -5,30 +5,13 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from importlib import import_module
 
 from gempy.gemini import gemini_tools as gt
-
-from recipe_system.cal_service.calrequestlib import get_cal_requests
 
 from geminidr import PrimitivesBASE
 from . import parameters_calibdb
 
 from recipe_system.utils.decorators import parameter_override
-
-# ------------------------------------------------------------------------------
-REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
-                     'processed_bias': ['PROCESSED', 'BIAS'],
-                     'processed_dark': ['PROCESSED', 'DARK'],
-                     'processed_flat': ['PROCESSED', 'FLAT'],
-                     'processed_fringe': ['PROCESSED', 'FRINGE'],
-                     'bpm': ['BPM'],
-                     'sq': [],
-                     'ql': [],
-                     'qa': [],
-                     'processed_standard': ['PROCESSED', 'STANDARD'],
-                     'processed_slitillum': ['PROCESSED', 'SLITILLUM']}
-
 
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -46,8 +29,11 @@ class CalibDB(PrimitivesBASE):
     def _assert_calibrations(self, adinputs, cals):
         log = self.log
         for ad, (calfile, origin) in zip(adinputs, cals.items()):
-            log.stdinfo(f"{ad.filename} has received calibration {calfile} "
-                        f"from {origin}")
+            if calfile:
+                log.stdinfo(f"{ad.filename}: received calibration {calfile} "
+                            f"from {origin}")
+            else:
+                log.warning(f"{ad.filename}: NO CALIBRATION RECEIVED")
         return adinputs
 
     def setCalibration(self, adinputs=None, **params):
@@ -116,40 +102,8 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
     def getMDF(self, adinputs=None):
-        caltype = "mask"
-        log = self.log
-        inst_lookups = self.inst_lookups
-        try:
-            masks = import_module('.maskdb', inst_lookups)
-            mdf_dict = getattr(masks, 'mdf_dict')
-        except (ImportError, AttributeError):
-            mdf_dict = None
-
-        rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
-        for ad in rqs_actual:
-            mask_name = ad.focal_plane_mask()
-            key = '{}_{}'.format(ad.instrument(), mask_name)
-            if mdf_dict is not None:
-                try:
-                    filename = mdf_dict[key]
-
-                    # Escape route to allow certain focal plane masks to
-                    # not require MDFs
-                    if filename is None:
-                        continue
-                    mdf = os.path.join(os.path.dirname(masks.__file__),
-                                       'MDF', filename)
-                except KeyError:
-                    log.warning("MDF not found in {}".format(inst_lookups))
-                else:
-                    self.calibrations[ad, caltype] = mdf
-                    continue
-            log.stdinfo("Requesting MDF from calibration server...")
-            mdf_requests = get_cal_requests([ad], caltype)
-            mdf_records = process_cal_requests(mdf_requests)
-            for ad, calfile in mdf_records.items():
-                self.calibrations[ad, caltype] = calfile
-
+        cals = self.caldb.get_calibrations(adinputs, caltype="mask")
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
     # =========================== STORE PRIMITIVES =================================
@@ -256,7 +210,7 @@ class CalibDB(PrimitivesBASE):
 
     def storeProcessedScience(self, adinputs=None, suffix=None):
         if self.mode not in ['sq', 'ql', 'qa']:
-            self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
+            self.log.warning(f'Mode {self.mode} not recognized in storeScience, not saving anything')
             return adinputs
 
         for ad in adinputs:
@@ -267,19 +221,8 @@ class CalibDB(PrimitivesBASE):
             if self.mode != 'qa' and self.upload and 'science' in self.upload:
                 old_filename = ad.filename
                 ad.update_filename(suffix=f"_{self.mode}"+suffix, strip=True)
-                ad.write(overwrite=True)
-                try:
-                    upload_calibration(ad.filename, is_science=True)
-                except:
-                    self.log.warning("Unable to upload file to science system")
-                else:
-                    msg = "File {} uploaded to fitsstore."
-                    self.log.stdinfo(msg.format(os.path.basename(ad.filename)))
-                # Rename file on disk to avoid writing twice
-                os.replace(ad.filename, old_filename)
+                self.caldb.store_calibration(ad, caltype="processed_science")
                 ad.filename = old_filename
-            else:
-                ad.write(overwrite=True)
 
         return adinputs
 

@@ -689,7 +689,7 @@ class Spect(PrimitivesBASE):
         subsample = params["subsample"]
 
         # Get a suitable arc frame (with distortion map) for every science AD
-        arc_list = arc or self.caldb.get_processed_arc(adinputs)
+        arc_list = arc or self.caldb.get_processed_arc(adinputs).files
 
         adoutputs = []
         # Provide an arc AD object for every science frame
@@ -1755,7 +1755,7 @@ class Spect(PrimitivesBASE):
         flux_units = u.Unit("W m-2")
 
         # Get a suitable specphot standard (with sensitivity function)
-        std_list = std or self.caldb.get_processed_standard(adinputs)
+        std_list = std or self.caldb.get_processed_standard(adinputs).files
 
         for ad, std in zip(*gt.make_lists(adinputs, std_list, force_ad=True)):
             if ad.phu.get(timestamp_key):

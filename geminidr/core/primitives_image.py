@@ -89,7 +89,7 @@ class Image(Preprocess, Register, Resample):
                 log.stdinfo("Using fringe frame in 'fringe' stream. "
                             "Setting scale=False")
             except (KeyError, AssertionError):
-                fringe_list = self.caldb.get_processed_fringe(adinputs)
+                fringe_list = self.caldb.get_processed_fringe(adinputs).files
         else:
             fringe_list = fringe
 
