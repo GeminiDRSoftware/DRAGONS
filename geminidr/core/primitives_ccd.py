@@ -35,8 +35,8 @@ class CCD(PrimitivesBASE):
         The biasCorrect primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
         frames. The variance and data quality extension will be updated, if
-        they exist. If no bias is provided, getProcessedBias will be called
-        to ensure a bias exists for every adinput.
+        they exist. If no bias is provided, the calibration database(s) will
+        be queried.
 
         Parameters
         ----------
@@ -55,11 +55,7 @@ class CCD(PrimitivesBASE):
             log.warning("Bias correction has been turned off.")
             return adinputs
 
-        if bias is None:
-            self.getProcessedBias(adinputs, refresh=False)
-            bias_list = self._get_cal(adinputs, 'processed_bias')
-        else:
-            bias_list = bias
+        bias_list = bias or self.caldb.get_processed_bias(adinputs)
 
         # Provide a bias AD object for every science frame
         for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):

@@ -388,8 +388,8 @@ class Preprocess(PrimitivesBASE):
         This primitive will subtract each SCI extension of the inputs by those
         of the corresponding dark. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the subtraction on the
-        data. If no dark is provided, getProcessedDark will be called to
-        ensure a dark exists for every adinput.
+        data. If no dark is provided, the calibration database(s) will be
+        queried.
 
         Parameters
         ----------
@@ -408,11 +408,7 @@ class Preprocess(PrimitivesBASE):
             log.warning("Dark correction has been turned off.")
             return adinputs
 
-        if dark is None:
-            self.getProcessedDark(adinputs, refresh=False)
-            dark_list = self._get_cal(adinputs, 'processed_dark')
-        else:
-            dark_list = dark
+        dark_list = dark or self.caldb.get_processed_dark(adinputs)
 
         # Provide a dark AD object for every science frame
         for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
@@ -700,8 +696,8 @@ class Preprocess(PrimitivesBASE):
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the division on the data.
-        If no flatfield is provided, getProcessedFlat will be called
-        to ensure a flat exists for every adinput.
+        If no flatfield is provided, the calibration database(s) will be
+        queried.
 
         If the flatfield has had a QE correction applied, this information is
         copied into the science header to avoid the correction being applied
@@ -725,11 +721,7 @@ class Preprocess(PrimitivesBASE):
             log.warning("Flat correction has been turned off.")
             return adinputs
 
-        if flat is None:
-            self.getProcessedFlat(adinputs, refresh=False)
-            flat_list = self._get_cal(adinputs, 'processed_flat')
-        else:
-            flat_list = flat
+        flat_list = flat or self.caldb.get_processed_flat(adinputs)
 
         # Provide a flatfield AD object for every science frame
         for ad, flat in zip(*gt.make_lists(adinputs, flat_list,

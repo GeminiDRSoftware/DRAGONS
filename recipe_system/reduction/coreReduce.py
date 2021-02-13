@@ -121,6 +121,7 @@ class Reduce:
         self.suffix = args.suffix
         self.ucals = normalize_ucals(args.files, args.user_cal)
         self.uparms = set_btypes(args.userparam)
+        self.config_file = args.config
         self._upload = args.upload
         self._output_filenames = None
         self.recipename = args.recipename if args.recipename else '_default'
@@ -200,7 +201,7 @@ class Reduce:
             raise
 
         p = pclass(adinputs, mode=self.mode, ucals=self.ucals, uparms=self.uparms,
-                   upload=self.upload)
+                   upload=self.upload, config_file=self.config_file)
 
         # Clean references to avoid keeping adinputs objects in memory one
         # there are no more needed.

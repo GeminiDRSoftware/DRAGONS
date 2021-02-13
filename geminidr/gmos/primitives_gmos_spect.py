@@ -170,11 +170,7 @@ class GMOSSpect(Spect, GMOS):
         use_iraf = params["use_iraf"]
 
         # Get a suitable arc frame (with distortion map) for every science AD
-        if arc is None:
-            self.getProcessedArc(adinputs, refresh=False)
-            arc_list = self._get_cal(adinputs, 'processed_arc')
-        else:
-            arc_list = arc
+        arc_list = arc or self.caldb.get_processed_arc(adinputs)
 
         for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
             if ad.phu.get(timestamp_key):

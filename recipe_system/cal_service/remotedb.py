@@ -37,6 +37,10 @@ class RemoteDB(CalDB):
             name = server
         super().__init__(name=name, get=get, store=store, log=log,
                          valid_caltypes=valid_caltypes)
+        # TODO: we want to make an MDF a full calibration, but currently
+        # we can only retrieve it from a remote location, so this handles that
+        if valid_caltypes is None:
+            self._valid_caltypes.append("mask")
         if not server.startswith("http"):  # allow https://
             server = f"http://{server}"
         self.server = server

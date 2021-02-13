@@ -71,39 +71,6 @@ def get_calconf():
         pass
 
 
-
-
-def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
-    """
-    Update the calibration service global configuration stored in
-    :data:`recipe_system.config.globalConf` by changing the path to the
-    configuration file and to the data base directory.
-
-    Parameters
-    ----------
-    local_db_dir: <str>
-        Name of the directory where the database will be stored.
-
-    config_file: <str>
-        Name of the configuration file that will be loaded.
-
-    """
-    globalConf.load(path.expanduser(config_file))
-
-    if localmanager_available:
-        if local_db_dir is None:
-            local_db_dir = globalConf['calibs'].database_dir
-
-        globalConf.update(
-            CONFIG_SECTION, dict(
-                database_dir=path.expanduser(local_db_dir),
-                config_file=path.expanduser(config_file)
-            )
-        )
-
-    globalConf.export_section(CONFIG_SECTION)
-
-
 def init_calibration_databases(ucals, default_dbname="cal_manager.db"):
     caldb = UserDB(name="the darn pickle", user_cals=ucals)
     databases = globalConf["calibs"].databases.splitlines()

@@ -343,7 +343,7 @@ def normalize_ucals(files, cals):
     Parameters
     ----------
     files : list
-        A list containing the input files.
+        A list containing the input files. NO LONGER USED.
     cals : list
         A list of strings like, 'caltype:calfilepath'.
 

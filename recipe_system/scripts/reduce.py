@@ -80,10 +80,6 @@ def main(args):
     except AssertionError:
         pass
 
-    # Override config
-    if args.config:
-        globalConf.load(args.config)
-
     log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
     log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))
     r_reduce = Reduce(args)

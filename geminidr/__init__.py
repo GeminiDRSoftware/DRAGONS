@@ -151,21 +151,26 @@ class PrimitivesBASE:
         A list of astrodata objects.
     mode : str
         Operational Mode, one of 'sq', 'qa', 'ql'.
+    ucals : dict
+        user-defined cals, e.g., {"processed_bias": "mybias.fits"}
+    uparms : dict
+        user-defined parameters, e.g., {"stackFrames:reject_method": "sigclip"}
     upload : list
         A list of products to upload to fitsstore.
         QA metrics uploaded if 'metrics' in upload.  E.g.::
 
             upload = ['metrics', ['calibs', ... ]]
 
+    config_file : str/None
+        name of DRAGONS configuration file (None => default)
     """
     tagset = None
 
-    def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None):
-        # This is a general config file so we should load it now. The user may
-        # have specified an override on the reduce command line, so don't load
-        # the default if we already have something in it.
-        if not globalConf._sections:
-            globalConf.load()
+    def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
+                 config_file=None):
+        # This is a general config file so we should load it now. Some of its
+        # information may be overridden by other parameters passed here.
+        globalConf.load(config_file)
 
         self.streams          = {'main': adinputs}
         self.mode             = mode
