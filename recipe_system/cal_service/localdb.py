@@ -16,7 +16,7 @@ class LocalDB(CalDB):
             name = dbfile
         super().__init__(name=name or dbfile, get=get, store=store, log=log,
                          valid_caltypes=valid_caltypes)
-        self._mgr = LocalManager(expanduser(dbfile))
+        self._calmgr = LocalManager(expanduser(dbfile))
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         cal_requests = get_cal_requests(adinputs, caltype, procmode=procmode,
@@ -25,7 +25,7 @@ class LocalDB(CalDB):
         for rq in cal_requests:
             # TODO: We can refactor this so it doesn't return lists or URLs,
             # since it no longer has to be the same format as RemoteDB
-            calurl, calmd5 = self._mgr.calibration_search(rq)
+            calurl, calmd5 = self._calmgr.calibration_search(rq)
             if not calurl:
                 cals.append(None)
                 continue
@@ -46,8 +46,12 @@ class LocalDB(CalDB):
 
     def _store_calibration(self, cal, caltype=None):
         """Store the calibration. The LocalDB is not interested in science"""
-        if caltype and "science" not in caltype:
-            self._mgr.ingest_file(cal)
+        if self.store:
+            if caltype and "science" not in caltype:
+                self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
+                self._calmgr.ingest_file(cal)
+        else:
+            self.log.stdinfo(f"{self.name}: NOT storing {cal} as {caltype}")
 
     # The following methods provide an API to modify the database, by
     # initializing it, removing a named calibration, and listing the files
@@ -73,9 +77,9 @@ class LocalDB(CalDB):
         LocalManagerError
             If the file exists and `wipe` was `False`
         """
-        return self._mgr.init_database(wipe=wipe)
+        return self._calmgr.init_database(wipe=wipe)
 
-    def add_cal(self, calfile):
+    def add_calibration(self, calfile):
         self._store_calibration(calfile)
 
     def remove_calibration(self, calfile):
@@ -88,7 +92,7 @@ class LocalDB(CalDB):
         calfile : <str>
             Path to the file. It can be either absolute or relative
         """
-        return self._mgr.remove_file(basename(calfile))
+        return self._calmgr.remove_file(basename(calfile))
 
     def list_files(self):
         """
@@ -104,4 +108,4 @@ class LocalDB(CalDB):
         LocalManagerError
             Raised when unable to read database.
         """
-        return self._mgr.list_files()
+        return self._calmgr.list_files()

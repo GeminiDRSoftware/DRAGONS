@@ -98,11 +98,15 @@ class RemoteDB(CalDB):
         return CalReturn([None if cal is None else (cal, self.name)
                           for cal in cals])
 
-
     def _store_calibration(self, cal, caltype=None):
         """Store calibration. If this is a processed_science, cal should be
         an AstroData object, otherwise it should be a filename"""
+        if not self.store:
+            self.log.stdinfo(f"{self.name}: NOT storing {cal} as {caltype}")
+            return
+
         assert isinstance(cal, str) ^ ("science" in caltype)
+        self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
         if "science" in caltype:
             # Write to a stream in memory, not to disk
             f = BytesIO()

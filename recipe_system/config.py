@@ -88,8 +88,7 @@ class ConfigObject:
                 # The option was not defined...
                 pass
 
-    def load(self, filenames=STANDARD_REDUCTION_CONF, defaults=None,
-             env_override=False):
+    def load(self, filenames=None, defaults=None, env_override=False):
         """
         Loads all or some entries from the specified section in a config file.
         The extracted values are set as environment variables, so that they are
@@ -117,7 +116,9 @@ class ConfigObject:
             from the config files.
 
         """
-        if isinstance(filenames, str):
+        if filenames is None:
+            filenames = (STANDARD_REDUCTION_CONF,)
+        elif isinstance(filenames, str):
             filenames = (filenames,)
 
         # Set the default values

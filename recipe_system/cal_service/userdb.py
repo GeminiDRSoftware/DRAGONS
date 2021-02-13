@@ -14,11 +14,12 @@ class UserDB(CalDB):
 
         self.user_cals = {}
         if user_cals:
-            for k, v in user_cals.items():
-                if k in self._valid_caltypes:
-                    self.user_cals[k] = v
+            for caltype, calfile in user_cals.items():
+                if caltype in self._valid_caltypes:
+                    self.user_cals[caltype] = calfile
+                    self.log.stdinfo(f"Manually assigned {calfile} as {caltype}")
                 else:
-                    raise ValueError("Unknown calibration type {!r}".format(k))
+                    raise ValueError("Unknown calibration type {!r}".format(caltype))
 
         self.user_cache = self.load_cache()
         if self.user_cache:

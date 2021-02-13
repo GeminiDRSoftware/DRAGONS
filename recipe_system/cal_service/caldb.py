@@ -171,7 +171,7 @@ class CalDB(metaclass=abc.ABCMeta):
         # Create storage directory if it doesn't exist and we've got an AD
         # object. This will only happen with the first CalDB to store,
         # since the calibration will be forwarded as a filename.
-        if self.store and not (isinstance(cal, str) or "science" in caltype):
+        if not (isinstance(cal, str) or "science" in caltype):
             if not os.path.exists(os.path.join(self.caldir, caltype)):
                 os.makedirs(os.path.join(self.caldir, caltype))
 
@@ -184,14 +184,12 @@ class CalDB(metaclass=abc.ABCMeta):
                 self.log.warning(
                     f"File {cal.filename} is not recognized as a"
                     f" {caltype}. Not storing as a calibration.")
+                return
             cal = fname
-            self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
-            self._store_calibrations(cal, caltype=caltype)
-        else:
-            self.log.stdinfo(f"{self.name}: NOT storing {cal} as {caltype}")
 
+        self._store_calibration(cal, caltype=caltype)
         if self.nextdb is not None:
-            self.nextdb.store_calibrations(cal, caltype=caltype)
+            self.nextdb.store_calibration(cal, caltype=caltype)
 
     @abc.abstractmethod
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):

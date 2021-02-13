@@ -87,13 +87,15 @@ def init_calibration_databases(ucals, default_dbname="cal_manager.db"):
                 kwargs["get"] = False
             else:
                 raise ValueError("{}: Unknown flag {!r}".format(db, flag))
-            if path.isdir(db):
-                db = path.join(db, default_dbname)
-                cls = LocalDB
-            elif path.isfile(db):
-                cls = LocalDB
-            else:  # does not check
-                cls = RemoteDB
-            caldb.add_database(cls(db, name=db, **kwargs))
+
+        if path.isdir(db):
+            db = path.join(db, default_dbname)
+            cls = LocalDB
+        elif path.isfile(db):
+            cls = LocalDB
+        else:  # does not check
+            cls = RemoteDB
+        print(cls.__name__, db, kwargs)
+        caldb.add_database(cls(db, name=db, **kwargs))
 
     return caldb
