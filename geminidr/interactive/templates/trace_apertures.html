@@ -49,15 +49,15 @@
         <div class="logo"><img src="dragons/static/DRAGONS.png"></div>
         <div class="banner">
             <div>
-                <div class="title">{{ primitive_title }}</div>
-                <div class="primitive-name">Primitive Name: {{ primitive_name }}</div>
+                <span class="title">{{ primitive_title }}</span>
+                <span class="primitive-name"> {{ primitive_name }} </span>
+                <span class="help"> <input type="button" value="Help" onclick=""> </span>
             </div>
-            <div class="filename-info">Finame: {{ filename_info }}</div>
         </div>
+        <div class="filename-info"> Filename Info: {{ filename_info }}</div>
     </div>
 
     <div class="plot_div">
-        Plot goes here.
         <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
         <div id="main_div">
             {% block main_div %}

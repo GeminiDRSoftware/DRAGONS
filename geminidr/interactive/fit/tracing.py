@@ -3,6 +3,7 @@ Interactive function and helper functions used to trace apertures.
 """
 import numpy as np
 from astropy import table
+from bokeh.layouts import layout
 
 from gempy.library import astromodels, astrotools, config, tracing
 
@@ -13,7 +14,33 @@ __all__ = ["interactive_trace_apertures", ]
 
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
-    pass
+    """
+    Custom visualizer for traceApertures().
+    """
+    def visualize(self, doc):
+        """
+        Start the bokeh document using this visualizer. This is a customized
+        version of Fit1DVisualizer.visualize() dedicated to traceApertures().
+
+        This call is responsible for filling in the bokeh document with
+        the user interface.
+
+        Parameters
+        ----------
+        doc : :class:`~bokeh.document.Document`
+            bokeh document to draw the UI in
+        """
+        super(Fit1DVisualizer, self).visualize(doc)
+
+        self.reinit_panel.css_classes += ['data_provider']
+        self.reinit_panel.sizing_mode = "stretch_width"
+
+        self.layout = layout([
+                [self.reinit_panel, self.submit_button],
+                [self.tabs]
+            ], sizing_mode="stretch_width")
+
+        doc.add_root(self.layout)
 
 
 def interactive_trace_apertures(ext, _config, _fit1d_params):
@@ -54,12 +81,14 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
     visualizer = TraceAperturesVisualizer(
         data_provider,
         config=_config,
+        filename_info=ext.filename,
         fitting_parameters=fit_par_list,
         tab_name_fmt="Aperture {}",
         xlabel='x',
         ylabel='y',
         reinit_extras=reinit_extras,
         domains=domain_list,
+        primitive_name="traceApertures()",
         template="trace_apertures.html",
         title="Trace Apertures")
 
