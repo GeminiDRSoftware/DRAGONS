@@ -756,27 +756,29 @@ def test_add_table():
     ad = astrodata.create({'OBJECT': 'M42'})
     ad.append(fakedata)
 
-    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.TABLE1 = tbl
+    ad.TABLE1 = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1'}
 
-    ad.TABLE2 = tbl
+    ad.TABLE2 = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1', 'TABLE2'}
 
-    ad.MYTABLE = tbl
+    ad.MYTABLE = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
 
-    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad[0].TABLE3 = tbl
-    ad[0].TABLE4 = tbl
-    ad[0].OTHERTABLE = tbl
+    ad[0].TABLE3 = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad[0].TABLE4 = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad[0].OTHERTABLE = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
 
     assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
 
-    expected_tables = {'MYTABLE', 'OTHERTABLE', 'TABLE1', 'TABLE2',
-                       'TABLE3', 'TABLE4'}
-    assert ad[0].tables == expected_tables
-    assert ad[0].exposed == expected_tables
+    assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
+    assert ad[0].tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
+    assert ad[0].ext_tables == {'OTHERTABLE', 'TABLE3', 'TABLE4'}
+    assert ad[0].exposed == {'MYTABLE', 'OTHERTABLE', 'TABLE1', 'TABLE2',
+                             'TABLE3', 'TABLE4'}
+
+    with pytest.raises(AttributeError):
+        ad.ext_tables
 
     assert set(ad[0].nddata.meta['other'].keys()) == {'OTHERTABLE',
                                                       'TABLE3', 'TABLE4'}
