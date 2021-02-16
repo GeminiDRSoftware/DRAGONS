@@ -26,6 +26,7 @@
 <!-- end favico stuff -->
 
 <link rel="stylesheet" href="dragons/static/dragons.css">
+<link rel="stylesheet" href="dragons/static/trace_apertures.css">
 
 <script
   src="https://code.jquery.com/jquery-3.5.1.min.js"
@@ -36,26 +37,27 @@
 {% endblock %}
 
 {% block contents %}
-<!-- modal, for long running bokeh code -->
-<div class="modal_overlay">
-    <b>Thinking...</b>
-</div>
-<!-- end modal -->
+
+    <!-- modal, for long running bokeh code -->
+    <div class="modal_overlay">
+        <b>Thinking...</b>
+    </div>
 
 <div class="container">
 
-    <div id="top">
-        <div id="top-icon"></div>
-        <div id="top-banner">
-            <div id="top-primitive-info">
-                <div id="top-title">{{ primitive_title }}</div>
-                <div id="top-primitive-name">{{ primitive_name }}</div>
+    <div class="top">
+        <div class="logo"><img src="dragons/static/DRAGONS.png"></div>
+        <div class="banner">
+            <div>
+                <div class="title">{{ primitive_title }}</div>
+                <div class="primitive-name">Primitive Name: {{ primitive_name }}</div>
             </div>
-            <!-- <div id="filename-info">{{ filename_info }}</div></div> -->
+            <div class="filename-info">Finame: {{ filename_info }}</div>
         </div>
     </div>
 
-    <div id="plot_div" style="border: 0px solid">
+    <div class="plot_div">
+        Plot goes here.
         <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
         <div id="main_div">
             {% block main_div %}
@@ -69,75 +71,78 @@
         </div>
     </div>
 
+    <div class="footer">
+        Made with
+        <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>
+    </div>
+
 </div>
 
-<script type="text/javascript">
-    // $("#plot_div").keydown(function(event) {
-    // document.getElementById("plot_div").addEventListener("keydown", function(event){
-    // doing whole document.  Or we could figure out how to target a bokeh-generated container div
-    // preventDefault causes the key not to pass to any widgets that are in focus, such as a text input
-    document.addEventListener("keydown", function(event){
-        switch(event.key){
-        case 'a':
-            $.ajax('/handle_key?key=a');
-            event.preventDefault()
-            break;
-        case 'b':
-            $.ajax('/handle_key?key=b');
-            event.preventDefault()
-            break;
-        case 'r':
-            $.ajax('/handle_key?key=r');
-            event.preventDefault()
-            break;
-        case 'd':
-            $.ajax('/handle_key?key=d');
-            event.preventDefault()
-            break;
-        case 'e':
-            $.ajax('/handle_key?key=e');
-            event.preventDefault()
-            break;
-        case 'f':
-            $.ajax('/handle_key?key=f');
-            event.preventDefault()
-            break;
-        case '[':
-            $.ajax('/handle_key?key=[');
-            event.preventDefault()
-            break;
-        case ']':
-            $.ajax('/handle_key?key=]');
-            event.preventDefault()
-            break;
-        case 'l':
-            $.ajax('/handle_key?key=l');
-            event.preventDefault()
-            break;
-        case '*':
-            $.ajax('/handle_key?key=*');
-            event.preventDefault()
-            break;
-        case 'm':
-            $.ajax('/handle_key?key=m');
-            event.preventDefault()
-            break;
-        case 'u':
-            $.ajax('/handle_key?key=u');
-            event.preventDefault()
-            break;
-        //case 65:
-        //  tabs.active = 0;
-        //  event.preventDefault()
-        //  break;
-        //case 66:
-        //  tabs.active = 1;
-        //  event.preventDefault()
-        //  break;
-        }
-     });
-</script>
-<div id="footer">
-Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
-</div>
+<!--<script type="text/javascript">-->
+<!--    // $("#plot_div").keydown(function(event) {-->
+<!--    // document.getElementById("plot_div").addEventListener("keydown", function(event){-->
+<!--    // doing whole document.  Or we could figure out how to target a bokeh-generated container div-->
+<!--    // preventDefault causes the key not to pass to any widgets that are in focus, such as a text input-->
+<!--    document.addEventListener("keydown", function(event){-->
+<!--        switch(event.key){-->
+<!--        case 'a':-->
+<!--            $.ajax('/handle_key?key=a');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'b':-->
+<!--            $.ajax('/handle_key?key=b');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'r':-->
+<!--            $.ajax('/handle_key?key=r');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'd':-->
+<!--            $.ajax('/handle_key?key=d');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'e':-->
+<!--            $.ajax('/handle_key?key=e');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'f':-->
+<!--            $.ajax('/handle_key?key=f');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case '[':-->
+<!--            $.ajax('/handle_key?key=[');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case ']':-->
+<!--            $.ajax('/handle_key?key=]');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'l':-->
+<!--            $.ajax('/handle_key?key=l');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case '*':-->
+<!--            $.ajax('/handle_key?key=*');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'm':-->
+<!--            $.ajax('/handle_key?key=m');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        case 'u':-->
+<!--            $.ajax('/handle_key?key=u');-->
+<!--            event.preventDefault()-->
+<!--            break;-->
+<!--        //case 65:-->
+<!--        //  tabs.active = 0;-->
+<!--        //  event.preventDefault()-->
+<!--        //  break;-->
+<!--        //case 66:-->
+<!--        //  tabs.active = 1;-->
+<!--        //  event.preventDefault()-->
+<!--        //  break;-->
+<!--        }-->
+<!--     });-->
+<!--</script>-->
+
 {% endblock %}
