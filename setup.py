@@ -98,7 +98,7 @@ setup(name='dragons',
       extras_require={
           'all': ['ginga', 'imexam'],
           'docs': ['sphinx', 'sphinx_rtd_theme'],
-          'test': ['pytest', 'coverage', 'objgraph', 'pandas'],
+          'test': ['pytest', 'coverage', 'objgraph'],
       },
       project_urls={
           'Issue Tracker': 'https://github.com/GeminiDRSoftware/DRAGONS',

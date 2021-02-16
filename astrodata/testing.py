@@ -7,7 +7,9 @@ import shutil
 import urllib
 import xml.etree.ElementTree as et
 
+import numpy as np
 import pytest
+from astropy.table import Table
 from astropy.utils.data import download_file
 
 URL = 'https://archive.gemini.edu/file/'
@@ -248,32 +250,27 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
 
 def get_associated_calibrations(filename, nbias=5):
     """
-    Queries Gemini Observatory Archive for associated calibrations to reduce the
-    data that will be used for testing.
+    Queries Gemini Observatory Archive for associated calibrations to reduce
+    the data that will be used for testing.
+
     Parameters
     ----------
     filename : str
         Input file name
     """
-    pd = pytest.importorskip("pandas", minversion='1.0.0')
-    url = "https://archive.gemini.edu/calmgr/{}".format(filename)
-
+    url = f"https://archive.gemini.edu/calmgr/{filename}"
     tree = et.parse(urllib.request.urlopen(url))
     root = tree.getroot()
     prefix = root.tag[:root.tag.rfind('}') + 1]
 
-    def iter_nodes(node):
+    rows = []
+    for node in tree.iter(prefix + 'calibration'):
         cal_type = node.find(prefix + 'caltype').text
         cal_filename = node.find(prefix + 'filename').text
-        return cal_filename, cal_type
+        if not ('processed_' in cal_filename or 'specphot' in cal_filename):
+            rows.append((cal_filename, cal_type))
 
-    cals = pd.DataFrame(
-        [iter_nodes(node) for node in tree.iter(prefix + 'calibration')],
-        columns=['filename', 'caltype'])
-
-    cals = cals.sort_values(by='filename')
-    cals = cals[~cals.caltype.str.contains('processed_')]
-    cals = cals[~cals.caltype.str.contains('specphot')]
-    cals = cals.drop(cals[cals.caltype.str.contains('bias')][nbias:].index)
-
-    return cals
+    tbl = Table(rows=rows, names=['filename', 'caltype'])
+    tbl.sort('filename')
+    tbl.remove_rows(np.where(tbl['caltype'] == 'bias')[0][nbias:])
+    return tbl
