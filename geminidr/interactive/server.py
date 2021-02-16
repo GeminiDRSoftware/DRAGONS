@@ -136,6 +136,10 @@ def _bkapp(doc):
         doc.template = t
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
         doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
+
+        if hasattr(_visualizer, "filename_info"):
+            doc.template_variables['filename_info'] = _visualizer.filename_info
+
     _visualizer.visualize(doc)
     doc.title = title
 
