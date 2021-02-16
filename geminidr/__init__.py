@@ -110,6 +110,13 @@ class Calibrations:
         key = (ad.calibration_key(), caltype)
         if key in self._usercals:
             return self._usercals[key]
+        # If we've stacked images, the datalabel won't match so see if we
+        # can match the original datalabel (without "-STACK")
+        elif isinstance(key[0], str):
+            try:
+                return self._usercals[key[0].replace("-STACK", ""), key[1]]
+            except KeyError:
+                pass
         calfile = self._dict.get(key)
         return calfile
 
