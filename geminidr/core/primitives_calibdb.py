@@ -272,7 +272,7 @@ class CalibDB(PrimitivesBASE):
         """
         for ad in adinputs:
             # if user mode: not uploading and sq, don't add mode.
-            if self.mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+            if self.mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
                 proc_suffix = f""
             else:
                 proc_suffix = f"_{self.mode}"

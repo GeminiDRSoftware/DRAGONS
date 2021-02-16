@@ -22,6 +22,16 @@ datasets = {
         "user_pars": [],
     },
 
+    # "GN-2018B-Q-108-27": {
+    #     "arcs": ["N20181011S0220.fits"],
+    #     "bias": ["N20181011S0609.fits", "N20181011S0610.fits",
+    #              "N20181011S0611.fits", "N20181011S0612.fits",
+    #              "N20181011S0613.fits"],
+    #     "flat": ["N20181011S0219.fits", "N20181011S0225.fits"],
+    #     "sci": [f"N20181011S{i:04d}.fits" for i in range(221, 225)],
+    #     "user_pars": [],
+    # }
+
     # 'GS-2016B-Q-54-32': {
     #     "arcs": ["S20170103S0149.fits", "S20170103S0152.fits"],
     #     "bias": [f"S20170103S{i:04d}.fits" for i in range(216, 221)],
@@ -80,6 +90,13 @@ def test_reduce_ls_spect(change_working_dir, keep_data, test_case):
         # Reducing science
         if "sci" in datasets[test_case]:
 
+            std_fname = [c.replace("processed_standard:", "")
+                         for c in cals if "processed_standard" in c]
+
+            if std_fname:
+                datasets[test_case]["user_pars"] += \
+                    [("fluxCalibrate:standard", std_fname.pop())]
+
             sci_filenames = datasets[test_case]["sci"]
             sci_paths = [download_from_archive(f) for f in sci_filenames]
             _ = reduce(sci_paths, f"sci_{test_case}", cals,
@@ -120,6 +137,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
 
     logutils.get_logger().info("\n\n\n")
     logutils.config(file_name=f"test_image_{label}.log")
+
     r = Reduce()
     r.files = file_list
     r.ucals = normalize_ucals(r.files, calib_files)

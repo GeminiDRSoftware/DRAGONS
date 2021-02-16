@@ -2251,14 +2251,14 @@ class Spect(PrimitivesBASE):
                     ad_out = new_ext
                 else:
                     ad_out.append(new_ext[0])
-                if ndim == 2:
-                    try:
-                        offset = slit_offset.offset.value
-                        ext.APERTURE['c0'] += offset
-                        log.fullinfo("Shifting aperture locations by {:.2f} "
-                                     "pixels".format(offset))
-                    except AttributeError:
-                        pass
+                #if ndim == 2:
+                #    try:
+                #        offset = slit_offset.offset.value
+                #        ext.APERTURE['c0'] += offset
+                #        log.fullinfo("Shifting aperture locations by {:.2f} "
+                #                     "pixels".format(offset))
+                #    except AttributeError:
+                #        pass
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)

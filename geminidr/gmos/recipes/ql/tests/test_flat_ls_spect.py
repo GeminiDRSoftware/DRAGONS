@@ -89,8 +89,8 @@ def test_regression_processed_flat(processed_flat, ref_ad_factory):
     """
     ref_flat = ref_ad_factory(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
-        astrodata.testing.assert_most_equal(ext.mask, ext_ref.mask, 10)
-        astrodata.testing.assert_most_close(ext.data, ext_ref.data, 10, atol=0.01)
+        astrodata.testing.assert_most_equal(ext.mask, ext_ref.mask, 30)
+        astrodata.testing.assert_most_close(ext.data, ext_ref.data, 30, atol=0.01)
 
 
 # -- Fixtures ----------------------------------------------------------------

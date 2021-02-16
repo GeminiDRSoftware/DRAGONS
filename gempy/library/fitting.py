@@ -140,7 +140,7 @@ class fit_1D:
                  grow=False, regions=None, plot=False):
 
         # Save the fitting parameter values:
-        self.points = points
+        self.points = None if points is None else np.array(points)
         self.function = function
         self.domain = domain
         self.order = order
@@ -242,7 +242,7 @@ class fit_1D:
         self._tmpshape = image.shape
         image = image.reshape(stack_shape)
         if weights is not None:
-            weights = np.rollaxis(weights, self.axis,
+            weights = np.rollaxis(np.array(weights), self.axis,
                                   ax_before).reshape(stack_shape)
 
         # Record intermediate array properties for later evaluation of models
