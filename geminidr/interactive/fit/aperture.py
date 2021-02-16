@@ -814,7 +814,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             list of locations and list of the limits as tuples
 
         """
-        res = (model.result() for model in self.model.aperture_models.values())
+        models = self.model.aperture_models
+        res = (models[id_].result() for id_ in sorted(models.keys()))
         locations, limits = zip(*res)
         return np.array(locations), limits
 
