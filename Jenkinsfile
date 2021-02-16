@@ -52,13 +52,14 @@ pipeline {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "unit_tests_outputs/"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml'
+                        sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -84,6 +85,7 @@ pipeline {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "./integ_tests_outputs/"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -91,7 +93,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Integration tests"
-                        sh 'tox -e py37-integ -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml'
+                        sh 'tox -e py37-integ -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F integration'
                     } // end steps
@@ -111,6 +113,7 @@ pipeline {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "regression_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -118,7 +121,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Regression tests"
-                        sh 'tox -e py37-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml'
+                        sh 'tox -e py37-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F regression'
                     } // end steps
@@ -138,13 +141,14 @@ pipeline {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "gmosls_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests"
-                        sh 'tox -e py37-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml'
+                        sh 'tox -e py37-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F gmosls'
                     }  // end steps
@@ -169,6 +173,7 @@ pipeline {
                 MPLBACKEND = "agg"
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "regression_tests_outputs"
+                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -176,7 +181,7 @@ pipeline {
                 echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Slow tests"
-                sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml'
+                sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F slow'
             } // end steps
