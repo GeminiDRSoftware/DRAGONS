@@ -32,15 +32,27 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         """
         super(Fit1DVisualizer, self).visualize(doc)
 
+        # self.update_submit_button()
+
         self.reinit_panel.css_classes += ['data_provider']
         self.reinit_panel.sizing_mode = "stretch_width"
 
+        print(self.widgets)
+
         self.layout = layout([
-                [self.reinit_panel, self.submit_button],
-                [self.tabs]
-            ], sizing_mode="stretch_width")
+                [self.submit_button],
+                [self.tabs, self.reinit_panel],
+            ], sizing_mode="stretch_width", name="all_panels")
 
         doc.add_root(self.layout)
+
+    # def update_button_classes(self):
+    #     """
+    #     Remove standard bokeh CSS classes and adds new custom classes.
+    #     """
+    #     self.submit_button.css_classes = [
+    #         c for c in self.submit_button.css_classes
+    #         if c not in ["bk-btn, bk-btn-success"]]
 
 
 def interactive_trace_apertures(ext, _config, _fit1d_params):
@@ -77,6 +89,8 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
 
     def data_provider(conf, extra):
         return trace_apertures_data_provider(ext, conf, extra)
+
+    print(">>>>", ext.filename)
 
     visualizer = TraceAperturesVisualizer(
         data_provider,

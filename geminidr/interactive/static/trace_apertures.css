@@ -9,6 +9,21 @@ body {
     position: unset;
 }
 
+.bk-btn.bk-btn-success {
+    border-radius: 20px;
+    font-size: 16px;
+    padding: 5px 20px 5px 20px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-warning {
+    border-radius: 20px;
+    font-size: 16px;
+    padding: 5px 20px 5px 20px;
+    transition: all .2s ease-in-out;
+}
+
+
 .bk-root {
     width: fit-content;
 }
@@ -64,6 +79,7 @@ body {
     border: 0px solid white;
     border-radius: 20px;
     color: gainsboro;
+    font-size: 16px;
     float: right;
     margin-right: 32px;
     padding: 10px 20px 10px 20px;
@@ -87,8 +103,8 @@ body {
 }
 
 .top .banner .primitive-name {
-    color: silver;
-    font-size: 16px;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 18px;
     padding: 10px;
     vertical-align: middle;
 }
@@ -101,7 +117,7 @@ body {
 
 .top .filename-info {
     background: white;
-    color: black;
+    color: #666666;
     padding: 10px;
 }
 

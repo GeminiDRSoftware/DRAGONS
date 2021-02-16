@@ -34,7 +34,12 @@ class PrimitiveVisualizer(ABC):
 
         self.user_satisfied = False
 
-        self.submit_button = Button(label="Accept", align='center', button_type='success', width_policy='min')
+        self.submit_button = Button(align='center',
+                                    button_type='success',
+                                    label="Accept",
+                                    name="submit_button",
+                                    width_policy='min')
+
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
             window.close();
@@ -290,7 +295,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         slider = Slider(start=start, end=end, value=value, step=step, title=title, format=fmt)
     else:
         slider = Slider(start=start, end=end, value=value, step=step, title=title)
-    slider.width = 256
+    slider.width = 128
 
     text_input = TextInput(width=64, value=str(value))
     component = row(slider, text_input)
