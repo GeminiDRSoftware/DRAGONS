@@ -8,7 +8,7 @@ source =
 omit =
    */conftest.py
    */*tests/*
-   gempy/library/config/*
+   */gempy/library/config/*
 
 [report]
 show_missing = false
