@@ -239,7 +239,6 @@ class LocalManager:
         caltype = rq.caltype
         descripts = rq.descriptors
         types = rq.tags
-        log.stdinfo("LOCAL CALIBRATION SEARCH:")
 
         if "ut_datetime" in descripts:
             utc = descripts["ut_datetime"]

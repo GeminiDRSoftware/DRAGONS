@@ -408,25 +408,26 @@ class Preprocess(PrimitivesBASE):
             log.warning("Dark correction has been turned off.")
             return adinputs
 
-        dark_list = dark or self.caldb.get_processed_dark(adinputs).files
+        if dark is None:
+            dark_list = self.caldb.get_processed_dark(adinputs)
+        else:
+            dark_list = (dark, None)
 
-        # Provide a dark AD object for every science frame
-        for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
-                                           force_ad=True)):
+        # Provide a dark AD object for every science frame, and an origin
+        for ad, dark, origin in zip(*gt.make_lists(adinputs, *dark_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by darkCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "darkCorrect. Continuing.")
                 continue
 
             if dark is None:
-                if 'sq' not in self.mode:
-                    log.warning("No changes will be made to {}, since no "
-                                "dark was specified".format(ad.filename))
-                    continue
+                if 'sq' in self.mode:
+                    raise OSError(f"No processed dark listed for {ad.filename}")
                 else:
-                    raise OSError("No processed dark listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no dark was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching binning, shapes & units
             # TODO: Check exposure time?
@@ -441,9 +442,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, dark, check_filter=False,
                                       check_units=True)
 
-            log.fullinfo("Subtracting the dark ({}) from the input "
-                         "AstroData object {}".
-                         format(dark.filename, ad.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.fullinfo(f"{ad.filename}: subtracting the dark "
+                         f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename
@@ -721,26 +722,26 @@ class Preprocess(PrimitivesBASE):
             log.warning("Flat correction has been turned off.")
             return adinputs
 
-        flat_list = flat or self.caldb.get_processed_flat(adinputs).files
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
 
-        # Provide a flatfield AD object for every science frame
-        for ad, flat in zip(*gt.make_lists(adinputs, flat_list,
-                                           force_ad=True)):
+        # Provide a bflat AD object for every science frame, and an origin
+        for ad, bias, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by flatCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "flatCorrect. Continuing.")
                 continue
 
             if flat is None:
-                if 'sq' not in self.mode:
-                    log.warning("No changes will be made to {}, since no "
-                                "flatfield has been specified".
-                                format(ad.filename))
-                    continue
+                if 'sq' in self.mode:
+                    raise OSError(f"No processed flat listed for {ad.filename}")
                 else:
-                    raise OSError("No processed flat listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no flat was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -755,8 +756,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, flat)
 
             # Do the division
-            log.fullinfo("Dividing the input AstroData object {} by this "
-                         "flat:\n{}".format(ad.filename, flat.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: dividing by the flat "
+                         f"{flat.filename}{origin_str}")
             ad.divide(flat)
 
             # Update the header and filename, copying QECORR keyword from flat

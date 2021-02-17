@@ -19,6 +19,7 @@ class LocalDB(CalDB):
         self._calmgr = LocalManager(expanduser(dbfile))
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
+        self.log.debug(f"Querying {self.name} for {caltype}")
         cal_requests = get_cal_requests(adinputs, caltype, procmode=procmode,
                                         is_local=True)
         cals = []
@@ -35,6 +36,7 @@ class LocalDB(CalDB):
             calfile, md5 = calurl[0][7:], calmd5[0]  # strip "file://"
             cached_md5 = generate_md5_digest(calfile)
             if md5 == cached_md5:
+                self.log.debug(f"{rq.filename}: retrieved {calfile}")
                 cals.append(calfile)
             else:
                 self.log.warning(f"md5 checksum of {calfile} does not match. "

@@ -223,7 +223,9 @@ class CalReturn:
     origins : list of origins
 
     There is also an items() method that returns these lists as zipped pairs,
-    like the dict.items() method.
+    like the dict.items() method. Iteration is set up to return first the
+    complete list of files, then the complete list of origins, which helps
+    with coding the cheeseCorrect() primitives.
     """
     def __init__(self, *args):
         if len(args) == 1:
@@ -234,6 +236,10 @@ class CalReturn:
         else:
             raise ValueError("CalReturn must be initialized with 1 or 2 "
                              "arguments")
+
+    def __iter__(self):
+        for ret in (self.files, self.origins):
+            yield ret
 
     def items(self):
         return list((file, origin) for file, origin in zip(self.files,

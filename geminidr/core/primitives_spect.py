@@ -1755,29 +1755,35 @@ class Spect(PrimitivesBASE):
         flux_units = u.Unit("W m-2")
 
         # Get a suitable specphot standard (with sensitivity function)
-        std_list = std or self.caldb.get_processed_standard(adinputs).files
+        if std is None:
+            std_list = self.caldb.get_processed_standard(adinputs)
+        else:
+            std_list = (std, None)
 
-        for ad, std in zip(*gt.make_lists(adinputs, std_list, force_ad=True)):
+        # Provide a standard AD object for every science frame, and an origin
+        for ad, bias, origin in zip(*gt.make_lists(adinputs, *std_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by fluxCalibrate".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "fluxCalibrate. Continuing.")
                 continue
 
             if std is None:
                 if 'sq' in self.mode:
-                    raise OSError('No processed standard listed for {}'.
-                                  format(ad.filename))
+                    raise OSError(f"No processed standard listed for {ad.filename}")
                 else:
-                    log.warning("No changes will be made to {}, since no "
-                                "standard was specified".format(ad.filename))
+                    log.warning(f"{ad.filename}: no standard was specified. "
+                                "Continuing.")
                     continue
 
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
+                        f"{origin_str}")
             len_std, len_ad = len(std), len(ad)
             if len_std not in (1, len_ad):
-                log.warning("{} has {} extensions so cannot be used to "
-                            "calibrate {} with {} extensions".
-                            format(std.filename, len_std, ad.filename, len_ad))
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{std.filename} has {len_std} extensions so "
+                            "cannot flux calibrate.")
                 continue
 
             if not all(hasattr(ext, "SENSFUNC") for ext in std):
@@ -1826,9 +1832,9 @@ class Spect(PrimitivesBASE):
                         ext /= exptime
                         sci_flux_unit /= u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
-                        log.warning("{} has incompatible units ('{}' and '{}')."
-                                    "Cannot flux calibrate"
-                                    .format(extname, sci_flux_unit, std_flux_unit))
+                        log.warning(f"{extname} has incompatible units "
+                                    f"('{sci_flux_unit}' and '{std_flux_unit}'"
+                                    "). Cannot flux calibrate")
                         continue
                 else:
                     log.warning("Cannot determine units of data and/or SENSFUNC "
@@ -1863,10 +1869,11 @@ class Spect(PrimitivesBASE):
                 if delta_airmass != 0:
                     telescope = ad.telescope()
                     try:
-                        extinction_correction = extinct.extinction(waves, telescope=telescope)
+                        extinction_correction = extinct.extinction(
+                            waves, telescope=telescope)
                     except KeyError:
-                        log.warning("Telescope {} not recognized. "
-                                    "Not making an airmass correction.".format(telescope))
+                        log.warning(f"Telescope {telescope} not recognized. "
+                                    "Not making an airmass correction.")
                     else:
                         log.stdinfo("Correcting for difference of {:5.3f} "
                                     "airmasses".format(delta_airmass))
