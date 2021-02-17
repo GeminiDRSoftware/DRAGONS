@@ -612,6 +612,11 @@ class Spect(PrimitivesBASE):
         arc = params["arc"]
         order = params["order"]
         subsample = params["subsample"]
+        do_cal = params["do_cal"]
+
+        if do_cal == 'skip':
+            log.warning('Distortion correction has been turned off.')
+            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
@@ -628,7 +633,7 @@ class Spect(PrimitivesBASE):
 
             len_ad = len(ad)
             if arc is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     # TODO: Think about this when we have MOS/XD/IFU
                     if len(ad) == 1:
                         log.warning("No changes will be made to {}, since no "
@@ -1659,10 +1664,16 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         std = params["standard"]
         final_units = params["units"]
+        do_cal = params["do_cal"]
 
         # Expectation is that the SENSFUNC table will be in units
         # like (electron/s) / (W/m^2)
         flux_units = u.Unit("W m-2")
+
+        if do_cal == 'skip':
+            log.warning("Flux calibration has been turned off.")
+            return adinputs
+
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if std is None:
@@ -1679,7 +1690,7 @@ class Spect(PrimitivesBASE):
                 continue
 
             if std is None:
-                if 'sq' in self.mode:
+                if 'sq' in self.mode and do_cal != 'force':
                     raise OSError('No processed standard listed for {}'.
                                   format(ad.filename))
                 else:

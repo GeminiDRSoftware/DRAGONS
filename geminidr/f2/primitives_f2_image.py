@@ -61,7 +61,7 @@ class F2Image(F2, Image, Photometry):
             elif flat_list:
                 log.fullinfo("Only had flats to stack. Calling darkCorrect.")
                 flat_list = self.darkCorrect(flat_list, suffix="_flat",
-                                             dark=None, do_dark=True)
+                                             dark=None, do_cal='procmode')
                 return flat_list
             else:
                 return []

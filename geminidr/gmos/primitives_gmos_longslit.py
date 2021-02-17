@@ -626,7 +626,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         timestamp_key = self.timestamp_keys[self.myself()]
         qecorr_key = self.timestamp_keys['QECorrect']
 
-        if not do_illum:
+        if do_cal == 'skip':
             log.warning("Slit Illumination correction has been turned off.")
             return adinputs
 
@@ -646,7 +646,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 continue
 
             if slit_illum_ad is None:
-                if self.mode in ['sq']:
+                if self.mode in ['sq'] or do_cal == 'force':
                     raise OSError(
                         "No processed slit illumination listed for {}".format(
                             ad.filename))

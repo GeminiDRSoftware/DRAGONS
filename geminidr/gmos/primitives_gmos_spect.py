@@ -156,6 +156,11 @@ class GMOSSpect(Spect, GMOS):
 
         sfx = params["suffix"]
         arc = params["arc"]
+        do_cal = params["do_cal"]
+
+        if do_cal == 'skip':
+            log.warning("QE correction has been turned off.")
+            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
@@ -206,7 +211,7 @@ class GMOSSpect(Spect, GMOS):
                             "frame. This is unexpected but I'll continue.")
 
             if arc is None:
-                if 'sq' in self.mode:
+                if 'sq' in self.mode or do_cal == 'force':
                     raise OSError(f"No processed arc listed for {ad.filename}")
                 else:
                     log.warning(f"No arc supplied for {ad.filename}")
@@ -214,7 +219,7 @@ class GMOSSpect(Spect, GMOS):
                 # OK, we definitely want to try to do this, get a wavelength solution
                 if self.timestamp_keys['determineWavelengthSolution'] not in arc.phu:
                     msg = f"Arc {arc.filename} (for {ad.filename} has not been wavelength calibrated."
-                    if 'sq' in self.mode:
+                    if 'sq' in self.mode or do_cal == 'force':
                         raise IOError(msg)
                     else:
                         log.warning(msg)
@@ -223,7 +228,7 @@ class GMOSSpect(Spect, GMOS):
                 arc_wcs = deepcopy(arc[0].wcs)
                 if 'distortion_corrected' not in arc_wcs.available_frames:
                     msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
-                    if 'sq' in self.mode:
+                    if 'sq' in self.mode or do_cal == 'force':
                         raise OSError(msg)
                     else:
                         log.warning(msg)

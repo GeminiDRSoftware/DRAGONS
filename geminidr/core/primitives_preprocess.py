@@ -415,7 +415,7 @@ class Preprocess(PrimitivesBASE):
 
         return adinputs
 
-    def darkCorrect(self, adinputs=None, suffix=None, dark=None, do_dark=True):
+    def darkCorrect(self, adinputs=None, suffix=None, dark=None, do_cal=None):
         """
         This primitive will subtract each SCI extension of the inputs by those
         of the corresponding dark. If the inputs contain VAR or DQ frames,
@@ -436,7 +436,7 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if not do_dark:
+        if do_cal == 'skip':
             log.warning("Dark correction has been turned off.")
             return adinputs
 
@@ -456,7 +456,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if dark is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "dark was specified".format(ad.filename))
                     continue
@@ -534,7 +534,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_flat=True):
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
@@ -560,7 +560,7 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         qecorr_key = self.timestamp_keys['QECorrect']
 
-        if not do_flat:
+        if do_cal == 'skip':
             log.warning("Flat correction has been turned off.")
             return adinputs
 
@@ -580,7 +580,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if flat is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "flatfield has been specified".
                                 format(ad.filename))
