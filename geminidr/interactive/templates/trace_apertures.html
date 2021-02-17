@@ -51,13 +51,13 @@
             <div>
                 <span class="title">{{ primitive_title }}</span>
                 <span class="primitive-name"> {{ primitive_name }} </span>
-                <span class="help"> <input type="button" value="Help" onclick=""> </span>
+                <span> <input class="help" type="button" value="Help" onclick=""> </span>
             </div>
         </div>
-        <div class="filename-info"> Filename Info: {{ filename_info }} </div>
     </div>
 
     <div class="plot_div">
+<!--        <div class="filename-info"> Filename Info: {{ filename_info }} </div>-->
         <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
         <div id="main_div">
             {% block main_div %}

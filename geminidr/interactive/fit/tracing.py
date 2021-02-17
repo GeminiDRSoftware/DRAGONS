@@ -3,7 +3,8 @@ Interactive function and helper functions used to trace apertures.
 """
 import numpy as np
 from astropy import table
-from bokeh.layouts import layout
+from bokeh.models import Div
+from bokeh.layouts import column, layout, row
 
 from gempy.library import astromodels, astrotools, config, tracing
 
@@ -32,19 +33,23 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         """
         super(Fit1DVisualizer, self).visualize(doc)
 
-        # self.update_submit_button()
+        filename_info_div = Div(
+            css_classes=["filename-info"],
+            text=f"Current filename: {self.filename_info}",
+            width_policy="max")
 
-        self.reinit_panel.css_classes += ['data_provider']
-        self.reinit_panel.sizing_mode = "stretch_width"
+        top_row = layout(
+            [[filename_info_div, self.submit_button]],
+            css_classes=["top_row"],
+            width_policy="max")
 
-        print(self.widgets)
+        content_row = layout(
+            [[self.tabs, self.reinit_panel]],
+            css_classes=["content_row"],
+            sizing_mode="stretch_width")
 
-        self.layout = layout([
-                [self.submit_button],
-                [self.tabs, self.reinit_panel],
-            ], sizing_mode="stretch_width", name="all_panels")
-
-        doc.add_root(self.layout)
+        doc.add_root(top_row)
+        doc.add_root(content_row)
 
     # def update_button_classes(self):
     #     """

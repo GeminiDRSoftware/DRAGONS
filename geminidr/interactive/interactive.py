@@ -12,7 +12,8 @@ from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title='', primitive_name='', filename_info='', template=None):
+    def __init__(self, config=None, title='', primitive_name='',
+                 filename_info='', template=None):
         """
         Initialize a visualizer.
 

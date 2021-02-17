@@ -809,6 +809,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  xlabel='x', ylabel='y',
                  domains=None, function=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html",
+                 template_variables=None,
                  **kwargs):
         """
         Parameters
@@ -849,8 +850,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         title : str
             Title for UI (Interactive <Title>)
         """
-        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
-                         template=template)
+        super().__init__(config=config,
+                         filename_info=filename_info,
+                         primitive_name=primitive_name,
+                         template=template,
+                         title=title)
+
         self.layout = None
 
         # Make the widgets accessible from external code so we can update
