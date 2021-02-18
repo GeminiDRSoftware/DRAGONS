@@ -573,7 +573,10 @@ class Fit1DPanel:
 
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
-        reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
+        reset_button = bm.Button(align='end',
+                                 button_type='warning',
+                                 label="Reset",
+                                 width_policy='min')
 
         def reset_dialog_handler(result):
             if result:
@@ -583,7 +586,7 @@ class Fit1DPanel:
                                                                   'to their original values.  Proceed?',
                                                                   reset_dialog_handler)
 
-        controller_div = Div()
+        controller_div = Div(name="help_text", width_policy="min")
         self.info_div = Div()
 
         controls_ls.extend(controls_column)
@@ -591,8 +594,9 @@ class Fit1DPanel:
         reset_button.align = 'center'
         controls_ls.append(reset_button)
         controls_ls.append(controller_div)
-
         controls = column(*controls_ls)
+
+        self.controller_div = controller_div
 
         # Now the figures
         x_range = None
@@ -664,7 +668,7 @@ class Fit1DPanel:
             self.band_model = None
             mask_handlers = None
 
-        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
+        self.controller = Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
         fig_column = [p_main, self.info_div]
 
         if plot_residuals:

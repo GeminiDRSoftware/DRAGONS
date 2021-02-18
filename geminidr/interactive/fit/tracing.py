@@ -33,31 +33,56 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         """
         super(Fit1DVisualizer, self).visualize(doc)
 
-        filename_info_div = Div(
-            css_classes=["filename-info"],
+        filename = Div(
             text=f"Current filename: {self.filename_info}",
-            width_policy="max")
+            id="_filename",
+            css_classes=["filename"],
+            height_policy="max",
+            max_width=1024,
+            width_policy="max",
+            name="filename",
+            style={
+                "background": "white",
+                "color": "#666666",
+                "padding": "10px",
+                "vertical-align": "middle",
+            },
+        )
 
-        top_row = layout(
-            [[filename_info_div, self.submit_button]],
-            css_classes=["top_row"],
-            width_policy="max")
+        print(">>>>> -------- <<<<<")
+        print(filename)
+        print(self.submit_button)
 
-        content_row = layout(
-            [[self.tabs, self.reinit_panel]],
-            css_classes=["content_row"],
-            sizing_mode="stretch_width")
+        upper_row = row(filename, self.submit_button,
+                        css_classes=["upper_row"],
+                        margin=(0, 0, 0, 84),  # (Top, Right, Bottom, Left)
+                        max_width=1024,
+                        name="upper_row",
+                        sizing_mode="stretch_width",
+                        width_policy="max",
+                        )
 
-        doc.add_root(top_row)
-        doc.add_root(content_row)
+        self.reinit_panel.css_classes = ["data_source"]
+        self.reinit_panel.sizing_mode = "fixed"
 
-    # def update_button_classes(self):
-    #     """
-    #     Remove standard bokeh CSS classes and adds new custom classes.
-    #     """
-    #     self.submit_button.css_classes = [
-    #         c for c in self.submit_button.css_classes
-    #         if c not in ["bk-btn, bk-btn-success"]]
+        print("---")
+        print(self.reinit_panel.children)
+        for key, val in self.reinit_panel.properties_with_values().items():
+            print(key, val)
+
+        self.tabs[0].controller_div
+
+        lower_row = row(self.tabs, self.reinit_panel,
+                        css_classes=["lower_row"],
+                        name="lower_row",
+                        sizing_mode="stretch_width")
+
+        all_content = column(upper_row, lower_row,
+                             name="all_content",
+                             sizing_mode="stretch_width",
+                             height_policy="max")
+
+        doc.add_root(all_content)
 
 
 def interactive_trace_apertures(ext, _config, _fit1d_params):

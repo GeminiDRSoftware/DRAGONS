@@ -5,10 +5,6 @@ body {
     font-size: 16px;
     }
 
-.bk {
-    position: unset;
-}
-
 .bk-btn.bk-btn-success {
     border-radius: 20px;
     font-size: 16px;
@@ -23,9 +19,8 @@ body {
     transition: all .2s ease-in-out;
 }
 
-
 .bk-root {
-    width: fit-content;
+    width: 100%;
 }
 
 .container {
@@ -34,12 +29,6 @@ body {
     margin: auto;
     max-width: 1240px;
     }
-
-.filename-info {
-    background: white;
-    color: #666666;
-    padding: 10px;
-}
 
 .footer {
     background-color: steelblue;
@@ -59,11 +48,6 @@ body {
 .footer a:hover {
     color: white;
 }
-
-.plot_div {
-    height: 100%;
-    padding: 0px 10px 0px 10px;
-    }
 
 .top {
     background-color: steelblue;
@@ -129,3 +113,8 @@ body {
 .top .logo img {
     height: 72px;
 }
+
+#main_div {
+    height: 100%;
+    padding: 0px 10px 0px 10px;
+    }

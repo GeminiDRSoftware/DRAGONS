@@ -37,8 +37,10 @@ class PrimitiveVisualizer(ABC):
 
         self.submit_button = Button(align='center',
                                     button_type='success',
+                                    css_classes=["submit_btn"],
+                                    id="_submit_btn",
                                     label="Accept",
-                                    name="submit_button",
+                                    name="submit_btn",
                                     width_policy='min')
 
         self.submit_button.on_click(self.submit_button_handler)
