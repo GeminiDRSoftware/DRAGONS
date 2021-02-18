@@ -728,7 +728,7 @@ class Preprocess(PrimitivesBASE):
             flat_list = (flat, None)
 
         # Provide a bflat AD object for every science frame, and an origin
-        for ad, bias, origin in zip(*gt.make_lists(adinputs, *flat_list,
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                     force_ad=(1,))):
             if ad.phu.get(timestamp_key):
                 log.warning(f"{ad.filename}: already processed by "

@@ -2,21 +2,29 @@
 # interface to the local calibration manager, and provides an API for
 # modifying the database on disk.
 
-from os.path import basename, expanduser
+from os import path
 
 from .caldb import CalDB, CalReturn
 from .localmanager import LocalManager
 from .calrequestlib import get_cal_requests, generate_md5_digest
 
+DEFAULT_DB_NAME = "cal_manager.db"
+
 
 class LocalDB(CalDB):
     def __init__(self, dbfile, name=None, valid_caltypes=None,
                  get=True, store=True, log=None):
+        if path.isdir(dbfile):
+            dbfile = path.join(dbfile, DEFAULT_DB_NAME)
         if name is None:
             name = dbfile
-        super().__init__(name=name or dbfile, get=get, store=store, log=log,
+        super().__init__(name=name, get=get, store=store, log=log,
                          valid_caltypes=valid_caltypes)
-        self._calmgr = LocalManager(expanduser(dbfile))
+        self._calmgr = LocalManager(path.expanduser(dbfile))
+        if not path.exists(dbfile):
+            self.log.stdinfo(f"Database file {dbfile} does not exist. "
+                             "Initalizing.")
+            self._calmgr.init_database()
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         self.log.debug(f"Querying {self.name} for {caltype}")
@@ -94,7 +102,7 @@ class LocalDB(CalDB):
         calfile : <str>
             Path to the file. It can be either absolute or relative
         """
-        return self._calmgr.remove_file(basename(calfile))
+        return self._calmgr.remove_file(path.basename(calfile))
 
     def list_files(self):
         """

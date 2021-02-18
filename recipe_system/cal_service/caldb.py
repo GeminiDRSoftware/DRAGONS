@@ -34,6 +34,28 @@ def cascade(fn):
 
 
 class CalDB(metaclass=abc.ABCMeta):
+    """
+    The parent class for all types of calibration database handlers.
+
+    Attributes
+    ----------
+    name : str
+        a name for this database (gets reported with the calibration, so
+        there is some provenance)
+    log : logger object
+        the logger object to report to
+    get : bool
+        allow retrievals from this database?
+    store : bool
+        allow new calibrations to be stored to this database?
+    caldir : str
+        directory under which calibrations will be stored (either when
+        createed, or when retrieved from a RemoteDB)
+    nextdb : CalDB object/None
+        a place to send unfulfilled calibration requests
+    _valid_caltypes : list of str
+        valid calibration types for retrieval/storage
+    """
     def __init__(self, name=None, get=True, store=False,
                  valid_caltypes=None, log=None):
         self._valid_caltypes = valid_caltypes or VALID_CALTYPES

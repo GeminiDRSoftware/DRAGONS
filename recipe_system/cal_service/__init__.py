@@ -89,16 +89,16 @@ def init_calibration_databases(inst_lookups=None, ucals=None,
                    user_cals=ucals)
     databases = globalConf["calibs"].databases.splitlines()
     for line in databases:
-        kwargs = {"get": True,
-                  "store": False}
         if not line:  # handle blank lines
             continue
         db, *flags = line.split()
+        # "get" is default if there are no flags, but if any flags are
+        # specified, then "get" must be there explicitly
+        kwargs = {"get": not bool(flags),
+                  "store": False}
         for flag in flags:
-            if flag == "store":
-                kwargs["store"] = True
-            elif flag == "noget":
-                kwargs["get"] = False
+            if flag in kwargs:
+                kwargs[flag] = True
             else:
                 raise ValueError("{}: Unknown flag {!r}".format(db, flag))
 

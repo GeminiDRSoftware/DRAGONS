@@ -689,36 +689,42 @@ class Spect(PrimitivesBASE):
         subsample = params["subsample"]
 
         # Get a suitable arc frame (with distortion map) for every science AD
-        arc_list = arc or self.caldb.get_processed_arc(adinputs).files
+        if arc is None:
+            arc_list = self.caldb.get_processed_arc(adinputs)
+        else:
+            arc_list = (arc, None)
 
         adoutputs = []
-        # Provide an arc AD object for every science frame
-        for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
+        # Provide an arc AD object for every science frame, and an origin
+        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
+                                                  force_ad=(1,))):
             # We don't check for a timestamp since it's not unreasonable
             # to do multiple distortion corrections on a single AD object
 
             len_ad = len(ad)
             if arc is None:
-                if 'sq' not in self.mode:
+                if 'sq' in self.mode:
+                    raise OSError(f"No processed arc listed for {ad.filename}")
+                else:
                     # TODO: Think about this when we have MOS/XD/IFU
                     if len(ad) == 1:
-                        log.warning("No changes will be made to {}, since no "
-                                    "arc was specified".format(ad.filename))
+                        log.warning(f"{ad.filename}: no arc was specified. "
+                                    "Continuing.")
                         adoutputs.append(ad)
                     else:
-                        log.warning("{} will only be mosaicked, since no "
-                                    "arc was specified".format(ad.filename))
+                        log.warning(f"{ad.filename}: no arc was specified. "
+                                    "Image will be mosaicked.")
                         adoutputs.extend(self.mosaicDetectors([ad]))
                     continue
-                else:
-                    raise OSError('No processed arc listed for {}'.
-                                  format(ad.filename))
 
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
+                        f"{origin_str}")
             len_arc = len(arc)
             if len_arc not in (1, len_ad):
-                log.warning("Science frame {} has {} extensions and arc {} "
-                            "has {} extensions.".format(ad.filename, len_ad,
-                                                        arc.filename, len_arc))
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{arc.filename} had {len_arc} extensions so "
+                            "cannot correct the distortion.")
                 adoutputs.append(ad)
                 continue
 
@@ -752,11 +758,13 @@ class Spect(PrimitivesBASE):
                 # relies on a no-op forward model to size the output correctly:
                 m_distcorr = models.Identity(2)
                 input_frame = wcs.input_frame
-                m_distcorr.inverse = wcs.get_transform(input_frame, 'distortion_corrected').inverse
+                m_distcorr.inverse = wcs.get_transform(
+                    input_frame, 'distortion_corrected').inverse
                 distortion_models.append(m_distcorr)
 
                 try:
-                    wave_model = am.get_named_submodel(wcs.forward_transform, 'WAVE')
+                    wave_model = am.get_named_submodel(wcs.forward_transform,
+                                                       'WAVE')
                 except IndexError:
                     wave_models.append(None)
                 else:
