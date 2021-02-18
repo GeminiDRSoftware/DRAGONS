@@ -92,7 +92,7 @@ setup(name='dragons',
           'python-dateutil',
           'requests',
           'scipy',
-          'specutils',
+          'specutils>=1.1',
           'sqlalchemy',
       ],
       extras_require={
