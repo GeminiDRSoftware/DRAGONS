@@ -14,17 +14,17 @@ DEFAULT_DB_NAME = "cal_manager.db"
 class LocalDB(CalDB):
     def __init__(self, dbfile, name=None, valid_caltypes=None,
                  get=True, store=True, log=None):
+        dbfile = path.expanduser(dbfile)
         if path.isdir(dbfile):
             dbfile = path.join(dbfile, DEFAULT_DB_NAME)
+        if not path.exists(dbfile):
+            raise OSError(f"Database file {dbfile} does not exist.")
+
         if name is None:
             name = dbfile
         super().__init__(name=name, get=get, store=store, log=log,
                          valid_caltypes=valid_caltypes)
-        self._calmgr = LocalManager(path.expanduser(dbfile))
-        if not path.exists(dbfile):
-            self.log.stdinfo(f"Database file {dbfile} does not exist. "
-                             "Initalizing.")
-            self._calmgr.init_database()
+        self._calmgr = LocalManager(dbfile)
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         self.log.debug(f"Querying {self.name} for {caltype}")
@@ -57,7 +57,7 @@ class LocalDB(CalDB):
     def _store_calibration(self, cal, caltype=None):
         """Store the calibration. The LocalDB is not interested in science"""
         if self.store:
-            if caltype and "science" not in caltype:
+            if caltype is None or "science" not in caltype:
                 self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
                 self._calmgr.ingest_file(cal)
         else:
@@ -92,6 +92,21 @@ class LocalDB(CalDB):
     def add_calibration(self, calfile):
         self._store_calibration(calfile)
 
+    def add_directory(self, path, walk=False):
+        """
+        Ingest one or more files from a given directory, optionally searching
+        all subdirectories. This is not used by primitives in the DRAGONS
+        data reduction pipelines.
+
+        Parameters
+        ----------
+        path : str
+            directory containing files to be ingested
+        walk : bool
+            add files from all subdirectories?
+        """
+        self._calmgr.ingest_directory(path, walk=walk, log=self.log)
+
     def remove_calibration(self, calfile):
         """
         Removes a calibration file from the database. Note that only the filename
@@ -106,7 +121,8 @@ class LocalDB(CalDB):
 
     def list_files(self):
         """
-        List all files in the local calibration database.
+        List all files in the local calibration database. This is not used by
+        primitives in the DRAGONS data reduction pipelines.
 
         Returns
         -------

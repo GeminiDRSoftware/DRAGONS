@@ -28,41 +28,8 @@ except ImportError as e:
 # BEGIN Setting up the calibs section for config files
 CONFIG_SECTION = 'calibs'
 
-globalConf.update_exports({
-    CONFIG_SECTION: ('standalone', 'database_dir')
-})
 # END Setting up the calibs section for config files
 # ------------------------------------------------------------------------------
-def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
-    """
-    Load the configuration from the specified path to file (or files), and
-    initialize it with some defaults.
-
-    Parameters
-    ----------
-    conf_path: <str>, Path of configuration file. Default is
-                      STANDARD_REDUCTION_CONF -> '~/.geminidr/rsys.cfg'
-
-    Return
-    ------
-    <ConfigObject>
-
-    """
-    globalConf.load(conf_path,
-            defaults = {
-                CONFIG_SECTION: {
-                    'standalone': False,
-                    'database_dir': path.expanduser(DEFAULT_DIRECTORY)
-                    }
-                })
-
-    return get_calconf()
-
-
-def update_calconf(items):
-    globalConf.update(CONFIG_SECTION, items)
-
-
 def get_calconf():
     try:
         return globalConf[CONFIG_SECTION]
@@ -73,8 +40,21 @@ def get_calconf():
         pass
 
 
-def init_calibration_databases(inst_lookups=None, ucals=None,
-                               default_dbname="cal_manager.db"):
+def init_calibration_databases(inst_lookups=None, ucals=None):
+    """
+    Initialize the calibration databases for a PrimitivesBASE object.
+
+    Parameters
+    ----------
+    inst_lookups : str
+        local of the instrument lookups package (for the MDF lookup table)
+    ucals : dict
+        user calibrations
+
+    Returns
+    -------
+    A UserDB object, possibly linked to additional CalDB objects
+    """
     try:
         masks = import_module('.maskdb', inst_lookups)
         mdf_dict = getattr(masks, 'mdf_dict')
@@ -87,7 +67,27 @@ def init_calibration_databases(inst_lookups=None, ucals=None,
 
     caldb = UserDB(name="the darn pickle", mdf_dict=mdf_dict,
                    user_cals=ucals)
-    databases = globalConf["calibs"].databases.splitlines()
+    for db in parse_databases():
+        caldb.add_database(db)
+    return caldb
+
+
+def parse_databases(default_dbname="cal_manager.db"):
+    """
+    Parse the databases listed in the global config file.
+
+    Parameters
+    ----------
+    default_dbname : str
+        default name of database file (if only a directory is listed in the
+        config file)
+
+    Returns
+    -------
+    list of CalDB objects
+    """
+    db_list = []
+    databases = get_calconf().databases.splitlines()
     for line in databases:
         if not line:  # handle blank lines
             continue
@@ -110,6 +110,5 @@ def init_calibration_databases(inst_lookups=None, ucals=None,
         else:  # does not check
             cls = RemoteDB
         print(cls.__name__, db, kwargs)
-        caldb.add_database(cls(db, name=db, **kwargs))
-
-    return caldb
+        db_list.append(cls(db, name=db, **kwargs))
+    pass
