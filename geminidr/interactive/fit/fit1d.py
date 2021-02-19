@@ -574,7 +574,7 @@ class Fit1DPanel:
 
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
-        reset_button = bm.Button(align='end',
+        reset_button = bm.Button(align=('center', 'end'),
                                  button_type='warning',
                                  label="Reset",
                                  width_policy='min')

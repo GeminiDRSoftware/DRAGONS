@@ -4,7 +4,7 @@ Interactive function and helper functions used to trace apertures.
 import numpy as np
 from astropy import table
 from bokeh.models import Div
-from bokeh.layouts import column, layout, row
+from bokeh.layouts import column, layout, row, Spacer
 
 from gempy.library import astromodels, astrotools, config, tracing
 
@@ -33,54 +33,44 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         """
         super(Fit1DVisualizer, self).visualize(doc)
 
+        # Edit left/central column
         filename = Div(
-            text=f"Current filename: {self.filename_info}",
-            id="_filename",
             css_classes=["filename"],
-            height_policy="max",
-            max_width=1024,
-            width_policy="max",
+            id="_filename",
+            margin=(0, 0, 0, 76),
             name="filename",
+            height_policy="max",
+            sizing_mode="fixed",
+            text=f"Current filename: {self.filename_info}",
             style={
                 "background": "white",
                 "color": "#666666",
-                "padding": "10px",
+                "padding": "10px 0px 10px 0px",
                 "vertical-align": "middle",
             },
+            width=500,
+            width_policy="fixed",
         )
 
-        print(">>>>> -------- <<<<<")
-        print(filename)
-        print(self.submit_button)
+        left_col = column(filename, self.tabs,
+                          sizing_mode="stretch_width",
+                          spacing=5)
 
-        upper_row = row(filename, self.submit_button,
-                        css_classes=["upper_row"],
-                        margin=(0, 0, 0, 84),  # (Top, Right, Bottom, Left)
-                        max_width=1024,
-                        name="upper_row",
-                        sizing_mode="stretch_width",
-                        width_policy="max",
-                        )
+        # Edit right column
+        self.submit_button.align = ("end", "center")
+        self.submit_button.width_policy = "min"
 
         self.reinit_panel.css_classes = ["data_source"]
         self.reinit_panel.sizing_mode = "fixed"
 
-        print("---")
-        print(self.reinit_panel.children)
-        for key, val in self.reinit_panel.properties_with_values().items():
-            print(key, val)
+        right_col = column(self.submit_button, self.reinit_panel,
+                           sizing_mode="fixed",
+                           spacing=5)
 
-        # self.tabs[0].controller_div
-
-        lower_row = row(self.tabs, self.reinit_panel,
-                        css_classes=["lower_row"],
-                        name="lower_row",
-                        sizing_mode="stretch_width")
-
-        all_content = column(upper_row, lower_row,
-                             name="all_content",
-                             sizing_mode="stretch_width",
-                             height_policy="max")
+        # Put all together
+        all_content = row(left_col, right_col,
+                          spacing=15,
+                          sizing_mode="stretch_both")
 
         doc.add_root(all_content)
 
@@ -117,10 +107,15 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
             "Tracing step: ", int, 10, min=1),
     }
 
+    if (2 - ext.dispersion_axis()) == 1:
+        xlabel = "x / columns [px]"
+        ylabel = "y / rows [px]"
+    else:
+        xlabel = "y / rows [px]"
+        ylabel = "x / columns [px]"
+
     def data_provider(conf, extra):
         return trace_apertures_data_provider(ext, conf, extra)
-
-    print(">>>>", ext.filename)
 
     visualizer = TraceAperturesVisualizer(
         data_provider,
@@ -128,8 +123,8 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
         tab_name_fmt="Aperture {}",
-        xlabel='x',
-        ylabel='y',
+        xlabel=xlabel,
+        ylabel=ylabel,
         reinit_extras=reinit_extras,
         domains=domain_list,
         primitive_name="traceApertures()",
