@@ -31,16 +31,13 @@ RESPONSESTR = """########## Request Data BEGIN ##########
 
 
 class RemoteDB(CalDB):
-    def __init__(self, server, name=None, valid_caltypes=None, get=True,
-                 store=True, log=None):
+    def __init__(self, server, name=None, valid_caltypes=None, get_cal=True,
+                 store_cal=True, store_science=False, log=None):
         if name is None:
             name = server
-        super().__init__(name=name, get=get, store=store, log=log,
-                         valid_caltypes=valid_caltypes)
-        # TODO: we want to make an MDF a full calibration, but currently
-        # we can only retrieve it from a remote location, so this handles that
-        if valid_caltypes is None:
-            self._valid_caltypes.append("mask")
+        super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
+                         log=log, valid_caltypes=valid_caltypes)
+        self.store_science = store_science
         if not server.startswith("http"):  # allow https://
             server = f"http://{server}"
         self.server = server
@@ -79,7 +76,7 @@ class RemoteDB(CalDB):
                     log.stdinfo("md5 checksums DO NOT MATCH")
                     log.stdinfo("Making request on calibration service")
 
-            log.stdinfo("Making request for {url}")
+            log.stdinfo(f"Making request for {calurl}")
             try:
                 get_request(calurl, cachefile)
             except GetterError as err:
@@ -101,11 +98,13 @@ class RemoteDB(CalDB):
     def _store_calibration(self, cal, caltype=None):
         """Store calibration. If this is a processed_science, cal should be
         an AstroData object, otherwise it should be a filename"""
-        if not self.store:
+        is_science = caltype is not None and "science" in caltype
+        if not ((is_science and self.store_science) or
+                not (is_science or self.store_cal)):
             self.log.stdinfo(f"{self.name}: NOT storing {cal} as {caltype}")
             return
 
-        assert isinstance(cal, str) ^ ("science" in caltype)
+        assert isinstance(cal, str) ^ is_science
         self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
         if "science" in caltype:
             # Write to a stream in memory, not to disk

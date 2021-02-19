@@ -56,13 +56,13 @@ class CalDB(metaclass=abc.ABCMeta):
     _valid_caltypes : list of str
         valid calibration types for retrieval/storage
     """
-    def __init__(self, name=None, get=True, store=False,
+    def __init__(self, name=None, get_cal=True, store_cal=False,
                  valid_caltypes=None, log=None):
         self._valid_caltypes = valid_caltypes or VALID_CALTYPES
         self.caldir = CALDIR
         self.name = name
-        self.get = get
-        self.store = store
+        self.get_cal = get_cal
+        self.store_cal = store_cal
         self.nextdb = None
         self.log = log or logutils.get_logger(__name__)
 
@@ -117,7 +117,7 @@ class CalDB(metaclass=abc.ABCMeta):
         if caltype not in self._valid_caltypes:
             raise ValueError("Calibration type {!r} not recognized".
                              format(caltype))
-        if self.get:
+        if self.get_cal:
             cal_ret = self._get_calibrations(adinputs, caltype=caltype,
                                              procmode=procmode)
         else:

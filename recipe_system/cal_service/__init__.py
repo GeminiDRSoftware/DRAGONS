@@ -4,25 +4,14 @@
 #                                                                    cal_service
 # ------------------------------------------------------------------------------
 from os import path
-
 from importlib import import_module
 
 from ..config import globalConf
-from ..config import STANDARD_REDUCTION_CONF
-from ..config import DEFAULT_DIRECTORY
 
 from . import transport_request
-
 from .userdb import UserDB
 from .localdb import LocalDB
 from .remotedb import RemoteDB
-
-try:
-    from . import localmanager
-    localmanager_available = True
-except ImportError as e:
-    localmanager_available = False
-    import_error = str(e)
 
 # ------------------------------------------------------------------------------
 # BEGIN Setting up the calibs section for config files
@@ -40,7 +29,7 @@ def get_calconf():
         pass
 
 
-def init_calibration_databases(inst_lookups=None, ucals=None):
+def init_calibration_databases(inst_lookups=None, ucals=None, upload=None):
     """
     Initialize the calibration databases for a PrimitivesBASE object.
 
@@ -50,6 +39,8 @@ def init_calibration_databases(inst_lookups=None, ucals=None):
         local of the instrument lookups package (for the MDF lookup table)
     ucals : dict
         user calibrations
+    upload : list
+        things to upload (we're concerned about "calibs" and "science")
 
     Returns
     -------
@@ -67,7 +58,13 @@ def init_calibration_databases(inst_lookups=None, ucals=None):
 
     caldb = UserDB(name="the darn pickle", mdf_dict=mdf_dict,
                    user_cals=ucals)
+    upload_calibs = upload is not None and "calibs" in upload
     for db in parse_databases():
+        if isinstance(db, RemoteDB):
+            # Actually storing to a remote DB requires that "store" is set in
+            # the config *and* the appropriate type is in upload
+            db.store_science = db.store_cal and ("science" in upload)
+            db.store_cal &= upload_calibs
         caldb.add_database(db)
     return caldb
 
@@ -84,7 +81,7 @@ def parse_databases(default_dbname="cal_manager.db"):
 
     Returns
     -------
-    list of CalDB objects
+    list of CalDB objects with the relevant attributes set
     """
     db_list = []
     databases = get_calconf().databases.splitlines()
@@ -94,11 +91,11 @@ def parse_databases(default_dbname="cal_manager.db"):
         db, *flags = line.split()
         # "get" is default if there are no flags, but if any flags are
         # specified, then "get" must be there explicitly
-        kwargs = {"get": not bool(flags),
-                  "store": False}
+        kwargs = {"get_cal": not bool(flags),
+                  "store_cal": False}
         for flag in flags:
             if flag in kwargs:
-                kwargs[flag] = True
+                kwargs[f"{flag}_cal"] = True
             else:
                 raise ValueError("{}: Unknown flag {!r}".format(db, flag))
 
@@ -109,6 +106,5 @@ def parse_databases(default_dbname="cal_manager.db"):
             cls = LocalDB
         else:  # does not check
             cls = RemoteDB
-        print(cls.__name__, db, kwargs)
         db_list.append(cls(db, name=db, **kwargs))
     pass

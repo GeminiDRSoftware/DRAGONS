@@ -11,10 +11,10 @@ from .caldb import CalDB, CalReturn
 
 
 class UserDB(CalDB):
-    def __init__(self, name=None, mdf_dict=None, user_cals=None,
-                 valid_caltypes=None, log=None):
-        super().__init__(name=name, store=True, log=log,
-                         valid_caltypes=valid_caltypes)
+    def __init__(self, name=None, get_cal=True, mdf_dict=None,
+                 user_cals=None, valid_caltypes=None, log=None):
+        super().__init__(name=name, get_cal=get_cal, store_cal=True,
+                         log=log, valid_caltypes=valid_caltypes)
         self.cachefile = os.path.join(self.caldir, "calindex.pkl")
         self.mdf_dict = mdf_dict
         if self.mdf_dict:

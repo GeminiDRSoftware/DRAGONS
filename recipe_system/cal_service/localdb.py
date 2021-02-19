@@ -5,15 +5,30 @@
 from os import path
 
 from .caldb import CalDB, CalReturn
-from .localmanager import LocalManager
 from .calrequestlib import get_cal_requests, generate_md5_digest
+
+try:
+    from . import localmanager
+    localmanager_available = True
+except ImportError as e:
+    localmanager_available = False
+    import_error = str(e)
 
 DEFAULT_DB_NAME = "cal_manager.db"
 
 
 class LocalDB(CalDB):
+    """
+    The class handling a calibration database stored on disk, via the
+    LocalManager class. In addition to the methods required to interface
+    with DRAGONS data reduction pipelines, other methods are used to
+    provide a full API and effect actions of the "caldb" script.
+
+    An attempt to create an instance of this class without the LocalManager
+    being importable will result in an error.
+    """
     def __init__(self, dbfile, name=None, valid_caltypes=None,
-                 get=True, store=True, log=None):
+                 get_cal=True, store_cal=True, log=None):
         dbfile = path.expanduser(dbfile)
         if path.isdir(dbfile):
             dbfile = path.join(dbfile, DEFAULT_DB_NAME)
@@ -22,9 +37,14 @@ class LocalDB(CalDB):
 
         if name is None:
             name = dbfile
-        super().__init__(name=name, get=get, store=store, log=log,
-                         valid_caltypes=valid_caltypes)
-        self._calmgr = LocalManager(dbfile)
+        if not localmanager_available:
+            raise ValueError(f"Cannot initialize local database {name} as"
+                             "localmanager could not be imported.\n"
+                             f"{import_error}")
+
+        super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
+                         log=log, valid_caltypes=valid_caltypes)
+        self._calmgr = localmanager.LocalManager(dbfile)
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         self.log.debug(f"Querying {self.name} for {caltype}")
@@ -56,7 +76,7 @@ class LocalDB(CalDB):
 
     def _store_calibration(self, cal, caltype=None):
         """Store the calibration. The LocalDB is not interested in science"""
-        if self.store:
+        if self.store_cal:
             if caltype is None or "science" not in caltype:
                 self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
                 self._calmgr.ingest_file(cal)
