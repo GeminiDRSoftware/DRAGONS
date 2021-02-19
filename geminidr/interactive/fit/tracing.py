@@ -70,7 +70,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         for key, val in self.reinit_panel.properties_with_values().items():
             print(key, val)
 
-        self.tabs[0].controller_div
+        # self.tabs[0].controller_div
 
         lower_row = row(self.tabs, self.reinit_panel,
                         css_classes=["lower_row"],

@@ -6,7 +6,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer
+from bokeh.models import Div, Select, Range1d, Spacer, LayoutDOM
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive
@@ -456,7 +456,8 @@ class FittingParametersUI:
                                                          1, 0, 10,
                                                          fitting_parameters, "grow",
                                                          fit.perform_fit)
-        self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
+        self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [],
+                                             width_policy="min")
         self.sigma_button.on_change('active', self.sigma_button_handler)
         self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
                                 self.niter_slider, self.grow_slider]
@@ -586,7 +587,7 @@ class Fit1DPanel:
                                                                   'to their original values.  Proceed?',
                                                                   reset_dialog_handler)
 
-        controller_div = Div(name="help_text", width_policy="min")
+        controller_div = Div(name="help_text", default_size=100, width_policy="fit")
         self.info_div = Div()
 
         controls_ls.extend(controls_column)
