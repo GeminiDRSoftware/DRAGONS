@@ -117,6 +117,12 @@ class CalDB(metaclass=abc.ABCMeta):
         if caltype not in self._valid_caltypes:
             raise ValueError("Calibration type {!r} not recognized".
                              format(caltype))
+
+        # TODO: Ideally this would build the cal_requests only once at the
+        # start and then pass on the unfulfilled requests, instead of the
+        # AD objects. But currently the cal_requests are slightly different
+        # for local and remote DBs (because of the "Section" namedtuple) so
+        # this isn't possible just yet.
         if self.get_cal:
             cal_ret = self._get_calibrations(adinputs, caltype=caltype,
                                              procmode=procmode)

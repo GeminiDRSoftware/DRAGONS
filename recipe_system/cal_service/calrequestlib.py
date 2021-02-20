@@ -5,8 +5,11 @@
 # ------------------------------------------------------------------------------
 import hashlib
 
+from gemini_instruments.common import Section
+
 from gempy.utils import logutils
 
+# GetterError is needed by a module that imports this one
 from .file_getter import get_file_iterator, GetterError
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
@@ -89,7 +92,7 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
 
     rq_events = []
     for ad in inputs:
-        log.stdinfo("Received calibration request for {}".format(ad.filename))
+        log.debug("Received calibration request for {}".format(ad.filename))
         rq = CalibrationRequest(ad, caltype, procmode)
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
@@ -112,3 +115,13 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
         rq.descriptors = desc_dict
         rq_events.append(rq)
     return rq_events
+
+
+def _handle_returns(dv):
+    # TODO: This sends "old style" request for data section, where the section
+    #       is converted to a regular 4-element list. In "new style" requests,
+    #       we send the Section as-is. This will need to be revised when
+    #       (eventually) FitsStorage upgrades to new AstroData
+    if isinstance(dv, list) and isinstance(dv[0], Section):
+        return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
+    return dv
