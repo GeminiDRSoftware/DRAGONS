@@ -55,23 +55,30 @@ def init_calibration_databases(inst_lookups=None, ucals=None, upload=None):
         for k, v in mdf_dict.items():
             mdf_dict[k] = path.join(path.dirname(masks.__file__),
                                     'MDF', v)
-
     caldb = UserDB(name="the darn pickle", mdf_dict=mdf_dict,
                    user_cals=ucals)
+
     upload_calibs = upload is not None and "calibs" in upload
-    for db in parse_databases():
-        if isinstance(db, RemoteDB):
+    upload_science = upload is not None and "science" in upload
+    for cls, db, kwargs in parse_databases():
+        if cls == RemoteDB:
             # Actually storing to a remote DB requires that "store" is set in
             # the config *and* the appropriate type is in upload
-            db.store_science = db.store_cal and ("science" in upload)
-            db.store_cal &= upload_calibs
-        caldb.add_database(db)
+            kwargs["store_science"] = kwargs["store_cal"] and upload_science
+            kwargs["store_cal"] &= upload_calibs
+        elif cls == LocalDB:
+            kwargs["force_init"] = True
+        database = cls(db, name=db, **kwargs)
+        caldb.add_database(database)
     return caldb
 
 
 def parse_databases(default_dbname="cal_manager.db"):
     """
-    Parse the databases listed in the global config file.
+    Parse the databases listed in the global config file. This returns a list
+    provided information on how to build the cascase of databases, but does
+    not instantiate any CalDB objects, so it can be used by the caldb script
+    efficiently.
 
     Parameters
     ----------
@@ -81,7 +88,7 @@ def parse_databases(default_dbname="cal_manager.db"):
 
     Returns
     -------
-    list of CalDB objects with the relevant attributes set
+    list of tuples (class, database name, kwargs)
     """
     db_list = []
     databases = get_calconf().databases.splitlines()
@@ -94,17 +101,19 @@ def parse_databases(default_dbname="cal_manager.db"):
         kwargs = {"get_cal": not bool(flags),
                   "store_cal": False}
         for flag in flags:
-            if flag in kwargs:
-                kwargs[f"{flag}_cal"] = True
+            kwarg = f"{flag}_cal"
+            if kwarg in kwargs:
+                kwargs[kwarg] = True
             else:
                 raise ValueError("{}: Unknown flag {!r}".format(db, flag))
 
-        if path.isdir(db):
+        expanded_db = path.expanduser(db)
+        if path.isdir(expanded_db):
             db = path.join(db, default_dbname)
             cls = LocalDB
-        elif path.isfile(db):
+        elif path.isfile(expanded_db):
             cls = LocalDB
         else:  # does not check
             cls = RemoteDB
-        db_list.append(cls(db, name=db, **kwargs))
-    pass
+        db_list.append((cls, db, kwargs))
+    return db_list

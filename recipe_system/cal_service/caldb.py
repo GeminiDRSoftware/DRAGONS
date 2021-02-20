@@ -15,7 +15,7 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'processed_standard': ['PROCESSED', 'STANDARD'],
                      'processed_slitillum': ['PROCESSED', 'SLITILLUM'],
                      'bpm': ['BPM'],
-                     'mask': [],
+                     'mask': ['MASK'],
                      }
 
 VALID_CALTYPES = REQUIRED_TAG_DICT.keys()
@@ -195,12 +195,13 @@ class CalDB(metaclass=abc.ABCMeta):
         # object. This will only happen with the first CalDB to store,
         # since the calibration will be forwarded as a filename.
         if not (isinstance(cal, str) or "science" in caltype):
-            if not os.path.exists(os.path.join(self.caldir, caltype)):
-                os.makedirs(os.path.join(self.caldir, caltype))
 
             required_tags = REQUIRED_TAG_DICT[caltype]
             if cal.tags.issuperset(required_tags):
-                fname = os.path.join(self.caldir, caltype,
+                caltype_dir = os.path.join(self.caldir, caltype)
+                if not os.path.exists(caltype_dir):
+                    os.makedirs(caltype_dir)
+                fname = os.path.join(caltype_dir,
                                      os.path.basename(cal.filename))
                 cal.write(fname, overwrite=True)
             else:

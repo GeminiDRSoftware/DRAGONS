@@ -28,12 +28,10 @@ class LocalDB(CalDB):
     being importable will result in an error.
     """
     def __init__(self, dbfile, name=None, valid_caltypes=None,
-                 get_cal=True, store_cal=True, log=None):
+                 get_cal=True, store_cal=True, log=None, force_init=False):
         dbfile = path.expanduser(dbfile)
         if path.isdir(dbfile):
             dbfile = path.join(dbfile, DEFAULT_DB_NAME)
-        if not path.exists(dbfile):
-            raise OSError(f"Database file {dbfile} does not exist.")
 
         if name is None:
             name = dbfile
@@ -44,7 +42,12 @@ class LocalDB(CalDB):
 
         super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
                          log=log, valid_caltypes=valid_caltypes)
+        self.dbfile = dbfile
         self._calmgr = localmanager.LocalManager(dbfile)
+        if not path.exists(dbfile) and force_init:
+            self.log.stdinfo(f"Local database file {dbfile} does not exist. "
+                             "Initializing.")
+            self.init()
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None):
         self.log.debug(f"Querying {self.name} for {caltype}")
@@ -78,7 +81,8 @@ class LocalDB(CalDB):
         """Store the calibration. The LocalDB is not interested in science"""
         if self.store_cal:
             if caltype is None or "science" not in caltype:
-                self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
+                if caltype is not None:
+                    self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
                 self._calmgr.ingest_file(cal)
         else:
             self.log.stdinfo(f"{self.name}: NOT storing {cal} as {caltype}")

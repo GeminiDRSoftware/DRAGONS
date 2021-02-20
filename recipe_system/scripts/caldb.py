@@ -81,10 +81,10 @@ def log(message, stream, bold=False, add_newlines=0):
 
 
 class Dispatcher:
-    def __init__(self, parser, db):
+    def __init__(self, parser, db, log):
         self.db = db
         self._parser = parser
-        self._log = db.log
+        self._log = log
 
     def apply(self, action, args):
         try:
@@ -115,6 +115,9 @@ class Dispatcher:
                 traceback.print_last()
                 print(e, file=sys.stderr)
                 return -1
+            except ValueError as e:
+                print(e, file=sys.stderr)
+                return -1
 
         return 0
 
@@ -133,7 +136,7 @@ class Dispatcher:
         msg += "first, or pass the -w option to confirm that you "
         msg += "want\nto wipe the contents."
         try:
-            self._log("Initializing {}...".format(self._mgr.path))
+            self._log("Initializing {}...".format(self.db.dbfile))
             self.db.init(wipe=args.wipe)
         except LocalManagerError as e:
             if e.error_type == ERROR_CANT_WIPE:
@@ -175,15 +178,17 @@ if __name__ == '__main__':
         databases = parse_databases()
         db_path = None
         for db in databases:
-            if isinstance(db, LocalDB):
+            if db[0] == LocalDB:
                 if db_path is None:
-                    db_path = db
+                    db_path = db[1]
                 else:
-                    raise LocalManagerError("Multiple local database files "
-                                            "listed in the config file.")
+                    raise LocalManagerError(
+                        ERROR_CANT_READ, "Multiple local database files "
+                                         "listed in the config file.")
         if db_path is None:
-            raise LocalManagerError("No local database file listed in the "
-                                    "config file.")
+            raise LocalManagerError(
+                ERROR_CANT_READ, "No local database file listed in the "
+                                 "config file.")
     else:
         db_path = args.db_path
 
@@ -191,8 +196,9 @@ if __name__ == '__main__':
     try:
         act = args.action
         logstream = sys.stderr if args.verbose else None
-        db = LocalDB(expanduser(db_path), log=partial(log, stream=logstream))
-        disp = Dispatcher(subp.choices[act], db)
+        db = LocalDB(expanduser(db_path), log=None)
+        disp = Dispatcher(subp.choices[act], db,
+                          partial(log, stream=logstream))
         ret = disp.apply(act, args)
     except AttributeError as e:
         raise
