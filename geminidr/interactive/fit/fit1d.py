@@ -587,13 +587,17 @@ class Fit1DPanel:
                                                                   'to their original values.  Proceed?',
                                                                   reset_dialog_handler)
 
-        controller_div = Div(name="help_text", default_size=100, width_policy="fit")
-        self.info_div = Div()
+        reset_button_row = row(
+            Spacer(width_policy="max"),
+            reset_button)
+
+        controller_div = Div(name="help_text",
+                             default_size=100,
+                             margin=(20, 0, 0, 0),
+                             width_policy="fit")
 
         controls_ls.extend(controls_column)
-
-        reset_button.align = 'center'
-        controls_ls.append(reset_button)
+        controls_ls.append(reset_button_row)
         controls_ls.append(controller_div)
         controls = column(*controls_ls)
 
