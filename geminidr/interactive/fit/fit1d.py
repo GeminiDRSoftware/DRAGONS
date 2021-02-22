@@ -594,6 +594,9 @@ class Fit1DPanel:
         controller_div = Div(name="help_text",
                              default_size=100,
                              margin=(20, 0, 0, 0),
+                             style={
+                                 "color": "gray",
+                             },
                              width_policy="fit")
 
         controls_ls.extend(controls_column)
@@ -894,7 +897,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         else:
             if function is None:
                 function = 'chebyshev'
-            self.function = Div(text='Function: %s' % function)
+            self.function = Div(
+                text=f'<p> Function: <b>{function.capitalize()}</b> </p>'
+                     f'<p style="color: gray"> These are parameters used to '
+                     f'(re)generate the input data for fitting. </p>',
+                sizing_mode="fixed",
+                width=212,  # ToDo: Hardcoded width. Would there be a better solution?
+            )
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
