@@ -556,7 +556,9 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
-        self.info_div = Div()
+        self.info_div = Div(align=('start', 'end'),)  # Top right (in theory)
+                            # sizing_mode="fixed",
+                            # width_policy='min',)
 
         # Make a listener to update the info panel with the RMS on a fit
         def update_info(info_div, f):
@@ -677,7 +679,7 @@ class Fit1DPanel:
             mask_handlers = None
 
         self.controller = Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
-        fig_column = [p_main, self.info_div]
+        fig_column = [p_main]
 
         if plot_residuals:
             # x_range is linked to the main plot so that zooming tracks between them
@@ -718,12 +720,33 @@ class Fit1DPanel:
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
 
+        info_row_spacer = Spacer(width_policy="fit",
+                                 sizing_mode="stretch_width",
+                                 min_width=10,
+                                 max_width=100)
+
+        info_row_ls = [info_row_spacer, self.info_div]
+
         if self.band_model:
             region_editor = RegionEditor(self.band_model)
-            fig_column.append(region_editor.get_widget())
+
+            region_editor_wgt = region_editor.get_widget()
+            # region_editor_wgt.width = 500
+            region_editor_wgt.sizing_mode = "stretch_width"
+            region_editor_wgt.width_policy = "fit"
+
+            # Replace empty space by region editor
+            info_row_ls.insert(0, region_editor_wgt)
+
+        info_row = row(*info_row_ls,
+                       sizing_mode="stretch_width",
+                       width_policy="max")
+
+        fig_column.append(info_row)
+
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
-        self.component = row(controls, col)
+        self.component = row(controls, col, spacing=10)
 
     def model_change_handler(self):
         """

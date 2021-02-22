@@ -1072,7 +1072,12 @@ class GIRegionView(GIRegionListener):
 
 class RegionEditor(GIRegionListener):
     def __init__(self, region_model):
-        self.text_input = TextInput(title="Regions (i.e. 100:500,510:900,950:   press 'Enter' to apply")
+        self.text_input = TextInput(
+            title="Regions (i.e. 100:500,510:900,950. Press 'Enter' to apply):",
+            max_width=600,
+            sizing_mode="stretch_width",
+            width_policy="max",
+        )
         self.text_input.value = region_model.build_regions()
         self.region_model = region_model
         self.region_model.add_listener(self)
