@@ -46,7 +46,7 @@ different_roi_datasets = [
 def test_dont_do_slit_illum(astrofaker):
     in_ad = astrofaker.create("GMOS-S", mode="SPECT")
     p = GMOSLongslit([in_ad])
-    out_ad = p.slitIllumCorrect(do_illum=False)[0]
+    out_ad = p.slitIllumCorrect(do_cal='skip')[0]
     for in_ext, out_ext in zip(in_ad, out_ad):
         assert np.testing.assert_equal(in_ext.data, out_ext.data)
 

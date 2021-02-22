@@ -3,6 +3,7 @@
 from geminidr.core import parameters_standardize
 from gempy.library import config
 from astrodata import AstroData
+from geminidr.core import parameters_generic
 
 
 def flat_order_check(value):
@@ -50,10 +51,8 @@ class normalizeFlatConfig(config.Config):
     grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
 
 
-class slitIllumCorrectConfig(config.Config):
+class slitIllumCorrectConfig(parameters_generic.calRequirementConfig):
 
-    do_illum = config.Field("Perform Slit Illumination Correction?",
-                            bool, True, optional=True)
     slit_illum = config.ListField("Slit Illumination Response",
                                   (str, AstroData), None, optional=True, single=True)
     suffix = config.Field("Filename suffix",

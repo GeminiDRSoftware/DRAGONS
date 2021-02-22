@@ -59,7 +59,7 @@ class Image(Preprocess, Register, Resample):
         timestamp_key = self.timestamp_keys[self.myself()]
         fringe = params["fringe"]
         scale = params["scale"]
-        do_fringe = params["do_fringe"]
+        do_cal = params["do_cal"]
 
         # Exit now if nothing needs a correction, to avoid an error when the
         # calibration search fails. If images with different exposure times
@@ -67,18 +67,18 @@ class Image(Preprocess, Register, Resample):
         # search will succeed), so still need to check individual inputs later.
         needs_correction = [self._needs_fringe_correction(ad) for ad in adinputs]
         if any(needs_correction):
-            if do_fringe == False:
+            if do_cal == 'skip':
                 log.warning("Fringe correction has been turned off but is "
                             "recommended.")
                 return adinputs
         else:
-            if not do_fringe:  # False or None
-                if do_fringe is None:
-                    log.stdinfo("No input images require a fringe correction.")
+            if do_cal == 'procmode' or do_cal == 'skip':
+                log.stdinfo("No input images require a fringe correction.")
                 return adinputs
-            else:
-                log.warning("Fringe correction has been turned on but may not "
+            else:  # do_cal == 'force':
+                log.warning("Fringe correction has been forced on but may not "
                             "be required.")
+
 
         if fringe is None:
             # This logic is for QAP
@@ -117,7 +117,9 @@ class Image(Preprocess, Register, Resample):
 
             # Logic to deal with different exposure times where only
             # some inputs might require fringe correction
-            if do_fringe is None and not correct:
+            # KL: for now, I'm not allowing the "force" to do anything when
+            #     the correction is not needed.
+            if (do_cal == 'procmode' or do_cal == 'force') and not correct:
                 log.stdinfo("{} does not require a fringe correction".
                             format(ad.filename))
                 ad.update_filename(suffix=params["suffix"], strip=True)
@@ -126,7 +128,7 @@ class Image(Preprocess, Register, Resample):
             # At this point, we definitely want to do a fringe correction
             # so we'd better have a fringe frame!
             if fringe is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "fringe frame has been specified".
                                 format(ad.filename))

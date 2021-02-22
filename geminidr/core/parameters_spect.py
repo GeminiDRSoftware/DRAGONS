@@ -3,6 +3,7 @@
 from gempy.library import config
 from astrodata import AstroData
 from astropy import units as u
+from geminidr.core import parameters_generic
 
 
 class adjustWCSToReferenceConfig(config.Config):
@@ -77,7 +78,7 @@ class determineWavelengthSolutionConfig(config.Config):
     debug = config.Field("Make diagnostic plots?", bool, False)
 
 
-class distortionCorrectConfig(config.Config):
+class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
                            optional=True, single=True)
@@ -152,7 +153,7 @@ def flux_units_check(value):
     return True
 
 
-class fluxCalibrateConfig(config.Config):
+class fluxCalibrateConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_fluxCalibrated", optional=True)
     standard = config.ListField("Standard(s) with sensitivity function", (AstroData, str),
                                 None, optional=True, single=True)
