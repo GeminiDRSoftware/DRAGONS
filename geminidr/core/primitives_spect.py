@@ -1726,7 +1726,7 @@ class Spect(PrimitivesBASE):
                 delta_airmass = 0
 
             for index, ext in enumerate(ad):
-                ext_std = std[max(index, len_std-1)]
+                ext_std = std[min(index, len_std-1)]
                 sensfunc = ext_std.SENSFUNC
 
                 extver = '{}:{}'.format(ad.filename, ext.hdr['EXTVER'])
