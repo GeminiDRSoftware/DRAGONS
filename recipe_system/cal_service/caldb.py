@@ -57,12 +57,13 @@ class CalDB(metaclass=abc.ABCMeta):
         valid calibration types for retrieval/storage
     """
     def __init__(self, name=None, get_cal=True, store_cal=False,
-                 valid_caltypes=None, log=None):
+                 valid_caltypes=None, procmode=None, log=None):
         self._valid_caltypes = valid_caltypes or VALID_CALTYPES
         self.caldir = CALDIR
         self.name = name
         self.get_cal = get_cal
         self.store_cal = store_cal
+        self.procmode = procmode
         self.nextdb = None
         self.log = log or logutils.get_logger(__name__)
 
@@ -118,6 +119,8 @@ class CalDB(metaclass=abc.ABCMeta):
             raise ValueError("Calibration type {!r} not recognized".
                              format(caltype))
 
+        if procmode is None:
+            procmode = self.procmode
         # TODO: Ideally this would build the cal_requests only once at the
         # start and then pass on the unfulfilled requests, instead of the
         # AD objects. But currently the cal_requests are slightly different

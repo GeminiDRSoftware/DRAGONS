@@ -27,7 +27,7 @@ class LocalDB(CalDB):
     An attempt to create an instance of this class without the LocalManager
     being importable will result in an error.
     """
-    def __init__(self, dbfile, name=None, valid_caltypes=None,
+    def __init__(self, dbfile, name=None, valid_caltypes=None, procmode=None,
                  get_cal=True, store_cal=True, log=None, force_init=False):
         if not localmanager_available:
             raise ValueError(f"Cannot initialize local database {name} as"
@@ -41,7 +41,8 @@ class LocalDB(CalDB):
             dbfile = path.join(dbfile, DEFAULT_DB_NAME)
 
         super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
-                         log=log, valid_caltypes=valid_caltypes)
+                         log=log, valid_caltypes=valid_caltypes,
+                         procmode=procmode)
         self.dbfile = dbfile
         self._calmgr = localmanager.LocalManager(dbfile)
         if not path.exists(dbfile) and force_init:

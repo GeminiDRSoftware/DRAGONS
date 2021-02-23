@@ -32,11 +32,12 @@ RESPONSESTR = """########## Request Data BEGIN ##########
 
 class RemoteDB(CalDB):
     def __init__(self, server, name=None, valid_caltypes=None, get_cal=True,
-                 store_cal=True, store_science=False, log=None):
+                 store_cal=True, store_science=False, procmode=None, log=None):
         if name is None:
             name = server
         super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
-                         log=log, valid_caltypes=valid_caltypes)
+                         log=log, valid_caltypes=valid_caltypes,
+                         procmode=procmode)
         self.store_science = store_science
         if not server.startswith("http"):  # allow https://
             server = f"http://{server}"
@@ -100,7 +101,7 @@ class RemoteDB(CalDB):
         an AstroData object, otherwise it should be a filename"""
         is_science = caltype is not None and "science" in caltype
         if not ((is_science and self.store_science) or
-                not (is_science or self.store_cal)):
+                (not is_science and self.store_cal)):
             self.log.stdinfo(f"{self.name}: NOT storing {cal} as {caltype}")
             return
 
@@ -114,8 +115,9 @@ class RemoteDB(CalDB):
             url = f"{self._science_url}/{cal.filename}"
         else:
             postdata = open(cal, "rb").read()
-            url = f"{self._proccal_url}/{cal}"
+            url = f"{self._proccal_url}/{path.basename(cal)}"
 
+        print(url)
         try:
             rq = urllib.request.Request(url)
             rq.add_header('Content-Length', '%d' % len(postdata))

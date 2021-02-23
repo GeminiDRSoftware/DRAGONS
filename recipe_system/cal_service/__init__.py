@@ -30,7 +30,8 @@ def get_calconf():
         pass
 
 
-def init_calibration_databases(inst_lookups=None, ucals=None, upload=None):
+def init_calibration_databases(inst_lookups=None, procmode=None,
+                               ucals=None, upload=None):
     """
     Initialize the calibration databases for a PrimitivesBASE object.
 
@@ -62,6 +63,7 @@ def init_calibration_databases(inst_lookups=None, ucals=None, upload=None):
     upload_calibs = upload is not None and "calibs" in upload
     upload_science = upload is not None and "science" in upload
     for cls, db, kwargs in parse_databases():
+        kwargs["procmode"] = procmode
         if cls == RemoteDB:
             # Actually storing to a remote DB requires that "store" is set in
             # the config *and* the appropriate type is in upload
