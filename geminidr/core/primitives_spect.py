@@ -1809,7 +1809,7 @@ class Spect(PrimitivesBASE):
                 delta_airmass = 0
 
             for index, ext in enumerate(ad):
-                ext_std = std[max(index, len_std-1)]
+                ext_std = std[min(index, len_std-1)]
                 extname = f"{ad.filename} extension {ext.id}"
 
                 # Create the correct callable function (we may want to
