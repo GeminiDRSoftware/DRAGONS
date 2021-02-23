@@ -13,6 +13,17 @@ from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
 
+DETAILED_HELP = """
+    <h1>Help for traceApertures</h1>
+    
+    <p> Traces the spectrum in 2D spectral images for each aperture center 
+        stored in the APERTURE on each extension. </p>
+        
+    <p> The panel on the right is used to subsample the spectrum. </p>
+    
+    TODO: Finish the HELP. 
+    """
+
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
     """
@@ -72,6 +83,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                           spacing=15,
                           sizing_mode="stretch_both")
 
+        doc.template_variables["primitive_long_help"] = DETAILED_HELP
         doc.add_root(all_content)
 
 

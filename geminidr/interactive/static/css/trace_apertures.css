@@ -1,0 +1,191 @@
+
+body {
+    background-color: gainsboro;
+    font-family: sans-serif;
+    font-size: 16px;
+    }
+
+.bk-btn.bk-btn-success {
+    border-radius: 20px;
+    font-size: 16px;
+    padding: 5px 30px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-warning {
+    border-radius: 20px;
+    font-size: 16px;
+    padding: 5px 30px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-root {
+    width: 100%;
+}
+
+.container {
+    background-color: white;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    margin: auto;
+    max-width: 1440px;
+    }
+
+.help-page {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 25px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+  transition: all .5s linear;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.help-page .help-content {
+    background-color: white;
+    border: 1px solid darkgray;
+    border-radius: 10px;
+    box-shadow: 0px 0px 30px rgba(0,0,0,0.4);
+    margin: auto;
+    margin-bottom: 100px;
+    overflow: scroll;
+    padding: 10px 20px 20px 20px;
+    width: 90%;
+}
+
+#close-btn {
+    background-color: silver;
+    border: 1px solid darkgray;
+    border-radius: 20px;
+    color: black;
+    font-size: 16px;
+    margin-right: 32px;
+    outline: none;
+    padding: 10px 30px;
+    transition: all .4s ease-in-out;
+}
+
+#close-btn:hover {
+    border: 1px solid darkgray;
+    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    filter: brightness(130%);
+}
+
+#close-btn:active {
+    border: 1px solid darkgray;
+    cursor: pointer;
+    filter: brightness(85%);
+
+    /* Inner shadow */
+    -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+}
+
+#footer {
+    background-color: steelblue;
+    color: gainsboro;
+    font-size: 14px;
+    font-style: normal;
+    margin: 10px 0px 0px 0px;
+    padding: 5px;
+    position: static;
+    text-align: right;
+    width: inherit;
+    }
+
+#footer a {
+    color: gainsboro;
+    transition: all .2s ease-in-out;
+}
+
+#footer a:hover {
+    color: white;
+}
+
+#help-btn {
+    background-color: steelblue;
+    border: 0px solid white;
+    border-radius: 20px;
+    color: gainsboro;
+    font-size: 16px;
+    float: right;
+    margin-right: 32px;
+    outline: none;
+    padding: 10px 30px;
+    transition: all .4s ease-in-out;
+    text-decoration: none;
+}
+
+#help-btn:hover {
+    border: 0px solid white;
+    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+    color: white;
+    cursor: pointer;
+    filter: brightness(115%);
+    outline: none;
+}
+
+#help-btn:active {
+    border: none;
+    border-bottom: none;
+    color: white;
+    cursor: pointer;
+    filter: brightness(85%);
+    outline: none;
+
+    /* Inner shadow */
+    -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+}
+
+#top {
+    background-color: steelblue;
+    box-shadow: 0px 10px 10px #f5f5f5;
+    color: white;
+    display: block;
+    height: auto;
+    margin: 0px;
+    width: inherit;
+    }
+
+#top .banner {
+    padding: 10px;
+    vertical-align: middle;
+    width: 100%;
+}
+
+#top .banner .primitive-name {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 18px;
+    padding: 10px;
+    vertical-align: middle;
+}
+
+#top .banner .title {
+    color: white;
+    font-size: 36px;
+    vertical-align: middle;
+}
+
+#top .logo {
+    float: left;
+    padding: 10px;
+}
+
+#top .logo img {
+    height: 72px;
+}
+
+#main_div {
+    height: 100%;
+    padding: 0px 10px 0px 10px;
+    }
