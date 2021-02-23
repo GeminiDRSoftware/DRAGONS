@@ -6,7 +6,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer, LayoutDOM
+from bokeh.models import Div, Select, Range1d, Spacer
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive
@@ -456,8 +456,7 @@ class FittingParametersUI:
                                                          1, 0, 10,
                                                          fitting_parameters, "grow",
                                                          fit.perform_fit)
-        self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [],
-                                             width_policy="min")
+        self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
         self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
                                 self.niter_slider, self.grow_slider]
@@ -556,11 +555,11 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
-        self.info_div = Div(align="center")
+        self.info_div = Div()
 
         # Make a listener to update the info panel with the RMS on a fit
         def update_info(info_div, f):
-            info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
+            info_div.update(text='<b>RMS:</b> {rms:.4f}'.format(rms=f.rms))
         listeners = [lambda f: update_info(self.info_div, f), ]
 
         self.fitting_parameters = fitting_parameters
@@ -574,10 +573,7 @@ class Fit1DPanel:
 
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
-        reset_button = bm.Button(align=('center', 'end'),
-                                 button_type='warning',
-                                 label="Reset",
-                                 width_policy='min')
+        reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
 
         def reset_dialog_handler(result):
             if result:
@@ -587,22 +583,16 @@ class Fit1DPanel:
                                                                   'to their original values.  Proceed?',
                                                                   reset_dialog_handler)
 
-        reset_button_row = row(
-            Spacer(width_policy="max"),
-            reset_button)
-
-        controller_div = Div(name="help_text",
-                             default_size=100,
-                             margin=(20, 0, 0, 0),
-                             style={"color": "gray"},
-                             width_policy="fit")
+        controller_div = Div()
+        self.info_div = Div()
 
         controls_ls.extend(controls_column)
-        controls_ls.append(reset_button_row)
-        controls_ls.append(controller_div)
-        controls = column(*controls_ls)
 
-        self.controller_div = controller_div
+        reset_button.align = 'center'
+        controls_ls.append(reset_button)
+        controls_ls.append(controller_div)
+
+        controls = column(*controls_ls)
 
         # Now the figures
         x_range = None
@@ -674,8 +664,8 @@ class Fit1DPanel:
             self.band_model = None
             mask_handlers = None
 
-        self.controller = Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
-        fig_column = [p_main]
+        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
+        fig_column = [p_main, self.info_div]
 
         if plot_residuals:
             # x_range is linked to the main plot so that zooming tracks between them
@@ -716,35 +706,12 @@ class Fit1DPanel:
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
 
-        info_row_spacer = Spacer(width_policy="fit",
-                                 sizing_mode="stretch_width",
-                                 min_width=10,
-                                 max_width=800)
-
-        info_row_ls = [info_row_spacer, self.info_div]
-
         if self.band_model:
             region_editor = RegionEditor(self.band_model)
-
-            region_editor_wgt = region_editor.get_widget()
-            region_editor_wgt.max_width = 500
-            region_editor_wgt.sizing_mode = "stretch_width"
-            region_editor_wgt.width_policy = "max"
-
-            # Replace empty space by region editor
-            info_row_ls.insert(0, region_editor_wgt)
-
-        info_row = row(*info_row_ls,
-                       min_width=100,
-                       sizing_mode="stretch_width",
-                       max_width=1000,
-                       width_policy="max")
-
-        fig_column.append(info_row)
-
+            fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
-        self.component = row(controls, col, spacing=10)
+        self.component = row(controls, col)
 
     def model_change_handler(self):
         """
@@ -842,7 +809,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  xlabel='x', ylabel='y',
                  domains=None, function=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html",
-                 template_variables=None,
                  **kwargs):
         """
         Parameters
@@ -883,12 +849,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         title : str
             Title for UI (Interactive <Title>)
         """
-        super().__init__(config=config,
-                         filename_info=filename_info,
-                         primitive_name=primitive_name,
-                         template=template,
-                         title=title)
-
+        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
+                         template=template)
         self.layout = None
 
         # Make the widgets accessible from external code so we can update
@@ -918,13 +880,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         else:
             if function is None:
                 function = 'chebyshev'
-            self.function = Div(
-                text=f'<p> Function: <b>{function.capitalize()}</b> </p>'
-                     f'<p style="color: gray"> These are parameters used to '
-                     f'(re)generate the input data for fitting. </p>',
-                sizing_mode="fixed",
-                width=212,  # ToDo: Hardcoded width. Would there be a better solution?
-            )
+            self.function = Div(text='Function: %s' % function)
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
@@ -1015,14 +971,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
         else:
-
-            # ToDo: Review if there is a better way of handling this.
-            if all_weights is None:
-                all_weights = [None]
-
-            # ToDo: the domains variable contains a list. I changed it to
-            #  domains[0] and the code worked.
-            tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
+            tui = Fit1DPanel(self, fitting_parameters[0], domains, allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
