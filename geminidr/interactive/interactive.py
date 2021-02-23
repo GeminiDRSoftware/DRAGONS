@@ -22,6 +22,7 @@ class PrimitiveVisualizer(ABC):
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
         """
+        self.exited = False
         self.title = title
         self.filename_info = filename_info if filename_info else ''
         self.primitive_name = primitive_name if primitive_name else ''
@@ -84,8 +85,10 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
-        self.user_satisfied = True
-        server.stop_server()
+        if not self.exited:
+            self.exited = True
+            self.user_satisfied = True
+            server.stop_server()
 
     def visualize(self, doc):
         """
