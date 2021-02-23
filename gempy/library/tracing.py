@@ -672,9 +672,14 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
 
     # Try to better estimate the true noise from the pixel-to-pixel
     # variations (the difference between adjacent pixels will be
-    # sqrt(2) times larger than the rms noise).
+    # sqrt(2) times larger than the rms noise). Also lower the weights
+    # in regions of rapidly-varying signal to avoid getting spurious minima.
     if variance is None:
-        w = np.full_like(y, np.sqrt(2) / sigma_clipped_stats(np.diff(y))[2])
+        diff = np.diff(y)
+        sigma1 = sigma_clipped_stats(diff)[2] / np.sqrt(2)
+        # 0.1 is a fudge factor that seems to work well
+        sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
+        w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
     else:
         w = divide0(1.0, np.sqrt(variance))
 
@@ -684,6 +689,14 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     # TODO: Quartic splines look bad with outlier removal
     #spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=4)
     spline = interpolate.UnivariateSpline(x, y, w=w, k=4)
+
+    from matplotlib import pyplot as plt
+    plt.ioff()
+    fig, ax = plt.subplots()
+    ax.plot(x, y)
+    x2 = np.arange(len(data)*10) * 0.1
+    ax.plot(x2, spline(x2), 'r-')
+    plt.show()
 
     derivative = spline.derivative(n=1)
     extrema = derivative.roots()
