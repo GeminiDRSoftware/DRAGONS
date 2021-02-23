@@ -20,8 +20,6 @@ from bokeh.events import PointEvent
 
 __all__ = ["controller", "Controller"]
 
-from gempy.library.tracing import pinpoint_peaks
-
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
 Controller instances will set this to listen to key presses.  The bokeh server will use this to send keys
@@ -77,7 +75,7 @@ class Controller(object):
             self.unmask_handler = None
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model, helptext)
+            self.tasks['a'] = ApertureTask(aperture_model, helptext, fig)
         if region_model:
             self.tasks['r'] = RegionTask(region_model, helptext)
         self.task = None
@@ -316,7 +314,7 @@ class ApertureTask(Task):
     """
     Task for controlling apertures.
     """
-    def __init__(self, aperture_model, helptext):
+    def __init__(self, aperture_model, helptext, fig):
         """
         Create aperture task for the given model.
 
@@ -332,6 +330,7 @@ class ApertureTask(Task):
         self.aperture_id = None
         self.last_x = None
         self.last_y = None
+        self.fig = fig
         self.helptext_area = helptext
         self.helptext_area.text = self.helptext()
 
@@ -382,40 +381,41 @@ class ApertureTask(Task):
             True if the task is finished and the controller should take over,
             False if we are not done with the Task
         """
-        if key == 'a':
+        keymodes = {'[': 'left', ']': 'right', 'l': 'location'}
+
+        def _handle_key():
+            if self.aperture_id is None:
+                # get closest one
+                self.aperture_id = self.aperture_model.find_closest(
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
+                if self.aperture_id is None:
+                    return False
+                self.mode = keymodes[key]
+                return False
+            else:
+                self.stop_aperture()
+                return True
+
+        if key in '[l]':
+            return _handle_key()
+        elif key == 'a':
             if self.aperture_id is None:
                 self.start_aperture(self.last_x, self.last_y)
                 return False
             else:
                 self.stop_aperture()
                 return True
-
         elif key == 'f':
             if self.aperture_id is None:
-                peaks = pinpoint_peaks(self.aperture_model.profile, None,
-                                       [self.last_x, ], halfwidth=20,
-                                       threshold=0)
-                if len(peaks) > 0:
-                    self.start_aperture(peaks[0], self.last_y)
-                else:
-                    self.start_aperture(self.last_x, self.last_y)
-
-        if key in '[ld]' and self.aperture_id is None:
-            # get closest one
-            self.aperture_id = self.aperture_model.find_closest(self.last_x)
-            if self.aperture_id is None:
-                return False
-
-        if key == '[':
-            self.mode = 'left'
-            return False
-        elif key == ']':
-            self.mode = 'right'
-            return False
-        elif key == 'l':
-            self.mode = 'location'
-            return False
+                self.aperture_model.find_peak(self.last_x)
+                return True
         elif key == 'd':
+            if self.aperture_id is None:
+                # get closest one
+                self.aperture_id = self.aperture_model.find_closest(
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
+                if self.aperture_id is None:
+                    return False
             self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
             return True
@@ -463,11 +463,11 @@ class ApertureTask(Task):
     def helptext(self):
         return """
         <b>A</b> to start the aperture or set the value<br/>
-        <b>F</b> to find a nearby peak to the cursor to start with<br/>
-        <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-        <b>]</b> to only edit the right edge (must remain right of the location)<br/>
+        <b>F</b> to find a peak close to the cursor (+/- 20 pixels)<br/>
+        <b>[</b> to edit the left edge<br/>
+        <b>]</b> to edit the right edge<br/>
         <b>L</b> to edit the location<br/>
-        <b>D</b> to delete the aperture
+        <b>D</b> to delete the closest aperture
         """
 
 

@@ -128,3 +128,7 @@ div.scrollable {
 .detailed_help dt {
   font-weight: bold;
 }
+
+.param_section {
+  font-weight: bold;
+}

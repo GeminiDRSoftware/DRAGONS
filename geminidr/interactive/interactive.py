@@ -35,7 +35,10 @@ class PrimitiveVisualizer(ABC):
 
         self.user_satisfied = False
 
-        self.submit_button = Button(label="Accept", align='center', button_type='success', width_policy='min')
+        self.submit_button = Button(
+            label="Accept (click here if you are done)",
+            button_type='success',
+        )
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
             window.close();

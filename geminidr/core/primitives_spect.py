@@ -1581,19 +1581,11 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
-        section = params["section"]
         interactive = params["interactive"]
-
-        sec_regions = []
-        if section:
-            for x1, x2 in (s.split(':') for s in section.split(',')):
-                sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
-                                         None if x2 == '' else int(x2)))
 
         aper_params = {key: params[key] for key in (
             'max_apertures', 'min_sky_region', 'percentile',
-            'sizing_method', 'threshold', 'use_snr')}
-        aper_params['sec_regions'] = sec_regions
+            'section', 'sizing_method', 'threshold', 'use_snr')}
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -2259,14 +2251,14 @@ class Spect(PrimitivesBASE):
                     ad_out = new_ext
                 else:
                     ad_out.append(new_ext[0])
-                if ndim == 2:
-                    try:
-                        offset = slit_offset.offset.value
-                        ext.APERTURE['c0'] += offset
-                        log.fullinfo("Shifting aperture locations by {:.2f} "
-                                     "pixels".format(offset))
-                    except AttributeError:
-                        pass
+                #if ndim == 2:
+                #    try:
+                #        offset = slit_offset.offset.value
+                #        ext.APERTURE['c0'] += offset
+                #        log.fullinfo("Shifting aperture locations by {:.2f} "
+                #                     "pixels".format(offset))
+                #    except AttributeError:
+                #        pass
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
