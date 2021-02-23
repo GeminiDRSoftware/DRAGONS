@@ -556,13 +556,11 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
-        self.info_div = Div(align=('start', 'end'),)  # Top right (in theory)
-                            # sizing_mode="fixed",
-                            # width_policy='min',)
+        self.info_div = Div(align="center")
 
         # Make a listener to update the info panel with the RMS on a fit
         def update_info(info_div, f):
-            info_div.update(text='<b>RMS:</b> {rms:.4f}'.format(rms=f.rms))
+            info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
         listeners = [lambda f: update_info(self.info_div, f), ]
 
         self.fitting_parameters = fitting_parameters
@@ -596,9 +594,7 @@ class Fit1DPanel:
         controller_div = Div(name="help_text",
                              default_size=100,
                              margin=(20, 0, 0, 0),
-                             style={
-                                 "color": "gray",
-                             },
+                             style={"color": "gray"},
                              width_policy="fit")
 
         controls_ls.extend(controls_column)
@@ -723,7 +719,7 @@ class Fit1DPanel:
         info_row_spacer = Spacer(width_policy="fit",
                                  sizing_mode="stretch_width",
                                  min_width=10,
-                                 max_width=100)
+                                 max_width=800)
 
         info_row_ls = [info_row_spacer, self.info_div]
 
@@ -731,15 +727,17 @@ class Fit1DPanel:
             region_editor = RegionEditor(self.band_model)
 
             region_editor_wgt = region_editor.get_widget()
-            # region_editor_wgt.width = 500
+            region_editor_wgt.max_width = 500
             region_editor_wgt.sizing_mode = "stretch_width"
-            region_editor_wgt.width_policy = "fit"
+            region_editor_wgt.width_policy = "max"
 
             # Replace empty space by region editor
             info_row_ls.insert(0, region_editor_wgt)
 
         info_row = row(*info_row_ls,
+                       min_width=100,
                        sizing_mode="stretch_width",
+                       max_width=1000,
                        width_policy="max")
 
         fig_column.append(info_row)
