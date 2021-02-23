@@ -19,13 +19,14 @@ CONFIG_SECTION = 'calibs'
 
 # END Setting up the calibs section for config files
 # ------------------------------------------------------------------------------
+
+
 def get_calconf():
     try:
         return globalConf[CONFIG_SECTION]
     except KeyError:
         # This will happen if CONFIG_SECTION has not been defined in any
-        # config file, and no defaults have been set (shouldn't happen if
-        # the user has called 'load_calconf' before.
+        # config file (shouldn't happen if the user has called load_config()
         pass
 
 
@@ -91,8 +92,11 @@ def parse_databases(default_dbname="cal_manager.db"):
     list of tuples (class, database name, kwargs)
     """
     db_list = []
-    databases = get_calconf().databases.splitlines()
-    for line in databases:
+    try:
+        databases = get_calconf()["databases"]
+    except AttributeError:  # if not defined, get_calconf() will return None
+        return db_list
+    for line in databases.splitlines():
         if not line:  # handle blank lines
             continue
         db, *flags = line.split()

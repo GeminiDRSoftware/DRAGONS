@@ -35,7 +35,7 @@ from .gemini.lookups.source_detection import sextractor_dict
 
 from recipe_system.cal_service import init_calibration_databases, calurl_dict
 from recipe_system.utils.decorators import parameter_override
-from recipe_system.config import globalConf
+from recipe_system.config import load_config
 
 import atexit
 # ------------------------------ caches ---------------------------------------
@@ -166,7 +166,7 @@ class PrimitivesBASE:
                  config_file=None):
         # This is a general config file so we should load it now. Some of its
         # information may be overridden by other parameters passed here.
-        globalConf.load(config_file)
+        load_config(config_file)
 
         self.streams          = {'main': adinputs}
         self.mode             = mode

@@ -29,16 +29,16 @@ class LocalDB(CalDB):
     """
     def __init__(self, dbfile, name=None, valid_caltypes=None,
                  get_cal=True, store_cal=True, log=None, force_init=False):
-        dbfile = path.expanduser(dbfile)
-        if path.isdir(dbfile):
-            dbfile = path.join(dbfile, DEFAULT_DB_NAME)
-
-        if name is None:
-            name = dbfile
         if not localmanager_available:
             raise ValueError(f"Cannot initialize local database {name} as"
                              "localmanager could not be imported.\n"
                              f"{import_error}")
+
+        if name is None:  # Do this first so "~" is in the name
+            name = dbfile
+        dbfile = path.expanduser(dbfile)
+        if path.isdir(dbfile):
+            dbfile = path.join(dbfile, DEFAULT_DB_NAME)
 
         super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
                          log=log, valid_caltypes=valid_caltypes)
