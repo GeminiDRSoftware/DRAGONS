@@ -694,14 +694,6 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     #spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=4)
     spline = interpolate.UnivariateSpline(x, y, w=w, k=4)
 
-    from matplotlib import pyplot as plt
-    plt.ioff()
-    fig, ax = plt.subplots()
-    ax.plot(x, y)
-    x2 = np.arange(len(data)*10) * 0.1
-    ax.plot(x2, spline(x2), 'r-')
-    plt.show()
-
     derivative = spline.derivative(n=1)
     extrema = derivative.roots()
     second_derivatives = spline.derivative(n=2)(extrema)
