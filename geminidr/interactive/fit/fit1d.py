@@ -180,7 +180,10 @@ class InteractiveModel1D(InteractiveModel):
 
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
-        xlinspace = np.linspace(*self.domain, 100, num=500)
+        if len(self.domain) == 1:
+            xlinspace = np.linspace(0, *self.domain, 500)
+        else:
+            xlinspace = np.linspace(*self.domain, 500)
         weights = self.populate_bokeh_objects(x, y, mask)
         self.weights = weights
 
@@ -519,7 +522,8 @@ class Fit1DPanel:
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True,
-                 enable_user_masking=True, enable_regions=True):
+                 enable_user_masking=True, enable_regions=True,
+                 show_plot_tools_legend=False):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -591,6 +595,8 @@ class Fit1DPanel:
         reset_button.align = 'center'
         controls_ls.append(reset_button)
         controls_ls.append(controller_div)
+        if show_plot_tools_legend:
+            controls_ls.append(visualizer.bokeh_legend)
 
         controls = column(*controls_ls)
 
@@ -956,6 +962,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             kwargs['min_order'] = 1
             kwargs['max_order'] = 10
 
+        # if we only have 1 reinit panel child, we didn't have room to show the legend there
+        # so we show it here
+        show_plot_tools_legend=False
+        if len(self.reinit_panel.children) <= 1:
+            show_plot_tools_legend=True
+
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
@@ -966,12 +978,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights,
+                                 show_plot_tools_legend=show_plot_tools_legend, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
         else:
-            tui = Fit1DPanel(self, fitting_parameters[0], domains, allx[0], ally[0], all_weights[0], **kwargs)
+            tui = Fit1DPanel(self, fitting_parameters[0], domains, allx[0], ally[0], all_weights[0],
+                             show_plot_tools_legend=show_plot_tools_legend, **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
@@ -1001,7 +1015,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             layout_ls.append(Spacer(height=10))
             layout_ls.append(col)
         else:
-            layout_ls.append(row(column(self.reinit_panel), col))
+            layout_ls.append(row(column(self.reinit_panel, self.bokeh_legend), col))
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
         doc.add_root(self.layout)
 

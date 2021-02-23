@@ -3,7 +3,7 @@ from copy import copy
 
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, Slider, TextInput)
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div)
 
 from geminidr.interactive import server
 from geminidr.interactive.server import register_callback
@@ -34,6 +34,7 @@ class PrimitiveVisualizer(ABC):
 
         self.user_satisfied = False
 
+        self.bokeh_legend = Div(text='Plot Tools<br/><img src="dragons/static/bokehlegend.png" />')
         self.submit_button = Button(label="Accept", align='center', button_type='success', width_policy='min')
         self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
