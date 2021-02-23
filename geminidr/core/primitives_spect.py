@@ -1769,7 +1769,7 @@ class Spect(PrimitivesBASE):
             std_list = (std, None)
 
         # Provide a standard AD object for every science frame, and an origin
-        for ad, bias, origin in zip(*gt.make_lists(adinputs, *std_list,
+        for ad, std, origin in zip(*gt.make_lists(adinputs, *std_list,
                                     force_ad=(1,))):
             if ad.phu.get(timestamp_key):
                 log.warning(f"{ad.filename}: already processed by "
