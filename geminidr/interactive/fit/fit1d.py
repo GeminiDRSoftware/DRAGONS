@@ -144,7 +144,6 @@ class InteractiveModel1D(InteractiveModel):
     Subclass for 1D models
     """
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
-                 grow=0, sigma=3, lsigma=None, hsigma=None, maxiter=3,
                  section=None, listeners=[]):
         """
         Create base class with given parameters as initial model inputs.
@@ -159,16 +158,6 @@ class InteractiveModel1D(InteractiveModel):
             list of y coordinate values
         mask : array of str
             array of mask names for each point
-        var
-        grow
-            grow for fit
-        sigma
-            sigma clip for fit
-        lsigma : float
-            Lower sigma (default None takes from sigma)
-        hsigma
-        maxiter
-            max iterations to do on fit
         section
         """
         model = InteractiveFit1D(fitting_parameters, domain, listeners=listeners)
@@ -184,7 +173,7 @@ class InteractiveModel1D(InteractiveModel):
             xlinspace = np.linspace(0, *self.domain, 500)
         else:
             xlinspace = np.linspace(*self.domain, 500)
-        weights = self.populate_bokeh_objects(x, y, mask)
+        weights = self.populate_bokeh_objects(x, y, weights=weights, mask=mask)
         self.weights = weights
 
         if "sigma_lower" in fitting_parameters or "sigma_upper" in fitting_parameters:
