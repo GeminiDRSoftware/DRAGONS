@@ -341,20 +341,25 @@ class Spect(PrimitivesBASE):
                     spectrum = Spek1D(ext) / (exptime * u.s)
                     wave, zpt, zpt_err = [], [], []
 
-                    # Compute values that are counts / (exptime * flux_density * bandpass)
-                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                        data, mask, variance = spectrum.signal(region)
-                        if mask == 0 and fluxdens > 0:
-                            # Regardless of whether FLUX column is f_nu or f_lambda
-                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                            if data > 0:
-                                wave.append(w0)
-                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(data / flux))
-                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                # Compute values in counts / (exptime * flux_density * bandpass)
+                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                            spec_table['WIDTH'].quantity,
+                                            spec_table['FLUX'].quantity):
+                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                    # We don't want a single bad pixel to ruin an entire
+                    # bandpass, so exclude pixels with the DQ.bad_pixel bit
+                    # set and assign them the average of the other pixels
+                    data, mask, variance = spectrum.signal(
+                        region, interpolate=DQ.bad_pixel)
+                    if mask == 0 and fluxdens > 0:
+                        # Regardless of whether FLUX column is f_nu or f_lambda
+                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                        if data > 0:
+                            wave.append(w0)
+                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                            zpt.append(u.Magnitude(data / flux))
+                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
                     # TODO: Abstract to interactive fitting
                     wave = array_from_list(wave, unit=u.nm)
