@@ -249,6 +249,8 @@ class traceAperturesConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     niter = config.RangeField("Maximum number of rejection iterations",
                               int, None, min=0, optional=True)
+    new_template = config.Field("Use new template?",
+                                bool, True)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     order = config.RangeField("Order of fitting function",
