@@ -168,7 +168,8 @@ class PrimitiveVisualizer(ABC):
         """ % message)
         widget.js_on_change('disabled', callback)
 
-    def make_widgets_from_config(self, params, extras, reinit_live):
+    def make_widgets_from_config(self, params, extras, reinit_live,
+                                 slider_width=256):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -183,6 +184,8 @@ class PrimitiveVisualizer(ABC):
         reinit_live : bool
             True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
             Currently only viable for text-slider style inputs
+        slider_width : int (default: 256)
+            Default width for sliders created here.
 
         Returns
         -------
@@ -209,7 +212,11 @@ class PrimitiveVisualizer(ABC):
                 if end is None:
                     end = 50
                 step = start
-                widget = build_text_slider(doc, value, step, start, end, obj=self.config, attr=pname)
+
+                widget = build_text_slider(doc, value, step, start, end,
+                                           obj=self.config, attr=pname,
+                                           slider_width=slider_width)
+
                 self.widgets[pname] = widget.children[0]
             elif hasattr(field, 'allowed'):
                 # ChoiceField => drop-down menu
@@ -222,6 +229,7 @@ class PrimitiveVisualizer(ABC):
             # Complex multi-widgets will already have been added
             if pname not in self.widgets:
                 self.widgets[pname] = widget
+
         for pname, field in extras.items():
             # Do some inspection of the config to determine what sort of widget we want
             doc = field.doc.split('\n')[0]
@@ -239,8 +247,12 @@ class PrimitiveVisualizer(ABC):
                     self.extras[pname] = val
                     if reinit_live:
                         self.reconstruct_points()
-                widget = build_text_slider(doc, field.default, step, start, end, obj=self.extras, attr=pname,
-                                           handler=handler, throttled=True)
+
+                widget = build_text_slider(doc, field.default, step, start, end,
+                                           obj=self.extras, attr=pname,
+                                           handler=handler, throttled=True,
+                                           slider_width=slider_width)
+
                 self.widgets[pname] = widget.children[0]
                 self.extras[pname] = field.default
             else:
@@ -257,7 +269,8 @@ class PrimitiveVisualizer(ABC):
 
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
-                      attr=None, handler=None, throttled=False):
+                      attr=None, handler=None, throttled=False,
+                      slider_width=256):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -295,13 +308,16 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     # trying to convince int-based sliders to behave
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
-        slider = Slider(start=start, end=end, value=value, step=step, title=title, format=fmt)
+        slider = Slider(start=start, end=end, value=value, step=step,
+                        title=title, format=fmt)
     else:
-        slider = Slider(start=start, end=end, value=value, step=step, title=title)
-    slider.width = 128
+        slider = Slider(start=start, end=end, value=value, step=step,
+                        title=title)
+
+    slider.width = slider_width
 
     text_input = TextInput(width=64, value=str(value))
-    component = row(slider, text_input)
+    component = row(slider, text_input, id=attr)
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type

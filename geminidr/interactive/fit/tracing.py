@@ -9,6 +9,7 @@ from bokeh.plotting import figure
 
 from gempy.library import astromodels, astrotools as at, config, tracing
 
+from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import (
     connect_figure_extras, GIRegionListener, GIRegionModel, RegionEditor)
@@ -30,6 +31,122 @@ DETAILED_HELP = """
     
     TODO: Finish the HELP. 
     """
+
+
+# noinspection PyUnusedLocal,PyMissingConstructor
+class TraceAperturesParametersUI(FittingParametersUI):
+    """
+    Represents the panel with the adjustable parameters for fitting the
+    trace.
+    """
+    def __init__(self, vis, fit, fitting_parameters, min_order, max_order):
+
+        self.vis = vis
+        self.fit = fit
+        self.saved_sigma_clip = self.fit.sigma_clip
+        self.fitting_parameters = fitting_parameters
+        self.fitting_parameters_for_reset = \
+            {x: y for x, y in self.fitting_parameters.items()}
+
+        self.description = bm.Div(
+            text=f"<p> 1D Fitting Function: "
+                 f"<b> {vis.function_name.capitalize()} </b> </p>"
+                 f"<p style='color: gray'> These are the parameters used to "
+                 f"fit the tracing data. </p>",
+            min_width=100,
+            max_width=200,
+            sizing_mode='stretch_width',
+            style={"color": "black"},
+            width_policy='min',
+        )
+
+        self.niter_slider = interactive.build_text_slider(
+            "Max iterations", fitting_parameters["niter"], 1, 0, 10,
+            fitting_parameters, "niter", fit.perform_fit, slider_width=128)
+
+        self.order_slider = interactive.build_text_slider(
+            "Order", fitting_parameters["order"], 1, min_order, max_order,
+            fitting_parameters, "order", fit.perform_fit, throttled=True,
+            slider_width=128)
+
+        self.grow_slider = interactive.build_text_slider(
+            "Grow", fitting_parameters["grow"], 1, 0, 10,
+            fitting_parameters, "grow", fit.perform_fit,
+            slider_width=128)
+
+        self.sigma_button = bm.CheckboxGroup(
+            labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
+        self.sigma_button.on_change('active', self.sigma_button_handler)
+
+        self.sigma_upper_slider = interactive.build_text_slider(
+            "Sigma (Upper)", fitting_parameters["sigma_upper"], 0.01, 1, 10,
+            fitting_parameters, "sigma_upper", self.sigma_slider_handler,
+            throttled=True, slider_width=128)
+
+        self.sigma_lower_slider = interactive.build_text_slider(
+            "Sigma (Lower)", fitting_parameters["sigma_lower"], 0.01, 1, 10,
+            fitting_parameters, "sigma_lower", self.sigma_slider_handler,
+            throttled=True, slider_width=128)
+
+        self.controls_column = [self.description,
+                                self.order_slider,
+                                self.niter_slider,
+                                self.grow_slider,
+                                self.sigma_button,
+                                self.sigma_upper_slider,
+                                self.sigma_lower_slider]
+
+    def sigma_button_handler(self, attr, old, new):
+        """
+        Handle the sigma clipping being turned on or off.
+
+        This will also trigger a fit since the result may
+        change.
+
+        Parameters
+        ----------
+        attr : Any
+            unused
+        old : str
+            old value of the toggle button
+        new : str
+            new value of the toggle button
+        """
+        self.fit.sigma_clip = bool(new)
+
+        if self.fit.sigma_clip:
+            self.fitting_parameters["sigma_upper"] = \
+                self.sigma_upper_slider.children[0].value
+            self.fitting_parameters["sigma_lower"] = \
+                self.sigma_lower_slider.children[0].value
+        else:
+            self.fitting_parameters["sigma_upper"] = None
+            self.fitting_parameters["sigma_lower"] = None
+        self.fit.perform_fit()
+
+
+class TraceAperturesRegionListener(GIRegionListener):
+    """
+    Wrapper class so we can just detect when a bands are finished. We don't want
+    to do an expensive recalc as a user is dragging a band around. It creates a
+    band listener that just updates on `finished`.
+
+    Parameters
+    ----------
+    fn : function
+        function to call when band is finished.
+    """
+    def __init__(self, fn):
+        self.fn = fn
+
+    def adjust_region(self, region_id, start, stop):
+        pass
+
+    def delete_region(self, region_id):
+        self.fn()
+
+    def finish_regions(self):
+        self.fn()
 
 
 # noinspection PyMissingConstructor
@@ -61,160 +178,164 @@ class TraceAperturesTab(Fit1DPanel):
         width of plot area in pixels
     plot_height : int
         height of plot area in pixels
-    plot_residuals : bool
-        True if we want the lower plot showing the differential between the fit and the data
     """
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
-                 weights=None, min_order=1, max_order=10, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True,
-                 enable_user_masking=True, enable_regions=True):
+                 weights=None, max_order=10, min_order=1, plot_height=400,
+                 plot_width=600, plot_title="Trace Apertures - Fitting",
+                 xlabel='x', ylabel='y'):
 
         # Just to get the doc later
         self.visualizer = visualizer
 
-        self.info_div = bm.Div(align="center")
-
         # Make a listener to update the info panel with the RMS on a fit
         def update_info(info_div, f):
             info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
-        listeners = [lambda f: update_info(self.info_div, f), ]
+
+        self.rms_div = bm.Div(align=("start", "center"),
+                              max_width=220,
+                              width_policy="fit",)
+
+        listeners = [lambda f: update_info(self.rms_div, f), ]
 
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(
-            fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.fitting_parameters_ui = TraceAperturesParametersUI(
+            visualizer, self.fit, self.fitting_parameters, min_order,  max_order)
 
-        fit = self.fit
-        self.fitting_parameters_ui = FittingParametersUI(
-            visualizer, fit, self.fitting_parameters, min_order, max_order)
+        self.left_column, self.controller_help = self.create_left_column(
+            fit_pars_ui=self.fitting_parameters_ui.get_bokeh_components(),
+            rms_div=self.rms_div)
 
-        controls_ls = list()
+        self.plots_column, self.controller = self.create_plots_column(
+            plot_height=plot_height, plot_title=plot_title,
+            plot_width=plot_width, xlabel=xlabel, ylabel=ylabel)
 
-        controls_column = self.fitting_parameters_ui.get_bokeh_components()
+        self.component = row(self.left_column, self.plots_column, spacing=10)
 
+    def create_left_column(self, fit_pars_ui, rms_div, column_width=220):
+        """
+        Creates the control panel on the left of the page where one can set
+        what are the fit parameter values.
+        """
+        # Create the reset button, add its functionality and add it to the layout
         reset_button = bm.Button(align=('center', 'end'),
                                  button_type='warning',
                                  label="Reset",
                                  width_policy='min')
 
-        def reset_dialog_handler(result):
-            if result:
-                self.fitting_parameters_ui.reset_ui()
-        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
-                                                                  'Reset will change all inputs for this tab back '
-                                                                  'to their original values.  Proceed?',
-                                                                  reset_dialog_handler)
+        reset_dialog_message = ('Reset will change all inputs for this tab back'
+                                ' to their original values. Proceed?')
+
+        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
+            reset_button, reset_dialog_message, self.reset_dialog_handler)
 
         reset_button_row = row(
-            Spacer(width_policy="max"),
-            reset_button)
+            rms_div,
+            reset_button,
+            max_width=column_width,
+            width_policy="max",
+            sizing_mode="fixed",
+        )
 
-        controller_div = bm.Div(name="help_text",
-                                default_size=100,
-                                margin=(20, 0, 0, 0),
-                                style={"color": "gray"},
-                                width_policy="fit")
+        controller_help = bm.Div(id="control_help",
+                                 name="control_help",
+                                 margin=(20, 0, 0, 0),
+                                 width=column_width,
+                                 style={"color": "gray"})
 
-        controls_ls.extend(controls_column)
+        controls_ls = fit_pars_ui
         controls_ls.append(reset_button_row)
-        controls_ls.append(controller_div)
-        controls = column(*controls_ls)
+        controls_ls.append(controller_help)
 
-        self.controller_div = controller_div
+        controls_col = column(*controls_ls,
+                              id="fit_pars_control",
+                              max_width=column_width,
+                              width_policy="fit")
 
+        return controls_col, controller_help
+
+    def create_plots_column(self, plot_width, plot_height, plot_title, xlabel,
+                            ylabel, enable_regions=True):
+        """
+        Creates the central plot area with the main plot, the residuals and
+        a text field where the user can select regions.
+        """
         # Now the figures
         x_range = None
         y_range = None
-        try:
-            if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                x_min = min(self.fit.data.data['x'])
-                x_max = max(self.fit.data.data['x'])
-                x_pad = (x_max-x_min)*0.1
-                x_range = bm.Range1d(x_min-x_pad, x_max+x_pad*2)
-            if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
-                y_min = min(self.fit.data.data['y'])
-                y_max = max(self.fit.data.data['y'])
-                y_pad = (y_max-y_min)*0.1
-                y_range = bm.Range1d(y_min-y_pad, y_max+y_pad)
-        except:
-            pass  # ok, we don't *need* ranges...
-        if enable_user_masking:
-            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
-        else:
-            tools = "pan,wheel_zoom,box_zoom,reset"
-        p_main = figure(plot_width=plot_width, plot_height=plot_height,
-                        min_width=400, title='Fit', x_axis_label=xlabel,
-                        y_axis_label=ylabel, tools=tools,
-                        output_backend="webgl", x_range=x_range,
+
+        if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
+            x_min = min(self.fit.data.data['x'])
+            x_max = max(self.fit.data.data['x'])
+            x_pad = (x_max - x_min)*0.1
+            x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
+
+        if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
+            y_min = min(self.fit.data.data['y'])
+            y_max = max(self.fit.data.data['y'])
+            y_pad = (y_max - y_min) * 0.1
+            y_range = bm.Range1d(y_min - y_pad, y_max + y_pad)
+
+        tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
+
+        # Create main plot area ------------------------------------------------
+        p_main = figure(plot_width=plot_width,
+                        plot_height=plot_height,
+                        min_width=400,
+                        title=plot_title,
+                        x_axis_label=xlabel,
+                        y_axis_label=ylabel,
+                        tools=tools,
+                        output_backend="webgl",
+                        x_range=x_range,
                         y_range=y_range)
 
-        p_main.height_policy = 'fixed'
+        p_main.height_policy = 'fit'
         p_main.width_policy = 'fit'
 
+        # Enable region selection ----------------------------------------------
         if enable_regions:
-            class Fit1DRegionListener(GIRegionListener):
-                """
-                Wrapper class so we can just detect when a bands are finished.
-
-                We don't want to do an expensive recalc as a user is dragging
-                a band around.
-                """
-                def __init__(self, fn):
-                    """
-                    Create a band listener that just updates on `finished`
-                    Parameters
-                    ----------
-                    fn : function
-                        function to call when band is finished.
-                    """
-                    self.fn = fn
-
-                def adjust_region(self, region_id, start, stop):
-                    pass
-
-                def delete_region(self, region_id):
-                    self.fn()
-
-                def finish_regions(self):
-                    self.fn()
-
-            self.band_model = GIRegionModel()
-
             def update_regions():
                 self.fit.model.regions = self.band_model.build_regions()
-            self.band_model.add_listener(Fit1DRegionListener(update_regions))
-            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
-
+            self.band_model = GIRegionModel()
+            self.band_model.add_listener(
+                TraceAperturesRegionListener(update_regions))
+            # self.band_model.add_listener(
+            #     TraceAperturesRegionListener(self.band_model_handler))
             connect_figure_extras(p_main, None, self.band_model)
-
             mask_handlers = (self.mask_button_handler,
                              self.unmask_button_handler)
         else:
             self.band_model = None
             mask_handlers = None
 
-        self.controller = Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
-        fig_column = [p_main]
+        # Create residual plot area --------------------------------------------
+        # x_range is linked to the main plot so that zooming tracks between them
+        p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
+                         min_width=400,
+                         title='Fit Residuals',
+                         x_axis_label=xlabel, y_axis_label='Delta',
+                         tools="pan,box_zoom,reset",
+                         output_backend="webgl", x_range=p_main.x_range, y_range=None)
+        p_resid.height_policy = 'fixed'
+        p_resid.width_policy = 'fit'
+        connect_figure_extras(p_resid, None, self.band_model)
 
-        if plot_residuals:
-            # x_range is linked to the main plot so that zooming tracks between them
-            p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                             min_width=400,
-                             title='Fit Residuals',
-                             x_axis_label=xlabel, y_axis_label='Delta',
-                             tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=p_main.x_range, y_range=None)
-            p_resid.height_policy = 'fixed'
-            p_resid.width_policy = 'fit'
-            connect_figure_extras(p_resid, None, self.band_model)
-            fig_column.append(p_resid)
-            # Initalizing this will cause the residuals to be calculated
-            self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
-            p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        controller = Controller(p_main,
+                                None,
+                                self.band_model,
+                                self.controller_help,
+                                mask_handlers=mask_handlers)
+
+        # Initializing this will cause the residuals to be calculated
+        self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
+
+        p_resid.scatter(x='x', y='residuals', source=self.fit.data,
+                        size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
 
         # Initializing regions here ensures the listeners are notified of the region(s)
-        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
-            region_tuples = at.cartesian_regions_to_slices(fitting_parameters["regions"])
+        if "regions" in self.fitting_parameters and self.fitting_parameters["regions"] is not None:
+            region_tuples = at.cartesian_regions_to_slices(self.fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
@@ -234,54 +355,45 @@ class TraceAperturesTab(Fit1DPanel):
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
 
-        info_row_spacer = Spacer(width_policy="fit",
-                                 sizing_mode="stretch_width",
-                                 min_width=10,
-                                 max_width=800)
-
-        info_row_ls = [info_row_spacer, self.info_div]
+        fig_column = [p_main, p_resid]
 
         if self.band_model:
             region_editor = RegionEditor(self.band_model)
-
             region_editor_wgt = region_editor.get_widget()
-            region_editor_wgt.max_width = 500
+            region_editor_wgt.align = "center"
+            region_editor_wgt.max_width = 835
             region_editor_wgt.sizing_mode = "stretch_width"
-            region_editor_wgt.width_policy = "max"
-
-            # Replace empty space by region editor
-            info_row_ls.insert(0, region_editor_wgt)
-
-        info_row = row(*info_row_ls,
-                       min_width=100,
-                       sizing_mode="stretch_width",
-                       max_width=1000,
-                       width_policy="max")
-
-        fig_column.append(info_row)
+            region_editor_wgt.width_policy = "fit"
+            fig_column.append(region_editor_wgt)
 
         col = column(*fig_column)
-        col.sizing_mode = 'scale_width'
-        self.component = row(controls, col, spacing=10)
+        col.sizing_mode = 'scale_both'
+        return col, controller
+
+    def reset_dialog_handler(self, result):
+        """
+        Reset fit parameter values.
+        """
+        if result:
+            self.fitting_parameters_ui.reset_ui()
 
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
     """
-    def __init__(self, data_source, fitting_parameters, config,
+    def __init__(self, data_source, fitting_parameters, _config,
                  reinit_params=None, reinit_extras=None,
                  modal_message=None,
                  modal_button_label=None,
                  order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
-                 domains=None, function=None, title=None, primitive_name=None, filename_info=None,
+                 domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html",
-                 template_variables=None,
                  **kwargs):
 
-        super(Fit1DVisualizer, self).__init__(config=config,
+        super(Fit1DVisualizer, self).__init__(config=_config,
                                               filename_info=filename_info,
                                               primitive_name=primitive_name,
                                               template=template,
@@ -289,18 +401,21 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.layout = None
         self.widgets = {}
 
-        function = 'chebyshev'
+        self.function_name = 'chebyshev'
         self.function = bm.Div(
-            text=f'<p> Function: <b>{function.capitalize()}</b> </p>'
+            text=f'<p> Parameters for Tracing Data </p>'
                  f'<p style="color: gray"> These are parameters used to '
-                 f'(re)generate the input data for fitting. </p>',
+                 f'(re)generate the input tracing data that will be used for '
+                 f'fitting. </p>',
             sizing_mode="fixed",
             width=212,  # ToDo: Hardcoded width. Would there be a better solution?
             )
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
+            reinit_widgets = self.make_widgets_from_config(
+                reinit_params, reinit_extras, modal_message is None,
+                slider_width=128)
 
             # This should really go in the parent class, like submit_button
             if modal_message:
@@ -382,7 +497,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
@@ -394,7 +509,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
-            tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
+            tui = TraceAperturesTab(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
@@ -457,7 +572,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         doc.add_root(all_content)
 
 
-def interactive_trace_apertures(ext, _config, _fit1d_params):
+def interactive_trace_apertures(ext, _config, _fit1d_params, new_template=False):
     """
     Run traceApertures() interactively.
 
@@ -469,6 +584,8 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
         Dictionary containing the parameters from traceApertures().
     _fit1d_params : dict
         Dictionary containing initial parameters for fitting a model.
+    new_template : bool
+
 
     Returns
     -------
@@ -499,19 +616,32 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
     def data_provider(conf, extra):
         return trace_apertures_data_provider(ext, conf, extra)
 
-    visualizer = TraceAperturesVisualizer(
-        data_provider,
-        config=_config,
-        filename_info=ext.filename,
-        fitting_parameters=fit_par_list,
-        tab_name_fmt="Aperture {}",
-        xlabel=xlabel,
-        ylabel=ylabel,
-        reinit_extras=reinit_extras,
-        domains=domain_list,
-        primitive_name="traceApertures()",
-        template="trace_apertures.html",
-        title="Trace Apertures")
+    if new_template:
+        visualizer = TraceAperturesVisualizer(
+            data_provider,
+            _config=_config,
+            filename_info=ext.filename,
+            fitting_parameters=fit_par_list,
+            tab_name_fmt="Aperture {}",
+            xlabel=xlabel,
+            ylabel=ylabel,
+            reinit_extras=reinit_extras,
+            domains=domain_list,
+            primitive_name="traceApertures()",
+            template="trace_apertures.html",
+            title="Trace Apertures")
+    else:
+        visualizer = Fit1DVisualizer(
+            data_provider, fit_par_list, _config,
+            filename_info=ext.filename,
+            tab_name_fmt="Aperture {}",
+            xlabel=xlabel,
+            ylabel=ylabel,
+            reinit_extras=reinit_extras,
+            domains=domain_list,
+            primitive_name="traceApertures()",
+            template="trace_apertures.html",
+            title="Trace Apertures")
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()
