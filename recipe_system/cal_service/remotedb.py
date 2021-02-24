@@ -57,7 +57,7 @@ class RemoteDB(CalDB):
         for rq in cal_requests:
             procstr = "" if procmode is None else f"/{procmode}"
             rqurl = f"{self._calmgr}/{rq.caltype}{procstr}/{rq.filename}"
-            log.stdinfo(f"CENTRAL CALIBRATION SEARCH: {rqurl}")
+            log.stdinfo(f"Querying remote database: {rqurl}")
             remote_cals = retrieve_calibration(rqurl, rq, howmany=howmany)
             print(remote_cals[0])
             print(remote_cals[1])
@@ -74,7 +74,7 @@ class RemoteDB(CalDB):
             print(remote_cals[0])
             caldir = path.join(self.caldir, rq.caltype)
             for calurl, calmd5 in zip(*remote_cals):
-                self.log.info(f"Found calibration (url): {calurl}")
+                log.stdinfo(f"Found calibration (url): {calurl}")
                 calname = path.basename(urllib.parse.urlparse(calurl).path)
                 cachefile = path.join(caldir, calname)
                 if path.exists(cachefile):
@@ -86,7 +86,6 @@ class RemoteDB(CalDB):
                     else:
                         log.stdinfo(f"File {calname} is cached but")
                         log.stdinfo("md5 checksums DO NOT MATCH")
-                        log.stdinfo("Making request on calibration service")
 
                 log.stdinfo(f"Making request for {calurl}")
                 if not path.exists(caldir):
