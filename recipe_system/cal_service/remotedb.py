@@ -1,7 +1,7 @@
 # Defines the RemoteDB class for calibration returns. This is a high-level
 # interface to FITSstore. It may be subclassed in future
 
-from os import path
+from os import path, makedirs
 from io import BytesIO
 from pprint  import pformat
 from xml.dom import minidom
@@ -59,6 +59,8 @@ class RemoteDB(CalDB):
             rqurl = f"{self._calmgr}/{rq.caltype}{procstr}/{rq.filename}"
             log.stdinfo(f"CENTRAL CALIBRATION SEARCH: {rqurl}")
             remote_cals = retrieve_calibration(rqurl, rq, howmany=howmany)
+            print(remote_cals[0])
+            print(remote_cals[1])
             if not remote_cals[0]:
                 log.warning("START CALIBRATION SERVICE REPORT\n")
                 if remote_cals[1]:
@@ -69,10 +71,12 @@ class RemoteDB(CalDB):
                 continue
 
             good_cals = []
+            print(remote_cals[0])
+            caldir = path.join(self.caldir, rq.caltype)
             for calurl, calmd5 in zip(*remote_cals):
                 self.log.info(f"Found calibration (url): {calurl}")
                 calname = path.basename(urllib.parse.urlparse(calurl).path)
-                cachefile = path.join(self.caldir, rq.caltype, calname)
+                cachefile = path.join(caldir, calname)
                 if path.exists(cachefile):
                     cached_md5 = generate_md5_digest(cachefile)
                     if cached_md5 == calmd5:
@@ -85,6 +89,8 @@ class RemoteDB(CalDB):
                         log.stdinfo("Making request on calibration service")
 
                 log.stdinfo(f"Making request for {calurl}")
+                if not path.exists(caldir):
+                    makedirs(caldir)
                 try:
                     get_request(calurl, cachefile)
                 except GetterError as err:
@@ -101,7 +107,7 @@ class RemoteDB(CalDB):
                                   f"expected hash {calmd5}")
             # Append list if >1 requested, else just the filename string
             if good_cals:
-                cals.append(good_cals if howmany > 1 else good_cals[0])
+                cals.append(good_cals if howmany != 1 else good_cals[0])
             else:
                 cals.append(None)
 
