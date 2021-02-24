@@ -50,29 +50,32 @@ class LocalDB(CalDB):
                              "Initializing.")
             self.init()
 
-    def _get_calibrations(self, adinputs, caltype=None, procmode=None):
+    def _get_calibrations(self, adinputs, caltype=None, procmode=None,
+                          howmany=1):
         self.log.debug(f"Querying {self.name} for {caltype}")
         cal_requests = get_cal_requests(adinputs, caltype, procmode=procmode,
                                         is_local=True)
         cals = []
         for rq in cal_requests:
-            # TODO: We can refactor this so it doesn't return lists or URLs,
-            # since it no longer has to be the same format as RemoteDB
-            calurl, calmd5 = self._calmgr.calibration_search(rq)
-            if not calurl:
+            local_cals = self._calmgr.calibration_search(rq, howmany=howmany)
+            if not local_cals[0]:
                 cals.append(None)
                 continue
 
-            if len(calurl) > 1:
-                raise ValueError("Received too many calibrations!")
-            calfile, md5 = calurl[0][7:], calmd5[0]  # strip "file://"
-            cached_md5 = generate_md5_digest(calfile)
-            if md5 == cached_md5:
-                self.log.debug(f"{rq.filename}: retrieved {calfile}")
-                cals.append(calfile)
+            good_cals = []
+            for calurl, calmd5 in zip(*local_cals):
+                calfile = calurl[7:]  # strip "file://"
+                cached_md5 = generate_md5_digest(calfile)
+                if calmd5 == cached_md5:
+                    self.log.debug(f"{rq.filename}: retrieved {calfile}")
+                    good_cals.append(calfile)
+                else:
+                    self.log.warning(f"md5 checksum of {calfile} does not match."
+                                     " Not returning this calibration")
+            # Append list if >1 requested, else just the filename string
+            if good_cals:
+                cals.append(good_cals if howmany != 1 else good_cals[0])
             else:
-                self.log.warning(f"md5 checksum of {calfile} does not match. "
-                                 "Not returning this calibration")
                 cals.append(None)
 
         return CalReturn([None if cal is None else (cal, self.name)

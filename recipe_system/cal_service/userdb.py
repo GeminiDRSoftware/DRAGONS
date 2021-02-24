@@ -46,9 +46,11 @@ class UserDB(CalDB):
         with open(self.cachefile, "wb") as fp:
             pickle.dump(self.user_cache, fp)
 
-    def _get_calibrations(self, adinputs, caltype=None, procmode=None):
+    def _get_calibrations(self, adinputs, caltype=None, procmode=None,
+                          howmany=1):
         # Return a list as long as adinputs if this calibration type is in
-        # the user_cals
+        # the user_cals. howmany is irrelevant, since there can be only one
+        # match in the UserDB
         if caltype in self.user_cals:
             return CalReturn([(self.user_cals[caltype], "user_cals")] *
                              len(adinputs))

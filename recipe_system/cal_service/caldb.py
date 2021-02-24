@@ -97,7 +97,8 @@ class CalDB(metaclass=abc.ABCMeta):
         else:
             self.nextdb.add_database(db)
 
-    def get_calibrations(self, adinputs, caltype=None, procmode=None):
+    def get_calibrations(self, adinputs, caltype=None, procmode=None,
+                         howmany=1):
         """
         Returns the requested calibration type for the list of files provided.
 
@@ -109,6 +110,9 @@ class CalDB(metaclass=abc.ABCMeta):
             the type of calibration required
         procmode : str/None
             minimum quality of processing needed for the calibration
+        howmany : int
+            maximum number of calibrations to return (for backwards compat).
+            Use howmany>1 at your own risk!
 
         Returns
         -------
@@ -128,7 +132,7 @@ class CalDB(metaclass=abc.ABCMeta):
         # this isn't possible just yet.
         if self.get_cal:
             cal_ret = self._get_calibrations(adinputs, caltype=caltype,
-                                             procmode=procmode)
+                                             procmode=procmode, howmany=howmany)
         else:
             cal_ret = CalReturn([None] * len(adinputs))
 
@@ -251,7 +255,7 @@ class CalReturn:
     used in place of (None, None).
 
     Public attributes are:
-    files : list of files
+    files : list of files (or list of lists of files)
     origins : list of origins
 
     There is also an items() method that returns these lists as zipped pairs,

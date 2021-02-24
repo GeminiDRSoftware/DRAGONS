@@ -46,7 +46,8 @@ class RemoteDB(CalDB):
         self._proccal_url = f"{self.server}/upload_processed_cal"
         self._science_url = f"{self.server}/upload_file"
 
-    def _get_calibrations(self, adinputs, caltype=None, procmode=None):
+    def _get_calibrations(self, adinputs, caltype=None, procmode=None,
+                          howmany=1):
         log = self.log
         cal_requests = get_cal_requests(adinputs, caltype, procmode=procmode,
                                         is_local=False)
@@ -55,43 +56,52 @@ class RemoteDB(CalDB):
             procstr = "" if procmode is None else f"/{procmode}"
             rqurl = f"{self._calmgr}/{rq.caltype}{procstr}/{rq.filename}"
             log.stdinfo(f"CENTRAL CALIBRATION SEARCH: {rqurl}")
-            calurl, calmd5 = retrieve_calibration(rqurl, rq)
-            if not calurl:
+            remote_cals = retrieve_calibration(rqurl, rq, howmany=howmany)
+            if not remote_cals[0]:
                 log.warning("START CALIBRATION SERVICE REPORT\n")
-                log.warning(f"\t{calmd5}")
+                if remote_cals[1]:
+                    log.warning(f"\t{remote_cals[1]}")
                 log.warning(f"No {rq.caltype} found for {rq.filename}")
                 log.warning("END CALIBRATION SERVICE REPORT\n")
                 cals.append(None)
                 continue
-            self.log.info(f"Found calibration (url): {calurl}")
-            calname = path.basename(urllib.parse.urlparse(calurl).path)
-            cachefile = path.join(self.caldir, rq.caltype, calname)
-            if path.exists(cachefile):
-                cached_md5 = generate_md5_digest(cachefile)
-                if cached_md5 == calmd5:
-                    log.stdinfo(f"Cached calibration {cachefile} matched.")
-                    cals.append(cachefile)
-                    continue
-                else:
-                    log.stdinfo(f"File {calname} is cached but")
-                    log.stdinfo("md5 checksums DO NOT MATCH")
-                    log.stdinfo("Making request on calibration service")
 
-            log.stdinfo(f"Making request for {calurl}")
-            try:
-                get_request(calurl, cachefile)
-            except GetterError as err:
-                for message in err.messages:
-                    log.error(message)
-                    cals.append(None)
-                continue
-            download_mdf5 = generate_md5_digest(cachefile)
-            if download_mdf5 == calmd5:
-                log.status("MD5 hash match. Download OK.")
-                cals.append(cachefile)
+            good_cals = []
+            for calurl, calmd5 in zip(*remote_cals):
+                self.log.info(f"Found calibration (url): {calurl}")
+                calname = path.basename(urllib.parse.urlparse(calurl).path)
+                cachefile = path.join(self.caldir, rq.caltype, calname)
+                if path.exists(cachefile):
+                    cached_md5 = generate_md5_digest(cachefile)
+                    if cached_md5 == calmd5:
+                        log.stdinfo(f"Cached calibration {cachefile} matched.")
+                        good_cals.append(cachefile)
+                        continue
+                    else:
+                        log.stdinfo(f"File {calname} is cached but")
+                        log.stdinfo("md5 checksums DO NOT MATCH")
+                        log.stdinfo("Making request on calibration service")
+
+                log.stdinfo(f"Making request for {calurl}")
+                try:
+                    get_request(calurl, cachefile)
+                except GetterError as err:
+                    for message in err.messages:
+                        log.error(message)
+                        cals.append(None)
+                    continue
+                download_mdf5 = generate_md5_digest(cachefile)
+                if download_mdf5 == calmd5:
+                    log.status("MD5 hash match. Download OK.")
+                    good_cals.append(cachefile)
+                else:
+                    raise OSError("MD5 hash of downloaded file does not match "
+                                  f"expected hash {calmd5}")
+            # Append list if >1 requested, else just the filename string
+            if good_cals:
+                cals.append(good_cals if howmany > 1 else good_cals[0])
             else:
-                raise OSError("MD5 hash of downloaded file does not match "
-                              f"expected hash {calmd5}")
+                cals.append(None)
 
         return CalReturn([None if cal is None else (cal, self.name)
                           for cal in cals])
@@ -131,7 +141,7 @@ class RemoteDB(CalDB):
             raise
 
 
-def retrieve_calibration(rqurl, rq):
+def retrieve_calibration(rqurl, rq, howmany=1):
     sequence = [("descriptors", rq.descriptors), ("types", rq.tags)]
     postdata = urllib.parse.urlencode(sequence).encode('utf-8')
     try:
@@ -148,9 +158,10 @@ def retrieve_calibration(rqurl, rq):
                             if len(desc_nones) > 0 else "No Nones Sent"}
     try:
         dom = minidom.parseString(response)
-        # Simplified for howmany=1 only
-        calurlel = dom.getElementsByTagName("url")[0].childNodes[0].data
-        calurlmd5 = dom.getElementsByTagName("md5")[0].childNodes[0].data
+        calurlel = [d.childNodes[0].data
+                    for d in dom.getElementsByTagName('url')[:howmany]]
+        calurlmd5 = [d.childNodes[0].data
+                     for d in dom.getElementsByTagName('md5')[:howmany]]
     except IndexError:
         return None, preerr
 

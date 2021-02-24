@@ -8,7 +8,6 @@ from importlib import import_module
 
 from ..config import globalConf
 
-from . import transport_request
 from .userdb import UserDB
 from .localdb import LocalDB
 from .remotedb import RemoteDB
