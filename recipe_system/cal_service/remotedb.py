@@ -32,7 +32,7 @@ RESPONSESTR = """########## Request Data BEGIN ##########
 
 class RemoteDB(CalDB):
     def __init__(self, server, name=None, valid_caltypes=None, get_cal=True,
-                 store_cal=True, store_science=False, procmode=None, log=None,
+                 store_cal=False, store_science=False, procmode=None, log=None,
                  upload_cookie=None):
         if name is None:
             name = server
