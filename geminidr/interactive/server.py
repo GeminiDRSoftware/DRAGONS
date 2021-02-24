@@ -1,7 +1,5 @@
 import uuid
 
-from bokeh.io import curdoc
-
 from astrodata import version
 
 import pathlib
@@ -10,7 +8,7 @@ import tornado
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 
 from geminidr.interactive import controls
 
@@ -122,14 +120,11 @@ def _bkapp(doc):
     if _visualizer.template:
         template = _visualizer.template
     with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
-        # Because Bokeh has broken templating...
         title = _visualizer.title
         if not title:
             title = 'Interactive'
         primitive_name = _visualizer.primitive_name
         template = f.read()
-        # template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
-        #                    .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
         t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
@@ -152,6 +147,10 @@ def _helpapp(doc):
         'primitive_name': primitive_name.replace(' ', '&nbsp;'),
     })
     doc.title = title
+
+
+def _shutdown(doc):
+    _visualizer.submit_button_handler(None)
 
 
 def set_visualizer(visualizer):
@@ -198,6 +197,7 @@ def start_server():
                         '/handle_key': _handle_key,
                         '/handle_callback': _handle_callback,
                         '/help': _helpapp,
+                        '/shutdown': _shutdown,
                     },
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],

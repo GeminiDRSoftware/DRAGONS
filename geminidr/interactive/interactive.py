@@ -39,9 +39,15 @@ class PrimitiveVisualizer(ABC):
             label="Accept (click here if you are done)",
             button_type='success',
         )
-        self.submit_button.on_click(self.submit_button_handler)
+
+        # This now happens indirectly via the /shutdown ajax js callback
+        # Remove this line if we stick with that
+        # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            window.close();
+            $.ajax('/shutdown').done(function() 
+                {
+                    window.close();
+                });
         """)
         self.submit_button.js_on_click(callback)
         self.doc = None
@@ -59,13 +65,9 @@ class PrimitiveVisualizer(ABC):
         callback_name = register_callback(_internal_handler)
 
         js_confirm_callback = CustomJS(code="""
-            console.log('in confirm callback');
-            console.log('element disabled, showing ok/cancel');
-            debugger;
             cb_obj.name = '';
             var confirmed = confirm('%s');
             var cbid = '%s';
-            console.log('OK/Cancel Result: ' + confirmed);
             if (confirmed) {
                 $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
             } else {
