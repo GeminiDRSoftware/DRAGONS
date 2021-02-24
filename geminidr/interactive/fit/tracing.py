@@ -640,7 +640,6 @@ def interactive_trace_apertures(ext, _config, _fit1d_params, new_template=False)
             reinit_extras=reinit_extras,
             domains=domain_list,
             primitive_name="traceApertures()",
-            template="trace_apertures.html",
             title="Trace Apertures")
 
     server.interactive_fitter(visualizer)
