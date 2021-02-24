@@ -185,10 +185,10 @@ class PrimitivesBASE:
             for k, v in self.sx_dict.items()
         })
 
-        self.cachedict        = set_caches()
         self.caldb            = init_calibration_databases(
             getattr(self, "inst_lookups", None), ucals=ucals, upload=upload,
             procmode=self.mode)
+        self.cachedict        = set_caches()
         self.stacks           = load_cache(stkindfile)
 
         # This lambda will return the name of the current caller.

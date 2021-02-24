@@ -95,7 +95,7 @@ def parse_databases(default_dbname="cal_manager.db"):
     db_list = []
     try:
         databases = get_calconf()["databases"]
-    except AttributeError:  # if not defined, get_calconf() will return None
+    except TypeError:  # if not defined, get_calconf() will return None
         return db_list
     for line in databases.splitlines():
         if not line:  # handle blank lines
