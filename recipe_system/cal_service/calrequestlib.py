@@ -88,7 +88,7 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
     """
     options = {'central_wavelength': {'asMicrometers': True}}
 
-    _handle_returns = lambda x: x if is_local else _handle_returns
+    handle_returns = (lambda x: x) if is_local else _handle_returns
 
     rq_events = []
     for ad in inputs:
@@ -104,7 +104,7 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
             else:
                 kwargs = options[desc_name] if desc_name in list(options.keys()) else {}
                 try:
-                    dv = _handle_returns(descriptor(**kwargs))
+                    dv = handle_returns(descriptor(**kwargs))
                 except:
                     dv = None
                 # Munge list to value if all item(s) are the same
