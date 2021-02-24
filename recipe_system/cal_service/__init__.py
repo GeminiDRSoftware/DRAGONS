@@ -93,10 +93,12 @@ def parse_databases(default_dbname="cal_manager.db"):
     list of tuples (class, database name, kwargs)
     """
     db_list = []
+    calconf = get_calconf()
     try:
-        databases = get_calconf()["databases"]
-    except TypeError:  # if not defined, get_calconf() will return None
+        databases = calconf["databases"]
+    except (TypeError, KeyError):  # if not defined, get_calconf() will return None
         return db_list
+    upload_cookie = calconf.get("upload_cookie")
     for line in databases.splitlines():
         if not line:  # handle blank lines
             continue
@@ -120,5 +122,6 @@ def parse_databases(default_dbname="cal_manager.db"):
             cls = LocalDB
         else:  # does not check
             cls = RemoteDB
+            kwargs["upload_cookie"] = upload_cookie
         db_list.append((cls, db, kwargs))
     return db_list

@@ -32,7 +32,8 @@ RESPONSESTR = """########## Request Data BEGIN ##########
 
 class RemoteDB(CalDB):
     def __init__(self, server, name=None, valid_caltypes=None, get_cal=True,
-                 store_cal=True, store_science=False, procmode=None, log=None):
+                 store_cal=True, store_science=False, procmode=None, log=None,
+                 upload_cookie=None):
         if name is None:
             name = server
         super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
@@ -45,6 +46,7 @@ class RemoteDB(CalDB):
         self._calmgr = f"{self.server}/calmgr"
         self._proccal_url = f"{self.server}/upload_processed_cal"
         self._science_url = f"{self.server}/upload_file"
+        self._upload_cookie = upload_cookie or UPLOADCOOKIE
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None,
                           howmany=1):
@@ -127,12 +129,12 @@ class RemoteDB(CalDB):
             postdata = open(cal, "rb").read()
             url = f"{self._proccal_url}/{path.basename(cal)}"
 
-        print(url)
         try:
             rq = urllib.request.Request(url)
             rq.add_header('Content-Length', '%d' % len(postdata))
             rq.add_header('Content-Type', 'application/octet-stream')
-            rq.add_header('Cookie', f"gemini_fits_upload_auth={UPLOADCOOKIE}")
+            rq.add_header('Cookie', "gemini_fits_upload_auth="
+                                    f"{self._upload_cookie}")
             u = urllib.request.urlopen(rq, postdata)
             response = u.read()
             self.log.stdinfo(f"{url} uploaded OK.")
