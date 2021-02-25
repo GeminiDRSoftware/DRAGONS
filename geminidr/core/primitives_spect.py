@@ -358,7 +358,7 @@ class Spect(PrimitivesBASE):
                         if data > 0:
                             wave.append(w0)
                             # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                            zpt.append(u.Magnitude(data / flux))
+                            zpt.append(u.Magnitude(flux / data))
                             zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
 
                     # TODO: Abstract to interactive fitting
@@ -1831,8 +1831,8 @@ class Spect(PrimitivesBASE):
                     sci_flux_unit = u.Unit(ext.hdr.get('BUNIT'))
                 except:
                     sci_flux_unit = None
-                if not (std_physical_unit is None or sci_flux_unit is None):
-                    unit = sci_flux_unit / (std_physical_unit * flux_units)
+                if not (std_flux_unit is None or sci_flux_unit is None):
+                    unit = sci_flux_unit * std_flux_unit / flux_units
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
                                      format(extname, exptime))
@@ -1885,8 +1885,8 @@ class Spect(PrimitivesBASE):
                                     "airmasses".format(delta_airmass))
                         sens_factor *= 10**(0.4*delta_airmass * extinction_correction)
 
-                final_sens_factor = (sci_flux_unit / (sens_factor * pixel_sizes)).to(final_units,
-                                     equivalencies=u.spectral_density(waves)).value
+                final_sens_factor = (sci_flux_unit * sens_factor / pixel_sizes).to(
+                    final_units, equivalencies=u.spectral_density(waves)).value
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]
