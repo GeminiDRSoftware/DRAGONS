@@ -18,7 +18,6 @@ from .. import server
 from .fit1d import (
     Fit1DPanel, Fit1DVisualizer, FittingParametersUI, InteractiveModel1D)
 
-
 __all__ = ["interactive_trace_apertures", ]
 
 DETAILED_HELP = """
@@ -26,10 +25,11 @@ DETAILED_HELP = """
     
     <p> Traces the spectrum in 2D spectral images for each aperture center 
         stored in the APERTURE on each extension. </p>
-        
-    <p> The panel on the right is used to subsample the spectrum. </p>
     
-    TODO: Finish the HELP. 
+    <p> TODO: Finish the HELP. </p>
+
+    <p> TODO: The HELP should be in a new page, not in a modal Div element. </p>
+    <br> 
     """
 
 
@@ -39,6 +39,7 @@ class TraceAperturesParametersUI(FittingParametersUI):
     Represents the panel with the adjustable parameters for fitting the
     trace.
     """
+
     def __init__(self, vis, fit, fitting_parameters, min_order, max_order):
 
         self.vis = vis
@@ -136,6 +137,7 @@ class TraceAperturesRegionListener(GIRegionListener):
     fn : function
         function to call when band is finished.
     """
+
     def __init__(self, fn):
         self.fn = fn
 
@@ -179,6 +181,7 @@ class TraceAperturesTab(Fit1DPanel):
     plot_height : int
         height of plot area in pixels
     """
+
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
                  weights=None, max_order=10, min_order=1, plot_height=400,
                  plot_width=600, plot_title="Trace Apertures - Fitting",
@@ -193,14 +196,14 @@ class TraceAperturesTab(Fit1DPanel):
 
         self.rms_div = bm.Div(align=("start", "center"),
                               max_width=220,
-                              width_policy="fit",)
+                              width_policy="fit", )
 
         listeners = [lambda f: update_info(self.rms_div, f), ]
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
         self.fitting_parameters_ui = TraceAperturesParametersUI(
-            visualizer, self.fit, self.fitting_parameters, min_order,  max_order)
+            visualizer, self.fit, self.fitting_parameters, min_order, max_order)
 
         self.left_column, self.controller_help = self.create_left_column(
             fit_pars_ui=self.fitting_parameters_ui.get_bokeh_components(),
@@ -210,7 +213,8 @@ class TraceAperturesTab(Fit1DPanel):
             plot_height=plot_height, plot_title=plot_title,
             plot_width=plot_width, xlabel=xlabel, ylabel=ylabel)
 
-        self.component = row(self.left_column, self.plots_column, spacing=10)
+        self.component = row(self.left_column, self.plots_column,
+                             css_classes=["tab_area"], spacing=10)
 
     def create_left_column(self, fit_pars_ui, rms_div, column_width=220):
         """
@@ -250,6 +254,7 @@ class TraceAperturesTab(Fit1DPanel):
         controls_col = column(*controls_ls,
                               id="fit_pars_control",
                               max_width=column_width,
+                              margin=(0, 0, 0, 10),
                               width_policy="fit")
 
         return controls_col, controller_help
@@ -267,7 +272,7 @@ class TraceAperturesTab(Fit1DPanel):
         if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
             x_min = min(self.fit.data.data['x'])
             x_max = max(self.fit.data.data['x'])
-            x_pad = (x_max - x_min)*0.1
+            x_pad = (x_max - x_min) * 0.1
             x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
 
         if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
@@ -281,6 +286,8 @@ class TraceAperturesTab(Fit1DPanel):
         # Create main plot area ------------------------------------------------
         p_main = figure(plot_width=plot_width,
                         plot_height=plot_height,
+                        min_height=100,
+                        max_height=1000,
                         min_width=400,
                         title=plot_title,
                         x_axis_label=xlabel,
@@ -297,6 +304,7 @@ class TraceAperturesTab(Fit1DPanel):
         if enable_regions:
             def update_regions():
                 self.fit.model.regions = self.band_model.build_regions()
+
             self.band_model = GIRegionModel()
             self.band_model.add_listener(
                 TraceAperturesRegionListener(update_regions))
@@ -366,7 +374,10 @@ class TraceAperturesTab(Fit1DPanel):
             region_editor_wgt.width_policy = "fit"
             fig_column.append(region_editor_wgt)
 
-        col = column(*fig_column)
+        col = column(*fig_column,
+                     height_policy='fit',
+                     margin=(0, 10, 0, 0),
+                     width_policy='fit')
         col.sizing_mode = 'scale_both'
         return col, controller
 
@@ -382,6 +393,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
     """
+
     def __init__(self, data_source, fitting_parameters, _config,
                  reinit_params=None, reinit_extras=None,
                  modal_message=None,
@@ -409,7 +421,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                  f'fitting. </p>',
             sizing_mode="fixed",
             width=212,  # ToDo: Hardcoded width. Would there be a better solution?
-            )
+            style={"margin-top": "30px"},
+        )
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
@@ -462,7 +475,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         # Some sanity checks now
         if isinstance(fitting_parameters, list):
-            if not(len(fitting_parameters) == len(allx) == len(ally)):
+            if not (len(fitting_parameters) == len(allx) == len(ally)):
                 raise ValueError("Different numbers of models and coordinates")
             self.nfits = len(fitting_parameters)
         else:
@@ -529,11 +542,12 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         """
         super(Fit1DVisualizer, self).visualize(doc)
 
-        # Edit left/central column
-        filename = bm.Div(
+        # Edit elements
+        filename_div = bm.Div(
+            align=("start", "center"),
             css_classes=["filename"],
             id="_filename",
-            margin=(0, 0, 0, 76),
+            margin=(0, 0, 0, 84),
             name="filename",
             height_policy="max",
             sizing_mode="fixed",
@@ -544,29 +558,39 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 "padding": "10px 0px 10px 0px",
                 "vertical-align": "middle",
             },
-            width=500,
             width_policy="fixed",
         )
 
-        left_col = column(filename, self.tabs,
-                          sizing_mode="stretch_width",
-                          spacing=5)
-
-        # Edit right column
         self.submit_button.align = ("end", "center")
+        self.submit_button.height_policy = "min"
         self.submit_button.width_policy = "min"
 
         self.reinit_panel.css_classes = ["data_source"]
         self.reinit_panel.sizing_mode = "fixed"
 
-        right_col = column(self.submit_button, self.reinit_panel,
-                           sizing_mode="fixed",
-                           spacing=5)
-
         # Put all together
-        all_content = row(left_col, right_col,
-                          spacing=15,
-                          sizing_mode="stretch_both")
+        # left_col = column(filename_div, self.tabs,
+        #                   sizing_mode="stretch_width",
+        #                   spacing=5)
+        #
+        # right_col = column(self.submit_button, self.reinit_panel,
+        #                    sizing_mode="fixed",
+        #                    spacing=5)
+        #
+        # all_content = row(left_col, right_col,
+        #                   spacing=15,
+        #                   sizing_mode="stretch_both")
+
+        top_row = row(filename_div,
+                      bm.Spacer(width_policy="max", height_policy="fixed"),
+                      self.submit_button)
+
+        bottom_row = row(self.reinit_panel,
+                         self.tabs)
+
+        all_content = column(top_row, bottom_row,
+                             spacing=15,
+                             sizing_mode="stretch_both")
 
         doc.template_variables["primitive_long_help"] = DETAILED_HELP
         doc.add_root(all_content)
