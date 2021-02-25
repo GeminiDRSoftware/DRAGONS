@@ -2443,7 +2443,6 @@ class Spect(PrimitivesBASE):
         :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
 
         """
-        from gempy.library.config import RangeField
 
         # Setup log
         log = self.log
