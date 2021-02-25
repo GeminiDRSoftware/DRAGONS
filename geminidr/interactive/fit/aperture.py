@@ -1,13 +1,11 @@
 import math
 
-import numpy as np
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import (BoxAnnotation, Button, CheckboxGroup,
-                          ColumnDataSource, CustomJS, Div, LabelSet,
+from bokeh.models import (Button, CheckboxGroup,
+                          ColumnDataSource, Div, LabelSet,
                           NumeralTickFormatter, Select, Slider, Spacer, Span,
-                          Spinner, TextInput, Whisker)
-from bokeh.plotting import figure
+                          Spinner, Whisker)
 
 from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
@@ -15,10 +13,9 @@ from geminidr.interactive.interactive import (PrimitiveVisualizer,
                                               hamburger_helper)
 from gempy.library.tracing import find_apertures, find_apertures_peaks
 
-# Datashader sandbox
-from holoviews.streams import Pipe, Stream
-import numpy as np, datashader as ds, xarray as xr
-from datashader import transfer_functions as tf
+# Holoviews
+from holoviews.streams import Stream
+import numpy as np
 import holoviews as hv
 
 hv.extension('bokeh')
@@ -198,7 +195,7 @@ class ApertureModel:
             'location': [location],
             'start': [start],
             'end': [end],
-            'label_position': [0],
+            'label_position': [380],
         })
         self.parent = parent
 
@@ -399,18 +396,13 @@ class AperturePlotView:
         fig = self.fig
         source = self.model.source
 
-        # self.box = BoxAnnotation(left=source.data['start'][0],
-        #                          right=source.data['end'][0],
-        #                          fill_alpha=0.1,
-        #                          fill_color='green')
-        # fig.add_layout(self.box)
-
         self.label = LabelSet(source=source, x="location", y="label_position",
-                              y_offset=2, text="id")
+                              y_offset=2, y_units="screen", text="id")
         fig.add_layout(self.label)
 
         self.whisker = Whisker(source=source, base="label_position",
                                lower="start", upper="end", dimension='width',
+                               base_units="screen",
                                line_color="purple")
         fig.add_layout(self.whisker)
 
@@ -419,36 +411,11 @@ class AperturePlotView:
                              line_dash='dashed', line_width=1)
         fig.add_layout(self.location)
 
-        fig.y_range.on_change(
-            'start', lambda attr, old, new: self.update_viewport())
-        fig.y_range.on_change(
-            'end', lambda attr, old, new: self.update_viewport())
-
         # convince the aperture lines to update on zoom
-        fig.y_range.js_on_change(
-            'end', CustomJS(args=dict(plot=fig),
-                            code="plot.properties.renderers.change.emit()"))
-
-        # self.update_viewport()
-        # don't flag this, just queue it
-        # self.ymid = self.compute_ymid()
-        # print("in constructor, ymid was %s" % self.ymid)
-        # curdoc().add_timeout_callback(self._update_viewport_callback, 2000)
-
-    def update_viewport(self):
-        """
-        Update the view in the figure whenever we detect a change in the
-        display area of the view.  By redrawing, we ensure the lines and axis
-        label are in view, at 80% of the way up the visible Y axis.
-        """
-        self.ymid = self.compute_ymid()
-        if self.ymid and not self._pending_update_viewport:
-            self._pending_update_viewport = True
-            curdoc().add_timeout_callback(self._update_viewport_callback, 100)
-
-    def _update_viewport_callback(self):
-        self._pending_update_viewport = False
-        self.model.update_values(label_position=self.ymid)
+        # leaving this here for now in case I need it again.
+        # fig.y_range.js_on_change(
+        #     'end', CustomJS(args=dict(plot=fig),
+        #                     code="plot.properties.renderers.change.emit()"))
 
     def update(self):
         """
@@ -457,8 +424,6 @@ class AperturePlotView:
         the figure.
         """
         source = self.model.source
-        # self.box.left = source.data['start'][0]
-        # self.box.right = source.data['end'][0]
         self.location.location = source.data['location'][0]
 
     def delete(self):
@@ -467,7 +432,6 @@ class AperturePlotView:
         # TODO could create a list of disabled labels/boxes to reuse instead
         # of making new ones (if we have one to recycle)
         self.label.visible = False
-        # self.box.visible = False
         self.location.visible = False
         self.whisker.visible = False
 
