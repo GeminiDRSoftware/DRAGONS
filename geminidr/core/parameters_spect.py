@@ -149,7 +149,7 @@ class findSourceAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
                            bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.01, min=0, max=1)
+                                  float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
