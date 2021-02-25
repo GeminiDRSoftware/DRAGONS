@@ -8,23 +8,23 @@ body {
     }
 
 .bk-btn.bk-btn-success {
-    border-radius: 20px;
-    font-size: 16px;
-    padding: 5px 30px;
+    border-radius: 25px;
+    font-size: 18px;
+    padding: 5px 35px;
     transition: all .2s ease-in-out;
 }
 
 .bk-btn.bk-btn-warning {
     border-radius: 20px;
     font-size: 16px;
-    padding: 5px 30px;
+    padding: 5px 35px;
     transition: all .2s ease-in-out;
 }
 
 .bk-btn:hover {
     border: none;
-    filter: brightness(105%);
-    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+    filter: saturate(90%);
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.2);
 }
 
 .bk-btn:active {
@@ -32,9 +32,9 @@ body {
     filter: brightness(90%);
 
     /* Inner shadow */
-    -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
-    -moz-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
-    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    -webkit-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
 }
 
 .bk-root {
@@ -133,10 +133,10 @@ body {
     border: 0px solid white;
     border-radius: 20px;
     color: gainsboro;
-    font-size: 16px;
+    font-size: 18px;
     float: right;
     position: relative;
-    right: 32px;
+    right: 36px;
     outline: none;
     padding: 10px 30px;
     transition: all .4s ease-in-out;
