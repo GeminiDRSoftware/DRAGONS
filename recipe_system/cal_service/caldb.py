@@ -44,13 +44,16 @@ class CalDB(metaclass=abc.ABCMeta):
         there is some provenance)
     log : logger object
         the logger object to report to
-    get : bool
+    get_cal : bool
         allow retrievals from this database?
-    store : bool
+    store_cal : bool
         allow new calibrations to be stored to this database?
     caldir : str
         directory under which calibrations will be stored (either when
         createed, or when retrieved from a RemoteDB)
+    procmode : str
+        the default processing mode that retrieved calibrations must be
+        suitable for
     nextdb : CalDB object/None
         a place to send unfulfilled calibration requests
     _valid_caltypes : list of str
@@ -205,10 +208,12 @@ class CalDB(metaclass=abc.ABCMeta):
             type of calibration
         """
         # Create storage directory if it doesn't exist and we've got an AD
-        # object. This will only happen with the first CalDB to store,
-        # since the calibration will be forwarded as a filename.
+        # object and this is not a processed science image. This will only
+        # happen with the first CalDB to store, since the calibration will
+        # be forwarded as a filename. Processed science files are simply
+        # passed through as AD objects since they don't get stored on disk
+        # in a calibrations/ subdirectory.
         if not (isinstance(cal, str) or "science" in caltype):
-
             required_tags = REQUIRED_TAG_DICT[caltype]
             if cal.tags.issuperset(required_tags):
                 caltype_dir = os.path.join(self.caldir, caltype)

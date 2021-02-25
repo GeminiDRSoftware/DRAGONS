@@ -26,6 +26,13 @@ class LocalDB(CalDB):
 
     An attempt to create an instance of this class without the LocalManager
     being importable will result in an error.
+
+    Attributes
+    ----------
+    dbfile : str
+        name of the file on disk holding the database
+    _calmgr : LocalManager instance
+        the local calibration manager that will handle the requests
     """
     def __init__(self, dbfile, name=None, valid_caltypes=None, procmode=None,
                  get_cal=True, store_cal=True, log=None, force_init=False):

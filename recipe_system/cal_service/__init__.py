@@ -47,6 +47,8 @@ def init_calibration_databases(inst_lookups=None, procmode=None,
     -------
     A UserDB object, possibly linked to additional CalDB objects
     """
+    # Read the mdf_dict file and create an actual dict with the complete
+    # paths to each of the MDF files
     try:
         masks = import_module('.maskdb', inst_lookups)
         mdf_dict = getattr(masks, 'mdf_dict')

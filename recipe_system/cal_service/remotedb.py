@@ -31,6 +31,24 @@ RESPONSESTR = """########## Request Data BEGIN ##########
 
 
 class RemoteDB(CalDB):
+    """
+    The class for remote calibration databases. It inherits from CalDB, but
+    also has the following attributes:
+
+    Attributes
+    ----------
+    server : str
+        URL of the server
+    store_science : bool
+        whether processed science images should be uploaded
+    _upload_cookie : str
+        the cookie to send when uploading files
+    _calmgr : str
+        the URL for making requests to the remote calibration manager
+    _proccal_url, _science_url : str
+        the URLs for uploading processed calibrations and processed science
+        images, respectively.
+    """
     def __init__(self, server, name=None, valid_caltypes=None, get_cal=True,
                  store_cal=False, store_science=False, procmode=None, log=None,
                  upload_cookie=None):
@@ -59,8 +77,6 @@ class RemoteDB(CalDB):
             rqurl = f"{self._calmgr}/{rq.caltype}{procstr}/{rq.filename}"
             log.stdinfo(f"Querying remote database: {rqurl}")
             remote_cals = retrieve_calibration(rqurl, rq, howmany=howmany)
-            print(remote_cals[0])
-            print(remote_cals[1])
             if not remote_cals[0]:
                 log.warning("START CALIBRATION SERVICE REPORT\n")
                 if remote_cals[1]:
