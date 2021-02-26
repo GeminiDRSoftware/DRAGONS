@@ -196,7 +196,7 @@ class flagCosmicRaysConfig(config.Config):
         optional=True,
         default=None,
     )
-    bkgfit_iterations = config.Field(
+    bkgfit_niter = config.Field(
         doc="Maximum number of iterations for the objects and sky fits.",
         dtype=int,
         optional=True,

@@ -1826,10 +1826,10 @@ class Spect(PrimitivesBASE):
         y_order_in = params.pop('y_order')
 
         fit_1D_params = dict(
-            hsigma=params.pop('bkgfit_hsigma'),
-            iterations=params.pop('bkgfit_iterations'),
-            lsigma=params.pop('bkgfit_lsigma'),
             plot=debug,
+            niter=params.pop('bkgfit_niter'),
+            sigma_lower=params.pop('bkgfit_lsigma'),
+            sigma_upper=params.pop('bkgfit_hsigma'),
         )
 
         for ad in adinputs:
@@ -1854,9 +1854,9 @@ class Spect(PrimitivesBASE):
                                     axis=dispaxis,
                                     order=x_order,
                                     # weights=weights,
-                                    **fit_1D_params)
+                                    **fit_1D_params).evaluate()
                     if debug:
-                        ext.append(objfit.copy(), name='OBJFIT')
+                        ext.OBJFIT = objfit.copy()
                 else:
                     objfit = np.zeros_like(ext.data)
 
@@ -1868,12 +1868,12 @@ class Spect(PrimitivesBASE):
                                     axis=1 - dispaxis,
                                     order=y_order,
                                     # weights=weights,
-                                    **fit_1D_params)
+                                    **fit_1D_params).evaluate()
 
                     # keep combined fits for later restoration
                     objfit += skyfit
                     if debug:
-                        ext.append(skyfit, name='SKYFIT')
+                        ext.SKYFIT = skyfit
                     del skyfit, input_copy
 
                 if ext.mask is not None:
@@ -1888,7 +1888,7 @@ class Spect(PrimitivesBASE):
                 if ext.saturation_level():
                     kwargs['satlevel'] = ext.saturation_level()
 
-                crmask, _ = detect_cosmics(ext.data, inmask=mask, bkg=objfit,
+                crmask, _ = detect_cosmics(ext.data, inmask=mask, inbkg=objfit,
                                            **params, **kwargs)
 
                 if ext.mask is None:
