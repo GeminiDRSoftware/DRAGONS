@@ -1843,11 +1843,15 @@ class Spect(PrimitivesBASE):
                 y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
                            if y_order_in is None else y_order_in)
 
+                if ext.hdr['BUNIT'] == 'electron':
+                    data = ext.data / ext.gain()
+                else:
+                    data = ext.data
+
                 if ext.mask is not None:
                     data = np.ma.array(ext.data, mask=ext.mask != 0)
                     weights = (ext.mask == 0).astype(int)
                 else:
-                    data = ext.data
                     weights = None
 
                 # Fit the object spectrum:
