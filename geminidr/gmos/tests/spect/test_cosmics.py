@@ -39,7 +39,7 @@ def test_cosmics(path_to_inputs, caplog):
     # Store mask of CR to help debugging
     crmask = np.zeros(ext.shape, dtype=np.uint8)
     crmask[cr_x, cr_y] = 1
-    ext.append(crmask, name='CRMASK')
+    ext.CRMASK = crmask
 
     debug = os.getenv('DEBUG') is not None
     p = GMOSSpect([ad])
