@@ -1843,31 +1843,34 @@ class Spect(PrimitivesBASE):
                 y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
                            if y_order_in is None else y_order_in)
 
-                # FIXME: 2D weights doesn't work with fit_1D
-                # weights = None
-                # if ext.mask is not None:
-                #     weights = (ext.mask == 0).astype(int)
+                if ext.mask is not None:
+                    data = np.ma.array(ext.data, mask=ext.mask != 0)
+                    weights = (ext.mask == 0).astype(int)
+                else:
+                    data = ext.data
+                    weights = None
 
                 # Fit the object spectrum:
                 if x_order > 0:
-                    objfit = fit_1D(ext.data, function='legendre',
+                    objfit = fit_1D(data,
+                                    function='legendre',
                                     axis=dispaxis,
                                     order=x_order,
-                                    # weights=weights,
+                                    weights=weights,
                                     **fit_1D_params).evaluate()
                     if debug:
                         ext.OBJFIT = objfit.copy()
                 else:
                     objfit = np.zeros_like(ext.data)
 
-                input_copy = ext.data - objfit
+                input_copy = data - objfit
 
                 # Fit sky lines:
                 if y_order > 0:
                     skyfit = fit_1D(input_copy, function='legendre',
                                     axis=1 - dispaxis,
                                     order=y_order,
-                                    # weights=weights,
+                                    weights=weights,
                                     **fit_1D_params).evaluate()
 
                     # keep combined fits for later restoration
