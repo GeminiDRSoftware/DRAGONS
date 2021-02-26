@@ -24,8 +24,60 @@ DETAILED_HELP = """
     <h1>Help for traceApertures</h1>
     
     <p> Traces the spectrum in 2D spectral images for each aperture center 
-        stored in the APERTURE on each extension. </p>
+        stored in the APERTURE on each extension. The leftmost panel in the 
+        webpage contains parameters used to perform the tracing, i.e., to follow 
+        how the position in the spatial direction of our target changes along 
+        the spectral direction. You can find the traced data in the top plot 
+        where X represents the pixels in the spectral direction and Y the pixels 
+        in the spatial direction. The tracing is performed all over again on 
+        each interaction with its parameters and this process might take a 
+        few seconds to finish and update the plot area. So be patient when 
+        trying out different tracing parameters.
+        
+        Then, it uses Fit Trace Parameters in the leftmost panel within each 
+        Aperture tab to fit how our target's spatial position varies 
+        continuously along the dispersion direction. </p>
     
+    <h2> Tracing Parameters: </h2>
+    <dl>
+        <dt> Max Missed </dt>
+        <dd> Maximum number of steps to miss before a line is lost. </dd> 
+    
+        <dt> Max Shifted </dt>
+        <dd> Maximum shift per pixel in line position. </dd>
+    
+        <dt> Number of Lines to Sum </dt>
+        <dd> Number of lines to sum. (ToDo @bquint - improve this) </dd> 
+    
+        <dt> Tracing Step </dt>
+        <dd> Step in rows/columns for tracing. </dd>
+    </dl>
+    
+    <h2> 1D Fitting Parameters </h2>
+    <dl> 
+        <dt> Function </dt>
+        <dd> This is the Function used to fit the traced data. For this 
+        primitive, we use Chebyshev. </dd>
+    
+        <dt> Order </dt>
+        <dd> Order of Chebyshev function. </dd> 
+    
+        <dt> Max Iteractions </dt>
+        <dd> Maximum number of rejection iterations. </dd>
+    
+        <dt> Grow </dt> 
+        <dd> ?????????????? </dd>
+    
+        <dt> Sigma Clip </dt> 
+        <dd> Reject outliers using sigma-clip. </dd>
+    
+        <dt> Sigma (Lower) </dt>
+        <dd> Number of sigma used as lower threshold. </dd>
+    
+        <dt> Sigma (Upper) </dt>
+        <dd> Number of sigma used as upper threshold/ </dd>
+    </dl>
+        
     <p> TODO: Finish the HELP. </p>
 
     <p> TODO: The HELP should be in a new page, not in a modal Div element. </p>
