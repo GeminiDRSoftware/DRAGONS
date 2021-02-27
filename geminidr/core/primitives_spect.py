@@ -2452,7 +2452,6 @@ class Spect(PrimitivesBASE):
         # Parse parameters
         debug = params["debug"]
         interactive = params["interactive"]
-        new_template = params["new_template"]
         max_missed = params["max_missed"]
         max_shift = params["max_shift"]
         nsum = params["nsum"]
@@ -2485,7 +2484,7 @@ class Spect(PrimitivesBASE):
                     _config = self.params[self.myself()]
                     _config.update(**params)
                     ext.APERTURE = interactive_trace_apertures(
-                        ext, _config, fit1d_params, new_template=new_template)
+                        ext, _config, fit1d_params)
 
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense

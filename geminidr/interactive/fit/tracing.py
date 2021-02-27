@@ -648,7 +648,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         doc.add_root(all_content)
 
 
-def interactive_trace_apertures(ext, _config, _fit1d_params, new_template=False):
+def interactive_trace_apertures(ext, _config, _fit1d_params):
     """
     Run traceApertures() interactively.
 
@@ -692,31 +692,19 @@ def interactive_trace_apertures(ext, _config, _fit1d_params, new_template=False)
     def data_provider(conf, extra):
         return trace_apertures_data_provider(ext, conf, extra)
 
-    if new_template:
-        visualizer = TraceAperturesVisualizer(
-            data_provider,
-            _config=_config,
-            filename_info=ext.filename,
-            fitting_parameters=fit_par_list,
-            tab_name_fmt="Aperture {}",
-            xlabel=xlabel,
-            ylabel=ylabel,
-            reinit_extras=reinit_extras,
-            domains=domain_list,
-            primitive_name="traceApertures()",
-            template="trace_apertures.html",
-            title="Trace Apertures")
-    else:
-        visualizer = Fit1DVisualizer(
-            data_provider, fit_par_list, _config,
-            filename_info=ext.filename,
-            tab_name_fmt="Aperture {}",
-            xlabel=xlabel,
-            ylabel=ylabel,
-            reinit_extras=reinit_extras,
-            domains=domain_list,
-            primitive_name="traceApertures()",
-            title="Trace Apertures")
+    visualizer = TraceAperturesVisualizer(
+        data_provider,
+        _config=_config,
+        filename_info=ext.filename,
+        fitting_parameters=fit_par_list,
+        tab_name_fmt="Aperture {}",
+        xlabel=xlabel,
+        ylabel=ylabel,
+        reinit_extras=reinit_extras,
+        domains=domain_list,
+        primitive_name="traceApertures()",
+        template="trace_apertures.html",
+        title="Trace Apertures")
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()
