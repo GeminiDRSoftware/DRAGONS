@@ -427,7 +427,7 @@ class AperturePlotView:
         fig = self.fig
         source = self.model.source
 
-        self.label = LabelSet(source=source, x="location", y=380,
+        self.label = LabelSet(source=source, x="end", y=380,
                               y_offset=2, y_units="screen", text="id")
         fig.add_layout(self.label)
 
@@ -647,7 +647,7 @@ class ApertureView:
     def update_view(self):
         self._reload_holoviews()
 
-    def _make_aperture_qm_data_for_holoviews(self, aperture_model, x_max, y_max):
+    def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
         y = [0, y_max]
         x = [0]
         datarr = [0]
@@ -662,21 +662,16 @@ class ApertureView:
         return x, y, [datarr]
 
     def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
-        da = self._make_aperture_qm_data_for_holoviews(aperture_model, x_max, y_max)
+        da = self._prepare_data_for_holoviews(aperture_model, x_max, y_max)
         cmap = [None, '#d1efd1']
         xyz = Stream.define('XYZ', data=da)
         self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
-        # grid_style = {'grid_line_color': 'black',
-        #               'grid_line_width': 1.5,
-        #               'ygrid_bounds': (0.3, 0.7),
-        #               'minor_xgrid_line_color': 'lightgray',
-        #               'xgrid_line_dash': [4, 4]}
         self.qm_dmap.opts(cmap=cmap,
                           height=500,
+                          alpha=0.5,
                           responsive=True,
                           show_grid=True,
                           clipping_colors={'NaN': (0, 0, 0, 0)},
-                          # add gridstyle=grid_style
                           clim=(0, 1))
         return hv.render(self.qm_dmap)
 
@@ -684,8 +679,7 @@ class ApertureView:
         if self.model.profile is not None:
             x_max = self.model.profile.shape[0]
             y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
-            da = self._make_aperture_qm_data_for_holoviews(self.model, x_max,
-                                                           y_max)
+            da = self._prepare_data_for_holoviews(self.model, x_max, y_max)
             self.qm_dmap.event(data=da)
 
 
