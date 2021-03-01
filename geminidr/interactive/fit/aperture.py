@@ -397,22 +397,12 @@ class AperturePlotView:
     def __init__(self, fig, model):
         self.model = model
         self.fig = fig
-        self.ymid = None
         self._pending_update_viewport = False
 
         if fig.document:
             fig.document.add_next_tick_callback(self.build_ui)
         else:
             self.build_ui()
-
-    def compute_ymid(self):
-        if (self.fig.y_range.start is not None and
-                self.fig.y_range.end is not None):
-            ymin = self.fig.y_range.start
-            ymax = self.fig.y_range.end
-            return (ymax - ymin)*.8 + ymin
-        else:
-            return 0
 
     def build_ui(self):
         """
@@ -620,7 +610,7 @@ class ApertureView:
         for widget in self.widgets.values():
             widget[1].update_viewport(start, end)
 
-    def handle_aperture(self, aperture_id):
+    def update_aperture(self, aperture_id):
         """Handle an updated or added aperture."""
         plot, line = self.widgets[aperture_id]
         plot.update()
