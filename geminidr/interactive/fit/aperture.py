@@ -362,16 +362,16 @@ class FindSourceAperturesModel:
 
     def delete_aperture(self, aperture_id):
         """Delete an aperture by ID."""
+        del self.aperture_models[aperture_id]
         for listener in self.listeners:
             listener.delete_aperture(aperture_id)
-        del self.aperture_models[aperture_id]
 
     def clear_apertures(self):
         """Remove all apertures, calling delete on the listeners for each."""
+        self.aperture_models.clear()
         for aperture_id in self.aperture_models:
             for listener in self.listeners:
                 listener.delete_aperture(aperture_id)
-        self.aperture_models.clear()
 
     def renumber_apertures(self):
         new_models = {}
@@ -643,38 +643,41 @@ class ApertureView:
 
     def _make_aperture_qm_data_for_holoviews(self, aperture_model, x_max, y_max):
         y = [0, y_max]
-        x = [0, ]
-        datarr = [0,]
-        ranges = list()
-        for am in aperture_model.aperture_models.values():
-            ranges.append((am.source.data['start'][0], am.source.data['end'][0]))
+        x = [0]
+        datarr = [0]
+        ranges = [[am.source.data['start'][0], am.source.data['end'][0]]
+                  for am in aperture_model.aperture_models.values()]
         ranges.sort(key=lambda x: x[0])
-        for range in ranges:
-            x.extend((range[0], range[1]))
-            datarr.append(1)
-            datarr.append(0)
-        x.append(x_max)
 
-        return x, y, [datarr, ]
+        for range_ in ranges:
+            x += range_
+            datarr += [1, 0]
+        x.append(x_max)
+        return x, y, [datarr]
 
     def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
         da = self._make_aperture_qm_data_for_holoviews(aperture_model, x_max, y_max)
         cmap = [None, '#d1efd1']
         xyz = Stream.define('XYZ', data=da)
         self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
-        # add gridstyle=grid_style in the call to .opts if you want to change how the grid looks
-        # grid_style = {'grid_line_color': 'black', 'grid_line_width': 1.5, 'ygrid_bounds': (0.3, 0.7),
-        #               'minor_xgrid_line_color': 'lightgray', 'xgrid_line_dash': [4, 4]}
-        self.qm_dmap.opts(cmap=cmap, height=500, responsive=True, show_grid=True,
-                          clipping_colors={'NaN': (0, 0, 0, 0)})
+        # grid_style = {'grid_line_color': 'black',
+        #               'grid_line_width': 1.5,
+        #               'ygrid_bounds': (0.3, 0.7),
+        #               'minor_xgrid_line_color': 'lightgray',
+        #               'xgrid_line_dash': [4, 4]}
+        self.qm_dmap.opts(cmap=cmap,
+                          height=500,
+                          responsive=True,
+                          show_grid=True,
+                          clipping_colors={'NaN': (0, 0, 0, 0)},
+                          # add gridstyle=grid_style
+                          clim=(0, 1))
         return hv.render(self.qm_dmap)
 
     def _reload_holoviews(self):
         x_max = self.model.profile.shape[0]
         y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
-
         da = self._make_aperture_qm_data_for_holoviews(self.model, x_max, y_max)
-
         self.qm_dmap.event(data=da)
 
 
