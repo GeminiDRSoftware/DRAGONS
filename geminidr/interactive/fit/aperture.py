@@ -247,6 +247,7 @@ class FindSourceAperturesModel:
         """
         self.listeners = []
         self.ext = ext
+        self.profile = None
         self.profile_shape = self.ext.shape[0]
         self.aperture_models = {}
 
@@ -271,6 +272,14 @@ class FindSourceAperturesModel:
     def add_listener(self, listener):
         """Add a listener for update to the apertures."""
         self.listeners.append(listener)
+
+    def call_listeners(self, method, *args, update_view=False, **kwargs):
+        for listener in self.listeners:
+            func = getattr(listener, method, None)
+            if func:
+                func(*args, **kwargs)
+            if update_view and hasattr(listener, 'update_view'):
+                listener.update_view()
 
     def reset(self):
         """Reset model to its initial values."""
@@ -342,36 +351,34 @@ class FindSourceAperturesModel:
             model = ApertureModel(aperture_id, location, limits[0],
                                   limits[1], self)
             self.aperture_models[aperture_id] = model
+            self.call_listeners('add_aperture', aperture_id, model)
 
-            for listener in self.listeners:
-                listener.add_aperture(aperture_id, model)
+        self.call_listeners('update_view')
 
     def add_aperture(self, location, start, end):
         aperture_id = max(self.aperture_models, default=0) + 1
         model = ApertureModel(aperture_id, location, start, end, self)
         self.aperture_models[aperture_id] = model
-
-        for listener in self.listeners:
-            listener.add_aperture(aperture_id, model)
+        self.call_listeners('add_aperture', aperture_id, model,
+                            update_view=True)
         return aperture_id
 
     def adjust_aperture(self, aperture_id):
         """Adjust an existing aperture by ID to a new range."""
-        for listener in self.listeners:
-            listener.update_aperture(aperture_id)
+        self.call_listeners('update_aperture', aperture_id, update_view=True)
 
     def delete_aperture(self, aperture_id):
         """Delete an aperture by ID."""
+        self.call_listeners('delete_aperture', aperture_id)
         del self.aperture_models[aperture_id]
-        for listener in self.listeners:
-            listener.delete_aperture(aperture_id)
+        self.call_listeners('update_view')
 
     def clear_apertures(self):
         """Remove all apertures, calling delete on the listeners for each."""
-        self.aperture_models.clear()
         for aperture_id in self.aperture_models:
-            for listener in self.listeners:
-                listener.delete_aperture(aperture_id)
+            self.call_listeners('delete_aperture', aperture_id)
+        self.aperture_models.clear()
+        self.call_listeners('update_view')
 
     def renumber_apertures(self):
         new_models = {}
@@ -381,11 +388,10 @@ class FindSourceAperturesModel:
         self.aperture_models.clear()
         self.aperture_models.update(new_models)
 
-        for listener in self.listeners:
-            listener.renumber_apertures()
-            # now we can tell widgets to update
-            for aperture_id in self.aperture_models:
-                listener.update_aperture(aperture_id)
+        self.call_listeners('renumber_apertures')
+        for aperture_id in self.aperture_models:
+            self.call_listeners('update_aperture', aperture_id)
+        self.call_listeners('update_view')
 
 
 class AperturePlotView:
@@ -615,14 +621,12 @@ class ApertureView:
         plot, line = self.widgets[aperture_id]
         plot.update()
         line.update(None, None, None)
-        self._reload_holoviews()
 
     def add_aperture(self, aperture_id, model):
         plot = AperturePlotView(self.fig, model)
         line = ApertureLineView(model)
         self.widgets[aperture_id] = (plot, line)
         self.inner_controls.children.append(line.component)
-        self._reload_holoviews()
 
     def delete_aperture(self, aperture_id):
         """Remove an aperture by ID."""
@@ -631,7 +635,6 @@ class ApertureView:
             plot.delete()
             self.inner_controls.children.remove(line.component)
             del self.widgets[aperture_id]
-        self._reload_holoviews()
 
     def renumber_apertures(self):
         new_widgets = {}
@@ -640,6 +643,9 @@ class ApertureView:
             new_widgets[aperture_id] = (plot, line)
         self.widgets.clear()
         self.widgets.update(new_widgets)
+
+    def update_view(self):
+        self._reload_holoviews()
 
     def _make_aperture_qm_data_for_holoviews(self, aperture_model, x_max, y_max):
         y = [0, y_max]
@@ -675,10 +681,12 @@ class ApertureView:
         return hv.render(self.qm_dmap)
 
     def _reload_holoviews(self):
-        x_max = self.model.profile.shape[0]
-        y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
-        da = self._make_aperture_qm_data_for_holoviews(self.model, x_max, y_max)
-        self.qm_dmap.event(data=da)
+        if self.model.profile is not None:
+            x_max = self.model.profile.shape[0]
+            y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
+            da = self._make_aperture_qm_data_for_holoviews(self.model, x_max,
+                                                           y_max)
+            self.qm_dmap.event(data=da)
 
 
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
