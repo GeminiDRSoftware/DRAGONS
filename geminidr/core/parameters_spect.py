@@ -31,6 +31,8 @@ class calculateSensitivityConfig(config.Config):
     order = config.RangeField("Order of spline fit", int, 6, min=1)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
+    debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
+                                  bool, False)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
 
 
