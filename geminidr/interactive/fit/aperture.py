@@ -440,11 +440,6 @@ class AperturePlotView:
                              line_dash='dashed', line_width=1)
         fig.add_layout(self.location)
 
-        # leaving this here for now in case I need it again.
-        # fig.y_range.js_on_change(
-        #     'end', CustomJS(args=dict(plot=fig),
-        #                     code="plot.properties.renderers.change.emit()"))
-
     def update(self):
         """
         Alter the coordinate range for this aperture. This will adjust the
@@ -682,7 +677,7 @@ class ApertureView:
     def _reload_holoviews(self):
         if self.model.profile is not None:
             x_max = self.model.profile.shape[0]
-            y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
+            y_max = math.ceil(np.nanmax(self.model.profile) * 10)  # arbitrarily large, TBD infinity in QM?
             da = self._prepare_data_for_holoviews(self.model, x_max, y_max)
             self.qm_dmap.event(data=da)
 
@@ -700,6 +695,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             fresh sets as needed
         """
         super().__init__(title='Find Source Apertures',
+                         primitive_name='findSourceApertures',
                          filename_info=filename_info)
         self.model = model
         self.fig = None
@@ -799,7 +795,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         params = self.parameters_view()
 
-        ymax = 100  # np.nanmax(self.model.ext.nddata)*1.05
+        ymax = 100  # we will update this when we have a profile
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
         aperture_view.fig.step(x='x', y='y', source=self.model.profile_source,
                                color="black", mode="center")
@@ -823,6 +819,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                 button_type='primary')
         details_button.js_on_click(CustomJS(code="openHelpPopup();"))
         self.model.recalc_apertures()
+        # now we have a height for the figure
+        aperture_view.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
