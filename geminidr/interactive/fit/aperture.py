@@ -403,7 +403,6 @@ class AperturePlotView:
     def __init__(self, fig, model):
         self.model = model
         self.fig = fig
-        self._pending_update_viewport = False
 
         if fig.document:
             fig.document.add_next_tick_callback(self.build_ui)
@@ -572,6 +571,8 @@ class ApertureView:
         # The widgets (AperturePlotView, ApertureLineView) for each aperture
         self.widgets = {}
 
+        self._pending_update_viewport = False
+
         self.model = model
         model.add_listener(self)
 
@@ -600,19 +601,18 @@ class ApertureView:
         self.fig.x_range.on_change('end', lambda attr, old, new:
                                    self.update_viewport(end=new))
 
-    _pending_update_viewport = False
-
     def update_viewport(self, start=None, end=None):
         """Handle a change in the view to enable/disable aperture lines."""
-        if not ApertureView._pending_update_viewport:
-            ApertureView._pending_update_viewport = True
+        if not self._pending_update_viewport:
+            self._pending_update_viewport = True
             start = start or self.fig.x_range.start
             end = end or self.fig.x_range.end
             callback = partial(self.update_viewport_callback, start, end)
             curdoc().add_timeout_callback(callback, 100)
 
     def update_viewport_callback(self, start, end):
-        ApertureView._pending_update_viewport = False
+        self._pending_update_viewport = False
+        self._reload_holoviews()
         for widget in self.widgets.values():
             widget[1].update_viewport(start, end)
 
@@ -648,7 +648,11 @@ class ApertureView:
         self._reload_holoviews()
 
     def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
-        y = [0, y_max]
+        if hasattr(self, 'fig'):
+            y = [min(0, self.fig.y_range.start),
+                 max(y_max, self.fig.y_range.end)]
+        else:
+            y = [0, y_max]
         x = [0]
         datarr = [0]
         ranges = [[am.source.data['start'][0], am.source.data['end'][0]]
