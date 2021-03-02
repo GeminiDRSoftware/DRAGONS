@@ -247,6 +247,7 @@ class TraceAperturesTab(Fit1DPanel):
             info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
 
         self.rms_div = bm.Div(align=("start", "center"),
+                              id="rms_div",
                               max_width=220,
                               width_policy="fit", )
 
@@ -288,9 +289,9 @@ class TraceAperturesTab(Fit1DPanel):
         reset_button_row = row(
             rms_div,
             reset_button,
+            id="reset_button_row",
             max_width=column_width,
             width_policy="max",
-            sizing_mode="fixed",
         )
 
         controller_help = bm.Div(id="control_help",
@@ -471,8 +472,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                  f'<p style="color: gray"> These are parameters used to '
                  f'(re)generate the input tracing data that will be used for '
                  f'fitting. </p>',
-            sizing_mode="fixed",
+            id="function_div",
             width=212,  # ToDo: Hardcoded width. Would there be a better solution?
+            width_policy="fixed",
             style={"margin-top": "30px"},
         )
 
@@ -602,7 +604,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             margin=(0, 0, 0, 84),
             name="filename",
             height_policy="max",
-            sizing_mode="fixed",
             text=f"Current filename: {self.filename_info}",
             style={
                 "background": "white",
@@ -610,7 +611,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 "padding": "10px 0px 10px 0px",
                 "vertical-align": "middle",
             },
-            width_policy="fixed",
+            width_policy="min",
         )
 
         self.submit_button.align = ("end", "center")
@@ -634,7 +635,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         #                   sizing_mode="stretch_both")
 
         top_row = row(filename_div,
-                      bm.Spacer(width_policy="max", height_policy="fixed"),
+                      bm.Spacer(width_policy="max", height_policy="min"),
                       self.submit_button)
 
         bottom_row = row(self.reinit_panel,
@@ -763,7 +764,7 @@ def trace_apertures_data_provider(ext, conf, extra):
 
         _start = np.argmax(at.boxcar(_spectrum, size=3))
 
-        _, _in_coords = tracing.trace_lines(
+        _ref_coords, _in_coords = tracing.trace_lines(
             ext, axis=dispaxis, cwidth=5,
             initial=[_loc], initial_tolerance=None,
             max_missed=extra['max_missed'], max_shift=extra['max_shift'],
