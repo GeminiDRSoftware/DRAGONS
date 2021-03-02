@@ -1595,10 +1595,12 @@ class Spect(PrimitivesBASE):
                     sec_mask = False
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
-                signal = (data if (variance is None or not use_snr) else
+                this_use_snr = use_snr and (variance is not None)
+                signal = (data if this_use_snr else
                           np.divide(data, np.sqrt(variance),
                                     out=np.zeros_like(data), where=variance>0))
-                masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
+                masked_data = np.where(np.logical_or(full_mask, variance == 0),
+                                       np.nan, signal)
                 # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', message='All-NaN slice')
@@ -1613,9 +1615,10 @@ class Spect(PrimitivesBASE):
                 #   idea whether sources will be extended or not
                 widths = np.arange(3, 20)
                 # Send variance=1 since "profile" is already the S/N
-                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                    variance=1.0, reject_bad=False,
-                                                    min_snr=3, min_frac=0.2)
+                peaks_and_snrs = tracing.find_peaks(
+                    profile, widths, mask=prof_mask & DQ.not_signal,
+                    variance=1.0 if this_use_snr else None, reject_bad=False,
+                    min_snr=3, min_frac=0.2)
 
                 if peaks_and_snrs.size == 0:
                     log.warning("Found no sources")
@@ -1632,7 +1635,7 @@ class Spect(PrimitivesBASE):
                 locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
                 log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
 
-                if np.isnan(profile[prof_mask==0]).any():
+                if np.isnan(data[prof_mask==0]).any():
                     log.warning("There are unmasked NaNs in the spatial profile")
                 all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
                                                 threshold=threshold, method=sizing_method)
