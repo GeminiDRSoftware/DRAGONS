@@ -36,6 +36,8 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
+    debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
+                                  bool, False)
     regions = config.Field("Sample regions", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)

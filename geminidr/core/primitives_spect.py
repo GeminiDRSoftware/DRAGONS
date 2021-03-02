@@ -263,6 +263,7 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         datafile = params["filename"]
         bandpass = params["bandpass"]
+        airmass0 = params["debug_airmass0"]
         debug_plot = params["debug_plot"]
         interactive = params["interactive"]
         fit1d_params = fit_1D.translate_params(params)
@@ -309,6 +310,27 @@ class Spect(PrimitivesBASE):
             if 'WIDTH' not in spec_table.colnames:
                 log.warning("Using default bandpass of {} nm".format(bandpass))
                 spec_table['WIDTH'] = bandpass * u.nm
+
+            # Do some checks now to avoid failing on every extension
+            if airmass0:
+                telescope = ad.telescope()
+                site = extinct.telescope_sites.get(telescope)
+                if site is None:
+                    log.warning(f"{ad.filename}: Cannot determine site of "
+                                f"telescope '{telescope}' so cannot apply "
+                                "correction to zero airmass.")
+                else:
+                    airmass = ad.airmass()
+                    if airmass is None:
+                        log.warning(f"{ad.filename}: Cannot determine airmass"
+                                    " of observation so cannot apply "
+                                    "correction to zero airmass.")
+                    else:
+                        log.stdinfo(f"{ad.filename}: Correcting from airmass "
+                                    f"{airmass} to zero airmass using curve "
+                                    f"for site '{site}'.")
+                        ad.phu["EXTCURVE"] = (
+                            site, self.keyword_comments["EXTCURVE"])
 
             # We can only calculate the sensitivity for one extension in
             # non-XD data, so keep track of this in case it's not the first one
@@ -359,22 +381,27 @@ class Spect(PrimitivesBASE):
                             wave.append(w0)
                             # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
                             zpt.append(u.Magnitude(flux / data))
-                            zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                            if variance is not None:
+                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                wave = array_from_list(wave, unit=u.nm)
+                zpt = array_from_list(zpt)
+                weights = 1./array_from_list(zpt_err) if zpt_err else None
 
-                    # TODO: Abstract to interactive fitting
-                    wave = array_from_list(wave, unit=u.nm)
+                # Correct for atmospheric extinction. This correction makes
+                # the real data brighter, so makes the zpt magnitude more +ve
+                # (since "data" is in the denominator)
+                if airmass0 and site is not None and airmass is not None:
+                    zpt += u.Magnitude(airmass *
+                                       extinct.extinction(wave, site=site))
 
-                    zpt = array_from_list(zpt)
-                    zpt_err = array_from_list(zpt_err)
+                all_exts.append(ext)
+                all_shapes.append(ext.shape[0])
+                all_pixels.append(wave.value)
+                all_masked_data.append(zpt.value)
+                all_weights.append(weights)
+                all_fp_init.append(fit_1D.translate_params(params))
 
-                    all_exts.append(ext)
-                    all_shapes.append(ext.shape[0])
-                    all_pixels.append(wave.value)
-                    all_masked_data.append(zpt.value)
-                    all_weights.append(1./zpt_err.value)
-                    all_fp_init.append(fit_1D.translate_params(params))
-
-                    calculated = True
+                calculated = True
 
                 # ******************************************************************************************
                 config = self.params[self.myself()]
@@ -1805,13 +1832,37 @@ class Spect(PrimitivesBASE):
                     not self.timestamp_keys['distortionCorrect'] in ad.phu):
                 log.warning("{} has not been distortion corrected".format(ad.filename))
 
+            telescope = ad.telescope()
             exptime = ad.exposure_time()
             try:
-                delta_airmass = ad.airmass() - std.airmass()
-            except TypeError:  # if either airmass() returns None
-                log.warning("Cannot determine airmass of target and/or standard."
-                            " Not making an airmass correction.")
-                delta_airmass = 0
+                std_site = std.phu["EXTCURVE"]
+            except KeyError:
+                try:
+                    delta_airmass = ad.airmass() - std.airmass()
+                except TypeError:  # if either airmass() returns None
+                    log.warning("Cannot determine airmass of target "
+                                f"{ad.filename} and/or standard {std.filename}"
+                                ". Not performing airmass correction.")
+                    delta_airmass = None
+                else:
+                    log.stdinfo(f"{ad.filename}: Correcting for difference of "
+                                f"{delta_airmass:5.3f} airmasses")
+            else:
+                telescope = ad.telescope()
+                sci_site = extinct.telescope_sites.get(telescope)
+                if sci_site != std_site:
+                    raise ValueError(f"Site of target observation {ad.filename}"
+                                     f" ({sci_site}) does not match site used "
+                                     f"to correct standard {std.filename} "
+                                     f"({std_site}).")
+                delta_airmass = ad.airmass()
+                if delta_airmass is None:
+                    log.warning(f"Cannot determine airmass of {ad.filename}."
+                                " Not performing airmass correction.")
+                else:
+                    log.stdinfo(f"{ad.filename}: Correcting for airmass of "
+                                f"{delta_airmass:5.3f}")
+
 
             for index, ext in enumerate(ad):
                 ext_std = std[min(index, len_std-1)]
@@ -1839,9 +1890,9 @@ class Spect(PrimitivesBASE):
                         ext /= exptime
                         sci_flux_unit /= u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
-                        log.warning("{} has incompatible units ('{}' and '{}')."
-                                    "Cannot flux calibrate"
-                                    .format(extname, sci_flux_unit, std_flux_unit))
+                        log.warning(f"{extname} has incompatible units ('"
+                                    f"{sci_flux_unit}' and '{std_flux_unit}'"
+                                    "). Cannot flux calibrate")
                         continue
                 else:
                     log.warning("Cannot determine units of data and/or SENSFUNC "
@@ -1873,17 +1924,15 @@ class Spect(PrimitivesBASE):
 
                 # Apply airmass correction. If none is needed/possible, we
                 # don't need to try to do this
-                if delta_airmass != 0:
-                    telescope = ad.telescope()
+                if delta_airmass:
                     try:
-                        extinction_correction = extinct.extinction(waves, telescope=telescope)
+                        extinction_correction = extinct.extinction(
+                            waves, telescope=telescope)
                     except KeyError:
-                        log.warning("Telescope {} not recognized. "
-                                    "Not making an airmass correction.".format(telescope))
+                        log.warning(f"Telescope {telescope} not recognized. "
+                                    "Not making an airmass correction.")
                     else:
-                        log.stdinfo("Correcting for difference of {:5.3f} "
-                                    "airmasses".format(delta_airmass))
-                        sens_factor *= 10**(0.4*delta_airmass * extinction_correction)
+                        sens_factor *= 10**(0.4 * delta_airmass * extinction_correction)
 
                 final_sens_factor = (sci_flux_unit * sens_factor / pixel_sizes).to(
                     final_units, equivalencies=u.spectral_density(waves)).value
