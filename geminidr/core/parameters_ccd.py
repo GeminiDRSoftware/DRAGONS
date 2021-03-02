@@ -9,22 +9,18 @@ class biasCorrectConfig(config.Config):
                             optional=True, single=True)
     do_bias = config.Field("Perform bias subtraction?", bool, True)
 
-class subtractOverscanConfig(config.Config):
+
+class subtractOverscanConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_overscanSubtracted", optional=True)
-    niterate = config.RangeField("Maximum number of iterations", int, 2, min=1)
-    high_reject = config.RangeField("High rejection limit (standard deviations)",
-                               float, 3., min=0., optional=True)
-    low_reject = config.RangeField("Low rejection limit (standard deviations)",
-                              float, 3., min=0., optional=True)
-    function = config.ChoiceField("Type of function", str,
-                                  allowed = {"spline": "Cublic spline",
-                                             "poly":   "Polynomial",
-                                             "none":   "Row-by-row"},
-                                  default="spline", optional=True)
-    nbiascontam = config.RangeField("Number of columns to exclude from averaging",
-                               int, 0, min=0)
+    function = config.ChoiceField("Fitting function", str,
+                           allowed={"none": "Row-by-row values",
+                                    "spline3": "Cubic spline",
+                                    "chebyshev": "Chebyshev polynomial"},
+                           default="spline3", optional=False)
     order = config.RangeField("Order of fitting function", int, None, min=0,
                               optional=True)
+    nbiascontam = config.RangeField("Number of columns to exclude from averaging",
+                                    int, 0, min=0)
 
     def validate(self):
         config.Config.validate(self)
@@ -33,8 +29,10 @@ class subtractOverscanConfig(config.Config):
         if self.function == "spline" and self.order == 0:
             raise ValueError("Must specify a positive spline order, or None")
 
+
 class trimOverscanConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_overscanTrimmed", optional=True)
+
 
 class overscanCorrectConfig(subtractOverscanConfig, trimOverscanConfig):
     def setDefaults(self):

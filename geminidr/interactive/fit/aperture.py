@@ -5,13 +5,15 @@ from bokeh.layouts import column, row
 from bokeh.models import (Button, CheckboxGroup,
                           ColumnDataSource, Div, LabelSet,
                           NumeralTickFormatter, Select, Slider, Spacer, Span,
-                          Spinner, Whisker)
+                          Spinner, Whisker, CustomJS, TextInput)
 
 from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import (PrimitiveVisualizer,
                                               hamburger_helper)
-from gempy.library.tracing import find_apertures, find_apertures_peaks
+from gempy.library.tracing import (find_apertures, find_apertures_peaks,
+                                   get_limits, pinpoint_peaks)
+from gempy.utils import logutils
 
 # Holoviews
 from holoviews.streams import Stream
@@ -24,6 +26,7 @@ renderer = hv.renderer('bokeh')
 
 __all__ = ["interactive_find_source_apertures", ]
 
+log = logutils.get_logger(__name__)
 
 DETAILED_HELP = """
 
@@ -32,25 +35,20 @@ DETAILED_HELP = """
 <p>Finds sources in 2D spectral images and store them in an APERTURE table for
 each extension. Each table will, then, be used in later primitives to perform
 aperture extraction.</p>
-
 <p>The primitive operates by first collapsing the 2D spectral image in the
 spatial direction to identify sky lines as regions of high pixel-to-pixel
 variance, and the regions between the sky lines which consist of at least
 `min_sky_region` pixels are selected. These are then collapsed in the
 dispersion direction to produce a 1D spatial profile, from which sources are
 identified using a peak-finding algorithm.</p>
-
 <p>The widths of the apertures are determined by calculating a threshold level
 relative to the peak, or an integrated flux relative to the total between the
 minima on either side and determining where a smoothed version of the source
 profile reaches this threshold.</p>
 
+<h3>Profile parameters</h3>
+<p>Those parameters applies to the computation of the 1D profile.</p>
 <dl>
-<dt>Max Apertures</dt>
-<dd>
-    Maximum number of apertures expected to be found. By default it is
-    None so all apertures are returned.
-</dd>
 <dt>Percentile</dt>
 <dd>
     Percentile to determine signal for each spatial pixel. Uses when
@@ -66,6 +64,21 @@ profile reaches this threshold.</p>
 <dd>
     Convert data to SNR per pixel before collapsing and peak-finding?
 </dd>
+<dt>Section</dt>
+<dd>
+    Comma-separated list of colon-separated pixel coordinate pairs
+    indicating the region(s) over which the spectral signal should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data
+</dd>
+
+<h3>Peak finding parameters</h3>
+<p>Those parameters applies to the detection of peaks in the 1D profile.</p>
+<dt>Max Apertures</dt>
+<dd>
+    Maximum number of apertures expected to be found. By default it is
+    None so all apertures are returned.
+</dd>
 <dt>Threshold</dt>
 <dd>
     Parameter describing either the height above background (relative
@@ -78,15 +91,20 @@ profile reaches this threshold.</p>
     Method for automatic width determination: <i>peak</i> for the height
     relative to peak, or <i>integral</i> for the integrated flux.
 </dd>
-<dt>Section</dt>
-<dd>
-    Comma-separated list of colon-separated pixel coordinate pairs
-    indicating the region(s) over which the spectral signal should be
-    used. The first and last values can be blank, indicating to
-    continue to the end of the data
-</dd>
 </dl>
 """
+
+
+def avoid_multiple_update(func):
+    """Decorator to prevent handlers to update multiple times."""
+    def wrapper(self, attr, old, new):
+        if self.in_update:
+            return
+
+        self.in_update = True
+        func(self, attr, old, new)
+        self.in_update = False
+    return wrapper
 
 
 class CustomWidget:
@@ -111,7 +129,7 @@ class CustomWidget:
             setattr(self.model, self.attr, new)
 
 
-class TextInputLine(CustomWidget):
+class SpinnerInputLine(CustomWidget):
     def build(self):
         self.spinner = Spinner(value=self.value, width=64, **self.kwargs)
         self.spinner.on_change("value", self.handler)
@@ -121,6 +139,18 @@ class TextInputLine(CustomWidget):
 
     def reset(self):
         self.spinner.value = self.value
+
+
+class TextInputLine(CustomWidget):
+    def build(self):
+        self.text_input = TextInput(value=self.value, width=256, **self.kwargs)
+        self.text_input.on_change("value", self.handler)
+        return row([Div(text=self.title, align='center'),
+                    Spacer(width_policy='max'),
+                    self.text_input])
+
+    def reset(self):
+        self.text_input.value = self.value
 
 
 class TextSlider(CustomWidget):
@@ -145,15 +175,11 @@ class TextSlider(CustomWidget):
         self.spinner.value = self.value
         self.slider.value = self.value
 
+    @avoid_multiple_update
     def handler(self, attr, old, new):
-        if self.in_update:
-            # To avoid triggering the handler with both spinner and slider
-            return
-        self.in_update = True
         self.spinner.value = new
         self.slider.value = new
         super().handler(attr, old, new)
-        self.in_update = False
 
 
 class CheckboxLine(CustomWidget):
@@ -189,7 +215,6 @@ class SelectLine(CustomWidget):
 
 class ApertureModel:
     def __init__(self, aperture_id, location, start, end, parent):
-        self.aperture_id = aperture_id
         self.source = ColumnDataSource({
             'id': [aperture_id],
             'location': [location],
@@ -200,12 +225,13 @@ class ApertureModel:
         self.parent = parent
 
     def delete(self):
-        self.parent.delete_aperture(self.aperture_id)
+        self.parent.delete_aperture(self.source.data['id'][0])
 
-    def update_values(self, **kwargs):
+    def update_values(self, notify=True, **kwargs):
         data = {field: [(0, value)] for field, value in kwargs.items()}
         self.source.patch(data)
-        self.parent.adjust_aperture(self.aperture_id)
+        if notify:
+            self.parent.adjust_aperture(self.source.data['id'][0])
 
     def result(self):
         data = self.source.data
@@ -222,7 +248,7 @@ class FindSourceAperturesModel:
         UI and then recalculate the fit as often as desired.
 
         """
-        self.listeners = list()
+        self.listeners = []
         self.ext = ext
         self.profile_shape = self.ext.shape[0]
         self.aperture_models = {}
@@ -243,7 +269,7 @@ class FindSourceAperturesModel:
     @property
     def aper_params(self):
         """Return the actual param dict from the instance attributes."""
-        return {name: getattr(self, name) for name in self._aper_params.keys()}
+        return {name: getattr(self, name) for name in self._aper_params}
 
     def add_listener(self, listener):
         """Add a listener for update to the apertures."""
@@ -254,10 +280,27 @@ class FindSourceAperturesModel:
         for name, value in self._aper_params.items():
             setattr(self, name, value)
 
-    def find_closest(self, x):
+    def find_closest(self, x, x_start, x_end):
         model = min(self.aperture_models.values(),
                     key=lambda m: abs(m.source.data['location'][0] - x))
-        return model.source.data['id'][0]
+        if x_start < model.source.data['location'][0] < x_end:
+            return model.source.data['id'][0]
+
+    def find_peak(self, x):
+        # Find local maximum to help pinpoint_peaks
+        data = np.ma.array(self.profile, mask=self.prof_mask)
+        initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
+
+        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx],
+                               halfwidth=20, threshold=0)
+        if len(peaks) > 0:
+            limits = get_limits(np.nan_to_num(self.profile),
+                                self.prof_mask,
+                                peaks=peaks,
+                                threshold=self.threshold,
+                                method=self.sizing_method)
+            log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
+            self.add_aperture(peaks[0], *limits[0])
 
     def recalc_apertures(self):
         """
@@ -277,8 +320,7 @@ class FindSourceAperturesModel:
             # Find if parameters that would change the profile have
             # been modified
             recompute_profile = False
-            for name in ('min_sky_region', 'percentile', 'sec_regions',
-                         'use_snr'):
+            for name in ('min_sky_region', 'percentile', 'section', 'use_snr'):
                 if self.profile_params[name] != self.aper_params[name]:
                     recompute_profile = True
                     break
@@ -305,25 +347,21 @@ class FindSourceAperturesModel:
             self.aperture_models[aperture_id] = model
 
             for listener in self.listeners:
-                listener.handle_aperture(aperture_id, model)
+                listener.add_aperture(aperture_id, model)
 
     def add_aperture(self, location, start, end):
-        if not self.aperture_models:
-            aperture_id = 1
-        else:
-            aperture_id = max(self.aperture_models) + 1
+        aperture_id = max(self.aperture_models, default=0) + 1
         model = ApertureModel(aperture_id, location, start, end, self)
         self.aperture_models[aperture_id] = model
 
         for listener in self.listeners:
-            listener.handle_aperture(aperture_id, model)
+            listener.add_aperture(aperture_id, model)
         return aperture_id
 
     def adjust_aperture(self, aperture_id):
         """Adjust an existing aperture by ID to a new range."""
         for listener in self.listeners:
-            listener.handle_aperture(aperture_id,
-                                     self.aperture_models[aperture_id])
+            listener.update_aperture(aperture_id)
 
     def delete_aperture(self, aperture_id):
         """Delete an aperture by ID."""
@@ -333,10 +371,24 @@ class FindSourceAperturesModel:
 
     def clear_apertures(self):
         """Remove all apertures, calling delete on the listeners for each."""
-        for aperture_id in self.aperture_models.keys():
+        for aperture_id in self.aperture_models:
             for listener in self.listeners:
                 listener.delete_aperture(aperture_id)
         self.aperture_models.clear()
+
+    def renumber_apertures(self):
+        new_models = {}
+        for new_id, model in enumerate(self.aperture_models.values(), start=1):
+            model.update_values(id=new_id, notify=False)
+            new_models[new_id] = model
+        self.aperture_models.clear()
+        self.aperture_models.update(new_models)
+
+        for listener in self.listeners:
+            listener.renumber_apertures()
+            # now we can tell widgets to update
+            for aperture_id in self.aperture_models:
+                listener.update_aperture(aperture_id)
 
 
 class AperturePlotView:
@@ -344,23 +396,15 @@ class AperturePlotView:
     Create a visible glyph-set to show the existance
     of an aperture on the given figure.  This display
     will update as needed in response to panning/zooming.
-
-    Parameters
-    ----------
-    fig : :class:`~bokeh.plotting.Figure`
-        Bokeh Figure to attach to
-    aperture_id : int
-        ID of the aperture (for displaying)
-    start : float
-        Start of the x-range for the aperture
-    end : float
-        End of the x-range for the aperture
     """
-    def __init__(self, fig, aperture_id, model):
+    def __init__(self, fig, model):
         self.model = model
         self.fig = fig
         self.ymid = None
         self._pending_update_viewport = False
+        self.label = None
+        self.whisker = None
+        self.location = None
 
         if fig.document:
             fig.document.add_next_tick_callback(self.build_ui)
@@ -375,9 +419,6 @@ class AperturePlotView:
             return (ymax - ymin)*.8 + ymin
         else:
             return 0
-
-    def update_id(self, aperture_id):
-        self.model.update_values(aperture_id=aperture_id)
 
     def build_ui(self):
         """
@@ -404,18 +445,13 @@ class AperturePlotView:
                                lower="start", upper="end", dimension='width',
                                base_units="screen",
                                line_color="purple")
+
         fig.add_layout(self.whisker)
 
         self.location = Span(location=source.data['location'][0],
                              dimension='height', line_color='green',
                              line_dash='dashed', line_width=1)
         fig.add_layout(self.location)
-
-        # convince the aperture lines to update on zoom
-        # leaving this here for now in case I need it again.
-        # fig.y_range.js_on_change(
-        #     'end', CustomJS(args=dict(plot=fig),
-        #                     code="plot.properties.renderers.change.emit()"))
 
     def update(self):
         """
@@ -436,31 +472,17 @@ class AperturePlotView:
         self.whisker.visible = False
 
 
-def avoid_multiple_update(func):
-    def wrapper(self, attr, old, new):
-        if self.in_update:
-            return
-
-        self.in_update = True
-        func(self, attr, old, new)
-        self.in_update = False
-    return wrapper
-
-
 class ApertureLineView:
-    def __init__(self, aperture_id, model):
+    def __init__(self, model):
         """ Create text inputs for the start, location and end of an aperture.
 
         Parameters
         ----------
-        aperture_id : int
-            The ID of the aperture
         model : :class:`ApertureModel`
             The model that tracks the apertures and their ranges
 
         """
         self.model = model
-        self.aperture_id = aperture_id
 
         button = Button(label="Del", width=48)
         button.on_click(self.model.delete)
@@ -476,8 +498,8 @@ class ApertureLineView:
 
         self.in_update = False
 
-        self.aperture_name = Div(text=f"Ap. {self.aperture_id}",
-                                 align='center', width=48)
+        self.aperture_name = Div(text=f"# {source.data['id'][0]}",
+                                 align='center', width=24)
         self.start_input.on_change("value", self._start_handler)
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
@@ -504,9 +526,6 @@ class ApertureLineView:
                                  start=self.start_input.value,
                                  end=self.end_input.value)
 
-    def update_title(self):
-        self.aperture_name.text = f"Aperture {self.aperture_id}"
-
     @avoid_multiple_update
     def update(self, attr, old, new):
         # Because Bokeh checks the handler signatures we need the same
@@ -515,6 +534,7 @@ class ApertureLineView:
         self.start_input.value = source.data['start'][0]
         self.location_input.value = source.data['location'][0]
         self.end_input.value = source.data['end'][0]
+        self.aperture_name.text = f"# {source.data['id'][0]}"
 
     def update_viewport(self, start, end):
         """
@@ -556,17 +576,15 @@ class ApertureView:
 
     """
     def __init__(self, model, x_max, y_max):
-        # The list of AperturePlotView widget (aperture plots)
-        self.aperture_plots = {}
-        # The list of ApertureLineView widget (text inputs)
-        self.aperture_lines = {}
+        # The widgets (AperturePlotView, ApertureLineView) for each aperture
+        self.widgets = {}
 
         self.fig = self._make_holoviews_quadmeshed(model, x_max, y_max)
 
         # The hamburger menu, which needs to have access to the aperture line
         # widgets (inner_controls)
         self.inner_controls = column(max_height=300, height_policy='auto',
-                                     width=450, css_classes=['scrollable'])
+                                     width=440, css_classes=['scrollable'])
         self.controls = hamburger_helper("Apertures", self.inner_controls)
 
         self.inner_controls.children.append(
@@ -606,40 +624,54 @@ class ApertureView:
 
     def update_viewport_callback(self):
         ApertureView._pending_update_viewport = False
-        for apline in self.aperture_lines.values():
-            apline.update_viewport(self.view_start, self.view_end)
+        for widget in self.widgets.values():
+            widget[1].update_viewport(self.view_start, self.view_end)
 
     def handle_aperture(self, aperture_id, model):
         """Handle an updated or added aperture."""
-        if aperture_id in self.aperture_plots:
-            self.aperture_plots[aperture_id].update()
-            self.aperture_lines[aperture_id].update(None, None, None)
-        else:
-            ap = AperturePlotView(self.fig, aperture_id, model)
-            self.aperture_plots[aperture_id] = ap
+        plot, line = self.widgets[aperture_id]
+        plot.update()
+        line.update(None, None, None)
 
-            ap = ApertureLineView(aperture_id, model)
-            self.aperture_lines[aperture_id] = ap
-            self.inner_controls.children.append(ap.component)
+        # TODO what about this no longer taking id?
+        ap = ApertureLineView(model)
+        self.aperture_lines[aperture_id] = ap
+        self.inner_controls.children.append(ap.component)
+        self._reload_holoviews()
+
+    def update_aperture(self, aperture_id):
+        plot, line = self.widgets[aperture_id]
+        plot.update()
+        line.update(None, None, None)
+        self._reload_holoviews()
+
+    def add_aperture(self, aperture_id, model):
+        plot = AperturePlotView(self.fig, model)
+        line = ApertureLineView(model)
+        self.widgets[aperture_id] = (plot, line)
+        self.inner_controls.children.append(line.component)
         self._reload_holoviews()
 
     def delete_aperture(self, aperture_id):
         """Remove an aperture by ID. If the ID is not recognized, do nothing.
         """
-        if aperture_id in self.aperture_plots:
-            self.aperture_plots[aperture_id].delete()
-            self.inner_controls.children.remove(
-                self.aperture_lines[aperture_id].component)
-            del self.aperture_plots[aperture_id]
-            del self.aperture_lines[aperture_id]
+        if aperture_id in self.widgets:
+            plot, line = self.widgets[aperture_id]
+            plot.delete()
+            self.inner_controls.children.remove(line.component)
+            del self.widgets[aperture_id]
 
         self._reload_holoviews()
-        # for ap in self.aperture_plots[idx:]:
-        #     ap.update_id(ap.aperture_id - 1)
 
-        # for ap in self.aperture_lines[idx:]:
-        #     ap.aperture_id -= 1
-        #     ap.update_title()
+    def renumber_apertures(self):
+        new_widgets = {}
+        for plot, line in self.widgets.values():
+            aperture_id = plot.model.source.data['id'][0]
+            new_widgets[aperture_id] = (plot, line)
+        self.widgets.clear()
+        self.widgets.update(new_widgets)
+
+        self._reload_holoviews()
 
     def _make_aperture_qm_data_for_holoviews(self, aperture_model, x_max, y_max):
         y = [0, y_max]
@@ -671,8 +703,7 @@ class ApertureView:
 
     def _reload_holoviews(self):
         x_max = self.model.profile.shape[0]
-        y_max = math.ceil(np.nanmax(self.model.profile) * 1.05)
-
+        y_max = math.ceil(np.nanmax(self.model.profile) * 10)  # TODO something else?  could pick arbitrary high value
         da = self._make_aperture_qm_data_for_holoviews(self.model, x_max, y_max)
 
         self.qm_dmap.event(data=da)
@@ -742,9 +773,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             fresh sets as needed
         """
         super().__init__(title='Find Source Apertures',
+                         primitive_name='findSourceApertures',
                          filename_info=filename_info)
         self.model = model
         self.fig = None
+        self.help_text = DETAILED_HELP
 
     def add_aperture(self):
         """
@@ -757,6 +790,76 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         x = (self.fig.x_range.start + self.fig.x_range.end) / 2
         self.model.add_aperture(x, x, x)
 
+    def parameters_view(self):
+        model = self.model
+
+        def _maxaper_handler(new):
+            model.max_apertures = int(new) if new is not None else None
+
+        def _use_snr_handler(new):
+            model.use_snr = 0 in new
+
+        def _reset_handler(result):
+            if result:
+                model.reset()
+                for widget in (maxaper, minsky, use_snr,
+                               threshold, percentile, sizing):
+                    widget.reset()
+                self.model.recalc_apertures()
+
+        def _find_handler(result):
+            if result:
+                self.model.recalc_apertures()
+
+        # Profile parameters
+        percentile = TextSlider("Percentile (use mean if no value)", model,
+                                attr="percentile", start=0, end=100, step=1)
+        minsky = SpinnerInputLine("Min sky region", model,
+                                  attr="min_sky_region", low=0)
+        use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
+                               handler=_use_snr_handler)
+        sections = TextInputLine("Sections", model, attr="section",
+                                 placeholder="e.g. 100:900,1500:2000")
+
+        # Peak finding parameters
+        maxaper = SpinnerInputLine("Max Apertures (empty means no limit)",
+                                   model, attr="max_apertures",
+                                   handler=_maxaper_handler, low=0)
+        threshold = TextSlider("Threshold", model, attr="threshold",
+                               start=0, end=1, step=0.01)
+        sizing = SelectLine("Sizing method", model, attr="sizing_method")
+
+        reset_button = Button(label="Reset", button_type='danger',
+                              default_size=200)
+
+        self.make_ok_cancel_dialog(reset_button,
+                                   'Reset will change all inputs for this tab '
+                                   'back to their original values.  Proceed?',
+                                   _reset_handler)
+
+        find_button = Button(label="Find apertures", button_type='primary',
+                             default_size=200)
+
+        self.make_ok_cancel_dialog(find_button,
+                                   'All apertures will be recomputed and '
+                                   'changes will be lost. Proceed?',
+                                   _find_handler)
+
+        return column(
+            Div(text="Parameters to compute the profile:",
+                css_classes=['param_section']),
+            percentile.build(),
+            minsky.build(),
+            use_snr.build(),
+            sections.build(),
+            Div(text="Parameters to find peaks:",
+                css_classes=['param_section']),
+            maxaper.build(),
+            threshold.build(),
+            sizing.build(),
+            row([reset_button, find_button]),
+        )
+
     def visualize(self, doc):
         """
         Build the visualization in bokeh in the given browser document.
@@ -768,49 +871,50 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        params = parameters_view(self.model, self.model.recalc_apertures)
+        params = self.parameters_view()
 
-        ymax = 100  # np.nanmax(self.model.ext.nddata)*1.05
+        ymax = 100  # this will update fof the profile once we have the data
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
         aperture_view.fig.step(x='x', y='y', source=self.model.profile_source,
                                color="black", mode="center")
+        # safe for reference:
+        self.fig = aperture_view.fig
 
-        add_button = Button(label="Add Aperture")
+        add_button = Button(label="Add Aperture", button_type='primary',
+                            default_size=200)
         add_button.on_click(self.add_aperture)
 
-        helptext = Div()
+        renumber_button = Button(label="Renumber apertures",
+                                 button_type='primary', default_size=200)
+        renumber_button.on_click(self.model.renumber_apertures)
+
+        helptext = Div(margin=(20, 0, 0, 35), sizing_mode='scale_width')
         controls = column(children=[
             params,
-            helptext,
             aperture_view.controls,
-            add_button,
+            row(renumber_button, add_button),
         ])
 
-        def _details_handler():
-            details.visible = not details.visible
-
-        details = Div(text=DETAILED_HELP, css_classes=['detailed_help'],
-                      visible=False)
         details_button = Button(label="Show detailed help",
-                                button_type='success', max_width=200,
-                                width_policy='max')
-        details_button.on_click(_details_handler)
+                                button_type='primary')
+        details_button.js_on_click(CustomJS(code="openHelpPopup();"))
         self.model.recalc_apertures()
-        # self.model.clear_apertures()
-        # for i in range(1, 700, 1):
-        #     loc = float(i)*3.0
-        #     start = loc-1.0
-        #     end = loc+1.0
-        #     self.model.add_aperture(loc, start, end)
+        # profile will be recalculated, adjust figure y range
+        y_max = np.nanmax(self.model.profile_source.data['y'])
+        aperture_view.fig.y_range.end = y_max * 1.1
 
-        col = column(children=[aperture_view.fig, details_button, details],
-                     sizing_mode='scale_width')
-
-        layout = column(
-            Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
-            self.submit_button,
-            row(controls, col)
+        col = column(children=[aperture_view.fig, helptext], sizing_mode='scale_width')
+        toolbar = row(
+            children=[
+                Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
+                Spacer(sizing_mode='scale_width'),
+                self.submit_button,
+                Spacer(sizing_mode='scale_width'),
+                details_button,
+            ],
         )
+
+        layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'
 
         Controller(aperture_view.fig, self.model, None, helptext, showing_residuals=False)
@@ -823,11 +927,12 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         Returns
         -------
-            list of float, list of tuple :
-                list of locations and list of the limits as tuples
+        list of float, list of tuple :
+            list of locations and list of the limits as tuples
 
         """
-        res = (model.result() for model in self.model.aperture_models.values())
+        models = self.model.aperture_models
+        res = (models[id_].result() for id_ in sorted(models.keys()))
         locations, limits = zip(*res)
         return np.array(locations), limits
 

@@ -1,7 +1,5 @@
 import uuid
 
-from bokeh.io import curdoc
-
 from astrodata import version
 
 import pathlib
@@ -10,7 +8,7 @@ import tornado
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 
 from geminidr.interactive import controls
 
@@ -19,8 +17,9 @@ __all__ = ["interactive_fitter", "stop_server"]
 _bokeh_server = None
 _visualizer = None
 
-
 __version__ = version()
+
+TEMPLATE_PATH = '%s/templates' % pathlib.Path(__file__).parent.absolute()
 
 
 class VersionHandler(tornado.web.RequestHandler):
@@ -117,22 +116,16 @@ def _bkapp(doc):
     -------
     none
     """
-    global _visualizer
-
     template = "index.html"
     if _visualizer.template:
         template = _visualizer.template
-    template_path = '%s/templates/' % pathlib.Path(__file__).parent.absolute()
-    with open('%s/templates/%s' % (pathlib.Path(__file__).parent.absolute(), template)) as f:
-        # Because Bokeh has broken templating...
+    with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
         title = _visualizer.title
         if not title:
             title = 'Interactive'
         primitive_name = _visualizer.primitive_name
         template = f.read()
-        # template = template.replace('{{ title }}', title.replace(' ', '&nbsp;')) \
-        #                    .replace('{{ primitive_name }}', primitive_name.replace(' ', '&nbsp;'))
-        t = Environment(loader=FileSystemLoader(template_path)).from_string(template)
+        t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
         doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
@@ -142,6 +135,26 @@ def _bkapp(doc):
 
     _visualizer.visualize(doc)
     doc.title = title
+
+
+def _helpapp(doc):
+    with open(f'{TEMPLATE_PATH}/help.html') as f:
+        template = f.read()
+
+    title = _visualizer.title or 'Interactive'
+    primitive_name = _visualizer.primitive_name
+    t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
+    doc.template = t
+    doc.template_variables.update({
+        'help_text': _visualizer.help_text,
+        'primitive_title': title.replace(' ', '&nbsp;'),
+        'primitive_name': primitive_name.replace(' ', '&nbsp;'),
+    })
+    doc.title = title
+
+
+def _shutdown(doc):
+    _visualizer.submit_button_handler(None)
 
 
 def set_visualizer(visualizer):
@@ -181,9 +194,18 @@ def start_server():
         port = 5006
         while port < 5701 and _bokeh_server is None:
             try:
-                _bokeh_server = Server({'/': _bkapp, '/dragons': static_app, '/handle_key': _handle_key,
-                                        '/handle_callback': _handle_callback,
-                                        }, num_procs=1, extra_patterns=[('/version', VersionHandler),], port=port)
+                _bokeh_server = Server(
+                    {
+                        '/': _bkapp,
+                        '/dragons': static_app,
+                        '/handle_key': _handle_key,
+                        '/handle_callback': _handle_callback,
+                        '/help': _helpapp,
+                        '/shutdown': _shutdown,
+                    },
+                    num_procs=1,
+                    extra_patterns=[('/version', VersionHandler)],
+                    port=port)
             except OSError:
                 port = port+1
                 if port >= 5701:

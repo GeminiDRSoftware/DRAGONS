@@ -169,7 +169,9 @@ class InteractiveModel1D(InteractiveModel):
 
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
-        if len(self.domain) == 1:
+        if isinstance(self.domain, int):
+            xlinspace = np.linspace(0, self.domain, 500)
+        elif len(self.domain) == 1:
             xlinspace = np.linspace(0, *self.domain, 500)
         else:
             xlinspace = np.linspace(*self.domain, 500)

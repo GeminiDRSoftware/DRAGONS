@@ -998,7 +998,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
 
 def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
-                   sizing_method, threshold, sec_regions, use_snr):
+                   sizing_method, threshold, section, use_snr):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
@@ -1016,24 +1016,21 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
                                     maxiters=1)
 
+    full_mask = ext.mask > 0
+
     # Mask sky-line regions and find clumps of unmasked pixels
     mask1d[var_excess > 5 * std] = 1
     slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
-    sky_regions = [slice_ for slice_ in slices
-                   if slice_.stop - slice_.start >= min_sky_region]
-    if not sky_regions:  # make sure we have something!
-        sky_regions = [slice(None)]
 
-    sky_mask = np.ones_like(mask1d, dtype=bool)
-    for reg in sky_regions:
-        sky_mask[reg] = False
-    if sec_regions:
-        sec_mask = np.ones_like(mask1d, dtype=bool)
-        for reg in sec_regions:
-            sec_mask[reg] = False
-    else:
-        sec_mask = False
-    full_mask = (ext.mask > 0) | sky_mask | sec_mask
+    for reg in slices:
+        if (reg.stop - reg.start) >= min_sky_region:
+            full_mask[reg] = False
+
+    if section:
+        for x1, x2 in (s.split(':') for s in section.split(',')):
+            reg = slice(None if x1 == '' else int(x1) - 1,
+                        None if x2 == '' else int(x2))
+            full_mask[reg] = False
 
     signal = (ext.data if (ext.variance is None or not use_snr) else
               np.divide(ext.data, np.sqrt(ext.variance),

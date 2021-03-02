@@ -17,7 +17,7 @@ class subtractOverscanConfig(parameters_ccd.subtractOverscanConfig):
     nbiascontam = config.RangeField("Number of columns to exclude from averaging",
                                int, None, min=0, optional=True)
     def setDefaults(self):
-        self.function = None
+        self.function = "none"
 
     def validate(self):
         config.Config.validate(self)

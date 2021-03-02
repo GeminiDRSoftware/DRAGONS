@@ -1,0 +1,35 @@
+{% extends base %}
+
+{% block preamble %}{% endblock %}
+{% block css_resources %}{% endblock %}
+{% block js_resources %}{% endblock %}
+
+{% block postamble %}
+<link rel="stylesheet" href="dragons/static/dragons.css">
+{% endblock %}
+
+{% block inner_body %}
+<!-- modal, for long running bokeh code -->
+<div id="top">
+    <div id="top-icon"></div>
+    <div id="top-banner">
+        <div id="top-primitive-info">
+            <div id="top-title">{{ primitive_title }}</div>
+            <div id="top-primitive-name">{{ primitive_name }}</div>
+        </div>
+    </div>
+</div>
+<div id="plot_div" style="border: 0px solid">
+    <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
+    <div id="main_div">
+        {% block main_div %}
+          <div class="detailed_help">
+            {{ help_text | indent(10) }}
+          </div>
+        {% endblock %}
+    </div>
+</div>
+<div id="footer">
+Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
+</div>
+{% endblock %}

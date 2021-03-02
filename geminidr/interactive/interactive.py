@@ -23,6 +23,7 @@ class PrimitiveVisualizer(ABC):
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
         """
+        self.exited = False
         self.title = title
         self.filename_info = filename_info if filename_info else ''
         self.primitive_name = primitive_name if primitive_name else ''
@@ -43,9 +44,15 @@ class PrimitiveVisualizer(ABC):
                                     label="Accept",
                                     name="submit_btn",
                                     width_policy='min')
-        self.submit_button.on_click(self.submit_button_handler)
+
+        # This now happens indirectly via the /shutdown ajax js callback
+        # Remove this line if we stick with that
+        # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            window.close();
+            $.ajax('/shutdown').done(function() 
+                {
+                    window.close();
+                });
         """)
         self.submit_button.js_on_click(callback)
         self.doc = None
@@ -63,13 +70,9 @@ class PrimitiveVisualizer(ABC):
         callback_name = register_callback(_internal_handler)
 
         js_confirm_callback = CustomJS(code="""
-            console.log('in confirm callback');
-            console.log('element disabled, showing ok/cancel');
-            debugger;
             cb_obj.name = '';
             var confirmed = confirm('%s');
             var cbid = '%s';
-            console.log('OK/Cancel Result: ' + confirmed);
             if (confirmed) {
                 $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
             } else {
@@ -92,8 +95,10 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
-        self.user_satisfied = True
-        server.stop_server()
+        if not self.exited:
+            self.exited = True
+            self.user_satisfied = True
+            server.stop_server()
 
     def visualize(self, doc):
         """
@@ -656,8 +661,10 @@ def connect_figure_extras(fig, aperture_model, region_model):
     # If we have regions or apertures to show, show them
     if region_model:
         regions = GIRegionView(fig, region_model)
-    if aperture_model:
-        aperture_view = GIApertureView(aperture_model, fig)
+    # This no longer works as we now require holoviews
+    # TODO remove from args to method
+    # if aperture_model:
+    #     aperture_view = GIApertureView(aperture_model, fig)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
     # apertures and regions will not update properly after the figure is visible.
