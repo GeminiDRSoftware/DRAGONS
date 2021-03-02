@@ -1,6 +1,9 @@
 import numpy as np
 from astropy import units as u
-from scipy.interpolate import InterpolatedUnivariateSpline as spline
+from scipy.interpolate import InterpolatedUnivariateSpline
+from functools import partial
+
+spline = partial(InterpolatedUnivariateSpline, k=1)
 
 # Mapping from telescope name to site's extinction curve
 # We have no curve for CPO, so use the CTIO one
@@ -107,7 +110,7 @@ def extinction(wave, site=None, telescope=None):
     if telescope in telescope_sites:
         site = telescope_sites[telescope]
     elif site not in extinction_curves:
-        raise KeyError("Site {} not recongized".format(site))
+        raise KeyError(f"Site {site} not recongized")
     try:
         wave_in_nm = wave.to(u.nm)
     except AttributeError:
