@@ -714,8 +714,11 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
         if method is None:
             all_limits.append((lower, upper))
         else:
-            limit1 = limit_finding_function(spline, tweaked_peak, lower, upper, threshold)
-            limit2 = limit_finding_function(spline, tweaked_peak, upper, lower, threshold)
+            limit1 = limit_finding_function(spline, tweaked_peak, lower,
+                                            upper, threshold)
+            limit2 = limit_finding_function(spline, tweaked_peak, upper,
+                                            lower, threshold)
+            limit1, limit2 = max(limit1, peak), max(limit2, peak)
             all_limits.append((limit1, limit2))
 
     return all_limits
