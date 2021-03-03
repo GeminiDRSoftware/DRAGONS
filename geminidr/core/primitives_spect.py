@@ -451,13 +451,14 @@ class Spect(PrimitivesBASE):
                             if data > 0:
                                 wave.append(w0)
                                 # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(data / flux))
-                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                                zpt.append(u.Magnitude(flux / data))
+                                if variance is not None:
+                                    zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
                     wave = at.array_from_list(wave, unit=u.nm)
                     zpt = at.array_from_list(zpt)
-                    zpt_err = at.array_from_list(zpt_err)
+                    weights = 1. / array_from_list(zpt_err) if zpt_err else None
                     fitter = fit_1D(zpt.value, points=wave.value,
-                                   weights=1./zpt_err.value, **fit1d_params,
+                                   weights=weights, **fit1d_params,
                                    plot=debug_plot)
                     ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
                                                      yunit=zpt.unit)
@@ -1885,8 +1886,8 @@ class Spect(PrimitivesBASE):
                     sci_flux_unit = u.Unit(ext.hdr.get('BUNIT'))
                 except:
                     sci_flux_unit = None
-                if not (std_flux_unit is None or sci_flux_unit is None):
-                    unit = sci_flux_unit * std_flux_unit / flux_units
+                if not (std_physical_unit is None or sci_flux_unit is None):
+                    unit = sci_flux_unit * std_physical_unit / flux_units
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
                                      format(extname, exptime))
@@ -1894,7 +1895,7 @@ class Spect(PrimitivesBASE):
                         sci_flux_unit /= u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
                         log.warning(f"{extname} has incompatible units ('"
-                                    f"{sci_flux_unit}' and '{std_flux_unit}'"
+                                    f"{sci_flux_unit}' and '{std_physical_unit}'"
                                     "). Cannot flux calibrate")
                         continue
                 else:
