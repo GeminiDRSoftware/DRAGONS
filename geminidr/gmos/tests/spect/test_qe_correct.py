@@ -73,7 +73,7 @@ gap_local_kw = {
     "N20180509S0010.fits": {},
     "N20190201S0163.fits": {},
     "N20190302S0089.fits": {'bad_cols': 5, 'wav_min': 450},
-    "N20190313S0114.fits": {'med_filt_size': 20},
+    "N20190313S0114.fits": {'order': 4, 'med_filt_size': 20},
     "N20190427S0123.fits": {'bad_cols': 5, 'order': 3},
     "N20190427S0126.fits": {'bad_cols': 5, 'order': 3},
     "N20190910S0028.fits": {},
