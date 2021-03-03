@@ -1833,8 +1833,17 @@ class Spect(PrimitivesBASE):
         )
 
         for ad in adinputs:
-            for ext in ad:
+            is_in_adu = ad[0].is_in_adu()
+            if not is_in_adu:
+                # astroscrappy takes data in adu
+                for ext in ad:
+                    ext.divide(ext.gain())
 
+            # tile extensions by CCD to limit the number of edges
+            array_info = gt.array_information(ad)
+            ad_tiled = self.tileArrays([ad], tile_all=False)[0]
+
+            for ext in ad_tiled:
                 dispaxis = 2 - ext.dispersion_axis()
 
                 # Use default orders from gemcrspec (from Bryan):
@@ -1843,15 +1852,13 @@ class Spect(PrimitivesBASE):
                 y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
                            if y_order_in is None else y_order_in)
 
-                if ext.hdr['BUNIT'] == 'electron':
-                    data = ext.data / ext.gain()
-                else:
-                    data = ext.data
-
                 if ext.mask is not None:
                     data = np.ma.array(ext.data, mask=ext.mask != 0)
+                    mask = (ext.mask & bitmask) > 0
                     weights = (ext.mask == 0).astype(int)
                 else:
+                    data = ext.data
+                    mask = None
                     weights = None
 
                 # Fit the object spectrum:
@@ -1865,7 +1872,7 @@ class Spect(PrimitivesBASE):
                     if debug:
                         ext.OBJFIT = objfit.copy()
                 else:
-                    objfit = np.zeros_like(ext.data)
+                    objfit = np.zeros(ext.shape)
 
                 input_copy = data - objfit
 
@@ -1881,23 +1888,22 @@ class Spect(PrimitivesBASE):
                     objfit += skyfit
                     if debug:
                         ext.SKYFIT = skyfit
-                    del skyfit, input_copy
+                    skyfit = None
 
-                if ext.mask is not None:
-                    mask = (ext.mask & bitmask) > 0
-                else:
-                    mask = None
+                input_copy = None
 
-                kwargs = {
-                    'gain': ext.gain(),
-                    'readnoise': ext.read_noise(),
-                }
-                if ext.saturation_level():
-                    kwargs['satlevel'] = ext.saturation_level()
+                # Run astroscrappy's detect_cosmics. We use the variance array
+                # because it takes into account the different read noises if
+                # the data has been tiled
+                crmask, _ = detect_cosmics(ext.data,
+                                           inmask=mask,
+                                           inbkg=objfit,
+                                           invar=ext.variance,
+                                           gain=ext.gain(),
+                                           satlevel=ext.saturation_level(),
+                                           **params)
 
-                crmask, _ = detect_cosmics(ext.data, inmask=mask, inbkg=objfit,
-                                           **params, **kwargs)
-
+                # Set the cosmic_ray flags, and create the mask if needed
                 if ext.mask is None:
                     ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
                 else:
@@ -1905,6 +1911,30 @@ class Spect(PrimitivesBASE):
 
                 if debug:
                     plot_cosmics(ext, crmask)
+
+            # Set flags in the original (un-tiled) ad
+            if ad_tiled is not ad:
+                xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+                for ext_tiled, indices in zip(ad_tiled, array_info.extensions):
+                    tiled_arrsec = ext_tiled.array_section()
+                    for i in indices:
+                        ext = ad[i]
+                        arrsec = ext.array_section()
+                        slice_ = (slice((arrsec.y1 - tiled_arrsec.y1) // ybin,
+                                        (arrsec.y2 - tiled_arrsec.y1) // ybin),
+                                  slice((arrsec.x1 - tiled_arrsec.x1) // xbin,
+                                        (arrsec.x2 - tiled_arrsec.x1) // xbin))
+
+                        ext.mask = ext_tiled.mask[slice_]
+
+                        if debug:
+                            ext.OBJFIT = ext_tiled.OBJFIT[slice_]
+                            ext.SKYFIT = ext_tiled.SKYFIT[slice_]
+
+            # convert back to electron if needed
+            if not is_in_adu:
+                for ext in ad:
+                    ext.multiply(ext.gain())
 
             ad.update_filename(suffix=suffix, strip=True)
 
