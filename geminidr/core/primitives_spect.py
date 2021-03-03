@@ -1635,7 +1635,7 @@ class Spect(PrimitivesBASE):
                 locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
                 log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
 
-                if np.isnan(data[prof_mask==0]).any():
+                if np.isnan(profile[prof_mask==0]).any():
                     log.warning("There are unmasked NaNs in the spatial profile")
                 all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
                                                 threshold=threshold, method=sizing_method)
