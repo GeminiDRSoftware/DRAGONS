@@ -1596,7 +1596,7 @@ class Spect(PrimitivesBASE):
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
                 this_use_snr = use_snr and (variance is not None)
-                signal = (data if this_use_snr else
+                signal = (data if not this_use_snr else
                           np.divide(data, np.sqrt(variance),
                                     out=np.zeros_like(data), where=variance>0))
                 masked_data = np.where(np.logical_or(full_mask, variance == 0),
