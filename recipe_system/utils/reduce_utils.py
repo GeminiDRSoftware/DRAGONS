@@ -319,7 +319,7 @@ def normalize_upload(upload):
     return
 
 
-def normalize_ucals(files, cals):
+def normalize_ucals(cals):
     """
     When a user passes a --user_cal argument of the form,
 
@@ -341,8 +341,6 @@ def normalize_ucals(files, cals):
 
     Parameters
     ----------
-    files : list
-        A list containing the input files. NO LONGER USED.
     cals : list
         A list of strings like, 'caltype:calfilepath'.
 

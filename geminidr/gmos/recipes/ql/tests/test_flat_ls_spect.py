@@ -131,7 +131,7 @@ def processed_flat(change_working_dir, path_to_inputs, request):
         reduce = Reduce()
         reduce.files.extend([flat_path])
         reduce.mode = 'ql'
-        reduce.ucals = normalize_ucals(reduce.files, calibration_files)
+        reduce.ucals = normalize_ucals(calibration_files)
         reduce.runr()
 
         # Clean up duplicated files

@@ -119,7 +119,7 @@ class Reduce:
         self.drpkg = args.drpkg
         self.files = args.files
         self.suffix = args.suffix
-        self.ucals = normalize_ucals(args.files, args.user_cal)
+        self.ucals = normalize_ucals(args.user_cal)
         self.uparms = set_btypes(args.userparam)
         self.config_file = args.config
         self._upload = args.upload

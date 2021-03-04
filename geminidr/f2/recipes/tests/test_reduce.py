@@ -157,7 +157,7 @@ def test_reduce_image(change_working_dir):
         reduce_target = Reduce()
         reduce_target.files.extend(science)
         reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
-        reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
+        reduce_target.ucals = normalize_ucals(calib_files)
         reduce_target.runr()
 
 

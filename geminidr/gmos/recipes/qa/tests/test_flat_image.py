@@ -50,7 +50,7 @@ def test_make_processed_flat(
         r = Reduce()
         r.files = [download_from_archive(f) for f in flat_fnames]
         r.mode = 'qa'
-        r.ucals = normalize_ucals(r.files, calibration_files)
+        r.ucals = normalize_ucals(calibration_files)
         r.runr()
 
         # Delete files that won't be used

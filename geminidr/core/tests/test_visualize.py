@@ -161,7 +161,7 @@ def create_inputs():
             logutils.config(file_name='log_quartz_{}.txt'.format(data_label))
             r = Reduce()
             r.files.extend(quartz_paths)
-            r.ucals = normalize_ucals(r.files, cals)
+            r.ucals = normalize_ucals(cals)
             r.runr()
             master_quartz = r.output_filenames.pop()
             cals.append(f"processed_flat:{master_quartz}")
@@ -172,7 +172,7 @@ def create_inputs():
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
         r = Reduce()
         r.files.extend(arc_paths)
-        r.ucals = normalize_ucals(r.files, cals)
+        r.ucals = normalize_ucals(cals)
         r.runr()
         master_arc = r.output_filenames.pop()
 
