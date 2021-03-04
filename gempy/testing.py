@@ -1,8 +1,3 @@
-import os
-import pytest
-
-from astropy.modeling import models
-
 from gempy.library.astromodels import get_named_submodel
 from numpy.testing import assert_allclose
 

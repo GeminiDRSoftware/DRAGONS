@@ -26,6 +26,7 @@ keyword_comments = {
     "DISPAXIS": "Dispersion axis",
 #    "EXPSCALE": "Scaling factor to match exposure time",
     "EXPTIME": "Exposure time [seconds]",
+    "EXTCURVE": "Extinction curve used to correct to zero airmass",
     "FILTER": "Combined filter name",
     "FLATIM": "Flat image used",
     "FRINGEIM": "Fringe image used",

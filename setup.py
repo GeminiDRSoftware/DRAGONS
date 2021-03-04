@@ -28,7 +28,7 @@ else:
 VERSION = '3.1.0-dev'
 
 PACKAGENAME = 'dragons'
-PACKAGES = find_packages('.', exclude=['*tests*'])
+PACKAGES = find_packages()
 
 # SCRIPTS
 SCRIPTS = [
@@ -92,13 +92,13 @@ setup(name='dragons',
           'python-dateutil',
           'requests',
           'scipy',
-          'specutils',
+          'specutils>=1.1',
           'sqlalchemy',
       ],
       extras_require={
           'all': ['ginga', 'imexam'],
           'docs': ['sphinx', 'sphinx_rtd_theme'],
-          'test': ['pytest', 'coverage', 'objgraph', 'pandas'],
+          'test': ['pytest', 'coverage', 'objgraph'],
       },
       project_urls={
           'Issue Tracker': 'https://github.com/GeminiDRSoftware/DRAGONS',
@@ -106,4 +106,5 @@ setup(name='dragons',
       },
       # keywords=['astronomy', 'astrophysics', 'science', 'gemini'],
       python_requires='>=3.7',
+      entry_points={"pytest11": ["pytest_dragons = pytest_dragons.plugin"]},
       )

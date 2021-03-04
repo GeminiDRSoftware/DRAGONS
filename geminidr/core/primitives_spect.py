@@ -263,6 +263,7 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         datafile = params["filename"]
         bandpass = params["bandpass"]
+        airmass0 = params["debug_airmass0"]
         debug_plot = params["debug_plot"]
         interactive = params["interactive"]
         fit1d_params = fit_1D.translate_params(params)
@@ -310,6 +311,27 @@ class Spect(PrimitivesBASE):
                 log.warning("Using default bandpass of {} nm".format(bandpass))
                 spec_table['WIDTH'] = bandpass * u.nm
 
+            # Do some checks now to avoid failing on every extension
+            if airmass0:
+                telescope = ad.telescope()
+                site = extinct.telescope_sites.get(telescope)
+                if site is None:
+                    log.warning(f"{ad.filename}: Cannot determine site of "
+                                f"telescope '{telescope}' so cannot apply "
+                                "correction to zero airmass.")
+                else:
+                    airmass = ad.airmass()
+                    if airmass is None:
+                        log.warning(f"{ad.filename}: Cannot determine airmass"
+                                    " of observation so cannot apply "
+                                    "correction to zero airmass.")
+                    else:
+                        log.stdinfo(f"{ad.filename}: Correcting from airmass "
+                                    f"{airmass} to zero airmass using curve "
+                                    f"for site '{site}'.")
+                        ad.phu["EXTCURVE"] = (
+                            site, self.keyword_comments["EXTCURVE"])
+
             # We can only calculate the sensitivity for one extension in
             # non-XD data, so keep track of this in case it's not the first one
             calculated = False
@@ -341,35 +363,45 @@ class Spect(PrimitivesBASE):
                     spectrum = Spek1D(ext) / (exptime * u.s)
                     wave, zpt, zpt_err = [], [], []
 
-                    # Compute values that are counts / (exptime * flux_density * bandpass)
-                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                        data, mask, variance = spectrum.signal(region)
-                        if mask == 0 and fluxdens > 0:
-                            # Regardless of whether FLUX column is f_nu or f_lambda
-                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                            if data > 0:
-                                wave.append(w0)
-                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(data / flux))
+                # Compute values in counts / (exptime * flux_density * bandpass)
+                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                            spec_table['WIDTH'].quantity,
+                                            spec_table['FLUX'].quantity):
+                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                    # We don't want a single bad pixel to ruin an entire
+                    # bandpass, so exclude pixels with the DQ.bad_pixel bit
+                    # set and assign them the average of the other pixels
+                    data, mask, variance = spectrum.signal(
+                        region, interpolate=DQ.bad_pixel)
+                    if mask == 0 and fluxdens > 0:
+                        # Regardless of whether FLUX column is f_nu or f_lambda
+                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                        if data > 0:
+                            wave.append(w0)
+                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                            zpt.append(u.Magnitude(flux / data))
+                            if variance is not None:
                                 zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                wave = array_from_list(wave, unit=u.nm)
+                zpt = array_from_list(zpt)
+                weights = 1./array_from_list(zpt_err) if zpt_err else None
 
-                    # TODO: Abstract to interactive fitting
-                    wave = array_from_list(wave, unit=u.nm)
+                # Correct for atmospheric extinction. This correction makes
+                # the real data brighter, so makes the zpt magnitude more +ve
+                # (since "data" is in the denominator)
+                if airmass0 and site is not None and airmass is not None:
+                    zpt += u.Magnitude(airmass *
+                                       extinct.extinction(wave, site=site))
 
-                    zpt = array_from_list(zpt)
-                    zpt_err = array_from_list(zpt_err)
+                all_exts.append(ext)
+                all_shapes.append(ext.shape[0])
+                all_pixels.append(wave.value)
+                all_masked_data.append(zpt.value)
+                all_weights.append(weights)
+                all_fp_init.append(fit_1D.translate_params(params))
 
-                    all_exts.append(ext)
-                    all_shapes.append(ext.shape[0])
-                    all_pixels.append(wave.value)
-                    all_masked_data.append(zpt.value)
-                    all_weights.append(1./zpt_err.value)
-                    all_fp_init.append(fit_1D.translate_params(params))
-
-                    calculated = True
+                calculated = True
 
                 # ******************************************************************************************
                 config = self.params[self.myself()]
@@ -419,13 +451,14 @@ class Spect(PrimitivesBASE):
                             if data > 0:
                                 wave.append(w0)
                                 # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(data / flux))
-                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                                zpt.append(u.Magnitude(flux / data))
+                                if variance is not None:
+                                    zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
                     wave = at.array_from_list(wave, unit=u.nm)
                     zpt = at.array_from_list(zpt)
-                    zpt_err = at.array_from_list(zpt_err)
+                    weights = 1. / array_from_list(zpt_err) if zpt_err else None
                     fitter = fit_1D(zpt.value, points=wave.value,
-                                   weights=1./zpt_err.value, **fit1d_params,
+                                   weights=weights, **fit1d_params,
                                    plot=debug_plot)
                     ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
                                                      yunit=zpt.unit)
@@ -1638,10 +1671,12 @@ class Spect(PrimitivesBASE):
                     sec_mask = False
                 full_mask = (mask > 0) | sky_mask | sec_mask
 
-                signal = (data if (variance is None or not use_snr) else
+                this_use_snr = use_snr and (variance is not None)
+                signal = (data if not this_use_snr else
                           np.divide(data, np.sqrt(variance),
                                     out=np.zeros_like(data), where=variance>0))
-                masked_data = np.where(np.logical_or(full_mask, variance == 0), np.nan, signal)
+                masked_data = np.where(np.logical_or(full_mask, variance == 0),
+                                       np.nan, signal)
                 # Need to catch warnings for rows full of NaNs
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', message='All-NaN slice')
@@ -1668,9 +1703,10 @@ class Spect(PrimitivesBASE):
                     # TODO: find_peaks might not be best considering we have no
                     #   idea whether sources will be extended or not
                     widths = np.arange(3, 20)
-                    peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask & DQ.not_signal,
-                                                        variance=1.0, reject_bad=False,
-                                                        min_snr=3, min_frac=0.2)
+                    peaks_and_snrs = tracing.find_peaks(
+                        profile, widths, mask=prof_mask & DQ.not_signal,
+                        variance=1.0 if this_use_snr else None, reject_bad=False,
+                        min_snr=3, min_frac=0.2)
 
                     if peaks_and_snrs.size == 0:
                         log.warning("Found no sources")
@@ -1806,16 +1842,40 @@ class Spect(PrimitivesBASE):
                     not self.timestamp_keys['distortionCorrect'] in ad.phu):
                 log.warning("{} has not been distortion corrected".format(ad.filename))
 
+            telescope = ad.telescope()
             exptime = ad.exposure_time()
             try:
-                delta_airmass = ad.airmass() - std.airmass()
-            except TypeError:  # if either airmass() returns None
-                log.warning("Cannot determine airmass of target and/or standard."
-                            " Not making an airmass correction.")
-                delta_airmass = 0
+                std_site = std.phu["EXTCURVE"]
+            except KeyError:
+                try:
+                    delta_airmass = ad.airmass() - std.airmass()
+                except TypeError:  # if either airmass() returns None
+                    log.warning("Cannot determine airmass of target "
+                                f"{ad.filename} and/or standard {std.filename}"
+                                ". Not performing airmass correction.")
+                    delta_airmass = None
+                else:
+                    log.stdinfo(f"{ad.filename}: Correcting for difference of "
+                                f"{delta_airmass:5.3f} airmasses")
+            else:
+                telescope = ad.telescope()
+                sci_site = extinct.telescope_sites.get(telescope)
+                if sci_site != std_site:
+                    raise ValueError(f"Site of target observation {ad.filename}"
+                                     f" ({sci_site}) does not match site used "
+                                     f"to correct standard {std.filename} "
+                                     f"({std_site}).")
+                delta_airmass = ad.airmass()
+                if delta_airmass is None:
+                    log.warning(f"Cannot determine airmass of {ad.filename}."
+                                " Not performing airmass correction.")
+                else:
+                    log.stdinfo(f"{ad.filename}: Correcting for airmass of "
+                                f"{delta_airmass:5.3f}")
+
 
             for index, ext in enumerate(ad):
-                ext_std = std[max(index, len_std-1)]
+                ext_std = std[min(index, len_std-1)]
                 extname = f"{ad.filename} extension {ext.id}"
 
                 # Create the correct callable function (we may want to
@@ -1833,15 +1893,15 @@ class Spect(PrimitivesBASE):
                 except:
                     sci_flux_unit = None
                 if not (std_physical_unit is None or sci_flux_unit is None):
-                    unit = sci_flux_unit / (std_physical_unit * flux_units)
+                    unit = sci_flux_unit * std_physical_unit / flux_units
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
                                      format(extname, exptime))
                         ext /= exptime
                         sci_flux_unit /= u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
-                        log.warning(f"{extname} has incompatible units "
-                                    f"('{sci_flux_unit}' and '{std_flux_unit}'"
+                        log.warning(f"{extname} has incompatible units ('"
+                                    f"{sci_flux_unit}' and '{std_physical_unit}'"
                                     "). Cannot flux calibrate")
                         continue
                 else:
@@ -1874,8 +1934,7 @@ class Spect(PrimitivesBASE):
 
                 # Apply airmass correction. If none is needed/possible, we
                 # don't need to try to do this
-                if delta_airmass != 0:
-                    telescope = ad.telescope()
+                if delta_airmass:
                     try:
                         extinction_correction = extinct.extinction(
                             waves, telescope=telescope)
@@ -1883,12 +1942,10 @@ class Spect(PrimitivesBASE):
                         log.warning(f"Telescope {telescope} not recognized. "
                                     "Not making an airmass correction.")
                     else:
-                        log.stdinfo("Correcting for difference of {:5.3f} "
-                                    "airmasses".format(delta_airmass))
-                        sens_factor *= 10**(0.4*delta_airmass * extinction_correction)
+                        sens_factor *= 10**(0.4 * delta_airmass * extinction_correction)
 
-                final_sens_factor = (sci_flux_unit / (sens_factor * pixel_sizes)).to(final_units,
-                                     equivalencies=u.spectral_density(waves)).value
+                final_sens_factor = (sci_flux_unit * sens_factor / pixel_sizes).to(
+                    final_units, equivalencies=u.spectral_density(waves)).value
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]

@@ -7,6 +7,7 @@ recursive-include geminidr *.dat
 recursive-include geminidr *.fits
 recursive-include gempy *.c
 recursive-include gempy *.pyx
+recursive-include gempy/share/man/man1 *
 
 graft geminidr/gemini/lookups/source_detection
 graft gempy/numdisplay

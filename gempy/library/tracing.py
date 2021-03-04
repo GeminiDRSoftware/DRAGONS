@@ -672,9 +672,14 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
 
     # Try to better estimate the true noise from the pixel-to-pixel
     # variations (the difference between adjacent pixels will be
-    # sqrt(2) times larger than the rms noise).
+    # sqrt(2) times larger than the rms noise). Also lower the weights
+    # in regions of rapidly-varying signal to avoid getting spurious minima.
     if variance is None:
-        w = np.full_like(y, np.sqrt(2) / sigma_clipped_stats(np.diff(y))[2])
+        diff = np.diff(y)
+        sigma1 = sigma_clipped_stats(diff)[2] / np.sqrt(2)
+        # 0.1 is a fudge factor that seems to work well
+        sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
+        w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
     else:
         w = divide0(1.0, np.sqrt(variance))
 
@@ -709,8 +714,11 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
         if method is None:
             all_limits.append((lower, upper))
         else:
-            limit1 = limit_finding_function(spline, tweaked_peak, lower, upper, threshold)
-            limit2 = limit_finding_function(spline, tweaked_peak, upper, lower, threshold)
+            limit1 = limit_finding_function(spline, tweaked_peak, lower,
+                                            upper, threshold)
+            limit2 = limit_finding_function(spline, tweaked_peak, upper,
+                                            lower, threshold)
+            limit1, limit2 = min(limit1, peak), max(limit2, peak)
             all_limits.append((limit1, limit2))
 
     return all_limits

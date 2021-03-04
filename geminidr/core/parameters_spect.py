@@ -36,6 +36,8 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
+    debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
+                                  bool, False)
     regions = config.Field("Sample regions", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
@@ -149,7 +151,7 @@ class findSourceAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
                            bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.01, min=0, max=1)
+                                  float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},

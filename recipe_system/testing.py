@@ -35,7 +35,7 @@ def get_master_arc(path_to_inputs, change_working_dir):
         cals = testing.get_associated_calibrations(
             ad.filename.split('_')[0] + '.fits')
 
-        arc_filename = cals[cals.caltype == 'arc'].filename.values[0]
+        arc_filename = cals[cals['caltype'] == 'arc']['filename'][0]
         arc_filename = arc_filename.split('.fits')[0] + '_arc.fits'
 
         if pre_process:

@@ -335,7 +335,7 @@ def test_phu(NIFS_DARK):
 
 
 @pytest.mark.dragons_remote_data
-def test_paths(path_to_outputs, NIFS_DARK):
+def test_paths(tmpdir, NIFS_DARK):
     ad = astrodata.open(NIFS_DARK)
     assert ad.orig_filename == 'N20160727S0077.fits'
 
@@ -347,7 +347,7 @@ def test_paths(path_to_outputs, NIFS_DARK):
     assert ad.filename == 'newfile.fits'
     assert ad.path == os.path.join(srcdir, 'newfile.fits')
 
-    testfile = os.path.join(path_to_outputs, 'temp.fits')
+    testfile = os.path.join(str(tmpdir), 'temp.fits')
     ad.path = testfile
     assert ad.filename == 'temp.fits'
     assert ad.path == testfile
@@ -356,7 +356,7 @@ def test_paths(path_to_outputs, NIFS_DARK):
     assert os.path.exists(testfile)
     os.remove(testfile)
 
-    testfile = os.path.join(path_to_outputs, 'temp2.fits')
+    testfile = os.path.join(str(tmpdir), 'temp2.fits')
     ad.write(testfile)
     assert os.path.exists(testfile)
 
