@@ -159,6 +159,169 @@ class findSourceAperturesConfig(config.Config):
     interactive = config.Field("Use interactive interface", bool, False)
 
 
+class flagCosmicRaysConfig(config.Config):
+    suffix = config.Field(
+        doc="Filename suffix",
+        dtype=str,
+        default="_CRMasked",
+        optional=True,
+    )
+    bitmask = config.Field(
+        doc="Bits in the input data quality `flags` that are to be used to "
+        "exclude bad pixels from cosmic ray detection and cleaning. Default "
+        "65535 (all non-zero bits, up to 16 planes).",
+        dtype=int,
+        optional=True,
+        default=65535,
+    )
+    debug = config.Field(
+        doc="Make diagnostic plots?",
+        dtype=bool,
+        default=False
+    )
+    # Fit parameters --------------------------------------------------------
+    x_order = config.Field(
+        doc="Order for fitting and subtracting object continuum and sky line "
+        "models, prior to running the main cosmic ray detection algorithm. "
+        "When None, defaults are used, according to the image size (as in "
+        "the IRAF task gemcrspec). When 0, no fit is done.",
+        dtype=int,
+        optional=True,
+        default=None,
+    )
+    y_order = config.Field(
+        doc="Order for fitting and subtracting object continuum and sky line "
+        "models, prior to running the main cosmic ray detection algorithm. "
+        "When None, defaults are used, according to the image size (as in "
+        "the IRAF task gemcrspec). When 0, no fit is done.",
+        dtype=int,
+        optional=True,
+        default=None,
+    )
+    bkgfit_niter = config.Field(
+        doc="Maximum number of iterations for the objects and sky fits.",
+        dtype=int,
+        optional=True,
+        default=3,
+    )
+    bkgfit_lsigma = config.Field(
+        doc="Rejection threshold in standard deviations below the mean, "
+        "for the objects and sky fits.",
+        dtype=float,
+        optional=True,
+        default=4.0,
+    )
+    bkgfit_hsigma = config.Field(
+        doc="Rejection threshold in standard deviations above the mean, "
+        "for the objects and sky fits.",
+        dtype=float,
+        optional=True,
+        default=4.0,
+    )
+    # Astroscrappy's detect_cosmics parameters ------------------------------
+    sigclip = config.Field(
+        doc="Laplacian-to-noise limit for cosmic ray detection. Lower "
+        "values will flag more pixels as cosmic rays.",
+        dtype=float,
+        optional=True,
+        default=4.5,
+    )
+    sigfrac = config.Field(
+        doc="Fractional detection limit for neighboring pixels. For cosmic "
+        "ray neighbor pixels, a lapacian-to-noise detection limit of"
+        "sigfrac * sigclip will be used.",
+        dtype=float,
+        optional=True,
+        default=0.3,
+    )
+    objlim = config.Field(
+        doc="Minimum contrast between Laplacian image and the fine structure "
+        "image.  Increase this value if cores of bright stars are flagged as "
+        "cosmic rays.",
+        dtype=float,
+        optional=True,
+        default=5.0,
+    )
+    niter = config.Field(
+        doc="Number of iterations of the LA Cosmic algorithm to perform",
+        dtype=int,
+        optional=True,
+        default=4,
+    )
+    sepmed = config.Field(
+        doc="Use the separable median filter instead of the full median "
+        "filter. The separable median is not identical to the full median "
+        "filter, but they are approximately the same and the separable median "
+        "filter is significantly faster and still detects cosmic rays well.",
+        dtype=bool,
+        optional=True,
+        default=True,
+    )
+    cleantype = config.ChoiceField(
+        doc="Set which clean algorithm is used.",
+        allowed={
+            'median': 'An umasked 5x5 median filter',
+            'medmask': 'A masked 5x5 median filter',
+            'meanmask': 'A masked 5x5 mean filter',
+            'idw': 'A masked 5x5 inverse distance weighted interpolation',
+        },
+        dtype=str,
+        optional=True,
+        default="meanmask",
+    )
+    fsmode = config.ChoiceField(
+        doc="Method to build the fine structure image.",
+        allowed={
+            'median': 'Use the median filter in the standard LA Cosmic '
+            'algorithm',
+            'convolve': 'Convolve the image with the psf kernel to calculate '
+            'the fine structure image.',
+        },
+        dtype=str,
+        optional=True,
+        default='median',
+    )
+    psfmodel = config.ChoiceField(
+        doc="Model to use to generate the psf kernel if fsmode == 'convolve' "
+        "and psfk is None. The current choices are Gaussian and Moffat "
+        "profiles.",
+        allowed={
+            'gauss': 'Circular Gaussian kernel',
+            'moffat': 'Circular Moffat kernel',
+            'gaussx': 'Gaussian kernel in the x direction',
+            'gaussy': 'Gaussian kernel in the y direction',
+        },
+        dtype=str,
+        optional=True,
+        default="gauss",
+    )
+    psffwhm = config.Field(
+        doc="Full Width Half Maximum of the PSF to use for the kernel.",
+        dtype=float,
+        optional=True,
+        default=2.5,
+    )
+    psfsize = config.Field(
+        doc="Size of the kernel to calculate. Returned kernel will have size "
+        "psfsize x psfsize. psfsize should be odd.",
+        dtype=int,
+        optional=True,
+        default=7,
+    )
+    psfbeta = config.Field(
+        doc="Moffat beta parameter. Only used if psfmodel=='moffat'.",
+        dtype=float,
+        optional=True,
+        default=4.765,
+    )
+    verbose = config.Field(
+        doc="Print to the screen or not.",
+        dtype=bool,
+        optional=True,
+        default=False,
+    )
+
+
 def flux_units_check(value):
     # Confirm that the specified units can be converted to a flux density
     try:
