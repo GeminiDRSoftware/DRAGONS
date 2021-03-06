@@ -126,7 +126,7 @@ class LocalDB(CalDB):
         """
         return self._calmgr.init_database(wipe=wipe)
 
-    def add_calibration(self, calfile):
+    def add_cal(self, calfile):
         self._store_calibration(calfile)
 
     def add_directory(self, path, walk=False):
@@ -144,7 +144,7 @@ class LocalDB(CalDB):
         """
         self._calmgr.ingest_directory(path, walk=walk, log=self.log)
 
-    def remove_calibration(self, calfile):
+    def remove_cal(self, calfile):
         """
         Removes a calibration file from the database. Note that only the filename
         is relevant. All duplicate copies in the database will be removed.

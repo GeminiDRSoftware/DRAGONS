@@ -183,7 +183,7 @@ configuration file but the ``store`` flag is not set.
 
 To add a processed calibration to the database::
 
-    >>> caldb.add_calibration('/path/to/master_bias.fits')
+    >>> caldb.add_cal('/path/to/master_bias.fits')
 
 If the path is not given, the current directory is assumed.  The addition
 of a file to the database is simply the addition of the filename and

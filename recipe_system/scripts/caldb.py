@@ -109,7 +109,7 @@ class Dispatcher:
                     self._log(m)
                     self.db.add_directory(path, walk=args.walk)
                 else:
-                    self.db.add_calibration(path)
+                    self.db.add_cal(path)
                     self._log(f"Ingested {path}")
             except OSError as e:
                 traceback.print_last()
@@ -124,7 +124,7 @@ class Dispatcher:
     def _action_remove(self, args):
         for path in args.files:
             try:
-                self.db.remove_calibration(path)
+                self.db.remove_cal(path)
                 self._log(f"Removed {path}")
             except LocalManagerError as e:
                 if e.error_type == ERROR_DIDNT_FIND:
