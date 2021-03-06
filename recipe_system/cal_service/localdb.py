@@ -2,7 +2,7 @@
 # interface to the local calibration manager, and provides an API for
 # modifying the database on disk.
 
-from os import path
+from os import path, makedirs
 
 from .caldb import CalDB, CalReturn
 from .calrequestlib import get_cal_requests, generate_md5_digest
@@ -55,6 +55,8 @@ class LocalDB(CalDB):
         if not path.exists(dbfile) and force_init:
             self.log.stdinfo(f"Local database file {dbfile} does not exist. "
                              "Initializing.")
+            if not path.exists(path.dirname(dbfile)):
+                makedirs(path.dirname(dbfile))
             self.init()
 
     def _get_calibrations(self, adinputs, caltype=None, procmode=None,
