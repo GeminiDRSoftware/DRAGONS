@@ -14,15 +14,18 @@ An instance of ConfigParser, `globalConf`, is initialized when first loading
 this module, and it should be used as the only interface to the config system.
 
 """
-import os
+import os, warnings
+from os.path import exists, expanduser
 from configparser import ConfigParser
 
-DEFAULT_DIRECTORY = '~/.geminidr'
+DEFAULT_DIRECTORY = '~/.dragons'
 
 try:
     STANDARD_REDUCTION_CONF = os.environ["DRAGONSRC"]
 except KeyError:
-    STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
+    STANDARD_REDUCTION_CONF = os.path.join(DEFAULT_DIRECTORY, 'dragonsrc')
+
+OLD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 
 def environment_variable_name(section, option):
@@ -40,12 +43,22 @@ def load_config(filenames=None):
         filenames of config files to load
     """
     if filenames is None:
-        filenames = (STANDARD_REDUCTION_CONF,)
+        if exists(expanduser(STANDARD_REDUCTION_CONF)):
+            filenames = (STANDARD_REDUCTION_CONF,)
+        elif exists(expanduser(OLD_REDUCTION_CONF)):
+            filenames = (OLD_REDUCTION_CONF,)
+            print("HELLO")
+            with warnings.catch_warnings():
+                warnings.simplefilter("always", DeprecationWarning)
+                warnings.warn("The ~/.geminidr/rsys.cfg file is deprecated. "
+                              "Please create a ~/.dragons/dragonsrc config file.",
+                              DeprecationWarning
+                              )
     elif isinstance(filenames, str):
         filenames = (filenames,)
 
     for filename in filenames:
-        globalConf.read(os.path.expanduser(filename))
+        globalConf.read(expanduser(filename))
 
 
 globalConf = ConfigParser()

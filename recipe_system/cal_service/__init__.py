@@ -4,6 +4,7 @@
 #                                                                    cal_service
 # ------------------------------------------------------------------------------
 from os import path
+import warnings
 from importlib import import_module
 
 from ..config import globalConf
@@ -96,11 +97,22 @@ def parse_databases(default_dbname="cal_manager.db"):
     """
     db_list = []
     calconf = get_calconf()
-    try:
-        databases = calconf["databases"]
-    except (TypeError, KeyError):  # if not defined, get_calconf() will return None
+    if not calconf:
         return db_list
     upload_cookie = calconf.get("upload_cookie")
+    # Allow old-format file to be read
+    try:
+        databases = calconf["databases"]
+    except KeyError:
+        databases = calconf.get("database_dir")
+        if not databases:
+            return db_list
+        with warnings.catch_warnings():
+            warnings.simplefilter("always", DeprecationWarning)
+            warnings.warn("Use 'databases' instead of 'database_dir' in "
+                          "config file.",
+                          DeprecationWarning
+                          )
     for line in databases.splitlines():
         if not line:  # handle blank lines
             continue
