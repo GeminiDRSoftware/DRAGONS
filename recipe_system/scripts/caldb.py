@@ -196,7 +196,7 @@ if __name__ == '__main__':
     try:
         act = args.action
         logstream = sys.stderr if args.verbose else None
-        db = LocalDB(expanduser(db_path), log=None)
+        db = LocalDB(db_path, log=None)
         disp = Dispatcher(subp.choices[act], db,
                           partial(log, stream=logstream))
         ret = disp.apply(act, args)
