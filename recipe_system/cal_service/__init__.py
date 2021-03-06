@@ -134,6 +134,8 @@ def parse_databases(default_dbname="cal_manager.db"):
             cls = LocalDB
         elif path.isfile(expanded_db):
             cls = LocalDB
+        elif "/" in expanded_db and "//" not in expanded_db:
+            cls = LocalDB
         else:  # does not check
             cls = RemoteDB
             kwargs["upload_cookie"] = upload_cookie
