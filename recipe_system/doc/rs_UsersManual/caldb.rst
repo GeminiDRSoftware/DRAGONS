@@ -31,35 +31,45 @@ calibrations that the Recipe System will pick up when needed.
 
 .. _config_caldb:
 
-Configuring ``caldb``
-=====================
-The first time ``caldb`` is used for a project, either via command line or
-API, it needs to be configured and initialized.  The configuration is
-stored in a text file in a special directory named ``~/.geminidr/``, in a
-file called ``rsys.cfg``.  The ``~`` means the user's home directory.  The
-very first step, to be done only once, is to create the directory and the
-configuration file.
+Configuring local databases for DRAGONS
+=======================================
+DRAGONS can be configured to use one or more local calibration databases,
+which it will query for processed calibrations if these are not specified
+directly on the command line or via the API. This is achieve by means of a
+configuration file. The default location for this is a file called
+``dragonrc`` in a special directory named ``~/.dragons/``, but it can be
+changed by use of the ``$DRAGONSRC`` environment variable.  The ``~``
+means the user's home directory.  The very first step, to be done only once,
+is to create the directory and the configuration file.
 
 ::
 
-    $ mkdir ~/.geminidr
-    $ touch ~/.geminidr/rsys.cfg
+    $ mkdir ~/.dragons
+    $ touch ~/.dragons/dragonsrc
 
-The ``rsys.cfg`` file must contain the following lines::
+The ``dragonsrc`` file must contain the following lines::
 
     [calibs]
-    standalone = True
-    database_dir = ~/.geminidr   # set this path to whatever you want.
+    databases = ~/.geminidr/cals.db get store  # set this file to whatever you want
+      ~/another_directory/another_file.db
 
-The ``standalone`` option tells ``caldb`` if you are using a local database
-when it is set to True.  ``standalone = False`` is used only internally at
-Gemini when using the internal data manager.
+Additional databases can be listed, one per line, provided they are indented
+as shown above. It is possible to specify only a directory, instead of a
+filename, in which case the database file will be called ``cal_manager.db``.
+By default each database is configured for retrieval only, and this is what
+will happen if only the filename (or directory) is listed. If you wish to
+have processed calibrations stored automatically when they are produced by
+DRAGONS, you should add the word "store" to that line, as shown. Adding any
+flags unsets the "get" flag, so this must be explicitly specified if you
+wish to both retrieve *and* store processed calibrations in a database.
 
-The ``database_dir`` parameter points to the directory hosting the calibration
-database.  The database name is always ``cal_manager.db``, this cannot be set,
-only the directory where it lives.  It is possible to have more than one
-database as long as they are in different directory.  Which one will be picked
-up will be set through the ``database_dir`` parameter in ``rsys.cfg``.
+When retrieving calibrations, the databases will be searched in order for
+each file requiring a calibration, until a suitable calibration is found.
+This means the "best" (e.g., closest in time) calibration may not always be
+assigned, if an acceptable calibration is found in a database higher in the
+list. When storing, each processed calibration will be stored in *every*
+database configured to allow storage (i.e., with the "store" flag on its
+line in the configuration file).
 
 
 Using ``caldb`` on the Command Line
@@ -69,14 +79,13 @@ This is where the Recipe System will look for processed calibrations.  For
 a reminder of its basic usage, one can always use the ``--help`` flag::
 
     $ caldb --help
-    usage: caldb [-h] {config,init,list,add,remove} ...
+    usage: caldb [-h] {init,list,add,remove} ...
 
     Calibration Database Management Tool
 
     positional arguments:
       {config,init,list,add,remove}
                             Sub-command help
-        config              Display configuration info
         init                Create and initialize a new database.
         list                List calib files in the current database.
         add                 Add files to the calibration database. One or more
@@ -87,21 +96,46 @@ a reminder of its basic usage, one can always use the ``--help`` flag::
     optional arguments:
       -h, --help            show this help message and exit
 
-There can be only one positional argument given to ``caldb``, this means only
-one file at a time can be added or removed from the database.
+Help for each of the sub-commands can be obtained by using the ``--help`` or
+``-h`` flag after the appropriate sub-command::
 
-Once the configuration file is in place (see :ref:`config_caldb`), one can
-verify the configuration by doing::
+    $ caldb add -h
+    usage: caldb add [-h] [-k] [-c CONFIG] [-d DB_PATH] [-v] path [path ...]
 
-    $ caldb config
+    positional arguments:
+      path                  FITS file or directory
 
-    Using configuration file: ~/.geminidr/rsys.cfg
-    Active database directory: /Users/username/.geminidr
-    Database file: /Users/username/.geminidr/cal_manager.db
+    optional arguments:
+      -h, --help            show this help message and exit
+      -k, --walk            If this option is active, directories will be explored
+                            recursively. Otherwise, only the first level will be
+                            searched for FITS files.
+      -c CONFIG, --config CONFIG
+                            Path to the config file, if not the default location,
+                            or defined by the environment variable.
+      -d DB_PATH, --database DB_PATH
+                            Path to the database file. Optional if the config file
+                            defines a single database.
+      -v, --verbose         Give information about the operations being performed.
 
-    The 'standalone' flag is active, meaning that local calibrations will be used
+By default, the database will be determined from the configuration file
+(either in its default location, or that indicated by ``$DRAGONSRC``, or
+specified with the ``-c`` flag on the command line). If more than one local
+database is listed in this file, ``caldb`` will raise an error and exit.
+A specific database file can be indicated with the ``-d`` flag, which will
+circumvent the configuration file (and, in fact, does not even require there
+to be a configuration file).  Since ``caldb`` operates on a *single*
+database, the flags in the configuration file are ignored, and the
+``caldb add`` command will add the calibration even if the ``store`` flag
+is not set.
 
-To initialize a new database with the selected configuration::
+In the following examples, it is assumed that your configuration file only
+lists a single local database, but that need not be true if the ``-d`` flag
+is used. Note, however, that this must appear *after* the ``caldb``
+sub-command but *before* the filenames of any calibrations to be added to
+the database.
+
+To initialize a new database::
 
     $ caldb init
 
@@ -136,31 +170,34 @@ To see ``caldb`` used in a complete example along with the other tools see
 
 Using the ``caldb`` API
 =======================
-Before being usable in a Python program, the local calibration manager
-must be configured.  This cannot be done from the API.  See
-:ref:`config_caldb` for instructions.
-
-The calibration database is initialized and the configuration are read into the the calibration service as follow::
+The above commands are also available in an API, using the ``LocalDB``
+class, which takes the filename of the database. This circumvents the
+configuration file, which exists to inform DRAGONS of the database
+locations and hierarchy. As with the command-line interface, this means
+that calibrations will be added even if this database is listed in the
+configuration file but the ``store`` flag is not set.
 
     >>> from recipe_system import cal_service
     >>>
-    >>> caldb = cal_service.CalibrationService()
-    >>> caldb.config()
-    >>> caldb.init()
-    >>> cal_service.set_calservice()
-
-The calibration service is then ready to use.  This must be done before
-``Reduce`` is instantiated.
+    >>> caldb = cal_service.LocalDB(database_filename)
 
 To add a processed calibration to the database::
 
-    >>> caldb.add_cal('/path/to/master_bias.fits')
+    >>> caldb.add_calibration('/path/to/master_bias.fits')
 
 If the path is not given, the current directory is assumed.  The addition
 of a file to the database is simply the addition of the filename and
 its location on the disk.  The file itself *is not stored*.  If the
 calibration file is deleted or moved, the database will not know and still
 think that the file is there.
+
+It is also possible to add all the files in a given directory to the
+database::
+
+    >>> caldb.add_directory('/path/to/calibrations/', walk=False)
+
+where setting the ``walk`` parameter will cause all files in subdirectories
+to be added as well.
 
 To see what is in the database::
 
@@ -171,7 +208,7 @@ To see what is in the database::
 
 To remove a file from the database::
 
-    >>> caldb.remove_cal('master_bias.fits')
+    >>> caldb.remove_calibration('master_bias.fits')
 
 
 .. warning:: If a file that is already stored within the database needs

@@ -174,6 +174,7 @@ Information Switches
 	['--suffix']                    :: suffix               :: None
 	['--drpkg']                     :: drpkg                :: geminidr
 	['--user_cal']                  :: user_cal             :: None
+    ['-c', '--config']              :: config_file          :: None
 	['--logfile']                   :: logfile              :: reduce.log
 	-----------------------------------------------------------------
 
@@ -305,7 +306,14 @@ Configuration Switches and Options
     * processed_dark
     * processed_flat
     * processed_fringe
+    * processed_slitillum
     * processed_standard
+
+**-c <CONFIGFILE>, --config <CONFIGFILE>**
+    Specify a configuration file for DRAGONS. By default, the file indicated
+    by the ``$DRAGONSRC`` environment variable will be used or, if that
+    variable is not defined, then the default ``~/.dragons/dragonsrc``. This
+    switch will take priority to use the specified configuration file.
 
 
 .. _atfile:
