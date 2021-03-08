@@ -7,7 +7,7 @@ from os import path
 import warnings
 from importlib import import_module
 
-from ..config import globalConf
+from ..config import globalConf, load_config
 
 from .userdb import UserDB
 from .localdb import LocalDB
@@ -28,6 +28,38 @@ def get_calconf():
         # This will happen if CONFIG_SECTION has not been defined in any
         # config file (shouldn't happen if the user has called load_config()
         pass
+
+
+def get_db_path_from_config(config=None):
+    """
+    Read the path of the local database specified in the config file. An
+    error will be raised if there is no such database, or more than one.
+    This function is used by the "caldb" script and the set_local_database()
+    function here.
+
+    Parameters
+    ----------
+    config: str
+        name of the configuration file
+
+    Returns
+    -------
+    db_path : str
+        the path to the local database file
+    """
+    load_config(filenames=config)
+    databases = parse_databases()
+    db_path = None
+    for db in databases:
+        if db[0] == LocalDB:
+            if db_path is None:
+                db_path = db[1]
+            else:
+                raise ValueError("Multiple local database files are listed "
+                                 "in the config file.")
+    if db_path is None:
+        raise ValueError("No local database file is listed in the config file.")
+    return db_path
 
 
 def init_calibration_databases(inst_lookups=None, procmode=None,
@@ -141,3 +173,17 @@ def parse_databases(default_dbname="cal_manager.db"):
             kwargs["upload_cookie"] = upload_cookie
         db_list.append((cls, db, kwargs))
     return db_list
+
+
+def set_local_database():
+    """
+    User helper function to define a local calibration database based on
+    the "dragonsrc" config file.
+
+    Returns
+    -------
+    A LocalDB object
+    """
+    db_path = get_db_path_from_config()
+    db = LocalDB(db_path, log=None)
+    return db

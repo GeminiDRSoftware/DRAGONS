@@ -40,13 +40,28 @@ beginning to end.
     >>> target = dataselect.select_data(all_files, expression=parsed_expr)
 
 3. Set up the calibration manager and database, by creating or editing the
-   ``~/.dragons/dragonsrc`` file as indicated below. The database will
-   automatically be initialized when the reduction starts. [#fn1]
+   ``~/.dragons/dragonsrc`` file as indicated below.
 
    ::
 
     [calibs]
     databases = <path_to>/redux_dir/dragons.db get store
+
+   In principle, if you configure the database to automatically store
+   calibrations as they are produced, there is no need for you to interact
+   with it, as it will automatically be initialized when the reduction
+   starts. [#fn1] However, you may want to inspect its contents, or possibly
+   delete files from it, in which case you should create a python object to
+   allow you to interact directly with it, as follows (the final ``init()``
+   call is optional unless you want to add calibrations to the database
+   before running ``reduce``).
+
+   ::
+
+   >>> from recipe_system import cal_service
+   >>> caldb = cal_service.set_local_database()
+   >>> caldb.init()
+
 
 4. Set up the logger.
 

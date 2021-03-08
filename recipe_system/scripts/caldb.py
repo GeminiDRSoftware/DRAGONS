@@ -9,12 +9,11 @@
 import sys
 import traceback
 
-from os.path import expanduser, isdir
+from os.path import isdir
 from argparse import ArgumentParser
 from functools import partial
 
-from recipe_system.config import globalConf
-from recipe_system.cal_service import parse_databases, LocalDB
+from recipe_system.cal_service import get_db_path_from_config, LocalDB
 from recipe_system.cal_service.localmanager import LocalManagerError
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
 from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
@@ -173,24 +172,7 @@ if __name__ == '__main__':
         usage(argp, message=msg)
         sys.exit(-1)
 
-    if args.db_path is None:
-        globalConf.load(args.config)
-        databases = parse_databases()
-        db_path = None
-        for db in databases:
-            if db[0] == LocalDB:
-                if db_path is None:
-                    db_path = db[1]
-                else:
-                    raise LocalManagerError(
-                        ERROR_CANT_READ, "Multiple local database files "
-                                         "listed in the config file.")
-        if db_path is None:
-            raise LocalManagerError(
-                ERROR_CANT_READ, "No local database file listed in the "
-                                 "config file.")
-    else:
-        db_path = args.db_path
+    db_path = args.db_path or get_db_path_from_config(config=args.config)
 
     ret = -1
     try:
