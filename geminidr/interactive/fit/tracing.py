@@ -258,7 +258,7 @@ class TraceAperturesTab(Fit1DPanel):
         self.fitting_parameters_ui = TraceAperturesParametersUI(
             visualizer, self.fit, self.fitting_parameters, min_order, max_order)
 
-        self.left_column, self.controller_help = self.create_left_column(
+        self.pars_column, self.controller_help = self.create_pars_column(
             fit_pars_ui=self.fitting_parameters_ui.get_bokeh_components(),
             rms_div=self.rms_div)
 
@@ -266,10 +266,10 @@ class TraceAperturesTab(Fit1DPanel):
             plot_height=plot_height, plot_title=plot_title,
             plot_width=plot_width, xlabel=xlabel, ylabel=ylabel)
 
-        self.component = row(self.left_column, self.plots_column,
-                             css_classes=["tab_area"], spacing=10)
+        self.component = row(self.plots_column, self.pars_column,
+                             css_classes=["tab_area"], spacing=0)
 
-    def create_left_column(self, fit_pars_ui, rms_div, column_width=220):
+    def create_pars_column(self, fit_pars_ui, rms_div, column_width=220):
         """
         Creates the control panel on the left of the page where one can set
         what are the fit parameter values.
@@ -475,7 +475,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             id="function_div",
             width=212,  # ToDo: Hardcoded width. Would there be a better solution?
             width_policy="fixed",
-            style={"margin-top": "30px"},
+            style={"margin-top": "-10px"},
         )
 
         if reinit_params is not None or reinit_extras is not None:
@@ -621,7 +621,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.reinit_panel.css_classes = ["data_source"]
         self.reinit_panel.sizing_mode = "fixed"
 
-        # Put all together
+        # Put all together --- Data provider on the Right
         # left_col = column(filename_div, self.tabs,
         #                   sizing_mode="stretch_width",
         #                   spacing=5)
@@ -634,6 +634,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         #                   spacing=15,
         #                   sizing_mode="stretch_both")
 
+        # Put all together --- Data provider on the Left
         top_row = row(filename_div,
                       bm.Spacer(width_policy="max", height_policy="min"),
                       self.submit_button)
