@@ -2,6 +2,8 @@ import abc
 import os
 from functools import partial
 
+import numpy as np
+
 from gempy.utils import logutils
 
 # Subdirectory in which to store processed calibrations
@@ -83,6 +85,18 @@ class CalDB(metaclass=abc.ABCMeta):
     def __len__(self):
         """Return the number of separate databases"""
         return 1 if self.nextdb is None else 1 + len(self.nextdb)
+
+    def __getitem__(self, item):
+        """Return the CalDB instance at that position in the list"""
+        if not isinstance(item, (int, np.integer)):
+            raise TypeError("Index must me an integer")
+        if item == 0:
+            return self
+        elif item > 0 and self.nextdb:
+            return self.nextdb[item-1]
+        elif -len(self) < item < 0:
+            return self[len(self)+item]
+        raise IndexError("index out of range")
 
     def add_database(self, db):
         """
