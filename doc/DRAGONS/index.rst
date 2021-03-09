@@ -44,5 +44,14 @@ Releases
    releasenotes.rst
    changes.rst
 
+Developer Notes
+---------------
+
+.. toctree::
+   :maxdepth: 1
+
+   contributing.rst
+   testing.rst
+
 .. todolist::
 
