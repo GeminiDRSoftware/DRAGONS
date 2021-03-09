@@ -54,6 +54,8 @@ def load_config(filenames=None):
                               "Please create a ~/.dragons/dragonsrc config file.",
                               DeprecationWarning
                               )
+        else:  # No config file
+            return
     elif isinstance(filenames, str):
         filenames = (filenames,)
 
