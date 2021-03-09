@@ -63,7 +63,7 @@ Importing Libraries
 
     import astrodata
     from recipe_system.reduction.coreReduce import Reduce
-    from recipe_system.cal_service import LocalDB
+    from recipe_system import cal_service
     from gempy.adlibrary import dataselect
 
 Importing ``print_function`` is for compatibility with the Python 2.7 print
@@ -116,7 +116,7 @@ configured like this:
     :linenos:
     :lineno-start: 11
 
-    caldb = LocalDB('<where_the_data_package_is>/niriimg_tutorial/playground/cal_manager.db')
+    caldb = cal_service.set_local_database()
     caldb.init()
 
 

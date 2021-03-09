@@ -56,7 +56,7 @@ We first import the necessary modules and classes:
     import glob
 
     from gempy.adlibrary import dataselect
-    from recipe_system.cal_service import LocalDB
+    from recipe_system import cal_service
     from recipe_system.reduction.coreReduce import Reduce
 
 
@@ -122,7 +122,7 @@ configured as follow:
     :linenos:
     :lineno-start: 10
 
-    caldb = LocalDB('/path_to_my_data/gmosimg_tutorial_api/playground/cal_manager.db')
+    caldb = cal_service.set_local_database()
     caldb.init()
 
 The calibration service is now ready to use. If you need more details,
