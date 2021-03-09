@@ -29,6 +29,12 @@ def pytest_addoption(parser):
         default=False,
         help="Keep intermediate data (e.g. pre-stack data)."
     )
+    parser.addoption(
+        "--interactive",
+        action="store_true",
+        default=False,
+        help="Run interactive tests."
+    )
 
 
 def pytest_configure(config):
@@ -38,15 +44,34 @@ def pytest_configure(config):
         "volume of data and run")
     config.addinivalue_line(
         "markers",
-        "preprocessed_data: tests with this download anr preprocess the "
+        "preprocessed_data: tests with this download and preprocess the "
         "data if it does not exist in the cache folder.")
+    config.addinivalue_line(
+        "markers",
+        "interactive: for tests that run interactively and require a display to" 
+        "run.")
 
 
 def pytest_collection_modifyitems(config, items):
+    """
+    Add custom command line options to the PyTest call for DRAGONS.
+
+    Examples
+    ========
+    ```
+    $ pytest --interactive geminidr/gmos/tests/spect/test_trace_apertures.py
+    ```
+    """
     if not config.getoption("--dragons-remote-data"):
         marker = pytest.mark.skip(reason="need --dragons-remote-data to run")
         for item in items:
             if "dragons_remote_data" in item.keywords:
+                item.add_marker(marker)
+
+    if not config.getoption("--interactive"):
+        marker = pytest.mark.skip(reason="need --interactive to run")
+        for item in items:
+            if "interactive" in item.keywords:
                 item.add_marker(marker)
 
 
