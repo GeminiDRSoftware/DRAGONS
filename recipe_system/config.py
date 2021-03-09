@@ -47,7 +47,6 @@ def load_config(filenames=None):
             filenames = (STANDARD_REDUCTION_CONF,)
         elif exists(expanduser(OLD_REDUCTION_CONF)):
             filenames = (OLD_REDUCTION_CONF,)
-            print("HELLO")
             with warnings.catch_warnings():
                 warnings.simplefilter("always", DeprecationWarning)
                 warnings.warn("The ~/.geminidr/rsys.cfg file is deprecated. "
