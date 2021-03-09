@@ -2808,7 +2808,7 @@ class Spect(PrimitivesBASE):
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
                         try:
-                            _fit_1d = fitting.fit1D(
+                            _fit_1d = fit_1D(
                                 in_coords[dispaxis],
                                 domain=[0, ext.shape[dispaxis] - 1],
                                 order=order,
@@ -2824,7 +2824,7 @@ class Spect(PrimitivesBASE):
                             log.warning(
                                 f"Unable to trace aperture {aperture['number']}")
 
-                            _fit_1d = fitting.fit_1D(
+                            _fit_1d = fit_1D(
                                 np.full_like(spectral_coords, c0),
                                 domain=[0, ext.shape[dispaxis] - 1],
                                 order=0,
