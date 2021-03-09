@@ -73,7 +73,7 @@ gap_local_kw = {
     "N20180509S0010.fits": {},
     "N20190201S0163.fits": {},
     "N20190302S0089.fits": {'bad_cols': 5, 'wav_min': 450},
-    "N20190313S0114.fits": {},
+    "N20190313S0114.fits": {'order': 4, 'med_filt_size': 20},
     "N20190427S0123.fits": {'bad_cols': 5, 'order': 3},
     "N20190427S0126.fits": {'bad_cols': 5, 'order': 3},
     "N20190910S0028.fits": {},
@@ -162,10 +162,6 @@ associated_calibrations = {
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
 def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
-
-    if ad.filename == 'S20180919S0139_flatCorrected.fits':
-        pytest.xfail('FIXME: this test fails following changes on the QE '
-                     'curves. Needs more investigation.')
 
     with change_working_dir():
 
@@ -715,7 +711,7 @@ def create_inputs_recipe(use_branch_name=False):
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
-    from astrodata.testing import download_from_archive, get_active_git_branch
+    from astrodata.testing import download_from_archive
     from gempy.utils import logutils
     from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from recipe_system.reduction.coreReduce import Reduce
@@ -726,7 +722,7 @@ def create_inputs_recipe(use_branch_name=False):
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
 
-    input_path = os.path.join(path, "inputs/", get_active_git_branch())
+    input_path = os.path.join(path, "inputs/")
     os.makedirs(input_path, exist_ok=True)
 
     for filename, cals in associated_calibrations.items():

@@ -8,6 +8,7 @@
 import os
 import re
 from bisect import bisect
+from copy import copy
 from functools import reduce
 from importlib import import_module
 from itertools import product as cart_product
@@ -263,6 +264,7 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         datafile = params["filename"]
         bandpass = params["bandpass"]
+        airmass0 = params["debug_airmass0"]
         debug_plot = params["debug_plot"]
         interactive = params["interactive"]
         fit1d_params = fit_1D.translate_params(params)
@@ -310,6 +312,27 @@ class Spect(PrimitivesBASE):
                 log.warning("Using default bandpass of {} nm".format(bandpass))
                 spec_table['WIDTH'] = bandpass * u.nm
 
+            # Do some checks now to avoid failing on every extension
+            if airmass0:
+                telescope = ad.telescope()
+                site = extinct.telescope_sites.get(telescope)
+                if site is None:
+                    log.warning(f"{ad.filename}: Cannot determine site of "
+                                f"telescope '{telescope}' so cannot apply "
+                                "correction to zero airmass.")
+                else:
+                    airmass = ad.airmass()
+                    if airmass is None:
+                        log.warning(f"{ad.filename}: Cannot determine airmass"
+                                    " of observation so cannot apply "
+                                    "correction to zero airmass.")
+                    else:
+                        log.stdinfo(f"{ad.filename}: Correcting from airmass "
+                                    f"{airmass} to zero airmass using curve "
+                                    f"for site '{site}'.")
+                        ad.phu["EXTCURVE"] = (
+                            site, self.keyword_comments["EXTCURVE"])
+
             # We can only calculate the sensitivity for one extension in
             # non-XD data, so keep track of this in case it's not the first one
             calculated = False
@@ -341,35 +364,45 @@ class Spect(PrimitivesBASE):
                     spectrum = Spek1D(ext) / (exptime * u.s)
                     wave, zpt, zpt_err = [], [], []
 
-                    # Compute values that are counts / (exptime * flux_density * bandpass)
-                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                        data, mask, variance = spectrum.signal(region)
-                        if mask == 0 and fluxdens > 0:
-                            # Regardless of whether FLUX column is f_nu or f_lambda
-                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                            if data > 0:
-                                wave.append(w0)
-                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(data / flux))
+                # Compute values in counts / (exptime * flux_density * bandpass)
+                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                            spec_table['WIDTH'].quantity,
+                                            spec_table['FLUX'].quantity):
+                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                    # We don't want a single bad pixel to ruin an entire
+                    # bandpass, so exclude pixels with the DQ.bad_pixel bit
+                    # set and assign them the average of the other pixels
+                    data, mask, variance = spectrum.signal(
+                        region, interpolate=DQ.bad_pixel)
+                    if mask == 0 and fluxdens > 0:
+                        # Regardless of whether FLUX column is f_nu or f_lambda
+                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                        if data > 0:
+                            wave.append(w0)
+                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                            zpt.append(u.Magnitude(flux / data))
+                            if variance is not None:
                                 zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                wave = array_from_list(wave, unit=u.nm)
+                zpt = array_from_list(zpt)
+                weights = 1./array_from_list(zpt_err) if zpt_err else None
 
-                    # TODO: Abstract to interactive fitting
-                    wave = array_from_list(wave, unit=u.nm)
+                # Correct for atmospheric extinction. This correction makes
+                # the real data brighter, so makes the zpt magnitude more +ve
+                # (since "data" is in the denominator)
+                if airmass0 and site is not None and airmass is not None:
+                    zpt += u.Magnitude(airmass *
+                                       extinct.extinction(wave, site=site))
 
-                    zpt = array_from_list(zpt)
-                    zpt_err = array_from_list(zpt_err)
+                all_exts.append(ext)
+                all_shapes.append(ext.shape[0])
+                all_pixels.append(wave.value)
+                all_masked_data.append(zpt.value)
+                all_weights.append(weights)
+                all_fp_init.append(fit_1D.translate_params(params))
 
-                    all_exts.append(ext)
-                    all_shapes.append(ext.shape[0])
-                    all_pixels.append(wave.value)
-                    all_masked_data.append(zpt.value)
-                    all_weights.append(1./zpt_err.value)
-                    all_fp_init.append(fit_1D.translate_params(params))
-
-                    calculated = True
+                calculated = True
 
                 # ******************************************************************************************
                 config = self.params[self.myself()]
@@ -427,13 +460,14 @@ class Spect(PrimitivesBASE):
                             if data > 0:
                                 wave.append(w0)
                                 # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(data / flux))
-                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                                zpt.append(u.Magnitude(flux / data))
+                                if variance is not None:
+                                    zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
                     wave = at.array_from_list(wave, unit=u.nm)
                     zpt = at.array_from_list(zpt)
-                    zpt_err = at.array_from_list(zpt_err)
+                    weights = 1. / array_from_list(zpt_err) if zpt_err else None
                     fitter = fit_1D(zpt.value, points=wave.value,
-                                   weights=1./zpt_err.value, **fit1d_params,
+                                   weights=weights, **fit1d_params,
                                    plot=debug_plot)
                     ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
                                                      yunit=zpt.unit)
@@ -1646,6 +1680,230 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def flagCosmicRays(self, adinputs=None, **params):
+        """
+        Detect and clean cosmic rays in a 2D wavelength-dispersed image,
+        using the well-known LA Cosmic algorithm of van Dokkum (2001)*, as
+        implemented in McCully's optimized version for Python, "astroscrappy"+.
+
+        * LA Cosmic: http://www.astro.yale.edu/dokkum/lacosmic
+        + astroscrappy: https://github.com/astropy/astroscrappy
+
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files.
+
+        x_order, y_order : int or None, optional
+            Order for fitting and subtracting object continuum and sky line
+            models, prior to running the main cosmic ray detection algorithm.
+            When None, defaults are used, according to the image size (as in
+            the IRAF task gemcrspec). When 0, no fit is done.
+
+        bitmask : int, optional
+            Bits in the input data quality `flags` that are to be used to
+            exclude bad pixels from cosmic ray detection and cleaning. Default
+            65535 (all non-zero bits, up to 16 planes).
+
+        sigclip : float, optional
+            Laplacian-to-noise limit for cosmic ray detection. Lower values
+            will flag more pixels as cosmic rays. Default: 4.5.
+
+        sigfrac : float, optional
+            Fractional detection limit for neighboring pixels. For cosmic ray
+            neighbor pixels, a lapacian-to-noise detection limit of
+            sigfrac * sigclip will be used. Default: 0.3.
+
+        objlim : float, optional
+            Minimum contrast between Laplacian image and the fine structure
+            image.  Increase this value if cores of bright stars are flagged
+            as cosmic rays. Default: 5.0.
+
+        pssl : float, optional
+            Previously subtracted sky level in ADU. We always need to work in
+            electrons for cosmic ray detection, so we need to know the sky
+            level that has been subtracted so we can add it back in.
+            Default: 0.0.
+
+        niter : int, optional
+            Number of iterations of the LA Cosmic algorithm to perform.
+            Default: 4.
+
+        sepmed : boolean, optional
+            Use the separable median filter instead of the full median filter.
+            The separable median is not identical to the full median filter,
+            but they are approximately the same and the separable median filter
+            is significantly faster and still detects cosmic rays well.
+            Default: True
+
+        cleantype : {'median', 'medmask', 'meanmask', 'idw'}, optional
+            Set which clean algorithm is used:
+            'median': An umasked 5x5 median filter
+            'medmask': A masked 5x5 median filter
+            'meanmask': A masked 5x5 mean filter
+            'idw': A masked 5x5 inverse distance weighted interpolation
+            Default: "meanmask".
+
+        fsmode : {'median', 'convolve'}, optional
+            Method to build the fine structure image:
+            'median': Use the median filter in the standard LA Cosmic algorithm
+            'convolve': Convolve the image with the psf kernel to calculate the
+            fine structure image.
+            Default: 'median'.
+
+        psfmodel : {'gauss', 'gaussx', 'gaussy', 'moffat'}, optional
+            Model to use to generate the psf kernel if fsmode == 'convolve' and
+            psfk is None. The current choices are Gaussian and Moffat profiles.
+            'gauss' and 'moffat' produce circular PSF kernels. The 'gaussx' and
+            'gaussy' produce Gaussian kernels in the x and y directions
+            respectively. Default: "gauss".
+
+        psffwhm : float, optional
+            Full Width Half Maximum of the PSF to use to generate the kernel.
+            Default: 2.5.
+
+        psfsize : int, optional
+            Size of the kernel to calculate. Returned kernel will have size
+            psfsize x psfsize. psfsize should be odd. Default: 7.
+
+        psfbeta : float, optional
+            Moffat beta parameter. Only used if fsmode=='convolve' and
+            psfmodel=='moffat'. Default: 4.765.
+
+        verbose : boolean, optional
+            Print to the screen or not. Default: False.
+
+        debug : bool
+            Enable plots for debugging and store object and sky fits in the
+            ad objects.
+
+        """
+        from astroscrappy import detect_cosmics
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        bitmask = params.pop('bitmask')
+        debug = params.pop('debug')
+        suffix = params.pop('suffix')
+        x_order_in = params.pop('x_order')
+        y_order_in = params.pop('y_order')
+
+        fit_1D_params = dict(
+            plot=debug,
+            niter=params.pop('bkgfit_niter'),
+            sigma_lower=params.pop('bkgfit_lsigma'),
+            sigma_upper=params.pop('bkgfit_hsigma'),
+        )
+
+        for ad in adinputs:
+            is_in_adu = ad[0].is_in_adu()
+            if not is_in_adu:
+                # astroscrappy takes data in adu
+                for ext in ad:
+                    ext.divide(ext.gain())
+
+            # tile extensions by CCD to limit the number of edges
+            array_info = gt.array_information(ad)
+            ad_tiled = self.tileArrays([ad], tile_all=False)[0]
+
+            for ext in ad_tiled:
+                dispaxis = 2 - ext.dispersion_axis()
+
+                # Use default orders from gemcrspec (from Bryan):
+                ny, nx = ext.shape
+                x_order = 9 if x_order_in is None else x_order_in
+                y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
+                           if y_order_in is None else y_order_in)
+
+                if ext.mask is not None:
+                    data = np.ma.array(ext.data, mask=ext.mask != 0)
+                    mask = (ext.mask & bitmask) > 0
+                    weights = (ext.mask == 0).astype(int)
+                else:
+                    data = ext.data
+                    mask = None
+                    weights = None
+
+                # Fit the object spectrum:
+                if x_order > 0:
+                    objfit = fit_1D(data,
+                                    function='legendre',
+                                    axis=dispaxis,
+                                    order=x_order,
+                                    weights=weights,
+                                    **fit_1D_params).evaluate()
+                    if debug:
+                        ext.OBJFIT = objfit.copy()
+                else:
+                    objfit = np.zeros(ext.shape)
+
+                input_copy = data - objfit
+
+                # Fit sky lines:
+                if y_order > 0:
+                    skyfit = fit_1D(input_copy, function='legendre',
+                                    axis=1 - dispaxis,
+                                    order=y_order,
+                                    weights=weights,
+                                    **fit_1D_params).evaluate()
+
+                    # keep combined fits for later restoration
+                    objfit += skyfit
+                    if debug:
+                        ext.SKYFIT = skyfit
+                    skyfit = None
+
+                input_copy = None
+
+                # Run astroscrappy's detect_cosmics. We use the variance array
+                # because it takes into account the different read noises if
+                # the data has been tiled
+                crmask, _ = detect_cosmics(ext.data,
+                                           inmask=mask,
+                                           inbkg=objfit,
+                                           invar=ext.variance,
+                                           gain=ext.gain(),
+                                           satlevel=ext.saturation_level(),
+                                           **params)
+
+                # Set the cosmic_ray flags, and create the mask if needed
+                if ext.mask is None:
+                    ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
+                else:
+                    ext.mask[crmask] = DQ.cosmic_ray
+
+                if debug:
+                    plot_cosmics(ext, crmask)
+
+            # Set flags in the original (un-tiled) ad
+            if ad_tiled is not ad:
+                xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+                for ext_tiled, indices in zip(ad_tiled, array_info.extensions):
+                    tiled_arrsec = ext_tiled.array_section()
+                    for i in indices:
+                        ext = ad[i]
+                        arrsec = ext.array_section()
+                        slice_ = (slice((arrsec.y1 - tiled_arrsec.y1) // ybin,
+                                        (arrsec.y2 - tiled_arrsec.y1) // ybin),
+                                  slice((arrsec.x1 - tiled_arrsec.x1) // xbin,
+                                        (arrsec.x2 - tiled_arrsec.x1) // xbin))
+
+                        ext.mask = ext_tiled.mask[slice_]
+
+                        if debug:
+                            ext.OBJFIT = ext_tiled.OBJFIT[slice_]
+                            ext.SKYFIT = ext_tiled.SKYFIT[slice_]
+
+            # convert back to electron if needed
+            if not is_in_adu:
+                for ext in ad:
+                    ext.multiply(ext.gain())
+
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
     def fluxCalibrate(self, adinputs=None, **params):
         """
         Performs flux calibration multiplying the input signal by the
@@ -1731,16 +1989,40 @@ class Spect(PrimitivesBASE):
                     not self.timestamp_keys['distortionCorrect'] in ad.phu):
                 log.warning("{} has not been distortion corrected".format(ad.filename))
 
+            telescope = ad.telescope()
             exptime = ad.exposure_time()
             try:
-                delta_airmass = ad.airmass() - std.airmass()
-            except TypeError:  # if either airmass() returns None
-                log.warning("Cannot determine airmass of target and/or standard."
-                            " Not making an airmass correction.")
-                delta_airmass = 0
+                std_site = std.phu["EXTCURVE"]
+            except KeyError:
+                try:
+                    delta_airmass = ad.airmass() - std.airmass()
+                except TypeError:  # if either airmass() returns None
+                    log.warning("Cannot determine airmass of target "
+                                f"{ad.filename} and/or standard {std.filename}"
+                                ". Not performing airmass correction.")
+                    delta_airmass = None
+                else:
+                    log.stdinfo(f"{ad.filename}: Correcting for difference of "
+                                f"{delta_airmass:5.3f} airmasses")
+            else:
+                telescope = ad.telescope()
+                sci_site = extinct.telescope_sites.get(telescope)
+                if sci_site != std_site:
+                    raise ValueError(f"Site of target observation {ad.filename}"
+                                     f" ({sci_site}) does not match site used "
+                                     f"to correct standard {std.filename} "
+                                     f"({std_site}).")
+                delta_airmass = ad.airmass()
+                if delta_airmass is None:
+                    log.warning(f"Cannot determine airmass of {ad.filename}."
+                                " Not performing airmass correction.")
+                else:
+                    log.stdinfo(f"{ad.filename}: Correcting for airmass of "
+                                f"{delta_airmass:5.3f}")
+
 
             for index, ext in enumerate(ad):
-                ext_std = std[max(index, len_std-1)]
+                ext_std = std[min(index, len_std-1)]
                 extname = f"{ad.filename} extension {ext.id}"
 
                 # Create the correct callable function (we may want to
@@ -1758,16 +2040,16 @@ class Spect(PrimitivesBASE):
                 except:
                     sci_flux_unit = None
                 if not (std_physical_unit is None or sci_flux_unit is None):
-                    unit = sci_flux_unit / (std_physical_unit * flux_units)
+                    unit = sci_flux_unit * std_physical_unit / flux_units
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
                                      format(extname, exptime))
                         ext /= exptime
                         sci_flux_unit /= u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
-                        log.warning("{} has incompatible units ('{}' and '{}')."
-                                    "Cannot flux calibrate"
-                                    .format(extname, sci_flux_unit, std_flux_unit))
+                        log.warning(f"{extname} has incompatible units ('"
+                                    f"{sci_flux_unit}' and '{std_physical_unit}'"
+                                    "). Cannot flux calibrate")
                         continue
                 else:
                     log.warning("Cannot determine units of data and/or SENSFUNC "
@@ -1799,20 +2081,18 @@ class Spect(PrimitivesBASE):
 
                 # Apply airmass correction. If none is needed/possible, we
                 # don't need to try to do this
-                if delta_airmass != 0:
-                    telescope = ad.telescope()
+                if delta_airmass:
                     try:
-                        extinction_correction = extinct.extinction(waves, telescope=telescope)
+                        extinction_correction = extinct.extinction(
+                            waves, telescope=telescope)
                     except KeyError:
-                        log.warning("Telescope {} not recognized. "
-                                    "Not making an airmass correction.".format(telescope))
+                        log.warning(f"Telescope {telescope} not recognized. "
+                                    "Not making an airmass correction.")
                     else:
-                        log.stdinfo("Correcting for difference of {:5.3f} "
-                                    "airmasses".format(delta_airmass))
-                        sens_factor *= 10**(0.4*delta_airmass * extinction_correction)
+                        sens_factor *= 10**(0.4 * delta_airmass * extinction_correction)
 
-                final_sens_factor = (sci_flux_unit / (sens_factor * pixel_sizes)).to(final_units,
-                                     equivalencies=u.spectral_density(waves)).value
+                final_sens_factor = (sci_flux_unit * sens_factor / pixel_sizes).to(
+                    final_units, equivalencies=u.spectral_density(waves)).value
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]
@@ -2494,7 +2774,7 @@ class Spect(PrimitivesBASE):
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(am.boxcar(spectrum, size=3))
+                        start = np.argmax(at.boxcar(spectrum, size=3))
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
@@ -3150,3 +3430,29 @@ def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
         fake_arc += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
     p = correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
     return c0 - 2 * p * c1/(len_data - 1)
+
+
+def plot_cosmics(ext, crmask):
+    from astropy.visualization import ZScaleInterval, imshow_norm
+
+    fig, axes = plt.subplots(5, 1, figsize=(15, 5*2), sharex=True, sharey=True)
+    imgs = (ext.data, ext.OBJFIT, ext.SKYFIT,
+            ext.data - (ext.OBJFIT + ext.SKYFIT), crmask)
+    titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')
+    mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
+
+    for ax, data, title in zip(axes, imgs, titles):
+        if title != 'crmask':
+            cmap = 'Greys_r'
+            interval = ZScaleInterval()
+            data = np.ma.array(data, mask=mask)
+        else:
+            cmap = 'Greys'
+            interval = None
+
+        cmap = copy(plt.get_cmap(cmap))
+        cmap.set_bad('r')
+        imshow_norm(data, ax=ax, origin='lower', interval=interval, cmap=cmap)
+        ax.set_title(title)
+
+    plt.show()
