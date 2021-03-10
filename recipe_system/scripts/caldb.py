@@ -13,6 +13,7 @@ from os.path import isdir
 from argparse import ArgumentParser
 from functools import partial
 
+from recipe_system.config import load_config
 from recipe_system.cal_service import get_db_path_from_config, LocalDB
 from recipe_system.cal_service.localmanager import LocalManagerError
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
@@ -149,6 +150,7 @@ class Dispatcher:
     def _action_list(self, args):
         msg = "Could not read information from the database. "
         msg += "Have you initialized it? (Use --help on the 'init' command)"
+        print(f"Database: {self.db.name}")
         try:
             total = 0
             for file_data in self.db.list_files():
@@ -172,7 +174,11 @@ if __name__ == '__main__':
         usage(argp, message=msg)
         sys.exit(-1)
 
-    db_path = args.db_path or get_db_path_from_config(config=args.config)
+    if args.db_path is None:
+        load_config()
+        db_path = get_db_path_from_config()
+    else:
+        db_path = args.db_path
 
     ret = -1
     try:
