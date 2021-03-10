@@ -222,16 +222,55 @@ on Python 3.7:
 .. code-block:: bash
 
    # simple usage:
-   tox -e py37-unit
+   $ tox -e py37-unit
 
    # with the verbose flag, showing more detail about tox operations:
-   tox -e py37-unit -v
+   $ tox -e py37-unit -v
 
    # passing additional options to pytest (arguments after the --):
-   tox -e py37-unit -- -sv --pdb
+   $ tox -e py37-unit -- -sv --pdb
 
    # specifying the environment with an environment variable:
-   TOXENV=py37-unit tox
+   $ TOXENV=py37-unit tox
+
+Pinpointing Tests
+-----------------
+
+It is important to mention that the calls when using PyTest or Tox are slightly
+different. PyTest, by default, will test the source code itself. Our Tox settings
+are configure to use PyTest on installed code instead. This a slight difference
+but might have major impact on how to call tests and how they behave.
+
+If you want to run a test inside a module using PyTest, you can run the following
+command:
+
+.. code-block:: bash
+
+   $ pytest geminidr/gmos/tests/spect/test_find_source_apertures
+
+With Tox, you run instead:
+
+.. code-block:: bash
+
+   $ tox -e py37-gmosls -- geminidr.gmos.tests.spect.test_find_source_apertures
+
+Remember that the `-e py37-gmosls` is simply the name of a Tox environment that
+run tests marked with `@pytest.mark.gmosls`.
+
+If we want to run a single test inside that module, we need to append
+:code:`::test_...` after the module name. Something like this:
+
+.. code-block:: bash
+
+   $ pytest geminidr/gmos/tests/spect/test_find_source_apertures::test_find_apertures_with_fake_data
+
+To run the test with PyTest. Or:
+
+.. code-block:: bash
+
+   $ tox -e py37-gmosls -- geminidr.gmos.tests.spect.test_find_source_apertures::test_find_apertures_with_fake_data
+
+To run the test with with Tox.
 
 
 Writing new tests
