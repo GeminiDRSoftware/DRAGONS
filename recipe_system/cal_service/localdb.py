@@ -44,8 +44,9 @@ class LocalDB(CalDB):
         if name is None:  # Do this first so "~" is in the name
             name = dbfile
         dbfile = path.expanduser(dbfile)
-        if path.isdir(dbfile):
+        if path.isdir(dbfile) or dbfile.endswith(path.sep):
             dbfile = path.join(dbfile, DEFAULT_DB_NAME)
+            name = path.join(name, DEFAULT_DB_NAME)
 
         super().__init__(name=name, get_cal=get_cal, store_cal=store_cal,
                          log=log, valid_caltypes=valid_caltypes,
