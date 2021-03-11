@@ -47,6 +47,8 @@ def get_db_path_from_config():
     db_path : str
         the path to the local database file
     """
+    if not globalConf.sections():
+        raise OSError("Cannot read config file.")
     databases = parse_databases()
     db_path = None
     for db in databases:
