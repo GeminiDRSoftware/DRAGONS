@@ -30,7 +30,7 @@ def get_calconf():
         pass
 
 
-def get_db_path_from_config(config=None):
+def get_db_path_from_config():
     """
     Read the path of the local database specified in the config file. An
     error will be raised if there is no such database, or more than one.
@@ -47,7 +47,6 @@ def get_db_path_from_config(config=None):
     db_path : str
         the path to the local database file
     """
-    load_config(filenames=config)
     databases = parse_databases()
     db_path = None
     for db in databases:
@@ -91,7 +90,7 @@ def init_calibration_databases(inst_lookups=None, procmode=None,
         for k, v in mdf_dict.items():
             mdf_dict[k] = path.join(path.dirname(masks.__file__),
                                     'MDF', v)
-    caldb = UserDB(name="the darn pickle", mdf_dict=mdf_dict,
+    caldb = UserDB(name="manual calibrations", mdf_dict=mdf_dict,
                    user_cals=ucals)
 
     upload_calibs = upload is not None and "calibs" in upload
@@ -184,6 +183,7 @@ def set_local_database():
     -------
     A LocalDB object
     """
+    load_config()
     db_path = get_db_path_from_config()
     db = LocalDB(db_path, log=None)
     return db
