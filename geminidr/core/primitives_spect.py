@@ -2733,6 +2733,13 @@ class Spect(PrimitivesBASE):
         fit1d_params = fit_1D.translate_params(
             {**params, "function": "chebyshev"})
 
+        # order is pulled out for the non-interactive version
+        order = None
+        if not interactive:
+            # pop "order" seeing we may need to call fit_1D with a
+            #  different value for the non-interactive version
+            order = fit1d_params.pop("order")
+
         # Main Loop
         for ad in adinputs:
             for ext in ad:
@@ -2761,10 +2768,6 @@ class Spect(PrimitivesBASE):
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     all_aperture_tables = []
-
-                    # pop "order" seeing we may need to call fit_1D with a
-                    #  different value
-                    order = fit1d_params.pop("order")
 
                     # For efficiency, we would like to trace all sources
                     #  simultaneously (like we do with arc lines), but we need
