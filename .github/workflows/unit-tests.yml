@@ -54,4 +54,4 @@ jobs:
       - name: Run Tox
         shell: bash -l {0}
         run: |
-          tox -e py37-unit -v
+          tox -e py37-unit -v -- -m "not preprocessed_data"
