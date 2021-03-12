@@ -331,13 +331,19 @@ class AstroData:
     @property
     def tables(self):
         """Return the names of the `astropy.table.Table` objects associated to
-        the object or its extensions.
+        the top-level object.
         """
-        keys = set(self._tables)
-        if self.is_single:
-            keys |= set(key for key, obj in self.nddata.meta['other'].items()
-                        if isinstance(obj, Table))
-        return keys
+        return set(self._tables)
+
+    @property
+    def ext_tables(self):
+        """Return the names of the `astropy.table.Table` objects associated to
+        an extension.
+        """
+        if not self.is_single:
+            raise AttributeError('this is only available for extensions')
+        return set(key for key, obj in self.nddata.meta['other'].items()
+                   if isinstance(obj, Table))
 
     @property
     @returns_list
