@@ -49,7 +49,7 @@ def pytest_collection_modifyitems(config, items):
             if "dragons_remote_data" in item.keywords:
                 item.add_marker(marker)
 
-    if any(["GITHUB" in venv for venv in os.environ]):
+    if "GITHUB_WORKFLOW" in os.environ:
         marker = pytest.mark.skip(
             reason="GitHub Actions do not support tests with preprocessed data")
         for item in items:
