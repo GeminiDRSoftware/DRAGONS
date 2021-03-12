@@ -710,24 +710,6 @@ class ApertureView:
     def update_view(self):
         self._reload_holoviews()
 
-    def _prepare_data_for_holoviews_old(self, aperture_model, x_max, y_max):
-        if hasattr(self, 'fig'):
-            y = [min(0, self.fig.y_range.start),
-                 max(y_max, self.fig.y_range.end)]
-        else:
-            y = [0, y_max]
-        x = [0]
-        datarr = [0]
-        ranges = [[am.source.data['start'][0], am.source.data['end'][0]]
-                  for am in aperture_model.aperture_models.values()]
-        ranges.sort(key=lambda x: x[0])
-
-        for range_ in ranges:
-            x += range_
-            datarr += [1, 0]
-        x.append(x_max)
-        return x, y, [datarr]
-
     def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
         if hasattr(self, 'fig'):
             y = [min(0, self.fig.y_range.start),
