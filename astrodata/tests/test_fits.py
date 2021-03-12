@@ -212,6 +212,27 @@ def test_slice(GMOSN_SPECT):
 
 
 @pytest.mark.dragons_remote_data
+def test_slice_single_element(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
+    assert ad.is_sliced is False
+
+    metadata = ('SCI', 2)
+
+    ext = ad[1:2]
+    assert ext.is_single is False
+    assert ext.is_sliced is True
+    assert ext.indices == [1]
+    assert isinstance(ext.data, list) and len(ext.data) == 1
+
+    ext = ext[0]
+    assert ext.id == 2
+    assert ext.is_single is True
+    assert ext.is_sliced is True
+    assert ext.hdr['EXTNAME'] == metadata[0]
+    assert ext.hdr['EXTVER'] == metadata[1]
+
+
+@pytest.mark.dragons_remote_data
 def test_slice_multiple(GMOSN_SPECT):
     ad = astrodata.open(GMOSN_SPECT)
 

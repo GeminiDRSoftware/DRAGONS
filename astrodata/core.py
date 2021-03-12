@@ -71,7 +71,8 @@ class AstroData:
         'ut_date': 'DATE-OBS'
     }
 
-    def __init__(self, nddata=None, tables=None, phu=None, indices=None):
+    def __init__(self, nddata=None, tables=None, phu=None, indices=None,
+                 is_single=False):
         if nddata is None:
             nddata = []
         if not isinstance(nddata, (list, tuple)):
@@ -81,6 +82,10 @@ class AstroData:
         # object.  And _indices is used to map extensions for sliced objects.
         self._all_nddatas = nddata
         self._indices = indices
+
+        self.is_single = is_single
+        """ If this data provider represents a single slice out of a whole
+        dataset, return True. Otherwise, return False. """
 
         if tables is not None and not isinstance(tables, dict):
             raise ValueError('tables must be a dict')
@@ -289,14 +294,6 @@ class AstroData:
         """
         return self._indices is not None
 
-    @property
-    def is_single(self):
-        """
-        If this data provider represents a single slice out of a whole dataset,
-        return True. Otherwise, return False.
-        """
-        return self._indices is not None and len(self._indices) == 1
-
     def is_settable(self, attr):
         """Return True if the attribute is meant to be modified."""
         if self.is_sliced and attr in {'path', 'filename'}:
@@ -482,8 +479,12 @@ class AstroData:
         if self._indices:
             indices = [self._indices[i] for i in indices]
 
-        obj = self.__class__(self._all_nddatas, tables=self._tables,
-                             phu=self.phu, indices=indices)
+        is_single = not isinstance(idx, (tuple, slice))
+        obj = self.__class__(self._all_nddatas,
+                             tables=self._tables,
+                             phu=self.phu,
+                             indices=indices,
+                             is_single=is_single)
         obj._path = self.path
         obj._orig_filename = self.orig_filename
         return obj
