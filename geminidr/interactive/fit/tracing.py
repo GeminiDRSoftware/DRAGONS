@@ -465,6 +465,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                               title=title)
         self.layout = None
         self.widgets = {}
+        self.help_text = DETAILED_HELP
 
         self.function_name = 'chebyshev'
         self.function = bm.Div(

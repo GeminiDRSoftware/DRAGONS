@@ -35,8 +35,9 @@
 <script src="dragons/static/version.js"></script>
 
 <!-- Custom CSS/JS for this template -->
-<link rel="stylesheet" href="dragons/static/trace_apertures.css">
-<script src="dragons/static/trace_apertures.js"></script>
+<link rel="stylesheet" href="dragons/static/css/trace_apertures.css">
+<script src="dragons/static/js/openHelpPopup.js"></script>
+
 {% endblock %}
 
 {% block contents %}
@@ -60,7 +61,7 @@
         <div class="banner">
             <span class="title">{{ primitive_title }}</span>
             <span class="primitive-name"> {{ primitive_name }} </span>
-            <button id="help-btn" type="button" onclick="showHelp()">Help</button>
+            <button id="help-btn" type="button" onclick="openHelpPopup('Trace Apertures - Help')">Help</button>
         </div>
     </div>
 
