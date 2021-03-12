@@ -393,7 +393,7 @@ class ApertureTask(Task):
         keymodes = {'[': 'left', ']': 'right', 'l': 'location'}
 
         def _handle_key():
-            if self.aperture_id is None:
+            if self.aperture_id is None or self.mode == '':
                 # get closest one
                 self.aperture_id = self.aperture_model.find_closest(
                     self.last_x, self.fig.x_range.start, self.fig.x_range.end)
@@ -407,6 +407,15 @@ class ApertureTask(Task):
 
         if key in '[l]':
             return _handle_key()
+        elif key == 's':
+            self.aperture_id = self.aperture_model.find_closest(
+                self.last_x, self.fig.x_range.start, self.fig.x_range.end, prefer_selected=False)
+            self.aperture_model.select_aperture(self.aperture_id)
+            return False
+        elif key == 'c':
+            self.aperture_id = None
+            self.aperture_model.select_aperture(None)
+            return False
         elif key == 'a':
             if self.aperture_id is None:
                 self.start_aperture(self.last_x, self.last_y)
@@ -472,11 +481,13 @@ class ApertureTask(Task):
     def helptext(self):
         return """
         <b>A</b> to start the aperture or set the value<br/>
+        <b>S</b> to select an existing aperture<br/>
+        <b>C</b> to clear the selection<br/>
         <b>F</b> to find a peak close to the cursor (+/- 20 pixels)<br/>
-        <b>[</b> to edit the left edge<br/>
-        <b>]</b> to edit the right edge<br/>
-        <b>L</b> to edit the location<br/>
-        <b>D</b> to delete the closest aperture
+        <b>[</b> to edit the left edge of selected or closest<br/>
+        <b>]</b> to edit the right edge of selected or closest<br/>
+        <b>L</b> to edit the location of selected or closest<br/>
+        <b>D</b> to delete the selected or closest aperture
         """
 
 
@@ -634,22 +645,12 @@ class RegionTask(Task):
 
     def update_help(self):
         if self.region_id is not None:
-            # self.helptext_area.text = """Drag to desired region width.<br/>\n
-            #       <b>R</b> to set the region<br/>\n
-            #       <b>D</b> to delete/cancel the current region<br/>
-            #       <b>*</b> to extend to maximum on this side
-            #       """
             controller.set_help_text("""Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n
                   <b>D</b> to delete/cancel the current region<br/>
                   <b>*</b> to extend to maximum on this side
                   """)
         else:
-            # self.helptext_area.text = """<b>Edit Regions:</b><br/>\n
-            #       <b>R</b> to start a new region<br/>\n
-            #       <b>E</b> to edit nearest region<br/>\n
-            #       <b>D</b> to delete the nearest region
-            #       """
             controller.set_help_text("""<b>Edit Regions:</b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n

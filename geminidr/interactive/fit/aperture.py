@@ -1,5 +1,5 @@
 import math
-from functools import partial
+from functools import partial, cmp_to_key
 
 import holoviews as hv
 import numpy as np
@@ -250,6 +250,7 @@ class FindSourceAperturesModel:
         self.profile = None
         self.profile_shape = self.ext.shape[0]
         self.aperture_models = {}
+        self.selected = None
 
         # keep the initial parameters
         self._aper_params = aper_params.copy()
@@ -286,11 +287,70 @@ class FindSourceAperturesModel:
         for name, value in self._aper_params.items():
             setattr(self, name, value)
 
-    def find_closest(self, x, x_start, x_end):
-        model = min(self.aperture_models.values(),
-                    key=lambda m: abs(m.source.data['location'][0] - x))
-        if x_start < model.source.data['location'][0] < x_end:
-            return model.source.data['id'][0]
+    def find_closest(self, x, x_start, x_end, prefer_selected=True):
+        """
+        Find the closest aperture.
+
+        If `prefer_selected` is True and we have an existing
+        selection, that aperture is returned.  This is the logic
+        we want when, for example, deleting.  Then we delete the
+        selected or closest aperture.  If the flag is false, we drop
+        to more complex logic as follows:
+
+        We want to select the closest aperture.  If there are any
+        visible aperturs (within `x_start` and `x_end`) only those
+        are considered.  In case of a tie with the current selection,
+        we want to select an unselected one with the next higher id.
+        If there are none with higher ids, we want to select the
+        lowest id.  If the closest aperture is only the currently
+        selected one, we want to return the currently selected one.
+
+        Parameters
+        ----------
+        x : float
+            x coordinate of mouse in data space
+        x_start : float
+            x coordinate of start of visible range
+        x_end : float
+            x coordinate of end of visible range
+        prefer_selected : bool
+            If True, return the selected aperture if there is one
+
+        Returns
+        -------
+        int aperture id of closest or selected
+        """
+        if prefer_selected and self.selected:
+            return self.selected
+
+        def aperture_comparator(a, b):
+            if x_start <= a[2] <= x_end and not x_start <= b[2] <= x_end:
+                return -1
+            if not x_start <= a[2] <= x_end and x_start <= b[2] <= x_end:
+                return 1
+            if a[0] < b[0]:
+                return -1
+            if a[0] > b[0]:
+                return 1
+            if a[1] == self.selected:
+                return 1
+            if b[1] == self.selected:
+                return -1
+            if self.selected and a[1] < self.selected:
+                if b[1] > self.selected:
+                    return 1
+            if self.selected and b[1] < self.selected:
+                if a[1] > self.selected:
+                    return -1
+            return 1 if b[1] < a[1] else -1
+
+        aps = [(abs(am.source.data['location'][0] - x), am.source.data['id'][0], am.source.data['location'][0])
+               for am in self.aperture_models.values()]
+        if not aps:
+            return None
+
+        aps.sort(key=cmp_to_key(aperture_comparator))
+        return aps[0][1]
 
     def find_peak(self, x):
         # Find local maximum to help pinpoint_peaks
@@ -355,6 +415,10 @@ class FindSourceAperturesModel:
 
         self.call_listeners('update_view')
 
+    def select_aperture(self, aperture_id):
+        self.selected = aperture_id
+        self.call_listeners('update_view')
+
     def add_aperture(self, location, start, end):
         aperture_id = max(self.aperture_models, default=0) + 1
         model = ApertureModel(aperture_id, location, start, end, self)
@@ -369,18 +433,22 @@ class FindSourceAperturesModel:
 
     def delete_aperture(self, aperture_id):
         """Delete an aperture by ID."""
+        if self.selected == aperture_id:
+            self.selected = None
         self.call_listeners('delete_aperture', aperture_id)
         del self.aperture_models[aperture_id]
         self.call_listeners('update_view')
 
     def clear_apertures(self):
         """Remove all apertures, calling delete on the listeners for each."""
+        self.selected = None
         for aperture_id in self.aperture_models:
             self.call_listeners('delete_aperture', aperture_id)
         self.aperture_models.clear()
         self.call_listeners('update_view')
 
     def renumber_apertures(self):
+        self.selected = None
         new_models = {}
         for new_id, model in enumerate(self.aperture_models.values(), start=1):
             model.update_values(id=new_id, notify=False)
@@ -642,7 +710,7 @@ class ApertureView:
     def update_view(self):
         self._reload_holoviews()
 
-    def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
+    def _prepare_data_for_holoviews_old(self, aperture_model, x_max, y_max):
         if hasattr(self, 'fig'):
             y = [min(0, self.fig.y_range.start),
                  max(y_max, self.fig.y_range.end)]
@@ -660,9 +728,28 @@ class ApertureView:
         x.append(x_max)
         return x, y, [datarr]
 
+    def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
+        if hasattr(self, 'fig'):
+            y = [min(0, self.fig.y_range.start),
+                 max(y_max, self.fig.y_range.end)]
+        else:
+            y = [0, y_max]
+        x = [0]
+        datarr = [0]
+        ranges = [[am.source.data['start'][0], am.source.data['end'][0],
+                   True if am.source.data['id'][0] == aperture_model.selected else False]
+                  for am in aperture_model.aperture_models.values()]
+        ranges.sort(key=lambda x: x[0])
+
+        for range_ in ranges:
+            x += range_[0:2]
+            datarr += [2 if range_[2] else 1, 0]
+        x.append(x_max)
+        return x, y, [datarr]
+
     def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
         da = self._prepare_data_for_holoviews(aperture_model, x_max, y_max)
-        cmap = [None, '#d1efd1']
+        cmap = [None, '#d1efd1', '#ff8888']
         xyz = Stream.define('XYZ', data=da)
         self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
         self.qm_dmap.opts(cmap=cmap,
@@ -671,7 +758,7 @@ class ApertureView:
                           responsive=True,
                           show_grid=True,
                           clipping_colors={'NaN': (0, 0, 0, 0)},
-                          clim=(0, 1))
+                          clim=(0, 2))
         return hv.render(self.qm_dmap)
 
     def _reload_holoviews(self):
@@ -799,6 +886,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
         aperture_view.fig.step(x='x', y='y', source=self.model.profile_source,
                                color="black", mode="center")
+        self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
         add_button = Button(label="Add Aperture", button_type='primary',
                             default_size=200)
