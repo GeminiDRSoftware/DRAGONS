@@ -359,7 +359,8 @@ def _transform_mask(mask, **kwargs):
     Transform the DQ plane, bit by bit. Since np.unpackbits() only works
     on uint8 data, we have to do this by hand
     """
-    trans_mask = np.zeros(kwargs['output_shape'], dtype=np.uint16)
+    dtype = mask.dtype
+    trans_mask = np.zeros(kwargs['output_shape'], dtype=dtype)
     for j in range(0, 16):
         bit = 2**j
         # Only transform bits that have a pixel set. But we always want
@@ -369,5 +370,5 @@ def _transform_mask(mask, **kwargs):
                                          cval=DQ.no_data if bit==DQ.no_data
                                          else 0, **kwargs)
             trans_mask += np.where(np.abs(temp_mask>0.01*bit), bit,
-                                          0).astype(np.uint16)
+                                          0).astype(dtype)
     return trans_mask

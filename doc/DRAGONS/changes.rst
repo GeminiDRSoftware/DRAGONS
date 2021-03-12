@@ -22,6 +22,7 @@ Bug Fixes
 
 * Remove incorrect logging in separateSky when object and/or sky files are specified.
 * Improve algorithm for separating on-source and on-sky frames.
+* Avoid upsampling OBJMASK from uint8 to uint16
 
 **geminidr.gemini**
 
