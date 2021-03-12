@@ -173,8 +173,6 @@ root folder. Here is a short description of each of them:
      - Enable tests that require any input data.
    * - --force-cache
      - Allows downloading input data from the archive and caching them into a temporary folder.
-   * - --force-preprocess-data
-     - Allows tests to create pre-processed data and store them into a temporary folder.
    * - --interactive
      - Runs tests that have some interactive component.
 
@@ -572,7 +570,7 @@ the table below:
      - For tests that requires (user) interaction and should be skipped by any Continuous Integration service.
    * - gmosls
      - GMOS Long-slit Tests. Only used for test selection.
-   * - preprocess_data
+   * - preprocessed_data
      - Tests that require preprocessed data. If input files are not found, they raise a FileNotFoundError. If you need to create inputs, see Create inputs for tests above.
 
 These are the official custom markers that now live inside DRAGONS. Other custom
