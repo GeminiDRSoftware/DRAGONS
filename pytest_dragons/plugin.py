@@ -174,6 +174,9 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
     """
     path_to_test_data = os.getenv(env_var)
 
+    if 'GITHUB_WORKFLOW' in os.environ:
+        pytest.skip('Skipping tests in GitHub Actions')
+
     if path_to_test_data is None:
         pytest.skip('Environment variable not set: $DRAGONS_TEST')
 
