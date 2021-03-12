@@ -297,13 +297,12 @@ class FindSourceAperturesModel:
         selected or closest aperture.  If the flag is false, we drop
         to more complex logic as follows:
 
-        We want to select the closest aperture.  If there are any
-        visible aperturs (within `x_start` and `x_end`) only those
-        are considered.  In case of a tie with the current selection,
-        we want to select an unselected one with the next higher id.
-        If there are none with higher ids, we want to select the
-        lowest id.  If the closest aperture is only the currently
-        selected one, we want to return the currently selected one.
+        We want to select the closest visible aperture.  In case of a
+        tie with the current selection, we want to select an unselected
+        one with the next higher id.  If there are none with higher ids,
+        we want to select the lowest id.  If the closest aperture is
+        only the currently selected one, we want to return the currently
+        selected one.
 
         Parameters
         ----------
@@ -344,13 +343,10 @@ class FindSourceAperturesModel:
                     return -1
             return 1 if b[1] < a[1] else -1
 
-        aps = [(abs(am.source.data['location'][0] - x), am.source.data['id'][0], am.source.data['location'][0])
-               for am in self.aperture_models.values()]
-        if not aps:
-            return None
-
-        aps.sort(key=cmp_to_key(aperture_comparator))
-        return aps[0][1]
+        model = min([(abs(ap.source.data['location'][0] - x), ap.source.data['id'][0], ap.source.data['location'][0])
+                     for ap in self.aperture_models.values() if x_start <= ap.source.data['location'][0] < x_end],
+                    key=cmp_to_key(aperture_comparator), default=(None, None, None))
+        return model[1]
 
     def find_peak(self, x):
         # Find local maximum to help pinpoint_peaks
