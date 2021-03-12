@@ -323,10 +323,6 @@ class FindSourceAperturesModel:
             return self.selected
 
         def aperture_comparator(a, b):
-            if x_start <= a[2] <= x_end and not x_start <= b[2] <= x_end:
-                return -1
-            if not x_start <= a[2] <= x_end and x_start <= b[2] <= x_end:
-                return 1
             if a[0] < b[0]:
                 return -1
             if a[0] > b[0]:
