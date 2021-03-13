@@ -701,7 +701,7 @@ class Fit1DPanel:
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
+        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='red')
 
         if self.band_model:
             region_editor = RegionEditor(self.band_model)
