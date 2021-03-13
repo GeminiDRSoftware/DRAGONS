@@ -41,7 +41,6 @@ def test_config_parsing(standard_config):
 
 
 @pytest.mark.preprocessed_data
-def test_api_store_and_retrieve(path_to_inputs, change_working_dir):
 def test_api_store(path_to_inputs, change_working_dir):
     with change_working_dir():
         cwd_config()
