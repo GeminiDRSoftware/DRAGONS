@@ -22,6 +22,19 @@ class PrimitiveVisualizer(ABC):
         submit if that happens.  The submit button will cause the `bokeh`
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
+
+        Parameters
+        ----------
+        config : `~gempy.library.config.Config`
+            DRAGONS primitive configuration data to work from
+        title : str
+            Title fo the primitive for display, currently not used
+        primitive_name : str
+            Name of the primitive function related to this UI, used in the title bar
+        filename_info : str
+            Information about the file being operated on
+        template : str
+            Optional path to an html template to render against, if customization is desired
         """
         self.exited = False
         self.title = title
