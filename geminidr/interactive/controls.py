@@ -16,7 +16,7 @@ inactive state.
 """
 from abc import ABC, abstractmethod
 
-from bokeh.events import PointEvent
+from bokeh.events import PointEvent, SelectionGeometry, Tap
 
 __all__ = ["controller", "Controller"]
 
@@ -62,8 +62,39 @@ class Controller(object):
         helptext : :class:`Div`
             div to update text in to provide help to the user
         """
+
+        # set the class for the helptext div so we can have a common style
+        helptext.css_classes.append('controller_div')
+
         self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
+
+        self.helpmaskingtext = "Masking<br/>" \
+                               "<i>Select points using the toolbar on the right side of the plot.  These" \
+                               "will be the points to be masked/unmasked.  Hold </i>shift<i> during select to " \
+                               "combine multiple selections or points.</i><br/>" \
+                               "<b>M</b> - Add selected points to mask<br/>" \
+                               "<b>U</b> - Unmask selected points<br/><br/>" if mask_handlers else ''
+
+        # If we support masking, we also want to wait for the first select event
+        # and remove the additional text when it happens.
+        if mask_handlers:
+            self.removed_selection_note = False
+
+            def cb(sg):
+                if not self.removed_selection_note:
+                    self.helpmaskingtext = "Masking<br/>" \
+                                           "<b>M</b> - Add selected points to mask<br/>" \
+                                           "<b>U</b> - Unmask selected points<br/><br/>"
+                    self.set_help_text(None)
+                    self.removed_selection_note = True
+            fig.on_event(SelectionGeometry, cb)
+
+        self.helpintrotext = "While the mouse is over the upper plot, " \
+                             "choose from the following commands:<br/><br/>\n" if showing_residuals \
+            else "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+
+        self.helptooltext = ''
         self.helptext = helptext
         self.enable_user_masking = True if mask_handlers else False
         if mask_handlers:
@@ -88,7 +119,6 @@ class Controller(object):
             fig.on_event('mousemove', self.on_mouse_move)
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
-
         self.set_help_text(None)
 
     def set_help_text(self, text=None):
@@ -105,27 +135,12 @@ class Controller(object):
             html to display in the div
         """
         if text is not None:
-            if self.showing_residuals:
-                ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
-            else:
-                ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
-            if self.enable_user_masking:
-                ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                    "<b>U</b> - Unmask selected points<br/><br/>"
-            ht = ht + text
+            ht = self.helpintrotext + self.helpmaskingtext + text
         else:
             if self.tasks or self.enable_user_masking:
                 # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
-                if self.showing_residuals:
-                    ht = "While the mouse is over the upper plot, choose from the following commands:<br/><br/>\n"
-                else:
-                    ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
-                if self.enable_user_masking:
-                    ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                        "<b>U</b> - Unmask selected points<br/><br/>"
+                ht = self.helpintrotext + self.helpmaskingtext
                 if len(self.tasks) == 1:
-                    # for k, v in self.tasks.items():
-                    #     self.task = v
                     task = next(iter(self.tasks.values()))
                     ht = ht + task.helptext()
                 else:

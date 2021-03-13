@@ -132,3 +132,7 @@ div.scrollable {
 .param_section {
   font-weight: bold;
 }
+
+.controller_div {
+  color: gray;
+}
