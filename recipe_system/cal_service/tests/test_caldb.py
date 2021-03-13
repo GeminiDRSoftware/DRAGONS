@@ -40,10 +40,16 @@ def test_config_parsing(standard_config):
     assert isinstance(p.caldb[2], cal_service.RemoteDB)
 
 
-def test_api_store_and_retrieve(path_to_inputs, change_working_dir):
+def test_api_store(path_to_inputs, change_working_dir):
     with change_working_dir():
         cwd_config()
         caldb = cal_service.set_local_database()
+        caldb.init()
+        bias_file = os.path.join(path_to_inputs,
+                                 "N20201022S0160_bias_nopixels.fits")
+        caldb.add_cal(bias_file)
+        assert len(list(caldb.list_files())) == 1
+        assert list(caldb.list_files())[0].name == os.path.basename(bias_file)
 
 
 def test_retrieval(path_to_inputs, change_working_dir):
