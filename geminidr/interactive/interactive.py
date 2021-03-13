@@ -11,9 +11,21 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.config import FieldValidationError
 
 
+
+DEFAULT_HELP = """
+
+<h2>Help</h2>
+
+<p>DRAGONS Interactive Tools provide an interactive web interface to adjust
+the data reduction parameters with a preview of the results.  This system
+runs in your browser using a local bokeh server.  Adjust the parameters
+to your liking and click the <b>Accept</b> button to continue.</p>
+"""
+
+
 class PrimitiveVisualizer(ABC):
     def __init__(self, config=None, title='', primitive_name='',
-                 filename_info='', template=None):
+                 filename_info='', template=None, help_text=None):
         """
         Initialize a visualizer.
 
@@ -23,6 +35,9 @@ class PrimitiveVisualizer(ABC):
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
         """
+        # set help to default, subclasses should override this with something specific to them
+        self.help_text = help_text if help_text else DEFAULT_HELP
+
         self.exited = False
         self.title = title
         self.filename_info = filename_info if filename_info else ''

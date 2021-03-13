@@ -17,6 +17,84 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
+CALCULATE_SENSITIVITY_HELP_TEXT = """
+<h2>Help</h2>
+
+<p>        Calculates the overall sensitivity of the observation system
+        (instrument, telescope, detector, etc) for each wavelength using
+        spectrophotometric data. It is obtained using the ratio
+        between the observed data and the reference look-up data.</p>
+
+<p>
+        For that, it looks for reference data using the stripped and lower
+        case name of the observed object inside geminidr.gemini.lookups,
+        geminidr.core.lookups and inside the instrument lookup module.
+</p>
+
+<p>
+        The reference data is fit using a Spline in order to match the input
+        data sampling.
+</p>
+
+<h3>Profile parameters</h3>
+<p>Those parameters applies to the computation of the 1D profile.</p>
+<dl>
+<dt>Order</dt>
+<dd>
+    Percentile to determine signal for each spatial pixel. Uses when
+    collapsing along the dispersion direction to obtain a slit profile.
+    If None, the mean is used instead.
+</dd>
+<dt>Sigma Clip, Upper, Lower</dt>
+<dd>
+    Enables sigma rejection with individually settable upper and lower
+    sigma bounds.
+</dd>
+<dt>Max Iterations</dt>
+<dd>
+    Maximum number of rejection iterations
+</dd>
+<dt>Grow</dt>
+<dd>
+    Radius to reject pixels adjacent to masked pixels of spline fit
+</dd>
+<dt>Regions</dt>
+<dd>
+    Comma-separated list of colon-separated pixel coordinate pairs
+    indicating the region(s) over which the input data should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data.
+</dd>
+</dl>
+
+<h3>Plot Tools</h3>
+
+<p>
+<img src="dragons/static/bokehlegend.png" align="right" />
+Data points in the upper plot may be selected in order to mask or
+unmask them from consideration.  To select, choose the <i>Box Select</i>, 
+<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure.  
+Selections may be additive if you hold down the shift key.  Once you have a 
+selection, you may <b>mask</b> or <b>unmask</b> the selection by hitting 
+the <b>M</b> or <b>U</b> key respectively.
+</p>
+<br clear="all"/>
+
+<h3>Region Editing</h3>
+
+<p>
+In addition to the region edit text box, you can edit regions interactively
+on the upper figure.  To start a new region, hover the mouse where you want
+one edge of the region and hit <b>R</b>.  Then move to the other end of the
+desired region and hit <b>R</b> again.  To edit an existing region, hit <b>E</b>
+while the mouse is near the edge you wish to adjust.  To delete a region, hit
+<b>D</b> while close to the region you want removed.  The <i>Regions</i>
+text entry will also update with these changes and you may fine tune the 
+results there as well.
+</p>
+"""
+
+
 def build_fit_1D(fit1d_params, data, points, weights):
     """
     Create a fit_1D from the given parameter dictionary and x/y/weights
@@ -805,7 +883,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, function=None, title=None, primitive_name=None, filename_info=None,
-                 template="fit1d.html",
+                 template="fit1d.html", help_text=None,
                  **kwargs):
         """
         Parameters
@@ -845,9 +923,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             ID of fit_1d function to use, if not a configuration option
         title : str
             Title for UI (Interactive <Title>)
+        help_text : str
+            HTML help text for popup help, or None to use the default
         """
         super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
-                         template=template)
+                         template=template, help_text=help_text)
         self.layout = None
 
         # Make the widgets accessible from external code so we can update

@@ -424,7 +424,8 @@ class Spect(PrimitivesBASE):
                                                    domains=all_shapes,
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
-                                                   filename_info=filename_info)
+                                                   filename_info=filename_info,
+                                                   help_text=fit1d.CALCULATE_SENSITIVITY_HELP_TEXT)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
