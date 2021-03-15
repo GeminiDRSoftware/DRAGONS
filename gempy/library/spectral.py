@@ -42,12 +42,16 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         # Unit handling
         try:  # for NDData-like
-            flux_unit = spectrum.unit
+            if isinstance(spectrum, AstroData):
+                flux_unit = spectrum.nddata.unit
+            else:
+                flux_unit = spectrum.unit
         except AttributeError:
             try:  # for AstroData
                 flux_unit = u.Unit(spectrum.hdr.get('BUNIT'))
             except (TypeError, ValueError):  # unknown/missing
                 flux_unit = None
+
         if flux_unit is None:
             flux_unit = u.dimensionless_unscaled
         try:
