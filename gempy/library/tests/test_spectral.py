@@ -33,6 +33,7 @@ def _create_fake_data():
     _ad.add_extension(hdu, pixel_scale=1.0)
     _ad[0].wcs = None  # or else imaging WCS will be added
 
+    _ad[0].nddata.unit = units.electron
     _ad[0].data = _ad[0].data.ravel() + 1.
     _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
     _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
