@@ -629,7 +629,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         div = bm.Div(align=("start", "center"),
                      css_classes=["filename"],
                      id="_filename",
-                     margin=(0, 0, 0, 84),
+                     margin=(0, 0, 0, 78),
                      min_width=750,
                      max_width=1000,
                      name="filename",
