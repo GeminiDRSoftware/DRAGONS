@@ -6,6 +6,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 import astrodata
+import astropy.units as u
 from astropy.io import fits
 from astropy.nddata import NDData, VarianceUncertainty
 from astropy.table import Table
@@ -48,7 +49,7 @@ def test_attributes(ad1):
     (operator.truediv, 0.5, 2)
 ])
 def test_arithmetic(op, res, res2, ad1, ad2):
-    for data in (ad2, ad2.data):
+    for data in (ad2, ad2.data * u.adu):
         result = op(ad1, data)
         assert_array_equal(result.data, res)
         assert isinstance(result, astrodata.AstroData)
@@ -56,10 +57,10 @@ def test_arithmetic(op, res, res2, ad1, ad2):
         assert isinstance(result[0].data, np.ndarray)
         assert isinstance(result[0].hdr, fits.Header)
 
-        result = op(data, ad1)
-        assert_array_equal(result.data, res2)
+    result = op(ad2, ad1)
+    assert_array_equal(result.data, res2)
 
-    for data in (ad2[0], ad2[0].data):
+    for data in (ad2[0], ad2[0].data * u.adu):
         result = op(ad1[0], data)
         assert_array_equal(result.data, res)
         assert isinstance(result, astrodata.AstroData)
@@ -67,7 +68,6 @@ def test_arithmetic(op, res, res2, ad1, ad2):
         assert isinstance(result[0].data, np.ndarray)
         assert isinstance(result[0].hdr, fits.Header)
 
-    # FIXME: should work also with ad2[0].data, but crashes
     result = op(ad2[0], ad1[0])
     assert_array_equal(result.data, res2)
 
@@ -79,7 +79,7 @@ def test_arithmetic(op, res, res2, ad1, ad2):
     (operator.itruediv, 0.5, 2)
 ])
 def test_arithmetic_inplace(op, res, res2, ad1, ad2):
-    for data in (ad2, ad2.data):
+    for data in (ad2, ad2.data * u.adu):
         ad = deepcopy(ad1)
         op(ad, data)
         assert_array_equal(ad.data, res)
@@ -88,11 +88,7 @@ def test_arithmetic_inplace(op, res, res2, ad1, ad2):
         assert isinstance(ad[0].data, np.ndarray)
         assert isinstance(ad[0].hdr, fits.Header)
 
-    # data2 = deepcopy(ad2[0])
-    # op(data2, ad1)
-    # assert_array_equal(data2, res2)
-
-    for data in (ad2[0], ad2[0].data):
+    for data in (ad2[0], ad2[0].data * u.adu):
         ad = deepcopy(ad1)
         op(ad[0], data)
         assert_array_equal(ad.data, res)
@@ -111,13 +107,13 @@ def test_arithmetic_inplace(op, res, res2, ad1, ad2):
 def test_arithmetic_multiple_ext(op, res, ad1):
     ad1.append(np.ones(SHAPE, dtype=np.uint16) + 4)
 
-    result = op(ad1, 2)
+    result = op(ad1, 2 * u.adu)
     assert len(result) == 2
     assert_array_equal(result[0].data, res[0])
     assert_array_equal(result[1].data, res[1])
 
     for i, ext in enumerate(ad1):
-        result = op(ext, 2)
+        result = op(ext, 2 * u.adu)
         assert len(result) == 1
         assert_array_equal(result[0].data, res[i])
 
@@ -132,7 +128,7 @@ def test_arithmetic_inplace_multiple_ext(op, res, ad1):
     ad1.append(np.ones(SHAPE, dtype=np.uint16) + 4)
 
     ad = deepcopy(ad1)
-    result = op(ad, 2)
+    result = op(ad, 2 * u.adu)
     assert len(result) == 2
     assert_array_equal(result[0].data, res[0])
     assert_array_equal(result[1].data, res[1])
@@ -141,13 +137,13 @@ def test_arithmetic_inplace_multiple_ext(op, res, ad1):
     # as it is now independant from its parent
     for i, ext in enumerate(ad1):
         ext = deepcopy(ext)
-        result = op(ext, 2)
+        result = op(ext, 2 * u.adu)
         assert len(result) == 1
         assert_array_equal(result[0].data, res[i])
 
     # Now work directly on the input object, will creates single ad objects
     for i, ext in enumerate(ad1):
-        result = op(ext, 2)
+        result = op(ext, 2 * u.adu)
         assert len(result) == 1
         assert_array_equal(result.data, res[i])
 
@@ -157,7 +153,7 @@ def test_arithmetic_inplace_multiple_ext(op, res, ad1):
                                           ('multiply', 3, 3),
                                           ('divide', 2, 0.5)])
 def test_operations(ad1, op, arg, res):
-    result = getattr(ad1, op)(arg)
+    result = getattr(ad1, op)(arg * u.adu)
     assert_array_equal(result.data, res)
     assert isinstance(result, astrodata.AstroData)
     assert isinstance(result[0].data, np.ndarray)
@@ -170,6 +166,7 @@ def test_operate():
     nd = NDData(data=[[1, 2], [3, 4]],
                 uncertainty=VarianceUncertainty(np.ones((2, 2))),
                 mask=np.identity(2),
+                unit='adu',
                 meta={'header': fits.Header()})
     ad.append(nd)
 
@@ -184,6 +181,7 @@ def test_write_and_read(tmpdir, capsys):
     nd = NDData(data=[[1, 2], [3, 4]],
                 uncertainty=VarianceUncertainty(np.ones((2, 2))),
                 mask=np.identity(2),
+                unit='adu',
                 meta={'header': fits.Header()})
     ad.append(nd)
 

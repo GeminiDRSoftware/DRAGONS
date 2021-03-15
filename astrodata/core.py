@@ -891,7 +891,7 @@ class AstroData:
                                                      custom_header=header)
         return self._append_nddata(processed_nddata, name=name, add_to=add_to)
 
-    def _append_nddata(self, new_nddata, name, add_to):
+    def _append_nddata(self, new_nddata, name, add_to, unit='adu'):
         # NOTE: This method is only used by others that have constructed NDData
         # according to our internal format. We don't accept new headers at this
         # point, and that's why it's missing from the signature.  'name' is
@@ -899,6 +899,12 @@ class AstroData:
         if add_to is not None:
             raise TypeError("You can only append NDData derived instances "
                             "at the top level")
+
+        if new_nddata.unit is None:
+            # FIXME: setting unit to adu by default but we should allow
+            # passing a unit in .append()
+            new_nddata.unit = 'adu'
+            warnings.warn('setting unit to ADU')
 
         hd = new_nddata.meta['header']
         hname = hd.get('EXTNAME', DEFAULT_EXTENSION)
