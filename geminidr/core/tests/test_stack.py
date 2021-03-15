@@ -4,6 +4,7 @@ Tests for primitives_stack.
 
 import numpy as np
 import pytest
+import astropy.units as u
 from astropy.io import fits
 from astropy.table import Table
 from numpy.testing import assert_array_equal
@@ -90,7 +91,7 @@ def test_stackframes_refcat_propagation(niri_adinputs):
 
 def test_rejmap(niri_adinputs):
     for i in (2, 3, 4):
-        niri_adinputs.append(niri_adinputs[0] + i)
+        niri_adinputs.append(niri_adinputs[0] + i * u.adu)
 
     p = NIRIImage(niri_adinputs)
     p.prepare()
