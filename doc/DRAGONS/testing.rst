@@ -66,7 +66,7 @@ if you make changes to your source code, these changes will be reflected in the
 installed DRAGONS.
 
 In addiction to installing DRAGONS, you might need to provide input data to the
-tests. The root path of the input data should be stored in the `$DRAGONS_TEST`
+tests. The root path of the input data should be stored in the ``$DRAGONS_TEST``
 environment variable, which can be set with:
 
 .. code-block:: bash
@@ -91,7 +91,7 @@ structure. The only difference is the most internal directory, which should be
 Here is another example:
 
 .. list-table::
-   :widths: 50 50
+   :widths: 25 75
 
    * - Test module:
      - geminidr/gmos/tests/test_gmos_spect_ls_apply_qe_correction.py
@@ -128,13 +128,13 @@ particularly useful ones are:
 .. list-table::
    :widths: 25 75
 
-   * - -v or --verbose
+   * - ``-v`` or ``--verbose``
      - Be more verbose.
-   * - --capture=no or -s
+   * - ``--capture=no`` or ``-s``
      - Do not capture stdout (print messages in during test execution).
-   * - -rs
+   * - ``-rs``
      - Report why tests were skipped (see `more <https://docs.pytest.org/en/latest/usage.html#detailed-summary-report>`_)
-   * - --basetem=./temp
+   * - ``--basetemp=./temp``
      - Write temporary files into the :code:`./temp` folder.
 
 Calling pytest_ in the repository's root folder will run all the tests inside
@@ -169,11 +169,11 @@ root folder. Here is a short description of each of them:
 .. list-table::
    :widths: 25 75
 
-   * - --dragons-remote-data
+   * - ``--dragons-remote-data``
      - Enable tests that require any input data.
-   * - --force-cache
+   * - ``--force-cache``
      - Allows downloading input data from the archive and caching them into a temporary folder.
-   * - --interactive
+   * - ``--interactive``
      - Runs tests that have some interactive component.
 
 Tests that require any kind of input data are normally skipped. If you want to
@@ -231,6 +231,11 @@ on Python 3.7:
    # specifying the environment with an environment variable:
    $ TOXENV=py37-unit tox
 
+.. note::
+    Since we use the `astroconda <http://ssb.stsci.edu/astroconda>`_ channel
+    which does not have packages for Python 3.8 and 3.9, tox can currently
+    only be used with Python 3.7.
+
 Pinpointing Tests
 -----------------
 
@@ -244,23 +249,23 @@ command:
 
 .. code-block:: bash
 
-   $ pytest geminidr/gmos/tests/spect/test_find_source_apertures
+   $ pytest geminidr/gmos/tests/spect/test_find_source_apertures.py
 
-With Tox, you run instead:
+With Tox, you must specify the module name instead:
 
 .. code-block:: bash
 
    $ tox -e py37-gmosls -- geminidr.gmos.tests.spect.test_find_source_apertures
 
-Remember that the `-e py37-gmosls` is simply the name of a Tox environment that
-run tests marked with `@pytest.mark.gmosls`.
+Remember that the ``-e py37-gmosls`` is simply the name of a Tox environment
+that run tests marked with `@pytest.mark.gmosls`.
 
 If we want to run a single test inside that module, we need to append
 :code:`::test_...` after the module name. Something like this:
 
 .. code-block:: bash
 
-   $ pytest geminidr/gmos/tests/spect/test_find_source_apertures::test_find_apertures_with_fake_data
+   $ pytest geminidr/gmos/tests/spect/test_find_source_apertures.py::test_find_apertures_with_fake_data
 
 To run the test with PyTest. Or:
 
@@ -268,7 +273,7 @@ To run the test with PyTest. Or:
 
    $ tox -e py37-gmosls -- geminidr.gmos.tests.spect.test_find_source_apertures::test_find_apertures_with_fake_data
 
-To run the test with with Tox.
+To run the test with Tox.
 
 
 Writing new tests
@@ -303,7 +308,7 @@ definition:
 
 .. code-block:: python
 
-    def test_can_perform_task(_):
+    def test_can_perform_task():
         ...
         assert task_was_performed()
 
@@ -321,7 +326,7 @@ numbers usually give lesser information on why the tests were failing. Please,
         assert task_was_performed()
 
 
-    def test_1(_):
+    def test_1():
         ...
         assert task_was_performed()
 
@@ -333,7 +338,8 @@ PyTest_ allows the creation of special functions called fixtures_. They are
 usually used to add custom test setup and/or finalization. Boilerplate code or
 code that brings up the system to a state right before the test should usually
 be written within fixtures_. This is a way of isolating what is being actually
-tested.
+tested. It is also a practical way to generate test data which can be used in
+multiple tests.
 
 A fixture_ is any function containing a :code:`@pytest.fixture` decorator. For
 example:
@@ -387,7 +393,7 @@ that are used in DRAGONS' tests. The most commonly used fixtures are:
 
 PyTest fixtures are modular since they can be used by fixtures. This allowed the
 creation of custom fixtures for the DRAGONS Testing Suite. All our custom
-fixtures now live inside the `pytest_dragons/plugin.py` module.
+fixtures now live inside the ``pytest_dragons/plugin.py`` module.
 
 Here is a very brief description of the fixtures defined in this plugin module:
 
@@ -410,7 +416,7 @@ PyTest Configuration File
 Most of `pytest`_'s setup and customization happens inside a special file named
 :code:`conftest.py`. This file might contain fixtures that can be used in tests
 without being imported and custom command-line options. Before moving towards the
-`pytest_dragons` plugin, this was how DRAGONS had all its custom setup. You can
+``pytest_dragons`` plugin, this was how DRAGONS had all its custom setup. You can
 still create a per-package :code:`conftest.py` file with specific behavior but
 we invite you to discuss with us if the required new functionality might be
 incorporated to the project level plugin.
@@ -463,7 +469,6 @@ information about the fixture and the test themselves. Line 08 shows how to pass
 the parameter to the fixture using the :code:`request.param` variable.
 
 .. code-block:: python
-   :linenos:
 
    input_files = [
     'N20001231_S001.fits',
@@ -491,7 +496,6 @@ This is only required when you want to have a single list of parameters and some
 of these parameters need to pass through a fixture. Here is an example:
 
 .. code-block:: python
-   :linenos:
 
    pars = [
        # Input File, Expected Value
@@ -545,7 +549,8 @@ which is implemented simply:
 
 Ideally, these recipes should write the created inputs inside
 :code:`./dragons_tests_inputs/` folder following the same directory structure
-inside $DRAGONS_TEST in order to allow easy, but still manual, synchronization.
+inside ``$DRAGONS_TEST`` in order to allow easy, but still manual,
+synchronization.
 
 
 Test markers
@@ -562,16 +567,20 @@ the table below:
 
    * - Marker Name
      - Description
-   * - dragons_remote_data
-     - Tests that require data that can be downloaded from the Archive. Require --dragons-remote-data and $DRAGONS_TEST to run. It might download data.
-   * - integtest
-     - Long tests using Reduce(...). Only used for test selection.
-   * - interactive
+   * - ``dragons_remote_data``
+     - Tests that require data that can be downloaded from the Archive. Require ``--dragons-remote-data`` and ``$DRAGONS_TEST`` to run. It downloads and caches data.
+   * - ``integration_test``
+     - Long tests using ``Reduce(...)``. Only used for test selection.
+   * - ``interactive``
      - For tests that requires (user) interaction and should be skipped by any Continuous Integration service.
-   * - gmosls
+   * - ``gmosls``
      - GMOS Long-slit Tests. Only used for test selection.
-   * - preprocessed_data
+   * - ``preprocessed_data``
      - Tests that require preprocessed data. If input files are not found, they raise a FileNotFoundError. If you need to create inputs, see Create inputs for tests above.
+   * - ``regression``
+     - Tests that will compare output data with reference data.
+   * - ``slow``
+     - Slow tests. Only used for test selection.
 
 These are the official custom markers that now live inside DRAGONS. Other custom
 markers might be found and those should be removed. Any new custom marker needs
@@ -587,7 +596,6 @@ object with the given filename from the :code:`path_to_refs`.
 
 .. code-block:: python
    :caption: geminidr/gmos/recipes/ql/tests/test_make_processed_flat.py
-   :linenos:
 
    @pytest.mark.gmosls
    @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
@@ -607,14 +615,3 @@ object with the given filename from the :code:`path_to_refs`.
          np.testing.assert_allclose(ext.mask, ext_ref.mask)
          np.testing.assert_almost_equal(
             ext.data, ext_ref.data, decimal=3)
-
-
-
-
-
-
-
-
-
-
-
