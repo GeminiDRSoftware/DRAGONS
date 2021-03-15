@@ -7,21 +7,10 @@ from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
                           NumeralTickFormatter, RangeSlider, Slider, TextInput, Div)
 
 from geminidr.interactive import server
+from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.config import FieldValidationError
-
-
-
-DEFAULT_HELP = """
-
-<h2>Help</h2>
-
-<p>DRAGONS Interactive Tools provide an interactive web interface to adjust
-the data reduction parameters with a preview of the results.  This system
-runs in your browser using a local bokeh server.  Adjust the parameters
-to your liking and click the <b>Accept</b> button to continue.</p>
-"""
 
 
 class PrimitiveVisualizer(ABC):
@@ -1128,7 +1117,7 @@ class GIRegionView(GIRegionListener):
 class RegionEditor(GIRegionListener):
     def __init__(self, region_model):
         self.text_input = TextInput(
-            title="Regions (i.e. 100:500,510:900,950. Press 'Enter' to apply):",
+            title="Regions (i.e. 100:500,510:900,950: Press 'Enter' to apply):",
             max_width=600,
             sizing_mode="stretch_width",
             width_policy="max",

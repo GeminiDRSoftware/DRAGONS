@@ -183,3 +183,17 @@ div.scrollable {
 .region_input_error {
     border:  solid red 1px;
 }
+
+div.plot_tools_help {
+    float: right;
+}
+div.plot_tools_help div {
+    border: 1px solid gray;
+    padding: 4px;
+    margin: 8px;
+    background: white;
+    filter: drop-shadow(2px 2px 2px gray);
+}
+div.plot_tools_help div span {
+    margin-left: 4px;
+}

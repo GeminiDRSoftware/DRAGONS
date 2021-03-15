@@ -17,84 +17,6 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-CALCULATE_SENSITIVITY_HELP_TEXT = """
-<h2>Help</h2>
-
-<p>        Calculates the overall sensitivity of the observation system
-        (instrument, telescope, detector, etc) for each wavelength using
-        spectrophotometric data. It is obtained using the ratio
-        between the observed data and the reference look-up data.</p>
-
-<p>
-        For that, it looks for reference data using the stripped and lower
-        case name of the observed object inside geminidr.gemini.lookups,
-        geminidr.core.lookups and inside the instrument lookup module.
-</p>
-
-<p>
-        The reference data is fit using a Spline in order to match the input
-        data sampling.
-</p>
-
-<h3>Profile parameters</h3>
-<p>Those parameters applies to the computation of the 1D profile.</p>
-<dl>
-<dt>Order</dt>
-<dd>
-    Percentile to determine signal for each spatial pixel. Uses when
-    collapsing along the dispersion direction to obtain a slit profile.
-    If None, the mean is used instead.
-</dd>
-<dt>Sigma Clip, Upper, Lower</dt>
-<dd>
-    Enables sigma rejection with individually settable upper and lower
-    sigma bounds.
-</dd>
-<dt>Max Iterations</dt>
-<dd>
-    Maximum number of rejection iterations
-</dd>
-<dt>Grow</dt>
-<dd>
-    Radius to reject pixels adjacent to masked pixels of spline fit
-</dd>
-<dt>Regions</dt>
-<dd>
-    Comma-separated list of colon-separated pixel coordinate pairs
-    indicating the region(s) over which the input data should be
-    used. The first and last values can be blank, indicating to
-    continue to the end of the data.
-</dd>
-</dl>
-
-<h3>Plot Tools</h3>
-
-<p>
-<img src="dragons/static/bokehlegend.png" align="right" />
-Data points in the upper plot may be selected in order to mask or
-unmask them from consideration.  To select, choose the <i>Box Select</i>, 
-<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure.  
-Selections may be additive if you hold down the shift key.  Once you have a 
-selection, you may <b>mask</b> or <b>unmask</b> the selection by hitting 
-the <b>M</b> or <b>U</b> key respectively.
-</p>
-<br clear="all"/>
-
-<h3>Region Editing</h3>
-
-<p>
-In addition to the region edit text box, you can edit regions interactively
-on the upper figure.  To start a new region, hover the mouse where you want
-one edge of the region and hit <b>R</b>.  Then move to the other end of the
-desired region and hit <b>R</b> again.  To edit an existing region, hit <b>E</b>
-while the mouse is near the edge you wish to adjust.  To delete a region, hit
-<b>D</b> while close to the region you want removed.  The <i>Regions</i>
-text entry will also update with these changes and you may fine tune the 
-results there as well.
-</p>
-"""
-
-
 def build_fit_1D(fit1d_params, data, points, weights):
     """
     Create a fit_1D from the given parameter dictionary and x/y/weights
@@ -591,8 +513,7 @@ class Fit1DPanel:
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True,
-                 enable_user_masking=True, enable_regions=True,
-                 show_plot_tools_legend=False):
+                 enable_user_masking=True, enable_regions=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -664,8 +585,6 @@ class Fit1DPanel:
         reset_button.align = 'center'
         controls_ls.append(reset_button)
         controls_ls.append(controller_div)
-        if show_plot_tools_legend:
-            controls_ls.append(visualizer.bokeh_legend)
 
         controls = column(*controls_ls)
 
@@ -1033,12 +952,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             kwargs['min_order'] = 1
             kwargs['max_order'] = 10
 
-        # if we only have 1 reinit panel child, we didn't have room to show the legend there
-        # so we show it here
-        show_plot_tools_legend=False
-        if len(self.reinit_panel.children) <= 1:
-            show_plot_tools_legend=True
-
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
@@ -1050,8 +963,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights,
-                                 show_plot_tools_legend=show_plot_tools_legend, **kwargs)
+                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
@@ -1063,8 +975,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
-            tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0],
-                             show_plot_tools_legend=show_plot_tools_legend, **kwargs)
+            tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
@@ -1111,7 +1022,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             layout_ls.append(Spacer(height=10))
             layout_ls.append(col)
         else:
-            layout_ls.append(row(column(self.reinit_panel, self.bokeh_legend), col))
+            layout_ls.append(row(self.reinit_panel, col))
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
         doc.add_root(self.layout)
 

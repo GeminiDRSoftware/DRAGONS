@@ -12,6 +12,7 @@ from holoviews.streams import Stream
 
 from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
+from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import (PrimitiveVisualizer,
                                               hamburger_helper)
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
@@ -90,7 +91,8 @@ profile reaches this threshold.</p>
     relative to peak, or <i>integral</i> for the integrated flux.
 </dd>
 </dl>
-"""
+""" + \
+PLOT_TOOLS_HELP_SUBTEXT
 
 
 def avoid_multiple_update(func):
@@ -877,9 +879,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             row(renumber_button, add_button),
         ])
 
-        details_button = Button(label="Show detailed help",
-                                button_type='primary')
-        details_button.js_on_click(CustomJS(code="openHelpPopup();"))
         self.model.recalc_apertures()
         # now we have a height for the figure
         aperture_view.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
@@ -892,7 +891,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 Spacer(sizing_mode='scale_width'),
                 self.submit_button,
                 Spacer(sizing_mode='scale_width'),
-                details_button,
             ],
         )
 
