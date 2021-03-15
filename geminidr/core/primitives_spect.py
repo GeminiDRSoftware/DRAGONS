@@ -48,6 +48,7 @@ from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -424,7 +425,8 @@ class Spect(PrimitivesBASE):
                                                    domains=all_shapes,
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
-                                                   filename_info=filename_info)
+                                                   filename_info=filename_info,
+                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()

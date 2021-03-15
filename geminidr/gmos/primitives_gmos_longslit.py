@@ -43,6 +43,7 @@ from . import parameters_gmos_longslit
 
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
+from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
 
 
 @parameter_override
@@ -728,7 +729,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    primitive_name="normalizeFlat",
                                                    filename_info=filename_info,
                                                    enable_user_masking=False,
-                                                   enable_regions=False)
+                                                   enable_regions=False,
+                                                   help_text=NORMALIZE_FLAT_HELP_TEXT)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 log.stdinfo('Interactive Parameters retrieved, performing flat normalization...')
 

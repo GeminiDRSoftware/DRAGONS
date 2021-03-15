@@ -513,8 +513,7 @@ class Fit1DPanel:
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True,
-                 enable_user_masking=True, enable_regions=True,
-                 show_plot_tools_legend=False):
+                 enable_user_masking=True, enable_regions=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -586,8 +585,6 @@ class Fit1DPanel:
         reset_button.align = 'center'
         controls_ls.append(reset_button)
         controls_ls.append(controller_div)
-        if show_plot_tools_legend:
-            controls_ls.append(visualizer.bokeh_legend)
 
         controls = column(*controls_ls)
 
@@ -805,7 +802,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, function=None, title=None, primitive_name=None, filename_info=None,
-                 template="fit1d.html",
+                 template="fit1d.html", help_text=None,
                  **kwargs):
         """
         Parameters
@@ -845,9 +842,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             ID of fit_1d function to use, if not a configuration option
         title : str
             Title for UI (Interactive <Title>)
+        help_text : str
+            HTML help text for popup help, or None to use the default
         """
         super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
-                         template=template)
+                         template=template, help_text=help_text)
         self.layout = None
 
         # Make the widgets accessible from external code so we can update
@@ -953,12 +952,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             kwargs['min_order'] = 1
             kwargs['max_order'] = 10
 
-        # if we only have 1 reinit panel child, we didn't have room to show the legend there
-        # so we show it here
-        show_plot_tools_legend=False
-        if len(self.reinit_panel.children) <= 1:
-            show_plot_tools_legend=True
-
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
@@ -970,8 +963,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights,
-                                 show_plot_tools_legend=show_plot_tools_legend, **kwargs)
+                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
@@ -983,8 +975,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
-            tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0],
-                             show_plot_tools_legend=show_plot_tools_legend, **kwargs)
+            tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
@@ -1031,7 +1022,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             layout_ls.append(Spacer(height=10))
             layout_ls.append(col)
         else:
-            layout_ls.append(row(column(self.reinit_panel, self.bokeh_legend), col))
+            layout_ls.append(row(self.reinit_panel, col))
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
         doc.add_root(self.layout)
 
