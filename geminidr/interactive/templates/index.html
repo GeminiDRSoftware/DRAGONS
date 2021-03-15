@@ -36,6 +36,8 @@
 {% endblock %}
 
 {% block contents %}
+<div class="container">
+
 <!-- modal, for long running bokeh code -->
 <div class="modal_overlay">
     <b>Thinking...</b>
@@ -43,15 +45,14 @@
 <!-- end modal -->
 
 <div id="top">
-    <div id="top-icon"></div>
-    <div id="top-banner">
-        <div id="top-primitive-info">
-            <div id="top-title">{{ primitive_title }}</div>
-            <div id="top-primitive-name">{{ primitive_name }}</div>
-        </div>
-        <!-- <div id="filename-info">{{ filename_info }}</div></div> -->
+    <div class="logo"><img src="dragons/static/DRAGONS.png"></div>
+    <div class="banner">
+        <span class="title">{{ primitive_name }}</span>
+        <button id="help-btn" type="button" onclick="openHelpPopup('Trace Apertures - Help')">Help</button>
     </div>
 </div>
+
+
 <div id="plot_div" style="border: 0px solid">
     <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
     <div id="main_div">
@@ -158,4 +159,6 @@
 <div id="footer">
 Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
 </div>
+
+</div><!-- end container -->
 {% endblock %}
