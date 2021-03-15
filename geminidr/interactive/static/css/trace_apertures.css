@@ -8,14 +8,14 @@ body {
     }
 
 .bk-btn.bk-btn-success {
-    border-radius: 25px;
+    border-radius: 5px;
     font-size: 18px;
     padding: 5px 35px;
     transition: all .2s ease-in-out;
 }
 
 .bk-btn.bk-btn-warning {
-    border-radius: 20px;
+    border-radius: 5px;
     font-size: 16px;
     padding: 5px 35px;
     transition: all .2s ease-in-out;
@@ -79,7 +79,7 @@ body {
 #close-btn {
     background-color: silver;
     border: 1px solid darkgray;
-    border-radius: 20px;
+    border-radius: 5px;
     color: black;
     font-size: 16px;
     margin-right: 32px;
@@ -130,7 +130,7 @@ body {
 #help-btn {
     background-color: steelblue;
     border: 0px solid white;
-    border-radius: 20px;
+    border-radius: 5px;
     color: gainsboro;
     font-size: 18px;
     float: right;

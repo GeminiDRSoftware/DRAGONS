@@ -1,6 +1,11 @@
 /* https://codepen.io/KanatSahanov/pen/raGXXa */
 
 body {
+    background-color: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
     margin: 0px;
 }
 
@@ -8,41 +13,41 @@ body {
     margin: 8px 8px 30px 8px;
 }
 
-#top-icon {
-    background-image: url('DRAGONS.png');
-    background-repeat: no-repeat;
+#top {
+    background-color: steelblue;
+    color: white;
+    display: block;
+    height: auto;
+    margin: 0px;
+    width: inherit;
+}
+
+#top .banner {
+    padding: 10px;
+    vertical-align: middle;
+    width: 100%;
+}
+
+#top .banner .primitive-name {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 18px;
+    padding: 10px;
+    vertical-align: middle;
+}
+
+#top .banner .title {
+    color: white;
+    font-size: 36px;
+    vertical-align: middle;
+}
+
+#top .logo {
     float: left;
-    height: 128px;
-    width: 128px;
+    padding: 10px;
 }
 
-#top-banner {
-    height: 76px;
-    background-color: #5384a5;
-    font: helvetica;
-    font-style: italic;
-    color: white;
-}
-
-#top-primitive-info {
-    position: absolute;
-    float: left;
-    padding-left: 128px;
-    padding-right: 256px;
-}
-
-#top-title {
-    font-size: 48px;
-    font: helvetica;
-    font-style: italic;
-    color: white;
-}
-
-#top-primitive-name {
-    font-size: 16px;
-    font: helvetica;
-    font-style: italic;
-    color: white;
+#top .logo img {
+    height: 72px;
 }
 
 #filename-info {
@@ -64,28 +69,66 @@ body {
     padding-right: 8px;
 }
 
-#top {
-    height: 128px;
-    width: 100%;
-}
-
 #footer {
-    background-color: #5384a5;
-    font: helvetica;
-    font-style: italic;
+    background-color: steelblue;
+    color: gainsboro;
     font-size: 14px;
-    color: white;
-    text-align: right;
+    font-style: normal;
+    margin: 10px 0px 0px 0px;
+    padding: 5px;
     position: fixed;
     left: 0;
     bottom: 0;
+    text-align: right;
     width: 100%;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    padding-right: 12px;
 }
+
 #footer a {
+    color: gainsboro;
+    transition: all .2s ease-in-out;
+    margin-right: 12px;
+}
+
+#footer a:hover {
     color: white;
+}
+
+#help-btn {
+    background-color: steelblue;
+    border: 0px solid white;
+    border-radius: 20px;
+    color: gainsboro;
+    font-size: 18px;
+    float: right;
+    position: relative;
+    right: 36px;
+    outline: none;
+    padding: 10px 30px;
+    transition: all .4s ease-in-out;
+    text-decoration: none;
+}
+
+#help-btn:hover {
+    border: 0px solid white;
+    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+    color: white;
+    cursor: pointer;
+    filter: brightness(115%);
+    outline: none;
+}
+
+#help-btn:active {
+    border: none;
+    border-bottom: none;
+    color: white;
+    cursor: pointer;
+    filter: brightness(85%);
+    outline: none;
+
+    /* Inner shadow */
+    -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
 }
 
 .modal_overlay {
@@ -135,4 +178,8 @@ div.scrollable {
 
 .controller_div {
   color: gray;
+}
+
+.region_input_error {
+    border:  solid red 1px;
 }

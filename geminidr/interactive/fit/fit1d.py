@@ -779,7 +779,7 @@ class Fit1DPanel:
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
+        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='red')
 
         if self.band_model:
             region_editor = RegionEditor(self.band_model)
@@ -1087,7 +1087,24 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         layout_ls = list()
         if self.filename_info:
-            layout_ls.append(Div(text='<b>Filename:</b> %s<br/>' % self.filename_info))
+            # Edit elements
+            filename_div = bm.Div(
+                align=("start", "center"),
+                css_classes=["filename"],
+                id="_filename",
+                margin=(0, 0, 0, 84),
+                name="filename",
+                height_policy="max",
+                text=f"Current filename: {self.filename_info}",
+                style={
+                    "background": "white",
+                    "color": "#666666",
+                    "padding": "10px 0px 10px 0px",
+                    "vertical-align": "middle",
+                },
+                width_policy="min",
+            )
+            layout_ls.append(filename_div)
         layout_ls.append(self.submit_button)
         if len(self.reinit_panel.children) <= 1:
             layout_ls.append(row(self.reinit_panel))
