@@ -136,3 +136,7 @@ div.scrollable {
 .controller_div {
   color: gray;
 }
+
+.region_input_error {
+    border:  solid red 1px;
+}
