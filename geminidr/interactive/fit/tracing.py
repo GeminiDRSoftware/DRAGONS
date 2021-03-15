@@ -634,7 +634,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                      max_width=1000,
                      name="filename",
                      height_policy="min",
-                     text=f"Current filename: "
+                     text=f"Filename: "
                           f"<span style='color: black; margin-left: 10px'>"
                           f"{self.filename_info}"
                           f"</span>",
