@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from copy import copy
 
@@ -960,7 +961,10 @@ class GIRegionModel:
             return '' if val is None else val + offset
         if self.regions is None or len(self.regions.values()) == 0:
             return None
-        return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in self.regions.values()])
+        sorted_regions = list()
+        sorted_regions.extend(self.regions.values())
+        sorted_regions.sort()
+        return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
 
 
 class RegionHolder:
@@ -1105,6 +1109,10 @@ class RegionEditor(GIRegionListener):
         self.region_model = region_model
         self.region_model.add_listener(self)
         self.text_input.on_change("value", self.handle_text_value)
+        self.error_message = Div(text="<b><span style='color:red'>please use comma separated : delimited values (i.e. 100:500,510:900,950:)</span></b>")
+        self.error_message.visible = False
+        self.widget = column(self.text_input, self.error_message)
+        self.handling = False
 
     def adjust_region(self, region_id, start, stop):
         pass
@@ -1115,10 +1123,28 @@ class RegionEditor(GIRegionListener):
     def finish_regions(self):
         self.text_input.value = self.region_model.build_regions()
 
+    def standardize_region_text(self, region_text):
+        region_text = re.sub(r'[ ,]+', ',', region_text)
+        region_text = re.sub(r'^,', '', region_text)
+        region_text = re.sub(r',$', '', region_text)
+        return region_text
+
     def handle_text_value(self, attr, old, new):
-        current = self.region_model.build_regions()
-        if current != new:
-            self.region_model.load_from_string(new)
+        if not self.handling:
+            self.handling = True
+            region_text = self.standardize_region_text(new)
+            current = self.region_model.build_regions()
+            if current != region_text:
+                if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
+                    self.region_model.load_from_string(region_text)
+                    self.text_input.value = self.region_model.build_regions()
+                    self.error_message.visible = False
+                else:
+                    if 'region_input_error' not in self.text_input.css_classes:
+                        self.error_message.visible = True
+            else:
+                self.error_message.visible = False
+            self.handling = False
 
     def get_widget(self):
-        return self.text_input
+        return self.widget
