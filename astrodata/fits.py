@@ -593,7 +593,8 @@ def ad_to_hdulist(ad):
         data_hdu = new_imagehdu(ext.data, header, 'SCI')
 
         if ext.unit is not None and ext.unit is not u.dimensionless_unscaled:
-            data_hdu.header['BUNIT'] = ext.unit.to_string()
+            data_hdu.header['BUNIT'] = (ext.unit.to_string(),
+                                        "Physical units of the array values")
 
         hdul.append(data_hdu)
 
