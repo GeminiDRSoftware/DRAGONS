@@ -292,6 +292,9 @@ class CalReturn:
             raise ValueError("CalReturn must be initialized with 1 or 2 "
                              "arguments")
 
+    def __len__(self):
+        return len(self.files)
+
     def __iter__(self):
         for ret in (self.files, self.origins):
             yield ret
