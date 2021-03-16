@@ -309,6 +309,27 @@ def test_fixpixels_multiple_ext(niriprim2):
     assert_almost_equal(ad[1].data[sy, sx].max(), 60.333, decimal=2)
 
 
+def test_adu_to_electrons(astrofaker, caplog):
+    caplog.set_level('INFO')
+    ad = astrofaker.create("NIRI", "IMAGE")
+    ad.init_default_extensions()
+    ad[0].data[:] = 1
+    p = NIRIImage([ad])
+
+    ad = p.ADUToElectrons()[0]
+    assert ad[0].nddata.unit == 'electron'
+    assert_array_almost_equal(ad[0].data, ad[0].gain())
+    assert caplog.messages[2] == ('Converting N20010101S0001.fits from ADU to '
+                                  'electrons by multiplying by the gain')
+    caplog.clear()
+
+    ad = p.ADUToElectrons()[0]
+    assert ad[0].nddata.unit == 'electron'
+    assert_array_almost_equal(ad[0].data, ad[0].gain())
+    assert ('No changes will be made to N20010101S0001_ADUToElectrons.fits, '
+            'since it has already been processed') in caplog.messages[2]
+
+
 # TODO @bquint: clean up these tests
 
 # @pytest.fixture
@@ -355,16 +376,6 @@ def test_fixpixels_multiple_ext(niriprim2):
 #     for ext, ext_orig in zip(ad, ad_orig):
 #         assert all(ext.mask[ext.OBJMASK == 0] == ext_orig.mask[ext.OBJMASK == 0])
 #         assert all(ext.mask[ext.OBJMASK == 1] == ext_orig.mask[ext.OBJMASK == 1] | 1)
-
-
-# @pytest.mark.xfail(reason="Test needs revision", run=False)
-# def test_adu_to_electrons(astrofaker):
-#     ad = astrofaker.create("NIRI", "IMAGE")
-#     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
-#     p = NIRIImage([ad])
-#     ad = p.ADUToElectrons()[0]
-#     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-#                                        'N20070819S0104_ADUToElectrons.fits'))
 
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
