@@ -329,7 +329,7 @@ def test_adu_to_electrons(astrofaker, caplog, tmp_path):
     testfile = tmp_path / 'test.fits'
     ad.write(testfile)
     assert fits.getval(testfile, 'BUNIT', extname='SCI') == 'electron'
-    ad = astrodata.read(testfile)
+    ad = astrodata.open(testfile)
     assert ad[0].unit == 'electron'
 
 
