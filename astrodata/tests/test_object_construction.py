@@ -94,16 +94,19 @@ def test_create_invalid():
 
 
 def test_append_image_hdu():
+    shape = (4, 5)
     ad = astrodata.create(fits.PrimaryHDU())
-    ad.append(fits.ImageHDU(data=np.zeros((4, 5))))
-    ad.append(fits.ImageHDU(data=np.zeros((4, 5))), name='SCI')
+    ad.append(fits.ImageHDU(data=np.zeros(shape)))
+    ad.append(fits.ImageHDU(data=np.zeros(shape)), name='SCI', unit='electron')
 
     with pytest.raises(ValueError,
                        match="Arbitrary image extensions can only be added "
                        "in association to a 'SCI'"):
-        ad.append(fits.ImageHDU(data=np.zeros((4, 5))), name='SCI2')
+        ad.append(fits.ImageHDU(data=np.zeros(shape)), name='SCI2')
 
     assert len(ad) == 2
+    assert ad[0].nddata.unit == 'adu'
+    assert ad[1].nddata.unit == 'electron'
 
 
 def test_append_lowercase_name():
@@ -113,12 +116,25 @@ def test_append_lowercase_name():
         ad.append(NDData(np.zeros((4, 5))), name='sci')
 
 
+def test_append_nddata():
+    shape = (4, 5)
+    ad = astrodata.create({})
+    ad.append(NDData(np.zeros(shape)))
+    ad.append(NDData(np.zeros(shape), unit='electron'))
+    ad.append(NDData(np.zeros(shape)), unit='electron')
+
+    assert ad[0].nddata.unit == 'adu'
+    assert ad[1].nddata.unit == 'electron'
+    assert ad[2].nddata.unit == 'electron'
+
+
 def test_append_arrays(tmp_path):
     testfile = tmp_path / 'test.fits'
 
     ad = astrodata.create({})
     ad.append(np.zeros(10))
     ad[0].ARR = np.arange(5)
+    ad.append(np.zeros(10), unit='electron')
 
     with pytest.raises(AttributeError):
         ad[0].SCI = np.arange(5)
@@ -138,7 +154,9 @@ def test_append_arrays(tmp_path):
     ad.write(testfile)
 
     ad = astrodata.open(testfile)
-    assert len(ad) == 1
+    assert len(ad) == 2
+    assert ad[0].nddata.unit == 'adu'
+    assert ad[1].nddata.unit == 'electron'
     assert ad[0].nddata.meta['header']['EXTNAME'] == 'SCI'
     assert_array_equal(ad[0].ARR, np.arange(5))
 
