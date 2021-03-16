@@ -33,6 +33,7 @@ LOGGER = logging.getLogger(__name__)
 known_invalid_fits_unit_strings = {
     'ELECTRONS/S': u.electron/u.s,
     'ELECTRONS': u.electron,
+    'ELECTRON': u.electron,
     'electrons': u.electron,
     'electron': u.electron,
 }

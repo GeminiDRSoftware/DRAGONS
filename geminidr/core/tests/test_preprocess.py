@@ -317,14 +317,14 @@ def test_adu_to_electrons(astrofaker, caplog):
     p = NIRIImage([ad])
 
     ad = p.ADUToElectrons()[0]
-    assert ad[0].nddata.unit == 'electron'
+    assert ad[0].unit == 'electron'
     assert_array_almost_equal(ad[0].data, ad[0].gain())
     assert caplog.messages[2] == ('Converting N20010101S0001.fits from ADU to '
                                   'electrons by multiplying by the gain')
     caplog.clear()
 
     ad = p.ADUToElectrons()[0]
-    assert ad[0].nddata.unit == 'electron'
+    assert ad[0].unit == 'electron'
     assert_array_almost_equal(ad[0].data, ad[0].gain())
     assert ('No changes will be made to N20010101S0001_ADUToElectrons.fits, '
             'since it has already been processed') in caplog.messages[2]

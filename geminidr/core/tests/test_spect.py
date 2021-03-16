@@ -309,7 +309,7 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     ad = astrofaker.create("NIRI")
     ad.init_default_extensions()
     p = NIRIImage([ad])  # doesn't matter but we need a log object
-    ad.hdr["BUNIT"] = unit
+    ad[0].unit = unit
     conserve = primitives_spect.conserve_or_interpolate(ad[0],
                     user_conserve=user_conserve,
                     flux_calibrated=flux_calibrated, log=p.log)

@@ -49,13 +49,13 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
         _ad = astrofaker.create('GMOS-S')
         _ad.add_extension(hdu, pixel_scale=1.0)
 
+        _ad[0].unit = "electron"
         _ad[0].data = _ad[0].data.ravel() + 1.
         _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
 
         _ad[0].phu.set('OBJECT', "DUMMY")
         _ad[0].phu.set('EXPTIME', 1.)
-        _ad[0].hdr.set('BUNIT', "electron")
         _ad[0].hdr.set('CTYPE1', "Wavelength")
         _ad[0].hdr.set('CUNIT1', "nm")
         _ad[0].hdr.set('CRPIX1', 1)

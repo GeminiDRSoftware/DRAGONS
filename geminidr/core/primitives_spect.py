@@ -2092,7 +2092,6 @@ class Spect(PrimitivesBASE):
                     log.stdinfo(f"{ad.filename}: Correcting for airmass of "
                                 f"{delta_airmass:5.3f}")
 
-
             for index, ext in enumerate(ad):
                 ext_std = std[min(index, len_std-1)]
                 extname = f"{ad.filename} extension {ext.id}"
@@ -2107,20 +2106,17 @@ class Spect(PrimitivesBASE):
                 std_physical_unit = (std_flux_unit.physical_unit if
                                      isinstance(std_flux_unit, u.LogUnit)
                                      else std_flux_unit)
-                try:
-                    sci_flux_unit = u.Unit(ext.hdr.get('BUNIT'))
-                except:
-                    sci_flux_unit = None
-                if not (std_physical_unit is None or sci_flux_unit is None):
-                    unit = sci_flux_unit * std_physical_unit / flux_units
+
+                if not (std_physical_unit is None or ext.unit is None):
+                    unit = ext.unit * std_physical_unit / flux_units
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
                                      format(extname, exptime))
                         ext /= exptime
-                        sci_flux_unit /= u.s
+                        ext.unit /= u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
                         log.warning(f"{extname} has incompatible units ('"
-                                    f"{sci_flux_unit}' and '{std_physical_unit}'"
+                                    f"{ext.unit}' and '{std_physical_unit}'"
                                     "). Cannot flux calibrate")
                         continue
                 else:
@@ -2163,14 +2159,15 @@ class Spect(PrimitivesBASE):
                     else:
                         sens_factor *= 10**(0.4 * delta_airmass * extinction_correction)
 
-                final_sens_factor = (sci_flux_unit * sens_factor / pixel_sizes).to(
+                final_sens_factor = (ext.unit * sens_factor / pixel_sizes).to(
                     final_units, equivalencies=u.spectral_density(waves)).value
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]
                 else:
                     ext *= final_sens_factor
-                ext.hdr['BUNIT'] = final_units
+
+                ext.unit = final_units
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -3335,8 +3332,8 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
     bool : whether or not to conserve the flux
     """
     ext_str = f"{ext.filename} extension {ext.id}"
-    ext_unit = ext.hdr["BUNIT"]
-    if ext_unit in (None, ""):
+
+    if ext.unit is u.dimensionless_unscaled:
         if user_conserve is None:
             this_conserve = not flux_calibrated
             log.stdinfo(f"{ext_str} has no units but "
@@ -3349,13 +3346,12 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
                             f"been flux calibrated but conserve={user_conserve}")
         return this_conserve
 
-    ext_unit = u.Unit(ext_unit)
     # Test for units like flux density
     units_imply_conserve = True
     for unit1 in ("W", "photon", "electron", "adu"):
         for unit2 in ("m2", ""):
             try:
-                ext_unit.to(u.Unit(f"{unit1} / ({unit2} nm)"),
+                ext.unit.to(u.Unit(f"{unit1} / ({unit2} nm)"),
                             equivalencies=u.spectral_density(1. * u.m))
             except u.UnitConversionError:
                 pass
@@ -3365,15 +3361,15 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
 
     if flux_calibrated and units_imply_conserve:
         log.warning(f"Possible unit mismatch for {ext_str}. File has been "
-                    f"flux calibrated but units are {ext_unit}")
+                    f"flux calibrated but units are {ext.unit}")
     if user_conserve is None:
         this_conserve = units_imply_conserve
         log.stdinfo(f"Setting conserve={this_conserve} for {ext_str} since "
-                    f"units are {ext_unit}")
+                    f"units are {ext.unit}")
     else:
         if user_conserve != units_imply_conserve:
             log.warning(f"conserve is set to {user_conserve} but the "
-                        f"units of {ext_str} are {ext_unit}")
+                        f"units of {ext_str} are {ext.unit}")
         this_conserve = user_conserve  # but do what we're told
     return this_conserve
 
