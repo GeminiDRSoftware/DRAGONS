@@ -248,8 +248,8 @@ class TraceAperturesTab(Fit1DPanel):
 
         self.rms_div = bm.Div(align=("start", "center"),
                               id="rms_div",
-                              max_width=220,
-                              width_policy="fit", )
+                              max_width=500,
+                              width_policy="fit")
 
         listeners = [lambda f: update_info(self.rms_div, f), ]
 
@@ -275,24 +275,17 @@ class TraceAperturesTab(Fit1DPanel):
         what are the fit parameter values.
         """
         # Create the reset button, add its functionality and add it to the layout
-        reset_button = bm.Button(align=('center', 'end'),
-                                 button_type='warning',
+        reset_button = bm.Button(align='start',
+                                 button_type='danger',
                                  label="Reset",
-                                 width_policy='min')
+                                 width=212,
+                                 sizing_mode='fixed')
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
                                 ' to their original values. Proceed?')
 
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
             reset_button, reset_dialog_message, self.reset_dialog_handler)
-
-        reset_button_row = row(
-            rms_div,
-            reset_button,
-            id="reset_button_row",
-            max_width=column_width,
-            width_policy="max",
-        )
 
         controller_help = bm.Div(id="control_help",
                                  name="control_help",
@@ -301,7 +294,8 @@ class TraceAperturesTab(Fit1DPanel):
                                  style={"color": "gray"})
 
         controls_ls = fit_pars_ui
-        controls_ls.append(reset_button_row)
+        controls_ls.append(rms_div)
+        controls_ls.append(reset_button)
         controls_ls.append(controller_help)
 
         controls_col = column(*controls_ls,
@@ -600,7 +594,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         # Edit elements
         filename_div = self.get_filename_div()
 
-        self.submit_button.align = ("end", "center")
+        self.submit_button.align = ("center", "center")
         self.submit_button.height_policy = "min"
         self.submit_button.width_policy = "min"
 
