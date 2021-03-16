@@ -116,16 +116,19 @@ def test_append_lowercase_name():
         ad.append(NDData(np.zeros((4, 5))), name='sci')
 
 
-def test_append_nddata():
+def test_append_nddata_and_units():
     shape = (4, 5)
     ad = astrodata.create({})
     ad.append(NDData(np.zeros(shape)))
     ad.append(NDData(np.zeros(shape), unit='electron'))
     ad.append(NDData(np.zeros(shape)), unit='electron')
 
-    assert ad[0].nddata.unit == 'adu'
-    assert ad[1].nddata.unit == 'electron'
-    assert ad[2].nddata.unit == 'electron'
+    assert ad[0].unit == 'adu'
+    assert ad[1].unit == 'electron'
+    assert ad[2].unit == 'electron'
+    assert ad.unit == ['adu', 'electron', 'electron']
+    ad[1].unit = 'adu'
+    assert ad.unit == ['adu', 'adu', 'electron']
 
 
 def test_append_arrays(tmp_path):

@@ -444,6 +444,20 @@ class AstroData:
     def wcs(self, value):
         self.nddata.wcs = value
 
+    @property
+    @returns_list
+    def unit(self):
+        """
+        A list of `astropy.units.Unit` objects (or a single object if this
+        is a single slice) attached to the science data, for each extension.
+        """
+        return [nd.unit for nd in self._nddata]
+
+    @unit.setter
+    @assign_only_single_slice
+    def unit(self, value):
+        self.nddata.unit = value
+
     def __iter__(self):
         if self.is_single:
             yield self
