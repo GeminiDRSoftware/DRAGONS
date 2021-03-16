@@ -33,7 +33,7 @@ from .gemini.lookups import keyword_comments
 from .gemini.lookups import timestamp_keywords
 from .gemini.lookups.source_detection import sextractor_dict
 
-from recipe_system.cal_service import init_calibration_databases, calurl_dict
+from recipe_system.cal_service import init_calibration_databases
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.config import load_config
 
@@ -174,7 +174,6 @@ class PrimitivesBASE:
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = dict(uparms) if uparms else {}
-        self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
