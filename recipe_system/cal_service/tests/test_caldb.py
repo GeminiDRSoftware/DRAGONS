@@ -2,11 +2,18 @@
 import pytest
 import io
 import os
+from glob import glob
+
+import astrodata, gemini_instruments
 
 from recipe_system import cal_service
 from recipe_system.config import globalConf
 
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+
+CAL_DICT = {"N20180303S0131_nopixels.fits":
+                {"processed_bias": "N20180302S0528_bias_nopixels.fits"}}
+
 
 @pytest.fixture
 def standard_config():
@@ -17,7 +24,7 @@ def standard_config():
 
 def cwd_config():
     """Populate globalConf object with a LocalDB in cwd"""
-    f = io.StringIO(f"[calibs]\ndatabases = {os.getcwd()}/\n")
+    f = io.StringIO(f"[calibs]\ndatabases = {os.getcwd()}/cal_manager.db\n")
     globalConf.read_file(f)
 
 
@@ -41,18 +48,46 @@ def test_config_parsing(standard_config):
 
 
 @pytest.mark.preprocessed_data
-def test_api_store(path_to_inputs, change_working_dir):
+def test_api_store_and_delete(path_to_inputs, change_working_dir):
     with change_working_dir():
         cwd_config()
         caldb = cal_service.set_local_database()
         caldb.init()
-        bias_file = os.path.join(path_to_inputs,
-                                 "N20201022S0160_bias_nopixels.fits")
-        caldb.add_cal(bias_file)
+
+        # Any file will do, take the first
+        cal_file = sorted(glob(os.path.join(path_to_inputs,
+                                            "*bias*.fits")))[0]
+        cal_name = os.path.basename(cal_file)
+        caldb.add_cal(cal_file)
         assert len(list(caldb.list_files())) == 1
-        assert list(caldb.list_files())[0].name == os.path.basename(bias_file)
+        assert list(caldb.list_files())[0].name == cal_name
+
+        # Now remove it
+        caldb.remove_cal(cal_name)
+        assert len(list(caldb.list_files())) == 0
+
+        # Clean up
+        os.remove(caldb.name)
 
 
 @pytest.mark.preprocessed_data
 def test_retrieval(path_to_inputs, change_working_dir):
-    pass
+    with change_working_dir():
+        cwd_config()
+        caldb = cal_service.set_local_database()
+
+        for sci, cals in CAL_DICT.items():
+            caldb.init()
+            for cal in cals.values():
+                cal_file = os.path.join(path_to_inputs, cal)
+                caldb.add_cal(cal_file)
+
+            ad_sci = astrodata.open(os.path.join(path_to_inputs, sci))
+            for caltype, calfile in cals.items():
+                cal_return = caldb.get_calibrations([ad_sci], caltype=caltype)
+                assert len(cal_return) == 1
+                assert cal_return.files[0] == cal_file
+                assert cal_return.origins[0] == caldb.name
+
+            # Delete caldb
+            os.remove(caldb.name)
