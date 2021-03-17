@@ -9,6 +9,7 @@ import os
 import re
 import warnings
 from bisect import bisect
+from copy import copy
 from functools import reduce
 from importlib import import_module
 from itertools import product as cart_product
@@ -1755,6 +1756,230 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
+    def flagCosmicRays(self, adinputs=None, **params):
+        """
+        Detect and clean cosmic rays in a 2D wavelength-dispersed image,
+        using the well-known LA Cosmic algorithm of van Dokkum (2001)*, as
+        implemented in McCully's optimized version for Python, "astroscrappy"+.
+
+        * LA Cosmic: http://www.astro.yale.edu/dokkum/lacosmic
+        + astroscrappy: https://github.com/astropy/astroscrappy
+
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files.
+
+        x_order, y_order : int or None, optional
+            Order for fitting and subtracting object continuum and sky line
+            models, prior to running the main cosmic ray detection algorithm.
+            When None, defaults are used, according to the image size (as in
+            the IRAF task gemcrspec). When 0, no fit is done.
+
+        bitmask : int, optional
+            Bits in the input data quality `flags` that are to be used to
+            exclude bad pixels from cosmic ray detection and cleaning. Default
+            65535 (all non-zero bits, up to 16 planes).
+
+        sigclip : float, optional
+            Laplacian-to-noise limit for cosmic ray detection. Lower values
+            will flag more pixels as cosmic rays. Default: 4.5.
+
+        sigfrac : float, optional
+            Fractional detection limit for neighboring pixels. For cosmic ray
+            neighbor pixels, a lapacian-to-noise detection limit of
+            sigfrac * sigclip will be used. Default: 0.3.
+
+        objlim : float, optional
+            Minimum contrast between Laplacian image and the fine structure
+            image.  Increase this value if cores of bright stars are flagged
+            as cosmic rays. Default: 5.0.
+
+        pssl : float, optional
+            Previously subtracted sky level in ADU. We always need to work in
+            electrons for cosmic ray detection, so we need to know the sky
+            level that has been subtracted so we can add it back in.
+            Default: 0.0.
+
+        niter : int, optional
+            Number of iterations of the LA Cosmic algorithm to perform.
+            Default: 4.
+
+        sepmed : boolean, optional
+            Use the separable median filter instead of the full median filter.
+            The separable median is not identical to the full median filter,
+            but they are approximately the same and the separable median filter
+            is significantly faster and still detects cosmic rays well.
+            Default: True
+
+        cleantype : {'median', 'medmask', 'meanmask', 'idw'}, optional
+            Set which clean algorithm is used:
+            'median': An umasked 5x5 median filter
+            'medmask': A masked 5x5 median filter
+            'meanmask': A masked 5x5 mean filter
+            'idw': A masked 5x5 inverse distance weighted interpolation
+            Default: "meanmask".
+
+        fsmode : {'median', 'convolve'}, optional
+            Method to build the fine structure image:
+            'median': Use the median filter in the standard LA Cosmic algorithm
+            'convolve': Convolve the image with the psf kernel to calculate the
+            fine structure image.
+            Default: 'median'.
+
+        psfmodel : {'gauss', 'gaussx', 'gaussy', 'moffat'}, optional
+            Model to use to generate the psf kernel if fsmode == 'convolve' and
+            psfk is None. The current choices are Gaussian and Moffat profiles.
+            'gauss' and 'moffat' produce circular PSF kernels. The 'gaussx' and
+            'gaussy' produce Gaussian kernels in the x and y directions
+            respectively. Default: "gauss".
+
+        psffwhm : float, optional
+            Full Width Half Maximum of the PSF to use to generate the kernel.
+            Default: 2.5.
+
+        psfsize : int, optional
+            Size of the kernel to calculate. Returned kernel will have size
+            psfsize x psfsize. psfsize should be odd. Default: 7.
+
+        psfbeta : float, optional
+            Moffat beta parameter. Only used if fsmode=='convolve' and
+            psfmodel=='moffat'. Default: 4.765.
+
+        verbose : boolean, optional
+            Print to the screen or not. Default: False.
+
+        debug : bool
+            Enable plots for debugging and store object and sky fits in the
+            ad objects.
+
+        """
+        from astroscrappy import detect_cosmics
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        bitmask = params.pop('bitmask')
+        debug = params.pop('debug')
+        suffix = params.pop('suffix')
+        x_order_in = params.pop('x_order')
+        y_order_in = params.pop('y_order')
+
+        fit_1D_params = dict(
+            plot=debug,
+            niter=params.pop('bkgfit_niter'),
+            sigma_lower=params.pop('bkgfit_lsigma'),
+            sigma_upper=params.pop('bkgfit_hsigma'),
+        )
+
+        for ad in adinputs:
+            is_in_adu = ad[0].is_in_adu()
+            if not is_in_adu:
+                # astroscrappy takes data in adu
+                for ext in ad:
+                    ext.divide(ext.gain())
+
+            # tile extensions by CCD to limit the number of edges
+            array_info = gt.array_information(ad)
+            ad_tiled = self.tileArrays([ad], tile_all=False)[0]
+
+            for ext in ad_tiled:
+                dispaxis = 2 - ext.dispersion_axis()
+
+                # Use default orders from gemcrspec (from Bryan):
+                ny, nx = ext.shape
+                x_order = 9 if x_order_in is None else x_order_in
+                y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
+                           if y_order_in is None else y_order_in)
+
+                if ext.mask is not None:
+                    data = np.ma.array(ext.data, mask=ext.mask != 0)
+                    mask = (ext.mask & bitmask) > 0
+                    weights = (ext.mask == 0).astype(int)
+                else:
+                    data = ext.data
+                    mask = None
+                    weights = None
+
+                # Fit the object spectrum:
+                if x_order > 0:
+                    objfit = fit_1D(data,
+                                    function='legendre',
+                                    axis=dispaxis,
+                                    order=x_order,
+                                    weights=weights,
+                                    **fit_1D_params).evaluate()
+                    if debug:
+                        ext.OBJFIT = objfit.copy()
+                else:
+                    objfit = np.zeros(ext.shape)
+
+                input_copy = data - objfit
+
+                # Fit sky lines:
+                if y_order > 0:
+                    skyfit = fit_1D(input_copy, function='legendre',
+                                    axis=1 - dispaxis,
+                                    order=y_order,
+                                    weights=weights,
+                                    **fit_1D_params).evaluate()
+
+                    # keep combined fits for later restoration
+                    objfit += skyfit
+                    if debug:
+                        ext.SKYFIT = skyfit
+                    skyfit = None
+
+                input_copy = None
+
+                # Run astroscrappy's detect_cosmics. We use the variance array
+                # because it takes into account the different read noises if
+                # the data has been tiled
+                crmask, _ = detect_cosmics(ext.data,
+                                           inmask=mask,
+                                           inbkg=objfit,
+                                           invar=ext.variance,
+                                           gain=ext.gain(),
+                                           satlevel=ext.saturation_level(),
+                                           **params)
+
+                # Set the cosmic_ray flags, and create the mask if needed
+                if ext.mask is None:
+                    ext.mask = np.where(crmask, DQ.cosmic_ray, DQ.good)
+                else:
+                    ext.mask[crmask] = DQ.cosmic_ray
+
+                if debug:
+                    plot_cosmics(ext, crmask)
+
+            # Set flags in the original (un-tiled) ad
+            if ad_tiled is not ad:
+                xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+                for ext_tiled, indices in zip(ad_tiled, array_info.extensions):
+                    tiled_arrsec = ext_tiled.array_section()
+                    for i in indices:
+                        ext = ad[i]
+                        arrsec = ext.array_section()
+                        slice_ = (slice((arrsec.y1 - tiled_arrsec.y1) // ybin,
+                                        (arrsec.y2 - tiled_arrsec.y1) // ybin),
+                                  slice((arrsec.x1 - tiled_arrsec.x1) // xbin,
+                                        (arrsec.x2 - tiled_arrsec.x1) // xbin))
+
+                        ext.mask = ext_tiled.mask[slice_]
+
+                        if debug:
+                            ext.OBJFIT = ext_tiled.OBJFIT[slice_]
+                            ext.SKYFIT = ext_tiled.SKYFIT[slice_]
+
+            # convert back to electron if needed
+            if not is_in_adu:
+                for ext in ad:
+                    ext.multiply(ext.gain())
+
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
     def fluxCalibrate(self, adinputs=None, **params):
         """
         Performs flux calibration multiplying the input signal by the
@@ -2522,8 +2747,6 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
-
-
     def traceApertures(self, adinputs=None, **params):
         """
         Traces apertures listed in the `.APERTURE` table along the dispersion
@@ -3249,3 +3472,29 @@ def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
         fake_arc += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
     p = correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
     return c0 - 2 * p * c1/(len_data - 1)
+
+
+def plot_cosmics(ext, crmask):
+    from astropy.visualization import ZScaleInterval, imshow_norm
+
+    fig, axes = plt.subplots(5, 1, figsize=(15, 5*2), sharex=True, sharey=True)
+    imgs = (ext.data, ext.OBJFIT, ext.SKYFIT,
+            ext.data - (ext.OBJFIT + ext.SKYFIT), crmask)
+    titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')
+    mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
+
+    for ax, data, title in zip(axes, imgs, titles):
+        if title != 'crmask':
+            cmap = 'Greys_r'
+            interval = ZScaleInterval()
+            data = np.ma.array(data, mask=mask)
+        else:
+            cmap = 'Greys'
+            interval = None
+
+        cmap = copy(plt.get_cmap(cmap))
+        cmap.set_bad('r')
+        imshow_norm(data, ax=ax, origin='lower', interval=interval, cmap=cmap)
+        ax.set_title(title)
+
+    plt.show()
