@@ -30,7 +30,7 @@ class CCD(PrimitivesBASE):
         super().__init__(adinputs, **kwargs)
         self._param_update(parameters_ccd)
 
-    def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_bias=True):
+    def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_cal=None):
         """
         The biasCorrect primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
@@ -44,14 +44,14 @@ class CCD(PrimitivesBASE):
             suffix to be added to output files
         bias: str/list of str
             bias(es) to subtract
-        do_bias: bool
+        do_cal: str
             perform bias subtraction?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if not do_bias:
+        if do_cal == 'skip':
             log.warning("Bias correction has been turned off.")
             return adinputs
 
@@ -70,7 +70,7 @@ class CCD(PrimitivesBASE):
                 continue
 
             if bias is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "bias was specified".format(ad.filename))
                     continue

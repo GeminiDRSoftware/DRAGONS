@@ -256,7 +256,7 @@ def create_inputs_recipe():
         p.addVAR(read_noise=True, poisson_noise=False)
         p.overscanCorrect(function="spline", high_reject=3., low_reject=3.,
                           nbiascontam=0, niterate=2, order=None)
-        p.biasCorrect(bias=bias_master, do_bias=True)
+        p.biasCorrect(bias=bias_master, do_bias='procmode')
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
         p.flatCorrect(flat=flat_master)

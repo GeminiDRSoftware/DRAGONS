@@ -364,47 +364,47 @@ class Spect(PrimitivesBASE):
                     spectrum = Spek1D(ext) / (exptime * u.s)
                     wave, zpt, zpt_err = [], [], []
 
-                # Compute values in counts / (exptime * flux_density * bandpass)
-                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                            spec_table['WIDTH'].quantity,
-                                            spec_table['FLUX'].quantity):
-                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                    # We don't want a single bad pixel to ruin an entire
-                    # bandpass, so exclude pixels with the DQ.bad_pixel bit
-                    # set and assign them the average of the other pixels
-                    data, mask, variance = spectrum.signal(
-                        region, interpolate=DQ.bad_pixel)
-                    if mask == 0 and fluxdens > 0:
-                        # Regardless of whether FLUX column is f_nu or f_lambda
-                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                        if data > 0:
-                            wave.append(w0)
-                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                            zpt.append(u.Magnitude(flux / data))
-                            if variance is not None:
-                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
-                wave = array_from_list(wave, unit=u.nm)
-                zpt = array_from_list(zpt)
-                weights = 1./array_from_list(zpt_err) if zpt_err else None
+                    # Compute values in counts / (exptime * flux_density * bandpass)
+                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                                spec_table['WIDTH'].quantity,
+                                                spec_table['FLUX'].quantity):
+                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                        # We don't want a single bad pixel to ruin an entire
+                        # bandpass, so exclude pixels with the DQ.bad_pixel bit
+                        # set and assign them the average of the other pixels
+                        data, mask, variance = spectrum.signal(
+                            region, interpolate=DQ.bad_pixel)
+                        if mask == 0 and fluxdens > 0:
+                            # Regardless of whether FLUX column is f_nu or f_lambda
+                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                            if data > 0:
+                                wave.append(w0)
+                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                                zpt.append(u.Magnitude(flux / data))
+                                if variance is not None:
+                                    zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                    wave = array_from_list(wave, unit=u.nm)
+                    zpt = array_from_list(zpt)
+                    weights = 1./array_from_list(zpt_err) if zpt_err else None
 
-                # Correct for atmospheric extinction. This correction makes
-                # the real data brighter, so makes the zpt magnitude more +ve
-                # (since "data" is in the denominator)
-                if airmass0 and site is not None and airmass is not None:
-                    zpt += u.Magnitude(airmass *
-                                       extinct.extinction(wave, site=site))
+                    # Correct for atmospheric extinction. This correction makes
+                    # the real data brighter, so makes the zpt magnitude more +ve
+                    # (since "data" is in the denominator)
+                    if airmass0 and site is not None and airmass is not None:
+                        zpt += u.Magnitude(airmass *
+                                           extinct.extinction(wave, site=site))
 
-                all_exts.append(ext)
-                all_shapes.append(ext.shape[0])
-                all_pixels.append(wave.value)
-                all_masked_data.append(zpt.value)
-                all_weights.append(weights)
-                all_fp_init.append(fit_1D.translate_params(params))
+                    all_exts.append(ext)
+                    all_shapes.append(ext.shape[0])
+                    all_pixels.append(wave.value)
+                    all_masked_data.append(zpt.value)
+                    all_weights.append(weights)
+                    all_fp_init.append(fit_1D.translate_params(params))
 
-                calculated = True
+                    calculated = True
 
-                # ******************************************************************************************
+                # ************************************************************
                 config = self.params[self.myself()]
                 config.update(**params)
 
@@ -721,6 +721,11 @@ class Spect(PrimitivesBASE):
         arc = params["arc"]
         order = params["order"]
         subsample = params["subsample"]
+        do_cal = params["do_cal"]
+
+        if do_cal == 'skip':
+            log.warning('Distortion correction has been turned off.')
+            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
@@ -737,7 +742,7 @@ class Spect(PrimitivesBASE):
 
             len_ad = len(ad)
             if arc is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     # TODO: Think about this when we have MOS/XD/IFU
                     if len(ad) == 1:
                         log.warning("No changes will be made to {}, since no "
@@ -2014,10 +2019,15 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         std = params["standard"]
         final_units = params["units"]
+        do_cal = params["do_cal"]
 
         # Expectation is that the SENSFUNC table will be in units
         # like (electron/s) / (W/m^2)
         flux_units = u.Unit("W m-2")
+
+        if do_cal == 'skip':
+            log.warning("Flux calibration has been turned off.")
+            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if std is None:
@@ -2034,7 +2044,7 @@ class Spect(PrimitivesBASE):
                 continue
 
             if std is None:
-                if 'sq' in self.mode:
+                if 'sq' in self.mode and do_cal != 'force':
                     raise OSError('No processed standard listed for {}'.
                                   format(ad.filename))
                 else:

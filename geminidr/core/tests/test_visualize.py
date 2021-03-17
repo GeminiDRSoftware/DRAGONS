@@ -176,16 +176,20 @@ def create_inputs():
         r.runr()
         master_arc = r.output_filenames.pop()
 
+
+        do_cal_bias = 'skip' if master_bias is None else 'procmode'
+        do_cal_flat = 'skip' if master_quartz is None else 'procmode'
+
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = GMOSLongslit(raw_ads)
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
         p.overscanCorrect()
-        p.biasCorrect(do_bias=master_bias is not None, bias=master_bias)
+        p.biasCorrect(do_cal=do_cal_bias, bias=master_bias)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        p.flatCorrect(do_flat=master_quartz is not None, flat=master_quartz)
+        p.flatCorrect(do_cal=do_cal_flat, flat=master_quartz)
         p.QECorrect(arc=master_arc)
         p.distortionCorrect(arc=master_arc)
         p.findSourceApertures(max_apertures=3)
