@@ -82,7 +82,7 @@ def processed_slit_illum(change_working_dir, path_to_inputs, request):
         reduce.files.extend([twi_path])
         reduce.mode = 'sq'
         reduce.recipename = 'makeProcessedSlitIllum'
-        reduce.ucals = normalize_ucals(reduce.files, calibration_files)
+        reduce.ucals = normalize_ucals(calibration_files)
         reduce.runr()
 
         _processed_twi_filename = reduce.output_filenames.pop()

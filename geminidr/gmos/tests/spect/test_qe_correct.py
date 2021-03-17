@@ -753,7 +753,7 @@ def create_inputs_recipe(use_branch_name=False):
         logutils.config(file_name='log_flat_{}.txt'.format(data_label))
         flat_reduce = Reduce()
         flat_reduce.files.extend(flat_paths)
-        flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
+        flat_reduce.ucals = normalize_ucals(calibration_files)
         flat_reduce.runr()
         flat_master = flat_reduce.output_filenames.pop()
         calibration_files.append('processed_flat:{}'.format(flat_master))
@@ -762,7 +762,7 @@ def create_inputs_recipe(use_branch_name=False):
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
         arc_reduce = Reduce()
         arc_reduce.files.extend(arc_paths)
-        arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+        arc_reduce.ucals = normalize_ucals(calibration_files)
 
         os.chdir(input_path)
         arc_reduce.runr()

@@ -24,9 +24,7 @@ def reduce(p):
     p.ADUToElectrons()
     p.addVAR(read_noise=True, poisson_noise=True)
     p.nonlinearityCorrect()
-    p.getProcessedDark()
     p.darkCorrect()
-    p.getProcessedFlat()
     p.flatCorrect()
     p.flushPixels()
     p.separateSky()
@@ -61,7 +59,6 @@ def makeSkyFlat(p):
     p.ADUToElectrons()
     p.addVAR(read_noise=True, poisson_noise=True)
     p.nonlinearityCorrect()
-    p.getProcessedDark()
     p.darkCorrect()
     # Make a "fastsky" by combining frames
     p.stackFrames(operation='median', scale=True, outstream='fastsky')

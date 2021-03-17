@@ -35,8 +35,8 @@ class CCD(PrimitivesBASE):
         The biasCorrect primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
         frames. The variance and data quality extension will be updated, if
-        they exist. If no bias is provided, getProcessedBias will be called
-        to ensure a bias exists for every adinput.
+        they exist. If no bias is provided, the calibration database(s) will
+        be queried.
 
         Parameters
         ----------
@@ -56,17 +56,16 @@ class CCD(PrimitivesBASE):
             return adinputs
 
         if bias is None:
-            self.getProcessedBias(adinputs, refresh=False)
-            bias_list = self._get_cal(adinputs, 'processed_bias')
+            bias_list = self.caldb.get_processed_bias(adinputs)
         else:
-            bias_list = bias
+            bias_list = (bias, None)
 
-        # Provide a bias AD object for every science frame
-        for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):
+        # Provide a bias AD object for every science frame, and an origin
+        for ad, bias, origin in zip(*gt.make_lists(adinputs, *bias_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by biasCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "biasCorrect. Continuing.")
                 continue
 
             if bias is None:
@@ -75,8 +74,9 @@ class CCD(PrimitivesBASE):
                                 "bias was specified".format(ad.filename))
                     continue
                 else:
-                    raise OSError('No processed bias listed for {}'.
-                                  format(ad.filename))
+                    log.warning(f"{ad.filename}: no bias was specified. "
+                                "Continuing.")
+                    continue
 
             try:
                 gt.check_inputs_match(ad, bias, check_filter=False,
@@ -87,8 +87,9 @@ class CCD(PrimitivesBASE):
                 gt.check_inputs_match(ad, bias, check_filter=False,
                                       check_units=True)
 
-            log.fullinfo('Subtracting this bias from {}:\n{}'.
-                         format(ad.filename, bias.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: subtracting the bias "
+                         f"{bias.filename}{origin_str}")
             ad.subtract(bias)
 
             # Record bias used, timestamp, and update filename
