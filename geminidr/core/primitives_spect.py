@@ -2112,8 +2112,7 @@ class Spect(PrimitivesBASE):
                     if unit.is_equivalent(u.s):
                         log.fullinfo("Dividing {} by exposure time of {} s".
                                      format(extname, exptime))
-                        ext /= exptime
-                        ext.unit /= u.s
+                        ext /= exptime * u.s
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
                         log.warning(f"{extname} has incompatible units ('"
                                     f"{ext.unit}' and '{std_physical_unit}'"
@@ -2159,15 +2158,19 @@ class Spect(PrimitivesBASE):
                     else:
                         sens_factor *= 10**(0.4 * delta_airmass * extinction_correction)
 
-                final_sens_factor = (ext.unit * sens_factor / pixel_sizes).to(
-                    final_units, equivalencies=u.spectral_density(waves)).value
-
+                sens_factor /= pixel_sizes
                 if ndim == 2 and dispaxis == 0:
-                    ext *= final_sens_factor[:, np.newaxis]
-                else:
-                    ext *= final_sens_factor
+                    sens_factor = sens_factor[:, np.newaxis]
 
-                ext.unit = final_units
+                new_nddata = ext.nddata.multiply(sens_factor).convert_unit_to(
+                    final_units, equivalencies=u.spectral_density(waves))
+                # Replace manually data and uncertainty... Not really optimal
+                # but 1) we don't have a way to replace a NDData object in an
+                # AstroData one (as there may be other references), and 2)
+                ext.data = new_nddata.data
+                ext.unit = new_nddata.unit
+                ext.uncertainty.array = new_nddata.uncertainty.array
+                ext.uncertainty.unit = new_nddata.uncertainty.unit
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

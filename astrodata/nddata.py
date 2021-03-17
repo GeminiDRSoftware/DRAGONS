@@ -381,6 +381,55 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         else:
             self._unit = u.Unit(value)
 
+    def convert_unit_to(self, unit, equivalencies=[]):
+        """
+        Returns a new `NDData` object whose values have been converted
+        to a new unit.
+
+        Copied from Astropy's NDDataArray.
+
+        Parameters
+        ----------
+        unit : `astropy.units.UnitBase` instance or str
+            The unit to convert to.
+
+        equivalencies : list of equivalence pairs, optional
+           A list of equivalence pairs to try if the units are not
+           directly convertible.  See :ref:`unit_equivalencies`.
+
+        Returns
+        -------
+        result : `~astropy.nddata.NDData`
+            The resulting dataset
+
+        Raises
+        ------
+        UnitsError
+            If units are inconsistent.
+
+        """
+        if self.unit is None:
+            raise ValueError("No unit specified on source data")
+        data = self.unit.to(unit, self.data, equivalencies=equivalencies)
+        if self.uncertainty is not None:
+            uncertainty_values = self.unit.to(unit, self.uncertainty.array,
+                                              equivalencies=equivalencies)
+            # should work for any uncertainty class
+            uncertainty = self.uncertainty.__class__(uncertainty_values)
+        else:
+            uncertainty = None
+        if self.mask is not None:
+            new_mask = self.mask.copy()
+        else:
+            new_mask = None
+        # Call __class__ in case we are dealing with an inherited type
+        result = self.__class__(data, uncertainty=uncertainty,
+                                mask=new_mask,
+                                wcs=self.wcs,
+                                meta=self.meta, unit=unit)
+
+        return result
+
     def set_section(self, section, input):
         """
         Sets only a section of the data. This method is meant to prevent
