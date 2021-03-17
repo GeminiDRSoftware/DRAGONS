@@ -200,8 +200,8 @@ The primitive class signature must be able to accept this instantiation call::
     ucals:    Python dict with format
                  {(<data_label>, <type_of_calib>): <calib_filename>},
                  one key-value pair for each input, with the type of
-                 calibration matching one from the list in
-                 cal_service.transport_request.CALTYPES.
+                 calibration matching one from the keys in
+                 cal_service.caldb.REQUIRED_TAG_DICT.
     uparms:   Python dict with format ``{'<prim>:<param>': <value>}``
     upload:   Python list of any combination of 'calibs', 'metrics', or
                  'science'.
