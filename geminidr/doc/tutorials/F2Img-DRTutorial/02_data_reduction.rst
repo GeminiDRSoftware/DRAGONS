@@ -94,30 +94,30 @@ calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+In ``~/.dragons/``, create or edit the configuration file ``dragons`` as
 follow:
 
 .. code-block:: none
 
     [calibs]
-    standalone = True
-    database_dir = ${path_to_my_data}/f2img_tutorial/playground
+    databases = ${path_to_my_data}/f2img_tutorial/playground/cal_manager.db get
 
-This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibrations we are going to
-send to it.
+This simply tells the system where to put the calibration database that
+will keep track of the processed calibrations we are going to send to it and
+that it should be used for retrieval whenever a processed calibration is
+required.
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
-   Also, mind the dot in ``.geminidr``.
+   Also, mind the dot in ``.dragons``.
 
-Then initialize the calibration database:
+The database file will be automatically created and the database initialized
+when you first start the reduction. However, you can manually initialize it:
 
 .. code-block:: bash
 
     caldb init
 
-That's it! It is ready to use!   You can check the configuration and confirm
-the setting with ``caldb config``.
+That's it! It is ready to use!
 
 You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and
@@ -281,8 +281,9 @@ Here is how you reduce the 120 s dark data into a master dark:
 The ``@`` character before the name of the input file is the "at-file" syntax.
 More details can be found in the |atfile| documentation.
 
-The master dark is added to the local calibration manager using the
-following command:
+Since the local database has not been configured to automatically store
+processed calibrations, the master dark must be added to the local calibration
+manager using the following command:
 
 .. code-block:: bash
 

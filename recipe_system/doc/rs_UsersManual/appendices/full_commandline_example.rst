@@ -18,13 +18,12 @@ beginning to end.
     $ dataselect ../raw/*.fits --expr='object=="SN2014J"' -o target.lis
 
 2. Set the calibration manager and database.  First, create or edit the
-   ``~/.geminidr/rsys.cfg`` to look like this:
+   ``~/.dragons/dragonsrc`` to look like this:
 
    ::
 
     [calibs]
-    standalone = True
-    database_dir = <path_to>/redux_dir/
+    databases = <path_to>/redux_dir/dragons.db get store
 
    Then initialize the calibration database.
 

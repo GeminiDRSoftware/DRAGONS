@@ -88,11 +88,11 @@ class Image(Preprocess, Register, Resample):
                 scale = False
                 log.stdinfo("Using fringe frame in 'fringe' stream. "
                             "Setting scale=False")
+                fringe_list = (fringe_list[0], "stream")
             except (KeyError, AssertionError):
-                self.getProcessedFringe(adinputs, refresh=False)
-                fringe_list = self._get_cal(adinputs, "processed_fringe")
+                fringe_list = self.caldb.get_processed_fringe(adinputs)
         else:
-            fringe_list = fringe
+            fringe_list = (fringe, None)
 
         # Usual stuff to ensure that we have an iterable of the correct length
         # for the scale factors regardless of what the input is
@@ -107,33 +107,29 @@ class Image(Preprocess, Register, Resample):
                 factors = iter(scale_factor * len(adinputs))
 
         # Get a fringe AD object for every science frame
-        for ad, fringe, correct in zip(*(gt.make_lists(adinputs, fringe_list, force_ad=True)
-                                      + [needs_correction])):
+        for ad, fringe, origin, correct in zip(*gt.make_lists(
+                adinputs, *fringe_list, needs_correction, force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractFringe".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "fringeCorrect. Continuing.")
                 continue
 
             # Logic to deal with different exposure times where only
             # some inputs might require fringe correction
             if do_fringe is None and not correct:
-                log.stdinfo("{} does not require a fringe correction".
-                            format(ad.filename))
+                log.stdinfo(f"{ad.filename} does not require a fringe correction")
                 ad.update_filename(suffix=params["suffix"], strip=True)
                 continue
 
             # At this point, we definitely want to do a fringe correction
             # so we'd better have a fringe frame!
             if fringe is None:
-                if 'sq' not in self.mode:
-                    log.warning("No changes will be made to {}, since no "
-                                "fringe frame has been specified".
-                                format(ad.filename))
-                    continue
+                if 'sq' in self.mode:
+                    raise OSError(f"No processed fringe listed for {ad.filename}")
                 else:
-                    raise OSError("No processed fringe listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no fringe was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -144,6 +140,9 @@ class Image(Preprocess, Register, Resample):
                 gt.check_inputs_match(ad, fringe)
 
             #
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the fringe frame "
+                         f"{fringe.filename}{origin_str}")
             matched_groups = (ad.group_id() == fringe.group_id())
             if scale or (scale is None and not matched_groups):
                 factor = next(factors)

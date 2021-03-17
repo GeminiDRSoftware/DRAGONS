@@ -388,8 +388,8 @@ class Preprocess(PrimitivesBASE):
         This primitive will subtract each SCI extension of the inputs by those
         of the corresponding dark. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the subtraction on the
-        data. If no dark is provided, getProcessedDark will be called to
-        ensure a dark exists for every adinput.
+        data. If no dark is provided, the calibration database(s) will be
+        queried.
 
         Parameters
         ----------
@@ -409,28 +409,25 @@ class Preprocess(PrimitivesBASE):
             return adinputs
 
         if dark is None:
-            self.getProcessedDark(adinputs, refresh=False)
-            dark_list = self._get_cal(adinputs, 'processed_dark')
+            dark_list = self.caldb.get_processed_dark(adinputs)
         else:
-            dark_list = dark
+            dark_list = (dark, None)
 
-        # Provide a dark AD object for every science frame
-        for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
-                                           force_ad=True)):
+        # Provide a dark AD object for every science frame, and an origin
+        for ad, dark, origin in zip(*gt.make_lists(adinputs, *dark_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by darkCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "darkCorrect. Continuing.")
                 continue
 
             if dark is None:
-                if 'sq' not in self.mode:
-                    log.warning("No changes will be made to {}, since no "
-                                "dark was specified".format(ad.filename))
-                    continue
+                if 'sq' in self.mode:
+                    raise OSError(f"No processed dark listed for {ad.filename}")
                 else:
-                    raise OSError("No processed dark listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no dark was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching binning, shapes & units
             # TODO: Check exposure time?
@@ -445,9 +442,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, dark, check_filter=False,
                                       check_units=True)
 
-            log.fullinfo("Subtracting the dark ({}) from the input "
-                         "AstroData object {}".
-                         format(dark.filename, ad.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.fullinfo(f"{ad.filename}: subtracting the dark "
+                         f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename
@@ -700,8 +697,8 @@ class Preprocess(PrimitivesBASE):
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the division on the data.
-        If no flatfield is provided, getProcessedFlat will be called
-        to ensure a flat exists for every adinput.
+        If no flatfield is provided, the calibration database(s) will be
+        queried.
 
         If the flatfield has had a QE correction applied, this information is
         copied into the science header to avoid the correction being applied
@@ -726,29 +723,25 @@ class Preprocess(PrimitivesBASE):
             return adinputs
 
         if flat is None:
-            self.getProcessedFlat(adinputs, refresh=False)
-            flat_list = self._get_cal(adinputs, 'processed_flat')
+            flat_list = self.caldb.get_processed_flat(adinputs)
         else:
-            flat_list = flat
+            flat_list = (flat, None)
 
-        # Provide a flatfield AD object for every science frame
-        for ad, flat in zip(*gt.make_lists(adinputs, flat_list,
-                                           force_ad=True)):
+        # Provide a bflat AD object for every science frame, and an origin
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by flatCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "flatCorrect. Continuing.")
                 continue
 
             if flat is None:
-                if 'sq' not in self.mode:
-                    log.warning("No changes will be made to {}, since no "
-                                "flatfield has been specified".
-                                format(ad.filename))
-                    continue
+                if 'sq' in self.mode:
+                    raise OSError(f"No processed flat listed for {ad.filename}")
                 else:
-                    raise OSError("No processed flat listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no flat was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -763,8 +756,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, flat)
 
             # Do the division
-            log.fullinfo("Dividing the input AstroData object {} by this "
-                         "flat:\n{}".format(ad.filename, flat.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: dividing by the flat "
+                         f"{flat.filename}{origin_str}")
             ad.divide(flat)
 
             # Update the header and filename, copying QECORR keyword from flat

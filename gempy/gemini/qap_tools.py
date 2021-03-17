@@ -16,6 +16,7 @@ from concurrent.futures import TimeoutError
 
 from astrodata import __version__ as ad_version
 from recipe_system.adcc.servers.eventsManager import EventsManager
+from recipe_system.cal_service.calurl_dict import calurl_dict
 
 from ..utils import logutils
 
@@ -127,7 +128,7 @@ def status_report(status):
 
     return
 
-def fitsstore_report(ad, metric, info_list, calurl_dict, mode, upload=False):
+def fitsstore_report(ad, metric, info_list, mode, upload=False):
     """
     Parameters
     ----------
@@ -140,10 +141,7 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, mode, upload=False):
     info_list: list
         the QA info, one dict item per extension
 
-    calurl_dict: dict
-        information about the FITSStore (needed if report gets sent)
-
-    mode: <list>
+    mode: str
         A string indicating recipe mode ('qa', 'sq', or 'ql')
 
     upload: <bool>
@@ -202,10 +200,10 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, mode, upload=False):
     qareport["qametric"] = qametric_list
 
     if upload:
-        send_fitsstore_report(qareport, calurl_dict)
+        send_fitsstore_report(qareport)
     return qareport
 
-def send_fitsstore_report(qareport, calurl_dict):
+def send_fitsstore_report(qareport):
     """
     Send a QA report to the FITSStore for ingestion.
 
@@ -213,15 +211,6 @@ def send_fitsstore_report(qareport, calurl_dict):
     ----------
     qareport: <dict>
         QA metrics report
-
-    calurl_dict: <dict>
-        Provides FITSstore URLs. See the DRAGONS file,
-        recipe_system.cal_service.calurl_dict
-
-    Return
-    ------
-    <void>
-
     """
     tout_msg = "{} - Could not deliver metrics to fitsstore. "
     tout_msg += "Server failed to respond."

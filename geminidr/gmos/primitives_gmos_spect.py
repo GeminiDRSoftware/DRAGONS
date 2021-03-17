@@ -171,16 +171,16 @@ class GMOSSpect(Spect, GMOS):
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
-            self.getProcessedArc(adinputs, refresh=False)
-            arc_list = self._get_cal(adinputs, 'processed_arc')
+            arc_list = self.caldb.get_processed_arc(adinputs)
         else:
-            arc_list = arc
+            arc_list = (arc, None)
 
-        for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
+        # Provide an arc AD object for every science frame, and an origin
+        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
+                                                  force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by QECorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by QECorrect. "
+                            "Continuing.")
                 continue
 
             if 'e2v' in ad.detector_name(pretty=True):
@@ -201,8 +201,7 @@ class GMOSSpect(Spect, GMOS):
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             if arc is not None and (arc.detector_x_bin() != xbin or
                                     arc.detector_y_bin() != ybin):
-                log.warning("Science frame {} and arc {} have different binnings,"
-                            "so cannot use arc".format(ad.filename, arc.filename))
+                log.warning("Science frame and arc have different binnings.")
                 arc = None
 
             # The plan here is to attach the mosaic gWCS to the science frame,
@@ -221,11 +220,15 @@ class GMOSSpect(Spect, GMOS):
                 if 'sq' in self.mode:
                     raise OSError(f"No processed arc listed for {ad.filename}")
                 else:
-                    log.warning(f"No arc supplied for {ad.filename}")
+                    log.warning(f"{ad.filename}: no arc was specified. Using "
+                                "wavelength solution in science frame.")
             else:
                 # OK, we definitely want to try to do this, get a wavelength solution
+                origin_str = f" (obtained from {origin})" if origin else ""
+                log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
+                            f"{origin_str}")
                 if self.timestamp_keys['determineWavelengthSolution'] not in arc.phu:
-                    msg = f"Arc {arc.filename} (for {ad.filename} has not been wavelength calibrated."
+                    msg = f"Arc {arc.filename} has not been wavelength calibrated."
                     if 'sq' in self.mode:
                         raise IOError(msg)
                     else:
@@ -234,7 +237,7 @@ class GMOSSpect(Spect, GMOS):
                 # We'll be modifying this
                 arc_wcs = deepcopy(arc[0].wcs)
                 if 'distortion_corrected' not in arc_wcs.available_frames:
-                    msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
+                    msg = f"Arc {arc.filename} has no distortion model."
                     if 'sq' in self.mode:
                         raise OSError(msg)
                     else:
@@ -249,9 +252,8 @@ class GMOSSpect(Spect, GMOS):
                 ad_detsec = ad.detector_section()
                 arc_detsec = arc.detector_section()[0]
                 if (ad_detsec[0].x1, ad_detsec[-1].x2) != (arc_detsec.x1, arc_detsec.x2):
-                    raise ValueError("I don't know how to process the "
-                                     f"offsets between {ad.filename} "
-                                     f"and {arc.filename}")
+                    raise ValueError("Cannot process the offsets between "
+                                     f"{ad.filename} and {arc.filename}")
 
                 yoff1 = arc_detsec.y1 - ad_detsec[0].y1
                 yoff2 = arc_detsec.y2 - ad_detsec[0].y2
