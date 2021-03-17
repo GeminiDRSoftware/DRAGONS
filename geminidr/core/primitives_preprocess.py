@@ -422,15 +422,10 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if dark is None:
-<<<<<<< HEAD
                 if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "dark was specified".format(ad.filename))
                     continue
-=======
-                if 'sq' in self.mode:
-                    raise OSError(f"No processed dark listed for {ad.filename}")
->>>>>>> 1c92a441ff5ea3b34e9ac7bc47fff896dc3a4db2
                 else:
                     log.warning(f"{ad.filename}: no dark was specified. "
                                 "Continuing.")
