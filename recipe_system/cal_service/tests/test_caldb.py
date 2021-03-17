@@ -70,7 +70,6 @@ def test_api_store_and_delete(path_to_inputs, change_working_dir):
         os.remove(caldb.name)
 
 
-@pytest.mark.skip("Need v1.0.0 of gemini_calmgr")
 @pytest.mark.preprocessed_data
 def test_retrieval(path_to_inputs, change_working_dir):
     with change_working_dir():
