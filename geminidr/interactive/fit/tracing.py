@@ -234,22 +234,30 @@ class TraceAperturesTab(Fit1DPanel):
         height of plot area in pixels
     """
 
-    def __init__(self, visualizer, fitting_parameters, domain, x, y,
+    def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
                  weights=None, max_order=10, min_order=1, plot_height=400,
                  plot_width=600, plot_title="Trace Apertures - Fitting",
                  xlabel='x', ylabel='y'):
 
         # Just to get the doc later
         self.visualizer = visualizer
+        self.index = idx
 
         # Make a listener to update the info panel with the RMS on a fit
         def update_info(info_div, f):
             info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
 
-        self.rms_div = bm.Div(align=("start", "center"),
-                              id="rms_div",
-                              max_width=500,
-                              width_policy="fit")
+        self.rms_div = bm.Div(align="start",
+                              id=f"rms_div_{self.index}",
+                              width=202,
+                              style={
+                                  "background-color": "whitesmoke",
+                                  "border": "1px solid gainsboro",
+                                  "border-radius": "5px",
+                                  "padding": "10px",
+                                  "width": "100%",
+                              },
+                              sizing_mode="fixed")
 
         listeners = [lambda f: update_info(self.rms_div, f), ]
 
@@ -278,7 +286,7 @@ class TraceAperturesTab(Fit1DPanel):
         reset_button = bm.Button(align='start',
                                  button_type='danger',
                                  label="Reset",
-                                 width=212,
+                                 width=202,
                                  sizing_mode='fixed')
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
@@ -287,11 +295,14 @@ class TraceAperturesTab(Fit1DPanel):
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
             reset_button, reset_dialog_message, self.reset_dialog_handler)
 
-        controller_help = bm.Div(id="control_help",
-                                 name="control_help",
+        controller_help = bm.Div(id=f"control_help_{self.index}",
+                                 name=f"control_help_{self.index}",
                                  margin=(20, 0, 0, 0),
                                  width=column_width,
-                                 style={"color": "gray"})
+                                 style={
+                                     "color": "gray",
+                                     "padding": "5px",
+                                 })
 
         controls_ls = fit_pars_ui
         controls_ls.append(rms_div)
@@ -559,7 +570,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, index=i, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
