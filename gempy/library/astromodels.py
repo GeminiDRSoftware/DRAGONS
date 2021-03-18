@@ -306,11 +306,11 @@ class UnivariateSplineWithOutlierRemoval:
                     if i not in indices:
                         xgood[i] *= (1.0 + epsf)
 
-            # Ensure the spline is constrained: num_points - k is max order
-            this_order = min(this_order, xgood.size - k)
-
             # Space knots equally based on density of unique x values
             if order is not None:
+                # Ensure the spline is constrained: num_points - k is max order
+                this_order = min(this_order, xgood.size - k)
+
                 knots = [xunique[int(xx+0.5)]
                          for xx in np.linspace(0, xunique.size-1, this_order+1)[1:-1]]
                 spline_args = (knots,)
