@@ -626,23 +626,25 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                      css_classes=["filename"],
                      id="_filename",
                      margin=(0, 0, 0, 78),
-                     min_width=750,
-                     max_width=1000,
+                     min_width=500,
+                     max_width=2000,
                      name="filename",
                      height_policy="min",
-                     text=f"Filename: "
-                          f"<span style='color: black; margin-left: 10px'>"
-                          f"{self.filename_info}"
+                     text=f"<span style='float: left'> Filename: </span>"
+                          f"<span style='color: black; display: block;"
+                          f" margin-left: 10px; text-align: right;'>"
+                          f" {self.filename_info}"
                           f"</span>",
                      style={
-                         "background": "white",
+                         "background": "whitesmoke",
                          "border": "1px solid gainsboro",
                          "border-radius": "5px",
                          "color": "darkgray",
                          "font-size": "16px",
-                         "margin": "5px 50px 5px 0px",
+                         "margin": "0px",
                          "padding": "10px",
                          "vertical-align": "middle",
+                         "width": "100%",
                      },
                      width_policy="fit",
                      )
@@ -666,16 +668,17 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         # Edit elements
         filename_div = self.get_filename_div()
 
-        self.submit_button.align = ("center", "center")
-        self.submit_button.height_policy = "min"
-        self.submit_button.width_policy = "min"
+        self.submit_button.align = ("center", "end")
+        self.submit_button.height = 44
+        self.submit_button.height_policy = "fixed"
+        self.submit_button.width = 212
+        self.submit_button.width_policy = "fixed"
 
         self.reinit_panel.css_classes = ["data_source"]
         self.reinit_panel.sizing_mode = "fixed"
 
         # Put all together --- Data provider on the Left
         top_row = row(filename_div,
-                      bm.Spacer(width_policy="max", height_policy="min"),
                       self.submit_button)
 
         bottom_row = row(self.reinit_panel,
