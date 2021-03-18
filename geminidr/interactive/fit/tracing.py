@@ -618,6 +618,36 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         return reinit_panel
 
+    def get_filename_div(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = bm.Div(align=("start", "center"),
+                     css_classes=["filename"],
+                     id="_filename",
+                     margin=(0, 0, 0, 78),
+                     min_width=750,
+                     max_width=1000,
+                     name="filename",
+                     height_policy="min",
+                     text=f"Filename: "
+                          f"<span style='color: black; margin-left: 10px'>"
+                          f"{self.filename_info}"
+                          f"</span>",
+                     style={
+                         "background": "white",
+                         "border": "1px solid gainsboro",
+                         "border-radius": "5px",
+                         "color": "darkgray",
+                         "font-size": "16px",
+                         "margin": "5px 50px 5px 0px",
+                         "padding": "10px",
+                         "vertical-align": "middle",
+                     },
+                     width_policy="fit",
+                     )
+        return div
+
     def visualize(self, doc):
         """
         Start the bokeh document using this visualizer. This is a customized
@@ -657,36 +687,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         doc.template_variables["primitive_long_help"] = DETAILED_HELP
         doc.add_root(all_content)
-
-    def get_filename_div(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(align=("start", "center"),
-                     css_classes=["filename"],
-                     id="_filename",
-                     margin=(0, 0, 0, 78),
-                     min_width=750,
-                     max_width=1000,
-                     name="filename",
-                     height_policy="min",
-                     text=f"Filename: "
-                          f"<span style='color: black; margin-left: 10px'>"
-                          f"{self.filename_info}"
-                          f"</span>",
-                     style={
-                         "background": "white",
-                         "border": "1px solid gainsboro",
-                         "border-radius": "5px",
-                         "color": "darkgray",
-                         "font-size": "16px",
-                         "margin": "5px 50px 5px 0px",
-                         "padding": "10px",
-                         "vertical-align": "middle",
-                     },
-                     width_policy="fit",
-                     )
-        return div
 
 
 def interactive_trace_apertures(ext, _config, _fit1d_params):
