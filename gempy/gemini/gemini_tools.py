@@ -1167,6 +1167,8 @@ def fit_continuum(ad):
                     if (m_final.amplitude_0 > 0.5*(maxflux-m_final.amplitude_2) and
                         pixels.min()+1 < m_final.mean_0 < pixels.max()-1):
                         fwhm = abs(2 * np.sqrt(2*np.log(2)) * m_final.stddev_0)
+                        if fwhm < 1.5:
+                            continue
                         fwhm_list.append(fwhm)
                         if dispaxis == 0:
                             x_list.append(m_final.mean_0.value)
