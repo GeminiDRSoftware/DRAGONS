@@ -746,9 +746,8 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
         ylabel=ylabel,
         reinit_extras=reinit_extras,
         domains=domain_list,
-        primitive_name="traceApertures()",
         template="trace_apertures.html",
-        title="Trace Apertures")
+        title="traceApertures")
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()
