@@ -257,7 +257,7 @@ class TraceAperturesTab(Fit1DPanel):
                                   "padding": "10px",
                                   "width": "100%",
                               },
-                              sizing_mode="fixed")
+                              width_policy="fixed")
 
         listeners = [lambda f: update_info(self.rms_div, f), ]
 
@@ -285,9 +285,9 @@ class TraceAperturesTab(Fit1DPanel):
         # Create the reset button, add its functionality and add it to the layout
         reset_button = bm.Button(align='start',
                                  button_type='danger',
+                                 height=44,
                                  label="Reset",
-                                 width=202,
-                                 sizing_mode='fixed')
+                                 width=202)
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
                                 ' to their original values. Proceed?')
@@ -604,9 +604,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.reinit_button = bm.Button(
                 align='start',
                 button_type='primary',
+                height=44,
                 label=modal_button_label,
-                width=202,
-                sizing_mode='fixed')
+                width=202)
 
             self.reinit_button.on_click(self.reconstruct_points)
             self.make_modal(self.reinit_button, modal_message)
@@ -675,7 +675,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.submit_button.width_policy = "fixed"
 
         self.reinit_panel.css_classes = ["data_source"]
-        self.reinit_panel.sizing_mode = "fixed"
+        self.reinit_panel.height_policy = "max"
+        self.reinit_panel.width = 212
+        self.reinit_panel.width_policy = "fixed"
 
         # Put all together --- Data provider on the Left
         top_row = row(filename_div,
