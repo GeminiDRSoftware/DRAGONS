@@ -7,14 +7,21 @@ body {
     overflow-y: auto;
     }
 
-.bk-btn.bk-btn-success {
+.bk-btn.bk-btn-danger {
     border-radius: 5px;
     font-size: 18px;
     padding: 5px 35px;
     transition: all .2s ease-in-out;
 }
 
-.bk-btn.bk-btn-danger {
+.bk-btn.bk-btn-primary {
+    border-radius: 5px;
+    font-size: 18px;
+    padding: 5px 15px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-success {
     border-radius: 5px;
     font-size: 18px;
     padding: 5px 35px;

@@ -451,16 +451,23 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
     """
-
-    def __init__(self, data_source, fitting_parameters, _config,
-                 reinit_params=None, reinit_extras=None,
-                 modal_message=None,
-                 modal_button_label=None,
+    def __init__(self,
+                 data_source,
+                 fitting_parameters,
+                 _config,
+                 domains=None,
+                 filename_info=None,
+                 modal_button_label="Re-trace apertures",
+                 modal_message="Re-tracing apertures...",
                  order_param="order",
+                 primitive_name=None,
+                 reinit_extras=None,
+                 reinit_params=None,
                  tab_name_fmt='{}',
-                 xlabel='x', ylabel='y',
-                 domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html",
+                 title=None,
+                 xlabel='x',
+                 ylabel='y',
                  **kwargs):
 
         super(Fit1DVisualizer, self).__init__(config=_config,
@@ -471,36 +478,20 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.layout = None
         self.widgets = {}
         self.help_text = DETAILED_HELP
+        self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         self.function_name = 'chebyshev'
-        self.function = bm.Div(
+        self.function = self.create_function_div(
             text=f'<p> Parameters for Tracing Data </p>'
                  f'<p style="color: gray"> These are parameters used to '
                  f'(re)generate the input tracing data that will be used for '
-                 f'fitting. </p>',
-            id="function_div",
-            width=212,  # ToDo: Hardcoded width. Would there be a better solution?
-            width_policy="fixed",
-            style={"margin-top": "-10px"},
-        )
+                 f'fitting. </p>')
 
-        if reinit_params is not None or reinit_extras is not None:
-            # Create left panel
-            reinit_widgets = self.make_widgets_from_config(
-                reinit_params, reinit_extras, modal_message is None,
-                slider_width=128)
-
-            # This should really go in the parent class, like submit_button
-            if modal_message:
-                self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
-                self.reinit_button.on_click(self.reconstruct_points)
-                self.make_modal(self.reinit_button, modal_message)
-                reinit_widgets.append(self.reinit_button)
-
-            self.reinit_panel = column(self.function, *reinit_widgets)
-        else:
-            # left panel with just the function selector (Chebyshev, etc.)
-            self.reinit_panel = column(self.function)
+        self.reinit_panel = self.create_reinit_panel(
+            modal_button_label=modal_button_label,
+            modal_message=modal_message,
+            reinit_extras=reinit_extras,
+            reinit_params=reinit_params)
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -543,8 +534,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
 
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
-
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
         if order_param and order_param in self.config._fields:
             field = self.config._fields[order_param]
@@ -586,6 +575,48 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
+
+    @staticmethod
+    def create_function_div(text=""):
+        div = bm.Div(text=text,
+                     id="function_div",
+                     width=212,
+                     width_policy="fixed",
+                     style={"margin-top": "-10px"})
+        return div
+
+    def create_reinit_panel(self, reinit_params=None, reinit_extras=None,
+                            modal_message=None,
+                            modal_button_label="Reconstruct points"):
+        """
+        Creates the 'Data Provider Panel' on the left of the webpage.
+        """
+        if reinit_params is None and reinit_extras is None:
+            return
+
+        reinit_widgets = self.make_widgets_from_config(reinit_params,
+                                                       reinit_extras,
+                                                       modal_message is None,
+                                                       slider_width=128)
+
+        # This should really go in the parent class, like submit_button
+        if modal_message:
+            self.reinit_button = bm.Button(
+                align='start',
+                button_type='primary',
+                label=modal_button_label,
+                width=202,
+                sizing_mode='fixed')
+
+            self.reinit_button.on_click(self.reconstruct_points)
+            self.make_modal(self.reinit_button, modal_message)
+            reinit_widgets.append(self.reinit_button)
+
+            reinit_panel = column(self.function, *reinit_widgets)
+        else:
+            reinit_panel = column(self.function)
+
+        return reinit_panel
 
     def visualize(self, doc):
         """
