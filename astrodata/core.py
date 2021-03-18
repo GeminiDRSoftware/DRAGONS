@@ -321,6 +321,15 @@ class AstroData:
         """
         return self._nddata[0] if self.is_single else self._nddata
 
+    @nddata.setter
+    @assign_only_single_slice
+    def nddata(self, new_nddata):
+        self.data = new_nddata.data
+        self.unit = new_nddata.unit
+        self.uncertainty = new_nddata.uncertainty
+        self.mask = new_nddata.mask
+        self.wcs = new_nddata.wcs
+
     def table(self):
         # FIXME: do we need this in addition to .tables ?
         return self._tables.copy()

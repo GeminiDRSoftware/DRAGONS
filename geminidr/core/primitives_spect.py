@@ -2162,15 +2162,8 @@ class Spect(PrimitivesBASE):
                 if ndim == 2 and dispaxis == 0:
                     sens_factor = sens_factor[:, np.newaxis]
 
-                new_nddata = ext.nddata.multiply(sens_factor).convert_unit_to(
+                ext.nddata = ext.nddata.multiply(sens_factor).convert_unit_to(
                     final_units, equivalencies=u.spectral_density(waves))
-                # Replace manually data and uncertainty... Not really optimal
-                # but 1) we don't have a way to replace a NDData object in an
-                # AstroData one (as there may be other references), and 2)
-                ext.data = new_nddata.data
-                ext.unit = new_nddata.unit
-                ext.uncertainty.array = new_nddata.uncertainty.array
-                ext.uncertainty.unit = new_nddata.uncertainty.unit
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
