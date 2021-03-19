@@ -437,17 +437,22 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     filtered = signal._peak_finding._filter_ridge_lines(
         wavelet_transformed_data, ridge_lines, window_size=window_size,
         min_length=int(min_frac * len(widths)), min_snr=min_snr)
-
     peaks = sorted([x[1][0] for x in filtered])
+
+    # We need to find accurate peak positions from convolved data so we're
+    # not affected by noise or problems with broad, flat-topped features.
+    # There appears to be a bias with narrow Ricker transforms, so we use the
+    # broadest one for this purpose.
+    pinpoint_data = wavelet_transformed_data[-1]
 
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     if variance is not None:
-        snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
+        snr = np.divide(pinpoint_data, np.sqrt(variance),
                         out=np.zeros_like(data, dtype=np.float32),
                         where=variance > 0)
     else:
         sigma = sigma_clip(data[~mask], masked=False).std() / np.sqrt(2)
-        snr = wavelet_transformed_data[0] / sigma
+        snr = pinpoint_data / sigma
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -472,7 +477,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)]) == 0]
 
     # Clip the really noisy parts of the data and get more accurate positions
-    pinpoint_data = np.where(snr < 0.5, 0, wavelet_transformed_data[0])
+    pinpoint_data[snr < 0.5] = 0
     peaks = pinpoint_peaks(pinpoint_data, mask, peaks,
                            halfwidth=int(np.median(widths)+0.5))
 

@@ -603,7 +603,7 @@ class Spect(PrimitivesBASE):
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
                     # Find peaks; convert width FWHM to sigma
-                    widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
+                    widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                     initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                           variance=variance, min_snr=min_snr)
                     log.stdinfo("Found {} peaks".format(len(initial_peaks)))
@@ -1162,7 +1162,7 @@ class Spect(PrimitivesBASE):
                     arc_lines *= 0.1
 
                 # Find peaks; convert width FWHM to sigma
-                widths = 0.42466 * fwidth * np.arange(0.7, 1.2, 0.05)  # TODO!
+                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                       variance=variance, min_snr=min_snr,
                                                       min_sep=min_sep, reject_bad=False)
