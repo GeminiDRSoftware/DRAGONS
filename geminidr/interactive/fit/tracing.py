@@ -680,13 +680,14 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.reinit_panel.width_policy = "fixed"
 
         # Put all together --- Data provider on the Left
-        top_row = row(filename_div,
-                      self.submit_button)
+        top_row = row(filename_div, self.submit_button,
+                      id="top_row")
 
-        bottom_row = row(self.reinit_panel,
-                         self.tabs)
+        bottom_row = row(self.reinit_panel, self.tabs,
+                         id="bottom_row")
 
         all_content = column(top_row, bottom_row,
+                             id="top_level_layout",
                              spacing=15,
                              sizing_mode="stretch_both")
 
