@@ -59,31 +59,33 @@
 
 <div class="container">
 
-    <div id="top">
+    <header id="top">
         <div class="logo"><img src="dragons/static/DRAGONS.png"></div>
         <div class="banner">
             <span class="title">{{ primitive_title }}</span>
             <span class="primitive-name"> {{ primitive_name }} </span>
             <button id="help-btn" type="button" onclick="openHelpPopup('Trace Apertures - Help')">Help</button>
         </div>
-    </div>
+    </header>
 
     <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
-    <div id="main_div">
-        {% block main_div %}
-            {% for doc in docs %}
-                {{ embed(doc) if doc.elementid }}
-                {% for root in doc.roots %}
-                    {{ embed(root) | indent(10) }}
+    <section class="content">
+        <div id="main_div" class="content-body">
+            {% block main_div %}
+                {% for doc in docs %}
+                    {{ embed(doc) if doc.elementid }}
+                    {% for root in doc.roots %}
+                        {{ embed(root) | indent(10) }}
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
-        {% endblock %}
-    </div>
+            {% endblock %}
+        </div>
+    </section>
 
-    <div id="footer">
+    <footer id="footer">
         Made with
         <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>
-    </div>
+    </footer>
 
 </div>
 
