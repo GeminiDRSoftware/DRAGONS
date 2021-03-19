@@ -245,6 +245,7 @@ body {
 
 #top .logo {
     float: left;
+    margin-bottom: -35px;
     padding: 10px;
 }
 
