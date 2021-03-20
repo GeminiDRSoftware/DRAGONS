@@ -1,0 +1,15 @@
+body {
+    background-color: black;
+    color: white;
+}
+
+.bk-root .bk-tabs-header .bk-tab.bk-active {
+    color: white;
+    background-color: #333333;
+    border-color: #666666;
+}
+
+.bk-root .bk-input {
+    background-color: #333333;
+    color: white;
+}

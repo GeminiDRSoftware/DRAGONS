@@ -14,6 +14,10 @@ from geminidr.interactive import controls
 
 __all__ = ["interactive_fitter", "stop_server"]
 
+from geminidr.interactive.interactive_config import bokeh_theme, bokeh_template_css
+
+from recipe_system.config import globalConf
+
 _bokeh_server = None
 _visualizer = None
 
@@ -117,6 +121,7 @@ def _bkapp(doc):
     none
     """
     template = "index.html"
+    doc.theme = bokeh_theme
     if _visualizer.template:
         template = _visualizer.template
     with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
@@ -127,6 +132,7 @@ def _bkapp(doc):
         template = f.read()
         t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
+        doc.template_variables['css_template'] = bokeh_template_css
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
         doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
 

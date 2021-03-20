@@ -13,6 +13,7 @@ from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor
+from geminidr.interactive.interactive_config import bokeh_data_color
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
@@ -45,7 +46,7 @@ def build_fit_1D(fit1d_params, data, points, weights):
 class InteractiveModel(ABC):
     MASK_TYPE = ['excluded', 'user', 'good', 'sigma']
     MARKERS = ['triangle', 'triangle', 'circle', 'square']
-    PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')  # Category10[4]
+    PALETTE = ('#1f77b4', '#ff7f0e', bokeh_data_color, '#9467bd')  # Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -676,7 +677,8 @@ class Fit1DPanel:
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+                            size=5, legend_field='mask',
+                            **self.fit.mask_rendering_kwargs())
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
@@ -684,7 +686,8 @@ class Fit1DPanel:
             self.band_model.load_from_tuples(region_tuples)
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
-                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+                                      size=5, legend_field='mask',
+                                      **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler

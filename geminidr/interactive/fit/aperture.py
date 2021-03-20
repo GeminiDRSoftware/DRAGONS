@@ -14,6 +14,7 @@ from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
+from geminidr.interactive.interactive_config import bokeh_data_color
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
@@ -949,7 +950,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         ymax = 100  # we will update this when we have a profile
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
         aperture_view.fig.step(x='x', y='y', source=self.model.profile_source,
-                               color="black", mode="center")
+                               color=bokeh_data_color, mode="center")
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
         add_button = Button(label="Add Aperture", button_type='primary',

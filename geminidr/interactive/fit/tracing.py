@@ -20,6 +20,8 @@ from .fit1d import (
 
 __all__ = ["interactive_trace_apertures", ]
 
+from ..interactive_config import bokeh_data_color
+
 DETAILED_HELP = """
     <h1>Help for traceApertures</h1>
     
@@ -419,7 +421,8 @@ class TraceAperturesTab(Fit1DPanel):
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
+        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3,
+                                color=bokeh_data_color)
 
         fig_column = [p_main, p_resid]
 
