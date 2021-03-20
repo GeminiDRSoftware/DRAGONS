@@ -234,22 +234,30 @@ class TraceAperturesTab(Fit1DPanel):
         height of plot area in pixels
     """
 
-    def __init__(self, visualizer, fitting_parameters, domain, x, y,
+    def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
                  weights=None, max_order=10, min_order=1, plot_height=400,
                  plot_width=600, plot_title="Trace Apertures - Fitting",
                  xlabel='x', ylabel='y'):
 
         # Just to get the doc later
         self.visualizer = visualizer
+        self.index = idx
 
         # Make a listener to update the info panel with the RMS on a fit
         def update_info(info_div, f):
             info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
 
-        self.rms_div = bm.Div(align=("start", "center"),
-                              id="rms_div",
-                              max_width=220,
-                              width_policy="fit", )
+        self.rms_div = bm.Div(align="start",
+                              id=f"rms_div_{self.index}",
+                              width=202,
+                              style={
+                                  "background-color": "whitesmoke",
+                                  "border": "1px solid gainsboro",
+                                  "border-radius": "5px",
+                                  "padding": "10px",
+                                  "width": "100%",
+                              },
+                              width_policy="fixed")
 
         listeners = [lambda f: update_info(self.rms_div, f), ]
 
@@ -275,10 +283,11 @@ class TraceAperturesTab(Fit1DPanel):
         what are the fit parameter values.
         """
         # Create the reset button, add its functionality and add it to the layout
-        reset_button = bm.Button(align=('center', 'end'),
-                                 button_type='warning',
+        reset_button = bm.Button(align='start',
+                                 button_type='danger',
+                                 height=44,
                                  label="Reset",
-                                 width_policy='min')
+                                 width=202)
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
                                 ' to their original values. Proceed?')
@@ -286,22 +295,18 @@ class TraceAperturesTab(Fit1DPanel):
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
             reset_button, reset_dialog_message, self.reset_dialog_handler)
 
-        reset_button_row = row(
-            rms_div,
-            reset_button,
-            id="reset_button_row",
-            max_width=column_width,
-            width_policy="max",
-        )
-
-        controller_help = bm.Div(id="control_help",
-                                 name="control_help",
+        controller_help = bm.Div(id=f"control_help_{self.index}",
+                                 name=f"control_help_{self.index}",
                                  margin=(20, 0, 0, 0),
                                  width=column_width,
-                                 style={"color": "gray"})
+                                 style={
+                                     "color": "gray",
+                                     "padding": "5px",
+                                 })
 
         controls_ls = fit_pars_ui
-        controls_ls.append(reset_button_row)
+        controls_ls.append(rms_div)
+        controls_ls.append(reset_button)
         controls_ls.append(controller_help)
 
         controls_col = column(*controls_ls,
@@ -446,16 +451,23 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
     """
-
-    def __init__(self, data_source, fitting_parameters, _config,
-                 reinit_params=None, reinit_extras=None,
-                 modal_message=None,
-                 modal_button_label=None,
+    def __init__(self,
+                 data_source,
+                 fitting_parameters,
+                 _config,
+                 domains=None,
+                 filename_info=None,
+                 modal_button_label="Re-trace apertures",
+                 modal_message="Re-tracing apertures...",
                  order_param="order",
+                 primitive_name=None,
+                 reinit_extras=None,
+                 reinit_params=None,
                  tab_name_fmt='{}',
-                 xlabel='x', ylabel='y',
-                 domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html",
+                 title=None,
+                 xlabel='x',
+                 ylabel='y',
                  **kwargs):
 
         super(Fit1DVisualizer, self).__init__(config=_config,
@@ -466,36 +478,20 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.layout = None
         self.widgets = {}
         self.help_text = DETAILED_HELP
+        self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         self.function_name = 'chebyshev'
-        self.function = bm.Div(
+        self.function = self.create_function_div(
             text=f'<p> Parameters for Tracing Data </p>'
                  f'<p style="color: gray"> These are parameters used to '
                  f'(re)generate the input tracing data that will be used for '
-                 f'fitting. </p>',
-            id="function_div",
-            width=212,  # ToDo: Hardcoded width. Would there be a better solution?
-            width_policy="fixed",
-            style={"margin-top": "-10px"},
-        )
+                 f'fitting. </p>')
 
-        if reinit_params is not None or reinit_extras is not None:
-            # Create left panel
-            reinit_widgets = self.make_widgets_from_config(
-                reinit_params, reinit_extras, modal_message is None,
-                slider_width=128)
-
-            # This should really go in the parent class, like submit_button
-            if modal_message:
-                self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
-                self.reinit_button.on_click(self.reconstruct_points)
-                self.make_modal(self.reinit_button, modal_message)
-                reinit_widgets.append(self.reinit_button)
-
-            self.reinit_panel = column(self.function, *reinit_widgets)
-        else:
-            # left panel with just the function selector (Chebyshev, etc.)
-            self.reinit_panel = column(self.function)
+        self.reinit_panel = self.create_reinit_panel(
+            modal_button_label=modal_button_label,
+            modal_message=modal_message,
+            reinit_extras=reinit_extras,
+            reinit_params=reinit_params)
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -538,8 +534,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
 
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
-
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
         if order_param and order_param in self.config._fields:
             field = self.config._fields[order_param]
@@ -565,7 +559,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, index=i, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
@@ -581,6 +575,80 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
+
+    @staticmethod
+    def create_function_div(text=""):
+        div = bm.Div(text=text,
+                     id="function_div",
+                     width=212,
+                     width_policy="fixed",
+                     style={"margin-top": "-10px"})
+        return div
+
+    def create_reinit_panel(self, reinit_params=None, reinit_extras=None,
+                            modal_message=None,
+                            modal_button_label="Reconstruct points"):
+        """
+        Creates the 'Data Provider Panel' on the left of the webpage.
+        """
+        if reinit_params is None and reinit_extras is None:
+            return
+
+        reinit_widgets = self.make_widgets_from_config(reinit_params,
+                                                       reinit_extras,
+                                                       modal_message is None,
+                                                       slider_width=128)
+
+        # This should really go in the parent class, like submit_button
+        if modal_message:
+            self.reinit_button = bm.Button(
+                align='start',
+                button_type='primary',
+                height=44,
+                label=modal_button_label,
+                width=202)
+
+            self.reinit_button.on_click(self.reconstruct_points)
+            self.make_modal(self.reinit_button, modal_message)
+            reinit_widgets.append(self.reinit_button)
+
+            reinit_panel = column(self.function, *reinit_widgets)
+        else:
+            reinit_panel = column(self.function)
+
+        return reinit_panel
+
+    def get_filename_div(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = bm.Div(align=("start", "center"),
+                     css_classes=["filename"],
+                     id="_filename",
+                     margin=(0, 0, 0, 78),
+                     min_width=500,
+                     max_width=2000,
+                     name="filename",
+                     height_policy="min",
+                     text=f"<span style='float: left'> Filename: </span>"
+                          f"<span style='color: black; display: block;"
+                          f" margin-left: 10px; text-align: right;'>"
+                          f" {self.filename_info}"
+                          f"</span>",
+                     style={
+                         "background": "whitesmoke",
+                         "border": "1px solid gainsboro",
+                         "border-radius": "5px",
+                         "color": "darkgray",
+                         "font-size": "16px",
+                         "margin": "0px",
+                         "padding": "10px",
+                         "vertical-align": "middle",
+                         "width": "100%",
+                     },
+                     width_policy="fit",
+                     )
+        return div
 
     def visualize(self, doc):
         """
@@ -600,57 +668,31 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         # Edit elements
         filename_div = self.get_filename_div()
 
-        self.submit_button.align = ("end", "center")
-        self.submit_button.height_policy = "min"
-        self.submit_button.width_policy = "min"
+        self.submit_button.align = ("center", "end")
+        self.submit_button.height = 44
+        self.submit_button.height_policy = "fixed"
+        self.submit_button.width = 212
+        self.submit_button.width_policy = "fixed"
 
         self.reinit_panel.css_classes = ["data_source"]
-        self.reinit_panel.sizing_mode = "fixed"
+        self.reinit_panel.height_policy = "max"
+        self.reinit_panel.width = 212
+        self.reinit_panel.width_policy = "fixed"
 
         # Put all together --- Data provider on the Left
-        top_row = row(filename_div,
-                      bm.Spacer(width_policy="max", height_policy="min"),
-                      self.submit_button)
+        top_row = row(filename_div, self.submit_button,
+                      id="top_row")
 
-        bottom_row = row(self.reinit_panel,
-                         self.tabs)
+        bottom_row = row(self.reinit_panel, self.tabs,
+                         id="bottom_row")
 
         all_content = column(top_row, bottom_row,
+                             id="top_level_layout",
                              spacing=15,
                              sizing_mode="stretch_both")
 
         doc.template_variables["primitive_long_help"] = DETAILED_HELP
         doc.add_root(all_content)
-
-    def get_filename_div(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(align=("start", "center"),
-                     css_classes=["filename"],
-                     id="_filename",
-                     margin=(0, 0, 0, 78),
-                     min_width=750,
-                     max_width=1000,
-                     name="filename",
-                     height_policy="min",
-                     text=f"Filename: "
-                          f"<span style='color: black; margin-left: 10px'>"
-                          f"{self.filename_info}"
-                          f"</span>",
-                     style={
-                         "background": "white",
-                         "border": "1px solid gainsboro",
-                         "border-radius": "5px",
-                         "color": "darkgray",
-                         "font-size": "16px",
-                         "margin": "5px 50px 5px 0px",
-                         "padding": "10px",
-                         "vertical-align": "middle",
-                     },
-                     width_policy="fit",
-                     )
-        return div
 
 
 def interactive_trace_apertures(ext, _config, _fit1d_params):
@@ -707,9 +749,8 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
         ylabel=ylabel,
         reinit_extras=reinit_extras,
         domains=domain_list,
-        primitive_name="traceApertures()",
         template="trace_apertures.html",
-        title="Trace Apertures")
+        title="traceApertures")
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()
