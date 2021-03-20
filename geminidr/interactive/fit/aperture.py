@@ -608,6 +608,197 @@ class ApertureLineView:
             child.disabled = disabled
 
 
+class SelectedApertureLineView:
+    def __init__(self, model):
+        """ Create text inputs for the start, location and end of the selected aperture.
+
+        Parameters
+        ----------
+        model : :class:`ApertureModel`
+            The model that tracks the apertures and their ranges
+
+        """
+        self.apertures_model = model
+        model.add_listener(self)
+
+        self.model = None
+
+        options = self._build_select_options()
+        self.select = Select(title="Select Aperture", options=options)
+        self.select.on_change('value', self._handle_select_change)
+
+        self.button = Button(label="Del", width=48)
+
+        def _del():
+            if self.model:
+                self.model.delete()
+        self.button.on_click(_del)
+
+        # source = model.source
+        fmt = NumeralTickFormatter(format='0.00')
+        self.start_input = Spinner(width=96, low=0, format=fmt,
+                                   value=0)
+        self.location_input = Spinner(width=96, low=0, format=fmt,
+                                      value=0)
+        self.end_input = Spinner(width=96, low=0, format=fmt,
+                                 value=0)
+
+        self.in_update = False
+
+        self.aperture_name = Div(text=f"N/A",
+                                 align='center', width=24)
+        self.start_input.on_change("value", self._start_handler)
+        self.location_input.on_change("value", self._location_handler)
+        self.end_input.on_change("value", self._end_handler)
+
+        self.component = row([self.select,
+                              self.start_input,
+                              self.location_input,
+                              self.end_input,
+                              self.button])
+
+    def _build_select_options(self):
+        options = list()
+        options.append("None")
+        aperture_ids = list()
+        aperture_ids.extend(self.apertures_model.aperture_models.keys())
+        aperture_ids.sort()
+        for m in aperture_ids:
+            sid = "%s" % m
+            options.append(sid)
+        return options
+
+    def _add_select_option(self, id):
+        sid = "%s" % id
+        if sid not in self.select.options:
+            self.select.options.append(sid)
+
+    def set_model(self, model):
+        self.model = None
+        if model:
+            sid = "%s" % model.source.data['id'][0]
+            self._add_select_option(model.source.data['id'][0])
+            self.select.value = sid
+            self.aperture_name.text = f"#{model.source.data['id'][0]}"
+            self.start_input.value = model.source.data['start'][0]
+            self.location_input.value = model.source.data['location'][0]
+            self.end_input.value = model.source.data['end'][0]
+            self.aperture_name.disabled = False
+            self.start_input.disabled = False
+            self.location_input.disabled = False
+            self.end_input.disabled = False
+            self.button.disabled = False
+            self.model = model
+            self.apertures_model.selected = model.source.data['id'][0]
+        else:
+            self.select.value = "None"
+            self.aperture_name.text = "N/A"
+            self.aperture_name.disabled = True
+            self.start_input.disabled = True
+            self.location_input.disabled = True
+            self.end_input.disabled = True
+            self.button.disabled = True
+
+    def _handle_select_change(self, attr, old, new):
+        if old != new:
+            if new == 'None':
+                self.apertures_model.select_aperture(None)
+            else:
+                id = int(new)
+                self.apertures_model.select_aperture(id)
+
+    @avoid_multiple_update
+    def _start_handler(self, attr, old, new):
+        if self.model and old != new:
+            self.model.update_values(start=self.start_input.value)
+
+    @avoid_multiple_update
+    def _end_handler(self, attr, old, new):
+        if self.model and old != new:
+            self.model.update_values(end=self.end_input.value)
+
+    @avoid_multiple_update
+    def _location_handler(self, attr, old, new):
+        if self.model and old != new:
+            self.start_input.value += new - old
+            self.end_input.value += new - old
+            self.model.update_values(location=self.location_input.value,
+                                     start=self.start_input.value,
+                                     end=self.end_input.value)
+
+    @avoid_multiple_update
+    def update(self, attr, old, new):
+        # Because Bokeh checks the handler signatures we need the same
+        # argument names for the decorator...
+        if self.model and old != new:
+            source = self.model.source
+            self._add_select_option(source.data['id'][0])
+            self.start_input.value = source.data['start'][0]
+            self.location_input.value = source.data['location'][0]
+            self.end_input.value = source.data['end'][0]
+            self.aperture_name.text = f"# {source.data['id'][0]}"
+
+    def update_viewport(self, start, end):
+        """
+        Respond to a viewport update.
+
+        This checks the visible range of the viewport against the current range
+        of this aperture.  If the aperture is not fully contained within the
+        new visible area, all UI elements are disabled.  If the aperture is in
+        range, the start and stop values for the slider are capped to the
+        visible range.
+
+        Parameters
+        ----------
+        start : float
+            Visible start of x axis
+        end : float
+            Visible end of x axis
+        """
+        if self.model:
+            disabled = (self.model.source.data['start'][0] < start or
+                        self.model.source.data['end'][0] > end)
+            for child in self.component.children:
+                child.disabled = disabled
+
+    def update_view(self):
+        self.select.options = self._build_select_options()
+        if self.apertures_model.selected:
+            if self.apertures_model.selected in self.apertures_model.aperture_models:
+                ap_model = self.apertures_model.aperture_models[self.apertures_model.selected]
+                self.set_model(ap_model)
+                return
+        self.set_model(None)
+
+
+class SelectedApertureEditor:
+    def __init__(self, model):
+        self.model = model
+        model.add_listener(self)
+        self.div = Div(text="<b>Selected Aperture</b>")
+        self.salv = SelectedApertureLineView(model)
+        self.component = column(self.div, self.salv.component)
+
+    def select_aperture(self, aperture_id):
+        pass
+
+    def update_aperture(self, aperture_id):
+        pass
+
+    def delete_aperture(self, aperture_id):
+        pass
+
+    def add_aperture(self, aperture_id, model):
+        pass
+
+    def update_view(self):
+        pass
+        if self.model.selected:
+            self.div.text = '<b>Selected Aperture</b>'
+        else:
+            self.div.text = '<b>Selected Aperture</b> - press S with the mouse near an aperture'
+
+
 class ApertureView:
     """
     UI elements for displaying the current set of apertures.
@@ -635,11 +826,13 @@ class ApertureView:
 
         self.fig = self._make_holoviews_quadmeshed(model, x_max, y_max)
 
+        self.selected_aperture_editor = SelectedApertureEditor(model)
+
         # The hamburger menu, which needs to have access to the aperture line
         # widgets (inner_controls)
         self.inner_controls = column(max_height=300, height_policy='auto',
                                      width=440, css_classes=['scrollable'])
-        self.controls = hamburger_helper("Apertures", self.inner_controls)
+        self.controls = self.selected_aperture_editor.component # hamburger_helper("Apertures", self.inner_controls)
 
         self.inner_controls.children.append(
             row([

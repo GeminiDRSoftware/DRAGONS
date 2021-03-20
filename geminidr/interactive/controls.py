@@ -467,6 +467,8 @@ class ApertureTask(Task):
         """
         # we are in aperture mode
         if self.aperture_id:
+            if self.aperture_id not in self.aperture_model.aperture_models.keys():
+                pass
             model = self.aperture_model.aperture_models[self.aperture_id]
             location = model.source.data['location'][0]
 
