@@ -690,56 +690,6 @@ def connect_figure_extras(fig, aperture_model, region_model):
                                         code="plot.properties.renderers.change.emit()"))
 
 
-_hamburger_order_number = 1
-
-
-def hamburger_helper(title, widget):
-    """
-    Create a bokeh layout with a top title and hamburger button
-    to show/hide the given widget.
-
-    This will make a wrapper column around whatever you pass in
-    and give a control for showing and hiding it.  It is useful
-    for potentially larger sets of controls such as a list of
-    aperture controls.
-
-    Parameters
-    ----------
-    title : str
-        Text to put in the top area
-    widget : :class:`~bokeh.models.layouts.LayoutDOM`
-        Component to show/hide with the hamburger action
-
-    Returns
-    -------
-    :class:`~bokeh.models.layouts.Column` : bokeh column to add into your document
-    """
-    global _hamburger_order_number
-    if widget.css_classes:
-        widget.css_classes.append('hamburger_helper_%s' % _hamburger_order_number)
-    else:
-        widget.css_classes = ['hamburger_helper_%s' % _hamburger_order_number]
-
-    _hamburger_order_number += 1
-
-    # TODO Hamburger icon
-    button = Button(label=title, css_classes=['hamburger_helper',])
-
-    def burger_action():
-        if widget.visible:
-            widget.visible = False
-        else:
-            widget.visible = True
-            # try to force resizing, bokeh bug workaround
-            if hasattr(widget, "children") and widget.children:
-                last_child = widget.children[len(widget.children) - 1]
-                widget.children.remove(last_child)
-                widget.children.append(last_child)
-
-    button.on_click(burger_action)
-    return column(button, widget)
-
-
 class GIRegionListener(ABC):
     """
     interface for classes that want to listen for updates to a set of regions.

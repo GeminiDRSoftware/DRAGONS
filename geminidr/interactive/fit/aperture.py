@@ -5,7 +5,7 @@ import holoviews as hv
 import numpy as np
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import (Button, CheckboxGroup, ColumnDataSource, CustomJS,
+from bokeh.models import (Button, CheckboxGroup, ColumnDataSource,
                           Div, LabelSet, NumeralTickFormatter, Select, Slider,
                           Spacer, Span, Spinner, TextInput, Whisker)
 from holoviews.streams import Stream
@@ -13,8 +13,7 @@ from holoviews.streams import Stream
 from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
-from geminidr.interactive.interactive import (PrimitiveVisualizer,
-                                              hamburger_helper)
+from geminidr.interactive.interactive import PrimitiveVisualizer
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
@@ -521,93 +520,6 @@ class AperturePlotView:
         self.whisker.visible = False
 
 
-class ApertureLineView:
-    def __init__(self, model):
-        """ Create text inputs for the start, location and end of an aperture.
-
-        Parameters
-        ----------
-        model : :class:`ApertureModel`
-            The model that tracks the apertures and their ranges
-
-        """
-        self.model = model
-
-        button = Button(label="Del", width=48)
-        button.on_click(self.model.delete)
-
-        source = model.source
-        fmt = NumeralTickFormatter(format='0.00')
-        self.start_input = Spinner(width=96, low=0, format=fmt,
-                                   value=source.data['start'][0])
-        self.location_input = Spinner(width=96, low=0, format=fmt,
-                                      value=source.data['location'][0])
-        self.end_input = Spinner(width=96, low=0, format=fmt,
-                                 value=source.data['end'][0])
-
-        self.in_update = False
-
-        self.aperture_name = Div(text=f"# {source.data['id'][0]}",
-                                 align='center', width=24)
-        self.start_input.on_change("value", self._start_handler)
-        self.location_input.on_change("value", self._location_handler)
-        self.end_input.on_change("value", self._end_handler)
-
-        self.component = row([self.aperture_name,
-                              self.start_input,
-                              self.location_input,
-                              self.end_input,
-                              button])
-
-    @avoid_multiple_update
-    def _start_handler(self, attr, old, new):
-        self.model.update_values(start=self.start_input.value)
-
-    @avoid_multiple_update
-    def _end_handler(self, attr, old, new):
-        self.model.update_values(end=self.end_input.value)
-
-    @avoid_multiple_update
-    def _location_handler(self, attr, old, new):
-        self.start_input.value += new - old
-        self.end_input.value += new - old
-        self.model.update_values(location=self.location_input.value,
-                                 start=self.start_input.value,
-                                 end=self.end_input.value)
-
-    @avoid_multiple_update
-    def update(self, attr, old, new):
-        # Because Bokeh checks the handler signatures we need the same
-        # argument names for the decorator...
-        source = self.model.source
-        self.start_input.value = source.data['start'][0]
-        self.location_input.value = source.data['location'][0]
-        self.end_input.value = source.data['end'][0]
-        self.aperture_name.text = f"# {source.data['id'][0]}"
-
-    def update_viewport(self, start, end):
-        """
-        Respond to a viewport update.
-
-        This checks the visible range of the viewport against the current range
-        of this aperture.  If the aperture is not fully contained within the
-        new visible area, all UI elements are disabled.  If the aperture is in
-        range, the start and stop values for the slider are capped to the
-        visible range.
-
-        Parameters
-        ----------
-        start : float
-            Visible start of x axis
-        end : float
-            Visible end of x axis
-        """
-        disabled = (self.model.source.data['start'][0] < start or
-                    self.model.source.data['end'][0] > end)
-        for child in self.component.children:
-            child.disabled = disabled
-
-
 class SelectedApertureLineView:
     def __init__(self, model):
         """ Create text inputs for the start, location and end of the selected aperture.
@@ -624,7 +536,7 @@ class SelectedApertureLineView:
         self.model = None
 
         options = self._build_select_options()
-        self.select = Select(title="Select Aperture", options=options)
+        self.select = Select(options=options, width=64)
         self.select.on_change('value', self._handle_select_change)
 
         self.button = Button(label="Del", width=48)
@@ -636,17 +548,15 @@ class SelectedApertureLineView:
 
         # source = model.source
         fmt = NumeralTickFormatter(format='0.00')
-        self.start_input = Spinner(width=96, low=0, format=fmt,
+        self.start_input = Spinner(width=80, low=0, format=fmt,
                                    value=0)
-        self.location_input = Spinner(width=96, low=0, format=fmt,
+        self.location_input = Spinner(width=80, low=0, format=fmt,
                                       value=0)
-        self.end_input = Spinner(width=96, low=0, format=fmt,
+        self.end_input = Spinner(width=80, low=0, format=fmt,
                                  value=0)
 
         self.in_update = False
 
-        self.aperture_name = Div(text=f"N/A",
-                                 align='center', width=24)
         self.start_input.on_change("value", self._start_handler)
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
@@ -679,11 +589,9 @@ class SelectedApertureLineView:
             sid = "%s" % model.source.data['id'][0]
             self._add_select_option(model.source.data['id'][0])
             self.select.value = sid
-            self.aperture_name.text = f"#{model.source.data['id'][0]}"
             self.start_input.value = model.source.data['start'][0]
             self.location_input.value = model.source.data['location'][0]
             self.end_input.value = model.source.data['end'][0]
-            self.aperture_name.disabled = False
             self.start_input.disabled = False
             self.location_input.disabled = False
             self.end_input.disabled = False
@@ -692,8 +600,6 @@ class SelectedApertureLineView:
             self.apertures_model.selected = model.source.data['id'][0]
         else:
             self.select.value = "None"
-            self.aperture_name.text = "N/A"
-            self.aperture_name.disabled = True
             self.start_input.disabled = True
             self.location_input.disabled = True
             self.end_input.disabled = True
@@ -827,21 +733,7 @@ class ApertureView:
         self.fig = self._make_holoviews_quadmeshed(model, x_max, y_max)
 
         self.selected_aperture_editor = SelectedApertureEditor(model)
-
-        # The hamburger menu, which needs to have access to the aperture line
-        # widgets (inner_controls)
-        self.inner_controls = column(max_height=300, height_policy='auto',
-                                     width=440, css_classes=['scrollable'])
-        self.controls = self.selected_aperture_editor.component # hamburger_helper("Apertures", self.inner_controls)
-
-        self.inner_controls.children.append(
-            row([
-                Div(text="", width=48),
-                Div(text="<b>Start</b>", width=96, align="center"),
-                Div(text="<b>Location</b>", width=96, align="center"),
-                Div(text="<b>End</b>", width=96, align="center"),
-            ])
-        )
+        self.controls = self.selected_aperture_editor.component
 
         # listen here because ap sliders can come and go, and we don't have to
         # convince the figure to release those references since it just ties to
@@ -868,29 +760,25 @@ class ApertureView:
 
     def update_aperture(self, aperture_id):
         """Handle an updated or added aperture."""
-        plot, line = self.widgets[aperture_id]
+        plot = self.widgets[aperture_id]
         plot.update()
-        line.update(None, None, None)
 
     def add_aperture(self, aperture_id, model):
         plot = AperturePlotView(self.fig, model)
-        line = ApertureLineView(model)
-        self.widgets[aperture_id] = (plot, line)
-        self.inner_controls.children.append(line.component)
+        self.widgets[aperture_id] = plot
 
     def delete_aperture(self, aperture_id):
         """Remove an aperture by ID."""
         if aperture_id in self.widgets:
-            plot, line = self.widgets[aperture_id]
+            plot = self.widgets[aperture_id]
             plot.delete()
-            self.inner_controls.children.remove(line.component)
             del self.widgets[aperture_id]
 
     def renumber_apertures(self):
         new_widgets = {}
-        for plot, line in self.widgets.values():
+        for plot in self.widgets.values():
             aperture_id = plot.model.source.data['id'][0]
-            new_widgets[aperture_id] = (plot, line)
+            new_widgets[aperture_id] = plot
         self.widgets.clear()
         self.widgets.update(new_widgets)
 
