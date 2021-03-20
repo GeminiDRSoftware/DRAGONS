@@ -561,11 +561,20 @@ class SelectedApertureLineView:
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
 
-        self.component = row([self.select,
-                              self.start_input,
-                              self.location_input,
-                              self.end_input,
-                              self.button])
+        self.component = column(
+            row(
+                Div(text="<b>Aperture</b>", width=64),
+                Div(text="<b>Lower</b>", width=80),
+                Div(text="<b>Location</b>", width=80),
+                Div(text="<b>Upper</b>", width=80),
+            ),
+            row(
+                [self.select,
+                 self.start_input,
+                 self.location_input,
+                 self.end_input,
+                 self.button]),
+        )
 
     def _build_select_options(self):
         options = list()
@@ -589,9 +598,9 @@ class SelectedApertureLineView:
             sid = "%s" % model.source.data['id'][0]
             self._add_select_option(model.source.data['id'][0])
             self.select.value = sid
-            self.start_input.value = model.source.data['start'][0]
             self.location_input.value = model.source.data['location'][0]
-            self.end_input.value = model.source.data['end'][0]
+            self.start_input.value = self.location_input.value - model.source.data['start'][0]
+            self.end_input.value = model.source.data['end'][0] - self.location_input.value
             self.start_input.disabled = False
             self.location_input.disabled = False
             self.end_input.disabled = False
@@ -616,21 +625,19 @@ class SelectedApertureLineView:
     @avoid_multiple_update
     def _start_handler(self, attr, old, new):
         if self.model and old != new:
-            self.model.update_values(start=self.start_input.value)
+            self.model.update_values(start=self.location_input.value - self.start_input.value)
 
     @avoid_multiple_update
     def _end_handler(self, attr, old, new):
         if self.model and old != new:
-            self.model.update_values(end=self.end_input.value)
+            self.model.update_values(end=self.location_input.value + self.end_input.value)
 
     @avoid_multiple_update
     def _location_handler(self, attr, old, new):
         if self.model and old != new:
-            self.start_input.value += new - old
-            self.end_input.value += new - old
             self.model.update_values(location=self.location_input.value,
-                                     start=self.start_input.value,
-                                     end=self.end_input.value)
+                                     start=self.location_input.value-self.start_input.value,
+                                     end=self.location_input.value+self.end_input.value)
 
     @avoid_multiple_update
     def update(self, attr, old, new):
