@@ -29,6 +29,7 @@ from numpy.ma.extras import _ezclump
 from scipy import optimize, spatial
 from scipy.signal import correlate
 from specutils import SpectralRegion
+from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
 import geminidr.interactive.server
@@ -1157,9 +1158,6 @@ class Spect(PrimitivesBASE):
                 if arc_file is None:
                     arc_lines, arc_weights = self._get_arc_linelist(ext, w1=c0-abs(c1),
                                                                     w2=c0+abs(c1), dw=dw0)
-                if min(arc_lines) > c0 + abs(c1):
-                    log.warning("Line list appears to be in Angstroms; converting to nm")
-                    arc_lines *= 0.1
 
                 # Find peaks; convert width FWHM to sigma
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
@@ -2908,7 +2906,70 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, **kwargs):
+    def _read_and_convert_linelist(self, filename, w2=None, output="air"):
+        """
+        Reads a standard-format linelist and returns a list of wavelengths
+        (in nm) and weights (if they are included in the file), converted to
+        air or vacuum if needed.
+
+        Parameters
+        ----------
+        filename : str
+            name of file to read
+        w2 : float
+            longest wavelength of data; used to determine if the linelist is
+            in Angstroms rather than nm (if it doesn't specify its units)
+        output : str ["air" | "vacuum"]
+            return air or vacuum wavelengths?
+
+        Returns
+        -------
+        tuple : wavelengths (in nm), and weights/None
+        """
+        def identity(x):
+            return x
+
+        r = re.compile(".*\sunits\s+(.+)")
+        units = None
+
+        with open(filename, "r") as f:
+            lines = f.readlines()
+
+        converter = None
+        while converter is None:
+            next_line = lines.pop(0).strip()
+            if "AIR" in next_line.upper():
+                converter = identity if output == "air" else air_to_vac
+            elif "VACUUM" in next_line.upper():
+                converter = identity if output == "vacuum" else vac_to_air
+            else:
+                # This requires the "units" line to be *before* "AIR"/"VACUUM"
+                m = r.match(next_line)
+                if m:
+                    try:
+                        units = u.Unit(m.group(1))
+                    except ValueError:
+                        pass
+
+        if converter is None:
+            raise OSError(f"AIR or VACUUM wavelengths not specified in {filename}")
+        wavelengths = np.genfromtxt(lines, usecols=[0])
+        try:
+            weights = np.genfromtxt(lines, usecols=[1])
+        except ValueError:
+            weights = None
+
+        if units:
+            wavelengths *= units
+        elif w2 is not None and wavelengths.min() > w2:
+            self.log.warning("Line list appears to be in Angstroms")
+            wavelengths *= u.AA
+        else:
+            wavelengths *= u.nm
+        # Return in nm
+        return converter(wavelengths).to(u.nm).value, weights
+
+    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, output="air"):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -2918,15 +2979,14 @@ class Spect(PrimitivesBASE):
         ----------
         ext : single-slice AD object
             Extension being calibrated (allows descriptors to be calculated).
-
         w1 : float
             Approximate shortest wavelength (nm).
-
         w2 : float
             Approximate longest wavelength (nm).
-
         dw : float
             Approximate dispersion (nm/pixel).
+        output : str ["air" | "vacuum"]
+            wavelength scale to get returned
 
         Returns
         -------
@@ -2938,12 +2998,7 @@ class Spect(PrimitivesBASE):
         """
         lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
-        arc_lines = np.loadtxt(filename, usecols=[0])
-        try:
-            weights = np.loadtxt(filename, usecols=[1])
-        except IndexError:
-            weights = None
-        return arc_lines, weights
+        return self._read_and_convert_linelist(filename, w2=w2, output=output)
 
     def _get_spectrophotometry(self, filename):
         """
