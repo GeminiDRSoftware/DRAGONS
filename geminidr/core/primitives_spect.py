@@ -1706,11 +1706,13 @@ class Spect(PrimitivesBASE):
                 else:
                     # TODO: find_peaks might not be best considering we have no
                     #   idea whether sources will be extended or not
+                    # We only use the lightly-smoothed profile to pinpoint
+                    # the peak positions
                     widths = np.arange(3, 20)
                     peaks_and_snrs = tracing.find_peaks(
                         profile, widths, mask=prof_mask & DQ.not_signal,
                         variance=1.0 if this_use_snr else None, reject_bad=False,
-                        min_snr=3, min_frac=0.2)
+                        min_snr=3, min_frac=0.2, pinpoint_index=0)
 
                     if peaks_and_snrs.size == 0:
                         log.warning("Found no sources")

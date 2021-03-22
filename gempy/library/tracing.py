@@ -386,7 +386,7 @@ def estimate_peak_width(data, mask=None):
     return sigma_clip(widths).mean()
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
-               min_frac=0.25, reject_bad=True):
+               min_frac=0.25, reject_bad=True, pinpoint_index=-1):
     """
     Find peaks in a 1D array. This uses scipy.signal routines, but requires some
     duplication of that code since the _filter_ridge_lines() function doesn't
@@ -412,6 +412,10 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
         minimum fraction of *widths* values at which a peak must be found
     reject_bad : bool
         clip lines using the reject_bad() function?
+    pinpoint_index : int / None
+        which index (in the wavelet-transformed array, ordered by "widths")
+        should be used for determining more the more accurate peak positions
+        (None => use untransformed data)
 
     Returns
     -------
@@ -443,7 +447,8 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     # not affected by noise or problems with broad, flat-topped features.
     # There appears to be a bias with narrow Ricker transforms, so we use the
     # broadest one for this purpose.
-    pinpoint_data = wavelet_transformed_data[-1]
+    pinpoint_data = (data if pinpoint_index is None else
+                     wavelet_transformed_data[pinpoint_index])
 
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     if variance is not None:
