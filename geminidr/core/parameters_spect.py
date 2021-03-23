@@ -92,6 +92,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
+    in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
     alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     debug = config.Field("Make diagnostic plots?", bool, False)
 
