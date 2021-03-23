@@ -801,28 +801,33 @@ def trace_apertures_data_provider(ext, conf, extra):
     all_tracing_knots = []
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-    for _i, _loc in enumerate(ext.APERTURE['c0'].data):
-        _c0 = int(_loc + 0.5)
+    for i, loc in enumerate(ext.APERTURE['c0'].data):
+        c0 = int(loc + 0.5)
+        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+        start = np.argmax(at.boxcar(spectrum, size=3))
 
-        _spectrum = (ext.data[_c0] if dispaxis == 1
-                     else ext.data[:, _c0])
+        # The coordinates are always returned as (x-coords, y-coords)
+        ref_coords, in_coords = tracing.trace_lines(
+            ext,
+            axis=dispaxis,
+            cwidth=5,
+            initial=[loc],
+            initial_tolerance=None,
+            max_missed=extra['max_missed'],
+            max_shift=extra['max_shift'],
+            nsum=extra['nsum'],
+            rwidth=None, 
+            start=start,
+            step=extra['step'],
+        )
 
-        _start = np.argmax(at.boxcar(_spectrum, size=3))
-
-        _ref_coords, _in_coords = tracing.trace_lines(
-            ext, axis=dispaxis, cwidth=5,
-            initial=[_loc], initial_tolerance=None,
-            max_missed=extra['max_missed'], max_shift=extra['max_shift'],
-            nsum=extra['nsum'], rwidth=None, start=_start,
-            step=extra['step'])
-
-        _in_coords = np.ma.masked_array(_in_coords)
+        in_coords = np.ma.masked_array(in_coords)
 
         # ToDo: This should not be required
-        _in_coords.mask = np.zeros_like(_in_coords)
+        in_coords.mask = np.zeros_like(in_coords)
 
-        spectral_tracing_knots = _in_coords[1 - dispaxis]
-        spatial_tracing_knots = _in_coords[dispaxis]
+        spectral_tracing_knots = in_coords[1 - dispaxis]
+        spatial_tracing_knots = in_coords[dispaxis]
 
         all_tracing_knots.append(
             [spectral_tracing_knots, spatial_tracing_knots])
