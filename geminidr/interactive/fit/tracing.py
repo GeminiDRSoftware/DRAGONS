@@ -476,7 +476,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                  f'(re)generate the input tracing data that will be used for '
                  f'fitting. </p>')
 
-        self.reinit_panel = self.create_reinit_panel(
+        self.reinit_panel = self.create_tracing_panel(
             modal_button_label=modal_button_label,
             modal_message=modal_message,
             reinit_extras=reinit_extras,
@@ -565,7 +565,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
             
-        self.reset_reinit_panel()
+        self.reset_tracing_panel()
 
     @staticmethod
     def create_function_div(text=""):
@@ -576,12 +576,27 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                      style={"margin-top": "-10px"})
         return div
 
-    def create_reinit_panel(self, reinit_params=None, reinit_extras=None,
-                            modal_message=None,
-                            modal_button_label="Reconstruct points"):
+    def create_tracing_panel(self, modal_button_label="Reconstruct points",
+                             modal_message=None, reinit_params=None,
+                             reinit_extras=None):
         """
-        Creates the 'Data Provider Panel' on the left of the webpage.
+        Creates the Tracing (leftmost) Panel. This function had some code not
+        used by TraceAperturesVisualizer, but this code helps to keep
+        compatibility in case we want to merge it into Fit1DVisualizer.
+
+        Parameters
+        ----------
+        modal_button_label : str
+            Text on the button which performs tracing.
+        modal_message : str
+            Displays message as a Modal Div element while performing tracing on
+            the background.
+        reinit_params : dict
+            Parameters for re-tracing.
+        reinit_extras : dict
+            Extra parameters for re-tracing.
         """
+        # No panel required if we are not re-creating data
         if reinit_params is None and reinit_extras is None:
             return
 
@@ -592,6 +607,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         # This should really go in the parent class, like submit_button
         if modal_message:
+
+            # Performs tracing
             self.reinit_button = bm.Button(
                 align='start',
                 button_type='primary',
@@ -602,19 +619,21 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.reinit_button.on_click(self.reconstruct_points)
             self.make_modal(self.reinit_button, modal_message)
 
+            # Reset tracing parameter
             reset_tracing_button = bm.Button(
                 align='start',
                 button_type='danger',
                 height=44,
                 label="Reset Tracing",
                 width=202)
-            reset_tracing_button.on_click(self.reset_reinit_panel)
 
+            reset_tracing_button.on_click(self.reset_tracing_panel)
+
+            # Add to the Web UI
             reinit_widgets.append(self.reinit_button)
             reinit_widgets.append(reset_tracing_button)
 
-            reinit_panel = column(self.function,
-                                  *reinit_widgets,
+            reinit_panel = column(self.function, *reinit_widgets,
                                   id="left_panel")
         else:
             reinit_panel = column(self.function,
