@@ -1293,7 +1293,7 @@ class Spect(PrimitivesBASE):
                                                                  max_deviation=max_dev)
                 inv_rms = np.std(m_inverse(m_final(m.input_coords)) - m.input_coords)
                 log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
-                m_final.name = "WAVE"
+                m_final.name = "WAVE"  # always WAVE, never AWAV
                 m_final.inverse = m_inverse
 
                 m.sort()
@@ -1320,22 +1320,30 @@ class Spect(PrimitivesBASE):
                                    list(temptable[0].values()) + [0] * pad_rows,
                                    incoords, outcoords],
                                   names=("name", "coefficients", "peaks", "wavelengths"),
+                                  units=(None, None, u.pix, u.nm),
                                   meta=temptable.meta)
-                fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
-                                              'peaks column is 1-indexed']
+                medium = "vacuo" if in_vacuo else "air"
+                fit_table.meta['comments'] = [
+                    'coefficients are based on 0-indexing',
+                    'peaks column is 1-indexed',
+                    f'calibrated with wavelengths in {medium}']
                 ext.WAVECAL = fit_table
+
+                spectral_frame = (ext.wcs.output_frame if ext.data.ndum == 1
+                                  else ext.wcs.output_frame.frames[0])
+                spectral_frame.name = "WAVE" if in_vacuo else "AWAV"
 
                 if ext.data.ndim == 1:
                     ext.wcs.set_transform(ext.wcs.input_frame,
-                                          ext.wcs.output_frame, m_final)
+                                          spectral_frame, m_final)
                 else:
                     # Write out a simplified WCS model so it's easier to
                     # extract what we need later
-                    spatial_frame = cf.CoordinateFrame(naxes=1, axes_type="SPATIAL",
-                                                       axes_order=(1,), unit=u.pix,
-                                                       name="SPATIAL")
-                    output_frame = cf.CompositeFrame([ext.wcs.output_frame.frames[0],
-                                                      spatial_frame], name='world')
+                    spatial_frame = cf.CoordinateFrame(
+                        naxes=1, axes_type="SPATIAL", axes_order=(1,),
+                        unit=u.pix, name="SPATIAL")
+                    output_frame = cf.CompositeFrame(
+                        [spectral_frame, spatial_frame], name='world')
                     try:
                         slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
                     except IndexError:
