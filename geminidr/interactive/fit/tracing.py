@@ -287,7 +287,7 @@ class TraceAperturesTab(Fit1DPanel):
         reset_button = bm.Button(align='start',
                                  button_type='danger',
                                  height=44,
-                                 label="Reset",
+                                 label="Reset Fitting",
                                  width=202)
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
@@ -453,8 +453,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     Custom visualizer for traceApertures().
     """
     def __init__(self, data_source, fitting_parameters, config, domains=None,
-                 filename_info=None, modal_button_label="Re-trace apertures",
-                 modal_message="Re-tracing apertures...", order_param="order",
+                 filename_info=None, modal_button_label="Trace apertures",
+                 modal_message="Tracing apertures...", order_param="order",
                  primitive_name=None, reinit_extras=None, reinit_params=None,
                  tab_name_fmt='{}', template="fit1d.html", title=None,
                  xlabel='x', ylabel='y', **kwargs):
@@ -564,6 +564,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
+            
+        self.reset_reinit_panel()
 
     @staticmethod
     def create_function_div(text=""):
@@ -599,11 +601,24 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             self.reinit_button.on_click(self.reconstruct_points)
             self.make_modal(self.reinit_button, modal_message)
-            reinit_widgets.append(self.reinit_button)
 
-            reinit_panel = column(self.function, *reinit_widgets)
+            reset_tracing_button = bm.Button(
+                align='start',
+                button_type='danger',
+                height=44,
+                label="Reset Tracing",
+                width=202)
+            reset_tracing_button.on_click(self.reset_reinit_panel)
+
+            reinit_widgets.append(self.reinit_button)
+            reinit_widgets.append(reset_tracing_button)
+
+            reinit_panel = column(self.function,
+                                  *reinit_widgets,
+                                  id="left_panel")
         else:
-            reinit_panel = column(self.function)
+            reinit_panel = column(self.function,
+                                  id="left_panel")
 
         return reinit_panel
 
@@ -638,6 +653,26 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                      width_policy="fit",
                      )
         return div
+
+    def reset_tracing_panel(self, param=None):
+        """
+        Reset all the parameters in the Tracing Panel (leftmost column).
+        If a param is provided, it resets only this parameter in particular.
+
+        Parameters
+        ----------
+        param : string
+            Parameter name
+        """
+        for key, val in self.reinit_extras.items():
+            if param is None or param == key:
+
+                # Update Slider Value
+                self.widgets[key].update(value=val.default)
+
+                # Update Text Field via callback function
+                for callback in self.widgets[key]._callbacks['value_throttled']:
+                    callback(attrib=None, old=None, new=val.default)
 
     def visualize(self, doc):
         """
