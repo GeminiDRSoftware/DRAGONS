@@ -7,7 +7,8 @@ from bokeh import models as bm
 from bokeh.layouts import column, layout, row, Spacer
 from bokeh.plotting import figure
 
-from gempy.library import astromodels, astrotools as at, config, tracing
+from gempy.library import astromodels, astrotools as at, tracing
+from gempy.library.config import RangeField
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
@@ -451,26 +452,14 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
     """
-    def __init__(self,
-                 data_source,
-                 fitting_parameters,
-                 _config,
-                 domains=None,
-                 filename_info=None,
-                 modal_button_label="Re-trace apertures",
-                 modal_message="Re-tracing apertures...",
-                 order_param="order",
-                 primitive_name=None,
-                 reinit_extras=None,
-                 reinit_params=None,
-                 tab_name_fmt='{}',
-                 template="fit1d.html",
-                 title=None,
-                 xlabel='x',
-                 ylabel='y',
-                 **kwargs):
+    def __init__(self, data_source, fitting_parameters, config, domains=None,
+                 filename_info=None, modal_button_label="Re-trace apertures",
+                 modal_message="Re-tracing apertures...", order_param="order",
+                 primitive_name=None, reinit_extras=None, reinit_params=None,
+                 tab_name_fmt='{}', template="fit1d.html", title=None,
+                 xlabel='x', ylabel='y', **kwargs):
 
-        super(Fit1DVisualizer, self).__init__(config=_config,
+        super(Fit1DVisualizer, self).__init__(config=config,
                                               filename_info=filename_info,
                                               primitive_name=primitive_name,
                                               template=template,
@@ -695,7 +684,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         doc.add_root(all_content)
 
 
-def interactive_trace_apertures(ext, _config, _fit1d_params):
+def interactive_trace_apertures(ext, config, fit1d_params):
     """
     Run traceApertures() interactively.
 
@@ -703,30 +692,25 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
     ----------
     ext : AstroData
         Single extension extracted from an AstroData object.
-    _config : dict
+    config : dict
         Dictionary containing the parameters from traceApertures().
-    _fit1d_params : dict
+    fit1d_params : dict
         Dictionary containing initial parameters for fitting a model.
-    new_template : bool
-
 
     Returns
     -------
+    Table : new aperture table.
     """
     ap_table = ext.APERTURE
-    fit_par_list = [_fit1d_params] * len(ap_table)
+    fit_par_list = [fit1d_params] * len(ap_table)
     domain_list = [[ap['domain_start'], ap['domain_end']] for ap in ap_table]
 
     # Create parameters to add to the UI
     reinit_extras = {
-        "max_missed": config.RangeField(
-            "Max Missed", int, 5, min=0),
-        "max_shift": config.RangeField(
-            "Max Shifted", float, 0.05, min=0.001, max=0.1),
-        "nsum": config.RangeField(
-            "Number of lines to sum", int, 10, min=1),
-        "step": config.RangeField(
-            "Tracing step: ", int, 10, min=1),
+        "max_missed": RangeField("Max Missed", int, 5, min=0),
+        "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
+        "nsum": RangeField("Number of lines to sum", int, 10, min=1),
+        "step": RangeField("Tracing step: ", int, 10, min=1),
     }
 
     if (2 - ext.dispersion_axis()) == 1:
@@ -741,7 +725,7 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
 
     visualizer = TraceAperturesVisualizer(
         data_provider,
-        _config=_config,
+        config=config,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
         tab_name_fmt="Aperture {}",
@@ -816,7 +800,7 @@ def trace_apertures_data_provider(ext, conf, extra):
             max_missed=extra['max_missed'],
             max_shift=extra['max_shift'],
             nsum=extra['nsum'],
-            rwidth=None, 
+            rwidth=None,
             start=start,
             step=extra['step'],
         )
