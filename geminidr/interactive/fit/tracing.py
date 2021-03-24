@@ -872,6 +872,9 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         ylabel = "x / columns [px]"
 
     def data_provider(conf, extra):
+        # Todo: Clean this up later
+        print("  Running data provider.")
+        print("   Reinit extras: ", extra)
         return trace_apertures_data_provider(ext, conf, extra)
 
     visualizer = TraceAperturesVisualizer(
