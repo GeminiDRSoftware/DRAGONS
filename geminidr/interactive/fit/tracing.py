@@ -452,6 +452,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
     """
+
     def __init__(self, data_source, fitting_parameters, config, domains=None,
                  filename_info=None, modal_button_label="Trace apertures",
                  modal_message="Tracing apertures...", order_param="order",
@@ -464,10 +465,15 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                               primitive_name=primitive_name,
                                               template=template,
                                               title=title)
-        self.layout = None
-        self.widgets = {}
         self.help_text = DETAILED_HELP
+        self.layout = None
+        self.last_changed = None
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
+        self.widgets = {}
+
+        # Save parameters in case we want to reset them
+        self._reinit_extras = {} if reinit_extras is None \
+            else {key: val.default for key, val in self.reinit_extras.items()}
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
@@ -569,11 +575,24 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
     @staticmethod
     def create_function_div(text=""):
+        """
+        Creates a DIV element containing some small help text.
+
+        Parameters
+        ----------
+        text : str
+            Text displayed above function name.
+
+        Returns
+        -------
+        bokeh.models.Div : help text.
+        """
         div = bm.Div(text=text,
                      id="function_div",
                      width=212,
                      width_policy="fixed",
                      style={"margin-top": "-10px"})
+
         return div
 
     def create_tracing_panel(self, modal_button_label="Reconstruct points",
