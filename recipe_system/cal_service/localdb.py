@@ -95,6 +95,8 @@ class LocalDB(CalDB):
         """Store the calibration. The LocalDB is not interested in science"""
         if self.store_cal:
             if caltype is None or "science" not in caltype:
+                if not path.exists(cal):
+                    raise OSError(f"File {cal} does not exist.")
                 if caltype is not None:
                     self.log.stdinfo(f"{self.name}: Storing {cal} as {caltype}")
                 self._calmgr.ingest_file(cal)
