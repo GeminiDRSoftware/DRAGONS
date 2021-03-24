@@ -2871,6 +2871,10 @@ class Spect(PrimitivesBASE):
                                        if c1[dispaxis] == location])
                     values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
                     ref_coords, in_coords = values[:2], values[2:]
+                    min_value = in_coords[1 - dispaxis].min()
+                    max_value = in_coords[1 - dispaxis].max()
+                    log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
+                              f"to {max_value}")
 
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis

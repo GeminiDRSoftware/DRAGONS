@@ -910,27 +910,30 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                 log.debug(f"Cannot recenter peak at coordinate {peak}")
 
     # Allocate space for collapsed arrays of different sizes
-    data = np.empty((max_missed, ext_data.shape[1]))
+    data = np.empty((max_missed + 1, ext_data.shape[1]))
     mask = np.zeros_like(data, dtype=DQ.datatype)
     var = np.empty_like(data)
 
     coord_lists = [[] for peak in initial_peaks]
-    for direction in (-1, 1):
+    for direction in (1, -1):
         ypos = start
         last_coords = [[ypos, peak] for peak in initial_peaks]
         lookback = 0
 
         while True:
-            ypos += direction * step
+            ypos += step
+            # This is the number of steps we are allowed to look back if
+            # we don't find the peak in the current step
             lookback = min(lookback + 1, max_missed)
             # Reached the bottom or top?
             if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5 * nsum:
                 break
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
+            # There's always at least one such array
             y2 = int(ypos + 0.5 * nsum + 0.5)
-            for i in range(lookback):
-                slices = [slice(y2 - j*step - nsum, y2 - j*step) for j in range(i+1)]
+            for i in range(lookback + 1):
+                slices = [slice(y2 - j*step - nsum, y2 - j*step) for j in range(i + 1)]
                 d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
                                mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
@@ -944,7 +947,11 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                 if m is not None:
                     mask[i] = m
 
-            if any(mask[0] == 0):
+            # The second piece of logic is to deal with situations where only
+            # one valid row is in the slice, so NDStacker will return var=0
+            # because it cannot derive pixel-to-pixel variations. This makes
+            # the data array 0 as well, and we can't find any peaks
+            if any(mask[0] == 0) and not all(np.isinf(var[0])):
                 last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
                 peaks = pinpoint_peaks(data[0], mask[0], last_peaks, halfwidth=halfwidth)
 
@@ -960,13 +967,13 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                         new_peak = np.inf
 
                     # Is this close enough to the existing peak?
-                    steps_missed = min(int(abs(ypos - last_row) / step), lookback)
-                    for j in range(steps_missed):
-                        tolerance = max_shift * (j + 1) * step
+                    steps_missed = int(abs((ypos - last_row) / step)) - 1
+                    for j in range(min(steps_missed, lookback) + 1):
+                        tolerance = max_shift * (j + 1) * abs(step)
                         if abs(new_peak - old_peak) <= tolerance:
                             new_coord = [ypos - 0.5 * j * step, new_peak]
                             break
-                        elif j + 1 < lookback:
+                        elif j < lookback:
                             # Investigate more heavily-binned profiles
                             try:
                                 new_peak = pinpoint_peaks(data[j+1], mask[j+1],
@@ -977,8 +984,9 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                         # We haven't found the continuation of this line.
                         # If it's gone for good, set the coord to NaN to avoid it
                         # picking up a different line if there's significant tilt
-                        if lookback > max_missed:
-                            coord_lists[i].append([ypos, np.nan])
+                        if steps_missed > max_missed:
+                            #coord_lists[i].append([ypos, np.nan])
+                            last_coords[i] = [ypos, np.nan]
                         continue
 
                     # Too close to the edge?
@@ -1002,6 +1010,8 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
             # Lost all lines!
             if all(np.isnan(c[1]) for c in last_coords):
                 break
+
+        step *= -1
 
     # List of traced peak positions
     in_coords = np.array([c for coo in coord_lists for c in coo]).T
