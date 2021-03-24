@@ -340,7 +340,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     slider.width = slider_width
 
     text_input = TextInput(width=64, value=str(value))
-    component = row(slider, text_input, css_classes=["text_sider_%s" % attr,])
+    component = row(slider, text_input, css_classes=["text_slider_%s" % attr,])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
