@@ -489,34 +489,23 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             reinit_params=reinit_params)
 
         # Grab input coordinates or calculate if we were given a callable
-        # TODO revisit the raging debate on `callable` for Python 3
-        if callable(data_source):
-            self.reconstruct_points_fn = data_source
-            data = data_source(config, self.extras)
-            # For this, we need to remap from
-            # [[x1, y1, weights1], [x2, y2, weights2], ...]
-            # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
-            allx = list()
-            ally = list()
-            all_weights = list()
-            for dat in data:
-                allx.append(dat[0])
-                ally.append(dat[1])
-                if len(dat) >= 3:
-                    all_weights.append(dat[2])
+        self.reconstruct_points_fn = self.data_source_factory(
+            data_source, reinit_extras=reinit_extras, reinit_params=reinit_params)
+
+        data = self.reconstruct_points_fn(config, self.extras)
+
+        # For this, we need to remap from
+        # [[x1, y1, weights1], [x2, y2, weights2], ...]
+        # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
+        allx = list()
+        ally = list()
+        all_weights = list()
+        for dat in data:
+            allx.append(dat[0])
+            ally.append(dat[1])
+            if len(dat) >= 3:
+                all_weights.append(dat[2])
             if len(all_weights) == 0:
-                all_weights = None
-        else:
-            self.reconstruct_points_fn = None
-            if reinit_params:
-                raise ValueError("Saw reinit_params but data_source is not a callable")
-            if reinit_extras:
-                raise ValueError("Saw reinit_extras but data_source is not a callable")
-            allx = data_source[0]
-            ally = data_source[1]
-            if len(data_source) >= 3:
-                all_weights = data_source[2]
-            else:
                 all_weights = None
 
         # Some sanity checks now
@@ -570,8 +559,70 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
-            
-        self.reset_tracing_panel()
+
+    def add_callback_to_sliders(self):
+        """
+        Adds a callback function to record which slider was last updated.
+        """
+        for key, val in self.widgets.items():
+            val.on_change('value', self.slider_callback_factory(key))
+
+    def data_source_factory(self, data_source, reinit_extras=None,
+                            reinit_params=None):
+        """
+        If our input data_source is an array, wraps it inside a callable
+        function which is called later by the `...` method.
+
+        Parameters
+        ----------
+        data_source : array or function
+            An array with 2 or more dimensions or a function that returns this
+            array.
+        extras : dict, optional
+            Extra parameters to reinitialize the data.
+        params : dict, optional
+            Parameters used to reinitialize the data.
+
+        Returns
+        -------
+        function
+        """
+        # TODO revisit the raging debate on `callable` for Python 3
+        if callable(data_source):
+            def _data_source(_config, _extras):
+                """
+                Wraps the callable so we can handle the error properly.
+                """
+                print("  Reconstruct points function: ", _extras)
+                data = data_source(_config, _extras)
+                # except IndexError:
+                #     print("Last changed slide: ", self.last_changed)
+                #     self.reset_tracing_panel(param=self.last_changed)
+                #     print(_extras)
+                #     # self.raise_error_popup()
+                #     # _extras[self.last_changed] = self._reinit_extras[self.last_changed]
+                #     # data = data_source(_config, _extras)
+                # else:
+                #     # Store successful pars
+                #     self._reinit_extras = _extras
+
+                return data
+
+        else:
+            def _data_source(_config, _extras):
+                """Simply passes the input data forward."""
+                if reinit_extras:
+                    raise ValueError("Saw reinit_extras but "
+                                     "data_source is not a callable")
+                if reinit_params:
+                    raise ValueError("Saw reinit_params but "
+                                     "data_source is not a callable")
+                if len(data_source) >= 3:
+                    return data_source[0], data_source[1], data_source[2]
+                else:
+                    return data_source[0], data_source[1]
+
+        return _data_source
 
     @staticmethod
     def create_function_div(text=""):
@@ -703,14 +754,41 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             Parameter name
         """
         for key, val in self.reinit_extras.items():
-            if param is None or param == key:
 
-                # Update Slider Value
-                self.widgets[key].update(value=val.default)
+            if param is None:
+                reset_value = val.default
+            elif key == param:
+                reset_value = self._reinit_extras[key]
+            else:
+                continue
 
-                # Update Text Field via callback function
-                for callback in self.widgets[key]._callbacks['value_throttled']:
-                    callback(attrib=None, old=None, new=val.default)
+            print(f" Reset '{key}'")
+
+            # Update Slider Value
+            self.widgets[key].update(value=reset_value)
+
+            print(f" Callbacks", self.widgets[key]._callbacks)
+
+            # Update Text Field via callback function
+            for callback in self.widgets[key]._callbacks['value_throttled']:
+                callback(attrib=None, old=None, new=reset_value)
+
+    def slider_callback_factory(self, key):
+        """
+        Creates a fallback function called when we update a slider's value.
+
+        Parameters
+        ----------
+        key : string
+            Key associated to the slider widget.
+
+        Returns
+        -------
+        function : callback function that stores the last modified slider.
+        """
+        def _callback(attr, old, new):
+            self.last_changed = key
+        return _callback
 
     def visualize(self, doc):
         """
