@@ -984,7 +984,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                         # We haven't found the continuation of this line.
                         # If it's gone for good, set the coord to NaN to avoid it
                         # picking up a different line if there's significant tilt
-                        if lookback >= max_missed:
+                        if steps_missed >= max_missed:
                             #coord_lists[i].append([ypos, np.nan])
                             last_coords[i] = [ypos, np.nan]
                         continue
