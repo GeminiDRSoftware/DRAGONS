@@ -967,8 +967,8 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                         new_peak = np.inf
 
                     # Is this close enough to the existing peak?
-                    steps_missed = min(int(abs((ypos - last_row) / step)) - 1, lookback)
-                    for j in range(steps_missed + 1):
+                    steps_missed = int(abs((ypos - last_row) / step)) - 1
+                    for j in range(min(steps_missed, lookback) + 1):
                         tolerance = max_shift * (j + 1) * abs(step)
                         if abs(new_peak - old_peak) <= tolerance:
                             new_coord = [ypos - 0.5 * j * step, new_peak]
@@ -984,7 +984,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                         # We haven't found the continuation of this line.
                         # If it's gone for good, set the coord to NaN to avoid it
                         # picking up a different line if there's significant tilt
-                        if steps_missed >= max_missed:
+                        if steps_missed > max_missed:
                             #coord_lists[i].append([ypos, np.nan])
                             last_coords[i] = [ypos, np.nan]
                         continue
