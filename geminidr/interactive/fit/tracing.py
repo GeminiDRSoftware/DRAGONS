@@ -6,6 +6,7 @@ from astropy import table
 from bokeh import models as bm
 from bokeh.layouts import column, layout, row, Spacer
 from bokeh.plotting import figure
+from copy import deepcopy
 
 from gempy.library import astromodels, astrotools as at, tracing
 from gempy.library.config import RangeField
@@ -519,7 +520,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.nfits = 1
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
+        # noinspection PyProtectedMember
         if order_param and order_param in self.config._fields:
+            # noinspection PyProtectedMember
             field = self.config._fields[order_param]
             if hasattr(field, 'min') and field.min:
                 kwargs['min_order'] = field.min
@@ -560,12 +563,14 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
 
+        self.add_callback_to_sliders()
+
     def add_callback_to_sliders(self):
         """
         Adds a callback function to record which slider was last updated.
         """
         for key, val in self.widgets.items():
-            val.on_change('value', self.slider_callback_factory(key))
+            val.on_change('value', self.register_last_changed(key))
 
     def data_source_factory(self, data_source, reinit_extras=None,
                             reinit_params=None):
@@ -578,9 +583,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         data_source : array or function
             An array with 2 or more dimensions or a function that returns this
             array.
-        extras : dict, optional
+        reinit_extras : dict, optional
             Extra parameters to reinitialize the data.
-        params : dict, optional
+        reinit_params : dict, optional
             Parameters used to reinitialize the data.
 
         Returns
@@ -593,18 +598,16 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 """
                 Wraps the callable so we can handle the error properly.
                 """
-                print("  Reconstruct points function: ", _extras)
-                data = data_source(_config, _extras)
-                # except IndexError:
-                #     print("Last changed slide: ", self.last_changed)
-                #     self.reset_tracing_panel(param=self.last_changed)
-                #     print(_extras)
-                #     # self.raise_error_popup()
-                #     # _extras[self.last_changed] = self._reinit_extras[self.last_changed]
-                #     # data = data_source(_config, _extras)
-                # else:
-                #     # Store successful pars
-                #     self._reinit_extras = _extras
+                try:
+                    data = data_source(_config, _extras)
+                except IndexError:
+                    self.reset_tracing_panel(param=self.last_changed)
+                    _extras[self.last_changed] = \
+                        self._reinit_extras[self.last_changed]
+                    data = data_source(_config, _extras)
+                else:
+                    # Store successful pars
+                    self._reinit_extras = deepcopy(_extras)
 
                 return data
 
@@ -762,18 +765,16 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             else:
                 continue
 
-            print(f" Reset '{key}'")
+            old = self.widgets[key].value
 
             # Update Slider Value
             self.widgets[key].update(value=reset_value)
 
-            print(f" Callbacks", self.widgets[key]._callbacks)
-
             # Update Text Field via callback function
             for callback in self.widgets[key]._callbacks['value_throttled']:
-                callback(attrib=None, old=None, new=reset_value)
+                callback(attrib='value_throttled', old=old, new=reset_value)
 
-    def slider_callback_factory(self, key):
+    def register_last_changed(self, key):
         """
         Creates a fallback function called when we update a slider's value.
 
@@ -786,8 +787,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         -------
         function : callback function that stores the last modified slider.
         """
+
+        # noinspection PyUnusedLocal
         def _callback(attr, old, new):
             self.last_changed = key
+
         return _callback
 
     def visualize(self, doc):
@@ -872,11 +876,9 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         ylabel = "x / columns [px]"
 
     def data_provider(conf, extra):
-        # Todo: Clean this up later
-        print("  Running data provider.")
-        print("   Reinit extras: ", extra)
         return trace_apertures_data_provider(ext, conf, extra)
 
+    # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
         data_provider,
         config=config,
@@ -915,6 +917,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     return new_aptable
 
 
+# noinspection PyUnusedLocal
 def trace_apertures_data_provider(ext, conf, extra):
     """
     Function used by the interactive fitter to generate the a list with
