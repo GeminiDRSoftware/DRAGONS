@@ -466,11 +466,13 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                               primitive_name=primitive_name,
                                               template=template,
                                               title=title)
+
         self.help_text = DETAILED_HELP
         self.layout = None
         self.last_changed = None
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
         self.widgets = {}
+        self.error_alert = self.create_error_alert()
 
         # Save parameters in case we want to reset them
         self._reinit_extras = {} if reinit_extras is None \
@@ -572,6 +574,23 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         for key, val in self.widgets.items():
             val.on_change('value', self.register_last_changed(key))
 
+    @staticmethod
+    def create_error_alert():
+        """
+        Creates a Pre element to hold a callback function that displays an
+        Alert when an error occurs.
+        """
+
+        callback = bm.CustomJS(
+            args={}, code="if (cb_obj.text !== '') { "
+                          "    alert(cb_obj.text); "
+                          "    cb_obj.text = '';"
+                          "}")
+
+        holder = bm.PreText(text='', css_classes=['hidden'], visible=False)
+        holder.js_on_change('text', callback)
+        return holder
+
     def data_source_factory(self, data_source, reinit_extras=None,
                             reinit_params=None):
         """
@@ -601,6 +620,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 try:
                     data = data_source(_config, _extras)
                 except IndexError:
+
+                    self.error_alert.text = "Could not perform tracing with " \
+                                            "current parameter. Rolling back " \
+                                            "to previous working configuration."
+
                     self.reset_tracing_panel(param=self.last_changed)
                     _extras[self.last_changed] = \
                         self._reinit_extras[self.last_changed]
@@ -705,6 +729,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Add to the Web UI
             reinit_widgets.append(self.reinit_button)
             reinit_widgets.append(reset_tracing_button)
+            reinit_widgets.append(self.error_alert)
 
             reinit_panel = column(self.function, *reinit_widgets,
                                   id="left_panel")
