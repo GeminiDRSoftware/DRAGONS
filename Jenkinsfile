@@ -38,8 +38,6 @@ pipeline {
             agent{ label "centos7" }
             steps{
                 sendNotifications 'STARTED'
-                // Clean workspace before build
-                cleanWs()
             }
         }
 
