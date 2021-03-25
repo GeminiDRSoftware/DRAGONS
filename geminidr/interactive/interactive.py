@@ -386,6 +386,12 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             numeric_value = float(new)
         else:
             numeric_value = int(new)
+        if (max_value is not None and numeric_value > max_value) or \
+                (min_value is not None and numeric_value < min_value):
+            text_input.remove_on_change("value", handle_value)
+            text_input.value = str(old)
+            text_input.on_change("value", handle_value)
+            return
         if obj and attr:
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
