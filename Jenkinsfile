@@ -35,7 +35,6 @@ pipeline {
     stages {
 
         stage ("Prepare"){
-            agent{ label "centos7" }
             steps{
                 sendNotifications 'STARTED'
             }
