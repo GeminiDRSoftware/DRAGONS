@@ -769,6 +769,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             # Update Slider Value
             self.widgets[key].update(value=reset_value)
+            self.widgets[key].update(value_throttled=reset_value)
 
             # Update Text Field via callback function
             for callback in self.widgets[key]._callbacks['value_throttled']:
