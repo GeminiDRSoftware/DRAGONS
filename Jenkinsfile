@@ -35,8 +35,11 @@ pipeline {
     stages {
 
         stage ("Prepare"){
+            agent{ label "centos7" }
             steps{
                 sendNotifications 'STARTED'
+                // Clean workspace before build
+                cleanWs()
             }
         }
 
@@ -55,8 +58,6 @@ pipeline {
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                     }
                     steps {
-                        // Clean workspace before build
-                        cleanWs()
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
