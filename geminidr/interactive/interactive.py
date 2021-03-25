@@ -266,15 +266,13 @@ class PrimitiveVisualizer(ABC):
                     end = 50
                 step = start
 
-                def handler(val):
-                    self.extras[pname] = val
-                    if reinit_live:
-                        self.reconstruct_points()
-
-                widget = build_text_slider(doc, field.default, step, start, end,
-                                           obj=self.extras, attr=pname,
-                                           handler=handler, throttled=True,
-                                           slider_width=slider_width)
+                widget = build_text_slider(
+                    doc, field.default, step, start, end,
+                    obj=self.extras, attr=pname,
+                    handler=self.slider_handler_factory(
+                        pname, reinit_live=reinit_live),
+                    throttled=True,
+                    slider_width=slider_width)
 
                 self.widgets[pname] = widget.children[0]
                 self.extras[pname] = field.default
@@ -289,6 +287,29 @@ class PrimitiveVisualizer(ABC):
                 self.widgets[pname] = widget
 
         return widgets
+
+    def slider_handler_factory(self, key, reinit_live=False):
+        """
+        Returns a function that updates the `extras` attribute.
+
+        Parameters
+        ----------
+        key : str
+            The parameter name to be updated.
+        reinit_live : bool, optional
+            Update the reconstructed points on "real time".
+
+        Returns
+        -------
+        function : callback called when we change the slider value.
+        """
+
+        def handler(val):
+            self.extras[key] = val
+            if reinit_live:
+                self.reconstruct_points()
+
+        return handler
 
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
