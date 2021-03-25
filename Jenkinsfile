@@ -55,6 +55,8 @@ pipeline {
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                     }
                     steps {
+                        // Clean workspace before build
+                        cleanWs()
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
@@ -197,9 +199,11 @@ pipeline {
 
     }
     post {
+        always {
+            deleteDir() /* clean up our workspace */
+        }
         success {
             sendNotifications 'SUCCESSFUL'
-            deleteDir() /* clean up our workspace */
         }
         failure {
             sendNotifications 'FAILED'
