@@ -774,7 +774,7 @@ class Spect(PrimitivesBASE):
 
             # Read all the arc's distortion maps. Do this now so we only have
             # one block of reading and verifying them
-            distortion_models, wave_models = [], []
+            distortion_models, wave_models, wave_frames = [], [], []
             for ext in arc:
                 wcs = ext.nddata.wcs
 
@@ -805,8 +805,11 @@ class Spect(PrimitivesBASE):
                                                        'WAVE')
                 except IndexError:
                     wave_models.append(None)
+                    wave_frames.append(None)
                 else:
                     wave_models.append(wave_model)
+                    wave_frames.extend([frame for frame in wcs.output_frame.frames
+                                        if isinstance(frame, cf.SpectralFrame)])
 
             if not distortion_models:
                 log.warning("Could not find a 'distortion_corrected' frame "
@@ -952,7 +955,8 @@ class Spect(PrimitivesBASE):
                         log.warning(f"{arc.filename} extension {ext.id} has "
                                     "no wavelength solution")
 
-            for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
+            for i, (ext, wave_model, wave_frame) in enumerate(
+                    zip(ad_out, wave_models, wave_frames)):
                 # TODO: remove this; for debugging purposes only
                 if arc is not None and hasattr(arc[i], "WAVECAL"):
                     ad_out[i].WAVECAL = arc[i].WAVECAL
@@ -961,8 +965,14 @@ class Spect(PrimitivesBASE):
                     t = wave_model & sky_model
                 else:
                     t = sky_model & wave_model
+                # We need to create a new output frame with a copy of the
+                # ARC's SpectralFrame in case there's a change from air->vac
+                # or vice versa
+                new_output_frame = cf.CompositeFrame(
+                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame) else
+                     frame for frame in ext.wcs.output_frame.frames])
                 ext.wcs = gWCS([(ext.wcs.input_frame, t),
-                                (ext.wcs.output_frame, None)])
+                                (new_output_frame, None)])
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
