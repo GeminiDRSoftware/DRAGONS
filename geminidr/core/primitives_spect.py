@@ -1329,13 +1329,17 @@ class Spect(PrimitivesBASE):
                     f'calibrated with wavelengths in {medium}']
                 ext.WAVECAL = fit_table
 
-                spectral_frame = (ext.wcs.output_frame if ext.data.ndum == 1
+                spectral_frame = (ext.wcs.output_frame if ext.data.ndim == 1
                                   else ext.wcs.output_frame.frames[0])
-                spectral_frame.name = "WAVE" if in_vacuo else "AWAV"
+                axis_name = "WAVE" if in_vacuo else "AWAV"
+                new_spectral_frame = cf.SpectralFrame(
+                    axes_order=spectral_frame.axes_order,
+                    unit=spectral_frame.unit, axes_names=(axis_name,),
+                    name=astrodata.wcs.frame_mapping[axis_name].description)
 
                 if ext.data.ndim == 1:
                     ext.wcs.set_transform(ext.wcs.input_frame,
-                                          spectral_frame, m_final)
+                                          new_spectral_frame, m_final)
                 else:
                     # Write out a simplified WCS model so it's easier to
                     # extract what we need later
@@ -1343,7 +1347,7 @@ class Spect(PrimitivesBASE):
                         naxes=1, axes_type="SPATIAL", axes_order=(1,),
                         unit=u.pix, name="SPATIAL")
                     output_frame = cf.CompositeFrame(
-                        [spectral_frame, spatial_frame], name='world')
+                        [new_spectral_frame, spatial_frame], name='world')
                     try:
                         slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
                     except IndexError:
