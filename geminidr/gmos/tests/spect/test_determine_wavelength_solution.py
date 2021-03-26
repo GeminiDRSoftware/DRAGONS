@@ -224,12 +224,12 @@ def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
 
     ad_air = p.determineWavelengthSolution(
         [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=False, **determine_wavelength_solution_parameters)
+        in_vacuo=False, **determine_wavelength_solution_parameters).pop()
     ad_vac = p.determineWavelengthSolution(
         [ad], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=True, **determine_wavelength_solution_parameters)
-    wave_air = am.get_named_submodel(ad_air[0].wcs.forward_transform, "WAVE").pop()
-    wave_vac = am.get_named_submodel(ad_vac[0].wcs.forward_transform, "WAVE").pop()
+        in_vacuo=True, **determine_wavelength_solution_parameters).pop()
+    wave_air = am.get_named_submodel(ad_air[0].wcs.forward_transform, "WAVE")
+    wave_vac = am.get_named_submodel(ad_vac[0].wcs.forward_transform, "WAVE")
     x = np.arange(ad_air[0].shape[1])
     wair = wave_air(x)
     wvac = air_to_vac(wair * u.nm).to(u.nm).value
