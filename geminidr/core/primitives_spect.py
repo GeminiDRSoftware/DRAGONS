@@ -1729,11 +1729,13 @@ class Spect(PrimitivesBASE):
                 else:
                     # TODO: find_peaks might not be best considering we have no
                     #   idea whether sources will be extended or not
+                    # We only use the lightly-smoothed profile to pinpoint
+                    # the peak positions
                     widths = np.arange(3, 20)
                     peaks_and_snrs = tracing.find_peaks(
                         profile, widths, mask=prof_mask & DQ.not_signal,
                         variance=1.0 if this_use_snr else None, reject_bad=False,
-                        min_snr=3, min_frac=0.2)
+                        min_snr=3, min_frac=0.2, pinpoint_index=0)
 
                     if peaks_and_snrs.size == 0:
                         log.warning("Found no sources")
@@ -2893,6 +2895,10 @@ class Spect(PrimitivesBASE):
                                        if c1[dispaxis] == location])
                     values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
                     ref_coords, in_coords = values[:2], values[2:]
+                    min_value = in_coords[1 - dispaxis].min()
+                    max_value = in_coords[1 - dispaxis].max()
+                    log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
+                              f"to {max_value}")
 
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis

@@ -203,8 +203,12 @@ def test_regression_determine_wavelength_solution(
     slit_size_in_px = slit_size_in_arcsec / pixel_scale
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
+    # We don't care about what the wavelength solution is doing at
+    # wavelengths where there's no data
+    indices = np.where(np.logical_and(ref_wavelength > 300, ref_wavelength < 1200))
     tolerance = 0.5 * (slit_size_in_px * dispersion)
-    np.testing.assert_allclose(wavelength, ref_wavelength, rtol=tolerance)
+    np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
+                               rtol=tolerance)
 
     if request.config.getoption("--do-plots"):
         do_plots(wcalibrated_ad)

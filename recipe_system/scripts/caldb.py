@@ -112,7 +112,10 @@ class Dispatcher:
                     self.db.add_cal(path)
                     self._log(f"Ingested {path}")
             except OSError as e:
-                traceback.print_last()
+                try:  # reproduce previous code
+                    traceback.print_last()
+                except ValueError:
+                    pass
                 print(e, file=sys.stderr)
                 return -1
             except ValueError as e:
