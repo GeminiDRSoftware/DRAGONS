@@ -598,6 +598,8 @@ class RegionTask(Task):
         if key == 'e':
             if self.region_edge is None:
                 self.region_id, self.region_edge = self.region_model.closest_region(self.last_x)
+            else:
+                self.stop_region()
             self.update_help()
             return False
         if key == 'd':
