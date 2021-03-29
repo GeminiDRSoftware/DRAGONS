@@ -729,7 +729,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    primitive_name="normalizeFlat",
                                                    filename_info=filename_info,
                                                    enable_user_masking=False,
-                                                   enable_regions=False,
+                                                   enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True)
                 geminidr.interactive.server.interactive_fitter(visualizer)
