@@ -59,7 +59,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -74,6 +74,10 @@ pipeline {
                             echo "Archiving tests results for Unit Tests"
                             sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
         //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
+                        }
+                        success {
+                            echo "Delete Tox Environment"
+                            sh "rm -Rf .tox/py37-unit"
                         }
                     }
 
@@ -93,7 +97,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Integration tests"
-                        sh 'tox -e py37-integ -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py37-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F integration'
                     } // end steps
@@ -103,6 +107,10 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: 'reports/*_results.xml'
                             )
+                        }
+                        success {
+                            echo "Delete Tox Environment"
+                            sh "rm -Rf .tox/py37-integ"
                         }
                     } // end post
                 } // end stage
@@ -121,7 +129,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Regression tests"
-                        sh 'tox -e py37-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py37-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F regression'
                     } // end steps
@@ -131,6 +139,10 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: 'reports/*_results.xml'
                             )
+                        }
+                        success {
+                            echo "Delete Tox Environment"
+                            sh "rm -Rf .tox/py37-reg"
                         }
                     } // end post
                 }
@@ -161,6 +173,12 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                         }  // end always
+                        success {
+                            echo "Delete Tox Environment"
+                            dir( '.tox/py37-gmosls' ) {
+                                deleteDir()
+                            }
+                        }
                     }  // end post
                 }  // end stage
 
@@ -191,6 +209,12 @@ pipeline {
                         allowEmptyResults: true,
                         testResults: 'reports/*_results.xml'
                     )
+                }
+                success {
+                    echo "Delete Tox Environment"
+                    dir( '.tox/py37-slow' ) {
+                        deleteDir()
+                    }
                 }
             } // end post
         }
