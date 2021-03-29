@@ -802,7 +802,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, function=None, title=None, primitive_name=None, filename_info=None,
-                 template="fit1d.html", help_text=None,
+                 template="fit1d.html", help_text=None, recalc_inputs_above=False,
                  **kwargs):
         """
         Parameters
@@ -848,6 +848,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
                          template=template, help_text=help_text)
         self.layout = None
+        self.recalc_inputs_above = recalc_inputs_above
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -856,13 +857,18 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # Make the panel with widgets to control the creation of (x, y) arrays
 
         # Function - either a dropdown or a label for the single option
+        # set width_policy to min if we are going to place above tabs
+        if self.recalc_inputs_above:
+            width_policy = "min"
+        else:
+            width_policy = "auto"
         if 'function' in config._fields:
             fn = config.function
             fn_allowed = [k for k in config._fields['function'].allowed.keys()]
 
             # Dropdown for selecting fit_1D function
             self.function = Select(title="Fitting Function:", value=fn,
-                                   options=fn_allowed)
+                                   options=fn_allowed, width_policy=width_policy)
 
             def fn_select_change(attr, old, new):
                 def refit():
@@ -889,7 +895,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.make_modal(self.reinit_button, modal_message)
                 reinit_widgets.append(self.reinit_button)
 
-            self.reinit_panel = column(self.function, *reinit_widgets)
+            if recalc_inputs_above:
+                self.reinit_panel = row(self.function, *reinit_widgets)
+            else:
+                self.reinit_panel = column(self.function, *reinit_widgets)
         else:
             # left panel with just the function selector (Chebyshev, etc.)
             self.reinit_panel = column(self.function)
@@ -1017,7 +1026,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             )
             layout_ls.append(filename_div)
         layout_ls.append(self.submit_button)
-        if len(self.reinit_panel.children) <= 1:
+        if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
             layout_ls.append(Spacer(height=10))
             layout_ls.append(col)
