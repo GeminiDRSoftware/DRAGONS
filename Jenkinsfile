@@ -70,6 +70,7 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: 'reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
                             dir ( '$TMPDIR' ) {
                                 deleteDir()
                             }
@@ -80,8 +81,10 @@ pipeline {
         //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
                         }
                         success {
-                            echo "Delete Tox Environment"
-                            sh "rm -Rf .tox/py37-unit"
+                            echo "Delete Tox Environment: .tox/py37-unit"
+                            dir ( ".tox/py37-unit" ) {
+                                deleteDir()
+                            }
                         }
                     }
 
@@ -94,6 +97,7 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "./integ_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/integ/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -111,10 +115,16 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: 'reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
                         }
                         success {
-                            echo "Delete Tox Environment"
-                            sh "rm -Rf .tox/py37-integ"
+                            echo "Delete Tox Environment: .tox/py37-integ"
+                            dir ( ".tox/py37-integ" ) {
+                                deleteDir()
+                            }
                         }
                     } // end post
                 } // end stage
@@ -126,6 +136,7 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "regression_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/regr/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -143,10 +154,16 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: 'reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
                         }
                         success {
-                            echo "Delete Tox Environment"
-                            sh "rm -Rf .tox/py37-reg"
+                            echo "Delete Tox Environment: .tox/py37-reg"
+                            dir ( ".tox/py37-reg" ) {
+                                deleteDir()
+                            }
                         }
                     } // end post
                 }
@@ -158,6 +175,7 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "gmosls_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/gmosls/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -176,9 +194,13 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: 'reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
                         }  // end always
                         success {
-                            echo "Delete Tox Environment"
+                            echo "Delete Tox Environment: .tox/py37-gmosls"
                             dir( '.tox/py37-gmosls' ) {
                                 deleteDir()
                             }
@@ -196,6 +218,7 @@ pipeline {
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "regression_tests_outputs"
                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                TMPDIR = "${env.WORKSPACE}/.tmp/slow/"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -213,9 +236,13 @@ pipeline {
                         allowEmptyResults: true,
                         testResults: 'reports/*_results.xml'
                     )
+                    echo "Delete temporary folder: ${TMPDIR}"
+                    dir ( '$TMPDIR' ) {
+                        deleteDir()
+                    }
                 }
                 success {
-                    echo "Delete Tox Environment"
+                    echo "Delete Tox Environment: .tox/py37-slow"
                     dir( '.tox/py37-slow' ) {
                         deleteDir()
                     }
