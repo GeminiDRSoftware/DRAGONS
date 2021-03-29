@@ -543,8 +543,10 @@ class Fit1DPanel:
             height of plot area in pixels
         plot_residuals : bool
             True if we want the lower plot showing the differential between the fit and the data
-        grow_slider : bool
-            True if we want the slider for modifying growth radius
+        enable_user_masking : bool
+            True to enable fine-grained data masking by the user using bokeh selections
+        enable_regions : bool
+            True if we want to allow user-defind regions as a means of masking the data
         """
         # Just to get the doc later
         self.visualizer = visualizer

@@ -1,6 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from copy import copy
+from functools import cmp_to_key
 
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
@@ -772,6 +773,7 @@ class GIRegionModel:
         for tup in tuples:
             self.adjust_region(self.region_id, tup.start, tup.stop)
             self.region_id = self.region_id + 1
+        self.finish_regions()
 
     def load_from_string(self, region_string):
         self.load_from_tuples(cartesian_regions_to_slices(region_string))
@@ -924,13 +926,26 @@ class GIRegionModel:
         return False
 
     def build_regions(self):
+        def none_cmp(x, y):
+            if x is None and y is None:
+                return 0
+            if x is None:
+                return -1
+            if y is None:
+                return 1
+            return x - y
+        def region_sorter(a, b):
+            retval = none_cmp(a[0], b[0])
+            if retval == 0:
+                retval = none_cmp(a[1], b[1])
+            return retval
         def deNone(val, offset=0):
             return '' if val is None else val + offset
         if self.regions is None or len(self.regions.values()) == 0:
             return None
         sorted_regions = list()
         sorted_regions.extend(self.regions.values())
-        sorted_regions.sort()
+        sorted_regions.sort(key=cmp_to_key(region_sorter))
         return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
 
 
