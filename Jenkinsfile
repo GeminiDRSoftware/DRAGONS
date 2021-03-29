@@ -60,8 +60,8 @@ pipeline {
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
                         sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
-//                         echo "Reportint coverage to CodeCov"
-//                         sh 'tox -e codecov -- -F unit'
+                        echo "Reportint coverage to CodeCov"
+                        sh 'tox -e codecov -- -F unit'
                     }
                     post {
                         always {
@@ -96,10 +96,10 @@ pipeline {
                         checkout scm
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
-//                         echo "Integration tests"
-//                         sh 'tox -e py37-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
-//                         echo "Reporting coverage"
-//                         sh 'tox -e codecov -- -F integration'
+                        echo "Integration tests"
+                        sh 'tox -e py37-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F integration'
                     } // end steps
                     post {
                         always {
