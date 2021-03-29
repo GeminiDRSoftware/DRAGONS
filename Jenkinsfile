@@ -53,6 +53,7 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "unit_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -69,6 +70,9 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: 'reports/*_results.xml'
                             )
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
                         }
                         failure {
                             echo "Archiving tests results for Unit Tests"
