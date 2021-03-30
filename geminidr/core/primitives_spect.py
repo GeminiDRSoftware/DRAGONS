@@ -15,10 +15,11 @@ import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
 from astropy.io.ascii.core import InconsistentTableError
-from astropy.io.fits import Header
+from astropy.io import fits
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip
 from astropy.table import Table
+from astropy.utils.exceptions import AstropyUserWarning
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
@@ -369,7 +370,7 @@ class Spect(PrimitivesBASE):
                 knots, coeffs, degree = spline.tck
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
                                  names=('knots', 'coefficients'),
-                                 meta={'header': Header()})
+                                 meta={'header': fits.Header()})
                 sensfunc.meta['header']['ORDER'] = (3, 'Order of spline fit')
                 ext.SENSFUNC = sensfunc
                 calculated = True
@@ -2574,6 +2575,108 @@ class Spect(PrimitivesBASE):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+        return adinputs
+
+    def write1DSpectra(self, adinputs=None, **params):
+        """
+        Write 1D spectra to files listing the wavelength and data (and
+        optionally variance and mask) in one of a range of possible formats.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+        format : str
+            format for writing output files
+        header : bool
+            write FITS header before data values?
+        extension : str
+            extension to be used in output filenames
+        apertures : str
+            comma-separated list of aperture numbers to write
+        dq : bool
+            write DQ (mask) plane?
+        var : bool
+            write VAR (variance) plane?
+        overwrite : bool
+            overwrite existing files?
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The unmodified input files.
+        """
+        # dict of {format parameter: (Table format, file suffix)}
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        fmt = params["format"]
+        header = params["header"]
+        extension = params["extension"]
+        apertures = params["apertures"]
+        if apertures:
+            these_apertures = [int(x) for x in apertures.split(",")]
+        write_dq = params["dq"]
+        write_var = params["var"]
+        overwrite = params["overwrite"]
+
+        for ad in adinputs:
+            aperture_map = dict(zip(range(len(ad)), ad.hdr.get("APERTURE")))
+            if apertures is None:
+                these_apertures = sorted(list(aperture_map.values()))
+            for aperture in these_apertures:
+                indices = [k for k, v in aperture_map.items() if v == aperture]
+                if len(indices) > 2:
+                    log.warning(f"{ad.filename} has more than one aperture "
+                                f"numbered {aperture} - continuing")
+                    continue
+                elif not indices:
+                    log.warning(f"{ad.filename} does not have an aperture "
+                                f"numbered {aperture} - continuing")
+                    continue
+
+                ext = ad[indices.pop()]
+                if ext.data.ndim != 1:
+                    log.warning(f"{ad.filename} aperture {aperture} is not a "
+                                "1D array - continuing")
+                    continue
+
+                data_unit = u.Unit(ext.hdr.get("BUNIT"))
+                t = Table((ext.wcs(range(ext.data.size)), ext.data),
+                          names=("wavelength", "data"),
+                          units=(ext.wcs.output_frame.unit[0], str(data_unit)))
+                if write_dq:
+                    t.add_column(ext.mask, name="dq")
+                if write_var:
+                    t.add_column(ext.variance, name="variance")
+                    t["variance"].unit = str(data_unit ** 2)
+                    var_col = len(t.colnames)
+
+                filename = (os.path.splitext(ad.filename)[0] +
+                            f"_{aperture:03d}.{extension}")
+                log.stdinfo(f"Writing {filename}")
+                try:
+                    if header:
+                        with open(filename, "w" if overwrite else "x") as f:
+                            for line in (repr(ext.phu) + repr(ext.hdr)).split("\n"):
+                                if line != " " * len(line):
+                                    f.write(f"# {line.strip()}\n")
+                            t.write(f, format=fmt)
+                    elif fmt == "fits":
+                        # Table.write isn't happy with the unit 'electron'
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore", category=AstropyUserWarning)
+                            thdu = fits.table_to_hdu(t)
+                        if "TUNIT2" not in thdu.header:
+                            thdu.header["TUNIT2"] = str(data_unit)
+                        if write_var and f"TUNIT{var_col}" not in thdu.header:
+                            thdu.header[f"TUNIT{var_col}"] = str(data_unit ** 2)
+                        hlist = fits.HDUList([fits.PrimaryHDU(), thdu])
+                        hlist.writeto(filename, overwrite=overwrite)
+                    else:
+                        t.write(filename, format=fmt, overwrite=overwrite)
+                except OSError:
+                    log.warning(f"{filename} already exists - cannot write")
+
         return adinputs
 
     def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, **kwargs):
