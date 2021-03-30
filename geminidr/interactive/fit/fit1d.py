@@ -42,8 +42,11 @@ def build_fit_1D(fit1d_params, data, points, weights):
                   **fit1d_params)
 
 
+SIGMA_MASK_NAME = 'rejected (sigma)'
+USER_MASK_NAME = 'rejected (user)'
+
 class InteractiveModel(ABC):
-    MASK_TYPE = ['excluded', 'user', 'good', 'sigma']
+    MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'triangle', 'circle', 'square']
     PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')  # Category10[4]
     """
@@ -131,11 +134,11 @@ class InteractiveModel(ABC):
         new_mask = ['good'] * len(self.data.data['mask'])
         for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
             if fm:
-                new_mask[i] = 'sigma'
+                new_mask[i] = SIGMA_MASK_NAME
             if bdm:
                 new_mask[i] = 'excluded'
             if um:
-                new_mask[i] = 'user'
+                new_mask[i] = USER_MASK_NAME
         self.data.data['mask'] = new_mask
 
 
