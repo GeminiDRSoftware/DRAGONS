@@ -329,11 +329,12 @@ class TraceAperturesTab(Fit1DPanel):
                 self.fit.model.regions = self.band_model.build_regions()
 
             self.band_model = GIRegionModel()
+            # Handles Bands Regions
             self.band_model.add_listener(
                 Fit1DRegionListener(update_regions))
-            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
-            # self.band_model.add_listener(
-            #     TraceAperturesRegionListener(self.band_model_handler))
+            # Handles Bands Masks
+            self.band_model.add_listener(
+                Fit1DRegionListener(self.band_model_handler))
             connect_figure_extras(p_main, None, self.band_model)
             mask_handlers = (self.mask_button_handler,
                              self.unmask_button_handler,
