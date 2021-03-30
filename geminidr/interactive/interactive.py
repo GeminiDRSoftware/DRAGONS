@@ -1126,7 +1126,12 @@ class RegionEditor(GIRegionListener):
         self.region_model = region_model
         self.region_model.add_listener(self)
         self.text_input.on_change("value", self.handle_text_value)
-        self.error_message = Div(text="<b><span style='color:red'>please use comma separated : delimited values (i.e. 100:500,510:900,950:)</span></b>")
+
+        self.error_message = Div(text="<b> <span style='color:red'> "
+                                      "  Please use comma separated : delimited "
+                                      "  values (i.e. 100:500,510:900,950:)"
+                                      "</span></b>")
+
         self.error_message.visible = False
         self.widget = column(self.text_input, self.error_message)
         self.handling = False
