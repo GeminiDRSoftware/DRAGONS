@@ -14,11 +14,11 @@ from gempy.library.config import RangeField
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import (
-    connect_figure_extras, GIRegionListener, GIRegionModel, RegionEditor)
+    connect_figure_extras, GIRegionModel, RegionEditor)
 
 from .. import server
-from .fit1d import (
-    Fit1DPanel, Fit1DVisualizer, FittingParametersUI, InteractiveModel1D)
+from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
+                    FittingParametersUI, InteractiveModel1D)
 
 __all__ = ["interactive_trace_apertures", ]
 
@@ -180,31 +180,6 @@ class TraceAperturesParametersUI(FittingParametersUI):
         self.fit.perform_fit()
 
 
-class TraceAperturesRegionListener(GIRegionListener):
-    """
-    Wrapper class so we can just detect when a bands are finished. We don't want
-    to do an expensive recalc as a user is dragging a band around. It creates a
-    band listener that just updates on `finished`.
-
-    Parameters
-    ----------
-    fn : function
-        function to call when band is finished.
-    """
-
-    def __init__(self, fn):
-        self.fn = fn
-
-    def adjust_region(self, region_id, start, stop):
-        pass
-
-    def delete_region(self, region_id):
-        self.fn()
-
-    def finish_regions(self):
-        self.fn()
-
-
 # noinspection PyMissingConstructor
 class TraceAperturesTab(Fit1DPanel):
     """
@@ -355,7 +330,7 @@ class TraceAperturesTab(Fit1DPanel):
 
             self.band_model = GIRegionModel()
             self.band_model.add_listener(
-                TraceAperturesRegionListener(update_regions))
+                Fit1DRegionListener(update_regions))
             # self.band_model.add_listener(
             #     TraceAperturesRegionListener(self.band_model_handler))
             connect_figure_extras(p_main, None, self.band_model)
@@ -474,6 +449,10 @@ class TraceAperturesTab(Fit1DPanel):
             ???
         """
         info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
+
+    def update_regions(self):
+        """ Update fitting regions """
+        self.fit.model.regions = self.band_model.build_regions()
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
     """

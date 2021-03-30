@@ -792,11 +792,20 @@ class GIRegionModel:
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
+    def clear_regions(self):
+        """
+        Deletes all regions.
+        """
+        for region_id in self.regions.keys():
+            for listener in self.listeners:
+                listener.delete_region(region_id)
+        self.regions = dict()
+
     def load_from_tuples(self, tuples):
         region_ids = list(self.regions.keys())
         for region_id in region_ids:
             self.delete_region(region_id)
-        self.region_id=1
+        self.region_id = 1
         for tup in tuples:
             self.adjust_region(self.region_id, tup.start, tup.stop)
             self.region_id = self.region_id + 1
@@ -1172,10 +1181,31 @@ class RegionEditor(GIRegionListener):
         return region_text
 
     def handle_text_value(self, attr, old, new):
+        """
+        Handles the new text value inside the Text Input field. The
+        (attr, old, new) callback signature is a requirement from Bokeh.
+
+        Parameters
+        ----------
+        attr :
+            Attribute that would be changed. Not used here.
+        old : str
+            Old attribute value. Not used here.
+        new : str
+            New attribute value. Used to update regions.
+        """
         if not self.handling:
             self.handling = True
             region_text = self.standardize_region_text(new)
             current = self.region_model.build_regions()
+
+            # Clean up regions if text input is empty
+            if not region_text or region_text.isspace():
+                self.region_model.clear_regions()
+                self.text_input.value = ""
+                current = None
+                region_text = None
+
             if current != region_text:
                 if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
                     self.region_model.load_from_string(region_text)
@@ -1186,6 +1216,7 @@ class RegionEditor(GIRegionListener):
                         self.error_message.visible = True
             else:
                 self.error_message.visible = False
+
             self.handling = False
 
     def get_widget(self):
