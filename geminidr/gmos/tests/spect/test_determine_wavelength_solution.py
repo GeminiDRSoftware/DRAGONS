@@ -218,7 +218,8 @@ def test_regression_determine_wavelength_solution(
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1])
-def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
+def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr,
+                                             indirect=True):
     p = GMOSLongslit([])
     p.viewer = geminidr.dormantViewer(p, None)
 
