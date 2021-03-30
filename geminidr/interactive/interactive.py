@@ -5,7 +5,7 @@ from functools import cmp_to_key
 
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div)
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
@@ -326,10 +326,18 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     """
     is_float = not isinstance(value, int)
 
+    if min_value is not None and max_value is not None:
+        title = '%s (min: %s, max: %s)' % (title, min_value, max_value)
+    elif min_value is not None:
+        title = '%s (min: %s)' % (title, min_value)
+    elif max_value is not None:
+        title = '%s (max: %s)' % (title, max_value)
+
     start = min(value, min_value) if min_value else min(value, 0)
     end = max(value, max_value) if max_value else max(10, value*2)
 
     # trying to convince int-based sliders to behave
+    fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
         slider = Slider(start=start, end=end, value=value, step=step,
@@ -340,7 +348,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     slider.width = slider_width
 
-    text_input = TextInput(width=64, value=str(value))
+    text_input = NumericInput(width=64, value=value, low=min_value, high=max_value, format=fmt,
+                              mode='float' if is_float else 'int')
     component = row(slider, text_input, css_classes=["text_sider_%s" % attr,])
 
     def _input_check(val):
@@ -377,22 +386,17 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     def update_text_input(attrib, old, new):
         # Update the text input
         if new != old:
-            text_input.value = str(new)
+            text_input.value = new
 
     def handle_value(attrib, old, new):
         # Handle a new value and set the registered object/attribute accordingly
         # Also updates the slider and calls the registered handler function, if any
-        numeric_value = None
-        if is_float:
-            numeric_value = float(new)
-        else:
-            numeric_value = int(new)
         if obj and attr:
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
-                    obj[attr] = numeric_value
+                    obj[attr] = new
                 else:
-                    obj.__setattr__(attr, numeric_value)
+                    obj.__setattr__(attr, new)
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
@@ -401,8 +405,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             else:
                 update_slider(attrib, old, new)
         if handler:
-            if numeric_value is not None:
-                handler(numeric_value)
+            if new is not None:
+                handler(new)
             else:
                 handler(new)
 
