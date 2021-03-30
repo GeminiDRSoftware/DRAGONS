@@ -880,9 +880,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                     widget.reset()
                 self.model.recalc_apertures()
 
+        find_button = Button(label="Find apertures", button_type='primary',
+                             default_size=200)
+
         def _find_handler(result):
             if result:
-                self.model.recalc_apertures()
+                find_button.disabled = True
+                def fn():
+                    self.model.recalc_apertures()
+                    find_button.disabled = False
+                self.do_later(fn)
 
         # Profile parameters
         percentile = TextSlider("Percentile (use mean if no value)", model,
@@ -910,13 +917,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                    'back to their original values.  Proceed?',
                                    _reset_handler)
 
-        find_button = Button(label="Find apertures", button_type='primary',
-                             default_size=200)
-
         self.make_ok_cancel_dialog(find_button,
                                    'All apertures will be recomputed and '
                                    'changes will be lost. Proceed?',
                                    _find_handler)
+        self.make_modal(find_button, 'Recalculating Apertures...')
 
         return column(
             Div(text="Parameters to compute the profile:",

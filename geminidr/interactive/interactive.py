@@ -1,10 +1,11 @@
 import re
 from abc import ABC, abstractmethod
 from copy import copy
+from functools import cmp_to_key
 
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div)
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
@@ -156,9 +157,11 @@ class PrimitiveVisualizer(ABC):
             Function to execute in the bokeh loop (should not take required arguments)
         """
         if self.doc is None:
-            if self.log is not None:
+            if hasattr(self, 'log') and self.log is not None:
                 self.log.warn("Call to do_later, but no document is set.  Does this PrimitiveVisualizer call "
                               "super().visualize(doc)?")
+            # no doc, probably ok to just execute
+            fn()
         else:
             self.doc.add_next_tick_callback(lambda: fn())
 
@@ -346,10 +349,18 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     """
     is_float = not isinstance(value, int)
 
+    if min_value is not None and max_value is not None:
+        title = '%s (min: %s, max: %s)' % (title, min_value, max_value)
+    elif min_value is not None:
+        title = '%s (min: %s)' % (title, min_value)
+    elif max_value is not None:
+        title = '%s (max: %s)' % (title, max_value)
+
     start = min(value, min_value) if min_value else min(value, 0)
     end = max(value, max_value) if max_value else max(10, value*2)
 
     # trying to convince int-based sliders to behave
+    fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
         slider = Slider(start=start, end=end, value=value, step=step,
@@ -360,8 +371,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     slider.width = slider_width
 
-    text_input = TextInput(width=64, value=str(value))
-    component = row(slider, text_input, css_classes=["text_slider_%s" % attr,])
+    text_input = NumericInput(width=64, value=value, low=min_value, high=max_value, format=fmt,
+                              mode='float' if is_float else 'int')
+    component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
@@ -397,28 +409,17 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     def update_text_input(attrib, old, new):
         # Update the text input
         if new != old:
-            text_input.value = str(new)
+            text_input.value = new
 
     def handle_value(attrib, old, new):
         # Handle a new value and set the registered object/attribute accordingly
         # Also updates the slider and calls the registered handler function, if any
-        numeric_value = None
-        if is_float:
-            numeric_value = float(new)
-        else:
-            numeric_value = int(new)
-        if (max_value is not None and numeric_value > max_value) or \
-                (min_value is not None and numeric_value < min_value):
-            text_input.remove_on_change("value", handle_value)
-            text_input.value = str(old)
-            text_input.on_change("value", handle_value)
-            return
         if obj and attr:
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
-                    obj[attr] = numeric_value
+                    obj[attr] = new
                 else:
-                    obj.__setattr__(attr, numeric_value)
+                    obj.__setattr__(attr, new)
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
@@ -427,8 +428,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             else:
                 update_slider(attrib, old, new)
         if handler:
-            if numeric_value is not None:
-                handler(numeric_value)
+            if new is not None:
+                handler(new)
             else:
                 handler(new)
 
@@ -799,6 +800,7 @@ class GIRegionModel:
         for tup in tuples:
             self.adjust_region(self.region_id, tup.start, tup.stop)
             self.region_id = self.region_id + 1
+        self.finish_regions()
 
     def load_from_string(self, region_string):
         self.load_from_tuples(cartesian_regions_to_slices(region_string))
@@ -951,13 +953,26 @@ class GIRegionModel:
         return False
 
     def build_regions(self):
+        def none_cmp(x, y):
+            if x is None and y is None:
+                return 0
+            if x is None:
+                return -1
+            if y is None:
+                return 1
+            return x - y
+        def region_sorter(a, b):
+            retval = none_cmp(a[0], b[0])
+            if retval == 0:
+                retval = none_cmp(a[1], b[1])
+            return retval
         def deNone(val, offset=0):
             return '' if val is None else val + offset
         if self.regions is None or len(self.regions.values()) == 0:
             return None
         sorted_regions = list()
         sorted_regions.extend(self.regions.values())
-        sorted_regions.sort()
+        sorted_regions.sort(key=cmp_to_key(region_sorter))
         return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
 
 

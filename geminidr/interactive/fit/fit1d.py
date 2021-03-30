@@ -42,8 +42,11 @@ def build_fit_1D(fit1d_params, data, points, weights):
                   **fit1d_params)
 
 
+SIGMA_MASK_NAME = 'rejected (sigma)'
+USER_MASK_NAME = 'rejected (user)'
+
 class InteractiveModel(ABC):
-    MASK_TYPE = ['excluded', 'user', 'good', 'sigma']
+    MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'triangle', 'circle', 'square']
     PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')  # Category10[4]
     """
@@ -131,11 +134,11 @@ class InteractiveModel(ABC):
         new_mask = ['good'] * len(self.data.data['mask'])
         for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
             if fm:
-                new_mask[i] = 'sigma'
+                new_mask[i] = SIGMA_MASK_NAME
             if bdm:
                 new_mask[i] = 'excluded'
             if um:
-                new_mask[i] = 'user'
+                new_mask[i] = USER_MASK_NAME
         self.data.data['mask'] = new_mask
 
 
@@ -543,8 +546,10 @@ class Fit1DPanel:
             height of plot area in pixels
         plot_residuals : bool
             True if we want the lower plot showing the differential between the fit and the data
-        grow_slider : bool
-            True if we want the slider for modifying growth radius
+        enable_user_masking : bool
+            True to enable fine-grained data masking by the user using bokeh selections
+        enable_regions : bool
+            True if we want to allow user-defind regions as a means of masking the data
         """
         # Just to get the doc later
         self.visualizer = visualizer
@@ -653,7 +658,8 @@ class Fit1DPanel:
             connect_figure_extras(p_main, None, self.band_model)
 
             mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler)
+                             self.unmask_button_handler,
+                             self.point_mask_handler)
         else:
             self.band_model = None
             mask_handlers = None
@@ -749,6 +755,40 @@ class Fit1DPanel:
         self.fit.data.selected.update(indices=[])
         for i in indices:
             self.fit.user_mask[i] = 0
+        self.fit.perform_fit()
+
+    def point_mask_handler(self, x, y):
+        """
+        Handler for the mask button.
+
+        When the mask button is clicked, this method
+        will find the selected data points and set the
+        user mask for them.
+
+        Parameters
+        ----------
+        stuff : any
+            This is ignored, but the button passes it
+        """
+        dist = None
+        sel = None
+        xarr = self.fit.data.data['x']
+        yarr = self.fit.data.data['y']
+        for i in range(len(xarr)):
+            xd = xarr[i]
+            yd = yarr[i]
+            if xd is not None and yd is not None:
+                ddist = (x-xd)**2 + (y-yd)**2
+                if dist is None or ddist < dist:
+                    dist = ddist
+                    sel = i
+        if sel is not None:
+            # we have a closest point, toggle the user mask
+            if self.fit.user_mask[sel]:
+                self.fit.user_mask[sel] = 0
+            else:
+                self.fit.user_mask[sel] = 1
+
         self.fit.perform_fit()
 
     def band_model_handler(self):
