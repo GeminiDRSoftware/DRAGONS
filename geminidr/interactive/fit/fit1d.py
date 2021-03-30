@@ -658,7 +658,8 @@ class Fit1DPanel:
             connect_figure_extras(p_main, None, self.band_model)
 
             mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler)
+                             self.unmask_button_handler,
+                             self.point_mask_handler)
         else:
             self.band_model = None
             mask_handlers = None
@@ -754,6 +755,40 @@ class Fit1DPanel:
         self.fit.data.selected.update(indices=[])
         for i in indices:
             self.fit.user_mask[i] = 0
+        self.fit.perform_fit()
+
+    def point_mask_handler(self, x, y):
+        """
+        Handler for the mask button.
+
+        When the mask button is clicked, this method
+        will find the selected data points and set the
+        user mask for them.
+
+        Parameters
+        ----------
+        stuff : any
+            This is ignored, but the button passes it
+        """
+        dist = None
+        sel = None
+        xarr = self.fit.data.data['x']
+        yarr = self.fit.data.data['y']
+        for i in range(len(xarr)):
+            xd = xarr[i]
+            yd = yarr[i]
+            if xd is not None and yd is not None:
+                ddist = (x-xd)**2 + (y-yd)**2
+                if dist is None or ddist < dist:
+                    dist = ddist
+                    sel = i
+        if sel is not None:
+            # we have a closest point, toggle the user mask
+            if self.fit.user_mask[sel]:
+                self.fit.user_mask[sel] = 0
+            else:
+                self.fit.user_mask[sel] = 1
+
         self.fit.perform_fit()
 
     def band_model_handler(self):

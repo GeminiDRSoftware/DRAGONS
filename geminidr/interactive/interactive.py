@@ -157,9 +157,11 @@ class PrimitiveVisualizer(ABC):
             Function to execute in the bokeh loop (should not take required arguments)
         """
         if self.doc is None:
-            if self.log is not None:
+            if hasattr(self, 'log') and self.log is not None:
                 self.log.warn("Call to do_later, but no document is set.  Does this PrimitiveVisualizer call "
                               "super().visualize(doc)?")
+            # no doc, probably ok to just execute
+            fn()
         else:
             self.doc.add_next_tick_callback(lambda: fn())
 

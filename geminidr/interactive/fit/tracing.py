@@ -370,7 +370,8 @@ class TraceAperturesTab(Fit1DPanel):
             #     TraceAperturesRegionListener(self.band_model_handler))
             connect_figure_extras(p_main, None, self.band_model)
             mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler)
+                             self.unmask_button_handler,
+                             self.point_mask_handler)
         else:
             self.band_model = None
             mask_handlers = None

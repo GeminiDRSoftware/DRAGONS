@@ -61,6 +61,9 @@ class Controller(object):
             model for regions for this plot/dataset, or None
         helptext : :class:`Div`
             div to update text in to provide help to the user
+        mask_handlers : None or tuple of {2,3} functions
+            The first two functions handle mask/unmask commands, the third (optional)
+            function handles 'P' point mask requests.
         """
 
         # set the class for the helptext div so we can have a common style
@@ -74,9 +77,13 @@ class Controller(object):
                                "will be the points to be masked/unmasked.  Hold </i>shift<i> during select to " \
                                "combine multiple selections or points.</i><br/>" \
                                "<b>M</b> - Add selected points to mask<br/>" \
-                               "<b>U</b> - Unmask selected points<br/><br/>" if mask_handlers else ''
+                               "<b>U</b> - Unmask selected points<br/>" if mask_handlers else ''
+        self.helpmaskingtext = self.helpmaskingtext + \
+                               "<b>P</b> - Mask/Unmask closest point<br>" if mask_handlers and len(mask_handlers)>2 else ''
+        self.helpmaskingtext = self.helpmaskingtext + \
+                               "<br/>" if mask_handlers else ''
 
-        # If we support masking, we also want to wait for the first select event
+            # If we support masking, we also want to wait for the first select event
         # and remove the additional text when it happens.
         if mask_handlers:
             self.removed_selection_note = False
@@ -85,7 +92,9 @@ class Controller(object):
                 if not self.removed_selection_note:
                     self.helpmaskingtext = "Masking<br/>" \
                                            "<b>M</b> - Add selected points to mask<br/>" \
-                                           "<b>U</b> - Unmask selected points<br/><br/>"
+                                           "<b>U</b> - Unmask selected points<br/>" \
+                                           "<b>P</b> - Mask/Unmask closest point<br/>" if len(mask_handlers) > 2 else ''
+                    self.helpmaskingtext = self.helpmaskingtext + "<br/>"
                     self.set_help_text(None)
                     self.removed_selection_note = True
             fig.on_event(SelectionGeometry, cb)
@@ -98,13 +107,15 @@ class Controller(object):
         self.helptext = helptext
         self.enable_user_masking = True if mask_handlers else False
         if mask_handlers:
-            if len(mask_handlers) != 2:
+            if len(mask_handlers) < 2:
                 raise ValueError("Must pass tuple (mask_fn, unmask_fn) to mask_handlers argument of Controller")
             self.mask_handler = mask_handlers[0]
             self.unmask_handler = mask_handlers[1]
+            self.pointmask_handler = mask_handlers[2] if len(mask_handlers) > 2 else None
         else:
             self.mask_handler = None
             self.unmask_handler = None
+            self.pointmask_handler = None
         self.tasks = dict()
         if aperture_model:
             self.tasks['a'] = ApertureTask(aperture_model, helptext, fig)
@@ -244,6 +255,9 @@ class Controller(object):
             elif key == 'u' or key == 'U':
                 if self.unmask_handler:
                     self.unmask_handler()
+            elif key == 'p' or key == 'P':
+                if self.pointmask_handler:
+                    self.pointmask_handler(self.x, self.y)
             elif self.task:
                 if self.task.handle_key(key):
                     if len(self.tasks) > 1:
