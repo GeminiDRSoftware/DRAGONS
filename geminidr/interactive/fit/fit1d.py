@@ -622,32 +622,6 @@ class Fit1DPanel:
         p_main.width_policy = 'fit'
 
         if enable_regions:
-            class Fit1DRegionListener(GIRegionListener):
-                """
-                Wrapper class so we can just detect when a bands are finished.
-
-                We don't want to do an expensive recalc as a user is dragging
-                a band around.
-                """
-                def __init__(self, fn):
-                    """
-                    Create a band listener that just updates on `finished`
-                    Parameters
-                    ----------
-                    fn : function
-                        function to call when band is finished.
-                    """
-                    self.fn = fn
-
-                def adjust_region(self, region_id, start, stop):
-                    pass
-
-                def delete_region(self, region_id):
-                    self.fn()
-
-                def finish_regions(self):
-                    self.fn()
-
             self.band_model = GIRegionModel()
 
             def update_regions():
@@ -814,6 +788,30 @@ class Fit1DPanel:
         # TODO figure out if we are using this or band_mask
         # self.fitting_parameters.regions = self.band_model.build_regions()
         self.visualizer.do_later(self.fit.perform_fit)
+
+
+class Fit1DRegionListener(GIRegionListener):
+    """
+    Wrapper class so we can just detect when a bands are finished. We don't want
+    to do an expensive recalc as a user is dragging a band around. It creates a
+    band listener that just updates on `finished`.
+
+    Parameters
+    ----------
+    fn : function
+        function to call when band is finished.
+    """
+    def __init__(self, fn):
+        self.fn = fn
+
+    def adjust_region(self, region_id, start, stop):
+        pass
+
+    def delete_region(self, region_id):
+        self.fn()
+
+    def finish_regions(self):
+        self.fn()
 
 
 class Fit1DVisualizer(interactive.PrimitiveVisualizer):
