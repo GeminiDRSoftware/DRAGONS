@@ -973,7 +973,7 @@ class GIRegionModel:
         sorted_regions = list()
         sorted_regions.extend(self.regions.values())
         sorted_regions.sort(key=cmp_to_key(region_sorter))
-        return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
+        return ', '.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
 
 
 class RegionHolder:
@@ -1107,6 +1107,14 @@ class GIRegionView(GIRegionListener):
 
 
 class RegionEditor(GIRegionListener):
+    """
+    Widget used to create/edit fitting Regions.
+
+    Parameters
+    ----------
+    region_model : GIRegionModel
+        Class that connects this element to the regions on plots.
+    """
     def __init__(self, region_model):
         self.text_input = TextInput(
             title="Regions (i.e. 100:500,510:900,950: Press 'Enter' to apply):",
