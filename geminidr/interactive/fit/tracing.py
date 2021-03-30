@@ -244,27 +244,15 @@ class TraceAperturesTab(Fit1DPanel):
         # Just to get the doc later
         self.visualizer = visualizer
         self.index = idx
+        self.rms_div = self.create_rms_div()
 
-        # Make a listener to update the info panel with the RMS on a fit
-        def update_info(info_div, f):
-            info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
-
-        self.rms_div = bm.Div(align="start",
-                              id=f"rms_div_{self.index}",
-                              width=202,
-                              style={
-                                  "background-color": "whitesmoke",
-                                  "border": "1px solid gainsboro",
-                                  "border-radius": "5px",
-                                  "padding": "10px",
-                                  "width": "100%",
-                              },
-                              width_policy="fixed")
-
-        listeners = [lambda f: update_info(self.rms_div, f), ]
+        listeners = [lambda f: self.update_info(self.rms_div, f), ]
 
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
+                                      listeners=listeners)
+
         self.fitting_parameters_ui = TraceAperturesParametersUI(
             visualizer, self.fit, self.fitting_parameters, min_order, max_order)
 
@@ -444,6 +432,28 @@ class TraceAperturesTab(Fit1DPanel):
         col.sizing_mode = 'scale_both'
         return col, controller
 
+    def create_rms_div(self):
+        """
+        Creates a bm.Div placeholder to print out the RMS information.
+
+        Returns
+        -------
+        bm.Div : element that displays the fitting RMS.
+        """
+        rms_div = bm.Div(align="start",
+                         id=f"rms_div_{self.index}",
+                         width=202,
+                         style={
+                             "background-color": "whitesmoke",
+                             "border": "1px solid gainsboro",
+                             "border-radius": "5px",
+                             "padding": "10px",
+                             "width": "100%",
+                         },
+                         width_policy="fixed")
+
+        return rms_div
+
     def reset_dialog_handler(self, result):
         """
         Reset fit parameter values.
@@ -451,6 +461,19 @@ class TraceAperturesTab(Fit1DPanel):
         if result:
             self.fitting_parameters_ui.reset_ui()
 
+    @staticmethod
+    def update_info(info_div, f):
+        """
+        Listener to update the info panel with the RMS of a fit.
+
+        Parameters
+        ----------
+        info_div : bm.Div
+            Div parameter containing the RMS information.
+        f : ???
+            ???
+        """
+        info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
     """
