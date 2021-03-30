@@ -6,8 +6,10 @@ from astropy import table
 from bokeh import models as bm
 from bokeh.layouts import column, layout, row, Spacer
 from bokeh.plotting import figure
+from copy import deepcopy
 
-from gempy.library import astromodels, astrotools as at, config, tracing
+from gempy.library import astromodels, astrotools as at, tracing
+from gempy.library.config import RangeField
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
@@ -286,7 +288,7 @@ class TraceAperturesTab(Fit1DPanel):
         reset_button = bm.Button(align='start',
                                  button_type='danger',
                                  height=44,
-                                 label="Reset",
+                                 label="Reset Fitting",
                                  width=202)
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
@@ -452,34 +454,30 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
     """
-    def __init__(self,
-                 data_source,
-                 fitting_parameters,
-                 _config,
-                 domains=None,
-                 filename_info=None,
-                 modal_button_label="Re-trace apertures",
-                 modal_message="Re-tracing apertures...",
-                 order_param="order",
-                 primitive_name=None,
-                 reinit_extras=None,
-                 reinit_params=None,
-                 tab_name_fmt='{}',
-                 template="fit1d.html",
-                 title=None,
-                 xlabel='x',
-                 ylabel='y',
-                 **kwargs):
 
-        super(Fit1DVisualizer, self).__init__(config=_config,
+    def __init__(self, data_source, fitting_parameters, config, domains=None,
+                 filename_info=None, modal_button_label="Trace apertures",
+                 modal_message="Tracing apertures...", order_param="order",
+                 primitive_name=None, reinit_extras=None, reinit_params=None,
+                 tab_name_fmt='{}', template="fit1d.html", title=None,
+                 xlabel='x', ylabel='y', **kwargs):
+
+        super(Fit1DVisualizer, self).__init__(config=config,
                                               filename_info=filename_info,
                                               primitive_name=primitive_name,
                                               template=template,
                                               title=title)
-        self.layout = None
-        self.widgets = {}
+
         self.help_text = DETAILED_HELP
+        self.layout = None
+        self.last_changed = None
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
+        self.widgets = {}
+        self.error_alert = self.create_error_alert()
+
+        # Save parameters in case we want to reset them
+        self._reinit_extras = {} if reinit_extras is None \
+            else {key: val.default for key, val in self.reinit_extras.items()}
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
@@ -488,41 +486,30 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                  f'(re)generate the input tracing data that will be used for '
                  f'fitting. </p>')
 
-        self.reinit_panel = self.create_reinit_panel(
+        self.reinit_panel = self.create_tracing_panel(
             modal_button_label=modal_button_label,
             modal_message=modal_message,
             reinit_extras=reinit_extras,
             reinit_params=reinit_params)
 
         # Grab input coordinates or calculate if we were given a callable
-        # TODO revisit the raging debate on `callable` for Python 3
-        if callable(data_source):
-            self.reconstruct_points_fn = data_source
-            data = data_source(config, self.extras)
-            # For this, we need to remap from
-            # [[x1, y1, weights1], [x2, y2, weights2], ...]
-            # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
-            allx = list()
-            ally = list()
-            all_weights = list()
-            for dat in data:
-                allx.append(dat[0])
-                ally.append(dat[1])
-                if len(dat) >= 3:
-                    all_weights.append(dat[2])
+        self.reconstruct_points_fn = self.data_source_factory(
+            data_source, reinit_extras=reinit_extras, reinit_params=reinit_params)
+
+        data = self.reconstruct_points_fn(config, self.extras)
+
+        # For this, we need to remap from
+        # [[x1, y1, weights1], [x2, y2, weights2], ...]
+        # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
+        allx = list()
+        ally = list()
+        all_weights = list()
+        for dat in data:
+            allx.append(dat[0])
+            ally.append(dat[1])
+            if len(dat) >= 3:
+                all_weights.append(dat[2])
             if len(all_weights) == 0:
-                all_weights = None
-        else:
-            self.reconstruct_points_fn = None
-            if reinit_params:
-                raise ValueError("Saw reinit_params but data_source is not a callable")
-            if reinit_extras:
-                raise ValueError("Saw reinit_extras but data_source is not a callable")
-            allx = data_source[0]
-            ally = data_source[1]
-            if len(data_source) >= 3:
-                all_weights = data_source[2]
-            else:
                 all_weights = None
 
         # Some sanity checks now
@@ -536,7 +523,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.nfits = 1
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
+        # noinspection PyProtectedMember
         if order_param and order_param in self.config._fields:
+            # noinspection PyProtectedMember
             field = self.config._fields[order_param]
             if hasattr(field, 'min') and field.min:
                 kwargs['min_order'] = field.min
@@ -577,21 +566,135 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
 
+        self.add_callback_to_sliders()
+
+    def add_callback_to_sliders(self):
+        """
+        Adds a callback function to record which slider was last updated.
+        """
+        for key, val in self.widgets.items():
+            val.on_change('value', self.register_last_changed(key))
+
+    @staticmethod
+    def create_error_alert():
+        """
+        Creates a Pre element to hold a callback function that displays an
+        Alert when an error occurs.
+        """
+
+        callback = bm.CustomJS(
+            args={}, code="if (cb_obj.text !== '') { "
+                          "    alert(cb_obj.text); "
+                          "    cb_obj.text = '';"
+                          "}")
+
+        holder = bm.PreText(text='', css_classes=['hidden'], visible=False)
+        holder.js_on_change('text', callback)
+        return holder
+
+    def data_source_factory(self, data_source, reinit_extras=None,
+                            reinit_params=None):
+        """
+        If our input data_source is an array, wraps it inside a callable
+        function which is called later by the `...` method.
+
+        Parameters
+        ----------
+        data_source : array or function
+            An array with 2 or more dimensions or a function that returns this
+            array.
+        reinit_extras : dict, optional
+            Extra parameters to reinitialize the data.
+        reinit_params : dict, optional
+            Parameters used to reinitialize the data.
+
+        Returns
+        -------
+        function
+        """
+        # TODO revisit the raging debate on `callable` for Python 3
+        if callable(data_source):
+            def _data_source(_config, _extras):
+                """
+                Wraps the callable so we can handle the error properly.
+                """
+                try:
+                    data = data_source(_config, _extras)
+                except IndexError:
+
+                    self.error_alert.text = "Could not perform tracing with " \
+                                            "current parameter. Rolling back " \
+                                            "to previous working configuration."
+
+                    self.reset_tracing_panel(param=self.last_changed)
+                    _extras[self.last_changed] = \
+                        self._reinit_extras[self.last_changed]
+                    data = data_source(_config, _extras)
+                else:
+                    # Store successful pars
+                    self._reinit_extras = deepcopy(_extras)
+
+                return data
+
+        else:
+            def _data_source(_config, _extras):
+                """Simply passes the input data forward."""
+                if reinit_extras:
+                    raise ValueError("Saw reinit_extras but "
+                                     "data_source is not a callable")
+                if reinit_params:
+                    raise ValueError("Saw reinit_params but "
+                                     "data_source is not a callable")
+                if len(data_source) >= 3:
+                    return data_source[0], data_source[1], data_source[2]
+                else:
+                    return data_source[0], data_source[1]
+
+        return _data_source
+
     @staticmethod
     def create_function_div(text=""):
+        """
+        Creates a DIV element containing some small help text.
+
+        Parameters
+        ----------
+        text : str
+            Text displayed above function name.
+
+        Returns
+        -------
+        bokeh.models.Div : help text.
+        """
         div = bm.Div(text=text,
                      id="function_div",
                      width=212,
                      width_policy="fixed",
                      style={"margin-top": "-10px"})
+
         return div
 
-    def create_reinit_panel(self, reinit_params=None, reinit_extras=None,
-                            modal_message=None,
-                            modal_button_label="Reconstruct points"):
+    def create_tracing_panel(self, modal_button_label="Reconstruct points",
+                             modal_message=None, reinit_params=None,
+                             reinit_extras=None):
         """
-        Creates the 'Data Provider Panel' on the left of the webpage.
+        Creates the Tracing (leftmost) Panel. This function had some code not
+        used by TraceAperturesVisualizer, but this code helps to keep
+        compatibility in case we want to merge it into Fit1DVisualizer.
+
+        Parameters
+        ----------
+        modal_button_label : str
+            Text on the button which performs tracing.
+        modal_message : str
+            Displays message as a Modal Div element while performing tracing on
+            the background.
+        reinit_params : dict
+            Parameters for re-tracing.
+        reinit_extras : dict
+            Extra parameters for re-tracing.
         """
+        # No panel required if we are not re-creating data
         if reinit_params is None and reinit_extras is None:
             return
 
@@ -602,6 +705,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         # This should really go in the parent class, like submit_button
         if modal_message:
+
+            # Performs tracing
             self.reinit_button = bm.Button(
                 align='start',
                 button_type='primary',
@@ -611,11 +716,27 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             self.reinit_button.on_click(self.reconstruct_points)
             self.make_modal(self.reinit_button, modal_message)
-            reinit_widgets.append(self.reinit_button)
 
-            reinit_panel = column(self.function, *reinit_widgets)
+            # Reset tracing parameter
+            reset_tracing_button = bm.Button(
+                align='start',
+                button_type='danger',
+                height=44,
+                label="Reset Tracing",
+                width=202)
+
+            reset_tracing_button.on_click(self.reset_tracing_panel)
+
+            # Add to the Web UI
+            reinit_widgets.append(self.reinit_button)
+            reinit_widgets.append(reset_tracing_button)
+            reinit_widgets.append(self.error_alert)
+
+            reinit_panel = column(self.function, *reinit_widgets,
+                                  id="left_panel")
         else:
-            reinit_panel = column(self.function)
+            reinit_panel = column(self.function,
+                                  id="left_panel")
 
         return reinit_panel
 
@@ -650,6 +771,55 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                      width_policy="fit",
                      )
         return div
+
+    def reset_tracing_panel(self, param=None):
+        """
+        Reset all the parameters in the Tracing Panel (leftmost column).
+        If a param is provided, it resets only this parameter in particular.
+
+        Parameters
+        ----------
+        param : string
+            Parameter name
+        """
+        for key, val in self.reinit_extras.items():
+
+            if param is None:
+                reset_value = val.default
+            elif key == param:
+                reset_value = self._reinit_extras[key]
+            else:
+                continue
+
+            old = self.widgets[key].value
+
+            # Update Slider Value
+            self.widgets[key].update(value=reset_value)
+            self.widgets[key].update(value_throttled=reset_value)
+
+            # Update Text Field via callback function
+            for callback in self.widgets[key]._callbacks['value_throttled']:
+                callback(attrib='value_throttled', old=old, new=reset_value)
+
+    def register_last_changed(self, key):
+        """
+        Creates a fallback function called when we update a slider's value.
+
+        Parameters
+        ----------
+        key : string
+            Key associated to the slider widget.
+
+        Returns
+        -------
+        function : callback function that stores the last modified slider.
+        """
+
+        # noinspection PyUnusedLocal
+        def _callback(attr, old, new):
+            self.last_changed = key
+
+        return _callback
 
     def visualize(self, doc):
         """
@@ -696,7 +866,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         doc.add_root(all_content)
 
 
-def interactive_trace_apertures(ext, _config, _fit1d_params):
+def interactive_trace_apertures(ext, config, fit1d_params):
     """
     Run traceApertures() interactively.
 
@@ -704,30 +874,25 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
     ----------
     ext : AstroData
         Single extension extracted from an AstroData object.
-    _config : dict
+    config : dict
         Dictionary containing the parameters from traceApertures().
-    _fit1d_params : dict
+    fit1d_params : dict
         Dictionary containing initial parameters for fitting a model.
-    new_template : bool
-
 
     Returns
     -------
+    Table : new aperture table.
     """
     ap_table = ext.APERTURE
-    fit_par_list = [_fit1d_params] * len(ap_table)
+    fit_par_list = [fit1d_params] * len(ap_table)
     domain_list = [[ap['domain_start'], ap['domain_end']] for ap in ap_table]
 
     # Create parameters to add to the UI
     reinit_extras = {
-        "max_missed": config.RangeField(
-            "Max Missed", int, 5, min=0),
-        "max_shift": config.RangeField(
-            "Max Shifted", float, 0.05, min=0.001, max=0.1),
-        "nsum": config.RangeField(
-            "Number of lines to sum", int, 10, min=1),
-        "step": config.RangeField(
-            "Tracing step: ", int, 10, min=1),
+        "max_missed": RangeField("Max Missed", int, 5, min=0),
+        "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
+        "nsum": RangeField("Number of lines to sum", int, 10, min=1),
+        "step": RangeField("Tracing step: ", int, 10, min=1),
     }
 
     if (2 - ext.dispersion_axis()) == 1:
@@ -740,9 +905,10 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
     def data_provider(conf, extra):
         return trace_apertures_data_provider(ext, conf, extra)
 
+    # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
         data_provider,
-        _config=_config,
+        config=config,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
         tab_name_fmt="Aperture {}",
@@ -778,6 +944,7 @@ def interactive_trace_apertures(ext, _config, _fit1d_params):
     return new_aptable
 
 
+# noinspection PyUnusedLocal
 def trace_apertures_data_provider(ext, conf, extra):
     """
     Function used by the interactive fitter to generate the a list with
@@ -802,28 +969,33 @@ def trace_apertures_data_provider(ext, conf, extra):
     all_tracing_knots = []
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-    for _i, _loc in enumerate(ext.APERTURE['c0'].data):
-        _c0 = int(_loc + 0.5)
+    for i, loc in enumerate(ext.APERTURE['c0'].data):
+        c0 = int(loc + 0.5)
+        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+        start = np.argmax(at.boxcar(spectrum, size=3))
 
-        _spectrum = (ext.data[_c0] if dispaxis == 1
-                     else ext.data[:, _c0])
+        # The coordinates are always returned as (x-coords, y-coords)
+        ref_coords, in_coords = tracing.trace_lines(
+            ext,
+            axis=dispaxis,
+            cwidth=5,
+            initial=[loc],
+            initial_tolerance=None,
+            max_missed=extra['max_missed'],
+            max_shift=extra['max_shift'],
+            nsum=extra['nsum'],
+            rwidth=None,
+            start=start,
+            step=extra['step'],
+        )
 
-        _start = np.argmax(at.boxcar(_spectrum, size=3))
-
-        _ref_coords, _in_coords = tracing.trace_lines(
-            ext, axis=dispaxis, cwidth=5,
-            initial=[_loc], initial_tolerance=None,
-            max_missed=extra['max_missed'], max_shift=extra['max_shift'],
-            nsum=extra['nsum'], rwidth=None, start=_start,
-            step=extra['step'])
-
-        _in_coords = np.ma.masked_array(_in_coords)
+        in_coords = np.ma.masked_array(in_coords)
 
         # ToDo: This should not be required
-        _in_coords.mask = np.zeros_like(_in_coords)
+        in_coords.mask = np.zeros_like(in_coords)
 
-        spectral_tracing_knots = _in_coords[1 - dispaxis]
-        spatial_tracing_knots = _in_coords[dispaxis]
+        spectral_tracing_knots = in_coords[1 - dispaxis]
+        spatial_tracing_knots = in_coords[dispaxis]
 
         all_tracing_knots.append(
             [spectral_tracing_knots, spatial_tracing_knots])
