@@ -1140,10 +1140,30 @@ class RegionEditor(GIRegionListener):
     def finish_regions(self):
         self.text_input.value = self.region_model.build_regions()
 
-    def standardize_region_text(self, region_text):
+    @staticmethod
+    def standardize_region_text(region_text):
+        """
+        Remove spaces near commas separating values, and removes
+        leading/trailing commas in string.
+
+        Parameters
+        ----------
+        region_text : str
+            Region text to clean up.
+
+        Returns
+        -------
+        str : Clean region text.
+        """
+        # Replace " ," or ", " with ","
         region_text = re.sub(r'[ ,]+', ',', region_text)
+
+        # Remove comma if region_text starts with ","
         region_text = re.sub(r'^,', '', region_text)
+
+        # Remove comma if region_text ends with ","
         region_text = re.sub(r',$', '', region_text)
+
         return region_text
 
     def handle_text_value(self, attr, old, new):
