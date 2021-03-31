@@ -14,11 +14,11 @@ from gempy.library.config import RangeField
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import (
-    connect_figure_extras, GIRegionListener, GIRegionModel, RegionEditor)
+    connect_figure_extras, GIRegionModel, RegionEditor)
 
 from .. import server
-from .fit1d import (
-    Fit1DPanel, Fit1DVisualizer, FittingParametersUI, InteractiveModel1D)
+from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
+                    FittingParametersUI, InteractiveModel1D)
 
 __all__ = ["interactive_trace_apertures", ]
 
@@ -180,31 +180,6 @@ class TraceAperturesParametersUI(FittingParametersUI):
         self.fit.perform_fit()
 
 
-class TraceAperturesRegionListener(GIRegionListener):
-    """
-    Wrapper class so we can just detect when a bands are finished. We don't want
-    to do an expensive recalc as a user is dragging a band around. It creates a
-    band listener that just updates on `finished`.
-
-    Parameters
-    ----------
-    fn : function
-        function to call when band is finished.
-    """
-
-    def __init__(self, fn):
-        self.fn = fn
-
-    def adjust_region(self, region_id, start, stop):
-        pass
-
-    def delete_region(self, region_id):
-        self.fn()
-
-    def finish_regions(self):
-        self.fn()
-
-
 # noinspection PyMissingConstructor
 class TraceAperturesTab(Fit1DPanel):
     """
@@ -244,27 +219,15 @@ class TraceAperturesTab(Fit1DPanel):
         # Just to get the doc later
         self.visualizer = visualizer
         self.index = idx
+        self.rms_div = self.create_rms_div()
 
-        # Make a listener to update the info panel with the RMS on a fit
-        def update_info(info_div, f):
-            info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
-
-        self.rms_div = bm.Div(align="start",
-                              id=f"rms_div_{self.index}",
-                              width=202,
-                              style={
-                                  "background-color": "whitesmoke",
-                                  "border": "1px solid gainsboro",
-                                  "border-radius": "5px",
-                                  "padding": "10px",
-                                  "width": "100%",
-                              },
-                              width_policy="fixed")
-
-        listeners = [lambda f: update_info(self.rms_div, f), ]
+        listeners = [lambda f: self.update_info(self.rms_div, f), ]
 
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
+                                      listeners=listeners)
+
         self.fitting_parameters_ui = TraceAperturesParametersUI(
             visualizer, self.fit, self.fitting_parameters, min_order, max_order)
 
@@ -329,32 +292,36 @@ class TraceAperturesTab(Fit1DPanel):
         x_range = None
         y_range = None
 
-        if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-            x_min = min(self.fit.data.data['x'])
-            x_max = max(self.fit.data.data['x'])
-            x_pad = (x_max - x_min) * 0.1
-            x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
+        if self.fit.data:
 
-        if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
-            y_min = min(self.fit.data.data['y'])
-            y_max = max(self.fit.data.data['y'])
-            y_pad = (y_max - y_min) * 0.1
-            y_range = bm.Range1d(y_min - y_pad, y_max + y_pad)
+            if 'x' in self.fit.data.data:
+                if len(self.fit.data.data['x']) >= 2:
+                    x_min = min(self.fit.data.data['x'])
+                    x_max = max(self.fit.data.data['x'])
+                    x_pad = (x_max - x_min) * 0.1
+                    x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
+
+            if 'y' in self.fit.data.data:
+                if len(self.fit.data.data['y']) >= 2:
+                    y_min = min(self.fit.data.data['y'])
+                    y_max = max(self.fit.data.data['y'])
+                    y_pad = (y_max - y_min) * 0.1
+                    y_range = bm.Range1d(y_min - y_pad, y_max + y_pad)
 
         tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
 
         # Create main plot area ------------------------------------------------
-        p_main = figure(plot_width=plot_width,
-                        plot_height=plot_height,
+        p_main = figure(max_height=1000,
                         min_height=100,
-                        max_height=1000,
                         min_width=400,
-                        title=plot_title,
-                        x_axis_label=xlabel,
-                        y_axis_label=ylabel,
-                        tools=tools,
                         output_backend="webgl",
+                        plot_width=plot_width,
+                        plot_height=plot_height,
+                        title=plot_title,
+                        tools=tools,
+                        x_axis_label=xlabel,
                         x_range=x_range,
+                        y_axis_label=ylabel,
                         y_range=y_range)
 
         p_main.height_policy = 'fit'
@@ -362,39 +329,51 @@ class TraceAperturesTab(Fit1DPanel):
 
         # Enable region selection ----------------------------------------------
         if enable_regions:
+
+            self.band_model = GIRegionModel()
+
             def update_regions():
                 self.fit.model.regions = self.band_model.build_regions()
 
-            self.band_model = GIRegionModel()
+            # Handles Bands Regions
             self.band_model.add_listener(
-                TraceAperturesRegionListener(update_regions))
-            # self.band_model.add_listener(
-            #     TraceAperturesRegionListener(self.band_model_handler))
+                Fit1DRegionListener(update_regions))
+
+            # Handles Bands Masks
+            self.band_model.add_listener(
+                Fit1DRegionListener(self.band_model_handler))
+
             connect_figure_extras(p_main, None, self.band_model)
+
             mask_handlers = (self.mask_button_handler,
                              self.unmask_button_handler,
                              self.point_mask_handler)
+
         else:
             self.band_model = None
             mask_handlers = None
 
+        _controller = Controller(p_main, None, self.band_model,
+                                 self.controller_help,
+                                 mask_handlers=mask_handlers)
+
         # Create residual plot area --------------------------------------------
         # x_range is linked to the main plot so that zooming tracks between them
-        p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                         min_width=400,
+        p_resid = figure(min_width=400,
+                         output_backend="webgl",
+                         plot_height=plot_height // 2,
+                         plot_width=plot_width,
                          title='Fit Residuals',
-                         x_axis_label=xlabel, y_axis_label='Delta',
                          tools="pan,box_zoom,reset",
-                         output_backend="webgl", x_range=p_main.x_range, y_range=None)
+                         x_axis_label=xlabel,
+                         x_range=p_main.x_range,
+                         y_axis_label='Delta',
+                         y_range=None)
+
         p_resid.height_policy = 'fixed'
         p_resid.width_policy = 'fit'
-        connect_figure_extras(p_resid, None, self.band_model)
 
-        controller = Controller(p_main,
-                                None,
-                                self.band_model,
-                                self.controller_help,
-                                mask_handlers=mask_handlers)
+        connect_figure_extras(p_resid, None, self.band_model)
 
         # Initializing this will cause the residuals to be calculated
         self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
@@ -412,8 +391,8 @@ class TraceAperturesTab(Fit1DPanel):
         self.fit.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
-        # hacking it in here so I can account for the initial
-        # state of the band model (which used to be always empty)
+        #   hacking it in here so I can account for the initial
+        #   state of the band model (which used to be always empty)
         x_data = self.fit.data.data['x']
         for i in np.arange(len(x_data)):
             if not self.band_model or self.band_model.contains(x_data[i]):
@@ -422,7 +401,9 @@ class TraceAperturesTab(Fit1DPanel):
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='black')
+        self.line = p_main.line(x='xlinspace', y='model',
+                                source=self.fit.evaluation, line_width=3,
+                                color='red')
 
         fig_column = [p_main, p_resid]
 
@@ -438,9 +419,32 @@ class TraceAperturesTab(Fit1DPanel):
         col = column(*fig_column,
                      height_policy='fit',
                      margin=(0, 10, 0, 0),
+                     sizing_mode='scale_both',
                      width_policy='fit')
-        col.sizing_mode = 'scale_both'
-        return col, controller
+
+        return col, _controller
+
+    def create_rms_div(self):
+        """
+        Creates a bm.Div placeholder to print out the RMS information.
+
+        Returns
+        -------
+        bm.Div : element that displays the fitting RMS.
+        """
+        rms_div = bm.Div(align="start",
+                         id=f"rms_div_{self.index}",
+                         width=202,
+                         style={
+                             "background-color": "whitesmoke",
+                             "border": "1px solid gainsboro",
+                             "border-radius": "5px",
+                             "padding": "10px",
+                             "width": "100%",
+                         },
+                         width_policy="fixed")
+
+        return rms_div
 
     def reset_dialog_handler(self, result):
         """
@@ -449,6 +453,23 @@ class TraceAperturesTab(Fit1DPanel):
         if result:
             self.fitting_parameters_ui.reset_ui()
 
+    @staticmethod
+    def update_info(info_div, f):
+        """
+        Listener to update the info panel with the RMS of a fit.
+
+        Parameters
+        ----------
+        info_div : bm.Div
+            Div parameter containing the RMS information.
+        f : ???
+            ???
+        """
+        info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
+
+    def update_regions(self):
+        """ Update fitting regions """
+        self.fit.model.regions = self.band_model.build_regions()
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
     """

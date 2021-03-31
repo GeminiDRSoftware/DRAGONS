@@ -792,11 +792,20 @@ class GIRegionModel:
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
+    def clear_regions(self):
+        """
+        Deletes all regions.
+        """
+        for region_id in self.regions.keys():
+            for listener in self.listeners:
+                listener.delete_region(region_id)
+        self.regions = dict()
+
     def load_from_tuples(self, tuples):
         region_ids = list(self.regions.keys())
         for region_id in region_ids:
             self.delete_region(region_id)
-        self.region_id=1
+        self.region_id = 1
         for tup in tuples:
             self.adjust_region(self.region_id, tup.start, tup.stop)
             self.region_id = self.region_id + 1
@@ -843,9 +852,10 @@ class GIRegionModel:
             ID of the region to delete
 
         """
-        del self.regions[region_id]
-        for listener in self.listeners:
-            listener.delete_region(region_id)
+        if self.regions[region_id]:
+            del self.regions[region_id]
+            for listener in self.listeners:
+                listener.delete_region(region_id)
 
     def finish_regions(self):
         """
@@ -973,7 +983,7 @@ class GIRegionModel:
         sorted_regions = list()
         sorted_regions.extend(self.regions.values())
         sorted_regions.sort(key=cmp_to_key(region_sorter))
-        return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
+        return ', '.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
 
 
 class RegionHolder:
@@ -1107,6 +1117,14 @@ class GIRegionView(GIRegionListener):
 
 
 class RegionEditor(GIRegionListener):
+    """
+    Widget used to create/edit fitting Regions.
+
+    Parameters
+    ----------
+    region_model : GIRegionModel
+        Class that connects this element to the regions on plots.
+    """
     def __init__(self, region_model):
         self.text_input = TextInput(
             title="Regions (i.e. 100:500,510:900,950: Press 'Enter' to apply):",
@@ -1118,7 +1136,12 @@ class RegionEditor(GIRegionListener):
         self.region_model = region_model
         self.region_model.add_listener(self)
         self.text_input.on_change("value", self.handle_text_value)
-        self.error_message = Div(text="<b><span style='color:red'>please use comma separated : delimited values (i.e. 100:500,510:900,950:)</span></b>")
+
+        self.error_message = Div(text="<b> <span style='color:red'> "
+                                      "  Please use comma separated : delimited "
+                                      "  values (i.e. 100:500,510:900,950:)"
+                                      "</span></b>")
+
         self.error_message.visible = False
         self.widget = column(self.text_input, self.error_message)
         self.handling = False
@@ -1132,17 +1155,61 @@ class RegionEditor(GIRegionListener):
     def finish_regions(self):
         self.text_input.value = self.region_model.build_regions()
 
-    def standardize_region_text(self, region_text):
+    @staticmethod
+    def standardize_region_text(region_text):
+        """
+        Remove spaces near commas separating values, and removes
+        leading/trailing commas in string.
+
+        Parameters
+        ----------
+        region_text : str
+            Region text to clean up.
+
+        Returns
+        -------
+        str : Clean region text.
+        """
+        # Handles when deleting last region
+        region_text = '' if region_text is None else region_text
+
+        # Replace " ," or ", " with ","
         region_text = re.sub(r'[ ,]+', ',', region_text)
+
+        # Remove comma if region_text starts with ","
         region_text = re.sub(r'^,', '', region_text)
+
+        # Remove comma if region_text ends with ","
         region_text = re.sub(r',$', '', region_text)
+
         return region_text
 
     def handle_text_value(self, attr, old, new):
+        """
+        Handles the new text value inside the Text Input field. The
+        (attr, old, new) callback signature is a requirement from Bokeh.
+
+        Parameters
+        ----------
+        attr :
+            Attribute that would be changed. Not used here.
+        old : str
+            Old attribute value. Not used here.
+        new : str
+            New attribute value. Used to update regions.
+        """
         if not self.handling:
             self.handling = True
             region_text = self.standardize_region_text(new)
             current = self.region_model.build_regions()
+
+            # Clean up regions if text input is empty
+            if not region_text or region_text.isspace():
+                self.region_model.clear_regions()
+                self.text_input.value = ""
+                current = None
+                region_text = None
+
             if current != region_text:
                 if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
                     self.region_model.load_from_string(region_text)
@@ -1153,6 +1220,7 @@ class RegionEditor(GIRegionListener):
                         self.error_message.visible = True
             else:
                 self.error_message.visible = False
+
             self.handling = False
 
     def get_widget(self):
