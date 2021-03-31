@@ -91,7 +91,12 @@
 </div>
 
 <script type="text/javascript">
-    document.addEventListener("keydown", keyMapping);
+    $('document').ready( function() {
+        console.log("Adding key mapping to document");
+        // Doing whole document. Or we could figure out how to target a
+        // bokeh-generated container div
+        document.addEventListener("keydown", keyMapping);
+    });
 </script>
 
 {% endblock %}

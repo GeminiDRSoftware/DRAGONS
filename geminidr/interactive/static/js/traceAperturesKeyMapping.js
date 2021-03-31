@@ -1,12 +1,11 @@
 
 /**
- *
+ * Sends key pressed events as ajax requests to Bokeh.
  */
 function keyMapping(event) {
-    // $("#plot_div").keydown(function(event) {
-    // document.getElementById("plot_div").addEventListener("keydown", function(event){
-    // doing whole document.  Or we could figure out how to target a bokeh-generated container div
-    // preventDefault causes the key not to pass to any widgets that are in focus, such as a text input
+    // preventDefault causes the key not to pass to any widgets that are in
+    // focus, such as a text input
+    console.log("Pressed ", event.key)
     switch(event.key) {
         case 'a':
             $.ajax('/handle_key?key=a');
@@ -50,6 +49,10 @@ function keyMapping(event) {
             break;
         case 'm':
             $.ajax('/handle_key?key=m');
+            event.preventDefault()
+            break;
+        case 'p':
+            $.ajax('/handle_key?key=p');
             event.preventDefault()
             break;
         case 'u':
