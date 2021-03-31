@@ -696,7 +696,7 @@ class RegionTask(Task):
                   <b>*</b> to extend to maximum on this side
                   """)
         else:
-            controller.set_help_text("""<b>Edit Regions:</b><br/>\n
+            controller.set_help_text("""<b> Edit Regions: </b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete the nearest region
@@ -710,7 +710,7 @@ class RegionTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Edit Regions<br/>\n
+        return """<b> Edit Regions </b> <br/>\n
                   <b>R</b> to start a new region or set the edge if editing<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete/cancel the current/nearest region
