@@ -852,9 +852,10 @@ class GIRegionModel:
             ID of the region to delete
 
         """
-        del self.regions[region_id]
-        for listener in self.listeners:
-            listener.delete_region(region_id)
+        if self.regions[region_id]:
+            del self.regions[region_id]
+            for listener in self.listeners:
+                listener.delete_region(region_id)
 
     def finish_regions(self):
         """
