@@ -1169,6 +1169,9 @@ class RegionEditor(GIRegionListener):
         -------
         str : Clean region text.
         """
+        # Handles when deleting last region
+        region_text = '' if region_text is None else region_text
+
         # Replace " ," or ", " with ","
         region_text = re.sub(r'[ ,]+', ',', region_text)
 
