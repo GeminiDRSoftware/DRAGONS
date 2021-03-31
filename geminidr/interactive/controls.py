@@ -264,9 +264,7 @@ class Controller(object):
                     self.unmask_handler()
 
             elif _key == 'p' or _key == 'P':
-                print('Pressing P')
                 if self.pointmask_handler:
-                    print('P has a handler!')
                     self.pointmask_handler(self.x, self.y)
 
             elif self.task:
