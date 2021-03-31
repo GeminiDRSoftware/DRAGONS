@@ -292,32 +292,36 @@ class TraceAperturesTab(Fit1DPanel):
         x_range = None
         y_range = None
 
-        if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-            x_min = min(self.fit.data.data['x'])
-            x_max = max(self.fit.data.data['x'])
-            x_pad = (x_max - x_min) * 0.1
-            x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
+        if self.fit.data:
 
-        if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
-            y_min = min(self.fit.data.data['y'])
-            y_max = max(self.fit.data.data['y'])
-            y_pad = (y_max - y_min) * 0.1
-            y_range = bm.Range1d(y_min - y_pad, y_max + y_pad)
+            if 'x' in self.fit.data.data:
+                if len(self.fit.data.data['x']) >= 2:
+                    x_min = min(self.fit.data.data['x'])
+                    x_max = max(self.fit.data.data['x'])
+                    x_pad = (x_max - x_min) * 0.1
+                    x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
+
+            if 'y' in self.fit.data.data:
+                if len(self.fit.data.data['y']) >= 2:
+                    y_min = min(self.fit.data.data['y'])
+                    y_max = max(self.fit.data.data['y'])
+                    y_pad = (y_max - y_min) * 0.1
+                    y_range = bm.Range1d(y_min - y_pad, y_max + y_pad)
 
         tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
 
         # Create main plot area ------------------------------------------------
-        p_main = figure(plot_width=plot_width,
-                        plot_height=plot_height,
+        p_main = figure(max_height=1000,
                         min_height=100,
-                        max_height=1000,
                         min_width=400,
-                        title=plot_title,
-                        x_axis_label=xlabel,
-                        y_axis_label=ylabel,
-                        tools=tools,
                         output_backend="webgl",
+                        plot_width=plot_width,
+                        plot_height=plot_height,
+                        title=plot_title,
+                        tools=tools,
+                        x_axis_label=xlabel,
                         x_range=x_range,
+                        y_axis_label=ylabel,
                         y_range=y_range)
 
         p_main.height_policy = 'fit'
@@ -325,41 +329,51 @@ class TraceAperturesTab(Fit1DPanel):
 
         # Enable region selection ----------------------------------------------
         if enable_regions:
+
+            self.band_model = GIRegionModel()
+
             def update_regions():
                 self.fit.model.regions = self.band_model.build_regions()
 
-            self.band_model = GIRegionModel()
             # Handles Bands Regions
             self.band_model.add_listener(
                 Fit1DRegionListener(update_regions))
+
             # Handles Bands Masks
             self.band_model.add_listener(
                 Fit1DRegionListener(self.band_model_handler))
+
             connect_figure_extras(p_main, None, self.band_model)
+
             mask_handlers = (self.mask_button_handler,
                              self.unmask_button_handler,
                              self.point_mask_handler)
+
         else:
             self.band_model = None
             mask_handlers = None
 
+        _controller = Controller(p_main, None, self.band_model,
+                                 self.controller_help,
+                                 mask_handlers=mask_handlers)
+
         # Create residual plot area --------------------------------------------
         # x_range is linked to the main plot so that zooming tracks between them
-        p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                         min_width=400,
+        p_resid = figure(min_width=400,
+                         output_backend="webgl",
+                         plot_height=plot_height // 2,
+                         plot_width=plot_width,
                          title='Fit Residuals',
-                         x_axis_label=xlabel, y_axis_label='Delta',
                          tools="pan,box_zoom,reset",
-                         output_backend="webgl", x_range=p_main.x_range, y_range=None)
+                         x_axis_label=xlabel,
+                         x_range=p_main.x_range,
+                         y_axis_label='Delta',
+                         y_range=None)
+
         p_resid.height_policy = 'fixed'
         p_resid.width_policy = 'fit'
-        connect_figure_extras(p_resid, None, self.band_model)
 
-        controller = Controller(p_main,
-                                None,
-                                self.band_model,
-                                self.controller_help,
-                                mask_handlers=mask_handlers)
+        connect_figure_extras(p_resid, None, self.band_model)
 
         # Initializing this will cause the residuals to be calculated
         self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
@@ -377,8 +391,8 @@ class TraceAperturesTab(Fit1DPanel):
         self.fit.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
-        # hacking it in here so I can account for the initial
-        # state of the band model (which used to be always empty)
+        #   hacking it in here so I can account for the initial
+        #   state of the band model (which used to be always empty)
         x_data = self.fit.data.data['x']
         for i in np.arange(len(x_data)):
             if not self.band_model or self.band_model.contains(x_data[i]):
@@ -405,9 +419,10 @@ class TraceAperturesTab(Fit1DPanel):
         col = column(*fig_column,
                      height_policy='fit',
                      margin=(0, 10, 0, 0),
+                     sizing_mode='scale_both',
                      width_policy='fit')
-        col.sizing_mode = 'scale_both'
-        return col, controller
+
+        return col, _controller
 
     def create_rms_div(self):
         """
