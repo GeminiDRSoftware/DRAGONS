@@ -197,3 +197,7 @@ div.plot_tools_help div {
 div.plot_tools_help div span {
     margin-left: 4px;
 }
+
+.bk-canvas-events {
+    cursor: crosshair;
+}
