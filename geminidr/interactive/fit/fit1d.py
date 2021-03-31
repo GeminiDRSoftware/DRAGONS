@@ -741,8 +741,10 @@ class Fit1DPanel:
 
         Parameters
         ----------
-        stuff : any
-            This is ignored, but the button passes it
+        x : float
+            X mouse position in pixels inside the canvas.
+        y : float
+            Y mouse position in pixels inside the canvas.
         """
         dist = None
         sel = None
@@ -752,7 +754,7 @@ class Fit1DPanel:
             xd = xarr[i]
             yd = yarr[i]
             if xd is not None and yd is not None:
-                ddist = (x-xd)**2 + (y-yd)**2
+                ddist = (x - xd) ** 2 + (y - yd) ** 2
                 if dist is None or ddist < dist:
                     dist = ddist
                     sel = i
