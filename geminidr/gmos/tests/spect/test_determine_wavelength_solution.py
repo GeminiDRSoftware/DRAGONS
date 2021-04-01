@@ -44,7 +44,8 @@ import astrodata
 import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from gempy.library import astromodels as am
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
@@ -172,7 +173,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 
     with change_working_dir():
         # logutils.config(file_name='log_rms_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(
@@ -212,7 +213,7 @@ def test_regression_determine_wavelength_solution(
 
     with change_working_dir():
         logutils.config(file_name='log_regress_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(
@@ -229,10 +230,10 @@ def test_regression_determine_wavelength_solution(
     table = wcalibrated_ad[0].WAVECAL
     table_ref = ref_ad[0].WAVECAL
 
-    model = astromodels.dict_to_chebyshev(
+    model = am.dict_to_chebyshev(
         dict(zip(table["name"], table["coefficients"])))
 
-    ref_model = astromodels.dict_to_chebyshev(
+    ref_model = am.dict_to_chebyshev(
         dict(zip(table_ref["name"], table_ref["coefficients"])))
 
     x = np.arange(wcalibrated_ad[0].shape[1])
@@ -347,7 +348,7 @@ def do_plots(ad):
         peaks = ext.WAVECAL["peaks"] - 1  # ToDo: Refactor peaks to be 0-indexed
         wavelengths = ext.WAVECAL["wavelengths"]
 
-        wavecal_model = astromodels.dict_to_chebyshev(
+        wavecal_model = am.dict_to_chebyshev(
             dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"])))
 
         middle = ext.data.shape[0] // 2
@@ -493,7 +494,7 @@ def create_inputs_recipe():
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = GMOSLongslit([sci_ad])
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
