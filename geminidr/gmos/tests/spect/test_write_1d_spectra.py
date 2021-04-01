@@ -11,8 +11,9 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 input_files = ["S20190206S0108_fluxCalibrated.fits"]
 formats = [("ascii", "dat", "ascii.basic"),
            ("fits", "fits", "fits"),
-           ("csv", "csv", "ascii.csv")]
+           ("ascii.csv", "csv", "ascii.csv")]
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", input_files, indirect=True)
 @pytest.mark.parametrize("output_format, extension, input_format", formats)
@@ -24,7 +25,7 @@ def test_write_spectrum(ad, output_format, extension, input_format, change_worki
         p.write1DSpectra(apertures=1, format=output_format,
                          extension=extension)
         assert len(glob("*")) == nfiles + 1
-        t = Table.read(ad.filename.replace(".fits", "_001.dat"),
+        t = Table.read(ad.filename.replace(".fits", f"_001.{extension}"),
                        format=input_format)
         assert len(t) == ad[0].data.size
         np.testing.assert_allclose(t["data"].data, ad[0].data, atol=1e-9)
