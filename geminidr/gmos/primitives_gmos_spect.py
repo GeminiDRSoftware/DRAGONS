@@ -450,11 +450,11 @@ class GMOSSpect(Spect, GMOS):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None):
+    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, in_vacuo=False):
         use_second_order = w2 > 1000 and abs(dw) < 0.2
         use_second_order = False
-        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
-        wavelengths = np.loadtxt(filename, usecols=[0])
-        return wavelengths, None
+        return self._read_and_convert_linelist(filename, w2=w2, in_vacuo=in_vacuo)

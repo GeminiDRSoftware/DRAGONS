@@ -1434,8 +1434,8 @@ def add_longslit_wcs(ad):
                   for kw in ('reference_frame', 'unit', 'axes_names',
                              'axis_physical_types')}
         sky_frame = cf.CelestialFrame(axes_order=(1,2), name='sky', **kwargs)
-        spectral_frame = cf.SpectralFrame(name='wavelength', unit=u.nm,
-                                          axes_names='WAVE')
+        spectral_frame = cf.SpectralFrame(name='Wavelength in air', unit=u.nm,
+                                          axes_names='AWAV')
         output_frame = cf.CompositeFrame([spectral_frame, sky_frame], name='world')
 
         transform = ext.wcs.forward_transform

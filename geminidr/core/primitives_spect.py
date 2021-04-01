@@ -27,9 +27,11 @@ from scipy import spatial, optimize
 from scipy.interpolate import BSpline
 from scipy.signal import correlate
 from specutils import SpectralRegion
+from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 from functools import reduce
 from itertools import product as cart_product
 from bisect import bisect
+from copy import copy
 
 import astrodata
 from astrodata import NDAstroData
@@ -292,7 +294,7 @@ class Spect(PrimitivesBASE):
 
             exptime = ad.exposure_time()
             if 'WIDTH' not in spec_table.colnames:
-                log.warning("Using default bandpass of {} nm".format(bandpass))
+                log.warning(f"Using default bandpass of {bandpass} nm")
                 spec_table['WIDTH'] = bandpass * u.nm
 
             # Do some checks now to avoid failing on every extension
@@ -513,7 +515,7 @@ class Spect(PrimitivesBASE):
                 if fwidth is None:
                     data, _, _, _ = _average_along_slit(ext, center=None, nsum=nsum)
                     fwidth = tracing.estimate_peak_width(data)
-                    log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+                    log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 if initial_peaks is None:
                     data, mask, variance, extract_slice = _average_along_slit(ext, center=None, nsum=nsum)
@@ -524,7 +526,7 @@ class Spect(PrimitivesBASE):
                     widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
                     initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                           variance=variance, min_snr=min_snr)
-                    log.stdinfo("Found {} peaks".format(len(initial_peaks)))
+                    log.stdinfo(f"Found {len(initial_peaks)} peaks")
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
@@ -696,7 +698,7 @@ class Spect(PrimitivesBASE):
 
             # Read all the arc's distortion maps. Do this now so we only have
             # one block of reading and verifying them
-            distortion_models, wave_models = [], []
+            distortion_models, wave_models, wave_frames = [], [], []
             for ext in arc:
                 wcs = ext.nddata.wcs
 
@@ -725,8 +727,11 @@ class Spect(PrimitivesBASE):
                     wave_model = astromodels.get_named_submodel(wcs.forward_transform, 'WAVE')
                 except IndexError:
                     wave_models.append(None)
+                    wave_frames.append(None)
                 else:
                     wave_models.append(wave_model)
+                    wave_frames.extend([frame for frame in wcs.output_frame.frames
+                                        if isinstance(frame, cf.SpectralFrame)])
 
             if not distortion_models:
                 log.warning("Could not find a 'distortion_corrected' frame "
@@ -872,7 +877,8 @@ class Spect(PrimitivesBASE):
                         log.warning(f"{arc.filename}:{0} has no wavelength "
                                     "solution".format(ext.hdr['EXTVER']))
 
-            for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
+            for i, (ext, wave_model, wave_frame) in enumerate(
+                    zip(ad_out, wave_models, wave_frames)):
                 # TODO: remove this; for debugging purposes only
                 if arc is not None:
                     try:
@@ -884,8 +890,14 @@ class Spect(PrimitivesBASE):
                     t = wave_model & sky_model
                 else:
                     t = sky_model & wave_model
+                # We need to create a new output frame with a copy of the
+                # ARC's SpectralFrame in case there's a change from air->vac
+                # or vice versa
+                new_output_frame = cf.CompositeFrame(
+                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame) else
+                     frame for frame in ext.wcs.output_frame.frames])
                 ext.wcs = gWCS([(ext.wcs.input_frame, t),
-                                (ext.wcs.output_frame, None)])
+                                (new_output_frame, None)])
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
@@ -992,6 +1004,7 @@ class Spect(PrimitivesBASE):
         cenwave = params["central_wavelength"]
         dw0 = params["dispersion"]
         arc_file = params["linelist"]
+        in_vacuo = params["in_vacuo"]
         nbright = params.get("nbright", 0)
         alt_centers = params["alternative_centers"]
         debug = params["debug"]
@@ -1074,16 +1087,14 @@ class Spect(PrimitivesBASE):
 
                 if fwidth is None:
                     fwidth = tracing.estimate_peak_width(data, mask=mask)
-                    log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+                    log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 # Don't read linelist if it's the one we already have
                 # (For user-supplied, we read it at the start, so don't do this at all)
                 if arc_file is None:
-                    arc_lines, arc_weights = self._get_arc_linelist(ext, w1=c0-abs(c1),
-                                                                    w2=c0+abs(c1), dw=dw0)
-                if min(arc_lines) > c0 + abs(c1):
-                    log.warning("Line list appears to be in Angstroms; converting to nm")
-                    arc_lines *= 0.1
+                    arc_lines, arc_weights = self._get_arc_linelist(
+                        ext, w1=c0-abs(c1), w2=c0+abs(c1), dw=dw0,
+                        in_vacuo=in_vacuo)
 
                 # Find peaks; convert width FWHM to sigma
                 widths = 0.42466 * fwidth * np.arange(0.7, 1.2, 0.05)  # TODO!
@@ -1208,14 +1219,15 @@ class Spect(PrimitivesBASE):
                 rms = m.rms_output
                 nmatched = len(m)
                 log.stdinfo(m_final)
-                log.stdinfo("Matched {}/{} lines with rms = {:.3f} nm.".format(nmatched, len(peaks), rms))
+                log.stdinfo(f"Matched {nmatched}/{len(peaks)} lines with "
+                            f"rms = {rms:.3f} nm.")
 
                 max_rms = 0.2 * rms / abs(dw0)  # in pixels
                 max_dev = 3 * max_rms
                 m_inverse = astromodels.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                                                  max_deviation=max_dev)
                 inv_rms = np.std(m_inverse(m_final(m.input_coords)) - m.input_coords)
-                log.stdinfo("Inverse model has rms = {:.3f} pixels.".format(inv_rms))
+                log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
                 m_final.name = "WAVE"
                 m_final.inverse = m_inverse
 
@@ -1246,17 +1258,25 @@ class Spect(PrimitivesBASE):
                                               'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
 
+                spectral_frame = (ext.wcs.output_frame if ext.data.ndim == 1
+                                  else ext.wcs.output_frame.frames[0])
+                axis_name = "WAVE" if in_vacuo else "AWAV"
+                new_spectral_frame = cf.SpectralFrame(
+                    axes_order=spectral_frame.axes_order,
+                    unit=spectral_frame.unit, axes_names=(axis_name,),
+                    name=astrodata.wcs.frame_mapping[axis_name].description)
+
                 if ext.data.ndim == 1:
                     ext.wcs.set_transform(ext.wcs.input_frame,
-                                          ext.wcs.output_frame, m_final)
+                                          new_spectral_frame, m_final)
                 else:
                     # Write out a simplified WCS model so it's easier to
                     # extract what we need later
                     spatial_frame = cf.CoordinateFrame(naxes=1, axes_type="SPATIAL",
                                                        axes_order=(1,), unit=u.pix,
                                                        name="SPATIAL")
-                    output_frame = cf.CompositeFrame([ext.wcs.output_frame.frames[0],
-                                                      spatial_frame], name='world')
+                    output_frame = cf.CompositeFrame(
+                        [new_spectral_frame, spatial_frame], name='world')
                     try:
                         slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
                     except IndexError:
@@ -1356,8 +1376,8 @@ class Spect(PrimitivesBASE):
 
                 num_spec = len(aptable)
                 if num_spec == 0:
-                    log.warning("{} has an empty APERTURE table. Cannot "
-                                "extract spectra.".format(ad.filename))
+                    log.warning(f"{ad.filename} has an empty APERTURE table. "
+                                "Cannot extract spectra.")
                     continue
 
                 try:
@@ -1429,7 +1449,7 @@ class Spect(PrimitivesBASE):
                                                              handle_mask=np.bitwise_or))
                         else:
                             log.warning("Difficulty finding sky aperture. No sky"
-                                        " subtraction for aperture {}".format(apnum))
+                                        f" subtraction for aperture {apnum}")
                             ad_spec.append(ndd_spec)
                     else:
                         ad_spec.append(ndd_spec)
@@ -1633,7 +1653,7 @@ class Spect(PrimitivesBASE):
                 locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
                                             reverse=True)[:max_apertures]).T[0]
                 locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
+                log.stdinfo(f"Found sources at {direction}s: {locstr}")
 
                 if np.isnan(profile[prof_mask==0]).any():
                     log.warning("There are unmasked NaNs in the spatial profile")
@@ -1648,7 +1668,8 @@ class Spect(PrimitivesBASE):
                     model_dict['aper_lower'] = lower
                     model_dict['aper_upper'] = upper
                     all_model_dicts.append(model_dict)
-                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
+                    log.debug("Limits for source "
+                              f"{loc:.1f} ({lower:.1f}, +{upper:.1f})")
 
                 aptable = Table([np.arange(len(locations)) + 1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
@@ -1749,7 +1770,7 @@ class Spect(PrimitivesBASE):
             # wrong wavelength solution in other columns/rows
             if (any(len(ext.shape) == 2 for ext in ad) and
                     not self.timestamp_keys['distortionCorrect'] in ad.phu):
-                log.warning("{} has not been distortion corrected".format(ad.filename))
+                log.warning(f"{ad.filename} has not been distortion corrected")
 
             telescope = ad.telescope()
             exptime = ad.exposure_time()
@@ -2576,7 +2597,74 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, **kwargs):
+    def _read_and_convert_linelist(self, filename, w2=None, in_vacuo=False):
+        """
+        Reads a standard-format linelist and returns a list of wavelengths
+        (in nm) and weights (if they are included in the file), converted to
+        air or vacuum if needed.
+        Parameters
+        ----------
+        filename : str
+            name of file to read
+        w2 : float
+            longest wavelength of data; used to determine if the linelist is
+            in Angstroms rather than nm (if it doesn't specify its units)
+        in_vacuo : bool
+            return vacuum wavelengths (rather than air)?
+
+        Returns
+        -------
+        tuple : wavelengths (in nm), and weights/None
+        """
+
+        def identity(x):
+            return x
+
+        r = re.compile(".*\sunits\s+(.+)")
+        units = None
+
+        with open(filename, "r") as f:
+            lines = f.readlines()
+
+        converter = None
+        while converter is None:
+            try:
+                next_line = lines.pop(0).strip()
+            except IndexError:  # run out of lines
+                raise OSError("AIR or VACUUM wavelengths not specified in "
+                              f"{filename}")
+
+            # We accept any case if there's a space before it, or require
+            # all caps, to avoid matching stuff like "Blair & Brown (2010)"
+            if " AIR" in next_line.upper() or "AIR" in next_line:
+                converter = air_to_vac if in_vacuo else identity
+            elif " VACUUM" in next_line.upper():
+                converter = identity if in_vacuo else vac_to_air
+            m = r.match(next_line)
+            if m:
+                try:
+                    units = u.Unit(m.group(1))
+                except ValueError:
+                    pass
+
+        wavelengths = np.genfromtxt(lines, usecols=[0])
+        try:
+            weights = np.genfromtxt(lines, usecols=[1])
+        except ValueError:
+            weights = None
+
+        if units:
+            wavelengths *= units
+        elif w2 is not None and wavelengths.min() > w2:
+            self.log.warning("Line list appears to be in Angstroms")
+            wavelengths *= u.AA
+        else:
+            wavelengths *= u.nm
+        # Return in nm
+        return converter(wavelengths).to(u.nm).value, weights
+
+    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None,
+                          in_vacuo=False):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -2586,15 +2674,14 @@ class Spect(PrimitivesBASE):
         ----------
         ext : single-slice AD object
             Extension being calibrated (allows descriptors to be calculated).
-
         w1 : float
             Approximate shortest wavelength (nm).
-
         w2 : float
             Approximate longest wavelength (nm).
-
         dw : float
             Approximate dispersion (nm/pixel).
+        in_vacuo : bool
+            return vacuum wavelengths (rather than air)?
 
         Returns
         -------
@@ -2604,14 +2691,11 @@ class Spect(PrimitivesBASE):
         array_like or None
             arc line weights
         """
-        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
-        arc_lines = np.loadtxt(filename, usecols=[0])
-        try:
-            weights = np.loadtxt(filename, usecols=[1])
-        except IndexError:
-            weights = None
-        return arc_lines, weights
+        return self._read_and_convert_linelist(filename, w2=w2,
+                                               in_vacuo=in_vacuo)
 
     def _get_spectrophotometry(self, filename):
         """

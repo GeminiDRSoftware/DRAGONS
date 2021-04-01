@@ -1,32 +1,36 @@
-import numpy as np
 import re
+import functools
+from collections import namedtuple
 
-from gwcs import coordinate_frames as cf
-from gwcs import utils as gwutils
+import numpy as np
 from astropy import coordinates as coord
 from astropy import units as u
 from astropy.modeling import core, models, projections
 from astropy.io import fits
-
+from gwcs import coordinate_frames as cf
+from gwcs import utils as gwutils
+from gwcs.utils import sky_pairs, specsystems
 from gwcs.wcs import WCS as gWCS
 
-import functools
-from collections import namedtuple
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
-from gwcs.utils import sky_pairs, specsystems
+FrameMapping = namedtuple("FrameMapping", "cls description")
+
+# Type of CoordinateFrame to construct for a FITS keyword and
+# readable name so user knows what's going on
+frame_mapping = {'WAVE': FrameMapping(cf.SpectralFrame, "Wavelength in vacuo"),
+                 'AWAV': FrameMapping(cf.SpectralFrame, "Wavelength in air")}
 
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
 #-----------------------------------------------------------------------------
+
 
 def fitswcs_to_gwcs(hdr):
     """
     Create and return a gWCS object from a FITS header. If it can't
     construct one, it should quietly return None.
     """
-    # Type of CoordinateFrame to construct for a FITS keyword
-    frame_mapping = {'WAVE': cf.SpectralFrame}
     # coordinate names for CelestialFrame
     coordinate_outputs = {'alpha_C', 'delta_C'}
 
@@ -52,14 +56,19 @@ def fitswcs_to_gwcs(hdr):
         except TypeError:
             unit = None
         try:
-            frame = frame_mapping[output[:4].upper()](axes_order=(i,), unit=unit,
-                                          axes_names=(output,), name=output)
+            frame_type = output[:4].upper()
+            frame_info = frame_mapping[frame_type]
         except KeyError:
             if output in coordinate_outputs:
                 continue
             frame = cf.CoordinateFrame(naxes=1, axes_type=("SPATIAL",),
                                        axes_order=(i,), unit=unit,
                                        axes_names=(output,), name=output)
+        else:
+            frame = frame_info.cls(axes_order=(i,), unit=unit,
+                                   axes_names=(frame_type,),
+                                   name=frame_info.description)
+
         out_frames.append(frame)
 
     if coordinate_outputs.issubset(outputs):
@@ -170,7 +179,7 @@ def gwcs_to_fits(ndd, hdr=None):
             continue
         if axis_type == "SPECTRAL":
             wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
-            wcs_dict[f'CTYPE{i}'] = 'WAVE'
+            wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = 0
 
