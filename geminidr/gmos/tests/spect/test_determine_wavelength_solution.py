@@ -32,16 +32,20 @@ import os
 from warnings import warn
 import tarfile
 import logging
+from copy import deepcopy
 
 import numpy as np
 import pytest
 from matplotlib import pyplot as plt
+from astropy import units as u
+from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata
 import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from gempy.library import astromodels as am
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
@@ -169,7 +173,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 
     with change_working_dir():
         # logutils.config(file_name='log_rms_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(
@@ -209,7 +213,7 @@ def test_regression_determine_wavelength_solution(
 
     with change_working_dir():
         logutils.config(file_name='log_regress_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(
@@ -226,10 +230,10 @@ def test_regression_determine_wavelength_solution(
     table = wcalibrated_ad[0].WAVECAL
     table_ref = ref_ad[0].WAVECAL
 
-    model = astromodels.dict_to_chebyshev(
+    model = am.dict_to_chebyshev(
         dict(zip(table["name"], table["coefficients"])))
 
-    ref_model = astromodels.dict_to_chebyshev(
+    ref_model = am.dict_to_chebyshev(
         dict(zip(table_ref["name"], table_ref["coefficients"])))
 
     x = np.arange(wcalibrated_ad[0].shape[1])
@@ -243,6 +247,30 @@ def test_regression_determine_wavelength_solution(
 
     tolerance = 0.5 * (slit_size_in_px * dispersion)
     np.testing.assert_allclose(wavelength, ref_wavelength, rtol=tolerance)
+
+
+# We only need to test this with one input
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
+                         indirect=True)
+def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
+    p = GMOSLongslit([])
+    p.viewer = geminidr.dormantViewer(p, None)
+
+    ad_air = p.determineWavelengthSolution(
+        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=False, **determine_wavelength_solution_parameters).pop()
+    ad_vac = p.determineWavelengthSolution(
+        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=True, **determine_wavelength_solution_parameters).pop()
+    wave_air = am.get_named_submodel(ad_air[0].wcs.forward_transform, "WAVE")
+    wave_vac = am.get_named_submodel(ad_vac[0].wcs.forward_transform, "WAVE")
+    x = np.arange(ad_air[0].shape[1])
+    wair = wave_air(x)
+    wvac = air_to_vac(wair * u.nm).to(u.nm).value
+    dw = wvac - wave_vac(x)
+    assert abs(dw).max() < 0.001
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
@@ -321,7 +349,7 @@ def do_plots(ad):
         peaks = ext.WAVECAL["peaks"] - 1  # ToDo: Refactor peaks to be 0-indexed
         wavelengths = ext.WAVECAL["wavelengths"]
 
-        wavecal_model = astromodels.dict_to_chebyshev(
+        wavecal_model = am.dict_to_chebyshev(
             dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"])))
 
         middle = ext.data.shape[0] // 2
@@ -467,7 +495,7 @@ def create_inputs_recipe():
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = GMOSLongslit([sci_ad])
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)
