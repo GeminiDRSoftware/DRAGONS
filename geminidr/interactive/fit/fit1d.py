@@ -516,7 +516,7 @@ class Fit1DPanel:
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True,
-                 enable_user_masking=True, enable_regions=True):
+                 enable_user_masking=True, enable_regions=True, central_plot=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -685,7 +685,10 @@ class Fit1DPanel:
             fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
-        self.component = row(controls, col)
+        if central_plot:
+            self.component = row(col, controls, Spacer(width=20))
+        else:
+            self.component = row(controls, col)
 
     def model_change_handler(self):
         """
