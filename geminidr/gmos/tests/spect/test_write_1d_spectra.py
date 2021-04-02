@@ -25,7 +25,7 @@ def test_write_spectrum(ad, output_format, extension, input_format, change_worki
         p.write1DSpectra(apertures=1, format=output_format,
                          extension=extension)
         assert len(glob("*")) == nfiles + 1
-        t = Table.read(ad.filename.replace(".fits", "_001.dat"),
+        t = Table.read(ad.filename.replace(".fits", f"_001.{extension}"),
                        format=input_format)
         assert len(t) == ad[0].data.size
         np.testing.assert_allclose(t["data"].data, ad[0].data, atol=1e-9)
