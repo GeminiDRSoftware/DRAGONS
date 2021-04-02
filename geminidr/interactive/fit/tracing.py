@@ -530,7 +530,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             ally.append(dat[1])
             if len(dat) >= 3:
                 all_weights.append(dat[2])
-            if len(all_weights) == 0:
+            if all_weights is None or len(all_weights) == 0:
                 all_weights = None
 
         # Some sanity checks now
@@ -570,7 +570,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, index=i, **kwargs)
+                # tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, index=i, **kwargs)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
