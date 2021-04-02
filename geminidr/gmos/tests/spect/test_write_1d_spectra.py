@@ -11,7 +11,7 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 input_files = ["S20190206S0108_fluxCalibrated.fits"]
 formats = [("ascii", "dat", "ascii.basic"),
            ("fits", "fits", "fits"),
-           ("csv", "csv", "ascii.csv")]
+           ("ascii.csv", "csv", "ascii.csv")]
 
 @pytest.mark.gmosls  # stop it running as a unit test
 @pytest.mark.preprocessed_data
