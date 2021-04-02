@@ -1,9 +1,21 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_spect.py file, in alphabetical order.
-from gempy.library import config
+from astropy import table, units as u
+from astropy.io import registry
+
 from astrodata import AstroData
-from astropy import units as u
 from geminidr.core import parameters_generic
+from gempy.library import config
+
+
+def list_of_ints_check(value):
+    [int(x) for x in str(value).split(',')]
+    return True
+
+
+def table_writing_formats():
+    t = registry.get_formats(table.Table, readwrite="Write")
+    return {fmt: "" for fmt, dep in t["Format", "Deprecated"] if dep != "Yes"}
 
 
 class adjustWCSToReferenceConfig(config.Config):
@@ -52,11 +64,6 @@ class determineDistortionConfig(config.Config):
     debug = config.Field("Display line traces on image display?", bool, False)
 
 
-def min_lines_check(value):
-    [int(x) for x in str(value).split(',')]
-    return True
-
-
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
     order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
@@ -71,7 +78,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                    default="natural")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
-                             check=min_lines_check)
+                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
@@ -226,3 +233,22 @@ class traceAperturesConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Draw aperture traces on image display?", bool, False)
+
+
+class write1DSpectraConfig(config.Config):
+    #format = config.Field("Format for writing", str, "ascii")
+    format = config.ChoiceField("Format for writing", str,
+                                allowed=table_writing_formats(),
+                                default="ascii", optional=False)
+    header = config.Field("Write full FITS header?", bool, False)
+    extension = config.Field("Filename extension", str, "dat")
+    apertures = config.Field("Apertures to write", (str, int), None,
+                             optional=True, check=list_of_ints_check)
+    dq = config.Field("Write Data Quality values?", bool, False)
+    var = config.Field("Write Variance values?", bool, False)
+    overwrite = config.Field("Overwrite existing files?", bool, False)
+
+    def validate(self):
+        config.Config.validate(self)
+        if self.header and not self.format.startswith("ascii"):
+            raise ValueError("FITS header can only be written with ASCII formats")
