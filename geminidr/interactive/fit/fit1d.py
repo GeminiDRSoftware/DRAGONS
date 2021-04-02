@@ -6,7 +6,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer
+from bokeh.models import Div, Select, Range1d, Spacer, Row
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive
@@ -1032,6 +1032,52 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
 
+    def get_filename_div(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = bm.Div(align="end",
+                     css_classes=["filename"],
+                     id="_filename",
+                     margin=(0, 0, 0, 78),
+                     min_width=500,
+                     max_width=2000,
+                     name="filename",
+                     height_policy="min",
+                     text=f"<span style='float: left'>&nbsp;Filename:&nbsp;</span>"
+                          f"<span style='color: black; display: block; float: right;"
+                          f" margin-left: 10px; text-align: right;'>"
+                          f"&nbsp;{self.filename_info}"
+                          f"</span>",
+                     style={
+                         "background": "whitesmoke",
+                         "border": "1px solid gainsboro",
+                         "border-radius": "5px",
+                         "color": "darkgray",
+                         "font-size": "16px",
+                         "margin": "0px",
+                         "padding": "10px",
+                         "vertical-align": "middle",
+                         "width": "100%",
+                     },
+                     width_policy="fit",
+                     )
+        return div
+
+    def get_filename_div2(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = bm.Div(text=f"<b>Current filename: </b>{self.filename_info}",
+                     style={
+                         "color": "steelblue",
+                         "font-size": "16px",
+                         "float": "right",
+                     },
+                     align="end",
+                     )
+        return div
+
     def visualize(self, doc):
         """
         Start the bokeh document using this visualizer.
@@ -1051,24 +1097,28 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         layout_ls = list()
         if self.filename_info:
             # Edit elements
-            filename_div = bm.Div(
-                align=("start", "center"),
-                css_classes=["filename"],
-                id="_filename",
-                margin=(0, 0, 0, 84),
-                name="filename",
-                height_policy="max",
-                text=f"Current filename: {self.filename_info}",
-                style={
-                    "background": "white",
-                    "color": "#666666",
-                    "padding": "10px 0px 10px 0px",
-                    "vertical-align": "middle",
-                },
-                width_policy="min",
-            )
-            layout_ls.append(filename_div)
-        layout_ls.append(self.submit_button)
+            # filename_div = bm.Div(
+            #     align=("start", "center"),
+            #     css_classes=["filename"],
+            #     id="_filename",
+            #     margin=(0, 0, 0, 84),
+            #     name="filename",
+            #     height_policy="max",
+            #     text=f"Current filename: {self.filename_info}",
+            #     style={
+            #         "background": "white",
+            #         "color": "#666666",
+            #         "padding": "10px 0px 10px 0px",
+            #         "vertical-align": "middle",
+            #     },
+            #     width_policy="min",
+            # )
+            # Stealing styling from Bruno's variant
+            self.submit_button.align = 'center'
+            # layout_ls.append(row(Spacer(width=250), row(self.submit_button, sizing_mode="stretch_width"), self.get_filename_div2()))
+            layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div2(), sizing_mode="scale_width"))
+        else:
+            layout_ls.append(self.submit_button)
         if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
             layout_ls.append(Spacer(height=10))
