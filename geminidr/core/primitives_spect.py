@@ -2635,7 +2635,7 @@ class Spect(PrimitivesBASE):
         extension = params["extension"]
         apertures = params["apertures"]
         if apertures:
-            these_apertures = [int(x) for x in apertures.split(",")]
+            these_apertures = [int(x) for x in str(apertures).split(",")]
         write_dq = params["dq"]
         write_var = params["var"]
         overwrite = params["overwrite"]
