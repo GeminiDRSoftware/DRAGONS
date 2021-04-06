@@ -253,6 +253,43 @@ def get_corners(shape):
 
     return corners
 
+
+def get_spline3_extrema(spline):
+    """
+    Find the locations of the minima and maxima of a cubic spline.
+
+    Parameters
+    ----------
+    spline: a callable spline object
+
+    Returns
+    -------
+    minima, maxima: 1D arrays
+    """
+    derivative = spline.derivative()
+    try:
+        knots = derivative.get_knots()
+    except AttributeError:  # for BSplines
+        knots = derivative.k
+
+    minima, maxima = [], []
+    # We take each pair of knots and map to interval [-1,1]
+    for xm, xp in zip(knots[:-1], knots[1:]):
+        ym, y0, yp = derivative([xm, 0.5*(xm+xp), xp])
+        # a*x^2 + b*x + c
+        a = 0.5 * (ym+yp) - y0
+        b = 0.5 * (yp-ym)
+        c = y0
+        for root in np.roots([a, b, c]):
+            if np.isreal(root) and abs(root) <= 1:
+                x = 0.5 * (root * (xp-xm) + (xp+xm))  # unmapped from [-1, 1]
+                if 2*a*root + b > 0:
+                    minima.append(x)
+                else:
+                    maxima.append(x)
+    return np.array(minima), np.array(maxima)
+
+
 def rotate_2d(degs):
     """
     Little helper function to return a basic 2-D rotation matrix.

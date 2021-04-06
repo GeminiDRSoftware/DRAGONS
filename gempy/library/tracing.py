@@ -693,21 +693,14 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     else:
         w = divide0(1.0, np.sqrt(variance))
 
-    # We need to fit a quartic spline since we want to know its
-    # minima (roots of its derivative), and can only find the
-    # roots of a cubic spline
-    # TODO: Quartic splines look bad with outlier removal
-    #spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=4)
-    spline = interpolate.UnivariateSpline(x, y, w=w, k=4)
-
-    derivative = spline.derivative(n=1)
-    extrema = derivative.roots()
-    second_derivatives = spline.derivative(n=2)(extrema)
-    minima = [ex for ex, second in zip(extrema, second_derivatives) if second > 0]
+    # TODO: Consider outlier removal
+    #spline = am.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=3)
+    spline = interpolate.UnivariateSpline(x, y, w=w, k=3)
+    minima, maxima = at.get_spline3_extrema(spline)
 
     all_limits = []
     for peak in peaks:
-        tweaked_peak = extrema[np.argmin(abs(extrema - peak))]
+        tweaked_peak = maxima[np.argmin(abs(maxima - peak))]
 
         # Now find the nearest minima above and below the peak
         for upper in minima:
