@@ -158,7 +158,7 @@ class Aperture:
             self.var[:] = [result.variance for result in results]
 
     def optimal_extraction(self, data, mask, var, aper_lower, aper_upper,
-                           cr_rej=5, max_iters=None):
+                           cr_rej=5, max_iters=None, degree=3):
         """Optimal extraction following Horne (1986, PASP 98, 609)"""
         BAD_BITS = DQ.bad_pixel | DQ.cosmic_ray | DQ.no_data | DQ.unilluminated
 
@@ -170,8 +170,9 @@ class Aperture:
         ix1 = max(int(min(all_x1) + 0.5), 0)
         ix2 = min(int(max(all_x2) + 1.5), slitlength)
 
-        fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                   outlier_func=sigma_clip, sigma_upper=3, sigma_lower=None)
+        fit_it = fitting.FittingWithOutlierRemoval(
+            fitting.LinearLSQFitter(), outlier_func=sigma_clip, sigma_upper=3,
+            sigma_lower=None)
 
         # If we don't have a VAR plane, assume uniform variance based
         # on the pixel-to-pixel variations in the data
@@ -181,9 +182,12 @@ class Aperture:
             var_mask = np.zeros_like(var, dtype=bool)
         else:
             mvar_init = models.Polynomial1D(degree=1)
-            var_model, var_mask = fit_it(mvar_init, np.ma.masked_where(mask.ravel(), abs(data).ravel()), var.ravel())
+            var_model, var_mask = fit_it(
+                mvar_init, np.ma.masked_where(mask.ravel(),
+                                              abs(data).ravel()), var.ravel())
             var_mask = var_mask.reshape(var.shape)[ix1:ix2]
             var = np.where(var_mask, var[ix1:ix2], var_model(data[ix1:ix2]))
+        var[var < 0] = 0
 
         if mask is None:
             mask = np.zeros((ix2 - ix1, npix), dtype=DQ.datatype)
@@ -194,26 +198,29 @@ class Aperture:
         # Step 4; first calculation of spectrum. We don't do any masking
         # here since we need all the flux
         spectrum = data.sum(axis=0)
-        weights = np.where(var > 0, var, 0)
+        inv_var = at.divide0(1., var)
         unmask = np.ones_like(data, dtype=bool)
 
         iter = 0
         while True:
             # Step 5: construct spatial profile for each wavelength pixel
             profile = np.divide(data, spectrum,
-                                out=np.zeros_like(data, dtype=np.float32), where=spectrum > 0)
+                                out=np.zeros_like(data, dtype=np.float32),
+                                where=spectrum > 0)
             profile_models = []
-            for row, wt_row in zip(profile, weights):
-                m_init = models.Chebyshev1D(degree=3, domain=[0, npix - 1])
-                m_final, _ = fit_it(m_init, pixels, row, weights=wt_row)
+            for row, ivar_row in zip(profile, inv_var):
+                m_init = models.Chebyshev1D(degree=degree, domain=[0, npix - 1])
+                m_final, _ = fit_it(m_init, pixels, row,
+                                    weights=np.sqrt(ivar_row) * np.where(spectrum > 0, spectrum, 0))
                 profile_models.append(m_final(pixels))
             profile_model_spectrum = np.array([np.where(pm < 0, 0, pm) for pm in profile_models])
             sums = profile_model_spectrum.sum(axis=0)
             model_profile = divide0(profile_model_spectrum, sums)
 
             # Step 6: revise variance estimates
-            var = np.where(var_mask | mask & BAD_BITS, var, var_model(abs(model_profile * spectrum)))
-            weights = divide0(1.0, var)
+            var = np.where(var_mask | mask & BAD_BITS, var,
+                           var_model(abs(model_profile * spectrum)))
+            inv_var = divide0(1.0, var)
 
             # Step 7: identify cosmic ray hits: we're (probably) OK
             # to flag more than 1 per wavelength
@@ -226,8 +233,8 @@ class Aperture:
 
             last_unmask = unmask
             unmask = (mask & BAD_BITS) == 0
-            spec_numerator = np.sum(unmask * model_profile * data * weights, axis=0)
-            spec_denominator = np.sum(unmask * model_profile ** 2 * weights, axis=0)
+            spec_numerator = np.sum(unmask * model_profile * data * inv_var, axis=0)
+            spec_denominator = np.sum(unmask * model_profile ** 2 * inv_var, axis=0)
             self.data = divide0(spec_numerator, spec_denominator)
             self.var = divide0(np.sum(unmask * model_profile, axis=0), spec_denominator)
             self.mask = np.bitwise_and.reduce(mask, axis=0)
