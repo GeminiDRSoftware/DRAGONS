@@ -433,26 +433,31 @@ class FittingParametersUI:
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], 1, min_order, max_order,
-                                                          fitting_parameters, "order", fit.perform_fit, throttled=True)
+        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None, # 1, min_order, max_order,
+                                                          fitting_parameters, "order", fit.perform_fit, throttled=True,
+                                                          config=vis.config)
         self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
-                                                                0.01, 1, 10,
+                                                                None, None, None, # 0.01, 1, 10,
                                                                 fitting_parameters, "sigma_upper",
                                                                 self.sigma_slider_handler,
-                                                                throttled=True)
+                                                                throttled=True,
+                                                                config=vis.config)
         self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
-                                                                0.01, 1, 10,
+                                                                None, None, None, # 0.01, 1, 10,
                                                                 fitting_parameters, "sigma_lower",
                                                                 self.sigma_slider_handler,
-                                                                throttled=True)
+                                                                throttled=True,
+                                                                config=vis.config)
         self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                          1, 0, 10,
+                                                          None, None, None, # 1, 0, 10,
                                                           fitting_parameters, "niter",
-                                                          fit.perform_fit)
+                                                          fit.perform_fit,
+                                                          config=vis.config)
         self.grow_slider = interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                         1, 0, 10,
+                                                         None, None, None, # 1, 0, 10,
                                                          fitting_parameters, "grow",
-                                                         fit.perform_fit)
+                                                         fit.perform_fit,
+                                                         config=vis.config)
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
         self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
@@ -995,14 +1000,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             if hasattr(field, 'min') and field.min:
                 kwargs['min_order'] = field.min
             else:
-                kwargs['min_order'] = 1
+                kwargs['min_order'] = 0
             if hasattr(field, 'max') and field.max:
                 kwargs['max_order'] = field.max
             else:
-                kwargs['max_order'] = field.default * 2
+                kwargs['max_order'] = None # field.default * 2
         else:
-            kwargs['min_order'] = 1
-            kwargs['max_order'] = 10
+            kwargs['min_order'] = 0
+            kwargs['max_order'] = None
 
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'

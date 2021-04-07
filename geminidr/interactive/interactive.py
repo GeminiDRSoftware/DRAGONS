@@ -62,7 +62,8 @@ class PrimitiveVisualizer(ABC):
                                     id="_submit_btn",
                                     label="Accept",
                                     name="submit_btn",
-                                    width_policy='min')
+                                    width_policy='min',
+                                    )
 
         # This now happens indirectly via the /shutdown ajax js callback
         # Remove this line if we stick with that
@@ -317,7 +318,7 @@ class PrimitiveVisualizer(ABC):
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256):
+                      slider_width=256, config=None):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -347,7 +348,16 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
 
     """
-    is_float = not isinstance(value, int)
+    if min_value is None and config is not None:
+        field = config._fields.get(attr, None)
+        if field is not None:
+            if hasattr(field, 'min'):
+                min_value = field.min
+    if max_value is None and config is not None:
+        field = config._fields.get(attr, None)
+        if field is not None:
+            if hasattr(field, 'max'):
+                max_value = field.max
 
     if min_value is not None and max_value is not None:
         title = '%s (min: %s, max: %s)' % (title, min_value, max_value)
@@ -356,10 +366,18 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     elif max_value is not None:
         title = '%s (max: %s)' % (title, max_value)
 
-    start = min(value, min_value) if min_value else min(value, 0)
-    end = max(value, max_value) if max_value else max(10, value*2)
+    start = min(value, min_value) if min_value is not None else min(value, 0)
+    end = max(value, max_value) if max_value is not None else max(10, value*2)
 
     # trying to convince int-based sliders to behave
+    is_float = not isinstance(value, int) or \
+               (min_value is not None and not isinstance(min_value, int)) or \
+               (max_value is not None and not isinstance(max_value, int))
+    if step is None:
+        if is_float:
+            step = 0.1
+        else:
+            step = 1
     fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
@@ -401,8 +419,12 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                 ival = int(new)
             if ival > slider.end and not max_value:
                 slider.end = ival
+            if ival < slider.end and end < slider.end:
+                slider.end = max(end, ival)
             if 0 <= ival < slider.start and min_value is None:
                 slider.start = ival
+            if ival > slider.start and start > slider.start:
+                slider.start = min(ival, start)
             if slider.start <= ival <= slider.end:
                 slider.value = ival
 
