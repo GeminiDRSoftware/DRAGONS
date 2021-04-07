@@ -2612,8 +2612,8 @@ class Spect(PrimitivesBASE):
 
                     # Recalculate aperture limits after rectification
                     apcoords = m_final(np.arange(ext.shape[dispaxis]))
-                    model_dict['aper_lower'] = aperture['aper_lower'] + (location - np.min(apcoords))
-                    model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
+                    model_dict['aper_lower'] = aperture['aper_lower'] # + (location - np.min(apcoords))
+                    model_dict['aper_upper'] = aperture['aper_upper'] # - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()
                                              if k not in all_column_names])
                     all_model_dicts.append(model_dict)
