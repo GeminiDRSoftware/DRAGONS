@@ -472,7 +472,7 @@ class FittingParametersUI:
                             (self.grow_slider, "grow")
                             ]:
             slider.children[0].value = self.fitting_parameters[key]
-            slider.children[1].value = str(self.fitting_parameters[key])
+            slider.children[1].value = self.fitting_parameters[key]
         self.sigma_button.active = [0] if self.saved_sigma_clip else []
         self.fit.perform_fit()
 
