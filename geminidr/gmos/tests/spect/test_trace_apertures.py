@@ -64,7 +64,8 @@ def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
         assert input_table['aper_lower'][0] <= 0
         assert input_table['aper_upper'][0] >= 0
 
-        keys = ext.APERTURE.colnames
+        # aper_lower and aper_upper aren't part of traceApertures
+        keys = [k for k in ext.APERTURE.colnames if not k.startswith("aper_")]
         actual = np.array([input_table[k] for k in keys])
         desired = np.array([reference_table[k] for k in keys])
         np.testing.assert_allclose(desired, actual, atol=0.05)
