@@ -1238,6 +1238,7 @@ class RegionEditor(GIRegionListener):
                     self.text_input.value = self.region_model.build_regions()
                     self.error_message.visible = False
                 else:
+                    self.text_input.value = current
                     if 'region_input_error' not in self.text_input.css_classes:
                         self.error_message.visible = True
             else:
