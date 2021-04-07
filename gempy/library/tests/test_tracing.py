@@ -67,8 +67,8 @@ def test_get_limits():
 
     limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='peak')[0]
     for l in limits:
-        assert abs(l - CENT) - (SIG * np.sqrt(2 * np.log(100))) < 0.05 * SIG
+        assert abs(l - CENT) - (SIG * np.sqrt(2 * np.log(100))) < 0.1 * SIG
 
     limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='integral')[0]
     for l in limits:
-        assert abs(l - CENT) - (SIG * 2.576) < 0.05 * SIG
+        assert abs(l - CENT) - (SIG * 2.576) < 0.1 * SIG
