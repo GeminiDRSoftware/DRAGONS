@@ -335,6 +335,11 @@ class UnivariateSplineWithOutlierRemoval:
                 spline = lambda xx: avg_y
 
             spline_y = spline(x)
+
+            # on last pass, do not update sigma clipping
+            if iteration >= niter:
+                break
+
             masked_residuals = outlier_func(np.ma.array(y - spline_y,
                                                         mask=full_mask),
                                             **outlier_kwargs)
