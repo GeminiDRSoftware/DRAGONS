@@ -250,6 +250,12 @@ class UnivariateSplineWithOutlierRemoval:
         if 'hsigma' in outlier_kwargs:
             outlier_kwargs['sigma_upper'] = outlier_kwargs.pop('hsigma')
 
+        # Override sigma if we have upper/lower set.  Otherwise astropy treats
+        # a 0.0 lower/upper sigma as a request to use sigma
+        if outlier_kwargs.get('sigma_lower', None) is not None and \
+            outlier_kwargs.get('sigma_upper', None) is not None:
+            outlier_kwargs['sigma'] = 0.0
+
         # Both spline classes require sorted x, so do that here. We also
         # require unique x values, so we're going to deal with duplicates by
         # making duplicated values slightly larger. But we have to do this
@@ -329,7 +335,7 @@ class UnivariateSplineWithOutlierRemoval:
                 spline = lambda xx: avg_y
 
             spline_y = spline(x)
-            masked_residuals = outlier_func(np.ma.array(spline_y - y,
+            masked_residuals = outlier_func(np.ma.array(y - spline_y,
                                                         mask=full_mask),
                                             **outlier_kwargs)
             mask = masked_residuals.mask
