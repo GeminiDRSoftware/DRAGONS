@@ -2928,8 +2928,8 @@ class Spect(PrimitivesBASE):
 
                     # Recalculate aperture limits after rectification
                     apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
-                    this_aptable["aper_lower"] = aperture["aper_lower"] + (location - apcoords.min())
-                    this_aptable["aper_upper"] = aperture["aper_upper"] - (apcoords.max() - location)
+                    this_aptable["aper_lower"] = aperture["aper_lower"]  #+ (location - apcoords.min())
+                    this_aptable["aper_upper"] = aperture["aper_upper"]  #- (apcoords.max() - location)
                     all_tables.append(this_aptable)
 
                 new_aptable = vstack(all_tables, metadata_conflicts="silent")
