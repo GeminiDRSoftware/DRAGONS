@@ -359,13 +359,6 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             if hasattr(field, 'max'):
                 max_value = field.max
 
-    if min_value is not None and max_value is not None:
-        title = '%s (min: %s, max: %s)' % (title, min_value, max_value)
-    elif min_value is not None:
-        title = '%s (min: %s)' % (title, min_value)
-    elif max_value is not None:
-        title = '%s (max: %s)' % (title, max_value)
-
     start = min(value, min_value) if min_value is not None else min(value, 0)
     end = max(value, max_value) if max_value is not None else max(10, value*2)
 
@@ -389,8 +382,36 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     slider.width = slider_width
 
-    text_input = NumericInput(width=64, value=value, low=min_value, high=max_value, format=fmt,
+    # NOTE: although NumericInput can handle a high/low limit, it
+    # offers no feedback to the user when it does.  Since some of our
+    # inputs are capped and others open-ended, we use the js callbacks
+    # below to enforce the range limits, if any.
+    text_input = NumericInput(width=64, value=value,
+                              format=fmt,
                               mode='float' if is_float else 'int')
+
+    # Custom range enforcement with alert messages
+    if max_value is not None:
+        text_input.js_on_change('value', CustomJS(
+            args=dict(inp=text_input),
+            code="""
+                debugger;
+                if (inp.value > %s) {
+                    alert('Maximum is %s');
+                    inp.value = %s;
+                }
+            """ % (max_value, max_value, max_value)))
+    if min_value is not None:
+        text_input.js_on_change('value', CustomJS(
+            args=dict(inp=text_input),
+            code="""
+                debugger;
+                if (inp.value < %s) {
+                    alert('Minimum is %s');
+                    inp.value = %s;
+                }
+            """ % (min_value, min_value, min_value)))
+
     component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
