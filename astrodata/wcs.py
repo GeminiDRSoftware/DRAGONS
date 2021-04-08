@@ -560,6 +560,10 @@ def fitswcs_linear(header):
         FITS Header or dict with basic FITS WCS keywords.
 
     """
+    # We *always* want the wavelength solution model to be called "WAVE"
+    # even if the CTYPE keyword is "AWAV"
+    model_name_mapping = {"AWAV": "WAVE"}
+
     if isinstance(header, fits.Header):
         wcs_info = read_wcs_from_header(header)
     elif isinstance(header, dict):
@@ -584,7 +588,8 @@ def fitswcs_linear(header):
                                             name='crpix' + str(pixel_axis + 1)) |
                             models.Scale(cd[ax, pixel_axis]) |
                             models.Shift(crval[ax]))
-            linear_model.name = wcs_info['CTYPE'][ax][:4].upper()
+            ctype = wcs_info['CTYPE'][ax][:4].upper()
+            linear_model.name = model_name_mapping.get(ctype, ctype)
             linear_model.outputs = (wcs_info['CTYPE'][ax],)
             linear_model.meta.update({'input_axes': pixel_axes,
                                       'output_axes': [ax]})
