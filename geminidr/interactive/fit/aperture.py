@@ -14,6 +14,7 @@ from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
+from geminidr.interactive.interactive_config import show_add_aperture_button
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
@@ -960,9 +961,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                color="black", mode="center")
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
-        add_button = Button(label="Add Aperture", button_type='primary',
-                            default_size=200)
-        add_button.on_click(self.add_aperture)
+        # making button configurable so we can add it conditionally for notebooks in future
+        if show_add_aperture_button:
+            add_button = Button(label="Add Aperture", button_type='primary',
+                                default_size=200)
+            add_button.on_click(self.add_aperture)
 
         renumber_button = Button(label="Renumber apertures",
                                  button_type='primary', default_size=200)
@@ -972,7 +975,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         controls = column(children=[
             params,
             aperture_view.controls,
-            row(renumber_button, add_button),
+            row(renumber_button, add_button) if show_add_aperture_button else renumber_button,
         ])
 
         self.model.recalc_apertures()
