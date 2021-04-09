@@ -43,6 +43,7 @@ def reduce(p):
     p.getList(purpose='forStack')
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
+    p.scaleByExposureTime()
     p.stackFrames()
     p.detectSources()
     p.determineAstrometricSolution()

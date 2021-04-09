@@ -33,6 +33,7 @@ def reduce(p):
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
+    p.scaleByExposureTime()
     p.stackFrames(zero=True)
     p.storeProcessedScience()
     return
@@ -80,6 +81,7 @@ def alignAndStack(p):
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
+    p.scaleByExposureTime()
     p.stackFrames(zero=True)
     return
 
