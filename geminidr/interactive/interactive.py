@@ -845,9 +845,10 @@ class GIRegionModel:
         self.regions = dict()
 
     def load_from_tuples(self, tuples):
-        region_ids = list(self.regions.keys())
-        for region_id in region_ids:
-            self.delete_region(region_id)
+        self.clear_regions()
+        # region_ids = list(self.regions.keys())
+        # for region_id in region_ids:
+        #     self.delete_region(region_id)
         self.region_id = 1
         for tup in tuples:
             self.adjust_region(self.region_id, tup.start, tup.stop)
@@ -1252,6 +1253,7 @@ class RegionEditor(GIRegionListener):
                 self.text_input.value = ""
                 current = None
                 region_text = None
+                self.region_model.finish_regions()
 
             if current != region_text:
                 if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
