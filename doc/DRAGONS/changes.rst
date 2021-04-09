@@ -22,6 +22,8 @@ Bug Fixes
 
 * Remove incorrect logging in separateSky when object and/or sky files are specified.
 * Improve algorithm for separating on-source and on-sky frames.
+* Avoid upsampling OBJMASK from uint8 to uint16
+
 
 **geminidr.gemini**
 
@@ -41,7 +43,8 @@ New Features
 
 **geminidr.core**
 
-* Add ``remove_first`` parameter to removeFirstFrame primitive
+* Add ``remove_first`` parameter to removeFirstFrame primitive.
+* Add ``match_radius`` parameter to adjustWCSToReference primitive.
 * Add an IRAF compatibility primitive and recipe for Flamingos 2.
 
 Documentation
