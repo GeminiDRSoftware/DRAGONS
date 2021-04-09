@@ -97,8 +97,7 @@ class Controller(object):
                     self.helpmaskingtext = (
                         "<b> Masking </b> <br/>"
                         "<b>M</b> - Add selected points to mask<br/>"
-                        "<b>U</b> - Unmask selected points<br/>"
-                        "<b>P</b> - Mask/Unmask closest point<br/>") if len(mask_handlers) > 2 else ''
+                        "<b>U</b> - Unmask selected points<br/>") if len(mask_handlers) > 2 else ''
                     self.helpmaskingtext = self.helpmaskingtext + "<br/>"
                     self.set_help_text(None)
                     self.removed_selection_note = True
@@ -257,15 +256,11 @@ class Controller(object):
 
             if _key == 'm' or _key == 'M':
                 if self.mask_handler:
-                    self.mask_handler()
+                    self.mask_handler(self.x, self.y)
 
             elif _key == 'u' or _key == 'U':
                 if self.unmask_handler:
-                    self.unmask_handler()
-
-            elif _key == 'p' or _key == 'P':
-                if self.pointmask_handler:
-                    self.pointmask_handler(self.x, self.y)
+                    self.unmask_handler(self.x, self.y)
 
             elif self.task:
                 if self.task.handle_key(_key):
