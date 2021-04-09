@@ -272,66 +272,52 @@ class UnivariateSplineWithOutlierRemoval:
                 orig_mask = y.mask.astype(bool)
             y = y.data
 
-        if w is not None:
-            orig_mask |= (w == 0)
+        wts = np.ones_like(x) if w is None else w.copy()
+        wts[orig_mask] = 0.
 
         if debug:
             print('y=', y)
             print('orig_mask=', orig_mask.astype(int))
 
+        while True:
+            xunique, indices = np.unique(x, return_index=True)
+            if indices.size == x.size:
+                # All unique x values so continue
+                break
+            if order is None:
+                raise ValueError("Must specify spline order when there are "
+                                 "duplicate x values")
+            for i in range(x.size):
+                if i not in indices:
+                    xunique[i] *= (1.0 + epsf)
+
+        if order is not None:
+            order = min(order, x.size - k)
+            knots = [xunique[int(xx + 0.5)]
+                     for xx in np.linspace(0, xunique.size - 1, order + 1)[1:-1]]
+            # Space knots equally based on density of unique x values
+            spline_args = (knots,)
+            if debug:
+                print("KNOTS", knots)
+
         iteration = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
         while iteration < niter+1:
             last_mask = full_mask
-            x_to_fit = x.astype(float)
+            wts[full_mask] = 0
 
-            if order is not None:
-                # Determine actual order to apply based on fraction of unmasked
-                # pixels, and unmask everything if there are too few good pixels
-                this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
-                if this_order == 0 and order > 0:
-                    full_mask = np.zeros(x.shape, dtype=bool)
-                    if w is not None and not all(w == 0):
-                        full_mask |= (w == 0)
-                    this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
-                    if debug:
-                        print("FULL MASK", full_mask)
-
-            xgood = x_to_fit[~full_mask]
-            while True:
-                if debug:
-                    print(f"Iter {iteration}: epsf loop")
-                xunique, indices = np.unique(xgood, return_index=True)
-                if indices.size == xgood.size:
-                    # All unique x values so continue
-                    break
-                if order is None:
-                    raise ValueError("Must specify spline order when there are "
-                                     "duplicate x values")
-                for i in range(xgood.size):
-                    if i not in indices:
-                        xgood[i] *= (1.0 + epsf)
-
-            # Space knots equally based on density of unique x values
-            if order is not None:
-                knots = [xunique[int(xx+0.5)]
-                         for xx in np.linspace(0, xunique.size-1, this_order+1)[1:-1]]
-                spline_args = (knots,)
-                if debug:
-                    print("KNOTS", knots)
-
-            sort_indices = np.argsort(xgood)
+            sort_indices = np.argsort(xunique)
             # Create appropriate spline object using current mask
-            if order is None or this_order > 0:
+            if order is None or order > 0:
                 spline = cls_(
-                    xgood[sort_indices], y[~full_mask][sort_indices],
+                    xunique[sort_indices], y[sort_indices],
                     *spline_args,
-                    w=None if w is None else w[~full_mask][sort_indices],
+                    w=wts[sort_indices],
                     **spline_kwargs
                 )
             else:
                 avg_y = np.average(y[~full_mask],
-                                   weights=None if w is None else w[~full_mask])
+                                   weights=wts[~full_mask])
                 spline = lambda xx: avg_y
 
             spline_y = spline(x)
