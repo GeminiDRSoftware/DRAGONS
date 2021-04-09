@@ -609,8 +609,11 @@ class SelectedApertureLineView:
             self.apertures_model.selected = model.source.data['id'][0]
         else:
             self.select.value = "None"
+            self.start_input.value = None
             self.start_input.disabled = True
+            self.location_input.value = None
             self.location_input.disabled = True
+            self.end_input.value = None
             self.end_input.disabled = True
             self.button.disabled = True
 
