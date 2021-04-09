@@ -637,8 +637,7 @@ class Fit1DPanel:
             connect_figure_extras(p_main, None, self.band_model)
 
             mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler,
-                             self.point_mask_handler)
+                             self.unmask_button_handler)
         else:
             self.band_model = None
             mask_handlers = None
@@ -701,7 +700,7 @@ class Fit1DPanel:
         """
         self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
 
-    def mask_button_handler(self, stuff=None):
+    def mask_button_handler(self, x, y):
         """
         Handler for the mask button.
 
@@ -715,12 +714,15 @@ class Fit1DPanel:
             This is ignored, but the button passes it
         """
         indices = self.fit.data.selected.indices
-        self.fit.data.selected.update(indices=[])
-        for i in indices:
-            self.fit.user_mask[i] = 1
-        self.fit.perform_fit()
+        if not indices:
+            self._point_mask_handler(x, y, 'mask')
+        else:
+            self.fit.data.selected.update(indices=[])
+            for i in indices:
+                self.fit.user_mask[i] = 1
+            self.fit.perform_fit()
 
-    def unmask_button_handler(self, stuff=None):
+    def unmask_button_handler(self, x, y):
         """
         Handler for the unmask button.
 
@@ -734,12 +736,15 @@ class Fit1DPanel:
             This is ignored, but the button passes it
         """
         indices = self.fit.data.selected.indices
-        self.fit.data.selected.update(indices=[])
-        for i in indices:
-            self.fit.user_mask[i] = 0
-        self.fit.perform_fit()
+        if not indices:
+            self._point_mask_handler(x, y, 'unmask')
+        else:
+            self.fit.data.selected.update(indices=[])
+            for i in indices:
+                self.fit.user_mask[i] = 0
+            self.fit.perform_fit()
 
-    def point_mask_handler(self, x, y):
+    def _point_mask_handler(self, x, y, action):
         """
         Handler for the mask button.
 
@@ -758,14 +763,19 @@ class Fit1DPanel:
         sel = None
         xarr = self.fit.data.data['x']
         yarr = self.fit.data.data['y']
+        if action not in ('mask', 'unmask'):
+            action = None
         for i in range(len(xarr)):
-            xd = xarr[i]
-            yd = yarr[i]
-            if xd is not None and yd is not None:
-                ddist = (x - xd) ** 2 + (y - yd) ** 2
-                if dist is None or ddist < dist:
-                    dist = ddist
-                    sel = i
+            if action is None or \
+                    (action == 'unmask' and self.fit.user_mask[i]) or \
+                    (action == 'mask' and self.fit.user_mask[i] == 0):
+                xd = xarr[i]
+                yd = yarr[i]
+                if xd is not None and yd is not None:
+                    ddist = (x - xd) ** 2 + (y - yd) ** 2
+                    if dist is None or ddist < dist:
+                        dist = ddist
+                        sel = i
         if sel is not None:
             # we have a closest point, toggle the user mask
             if self.fit.user_mask[sel]:
