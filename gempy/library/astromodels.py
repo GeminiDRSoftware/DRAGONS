@@ -292,7 +292,7 @@ class UnivariateSplineWithOutlierRemoval:
                     xunique[i] *= (1.0 + epsf)
 
         if order is not None:
-            order = min(order, x.size - k)
+            order = min(order, x.size - k + 1)
             knots = [xunique[int(xx + 0.5)]
                      for xx in np.linspace(0, xunique.size - 1, order + 1)[1:-1]]
             # Space knots equally based on density of unique x values
@@ -311,13 +311,10 @@ class UnivariateSplineWithOutlierRemoval:
             if order is None or order > 0:
                 spline = cls_(
                     xunique[sort_indices], y[sort_indices],
-                    *spline_args,
-                    w=wts[sort_indices],
-                    **spline_kwargs
+                    *spline_args, w=wts[sort_indices], **spline_kwargs
                 )
             else:
-                avg_y = np.average(y[~full_mask],
-                                   weights=wts[~full_mask])
+                avg_y = np.average(y, weights=wts)
                 spline = lambda xx: avg_y
 
             spline_y = spline(x)
@@ -325,6 +322,11 @@ class UnivariateSplineWithOutlierRemoval:
             # on last pass, do not update sigma clipping
             if iteration >= niter:
                 break
+
+            if np.isnan(spline_y).any():
+                print("Some NaNs")
+            if np.isinf(spline_y).any():
+                print("Some Infs")
 
             masked_residuals = outlier_func(np.ma.array(y - spline_y,
                                                         mask=full_mask),

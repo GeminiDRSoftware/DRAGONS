@@ -46,4 +46,4 @@ class core_1Dfitting_config(Config):
                         min=0, optional=True)
     niter = RangeField("Maximum number of rejection iterations", int, None,
                        min=0, optional=True)
-    grow = RangeField("Rejection growing radius", float, 0, min=0)
+    grow = RangeField("Rejection growing radius", int, 0, min=0)
