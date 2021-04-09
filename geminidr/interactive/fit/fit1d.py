@@ -426,42 +426,57 @@ class InteractiveFit1D:
 
 
 class FittingParametersUI:
-    def __init__(self, vis, fit, fitting_parameters, min_order, max_order):
+    def __init__(self, vis, fit, fitting_parameters):
         self.vis = vis
         self.fit = fit
         self.saved_sigma_clip = self.fit.sigma_clip
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None, # 1, min_order, max_order,
+        self.description = self.build_description()
+
+        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None,
                                                           fitting_parameters, "order", fit.perform_fit, throttled=True,
-                                                          config=vis.config)
+                                                          config=vis.config, slider_width=128)
         self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
-                                                                None, None, None, # 0.01, 1, 10,
+                                                                None, None, None,
                                                                 fitting_parameters, "sigma_upper",
                                                                 self.sigma_slider_handler,
                                                                 throttled=True,
-                                                                config=vis.config)
+                                                                config=vis.config, slider_width=128)
         self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
-                                                                None, None, None, # 0.01, 1, 10,
+                                                                None, None, None,
                                                                 fitting_parameters, "sigma_lower",
                                                                 self.sigma_slider_handler,
                                                                 throttled=True,
-                                                                config=vis.config)
+                                                                config=vis.config, slider_width=128)
         self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                          None, None, None, # 1, 0, 10,
+                                                          None, None, None,
                                                           fitting_parameters, "niter",
                                                           fit.perform_fit,
-                                                          config=vis.config)
+                                                          throttled=True,
+                                                          config=vis.config, slider_width=128)
         self.grow_slider = interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                         None, None, None, # 1, 0, 10,
+                                                         None, None, None,
                                                          fitting_parameters, "grow",
                                                          fit.perform_fit,
-                                                         config=vis.config)
+                                                         throttled=True,
+                                                         config=vis.config, slider_width=128)
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
-        self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
-                                self.niter_slider, self.grow_slider]
+        self.controls_column = [self.order_slider, self.description, self.niter_slider, self.sigma_button,
+                                self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
+
+    def build_description(self):
+        return bm.Div(
+            text=f"<p style='color: gray'> These are the parameters used to "
+                 f"fit the tracing data. </p>",
+            min_width=100,
+            max_width=200,
+            sizing_mode='stretch_width',
+            style={"color": "black"},
+            width_policy='min',
+        )
 
     def reset_ui(self):
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
@@ -537,10 +552,6 @@ class Fit1DPanel:
             X coordinate values
         y : :class:`~numpy.ndarray`
             Y coordinate values
-        min_order : int
-            minimum order in UI
-        max_order : int
-            maximum order in UI
         xlabel : str
             label for X axis
         ylabel : str
@@ -570,8 +581,7 @@ class Fit1DPanel:
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
 
         fit = self.fit
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters,
-                                                         min_order, max_order)
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
 
         controls_ls = list()
 
@@ -587,7 +597,12 @@ class Fit1DPanel:
                                                                   'to their original values.  Proceed?',
                                                                   reset_dialog_handler)
 
-        controller_div = Div()
+        controller_div = Div(margin=(20, 0, 0, 0),
+                             width=220,
+                             style={
+                                     "color": "gray",
+                                     "padding": "5px",
+                                 })
         self.info_div = Div()
 
         controls_ls.extend(controls_column)
@@ -596,7 +611,7 @@ class Fit1DPanel:
         controls_ls.append(reset_button)
         controls_ls.append(controller_div)
 
-        controls = column(*controls_ls)
+        controls = column(*controls_ls, max_width=220)
 
         # Now the figures
         x_range = None
@@ -859,7 +874,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  reinit_params=None, reinit_extras=None,
                  modal_message=None,
                  modal_button_label=None,
-                 order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, function=None, title=None, primitive_name=None, filename_info=None,
@@ -1008,19 +1022,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
-        if order_param and order_param in self.config._fields:
-            field = self.config._fields[order_param]
-            if hasattr(field, 'min') and field.min:
-                kwargs['min_order'] = field.min
-            else:
-                kwargs['min_order'] = 0
-            if hasattr(field, 'max') and field.max:
-                kwargs['max_order'] = field.max
-            else:
-                kwargs['max_order'] = None # field.default * 2
-        else:
-            kwargs['min_order'] = 0
-            kwargs['max_order'] = None
 
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
