@@ -700,7 +700,7 @@ class Fit1DPanel:
         """
         self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
 
-    def mask_button_handler(self, x, y):
+    def mask_button_handler(self, x, y, mult):
         """
         Handler for the mask button.
 
@@ -715,14 +715,14 @@ class Fit1DPanel:
         """
         indices = self.fit.data.selected.indices
         if not indices:
-            self._point_mask_handler(x, y, 'mask')
+            self._point_mask_handler(x, y, mult, 'mask')
         else:
             self.fit.data.selected.update(indices=[])
             for i in indices:
                 self.fit.user_mask[i] = 1
             self.fit.perform_fit()
 
-    def unmask_button_handler(self, x, y):
+    def unmask_button_handler(self, x, y, mult):
         """
         Handler for the unmask button.
 
@@ -737,14 +737,14 @@ class Fit1DPanel:
         """
         indices = self.fit.data.selected.indices
         if not indices:
-            self._point_mask_handler(x, y, 'unmask')
+            self._point_mask_handler(x, y, mult, 'unmask')
         else:
             self.fit.data.selected.update(indices=[])
             for i in indices:
                 self.fit.user_mask[i] = 0
             self.fit.perform_fit()
 
-    def _point_mask_handler(self, x, y, action):
+    def _point_mask_handler(self, x, y, mult, action):
         """
         Handler for the mask button.
 
@@ -772,7 +772,7 @@ class Fit1DPanel:
                 xd = xarr[i]
                 yd = yarr[i]
                 if xd is not None and yd is not None:
-                    ddist = (x - xd) ** 2 + (y - yd) ** 2
+                    ddist = (x - xd) ** 2 + ((y - yd) * mult) ** 2
                     if dist is None or ddist < dist:
                         dist = ddist
                         sel = i

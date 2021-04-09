@@ -135,6 +135,7 @@ class Controller(object):
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
         self.set_help_text(None)
+        self.fig = fig
 
     def set_help_text(self, text=None):
         """
@@ -256,11 +257,16 @@ class Controller(object):
 
             if _key == 'm' or _key == 'M':
                 if self.mask_handler:
-                    self.mask_handler(self.x, self.y)
+                    # mult is used to convert the y distance to be in x-equivalent-pixel terms
+                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
+                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
+                    self.mask_handler(self.x, self.y, mult)
 
             elif _key == 'u' or _key == 'U':
                 if self.unmask_handler:
-                    self.unmask_handler(self.x, self.y)
+                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
+                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
+                    self.unmask_handler(self.x, self.y, mult)
 
             elif self.task:
                 if self.task.handle_key(_key):
