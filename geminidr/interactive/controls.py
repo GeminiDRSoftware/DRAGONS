@@ -79,29 +79,10 @@ class Controller(object):
             "Select points using the toolbar on the right side of "
             "the plot. These will be the points to be masked or unmasked. Hold "
             "SHIFT during select to combine multiple selections or points.<br/>"
-            "<b>M</b> - Add selected points to mask<br/>"
-            "<b>U</b> - Unmask selected points<br/>") if mask_handlers else ''
-
-        self.helpmaskingtext += "<b>P</b> - Mask/Unmask closest point<br>" \
-            if mask_handlers and len(mask_handlers) > 2 else ''
+            "<b>M</b> - Mask selected/closest<br/>"
+            "<b>U</b> - Unmask selected/closest<br/>") if mask_handlers else ''
 
         self.helpmaskingtext += "<br/>" if mask_handlers else ''
-
-        # If we support masking, we also want to wait for the first select event
-        # and remove the additional text when it happens.
-        if mask_handlers:
-            self.removed_selection_note = False
-
-            def cb(sg):
-                if not self.removed_selection_note:
-                    self.helpmaskingtext = (
-                        "<b> Masking </b> <br/>"
-                        "<b>M</b> - Add selected points to mask<br/>"
-                        "<b>U</b> - Unmask selected points<br/>") if len(mask_handlers) > 2 else ''
-                    self.helpmaskingtext = self.helpmaskingtext + "<br/>"
-                    self.set_help_text(None)
-                    self.removed_selection_note = True
-            fig.on_event(SelectionGeometry, cb)
 
         self.helpintrotext = "While the mouse is over the upper plot, " \
                              "choose from the following commands:<br/><br/>\n" if showing_residuals \
