@@ -46,6 +46,7 @@ timestamp_keys = {
     "measureBG": "MEASREBG",
     "measureCC": "MEASRECC",
     "measureIQ": "MEASREIQ",
+    "modelSky2D": "MODELSKY",
     "mosaicDetectors": "MOSAIC",
     "multiply": "MULTIPLY",
     "nonlinearityCorrect": "LINCORR",

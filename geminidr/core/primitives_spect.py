@@ -2293,6 +2293,81 @@ class Spect(PrimitivesBASE):
 
         return adoutputs
 
+    def modelSky2D(self, adinputs=None, **params):
+        """
+        Model the sky background in 2D, by fitting a high-resolution, bivariate
+        spline to the supersampled spectrum in distortion-calibrated
+        co-ordinates. This model is then sampled onto the original input grid
+        to give a sky frame that can simply be subtracted from the input data.
+
+        Outputs are placed in a 'sky' stream, where each image contains the
+        2D model sky for the corresponding input image, while the original
+        ``adinputs`` are preserved in the main stream.
+
+        The algorithm used is comparable to the one described by Kelson (2003),
+        PASP 115, 688-699.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D science spectra loaded as :class:`~astrodata.AstroData` objects.
+        suffix : str or None
+            Suffix to be added to output files.
+        spatial_order : int
+            Number of cubic spline pieces to fit in the direction along the
+            slit (default 2). This is usually a low number, allowing for
+            gradual variations in the spectrograph's PSF and/or slit width,
+            since there is no intrinsic spatial variation in the sky itself.
+        spectral_spacing: float
+            PROSPECTIVE DESCRIPTION TBC:
+            Spline knot spacing in pixels in the spectral direction (a trade-
+            off between accuracy and noise/stability). The generic default of
+            1.0 reproduces the maximum resolution that can be sampled by a
+            single row of the input pixel grid, which is the smallest value
+            guaranteed to work [TBC]. For a typical slit spectrograph with
+            significant optical distortion, optimal results may be obtained by
+            reducing this parameter value to several tenths of a pixel
+            (depending on the instrument & configuration), to reproduce sharp
+            slit edges at the resolution of the spectrograph optics. Setting
+            the value too low may cause the fitting to fail, if there is not
+            enough distortion and/or redundancy along the slit to provide the
+            supersampling needed to satisfy the Schoenberg-Whitney conditions
+            for the requested spline. Also, there will be little gain from
+            using values smaller than about 0.3, because image resolution is
+            ultimately limited at that level by the finite size of a detector
+            pixel. For oversampled spectral apertures (eg. large fibres), the
+            parameter value may be set to >1, to minimize noise.
+        debug_plot : bool
+            Show diagnostic plots?
+
+        See Also
+        --------
+        :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
+        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`,
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        suffix = params["suffix"]
+        spatial_order = params["spatial_order"]
+        spectral_spacing = params["spectral_spacing"]
+
+        adoutputs = []
+
+        for ad in adinputs:
+
+            from copy import deepcopy
+            ad_out = deepcopy(ad)  # copy() causes infinite recursion
+
+            gt.mark_history(ad_out, primname=self.myself(),
+                            keyword=timestamp_key)
+            ad_out.update_filename(suffix=suffix, strip=True)
+            adoutputs.append(ad_out)
+
+        self.streams['sky'] = adoutputs
+        return adinputs
+
     def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive normalizes a spectroscopic flatfield, by fitting

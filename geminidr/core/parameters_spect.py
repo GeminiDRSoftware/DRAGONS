@@ -369,6 +369,16 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
+class modelSky2DConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_sky", optional=True)
+    # regions = config.Field("Sample regions", str, None, optional=True)
+    aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
+    spatial_order = config.RangeField("Fitting order in spatial direction", int, 2, min=2)
+    spectral_spacing = config.RangeField("Knot spacing in spectral direction", float, 1.0, min=0.1)
+    # niter = config.RangeField("Maximum number of rejection iterations", int, 3, min=0)
+    debug_plot = config.Field("Show diagnostic plots?", bool, False)
+
+
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
