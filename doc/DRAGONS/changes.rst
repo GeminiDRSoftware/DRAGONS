@@ -42,7 +42,8 @@ New Features
 
 **geminidr.core**
 
-* Add ``remove_first`` parameter to removeFirstFrame primitive
+* Add ``remove_first`` parameter to removeFirstFrame primitive.
+* Add ``match_radius`` parameter to adjustWCSToReference primitive.
 * Add an IRAF compatibility primitive and recipe for Flamingos 2.
 
 Documentation
