@@ -433,6 +433,22 @@ class FittingParametersUI:
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
+        if 'function' in vis.config._fields:
+            fn = vis.config.function
+            fn_allowed = [k for k in vis.config._fields['function'].allowed.keys()]
+
+            # Dropdown for selecting fit_1D function
+            self.function = Select(title="Fitting Function:", value=fn,
+                                   options=fn_allowed)
+
+            def fn_select_change(attr, old, new):
+                self.fit.set_function(new)
+                self.fit.perform_fit()
+
+            self.function.on_change('value', fn_select_change)
+        else:
+            self.function = None
+
         self.description = self.build_description()
 
         self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None,
@@ -464,8 +480,12 @@ class FittingParametersUI:
                                                          config=vis.config, slider_width=128)
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
-        self.controls_column = [self.order_slider, self.description, self.niter_slider, self.sigma_button,
-                                self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
+        if self.function:
+            self.controls_column = [self.function, self.order_slider, self.description, self.niter_slider, self.sigma_button,
+                                    self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
+        else:
+            self.controls_column = [self.order_slider, self.description, self.niter_slider, self.sigma_button,
+                                    self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
 
     def build_description(self):
         return bm.Div(
@@ -876,7 +896,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  modal_button_label=None,
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
-                 domains=None, function=None, title=None, primitive_name=None, filename_info=None,
+                 domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
                  **kwargs):
         """
@@ -903,8 +923,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         modal_button_label : str
             If set and if modal_message was set, this will be used for the label on the recalculate button.  It is
             not required.
-        order_param : str
-            Name of the parameter this primitive uses for `order`, to infer the min/max suggested values
         tab_name_fmt : str
             Format string for naming the tabs
         xlabel : str
@@ -913,8 +931,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             String label for Y axis
         domains : list
             List of domains for the inputs
-        function : str
-            ID of fit_1d function to use, if not a configuration option
         title : str
             Title for UI (Interactive <Title>)
         help_text : str
@@ -931,34 +947,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Make the panel with widgets to control the creation of (x, y) arrays
 
-        # Function - either a dropdown or a label for the single option
-        # set width_policy to min if we are going to place above tabs
-        if self.recalc_inputs_above:
-            width_policy = "min"
-        else:
-            width_policy = "auto"
-        if 'function' in config._fields:
-            fn = config.function
-            fn_allowed = [k for k in config._fields['function'].allowed.keys()]
-
-            # Dropdown for selecting fit_1D function
-            self.function = Select(title="Fitting Function:", value=fn,
-                                   options=fn_allowed, width_policy=width_policy)
-
-            def fn_select_change(attr, old, new):
-                def refit():
-                    for fit in self.fits:
-                        fit.set_function(new)
-                        fit.perform_fit()
-
-                self.do_later(refit)
-
-            self.function.on_change('value', fn_select_change)
-        else:
-            if function is None:
-                function = 'chebyshev'
-            self.function = Div(text='Function: %s' % function)
-
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
             reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
@@ -971,12 +959,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 reinit_widgets.append(self.reinit_button)
 
             if recalc_inputs_above:
-                self.reinit_panel = row(self.function, *reinit_widgets)
+                self.reinit_panel = row(*reinit_widgets)
             else:
-                self.reinit_panel = column(self.function, *reinit_widgets)
+                self.reinit_panel = column(*reinit_widgets)
         else:
             # left panel with just the function selector (Chebyshev, etc.)
-            self.reinit_panel = column(self.function)
+            self.reinit_panel = column()
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -1115,27 +1103,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         layout_ls = list()
         if self.filename_info:
-            # Edit elements
-            # filename_div = bm.Div(
-            #     align=("start", "center"),
-            #     css_classes=["filename"],
-            #     id="_filename",
-            #     margin=(0, 0, 0, 84),
-            #     name="filename",
-            #     height_policy="max",
-            #     text=f"Current filename: {self.filename_info}",
-            #     style={
-            #         "background": "white",
-            #         "color": "#666666",
-            #         "padding": "10px 0px 10px 0px",
-            #         "vertical-align": "middle",
-            #     },
-            #     width_policy="min",
-            # )
-            # Stealing styling from Bruno's variant
             self.submit_button.align = 'center'
-            # layout_ls.append(row(Spacer(width=250), row(self.submit_button, sizing_mode="stretch_width"), self.get_filename_div2()))
-            layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div2(), sizing_mode="scale_width"))
+            layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div2(),
+                                 sizing_mode="scale_width"))
         else:
             layout_ls.append(self.submit_button)
         if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
