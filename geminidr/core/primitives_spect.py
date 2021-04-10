@@ -384,7 +384,7 @@ class Spect(PrimitivesBASE):
                             # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
                             zpt.append(u.Magnitude(flux / data))
                             if variance is not None:
-                                zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                                zpt_err.append(np.log(1 + np.sqrt(variance) / data))
                 wave = array_from_list(wave, unit=u.nm)
                 zpt = array_from_list(zpt)
                 weights = 1./array_from_list(zpt_err) if zpt_err else None
@@ -464,14 +464,14 @@ class Spect(PrimitivesBASE):
                                 # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
                                 zpt.append(u.Magnitude(flux / data))
                                 if variance is not None:
-                                    zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                                    zpt_err.append(np.log(1 + np.sqrt(variance) / data))
                     wave = at.array_from_list(wave, unit=u.nm)
                     zpt = at.array_from_list(zpt)
                     weights = 1. / array_from_list(zpt_err) if zpt_err else None
-                    fitter = fit_1D(zpt.value, points=wave.value,
-                                   weights=weights, **fit1d_params,
-                                   plot=debug_plot)
-                    ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
+                    fit_1d = fit_1D(zpt.value, points=wave.value,
+                                    weights=weights, **fit1d_params,
+                                    plot=debug_plot)
+                    ext.SENSFUNC = am.model_to_table(fit_1d.model, xunit=wave.unit,
                                                      yunit=zpt.unit)
                     calculated = True
 
