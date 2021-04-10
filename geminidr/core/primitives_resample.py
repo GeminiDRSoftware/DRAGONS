@@ -256,7 +256,6 @@ class Resample(PrimitivesBASE):
             output_shape = tuple(int(np.floor(max(corners)) - np.ceil(min(corners)) + 1)
                                  for corners in all_corners)
 
-        print("ORIGIN", origin)
         log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
         adoutputs = []
         for ad in adinputs:
