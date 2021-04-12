@@ -702,15 +702,6 @@ class Fit1DPanel:
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         if plot_ratios:
-            x_range = None
-            try:
-                if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                    x_min = min(self.fit.data.data['x'])
-                    x_max = max(self.fit.data.data['x'])
-                    x_pad = (x_max - x_min) * 0.1
-                    x_range = Range1d(x_min - x_pad, x_max + x_pad)
-            except:
-                pass  # ok, we don't *need* ranges...
             p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
                               min_width=400,
                               title='Fit Ratios',
@@ -726,16 +717,10 @@ class Fit1DPanel:
             p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         if plot_residuals and plot_ratios:
-            # fig_column.append(bm.Tabs(tabs=[bm.Panel(child=p_resid, title='Residuals'),
-            #                                 bm.Panel(child=p_ratios, title='Ratios')], name="tabs",
-            #                           width_policy="fit", sizing_mode="stretch_width"),)
             tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
             tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
             tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
-            # tabs = bm.Tabs(name="plots_tabs", tabs=[bm.Panel(child=bm.Div(text="tab1"), title="Tab 1"),
-            #                                 bm.Panel(child=Div(text="tab2"), title="Tab 2")],
-            #                width_policy="max")
-            fig_column.append(column(tabs, sizing_mode="scale_width"))
+            fig_column.append(tabs)
         elif plot_residuals:
             fig_column.append(p_resid)
         elif plot_ratios:
