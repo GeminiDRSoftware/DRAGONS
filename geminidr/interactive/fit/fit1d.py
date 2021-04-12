@@ -6,7 +6,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer, Row
+from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive
@@ -555,7 +555,7 @@ class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
                  weights=None,
                  min_order=1, max_order=10, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True,
+                 plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
@@ -581,7 +581,9 @@ class Fit1DPanel:
         plot_height : int
             height of plot area in pixels
         plot_residuals : bool
-            True if we want the lower plot showing the differential between the fit and the data
+            True if we want the lower plot showing the differential between the data and the fit
+        plot_ratios : bool
+            True if we want the lower plot showing the ratio between the data and the fit
         enable_user_masking : bool
             True to enable fine-grained data masking by the user using bokeh selections
         enable_regions : bool
@@ -693,12 +695,36 @@ class Fit1DPanel:
                              output_backend="webgl", x_range=p_main.x_range, y_range=None)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
+            p_resid.sizing_mode = 'stretch_width'
             connect_figure_extras(p_resid, None, self.band_model)
-            fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        if plot_ratios:
+            p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
+                              min_width=400,
+                              title='Fit Ratios',
+                              x_axis_label=xlabel, y_axis_label='Ratio',
+                              tools="pan,box_zoom,reset",
+                              output_backend="webgl", x_range=p_main.x_range, y_range=None)
+            p_ratios.height_policy = 'fixed'
+            p_ratios.width_policy = 'fit'
+            p_ratios.sizing_mode = 'stretch_width'
+            connect_figure_extras(p_ratios, None, self.band_model)
+            # Initalizing this will cause the residuals to be calculated
+            self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
+            p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
+                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        if plot_residuals and plot_ratios:
+            tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
+            tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
+            tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
+            fig_column.append(tabs)
+        elif plot_residuals:
+            fig_column.append(p_resid)
+        elif plot_ratios:
+            fig_column.append(p_ratios)
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
