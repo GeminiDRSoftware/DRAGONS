@@ -307,10 +307,13 @@ class UnivariateSplineWithOutlierRemoval:
                     xunique[i] *= (1.0 + epsf)
 
         if order is not None:
-            if order > (~orig_mask).sum() - k:
-                order = max((~orig_mask).sum() - k, 0)
-                log.warning("Underconstrained fit. Reducing number of spline "
-                            f"pieces to {order}")
+            if (~orig_mask).sum() <= k:
+                log.warning("Too few unmasked points. Unmasking all data.")
+                orig_mask[:] = False
+                if order > (~orig_mask).sum() - k:
+                    order = (~orig_mask).sum() - k
+                    log.warning("Underconstrained fit. Reducing number of spline "
+                                f"pieces to {order}")
             knots = [xunique[int(xx + 0.5)]
                      for xx in np.linspace(0, xunique.size - 1, order + 1)]
             spline_kwargs["t"] = knots[1:-1]
@@ -327,10 +330,13 @@ class UnivariateSplineWithOutlierRemoval:
             # with non-zero weights so we fix this by setting the weights to
             # epsf instead in such cases. Remember that the knots are in the
             # x-value space, not the x-index space!
-            fully_masked_regions = np.sum(
-                not full_mask[np.logical_and(xunique>=x1, xunique<=x2)].any()
-                for x1, x2 in zip(knots[:-1], knots[1:]))
-            wts[full_mask] = epsf if fully_masked_regions > min(k, order) else 0
+            if order > 0:
+                fully_masked_regions = np.sum(
+                    not full_mask[np.logical_and(xunique>=x1, xunique<=x2)].any()
+                    for x1, x2 in zip(knots[:-1], knots[1:]))
+                wts[full_mask] = epsf if fully_masked_regions > min(k, order) else 0
+            else:
+                wts[full_mask] = epsf
 
             last_mask = full_mask
             if order is None or order > 0:
