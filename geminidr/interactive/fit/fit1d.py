@@ -45,6 +45,7 @@ def build_fit_1D(fit1d_params, data, points, weights):
 SIGMA_MASK_NAME = 'rejected (sigma)'
 USER_MASK_NAME = 'rejected (user)'
 
+
 class InteractiveModel(ABC):
     MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'triangle', 'circle', 'square']
@@ -64,6 +65,7 @@ class InteractiveModel(ABC):
     def __init__(self, model):
         self.model = model
         self.listeners = []
+        self.mask_listeners = []
         self.data = None
 
     def add_listener(self, listener):
@@ -87,6 +89,19 @@ class InteractiveModel(ABC):
         """
         for listener in self.listeners:
             listener()
+
+    def add_mask_listener(self, mask_listener):
+        if not callable(mask_listener):
+            raise ValueError("Mask Listener must be callable")
+        self.mask_listeners.append(mask_listener)
+
+    def notify_mask_listeners(self):
+        for mask_listener in self.mask_listeners:
+            mask_listener(
+                self.band_mask,
+                self.user_mask,
+                self.fit_mask
+            )
 
     @abstractmethod
     def perform_fit(self):
@@ -140,6 +155,7 @@ class InteractiveModel(ABC):
             if um:
                 new_mask[i] = USER_MASK_NAME
         self.data.data['mask'] = new_mask
+        self.notify_mask_listeners()
 
 
 class InteractiveModel1D(InteractiveModel):
@@ -551,10 +567,37 @@ class FittingParametersUI:
             self.fit.perform_fit()
 
 
+class InfoPanel:
+    def __init__(self):
+        self.rms = 0.0
+        self.band_count = 0
+        self.user_count = 0
+        self.fit_count = 0
+        self.component = Div(text='')
+        self.recalc()
+
+    def recalc(self):
+        rms = '<b>RMS:</b> {rms:.4f}<br/>'.format(rms=self.rms)
+        band = '<b>Band Masked:</b> {band_count}<br/>'.format(band_count=self.band_count) if self.band_count else ''
+        user = '<b>User Masked:</b> {user_count}<br/>'.format(user_count=self.user_count) if self.user_count else ''
+        fit = '<b>Fit Masked:</b> {fit_count}<br/>'.format(fit_count=self.fit_count) if self.fit_count else ''
+
+        self.component.update(text=rms + band + user + fit)
+
+    def update(self, f):
+        self.rms = f.rms
+        self.recalc()
+
+    def update_mask(self, band_mask, user_mask, fit_mask):
+        self.band_count = sum(band_mask)
+        self.user_count = sum(user_mask)
+        self.fit_count = sum(fit_mask) - self.band_count
+        self.recalc()
+
+
 class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
-                 weights=None,
-                 min_order=1, max_order=10, xlabel='x', ylabel='y',
+                 weights=None, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True):
         """
@@ -592,15 +635,17 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
-        self.info_div = Div()
+        self.info_panel = InfoPanel()
+        self.info_div = self.info_panel.component
 
         # Make a listener to update the info panel with the RMS on a fit
-        def update_info(info_div, f):
-            info_div.update(text='<b>RMS:</b> {rms:.4f}'.format(rms=f.rms))
-        listeners = [lambda f: update_info(self.info_div, f), ]
+        listeners = [lambda f: self.info_panel.update(f), ]
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+
+        # also listen for updates to the masks
+        self.fit.add_mask_listener(self.info_panel.update_mask)
 
         fit = self.fit
         self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
@@ -625,7 +670,6 @@ class Fit1DPanel:
                                      "color": "gray",
                                      "padding": "5px",
                                  })
-        self.info_div = Div()
 
         controls_ls.extend(controls_column)
 
