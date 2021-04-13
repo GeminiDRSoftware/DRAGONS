@@ -343,38 +343,15 @@ class Spect(PrimitivesBASE):
                                 "1D spectrum")
                     continue
 
-            if interactive:
-                all_exts = list()
-                all_shapes = list()
-                all_pixels = list()
-                all_masked_data = list()
-                all_weights = list()
-                all_fp_init = list()
+            def _get_fit1d_input_data(ext, exptime, spec_table):
+                spectrum = Spek1D(ext) / (exptime * u.s)
+                wave, zpt, zpt_err = [], [], []
 
-                for ext in ad:
-                    if len(ext.shape) != 1:
-                        log.warning("{}:{} is not a 1D spectrum".
-                                    format(ad.filename, ext.hdr['EXTVER']))
-                        continue
-
-                    if calculated and 'XD' not in ad.tags:
-                        log.warning("Found additional 1D extensions in non-XD data."
-                                    " Ignoring.")
-                        break
-
-                    spectrum = Spek1D(ext) / (exptime * u.s)
-                    wave, zpt, zpt_err = [], [], []
-
-                # Compute values in counts / (exptime * flux_density * bandpass)
+                # Compute values that are counts / (exptime * flux_density * bandpass)
                 for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                            spec_table['WIDTH'].quantity,
-                                            spec_table['FLUX'].quantity):
+                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                    # We don't want a single bad pixel to ruin an entire
-                    # bandpass, so exclude pixels with the DQ.bad_pixel bit
-                    # set and assign them the average of the other pixels
-                    data, mask, variance = spectrum.signal(
-                        region, interpolate=DQ.bad_pixel)
+                    data, mask, variance = spectrum.signal(region)
                     if mask == 0 and fluxdens > 0:
                         # Regardless of whether FLUX column is f_nu or f_lambda
                         flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
@@ -385,27 +362,49 @@ class Spect(PrimitivesBASE):
                             zpt.append(u.Magnitude(flux / data))
                             if variance is not None:
                                 zpt_err.append(np.log(1 + np.sqrt(variance) / data))
-                wave = array_from_list(wave, unit=u.nm)
-                zpt = array_from_list(zpt)
-                weights = 1./array_from_list(zpt_err) if zpt_err else None
+                wave = at.array_from_list(wave, unit=u.nm)
+                zpt = at.array_from_list(zpt)
+                weights = 1. / array_from_list(zpt_err) if zpt_err else None
+                return wave, zpt, weights
 
-                # Correct for atmospheric extinction. This correction makes
-                # the real data brighter, so makes the zpt magnitude more +ve
-                # (since "data" is in the denominator)
-                if airmass0 and site is not None and airmass is not None:
-                    zpt += u.Magnitude(airmass *
-                                       extinct.extinction(wave, site=site))
+            if interactive:
+                all_exts = list()
+                all_shapes = list()
+                all_xunits = list()
+                all_yunits = list()
+                all_pixels = list()
+                all_masked_data = list()
+                all_weights = list()
+                all_fp_init = list()
 
-                all_exts.append(ext)
-                all_shapes.append(ext.shape[0])
-                all_pixels.append(wave.value)
-                all_masked_data.append(zpt.value)
-                all_weights.append(weights)
-                all_fp_init.append(fit_1D.translate_params(params))
+                calculated = False
+                for ext in ad:
+                    if len(ext.shape) != 1:
+                        log.warning(f"{ad.filename} extension {ext.id} is not a "
+                                    "1D spectrum")
+                        continue
 
-                calculated = True
+                    if calculated and 'XD' not in ad.tags:
+                        log.warning("Found additional 1D extensions in non-XD data."
+                                    " Ignoring.")
+                        break
 
-                # ******************************************************************************************
+                    # Using common input calculation method to get our per-ext inputs
+                    pixels, masked_data, weights = _get_fit1d_input_data(ext, exptime, spec_table)
+                    all_xunits.append(pixels.unit)
+                    all_pixels.append(pixels.value)
+                    all_yunits.append(masked_data.unit)
+                    all_masked_data.append(masked_data.value)
+                    all_weights.append(weights)
+
+                    # additional inputs just for the interactive code
+                    all_shapes.append(ext.shape[0])
+                    all_exts.append(ext)
+                    all_fp_init.append(fit_1D.translate_params(params))
+
+                    calculated = True
+
+                # build config for interactive
                 config = self.params[self.myself()]
                 config.update(**params)
 
@@ -416,6 +415,7 @@ class Spect(PrimitivesBASE):
                     filename_info = ad.filename
                 else:
                     filename_info = ''
+
                 visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
@@ -430,9 +430,9 @@ class Spect(PrimitivesBASE):
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
-                for ext, fit in zip(all_exts, all_m_final):
-                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=wave.unit,
-                                                     yunit=zpt.unit)
+                for ext, fit, xunit, yunit in zip(all_exts, all_m_final, all_xunits, all_yunits):
+                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=xunit,
+                                                     yunit=yunit)
             else:
                 calculated = False
                 for ext in ad:
