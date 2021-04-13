@@ -240,7 +240,7 @@ class TestFit1D:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+        assert_allclose(fit_vals, self.obj + 30, atol=25., rtol=0.02)
 
     def test_legendre_ax1_quartic(self):
         """
@@ -285,7 +285,7 @@ class TestFit1D:
                        plot=debug)
         fit_vals = fit1d.evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+        assert_allclose(fit_vals, self.obj + 30, atol=25., rtol=0.02)
 
         # Ensure that masked input values have been passed through to the
         # output mask by the fitter:
@@ -390,8 +390,8 @@ class TestFit1DCube:
                           sigma_lower=3.5, sigma_upper=3.5, niter=5, grow=1,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2),
-                        atol=45., rtol=0.015)
+        assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2) + 30,
+                        atol=25., rtol=0.015)
 
 
 class TestFit1DNewPoints:
