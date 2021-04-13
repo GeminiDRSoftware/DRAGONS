@@ -1386,6 +1386,13 @@ class Spect(PrimitivesBASE):
                 except (AttributeError, IndexError):
                     log.warning(f"Cannot find wavelength solution for {extname}")
                     wave_model = None
+                else:
+                    axes_names = tuple(frame.axes_names[0]
+                                       for frame in ext.wcs.output_frame.frames
+                                       if isinstance(frame, cf.SpectralFrame))
+                    if len(axes_names) != 1:
+                        log.warning("Problem with identifying spectral axis "
+                                    f"for {extname}")
 
                 log.stdinfo("Extracting {} spectra from {}".format(num_spec,
                                                                    extname))
@@ -1463,7 +1470,8 @@ class Spect(PrimitivesBASE):
                         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                                       axes_order=(0,), unit=u.pix,
                                                       axes_names=('x',), name='pixels')
-                        out_frame = cf.SpectralFrame(unit=u.nm, name='world')
+                        out_frame = cf.SpectralFrame(unit=u.nm, name='world',
+                                                     axes_names=axes_names)
                         ext_spec.wcs = gWCS([(in_frame, wave_model),
                                              (out_frame, None)])
                     ext_spec.hdr[ad._keyword_for('aperture_number')] = apnum
