@@ -308,7 +308,7 @@ class UnivariateSplineWithOutlierRemoval:
 
         if order is not None:
             if order > (~orig_mask).sum() - k:
-                order = (~orig_mask).sum() - k
+                order = max((~orig_mask).sum() - k, 0)
                 log.warning("Underconstrained fit. Reducing number of spline "
                             f"pieces to {order}")
             knots = [xunique[int(xx + 0.5)]
@@ -330,7 +330,7 @@ class UnivariateSplineWithOutlierRemoval:
             fully_masked_regions = np.sum(
                 not full_mask[np.logical_and(xunique>=x1, xunique<=x2)].any()
                 for x1, x2 in zip(knots[:-1], knots[1:]))
-            wts[full_mask] = epsf if fully_masked_regions > k else 0
+            wts[full_mask] = epsf if fully_masked_regions > min(k, order) else 0
 
             last_mask = full_mask
             if order is None or order > 0:
