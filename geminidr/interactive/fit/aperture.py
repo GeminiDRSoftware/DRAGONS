@@ -984,14 +984,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
-        toolbar = row(
-            children=[
-                Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
-                Spacer(sizing_mode='scale_width'),
-                self.submit_button,
-                Spacer(sizing_mode='scale_width'),
-            ],
-        )
+        # toolbar = row(
+        #     children=[
+        #         Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
+        #         Spacer(sizing_mode='scale_width'),
+        #         self.submit_button,
+        #         Spacer(sizing_mode='scale_width'),
+        #     ],
+        # )
+        toolbar = row(Spacer(width=250), self.submit_button, self.get_filename_div(),
+                      sizing_mode="scale_width")
 
         layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'

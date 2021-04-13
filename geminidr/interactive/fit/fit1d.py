@@ -1065,52 +1065,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
 
-    def get_filename_div(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(align="end",
-                     css_classes=["filename"],
-                     id="_filename",
-                     margin=(0, 0, 0, 78),
-                     min_width=500,
-                     max_width=2000,
-                     name="filename",
-                     height_policy="min",
-                     text=f"<span style='float: left'>&nbsp;Filename:&nbsp;</span>"
-                          f"<span style='color: black; display: block; float: right;"
-                          f" margin-left: 10px; text-align: right;'>"
-                          f"&nbsp;{self.filename_info}"
-                          f"</span>",
-                     style={
-                         "background": "whitesmoke",
-                         "border": "1px solid gainsboro",
-                         "border-radius": "5px",
-                         "color": "darkgray",
-                         "font-size": "16px",
-                         "margin": "0px",
-                         "padding": "10px",
-                         "vertical-align": "middle",
-                         "width": "100%",
-                     },
-                     width_policy="fit",
-                     )
-        return div
-
-    def get_filename_div2(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(text=f"<b>Current filename: </b>{self.filename_info}",
-                     style={
-                         "color": "steelblue",
-                         "font-size": "16px",
-                         "float": "right",
-                     },
-                     align="end",
-                     )
-        return div
-
     def visualize(self, doc):
         """
         Start the bokeh document using this visualizer.
@@ -1130,7 +1084,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         layout_ls = list()
         if self.filename_info:
             self.submit_button.align = 'center'
-            layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div2(),
+            layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
                                  sizing_mode="scale_width"))
         else:
             layout_ls.append(self.submit_button)
