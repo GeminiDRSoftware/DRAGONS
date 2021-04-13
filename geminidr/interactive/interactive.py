@@ -1016,7 +1016,7 @@ class GIRegionModel:
         if len(self.regions.values()) == 0:
             return True
         for b in self.regions.values():
-            if (b[0] is None or b[0] < x) and (b[1] is None or x < b[1]):
+            if (b[0] is None or b[0] <= x) and (b[1] is None or x <= b[1]):
                 return True
         return False
 
