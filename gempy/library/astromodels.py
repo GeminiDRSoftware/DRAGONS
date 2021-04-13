@@ -306,10 +306,11 @@ class UnivariateSplineWithOutlierRemoval:
                 if i not in indices:
                     xunique[i] *= (1.0 + epsf)
 
-            if (~orig_mask).sum() <= k:
-                log.warning("Too few unmasked points. Unmasking all data.")
-                orig_mask[:] = False
-            if order is not None and order > (~orig_mask).sum() - k:
+        if (~orig_mask).sum() <= k:
+            log.warning("Too few unmasked points. Unmasking all data.")
+            orig_mask[:] = False
+        if order is not None:
+            if order > (~orig_mask).sum() - k:
                 order = (~orig_mask).sum() - k
                 log.warning("Underconstrained fit. Reducing number of spline "
                             f"pieces to {order}")
