@@ -343,6 +343,9 @@ class Spect(PrimitivesBASE):
                                 "1D spectrum")
                     continue
 
+            ### some sort of for loop with the warnings
+            # and build the indices to operate on
+
             def _get_fit1d_input_data(ext, exptime, spec_table):
                 spectrum = Spek1D(ext) / (exptime * u.s)
                 wave, zpt, zpt_err = [], [], []
@@ -370,14 +373,15 @@ class Spect(PrimitivesBASE):
             if interactive:
                 all_exts = list()
                 all_shapes = list()
-                all_xunits = list()
-                all_yunits = list()
+                xunits = None
+                yunits = None
                 all_pixels = list()
                 all_masked_data = list()
                 all_weights = list()
                 all_fp_init = list()
 
                 calculated = False
+
                 for ext in ad:
                     if len(ext.shape) != 1:
                         log.warning(f"{ad.filename} extension {ext.id} is not a "
@@ -391,9 +395,12 @@ class Spect(PrimitivesBASE):
 
                     # Using common input calculation method to get our per-ext inputs
                     pixels, masked_data, weights = _get_fit1d_input_data(ext, exptime, spec_table)
-                    all_xunits.append(pixels.unit)
+                    if xunits is None:
+                        xunits = pixels.unit
+                    if yunits is None:
+                        yunits = masked_data.unit
+                    # TODO also throw ValueException if we get mismatched units
                     all_pixels.append(pixels.value)
-                    all_yunits.append(masked_data.unit)
                     all_masked_data.append(masked_data.value)
                     all_weights.append(weights)
 
@@ -408,20 +415,15 @@ class Spect(PrimitivesBASE):
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                # Hacking this out?
-                if ad.orig_filename:
-                    filename_info = ad.orig_filename
-                elif ad.filename:
-                    filename_info = ad.filename
-                else:
-                    filename_info = ''
+                # Get filename to display in visualizer
+                filename_info = getattr(ad, 'filename', '')
 
                 visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
                                                    tab_name_fmt="CCD {}",
-                                                   xlabel='Wavelength (nm)',
-                                                   ylabel='Sensitivity (mag cm^2 electron / erg)',
+                                                   xlabel=f'Wavelength ({xunits})',
+                                                   ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_shapes,
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
@@ -430,9 +432,9 @@ class Spect(PrimitivesBASE):
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
-                for ext, fit, xunit, yunit in zip(all_exts, all_m_final, all_xunits, all_yunits):
-                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=xunit,
-                                                     yunit=yunit)
+                for ext, fit in zip(all_exts, all_m_final):
+                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=xunits,
+                                                     yunit=yunits)
             else:
                 calculated = False
                 for ext in ad:
