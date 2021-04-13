@@ -755,38 +755,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         return reinit_panel
 
-    def get_filename_div(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(align=("start", "center"),
-                     css_classes=["filename"],
-                     id="_filename",
-                     margin=(0, 0, 0, 78),
-                     min_width=500,
-                     max_width=2000,
-                     name="filename",
-                     height_policy="min",
-                     text=f"<span style='float: left'> Filename: </span>"
-                          f"<span style='color: black; display: block;"
-                          f" margin-left: 10px; text-align: right;'>"
-                          f" {self.filename_info}"
-                          f"</span>",
-                     style={
-                         "background": "whitesmoke",
-                         "border": "1px solid gainsboro",
-                         "border-radius": "5px",
-                         "color": "darkgray",
-                         "font-size": "16px",
-                         "margin": "0px",
-                         "padding": "10px",
-                         "vertical-align": "middle",
-                         "width": "100%",
-                     },
-                     width_policy="fit",
-                     )
-        return div
-
     def reset_tracing_panel(self, param=None):
         """
         Reset all the parameters in the Tracing Panel (leftmost column).
@@ -852,8 +820,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         super(Fit1DVisualizer, self).visualize(doc)
 
         # Edit elements
-        filename_div = self.get_filename_div()
-
         self.submit_button.align = ("center", "end")
         self.submit_button.height = 44
         self.submit_button.height_policy = "fixed"
@@ -866,8 +832,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.reinit_panel.width_policy = "fixed"
 
         # Put all together --- Data provider on the Left
-        top_row = row(filename_div, self.submit_button,
-                      id="top_row")
+        top_row = row(Spacer(width=250), self.submit_button, self.get_filename_div(),
+                             sizing_mode="scale_width")
 
         bottom_row = row(self.reinit_panel, self.tabs,
                          id="bottom_row")
