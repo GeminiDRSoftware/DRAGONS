@@ -120,6 +120,20 @@ class PrimitiveVisualizer(ABC):
             self.user_satisfied = True
             server.stop_server()
 
+    def get_filename_div(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = Div(text=f"<b>Current filename: </b>{self.filename_info}",
+                  style={
+                         "color": "steelblue",
+                         "font-size": "16px",
+                         "float": "right",
+                  },
+                  align="end",
+                  )
+        return div
+
     def visualize(self, doc):
         """
         Perform the visualization.
