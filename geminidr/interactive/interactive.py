@@ -124,7 +124,7 @@ class PrimitiveVisualizer(ABC):
         """
         Returns a Div element that displays the current filename.
         """
-        div = Div(text=f"<b>Current filename: </b>{self.filename_info}",
+        div = Div(text=f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}",
                   style={
                          "color": "steelblue",
                          "font-size": "16px",
