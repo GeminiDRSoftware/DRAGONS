@@ -276,14 +276,20 @@ class UnivariateSplineWithOutlierRemoval:
         # Setting a lot of weights to zero can cause problems with the spline
         # fitting, so instead we set weights to epsf. To ensure this is a
         # sufficiently small value to be zero-like, we scale the input weights
-        # so that the smallest "real" weight is 1.0
+        # so that the smallest "real" weight is 1.0. Input points with a weight
+        # of zero are masked
         if w is None:
             wts = np.ones_like(x)
         elif np.any(w < 0):
             raise ValueError("Weights should not be negative")
         else:
-            wmin = w[w > 0].min()
-            wts = w / wmin
+            orig_mask |= (w == 0)
+            try:
+                wmin = w[w > 0].min()
+            except ValueError:  # all w==0
+                wts = np.ones_like(x)
+            else:
+                wts = w / wmin
 
         if check_finite:
             if (not np.isfinite(x).all() or not np.isfinite(y).all() or
@@ -333,19 +339,22 @@ class UnivariateSplineWithOutlierRemoval:
             if order is not None:
                 if order > 0:
                     fully_masked_regions = np.sum(
-                        not full_mask[np.logical_and(xunique>=x1, xunique<=x2)].any()
+                        full_mask[np.logical_and(xunique>=x1, xunique<=x2)].all()
                         for x1, x2 in zip(knots[:-1], knots[1:]))
-                    wts[full_mask] = epsf if fully_masked_regions > min(k, order) else 0
+                    wts[full_mask] = epsf if fully_masked_regions > min(k, order) else epsf
                 else:
-                    wts[full_mask] = epsf
+                    wts = w.copy()
 
             last_mask = full_mask
+            avg_y = np.average(y, weights=wts)
             if order is None or order > 0:
                 tck = splrep(xunique[sort_indices], y[sort_indices],
                              w=wts[sort_indices], **spline_kwargs)
                 spline = BSpline(*tck)
+                # Ensure we get a real-valued fit
+                if np.isnan(tck[1]).any():
+                    spline = lambda xx: avg_y
             else:
-                avg_y = np.average(y, weights=wts)
                 spline = lambda xx: avg_y
             spline_y = spline(x)
 
