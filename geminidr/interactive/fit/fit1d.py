@@ -6,7 +6,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer, Row
+from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive
@@ -45,6 +45,7 @@ def build_fit_1D(fit1d_params, data, points, weights):
 SIGMA_MASK_NAME = 'rejected (sigma)'
 USER_MASK_NAME = 'rejected (user)'
 
+
 class InteractiveModel(ABC):
     MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'triangle', 'circle', 'square']
@@ -64,6 +65,7 @@ class InteractiveModel(ABC):
     def __init__(self, model):
         self.model = model
         self.listeners = []
+        self.mask_listeners = []
         self.data = None
 
     def add_listener(self, listener):
@@ -87,6 +89,19 @@ class InteractiveModel(ABC):
         """
         for listener in self.listeners:
             listener()
+
+    def add_mask_listener(self, mask_listener):
+        if not callable(mask_listener):
+            raise ValueError("Mask Listener must be callable")
+        self.mask_listeners.append(mask_listener)
+
+    def notify_mask_listeners(self):
+        for mask_listener in self.mask_listeners:
+            mask_listener(
+                self.band_mask,
+                self.user_mask,
+                self.fit_mask
+            )
 
     @abstractmethod
     def perform_fit(self):
@@ -140,6 +155,7 @@ class InteractiveModel(ABC):
             if um:
                 new_mask[i] = USER_MASK_NAME
         self.data.data['mask'] = new_mask
+        self.notify_mask_listeners()
 
 
 class InteractiveModel1D(InteractiveModel):
@@ -426,42 +442,77 @@ class InteractiveFit1D:
 
 
 class FittingParametersUI:
-    def __init__(self, vis, fit, fitting_parameters, min_order, max_order):
+    def __init__(self, vis, fit, fitting_parameters):
         self.vis = vis
         self.fit = fit
         self.saved_sigma_clip = self.fit.sigma_clip
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None, # 1, min_order, max_order,
+        if 'function' in vis.config._fields:
+            fn = vis.config.function
+            fn_allowed = [k for k in vis.config._fields['function'].allowed.keys()]
+
+            # Dropdown for selecting fit_1D function
+            self.function = Select(title="Fitting Function:", value=fn,
+                                   options=fn_allowed, width=200)
+
+            def fn_select_change(attr, old, new):
+                self.fit.set_function(new)
+                self.fit.perform_fit()
+
+            self.function.on_change('value', fn_select_change)
+        else:
+            self.function = None
+
+        self.description = self.build_description()
+
+        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None,
                                                           fitting_parameters, "order", fit.perform_fit, throttled=True,
-                                                          config=vis.config)
+                                                          config=vis.config, slider_width=128)
         self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
-                                                                None, None, None, # 0.01, 1, 10,
+                                                                None, None, None,
                                                                 fitting_parameters, "sigma_upper",
                                                                 self.sigma_slider_handler,
                                                                 throttled=True,
-                                                                config=vis.config)
+                                                                config=vis.config, slider_width=128)
         self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
-                                                                None, None, None, # 0.01, 1, 10,
+                                                                None, None, None,
                                                                 fitting_parameters, "sigma_lower",
                                                                 self.sigma_slider_handler,
                                                                 throttled=True,
-                                                                config=vis.config)
+                                                                config=vis.config, slider_width=128)
         self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                          None, None, None, # 1, 0, 10,
+                                                          None, None, None,
                                                           fitting_parameters, "niter",
                                                           fit.perform_fit,
-                                                          config=vis.config)
+                                                          throttled=True,
+                                                          config=vis.config, slider_width=128)
         self.grow_slider = interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                         None, None, None, # 1, 0, 10,
+                                                         None, None, None,
                                                          fitting_parameters, "grow",
                                                          fit.perform_fit,
-                                                         config=vis.config)
+                                                         throttled=True,
+                                                         config=vis.config, slider_width=128)
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
-        self.controls_column = [self.order_slider, self.sigma_button, self.sigma_upper_slider, self.sigma_lower_slider,
-                                self.niter_slider, self.grow_slider]
+        if self.function:
+            self.controls_column = [self.function, self.order_slider, self.description, self.niter_slider, self.sigma_button,
+                                    self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
+        else:
+            self.controls_column = [self.order_slider, self.description, self.niter_slider, self.sigma_button,
+                                    self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
+
+    def build_description(self):
+        return bm.Div(
+            text=f"<p style='color: gray'> These are the parameters used to "
+                 f"fit the tracing data. </p>",
+            min_width=100,
+            max_width=200,
+            sizing_mode='stretch_width',
+            style={"color": "black"},
+            width_policy='min',
+        )
 
     def reset_ui(self):
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
@@ -516,11 +567,38 @@ class FittingParametersUI:
             self.fit.perform_fit()
 
 
+class InfoPanel:
+    def __init__(self):
+        self.rms = 0.0
+        self.band_count = 0
+        self.user_count = 0
+        self.fit_count = 0
+        self.component = Div(text='')
+        self.recalc()
+
+    def recalc(self):
+        rms = '<b>RMS:</b> {rms:.4f}<br/>'.format(rms=self.rms)
+        band = '<b>Band Masked:</b> {band_count}<br/>'.format(band_count=self.band_count) if self.band_count else ''
+        user = '<b>User Masked:</b> {user_count}<br/>'.format(user_count=self.user_count) if self.user_count else ''
+        fit = '<b>Fit Masked:</b> {fit_count}<br/>'.format(fit_count=self.fit_count) if self.fit_count else ''
+
+        self.component.update(text=rms + band + user + fit)
+
+    def update(self, f):
+        self.rms = f.rms
+        self.recalc()
+
+    def update_mask(self, band_mask, user_mask, fit_mask):
+        self.band_count = sum(band_mask)
+        self.user_count = sum(user_mask)
+        self.fit_count = sum(fit_mask) - self.band_count
+        self.recalc()
+
+
 class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
-                 weights=None,
-                 min_order=1, max_order=10, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True,
+                 weights=None, xlabel='x', ylabel='y',
+                 plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
@@ -537,10 +615,6 @@ class Fit1DPanel:
             X coordinate values
         y : :class:`~numpy.ndarray`
             Y coordinate values
-        min_order : int
-            minimum order in UI
-        max_order : int
-            maximum order in UI
         xlabel : str
             label for X axis
         ylabel : str
@@ -550,7 +624,9 @@ class Fit1DPanel:
         plot_height : int
             height of plot area in pixels
         plot_residuals : bool
-            True if we want the lower plot showing the differential between the fit and the data
+            True if we want the lower plot showing the differential between the data and the fit
+        plot_ratios : bool
+            True if we want the lower plot showing the ratio between the data and the fit
         enable_user_masking : bool
             True to enable fine-grained data masking by the user using bokeh selections
         enable_regions : bool
@@ -559,25 +635,26 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
 
-        self.info_div = Div()
+        self.info_panel = InfoPanel()
+        self.info_div = self.info_panel.component
 
         # Make a listener to update the info panel with the RMS on a fit
-        def update_info(info_div, f):
-            info_div.update(text='<b>RMS:</b> {rms:.4f}'.format(rms=f.rms))
-        listeners = [lambda f: update_info(self.info_div, f), ]
+        listeners = [lambda f: self.info_panel.update(f), ]
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
 
+        # also listen for updates to the masks
+        self.fit.add_mask_listener(self.info_panel.update_mask)
+
         fit = self.fit
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters,
-                                                         min_order, max_order)
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
 
         controls_ls = list()
 
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
-        reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
+        reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
 
         def reset_dialog_handler(result):
             if result:
@@ -587,16 +664,19 @@ class Fit1DPanel:
                                                                   'to their original values.  Proceed?',
                                                                   reset_dialog_handler)
 
-        controller_div = Div()
-        self.info_div = Div()
+        controller_div = Div(margin=(20, 0, 0, 0),
+                             width=220,
+                             style={
+                                     "color": "gray",
+                                     "padding": "5px",
+                                 })
 
         controls_ls.extend(controls_column)
 
-        reset_button.align = 'center'
         controls_ls.append(reset_button)
         controls_ls.append(controller_div)
 
-        controls = column(*controls_ls)
+        controls = column(*controls_ls, width=220)
 
         # Now the figures
         x_range = None
@@ -658,12 +738,36 @@ class Fit1DPanel:
                              output_backend="webgl", x_range=p_main.x_range, y_range=None)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
+            p_resid.sizing_mode = 'stretch_width'
             connect_figure_extras(p_resid, None, self.band_model)
-            fig_column.append(p_resid)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        if plot_ratios:
+            p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
+                              min_width=400,
+                              title='Fit Ratios',
+                              x_axis_label=xlabel, y_axis_label='Ratio',
+                              tools="pan,box_zoom,reset",
+                              output_backend="webgl", x_range=p_main.x_range, y_range=None)
+            p_ratios.height_policy = 'fixed'
+            p_ratios.width_policy = 'fit'
+            p_ratios.sizing_mode = 'stretch_width'
+            connect_figure_extras(p_ratios, None, self.band_model)
+            # Initalizing this will cause the residuals to be calculated
+            self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
+            p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
+                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        if plot_residuals and plot_ratios:
+            tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
+            tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
+            tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
+            fig_column.append(tabs)
+        elif plot_residuals:
+            fig_column.append(p_resid)
+        elif plot_ratios:
+            fig_column.append(p_ratios)
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
@@ -859,10 +963,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  reinit_params=None, reinit_extras=None,
                  modal_message=None,
                  modal_button_label=None,
-                 order_param="order",
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
-                 domains=None, function=None, title=None, primitive_name=None, filename_info=None,
+                 domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
                  **kwargs):
         """
@@ -889,8 +992,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         modal_button_label : str
             If set and if modal_message was set, this will be used for the label on the recalculate button.  It is
             not required.
-        order_param : str
-            Name of the parameter this primitive uses for `order`, to infer the min/max suggested values
         tab_name_fmt : str
             Format string for naming the tabs
         xlabel : str
@@ -899,8 +1000,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             String label for Y axis
         domains : list
             List of domains for the inputs
-        function : str
-            ID of fit_1d function to use, if not a configuration option
         title : str
             Title for UI (Interactive <Title>)
         help_text : str
@@ -917,34 +1016,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Make the panel with widgets to control the creation of (x, y) arrays
 
-        # Function - either a dropdown or a label for the single option
-        # set width_policy to min if we are going to place above tabs
-        if self.recalc_inputs_above:
-            width_policy = "min"
-        else:
-            width_policy = "auto"
-        if 'function' in config._fields:
-            fn = config.function
-            fn_allowed = [k for k in config._fields['function'].allowed.keys()]
-
-            # Dropdown for selecting fit_1D function
-            self.function = Select(title="Fitting Function:", value=fn,
-                                   options=fn_allowed, width_policy=width_policy)
-
-            def fn_select_change(attr, old, new):
-                def refit():
-                    for fit in self.fits:
-                        fit.set_function(new)
-                        fit.perform_fit()
-
-                self.do_later(refit)
-
-            self.function.on_change('value', fn_select_change)
-        else:
-            if function is None:
-                function = 'chebyshev'
-            self.function = Div(text='Function: %s' % function)
-
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
             reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
@@ -957,12 +1028,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 reinit_widgets.append(self.reinit_button)
 
             if recalc_inputs_above:
-                self.reinit_panel = row(self.function, *reinit_widgets)
+                self.reinit_panel = row(*reinit_widgets)
             else:
-                self.reinit_panel = column(self.function, *reinit_widgets)
+                self.reinit_panel = column(*reinit_widgets)
         else:
             # left panel with just the function selector (Chebyshev, etc.)
-            self.reinit_panel = column(self.function)
+            self.reinit_panel = column()
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -1008,19 +1079,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
-        if order_param and order_param in self.config._fields:
-            field = self.config._fields[order_param]
-            if hasattr(field, 'min') and field.min:
-                kwargs['min_order'] = field.min
-            else:
-                kwargs['min_order'] = 0
-            if hasattr(field, 'max') and field.max:
-                kwargs['max_order'] = field.max
-            else:
-                kwargs['max_order'] = None # field.default * 2
-        else:
-            kwargs['min_order'] = 0
-            kwargs['max_order'] = None
 
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
@@ -1050,52 +1108,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
 
-    def get_filename_div(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(align="end",
-                     css_classes=["filename"],
-                     id="_filename",
-                     margin=(0, 0, 0, 78),
-                     min_width=500,
-                     max_width=2000,
-                     name="filename",
-                     height_policy="min",
-                     text=f"<span style='float: left'>&nbsp;Filename:&nbsp;</span>"
-                          f"<span style='color: black; display: block; float: right;"
-                          f" margin-left: 10px; text-align: right;'>"
-                          f"&nbsp;{self.filename_info}"
-                          f"</span>",
-                     style={
-                         "background": "whitesmoke",
-                         "border": "1px solid gainsboro",
-                         "border-radius": "5px",
-                         "color": "darkgray",
-                         "font-size": "16px",
-                         "margin": "0px",
-                         "padding": "10px",
-                         "vertical-align": "middle",
-                         "width": "100%",
-                     },
-                     width_policy="fit",
-                     )
-        return div
-
-    def get_filename_div2(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(text=f"<b>Current filename: </b>{self.filename_info}",
-                     style={
-                         "color": "steelblue",
-                         "font-size": "16px",
-                         "float": "right",
-                     },
-                     align="end",
-                     )
-        return div
-
     def visualize(self, doc):
         """
         Start the bokeh document using this visualizer.
@@ -1114,27 +1126,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         layout_ls = list()
         if self.filename_info:
-            # Edit elements
-            # filename_div = bm.Div(
-            #     align=("start", "center"),
-            #     css_classes=["filename"],
-            #     id="_filename",
-            #     margin=(0, 0, 0, 84),
-            #     name="filename",
-            #     height_policy="max",
-            #     text=f"Current filename: {self.filename_info}",
-            #     style={
-            #         "background": "white",
-            #         "color": "#666666",
-            #         "padding": "10px 0px 10px 0px",
-            #         "vertical-align": "middle",
-            #     },
-            #     width_policy="min",
-            # )
-            # Stealing styling from Bruno's variant
-            self.submit_button.align = 'center'
-            # layout_ls.append(row(Spacer(width=250), row(self.submit_button, sizing_mode="stretch_width"), self.get_filename_div2()))
-            layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div2(), sizing_mode="scale_width"))
+            # self.submit_button.align = 'center'
+            # layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
+            #                      sizing_mode="scale_width"))
+            self.submit_button.align = 'end'
+            layout_ls.append(row(Spacer(width=250), column(self.get_filename_div(), self.submit_button),
+                                 Spacer(width=10), align="end"))
+                                 # sizing_mode="scale_width"))
         else:
             layout_ls.append(self.submit_button)
         if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:

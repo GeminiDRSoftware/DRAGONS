@@ -417,7 +417,7 @@ class traceAperturesConfig(config.Config):
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     order = config.RangeField("Order of fitting function",
-                              int, 2, min=1, max=15)
+                              int, 2, min=1)
     sigma = config.RangeField("Rejection in sigma of fit",
                               float, 3, min=0, optional=True)
     step = config.RangeField("Step in rows/columns for tracing",

@@ -120,6 +120,20 @@ class PrimitiveVisualizer(ABC):
             self.user_satisfied = True
             server.stop_server()
 
+    def get_filename_div(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = Div(text=f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}",
+                  style={
+                         "color": "steelblue",
+                         "font-size": "16px",
+                         "float": "right",
+                  },
+                  align="end",
+                  )
+        return div
+
     def visualize(self, doc):
         """
         Perform the visualization.
@@ -1002,7 +1016,7 @@ class GIRegionModel:
         if len(self.regions.values()) == 0:
             return True
         for b in self.regions.values():
-            if (b[0] is None or b[0] < x) and (b[1] is None or x < b[1]):
+            if (b[0] is None or b[0] <= x) and (b[1] is None or x <= b[1]):
                 return True
         return False
 

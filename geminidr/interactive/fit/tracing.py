@@ -94,18 +94,67 @@ class TraceAperturesParametersUI(FittingParametersUI):
     trace.
     """
 
-    def __init__(self, vis, fit, fitting_parameters, min_order, max_order):
+    def __init__(self, vis, fit, fitting_parameters):
+        super().__init__(vis, fit, fitting_parameters)
+        # self.vis = vis
+        # self.fit = fit
+        # self.saved_sigma_clip = self.fit.sigma_clip
+        # self.fitting_parameters = fitting_parameters
+        # self.fitting_parameters_for_reset = \
+        #     {x: y for x, y in self.fitting_parameters.items()}
+        #
+        # self.description = bm.Div(
+        #     text=f"<p> 1D Fitting Function: "
+        #          f"<b> {vis.function_name.capitalize()} </b> </p>"
+        #          f"<p style='color: gray'> These are the parameters used to "
+        #          f"fit the tracing data. </p>",
+        #     min_width=100,
+        #     max_width=200,
+        #     sizing_mode='stretch_width',
+        #     style={"color": "black"},
+        #     width_policy='min',
+        # )
+        #
+        # self.niter_slider = interactive.build_text_slider(
+        #     "Max iterations", fitting_parameters["niter"], 1, 0, 10,
+        #     fitting_parameters, "niter", fit.perform_fit, slider_width=128)
+        #
+        # self.order_slider = interactive.build_text_slider(
+        #     "Order", fitting_parameters["order"], 1, min_order, max_order,
+        #     fitting_parameters, "order", fit.perform_fit, throttled=True,
+        #     slider_width=128)
+        #
+        # self.grow_slider = interactive.build_text_slider(
+        #     "Grow", fitting_parameters["grow"], 1, 0, 10,
+        #     fitting_parameters, "grow", fit.perform_fit,
+        #     slider_width=128)
+        #
+        # self.sigma_button = bm.CheckboxGroup(
+        #     labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
+        # self.sigma_button.on_change('active', self.sigma_button_handler)
+        #
+        # self.sigma_upper_slider = interactive.build_text_slider(
+        #     "Sigma (Upper)", fitting_parameters["sigma_upper"], 0.01, 1, 10,
+        #     fitting_parameters, "sigma_upper", self.sigma_slider_handler,
+        #     throttled=True, slider_width=128)
+        #
+        # self.sigma_lower_slider = interactive.build_text_slider(
+        #     "Sigma (Lower)", fitting_parameters["sigma_lower"], 0.01, 1, 10,
+        #     fitting_parameters, "sigma_lower", self.sigma_slider_handler,
+        #     throttled=True, slider_width=128)
+        #
+        # self.controls_column = [self.description,
+        #                         self.order_slider,
+        #                         self.niter_slider,
+        #                         self.grow_slider,
+        #                         self.sigma_button,
+        #                         self.sigma_upper_slider,
+        #                         self.sigma_lower_slider]
 
-        self.vis = vis
-        self.fit = fit
-        self.saved_sigma_clip = self.fit.sigma_clip
-        self.fitting_parameters = fitting_parameters
-        self.fitting_parameters_for_reset = \
-            {x: y for x, y in self.fitting_parameters.items()}
-
-        self.description = bm.Div(
+    def build_description(self):
+        return bm.Div(
             text=f"<p> 1D Fitting Function: "
-                 f"<b> {vis.function_name.capitalize()} </b> </p>"
+                 f"<b> {self.vis.function_name.capitalize()} </b> </p>"
                  f"<p style='color: gray'> These are the parameters used to "
                  f"fit the tracing data. </p>",
             min_width=100,
@@ -114,42 +163,6 @@ class TraceAperturesParametersUI(FittingParametersUI):
             style={"color": "black"},
             width_policy='min',
         )
-
-        self.niter_slider = interactive.build_text_slider(
-            "Max iterations", fitting_parameters["niter"], 1, 0, 10,
-            fitting_parameters, "niter", fit.perform_fit, slider_width=128)
-
-        self.order_slider = interactive.build_text_slider(
-            "Order", fitting_parameters["order"], 1, min_order, max_order,
-            fitting_parameters, "order", fit.perform_fit, throttled=True,
-            slider_width=128)
-
-        self.grow_slider = interactive.build_text_slider(
-            "Grow", fitting_parameters["grow"], 1, 0, 10,
-            fitting_parameters, "grow", fit.perform_fit,
-            slider_width=128)
-
-        self.sigma_button = bm.CheckboxGroup(
-            labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
-        self.sigma_button.on_change('active', self.sigma_button_handler)
-
-        self.sigma_upper_slider = interactive.build_text_slider(
-            "Sigma (Upper)", fitting_parameters["sigma_upper"], 0.01, 1, 10,
-            fitting_parameters, "sigma_upper", self.sigma_slider_handler,
-            throttled=True, slider_width=128)
-
-        self.sigma_lower_slider = interactive.build_text_slider(
-            "Sigma (Lower)", fitting_parameters["sigma_lower"], 0.01, 1, 10,
-            fitting_parameters, "sigma_lower", self.sigma_slider_handler,
-            throttled=True, slider_width=128)
-
-        self.controls_column = [self.description,
-                                self.order_slider,
-                                self.niter_slider,
-                                self.grow_slider,
-                                self.sigma_button,
-                                self.sigma_upper_slider,
-                                self.sigma_lower_slider]
 
     def sigma_button_handler(self, attr, old, new):
         """
@@ -197,10 +210,6 @@ class TraceAperturesTab(Fit1DPanel):
         X coordinate values
     y : :class:`~numpy.ndarray`
         Y coordinate values
-    min_order : int
-        minimum order in UI
-    max_order : int
-        maximum order in UI
     xlabel : str
         label for X axis
     ylabel : str
@@ -212,7 +221,7 @@ class TraceAperturesTab(Fit1DPanel):
     """
 
     def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
-                 weights=None, max_order=10, min_order=1, plot_height=400,
+                 weights=None, plot_height=400,
                  plot_width=600, plot_title="Trace Apertures - Fitting",
                  xlabel='x', ylabel='y'):
 
@@ -229,7 +238,7 @@ class TraceAperturesTab(Fit1DPanel):
                                       listeners=listeners)
 
         self.fitting_parameters_ui = TraceAperturesParametersUI(
-            visualizer, self.fit, self.fitting_parameters, min_order, max_order)
+            visualizer, self.fit, self.fitting_parameters)
 
         self.pars_column, self.controller_help = self.create_pars_column(
             fit_pars_ui=self.fitting_parameters_ui.get_bokeh_components(),
@@ -251,7 +260,7 @@ class TraceAperturesTab(Fit1DPanel):
         reset_button = bm.Button(align='start',
                                  button_type='danger',
                                  height=44,
-                                 label="Reset Fitting",
+                                 label="Reset",
                                  width=202)
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
@@ -477,7 +486,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
     def __init__(self, data_source, fitting_parameters, config, domains=None,
                  filename_info=None, modal_button_label="Trace apertures",
-                 modal_message="Tracing apertures...", order_param="order",
+                 modal_message="Tracing apertures...",
                  primitive_name=None, reinit_extras=None, reinit_params=None,
                  tab_name_fmt='{}', template="fit1d.html", title=None,
                  xlabel='x', ylabel='y', **kwargs):
@@ -543,21 +552,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.nfits = 1
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
-        # noinspection PyProtectedMember
-        if order_param and order_param in self.config._fields:
-            # noinspection PyProtectedMember
-            field = self.config._fields[order_param]
-            if hasattr(field, 'min') and field.min:
-                kwargs['min_order'] = field.min
-            else:
-                kwargs['min_order'] = 1
-            if hasattr(field, 'max') and field.max:
-                kwargs['max_order'] = field.max
-            else:
-                kwargs['max_order'] = field.default * 2
-        else:
-            kwargs['min_order'] = 1
-            kwargs['max_order'] = 10
 
         self.tabs = bm.Tabs(tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
@@ -743,7 +737,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 align='start',
                 button_type='danger',
                 height=44,
-                label="Reset Tracing",
+                label="Reset",
                 width=202)
 
             reset_tracing_button.on_click(self.reset_tracing_panel)
@@ -760,38 +754,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                   id="left_panel")
 
         return reinit_panel
-
-    def get_filename_div(self):
-        """
-        Returns a Div element that displays the current filename.
-        """
-        div = bm.Div(align=("start", "center"),
-                     css_classes=["filename"],
-                     id="_filename",
-                     margin=(0, 0, 0, 78),
-                     min_width=500,
-                     max_width=2000,
-                     name="filename",
-                     height_policy="min",
-                     text=f"<span style='float: left'> Filename: </span>"
-                          f"<span style='color: black; display: block;"
-                          f" margin-left: 10px; text-align: right;'>"
-                          f" {self.filename_info}"
-                          f"</span>",
-                     style={
-                         "background": "whitesmoke",
-                         "border": "1px solid gainsboro",
-                         "border-radius": "5px",
-                         "color": "darkgray",
-                         "font-size": "16px",
-                         "margin": "0px",
-                         "padding": "10px",
-                         "vertical-align": "middle",
-                         "width": "100%",
-                     },
-                     width_policy="fit",
-                     )
-        return div
 
     def reset_tracing_panel(self, param=None):
         """
@@ -858,8 +820,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         super(Fit1DVisualizer, self).visualize(doc)
 
         # Edit elements
-        filename_div = self.get_filename_div()
-
         self.submit_button.align = ("center", "end")
         self.submit_button.height = 44
         self.submit_button.height_policy = "fixed"
@@ -872,8 +832,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.reinit_panel.width_policy = "fixed"
 
         # Put all together --- Data provider on the Left
-        top_row = row(filename_div, self.submit_button,
-                      id="top_row")
+        top_row = row(Spacer(width=250), self.submit_button, self.get_filename_div(),
+                             sizing_mode="scale_width")
 
         bottom_row = row(self.reinit_panel, self.tabs,
                          id="bottom_row")
