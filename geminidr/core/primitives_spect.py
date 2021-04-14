@@ -337,14 +337,20 @@ class Spect(PrimitivesBASE):
             # We can only calculate the sensitivity for one extension in
             # non-XD data, so keep track of this in case it's not the first one
             calculated = False
+            all_exts = list()
             for ext in ad:
                 if len(ext.shape) != 1:
                     log.warning(f"{ad.filename} extension {ext.id} is not a "
                                 "1D spectrum")
                     continue
 
-            ### some sort of for loop with the warnings
-            # and build the indices to operate on
+                if calculated and 'XD' not in ad.tags:
+                    log.warning("Found additional 1D extensions in non-XD data."
+                                " Ignoring.")
+                    break
+
+                all_exts.append(ext)
+                calculated = True
 
             def _get_fit1d_input_data(ext, exptime, spec_table):
                 spectrum = Spek1D(ext) / (exptime * u.s)
@@ -371,7 +377,6 @@ class Spect(PrimitivesBASE):
                 return wave, zpt, weights
 
             if interactive:
-                all_exts = list()
                 all_shapes = list()
                 xunits = None
                 yunits = None
@@ -380,36 +385,20 @@ class Spect(PrimitivesBASE):
                 all_weights = list()
                 all_fp_init = list()
 
-                calculated = False
-
-                for ext in ad:
-                    if len(ext.shape) != 1:
-                        log.warning(f"{ad.filename} extension {ext.id} is not a "
-                                    "1D spectrum")
-                        continue
-
-                    if calculated and 'XD' not in ad.tags:
-                        log.warning("Found additional 1D extensions in non-XD data."
-                                    " Ignoring.")
-                        break
-
+                for ext in all_exts:
                     # Using common input calculation method to get our per-ext inputs
                     pixels, masked_data, weights = _get_fit1d_input_data(ext, exptime, spec_table)
                     if xunits is None:
                         xunits = pixels.unit
                     if yunits is None:
                         yunits = masked_data.unit
-                    # TODO also throw ValueException if we get mismatched units
                     all_pixels.append(pixels.value)
                     all_masked_data.append(masked_data.value)
                     all_weights.append(weights)
 
                     # additional inputs just for the interactive code
                     all_shapes.append(ext.shape[0])
-                    all_exts.append(ext)
                     all_fp_init.append(fit_1D.translate_params(params))
-
-                    calculated = True
 
                 # build config for interactive
                 config = self.params[self.myself()]
