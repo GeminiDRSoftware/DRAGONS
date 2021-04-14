@@ -26,6 +26,8 @@
 <!-- end favico stuff -->
 
 <link rel="stylesheet" href="dragons/static/dragons.css">
+<link rel="stylesheet" href="dragons/static/css/loading.css">
+
 
 <script
   src="https://code.jquery.com/jquery-3.5.1.min.js"
@@ -33,6 +35,7 @@
   crossorigin="anonymous"></script>
 <script src="dragons/static/modal.js"></script>
 <script src="dragons/static/version.js"></script>
+<script src="dragons/static/js/loading.js"></script>
 {% endblock %}
 
 {% block contents %}
@@ -40,8 +43,11 @@
 
 <!-- modal, for long running bokeh code -->
 <div class="modal_overlay">
-    <b>Thinking...</b>
+    <div class="modal_textbox">
+        <b>Thinking...</b>
+    </div>
 </div>
+
 <!-- end modal -->
 
 <div id="top">
