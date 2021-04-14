@@ -201,3 +201,47 @@ div.plot_tools_help div span {
 .bk-canvas-events {
     cursor: crosshair;
 }
+
+.bk-btn.bk-btn-danger {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-primary {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 15px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-success {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-warning {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn:hover {
+    border: none;
+    filter: saturate(90%);
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.2);
+}
+
+.bk-btn:active {
+    border: none;
+    filter: brightness(90%);
+
+    /* Inner shadow */
+    -webkit-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+}

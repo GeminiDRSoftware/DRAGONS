@@ -260,7 +260,7 @@ class TraceAperturesTab(Fit1DPanel):
         reset_button = bm.Button(align='start',
                                  button_type='danger',
                                  height=44,
-                                 label="Reset Fitting",
+                                 label="Reset",
                                  width=202)
 
         reset_dialog_message = ('Reset will change all inputs for this tab back'
@@ -737,7 +737,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 align='start',
                 button_type='danger',
                 height=44,
-                label="Reset Tracing",
+                label="Reset",
                 width=202)
 
             reset_tracing_button.on_click(self.reset_tracing_panel)

@@ -455,7 +455,7 @@ class FittingParametersUI:
 
             # Dropdown for selecting fit_1D function
             self.function = Select(title="Fitting Function:", value=fn,
-                                   options=fn_allowed)
+                                   options=fn_allowed, width=200)
 
             def fn_select_change(attr, old, new):
                 self.fit.set_function(new)
@@ -654,7 +654,7 @@ class Fit1DPanel:
 
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
-        reset_button = bm.Button(label="Reset", align='end', button_type='warning', width_policy='min')
+        reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
 
         def reset_dialog_handler(result):
             if result:
@@ -673,11 +673,10 @@ class Fit1DPanel:
 
         controls_ls.extend(controls_column)
 
-        reset_button.align = 'center'
         controls_ls.append(reset_button)
         controls_ls.append(controller_div)
 
-        controls = column(*controls_ls, max_width=220)
+        controls = column(*controls_ls, width=220)
 
         # Now the figures
         x_range = None
@@ -1127,9 +1126,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         layout_ls = list()
         if self.filename_info:
-            self.submit_button.align = 'center'
-            layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
-                                 sizing_mode="scale_width"))
+            # self.submit_button.align = 'center'
+            # layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
+            #                      sizing_mode="scale_width"))
+            self.submit_button.align = 'end'
+            layout_ls.append(row(Spacer(width=250), column(self.get_filename_div(), self.submit_button),
+                                 Spacer(width=10), align="end"))
+                                 # sizing_mode="scale_width"))
         else:
             layout_ls.append(self.submit_button)
         if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
