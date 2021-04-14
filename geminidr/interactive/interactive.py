@@ -1007,6 +1007,7 @@ class GIRegionModel:
         return False
 
     def build_regions(self):
+
         def none_cmp(x, y):
             if x is None and y is None:
                 return 0
@@ -1015,19 +1016,24 @@ class GIRegionModel:
             if y is None:
                 return 1
             return x - y
+
         def region_sorter(a, b):
             retval = none_cmp(a[0], b[0])
             if retval == 0:
                 retval = none_cmp(a[1], b[1])
             return retval
+
         def deNone(val, offset=0):
             return '' if val is None else val + offset
+
         if self.regions is None or len(self.regions.values()) == 0:
-            return None
+            return ''
+
         sorted_regions = list()
         sorted_regions.extend(self.regions.values())
         sorted_regions.sort(key=cmp_to_key(region_sorter))
-        return ', '.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
+        return ', '.join(['{}:{}'.format(deNone(b[0], offset=1), deNone(b[1]))
+                          for b in sorted_regions])
 
 
 class RegionHolder:
