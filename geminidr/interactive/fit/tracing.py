@@ -511,10 +511,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
-            text=f'<p> Parameters for Tracing Data </p>'
-                 f'<p style="color: gray"> These are parameters used to '
-                 f'(re)generate the input tracing data that will be used for '
-                 f'fitting. </p>')
+            text='Tracing Parameters')
 
         self.reinit_panel = self.create_tracing_panel(
             modal_button_label=modal_button_label,
@@ -686,11 +683,14 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         -------
         bokeh.models.Div : help text.
         """
-        div = bm.Div(text=text,
+        div = bm.Div(css_classes=['panel-header'],
+                     text=text,
                      id="function_div",
                      width=212,
                      width_policy="fixed",
-                     style={"margin-top": "-10px"})
+                     style={"font-size": "large",
+                            "font-weight": "bold",
+                            "margin-top": "-10px"})
 
         return div
 

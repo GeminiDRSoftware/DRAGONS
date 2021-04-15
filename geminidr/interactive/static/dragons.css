@@ -97,6 +97,20 @@ div.tab-content {
     cursor: crosshair;
 }
 
+.bk-root .bk-button-bar {
+  background-color: whitesmoke;
+  border-radius: 0px 5px 5px 0px;
+}
+
+.bk-root .bk-button-bar + .bk-button-bar:before {
+    content: " ";
+    display: inline-block;
+    background-color: #0f0f0f;
+    border-top: solid 1px #0f0f0f;
+    margin: 2px 0px;
+    width: 100%;
+}
+
 /**
  * Updates the appearance of the Bokeh's toolbar on the right
  */
@@ -111,7 +125,7 @@ div.tab-content {
  */
 .bk-root .bk-toolbar.bk-right .bk-toolbar-button {
   filter: brightness(125%);
-  margin: 2px;
+  margin: 0px;
   border: 1px 1px 1px 0px solid white;
   border-radius: 0px 5px 5px 0px;
   transition: all .25s linear;
@@ -128,7 +142,6 @@ div.tab-content {
  * Overrides the "active" state to make it more obvious
  */
 .bk-root .bk-toolbar.bk-right .bk-toolbar-button.bk-active {
-  border-left: none;
   background-color: white;
   filter: brightness(80%);
 }
