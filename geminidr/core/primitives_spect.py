@@ -133,6 +133,9 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs[1:]:
             for method in methods:
+                if method is None:
+                    break
+
                 adjust = True  # optimistic expectation
                 dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
@@ -145,21 +148,32 @@ class Spect(PrimitivesBASE):
                 else:
                     hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
 
-                # Cross-correlate to find real offset and compare
+                # Cross-correlate to find real offset and compare. Only look
+                # for a peak in the range defined by "tolerance".
+                # TODO: we simply find an accurate position around the
+                #  brightest pixel in the xcorr array, rather than find peaks
+                #  independently, because we don't know their likely widths.
+                #  This may need to be revisited, since we will always find
+                #  an offset, even in pure noise.
                 if 'sources' in method:
                     profile = stack_slit(ad[0])
                     corr = np.correlate(ref_profile, profile, mode='full')
-                    peak = tracing.pinpoint_peaks(corr, None, [np.argmax(corr)])[0]
-                    offset = peak - ref_profile.shape[0] + 1
-
-                    # Check that the offset is similar to the one from headers
-                    offset_diff = hdr_offset - offset
-                    if (tolerance is not None and
-                            np.abs(offset_diff * ad.pixel_scale()) > tolerance):
-                        log.warning("Offset for {} ({:.2f}) disagrees with "
-                                    "expected value ({:.2f})".format(
-                            ad.filename, offset, hdr_offset))
+                    expected_peak = corr.size // 2 + hdr_offset
+                    if tolerance is None:
+                        slice_ = slice(0, -1)
+                    else:
+                        slice_ = slice(*((expected_peak + np.array([-1, 1]) *
+                                          tolerance / ad.pixel_scale()).astype(int)))
+                    try:
+                        peak = (tracing.pinpoint_peaks(
+                            corr[slice_], None, [np.argmax(corr[slice_])])[0] +
+                                slice_.start)
+                    except IndexError:  # no xcorr peak
+                        log.warning(f"{ad.filename}: Cross-correlation failed")
                         adjust = False
+                    else:
+                        offset = peak - ref_profile.shape[0] + 1
+
                 elif method == 'offsets':
                     offset = hdr_offset
 
