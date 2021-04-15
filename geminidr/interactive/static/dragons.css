@@ -246,12 +246,18 @@ div.plot_tools_help div span {
     box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
 }
 
+/**
+ * Updates the appearance of the Bokeh's toolbar on the right
+ */
 .bk-root .bk-toolbar.bk-right {
   background-color: white;
   margin: 5px;
   height: 100%;
 }
 
+/**
+ * Updates the appearance of the buttons in the Bokeh's toolbar on the right
+ */
 .bk-root .bk-toolbar.bk-right .bk-toolbar-button {
   filter: brightness(125%);
   margin: 2px;
@@ -260,13 +266,37 @@ div.plot_tools_help div span {
   transition: all .25s linear;
 }
 
+/**
+ * These buttons get a bit darker when the user hovers the mouse over them
+ */
 .bk-root .bk-toolbar.bk-right .bk-toolbar-button:hover {
   filter: brightness(90%);
 }
 
-
+/**
+ * Overrides the "active" state to make it more obvious
+ */
 .bk-root .bk-toolbar.bk-right .bk-toolbar-button.bk-active {
   border-left: none;
   background-color: white;
   filter: brightness(80%);
+}
+
+/**
+ * This element holds all the Bokeh Generated components
+ */
+div.container {
+    background-color: whitesmoke;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    display: table;
+    height: 100%;
+    margin: auto;
+    width: 100%;
+    }
+
+/**
+ * This element holds the tab area
+ */
+div.tab-content {
+    background-color: white;
 }

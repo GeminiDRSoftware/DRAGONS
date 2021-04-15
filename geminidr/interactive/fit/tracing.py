@@ -249,7 +249,7 @@ class TraceAperturesTab(Fit1DPanel):
             plot_width=plot_width, xlabel=xlabel, ylabel=ylabel)
 
         self.component = row(self.plots_column, self.pars_column,
-                             css_classes=["tab_area"], spacing=0)
+                             css_classes=["tab-content"], spacing=5)
 
     def create_pars_column(self, fit_pars_ui, rms_div, column_width=220):
         """
@@ -479,6 +479,7 @@ class TraceAperturesTab(Fit1DPanel):
         """ Update fitting regions """
         self.fit.model.regions = self.band_model.build_regions()
 
+
 class TraceAperturesVisualizer(Fit1DVisualizer):
     """
     Custom visualizer for traceApertures().
@@ -553,7 +554,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
 
-        self.tabs = bm.Tabs(tabs=[], name="tabs")
+        self.tabs = bm.Tabs(css_classes=['tabs'],
+                            height_policy="max",
+                            name="tabs",
+                            tabs=[])
+
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
         if self.nfits > 1:
@@ -832,11 +837,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.reinit_panel.width_policy = "fixed"
 
         # Put all together --- Data provider on the Left
-        top_row = row(Spacer(width=250), self.submit_button, self.get_filename_div(),
-                             sizing_mode="scale_width")
+        top_row = row(Spacer(width=250), self.submit_button,
+                      self.get_filename_div(), sizing_mode="scale_width")
 
         bottom_row = row(self.reinit_panel, self.tabs,
-                         id="bottom_row")
+                         id="bottom_row", spacing=10)
 
         all_content = column(top_row, bottom_row,
                              id="top_level_layout",
