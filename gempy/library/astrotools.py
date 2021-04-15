@@ -32,7 +32,7 @@ def array_from_list(list_of_quantities, unit=None):
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
 
-def boxcar(data, operation=np.median, size=1):
+def boxcar(data, operation=np.ma.median, size=1):
     """
     "Smooth" a 1D array by applying a boxcar filter along it. Any operation
     can be performed, as long as it can take a sequence and return a single
