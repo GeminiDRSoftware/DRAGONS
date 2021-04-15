@@ -183,6 +183,7 @@ class Spect(PrimitivesBASE):
 
                 elif method == 'offsets':
                     offset = hdr_offset
+                    adjust = True
 
                 if adjust:
                     wcs = ad[0].wcs
