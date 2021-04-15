@@ -110,7 +110,8 @@ class Spect(PrimitivesBASE):
 
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
-            data = np.ma.array(ext.data, mask=(ext.mask > 0))
+            data = np.ma.array(ext.data, mask=None if ext.mask is None
+                               else (ext.mask > 0))
             data = np.ma.masked_invalid(data)
             return data.mean(axis=dispaxis)
 
@@ -136,7 +137,7 @@ class Spect(PrimitivesBASE):
                 if method is None:
                     break
 
-                adjust = True  # optimistic expectation
+                adjust = False
                 dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
                 # Calculate offset determined by header (WCS or offsets)
@@ -150,29 +151,35 @@ class Spect(PrimitivesBASE):
 
                 # Cross-correlate to find real offset and compare. Only look
                 # for a peak in the range defined by "tolerance".
-                # TODO: we simply find an accurate position around the
-                #  brightest pixel in the xcorr array, rather than find peaks
-                #  independently, because we don't know their likely widths.
-                #  This may need to be revisited, since we will always find
-                #  an offset, even in pure noise.
                 if 'sources' in method:
                     profile = stack_slit(ad[0])
                     corr = np.correlate(ref_profile, profile, mode='full')
                     expected_peak = corr.size // 2 + hdr_offset
-                    if tolerance is None:
-                        slice_ = slice(0, -1)
+                    peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),
+                                                     reject_bad=False, pinpoint_index=0)
+                    if peaks.size:
+                        if tolerance is None:
+                            found_peak = peaks[snrs.argmax()]
+                        else:
+                            # Go down the peaks in order of decreasing SNR
+                            # until we find one within "tolerance"
+                            found_peak = None
+                            for peak, snr in sorted(zip(peaks, snrs),
+                                                    key=lambda pair: pair[1],
+                                                    reverse=True):
+                                if (abs(peak - expected_peak) <=
+                                        tolerance / ad.pixel_scale()):
+                                    found_peak = peak
+                                    break
+                        if found_peak:
+                            # found_peak = tracing.pinpoint_peaks(corr, None, found_peak)[0]
+                            offset = found_peak - ref_profile.shape[0] + 1
+                            adjust = True
+                        else:
+                            log.warning("No cross-correlation peak found for "
+                                        f"{ad.filename} within tolerance")
                     else:
-                        slice_ = slice(*((expected_peak + np.array([-1, 1]) *
-                                          tolerance / ad.pixel_scale()).astype(int)))
-                    try:
-                        peak = (tracing.pinpoint_peaks(
-                            corr[slice_], None, [np.argmax(corr[slice_])])[0] +
-                                slice_.start)
-                    except IndexError:  # no xcorr peak
                         log.warning(f"{ad.filename}: Cross-correlation failed")
-                        adjust = False
-                    else:
-                        offset = peak - ref_profile.shape[0] + 1
 
                 elif method == 'offsets':
                     offset = hdr_offset
