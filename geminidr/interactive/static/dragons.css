@@ -9,45 +9,182 @@ body {
     margin: 0px;
 }
 
-#plot_div {
-    margin: 8px 8px 30px 8px;
-}
-
-#top {
-    background-color: steelblue;
-    color: white;
-    display: block;
-    height: auto;
-    margin: 0px;
-    width: inherit;
-}
-
-#top .banner {
-    padding: 10px;
-    vertical-align: middle;
+/**
+ * This element holds all the Bokeh Generated components
+ */
+div.container {
+    background-color: whitesmoke;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    display: table;
+    height: 100%;
+    margin: auto;
     width: 100%;
+    }
+
+div.plot_tools_help {
+    float: right;
 }
 
-#top .banner .primitive-name {
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 18px;
-    padding: 10px;
-    vertical-align: middle;
+div.plot_tools_help div {
+    border: 1px solid gray;
+    padding: 4px;
+    margin: 8px;
+    background: white;
+    filter: drop-shadow(2px 2px 2px gray);
 }
 
-#top .banner .title {
-    color: white;
-    font-size: 36px;
-    vertical-align: middle;
+div.plot_tools_help div span {
+    margin-left: 4px;
 }
 
-#top .logo {
-    float: left;
-    padding: 10px;
+div.scrollable {
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
-#top .logo img {
-    height: 72px;
+/**
+ * This element holds the tab area
+ */
+div.tab-content {
+    background-color: white;
+}
+
+.bk-btn:active {
+    border: none;
+    filter: brightness(90%);
+
+    /* Inner shadow */
+    -webkit-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+}
+
+.bk-btn:hover {
+    border: none;
+    filter: saturate(90%);
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.2);
+}
+
+.bk-btn.bk-btn-danger {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-primary {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 15px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-success {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-warning {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-canvas-events {
+    cursor: crosshair;
+}
+
+/**
+ * Updates the appearance of the Bokeh's toolbar on the right
+ */
+.bk-root .bk-toolbar.bk-right {
+  background-color: white;
+  margin: 5px;
+  height: 100%;
+}
+
+/**
+ * Updates the appearance of the buttons in the Bokeh's toolbar on the right
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button {
+  filter: brightness(125%);
+  margin: 2px;
+  border: 1px 1px 1px 0px solid white;
+  border-radius: 0px 5px 5px 0px;
+  transition: all .25s linear;
+}
+
+/**
+ * These buttons get a bit darker when the user hovers the mouse over them
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button:hover {
+  filter: brightness(90%);
+}
+
+/**
+ * Overrides the "active" state to make it more obvious
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button.bk-active {
+  border-left: none;
+  background-color: white;
+  filter: brightness(80%);
+}
+
+.controller_div {
+  color: gray;
+}
+
+.detailed_help dt {
+  font-weight: bold;
+}
+
+.hamburger_helper button.bk-btn {
+    background-image: url('hamburger.svg');
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    vertical-align: 5px;
+    padding-left: 20px;
+    appearance: none;
+    border: none;
+    text-align: left;
+}
+
+.modal_overlay {
+    visibility: hidden;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #8888aa88;
+    z-index: 2;
+    text-align: center;
+    font-size: 32px;
+    font-family: sans-serif;
+    padding-top: 200px;
+}
+
+.param_section {
+  font-weight: bold;
+}
+
+.region_input_error {
+    border:  solid red 1px;
+}
+
+.submit-info {
+    border: 2px solid black;
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 #filename-info {
@@ -61,12 +198,6 @@ body {
     font: helvetica;
     font-style: italic;
     color: white;
-}
-
-.submit-info {
-    border: 2px solid black;
-    padding-left: 8px;
-    padding-right: 8px;
 }
 
 #footer {
@@ -108,15 +239,6 @@ body {
     text-decoration: none;
 }
 
-#help-btn:hover {
-    border: 0px solid white;
-    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
-    color: white;
-    cursor: pointer;
-    filter: brightness(115%);
-    outline: none;
-}
-
 #help-btn:active {
     border: none;
     border-bottom: none;
@@ -131,172 +253,52 @@ body {
     box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
 }
 
-.modal_overlay {
-    visibility: hidden;
-    position: fixed;
-    height: 100%;
+#help-btn:hover {
+    border: 0px solid white;
+    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+    color: white;
+    cursor: pointer;
+    filter: brightness(115%);
+    outline: none;
+}
+
+#plot_div {
+    margin: 8px 8px 30px 8px;
+}
+
+#top {
+    background-color: steelblue;
+    color: white;
+    display: block;
+    height: auto;
+    margin: 0px;
+    width: inherit;
+}
+
+#top .banner {
+    padding: 10px;
+    vertical-align: middle;
     width: 100%;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #8888aa88;
-    z-index: 2;
-    text-align: center;
-    font-size: 32px;
-    font-family: sans-serif;
-    padding-top: 200px;
 }
 
-.hamburger_helper button.bk-btn {
-    background-image: url('hamburger.svg');
-    background-size: 18px;
-    background-repeat: no-repeat;
-    background-position: left bottom;
-    height: 24px;
-    font-size: 14px;
-    font-weight: bold;
-    vertical-align: 5px;
-    padding-left: 20px;
-    appearance: none;
-    border: none;
-    text-align: left;
+#top .banner .primitive-name {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 18px;
+    padding: 10px;
+    vertical-align: middle;
 }
 
-div.scrollable {
-  overflow-x: hidden;
-  overflow-y: scroll;
+#top .banner .title {
+    color: white;
+    font-size: 36px;
+    vertical-align: middle;
 }
 
-.detailed_help dt {
-  font-weight: bold;
+#top .logo {
+    float: left;
+    padding: 10px;
 }
 
-.param_section {
-  font-weight: bold;
-}
-
-.controller_div {
-  color: gray;
-}
-
-.region_input_error {
-    border:  solid red 1px;
-}
-
-div.plot_tools_help {
-    float: right;
-}
-div.plot_tools_help div {
-    border: 1px solid gray;
-    padding: 4px;
-    margin: 8px;
-    background: white;
-    filter: drop-shadow(2px 2px 2px gray);
-}
-div.plot_tools_help div span {
-    margin-left: 4px;
-}
-
-.bk-canvas-events {
-    cursor: crosshair;
-}
-
-.bk-btn.bk-btn-danger {
-    border-radius: 5px;
-    font-size: 16px;
-    padding: 5px 35px;
-    transition: all .2s ease-in-out;
-}
-
-.bk-btn.bk-btn-primary {
-    border-radius: 5px;
-    font-size: 16px;
-    padding: 5px 15px;
-    transition: all .2s ease-in-out;
-}
-
-.bk-btn.bk-btn-success {
-    border-radius: 5px;
-    font-size: 16px;
-    padding: 5px 35px;
-    transition: all .2s ease-in-out;
-}
-
-.bk-btn.bk-btn-warning {
-    border-radius: 5px;
-    font-size: 16px;
-    padding: 5px 35px;
-    transition: all .2s ease-in-out;
-}
-
-.bk-btn:hover {
-    border: none;
-    filter: saturate(90%);
-    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.2);
-}
-
-.bk-btn:active {
-    border: none;
-    filter: brightness(90%);
-
-    /* Inner shadow */
-    -webkit-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
-    -moz-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
-    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
-}
-
-/**
- * Updates the appearance of the Bokeh's toolbar on the right
- */
-.bk-root .bk-toolbar.bk-right {
-  background-color: white;
-  margin: 5px;
-  height: 100%;
-}
-
-/**
- * Updates the appearance of the buttons in the Bokeh's toolbar on the right
- */
-.bk-root .bk-toolbar.bk-right .bk-toolbar-button {
-  filter: brightness(125%);
-  margin: 2px;
-  border: 1px 1px 1px 0px solid white;
-  border-radius: 0px 5px 5px 0px;
-  transition: all .25s linear;
-}
-
-/**
- * These buttons get a bit darker when the user hovers the mouse over them
- */
-.bk-root .bk-toolbar.bk-right .bk-toolbar-button:hover {
-  filter: brightness(90%);
-}
-
-/**
- * Overrides the "active" state to make it more obvious
- */
-.bk-root .bk-toolbar.bk-right .bk-toolbar-button.bk-active {
-  border-left: none;
-  background-color: white;
-  filter: brightness(80%);
-}
-
-/**
- * This element holds all the Bokeh Generated components
- */
-div.container {
-    background-color: whitesmoke;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-    display: table;
-    height: 100%;
-    margin: auto;
-    width: 100%;
-    }
-
-/**
- * This element holds the tab area
- */
-div.tab-content {
-    background-color: white;
+#top .logo img {
+    height: 72px;
 }
