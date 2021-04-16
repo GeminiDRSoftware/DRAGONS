@@ -500,8 +500,10 @@ class FittingParametersUI:
             self.controls_column = [self.function, self.order_slider, self.description, self.niter_slider, self.sigma_button,
                                     self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
         else:
-            self.controls_column = [self.order_slider, self.description, self.niter_slider, self.sigma_button,
-                                    self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
+            self.controls_column = [self.description, self.order_slider,
+                                    self.niter_slider, self.sigma_button,
+                                    self.sigma_lower_slider,
+                                    self.sigma_upper_slider, self.grow_slider]
 
     def build_description(self):
         return bm.Div(
