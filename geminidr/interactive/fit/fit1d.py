@@ -1,6 +1,4 @@
-
 from abc import ABC, abstractmethod
-
 
 import numpy as np
 
@@ -62,6 +60,7 @@ class InteractiveModel(ABC):
         fit_mask:  points rejected by the fit
         band_mask: points rejected by not being in a selection band (only if bands exist)
     """
+
     def __init__(self, model):
         self.model = model
         self.listeners = []
@@ -162,6 +161,7 @@ class InteractiveModel1D(InteractiveModel):
     """
     Subclass for 1D models
     """
+
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
                  section=None, listeners=[]):
         """
@@ -496,14 +496,31 @@ class FittingParametersUI:
                                                          config=vis.config, slider_width=128)
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
+
+        self.controls_column = self.build_column()
+
+    def build_column(self):
+        """
+        Builds a list with the components that belong to the Fit 1D Parameters
+        column. The element's order inside the list represent the top-to-bottom
+        order of the elements in the column.
+
+        Return
+        ------
+        list : elements displayed in the column.
+        """
         if self.function:
-            self.controls_column = [self.function, self.order_slider, self.description, self.niter_slider, self.sigma_button,
-                                    self.sigma_lower_slider, self.sigma_upper_slider, self.grow_slider]
+            column_list = [self.function, self.order_slider, self.description,
+                           self.niter_slider, self.sigma_button,
+                           self.sigma_lower_slider, self.sigma_upper_slider,
+                           self.grow_slider]
         else:
-            self.controls_column = [self.description, self.order_slider,
-                                    self.niter_slider, self.sigma_button,
-                                    self.sigma_lower_slider,
-                                    self.sigma_upper_slider, self.grow_slider]
+            column_list = [self.order_slider, self.description,
+                           self.niter_slider, self.sigma_button,
+                           self.sigma_lower_slider,
+                           self.sigma_upper_slider, self.grow_slider]
+
+        return column_list
 
     def build_description(self, text=""):
         """
@@ -672,6 +689,7 @@ class Fit1DPanel:
         def reset_dialog_handler(result):
             if result:
                 self.fitting_parameters_ui.reset_ui()
+
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
                                                                   'Reset will change all inputs for this tab back '
                                                                   'to their original values.  Proceed?',
@@ -680,9 +698,9 @@ class Fit1DPanel:
         controller_div = Div(margin=(20, 0, 0, 0),
                              width=220,
                              style={
-                                     "color": "gray",
-                                     "padding": "5px",
-                                 })
+                                 "color": "gray",
+                                 "padding": "5px",
+                             })
 
         controls_ls.extend(controls_column)
 
@@ -698,13 +716,13 @@ class Fit1DPanel:
             if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
                 x_min = min(self.fit.data.data['x'])
                 x_max = max(self.fit.data.data['x'])
-                x_pad = (x_max-x_min)*0.1
-                x_range = Range1d(x_min-x_pad, x_max+x_pad*2)
+                x_pad = (x_max - x_min) * 0.1
+                x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
             if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
                 y_min = min(self.fit.data.data['y'])
                 y_max = max(self.fit.data.data['y'])
-                y_pad = (y_max-y_min)*0.1
-                y_range = Range1d(y_min-y_pad, y_max+y_pad)
+                y_pad = (y_max - y_min) * 0.1
+                y_range = Range1d(y_min - y_pad, y_max + y_pad)
         except:
             pass  # ok, we don't *need* ranges...
         if enable_user_masking:
@@ -724,6 +742,7 @@ class Fit1DPanel:
 
             def update_regions():
                 self.fit.model.regions = self.band_model.build_regions()
+
             self.band_model.add_listener(Fit1DRegionListener(update_regions))
             self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
@@ -771,7 +790,7 @@ class Fit1DPanel:
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
             p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
-                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         if plot_residuals and plot_ratios:
             tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
             tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
@@ -941,6 +960,7 @@ class Fit1DRegionListener(GIRegionListener):
     fn : function
         function to call when band is finished.
     """
+
     def __init__(self, fn):
         self.fn = fn
 
@@ -1081,7 +1101,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Some sanity checks now
         if isinstance(fitting_parameters, list):
-            if not(len(fitting_parameters) == len(allx) == len(ally)):
+            if not (len(fitting_parameters) == len(allx) == len(ally)):
                 raise ValueError("Different numbers of models and coordinates")
             self.nfits = len(fitting_parameters)
         else:
@@ -1134,7 +1154,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             bokeh document to draw the UI in
         """
         super().visualize(doc)
-        col = column(self.tabs,)
+        col = column(self.tabs, )
         col.sizing_mode = 'scale_width'
 
         layout_ls = list()
@@ -1145,7 +1165,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.submit_button.align = 'end'
             layout_ls.append(row(Spacer(width=250), column(self.get_filename_div(), self.submit_button),
                                  Spacer(width=10), align="end"))
-                                 # sizing_mode="scale_width"))
+            # sizing_mode="scale_width"))
         else:
             layout_ls.append(self.submit_button)
         if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
@@ -1181,6 +1201,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             for k, v in config_update.items():
                 print(f'{k} = {v}')
             self.config.update(**config_update)
+
         self.do_later(fn)
 
         if self.reconstruct_points_fn is not None:
@@ -1195,6 +1216,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     fit.perform_fit()
                 if hasattr(self, 'reinit_button'):
                     self.reinit_button.disabled = False
+
             self.do_later(rfn)
 
     def results(self):
