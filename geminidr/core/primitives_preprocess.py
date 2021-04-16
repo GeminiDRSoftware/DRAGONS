@@ -342,19 +342,19 @@ class Preprocess(PrimitivesBASE):
         # if only some frames did not have sky corrected, move them out of main and
         # to the "no_skytable" stream.
         if not any(has_skytable):  # "all false", none have been sky corrected
-            log.warning('No frames received a sky table, continuing with ',
-                        'all frames.  Sky subtraction will not be possible.')
+            log.warning('Sky frames could not be associated to any input frames.'
+                        'Sky subtraction will not be possible.')
         elif not all(has_skytable):  # "some false", some frames were NOT sky corrected
             log.stdinfo('')  # for readablity
             false_idx = [idx for idx, trueval in enumerate(has_skytable) if not trueval]
             for idx in reversed(false_idx):
                 ad = adinputs[idx]
-                log.warning('{} does not have a sky table, moving to "no_skytable" stream'.
-                            format(ad.filename))
-                if "no_skystable" in self.streams:
-                    self.streams["no_skytable"].append(ad)
+                log.warning(f'{(ad.filename} does not have any associated sky '
+                            'cannot be sky-subtracted, moving to "no_skies" stream')
+                if "no_skies" in self.streams:
+                    self.streams["no_skies"].append(ad)
                 else:
-                    self.streams["no_skytable"] = [ad]
+                    self.streams["no_skies"] = [ad]
                 del adinputs[idx]
 
         return adinputs
