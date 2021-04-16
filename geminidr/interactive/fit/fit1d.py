@@ -505,10 +505,21 @@ class FittingParametersUI:
                                     self.sigma_lower_slider,
                                     self.sigma_upper_slider, self.grow_slider]
 
-    def build_description(self):
+    def build_description(self, text=""):
+        """
+        Adds a description text to the fitting function parameters panel.
+
+        Parameters
+        ----------
+        text : str
+            Text that shows up in the description.
+
+        Return
+        ------
+        bokeh.models.Div : Div component containing the short description.
+        """
         return bm.Div(
-            text=f"<p style='color: gray'> These are the parameters used to "
-                 f"fit the tracing data. </p>",
+            text=text,
             min_width=100,
             max_width=200,
             sizing_mode='stretch_width',

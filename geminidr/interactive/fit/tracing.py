@@ -151,18 +151,11 @@ class TraceAperturesParametersUI(FittingParametersUI):
         #                         self.sigma_upper_slider,
         #                         self.sigma_lower_slider]
 
-    def build_description(self):
-        return bm.Div(
-            text=f"<p> 1D Fitting Function: "
-                 f"<b> {self.vis.function_name.capitalize()} </b> </p>"
-                 f"<p style='color: gray'> These are the parameters used to "
-                 f"fit the tracing data. </p>",
-            min_width=100,
-            max_width=200,
-            sizing_mode='stretch_width',
-            style={"color": "black"},
-            width_policy='min',
-        )
+    def build_description(self, text=""):
+        return super().build_description(
+            text=f"<p style='font-size: larger;'> <b> Fit 1D Parameters </b> </p>" 
+                 f"<p> Fit Function: "
+                 f"<b> {self.vis.function_name.capitalize()} </b> </p>")
 
     def sigma_button_handler(self, attr, old, new):
         """
