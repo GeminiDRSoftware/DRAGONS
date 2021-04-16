@@ -151,11 +151,34 @@ class TraceAperturesParametersUI(FittingParametersUI):
         #                         self.sigma_upper_slider,
         #                         self.sigma_lower_slider]
 
-    def build_description(self, text=""):
-        return super().build_description(
-            text=f"<p style='font-size: larger;'> <b> Fit 1D Parameters </b> </p>" 
-                 f"<p> Fit Function: "
-                 f"<b> {self.vis.function_name.capitalize()} </b> </p>")
+    def build_column(self):
+        """
+        Override the standard column order.
+        """
+        column_title = bm.Div(
+            text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
+            min_width=100,
+            max_width=202,
+            sizing_mode='stretch_width',
+            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+            width_policy='max',
+        )
+
+        rejection_title = bm.Div(
+            text="Rejection Parameters",
+            min_width=100,
+            max_width=202,
+            sizing_mode='stretch_width',
+            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
+            width_policy='max',
+        )
+
+        column_list = [column_title, self.order_slider, rejection_title,
+                       self.niter_slider, self.sigma_button,
+                       self.sigma_lower_slider, self.sigma_upper_slider,
+                       self.grow_slider]
+
+        return column_list
 
     def sigma_button_handler(self, attr, old, new):
         """
