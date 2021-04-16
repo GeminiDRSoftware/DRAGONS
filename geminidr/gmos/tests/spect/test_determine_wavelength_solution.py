@@ -204,7 +204,8 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
 def test_regression_determine_wavelength_solution(
-        ad, fwidth, order, min_snr, caplog, change_working_dir, ref_ad_factory):
+        ad, fwidth, order, min_snr, caplog, change_working_dir,
+        ref_ad_factory, request):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
@@ -245,8 +246,15 @@ def test_regression_determine_wavelength_solution(
     slit_size_in_px = slit_size_in_arcsec / pixel_scale
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
+    # We don't care about what the wavelength solution is doing at
+    # wavelengths where there's no data
+    indices = np.where(np.logical_and(ref_wavelength > 300, ref_wavelength < 1200))
     tolerance = 0.5 * (slit_size_in_px * dispersion)
-    np.testing.assert_allclose(wavelength, ref_wavelength, rtol=tolerance)
+    np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
+                               rtol=tolerance)
+
+    if request.config.getoption("--do-plots"):
+        do_plots(wcalibrated_ad)
 
 
 # We only need to test this with one input
