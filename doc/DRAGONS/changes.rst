@@ -6,7 +6,46 @@
 Change Logs
 ***********
 
-[KL: TO REMOVE BEFORE RELEASE.  Last update up to commit  Thu Sep 17 16:57 HST 2020]
+[KL: TO REMOVE BEFORE RELEASE.  Last update up to commit ... need commits
+review since beginning of branch.]
+
+3.0.0
+=====
+
+This release includes new support for GMOS longslit data.  Reduction of
+GMOS longslit data is offered only quicklook mode.  It does not produce
+science quality outputs, yet.
+
+Bug Fixes
+---------
+
+* In imaging mode, the science recipes now include a call to
+``scaleByExposureTime`` before the stacking step.  It is now possible to stack
+frames with different exposure times.
+* In near-IR imaging mode, frames that fail to be sky subtracted are removed
+from the main reduction stream to avoid contamination.  The reduction continues
+with the "good" frames.  If all frames fail the sky subtraction, then all
+frames will be passed to the next step of the reduction.
+
+New Features
+------------
+
+* Quicklook (``ql`` mode) reduction support for GMOS longslit data.
+
+Compatibility
+-------------
+
+* Python 2 support has been dropped.  Starting with v3.0.0, DRAGONS requires
+Python 3.   All tests were run on Python 3.7, and this version of Python
+now serves as the minimal required version.
+
+
+Documentation
+-------------
+
+(KL: When we add them:  New tutorial for the reduction of GMOS longslit data.)
+
+
 
 2.1.2
 =====
