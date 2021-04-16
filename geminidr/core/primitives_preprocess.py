@@ -349,8 +349,9 @@ class Preprocess(PrimitivesBASE):
             false_idx = [idx for idx, trueval in enumerate(has_skytable) if not trueval]
             for idx in reversed(false_idx):
                 ad = adinputs[idx]
-                log.warning(f'{(ad.filename} does not have any associated sky '
-                            'cannot be sky-subtracted, moving to "no_skies" stream')
+                log.warning(f'{ad.filename} does not have any associated skies'
+                            ' and cannot be sky-subtracted, moving to '
+                            '"no_skies" stream')
                 if "no_skies" in self.streams:
                     self.streams["no_skies"].append(ad)
                 else:
