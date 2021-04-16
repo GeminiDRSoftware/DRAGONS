@@ -108,7 +108,8 @@ class Spect(PrimitivesBASE):
 
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
-            data = np.ma.array(ext.data, mask=(ext.mask > 0))
+            data = np.ma.array(ext.data, mask=None if ext.mask is None
+                               else (ext.mask > 0))
             data = np.ma.masked_invalid(data)
             return data.mean(axis=dispaxis)
 
@@ -116,7 +117,7 @@ class Spect(PrimitivesBASE):
         refad = adinputs[0]
         ref_sky_model = astromodels.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
         ref_sky_model.name = None
-        log.stdinfo("Reference image: {}".format(refad.filename))
+        log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
             ref_profile = stack_slit(refad[0])
@@ -131,7 +132,10 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs[1:]:
             for method in methods:
-                adjust = True  # optimistic expectation
+                if method is None:
+                    break
+
+                adjust = False
                 dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
                 # Calculate offset determined by header (WCS or offsets)
@@ -143,23 +147,41 @@ class Spect(PrimitivesBASE):
                 else:
                     hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
 
-                # Cross-correlate to find real offset and compare
+                # Cross-correlate to find real offset and compare. Only look
+                # for a peak in the range defined by "tolerance".
                 if 'sources' in method:
                     profile = stack_slit(ad[0])
                     corr = np.correlate(ref_profile, profile, mode='full')
-                    peak = tracing.pinpoint_peaks(corr, None, [np.argmax(corr)])[0]
-                    offset = peak - ref_profile.shape[0] + 1
+                    expected_peak = corr.size // 2 + hdr_offset
+                    peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),
+                                                     reject_bad=False, pinpoint_index=0)
+                    if peaks.size:
+                        if tolerance is None:
+                            found_peak = peaks[snrs.argmax()]
+                        else:
+                            # Go down the peaks in order of decreasing SNR
+                            # until we find one within "tolerance"
+                            found_peak = None
+                            for peak, snr in sorted(zip(peaks, snrs),
+                                                    key=lambda pair: pair[1],
+                                                    reverse=True):
+                                if (abs(peak - expected_peak) <=
+                                        tolerance / ad.pixel_scale()):
+                                    found_peak = peak
+                                    break
+                        if found_peak:
+                            # found_peak = tracing.pinpoint_peaks(corr, None, found_peak)[0]
+                            offset = found_peak - ref_profile.shape[0] + 1
+                            adjust = True
+                        else:
+                            log.warning("No cross-correlation peak found for "
+                                        f"{ad.filename} within tolerance")
+                    else:
+                        log.warning(f"{ad.filename}: Cross-correlation failed")
 
-                    # Check that the offset is similar to the one from headers
-                    offset_diff = hdr_offset - offset
-                    if (tolerance is not None and
-                            np.abs(offset_diff * ad.pixel_scale()) > tolerance):
-                        log.warning("Offset for {} ({:.2f}) disagrees with "
-                                    "expected value ({:.2f})".format(
-                            ad.filename, offset, hdr_offset))
-                        adjust = False
                 elif method == 'offsets':
                     offset = hdr_offset
+                    adjust = True
 
                 if adjust:
                     wcs = ad[0].wcs
@@ -1390,6 +1412,13 @@ class Spect(PrimitivesBASE):
                 except (AttributeError, IndexError):
                     log.warning(f"Cannot find wavelength solution for {extname}")
                     wave_model = None
+                else:
+                    axes_names = tuple(frame.axes_names[0]
+                                       for frame in ext.wcs.output_frame.frames
+                                       if isinstance(frame, cf.SpectralFrame))
+                    if len(axes_names) != 1:
+                        log.warning("Problem with identifying spectral axis "
+                                    f"for {extname}")
 
                 log.stdinfo("Extracting {} spectra from {}".format(num_spec,
                                                                    extname))
@@ -1467,7 +1496,8 @@ class Spect(PrimitivesBASE):
                         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                                       axes_order=(0,), unit=u.pix,
                                                       axes_names=('x',), name='pixels')
-                        out_frame = cf.SpectralFrame(unit=u.nm, name='world')
+                        out_frame = cf.SpectralFrame(unit=u.nm, name='world',
+                                                     axes_names=axes_names)
                         ext_spec.wcs = gWCS([(in_frame, wave_model),
                                              (out_frame, None)])
                     ext_spec.hdr[ad._keyword_for('aperture_number')] = apnum

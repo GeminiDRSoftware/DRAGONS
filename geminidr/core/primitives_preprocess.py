@@ -273,6 +273,7 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
+        has_skytable = [False] * len(adinputs)
         if not adinputs or not ad_skies:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
@@ -283,7 +284,7 @@ class Preprocess(PrimitivesBASE):
             sky_times = dict(zip(ad_skies,
                                  [ad.ut_datetime() for ad in ad_skies]))
 
-            for ad in adinputs:
+            for i, ad in enumerate(adinputs):
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
                 if params["use_all"]:
@@ -330,11 +331,33 @@ class Preprocess(PrimitivesBASE):
                     for sky in sky_list:
                         log.stdinfo("  {}".format(sky.filename))
                     ad.SKYTABLE = sky_table
+                    has_skytable[i] = True
                 else:
                     log.warning("No sky frames available for {}".format(ad.filename))
 
         # Need to update sky stream in case it came from the "sky" parameter
         self.streams['sky'] = ad_skies
+
+        # if none of frames have sky tables, just pass them all through
+        # if only some frames did not have sky corrected, move them out of main and
+        # to the "no_skytable" stream.
+        if not any(has_skytable):  # "all false", none have been sky corrected
+            log.warning('Sky frames could not be associated to any input frames.'
+                        'Sky subtraction will not be possible.')
+        elif not all(has_skytable):  # "some false", some frames were NOT sky corrected
+            log.stdinfo('')  # for readablity
+            false_idx = [idx for idx, trueval in enumerate(has_skytable) if not trueval]
+            for idx in reversed(false_idx):
+                ad = adinputs[idx]
+                log.warning(f'{ad.filename} does not have any associated skies'
+                            ' and cannot be sky-subtracted, moving to '
+                            '"no_skies" stream')
+                if "no_skies" in self.streams:
+                    self.streams["no_skies"].append(ad)
+                else:
+                    self.streams["no_skies"] = [ad]
+                del adinputs[idx]
+
         return adinputs
 
     def correctBackgroundToReference(self, adinputs=None, suffix=None,

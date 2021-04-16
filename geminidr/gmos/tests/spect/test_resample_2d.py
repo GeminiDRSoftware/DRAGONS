@@ -124,7 +124,7 @@ def test_header_offset(adinputs2, caplog):
     adout = p.adjustWCSToReference(method='offsets')
 
     for rec in caplog.records:
-        assert not rec.message.startswith('WARNING - Offset from correlation')
+        assert not rec.message.startswith('WARNING')
 
     assert np.isclose(adout[0].phu['SLITOFF'], 0)
     assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
@@ -143,7 +143,7 @@ def test_header_offset_fallback(adinputs2, caplog):
     adout = p.adjustWCSToReference()
 
     # WARNING when offset is too large
-    assert caplog.records[3].message.startswith('WARNING - Offset for')
+    assert caplog.records[3].message.startswith('WARNING - No cross')
 
     assert np.isclose(adout[0].phu['SLITOFF'], 0)
     assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
