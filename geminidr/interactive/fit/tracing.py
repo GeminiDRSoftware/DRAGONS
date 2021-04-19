@@ -300,7 +300,7 @@ class TraceAperturesTab(Fit1DPanel):
         controls_ls.append(controller_help)
 
         controls_col = column(*controls_ls,
-                              id="fit_pars_control",
+                              css_classes=["fitpars-column"],
                               max_width=column_width,
                               margin=(0, 0, 0, 10),
                               width_policy="fit")
@@ -441,6 +441,7 @@ class TraceAperturesTab(Fit1DPanel):
             fig_column.append(region_editor_wgt)
 
         col = column(*fig_column,
+                     css_classes=["column-plot"],
                      height_policy='fit',
                      margin=(0, 10, 0, 0),
                      sizing_mode='scale_both',
