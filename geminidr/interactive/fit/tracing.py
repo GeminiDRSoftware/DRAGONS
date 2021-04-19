@@ -462,12 +462,13 @@ class TraceAperturesTab(Fit1DPanel):
         rms_div = bm.Div(align="start",
                          id=f"rms_div_{self.index}",
                          width=202,
+                         margin=(15, 5, 5, 5),
                          max_width=202,
                          style={
-                             "background-color": "whitesmoke",
-                             "border": "1px solid gainsboro",
-                             "border-radius": "5px",
-                             "padding": "10px",
+                             "background-color": "white",
+                             "border-top": "1px solid gainsboro",
+                             "font-size": "115%",
+                             "padding": "5px",
                              "width": "100%",
                          },
                          width_policy="fixed")
@@ -750,7 +751,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.reinit_button = bm.Button(
                 align='start',
                 button_type='primary',
-                height=44,
+                height=35,
                 label=modal_button_label,
                 width=202)
 
@@ -761,7 +762,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             reset_tracing_button = bm.Button(
                 align='start',
                 button_type='danger',
-                height=44,
+                height=35,
                 label="Reset",
                 width=202)
 
@@ -848,7 +849,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.submit_button.align = "end"
         self.submit_button.height = 35
         self.submit_button.height_policy = "fixed"
-        self.submit_button.margin = (5, 5, -35, 5)
+        self.submit_button.margin = (0, 5, -35, 5)
         self.submit_button.width = 212
         self.submit_button.width_policy = "fixed"
 
@@ -860,10 +861,10 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         # Put all together --- Data provider on the Left
         top_row = row(Spacer(width=250),
                       column(self.get_filename_div(), self.submit_button),
-                      sizing_mode="scale_width")
+                      css_classes=['top-row'], sizing_mode="scale_width")
 
         bottom_row = row(self.reinit_panel, self.tabs,
-                         id="bottom_row", spacing=10)
+                         css_classes=['bottom-row'], id="bottom_row", spacing=10)
 
         all_content = column(top_row, bottom_row,
                              id="top_level_layout",
