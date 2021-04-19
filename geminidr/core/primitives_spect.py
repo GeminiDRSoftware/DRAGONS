@@ -35,6 +35,7 @@ from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
 import geminidr.interactive.server
+from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -2357,8 +2358,27 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
 
-            from copy import deepcopy
-            ad_out = deepcopy(ad)  # copy() causes infinite recursion
+            ad_out = astrodata.create(ad.phu)
+
+            # Here we should probably apply the mosaicking and distortion
+            # correction in order to fit a single sky model, but that requires
+            # a bit of reorganization of distortionCorrect; just get it working
+            # per extension for the time being, which should produce close
+            # results (like flat fielding per extension).
+            for ext in ad:
+
+                ndd = ext.nddata
+
+                # Need the gWCS distortion solution from the arc attached here
+                # (currently that happens within distortionCorrect), to allow
+                # evaluating the sample locations for fitting the sky model in
+                # undistorted co-ordinates.
+
+                sky_vals = ndd.data * 0.  # placeholder for BivariateSpline fn
+
+                ad_out.append(NDAstroData(data=sky_vals, wcs=ndd.wcs,
+                                          meta=ndd.meta, unit=ndd.unit,
+                                          copy=True, window=ndd.window))
 
             gt.mark_history(ad_out, primname=self.myself(),
                             keyword=timestamp_key)
