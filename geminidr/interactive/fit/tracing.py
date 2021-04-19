@@ -237,7 +237,7 @@ class TraceAperturesTab(Fit1DPanel):
     """
 
     def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
-                 weights=None, plot_height=400,
+                 weights=None, plot_height=600,
                  plot_width=600, plot_title="Trace Apertures - Fitting",
                  xlabel='x', ylabel='y'):
 
@@ -275,7 +275,7 @@ class TraceAperturesTab(Fit1DPanel):
         # Create the reset button, add its functionality and add it to the layout
         reset_button = bm.Button(align='start',
                                  button_type='danger',
-                                 height=44,
+                                 height=35,
                                  label="Reset",
                                  width=202)
 
@@ -288,6 +288,7 @@ class TraceAperturesTab(Fit1DPanel):
         controller_help = bm.Div(id=f"control_help_{self.index}",
                                  name=f"control_help_{self.index}",
                                  margin=(20, 0, 0, 0),
+                                 max_width=column_width,
                                  width=column_width,
                                  style={
                                      "color": "gray",
@@ -443,6 +444,7 @@ class TraceAperturesTab(Fit1DPanel):
         col = column(*fig_column,
                      css_classes=["column-plot"],
                      height_policy='fit',
+                     max_height=1000,
                      margin=(0, 10, 0, 0),
                      sizing_mode='scale_both',
                      width_policy='fit')
@@ -460,6 +462,7 @@ class TraceAperturesTab(Fit1DPanel):
         rms_div = bm.Div(align="start",
                          id=f"rms_div_{self.index}",
                          width=202,
+                         max_width=202,
                          style={
                              "background-color": "whitesmoke",
                              "border": "1px solid gainsboro",
