@@ -126,7 +126,7 @@ class PrimitiveVisualizer(ABC):
         """
         div = Div(text=f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}",
                   style={
-                         "color": "steelblue",
+                         "color": "dimgray",
                          "font-size": "16px",
                          "float": "right",
                   },

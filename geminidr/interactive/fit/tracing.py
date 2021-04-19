@@ -845,8 +845,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         super(Fit1DVisualizer, self).visualize(doc)
 
         # Edit elements
-        self.submit_button.align = ("center", "end")
-        self.submit_button.height = 44
+        self.submit_button.align = "end"
+        self.submit_button.height = 35
         self.submit_button.height_policy = "fixed"
         self.submit_button.width = 212
         self.submit_button.width_policy = "fixed"
@@ -857,8 +857,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.reinit_panel.width_policy = "fixed"
 
         # Put all together --- Data provider on the Left
-        top_row = row(Spacer(width=250), self.submit_button,
-                      self.get_filename_div(), sizing_mode="scale_width")
+        top_row = row(Spacer(width=250),
+                      column(self.get_filename_div(), self.submit_button),
+                      sizing_mode="scale_width")
 
         bottom_row = row(self.reinit_panel, self.tabs,
                          id="bottom_row", spacing=10)
