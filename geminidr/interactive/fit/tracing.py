@@ -848,6 +848,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.submit_button.align = "end"
         self.submit_button.height = 35
         self.submit_button.height_policy = "fixed"
+        self.submit_button.margin = (5, 5, -35, 5)
         self.submit_button.width = 212
         self.submit_button.width_policy = "fixed"
 
