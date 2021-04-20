@@ -375,7 +375,9 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                       sci_detsec, sci_datasec, sci_arraysec), start=1):
             datasec, new_datasec = map_data_sections_to_trimmed_data(datasec)
             new_datasec = new_datasec.view((int, 4))
-            sci_trimmed = np.array_equal(new_datasec, [[0, ext.shape[1], 0, ext.shape[0]]])
+            ext_shape = ext.shape[-2:]
+            sci_trimmed = np.array_equal(new_datasec, [[0, ext_shape[1], 0, ext_shape[0]]])
+            sci_multi_amp = isinstance(arrsec, list)
 
             for auxext in this_aux:
                 aux_detsec = auxext.detector_section()
@@ -383,16 +385,35 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                     continue
 
                 # If this is a perfect match, just do it and carry on
-                if auxext.shape == ext.shape:
+                if auxext.shape == ext_shape:
                     new_aux.append(auxext.nddata, reset_ver=True)
                     continue
 
                 aux_arrsec = auxext.array_section()
                 aux_datasec, aux_new_datasec = map_data_sections_to_trimmed_data(auxext.data_section())
                 aux_trimmed = np.array_equal(aux_new_datasec, [[0, auxext.shape[1], 0, auxext.shape[0]]])
+                aux_multi_amp = isinstance(aux_arrsec, list)
 
-                xshift = (arrsec.x1 - aux_arrsec.x1) // xbin
-                yshift = (arrsec.y1 - aux_arrsec.y1) // ybin
+                # Either both are multi-amp or neither is. If they both are,
+                # the science can't have more amps (but the aux can).
+                if ((sci_multi_amp ^ aux_multi_amp) or
+                        (sci_multi_amp and len(arrsec) > len(aux_arrsec))):
+                    raise OSError("Problem with array sections for "
+                                  f"{ext.filename} and {auxext.filename}")
+
+                # Assumption that the sections returned by array_section()
+                # are contiguous so we don't have to do an amp-by-amp match
+                if sci_multi_amp:
+                    x1 = min(sec.x1 for sec in arrsec)
+                    y1 = min(sec.y1 for sec in arrsec)
+                    ax1 = min(sec.x1 for sec in aux_arrsec)
+                    ay1 = min(sec.y1 for sec in aux_arrsec)
+                else:
+                    x1, y1 = arrsec.x1, arrsec.y1
+                    ax1, ay1 = aux_arrsec.x1, aux_arrsec.y1
+
+                xshift = (x1 - ax1) // xbin
+                yshift = (y1 - ay1) // ybin
                 aux_new_datasec = (aux_new_datasec.view((int, 4)) -
                                    np.array([xshift, xshift, yshift, yshift]))
 
@@ -403,8 +424,9 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # This means we can cut a single section from the aux data
                 if len(set(shifts)) == 1:
+                    print(shifts)
                     x1, y1 = shifts[0]
-                    x2, y2 = x1 + ext.shape[1], y1 + ext.shape[0]
+                    x2, y2 = x1 + ext_shape[1], y1 + ext_shape[0]
                     if at.section_contains((0, auxext.shape[1], 0, auxext.shape[0]),
                                            (x1, x2, y1, y2)):
                         new_aux.append(auxext.nddata[y1:y2, x1:x2], reset_ver=True)
@@ -416,8 +438,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 if aux_trimmed and not sci_trimmed and aux_type != 'bpm':
                     raise OSError(f"Auxiliary data {auxext.filename} is trimmed, but "
                                   f"science data {ext.filename} is untrimmed.")
-                nd = astrodata.NDAstroData(np.zeros(ext.shape, dtype=auxext.data.dtype if return_dtype is None else return_dtype),
-                                           mask=None if auxext.mask is None else np.zeros(ext.shape, dtype=auxext.mask.dtype),
+                nd = astrodata.NDAstroData(np.zeros(ext_shape, dtype=auxext.data.dtype if return_dtype is None else return_dtype),
+                                           mask=None if auxext.mask is None else np.zeros(ext_shape, dtype=auxext.mask.dtype),
                                            meta=auxext.nddata.meta)
                 if auxext.variance is not None:
                     nd.variance = np.zeros_like(nd.data)
