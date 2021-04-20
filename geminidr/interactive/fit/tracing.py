@@ -93,64 +93,6 @@ class TraceAperturesParametersUI(FittingParametersUI):
     Represents the panel with the adjustable parameters for fitting the
     trace.
     """
-
-    def __init__(self, vis, fit, fitting_parameters):
-        super().__init__(vis, fit, fitting_parameters)
-        # self.vis = vis
-        # self.fit = fit
-        # self.saved_sigma_clip = self.fit.sigma_clip
-        # self.fitting_parameters = fitting_parameters
-        # self.fitting_parameters_for_reset = \
-        #     {x: y for x, y in self.fitting_parameters.items()}
-        #
-        # self.description = bm.Div(
-        #     text=f"<p> 1D Fitting Function: "
-        #          f"<b> {vis.function_name.capitalize()} </b> </p>"
-        #          f"<p style='color: gray'> These are the parameters used to "
-        #          f"fit the tracing data. </p>",
-        #     min_width=100,
-        #     max_width=200,
-        #     sizing_mode='stretch_width',
-        #     style={"color": "black"},
-        #     width_policy='min',
-        # )
-        #
-        # self.niter_slider = interactive.build_text_slider(
-        #     "Max iterations", fitting_parameters["niter"], 1, 0, 10,
-        #     fitting_parameters, "niter", fit.perform_fit, slider_width=128)
-        #
-        # self.order_slider = interactive.build_text_slider(
-        #     "Order", fitting_parameters["order"], 1, min_order, max_order,
-        #     fitting_parameters, "order", fit.perform_fit, throttled=True,
-        #     slider_width=128)
-        #
-        # self.grow_slider = interactive.build_text_slider(
-        #     "Grow", fitting_parameters["grow"], 1, 0, 10,
-        #     fitting_parameters, "grow", fit.perform_fit,
-        #     slider_width=128)
-        #
-        # self.sigma_button = bm.CheckboxGroup(
-        #     labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
-        # self.sigma_button.on_change('active', self.sigma_button_handler)
-        #
-        # self.sigma_upper_slider = interactive.build_text_slider(
-        #     "Sigma (Upper)", fitting_parameters["sigma_upper"], 0.01, 1, 10,
-        #     fitting_parameters, "sigma_upper", self.sigma_slider_handler,
-        #     throttled=True, slider_width=128)
-        #
-        # self.sigma_lower_slider = interactive.build_text_slider(
-        #     "Sigma (Lower)", fitting_parameters["sigma_lower"], 0.01, 1, 10,
-        #     fitting_parameters, "sigma_lower", self.sigma_slider_handler,
-        #     throttled=True, slider_width=128)
-        #
-        # self.controls_column = [self.description,
-        #                         self.order_slider,
-        #                         self.niter_slider,
-        #                         self.grow_slider,
-        #                         self.sigma_button,
-        #                         self.sigma_upper_slider,
-        #                         self.sigma_lower_slider]
-
     def build_column(self):
         """
         Override the standard column order.
@@ -755,7 +697,15 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 label=modal_button_label,
                 width=202)
 
-            self.reinit_button.on_click(self.reconstruct_points)
+            def trace_apertures_handler(result):
+                if result:
+                    self.reconstruct_points()
+
+            self.make_ok_cancel_dialog(
+                btn=self.reinit_button,
+                message="Perform the tracing with the current parameters?",
+                callback=trace_apertures_handler)
+
             self.make_modal(self.reinit_button, modal_message)
 
             # Reset tracing parameter
@@ -763,10 +713,18 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 align='start',
                 button_type='danger',
                 height=35,
+                id='reset-tracing-pars',
                 label="Reset",
                 width=202)
 
-            reset_tracing_button.on_click(self.reset_tracing_panel)
+            def reset_dialog_handler(result):
+                if result:
+                    self.reset_tracing_panel()
+
+            self.make_ok_cancel_dialog(
+                btn=reset_tracing_button,
+                message='Do you want to reset the tracing parameters?',
+                callback=reset_dialog_handler)
 
             # Add to the Web UI
             reinit_widgets.append(self.reinit_button)
@@ -804,7 +762,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             # Update Slider Value
             self.widgets[key].update(value=reset_value)
-            self.widgets[key].update(value_throttled=reset_value)
 
             # Update Text Field via callback function
             for callback in self.widgets[key]._callbacks['value_throttled']:
