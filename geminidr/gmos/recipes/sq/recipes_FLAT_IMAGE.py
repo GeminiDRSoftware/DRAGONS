@@ -4,6 +4,8 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = {'GMOS', 'IMAGE', 'CAL', 'FLAT'}
 
+from .recipes_common import makeIRAFCompatible
+
 
 def makeProcessedFlat(p):
     """

@@ -5,6 +5,7 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'ARC'}
 
+from .recipes_common import makeIRAFCompatible
 
 def makeProcessedArc(p):
     p.prepare()

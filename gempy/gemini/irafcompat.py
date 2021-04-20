@@ -20,7 +20,7 @@ def pipeline2iraf(ad, verbose=False):
     return
 
 def compat_with_iraf_GMOS(ad, verbose):
-    
+    verbose=True
     # The mighty GMOS OBSMODE
     obsmode = _get_gmos_obsmode(ad)
     if verbose:
@@ -57,6 +57,15 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Copy WCS to PHU")
         _copy_wcs_to_phu(ad)
+    if 'NSCIEXT' not in ad.phu:
+        if verbose:
+            print("Add NSCIEXT to PHU")
+        ad.phu.set('NSCIEXT', len(ad), "For IRAF compatibility")
+    elif ad.phu['NSCIEXT'] != len(ad):
+        if verbose:
+            print("Update NSCIEXT to match number of science extensions")
+        ad.phu.set('NSCIEXT', len(ad), "For IRAF compatibility")
+
 
     return
 

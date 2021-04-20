@@ -5,6 +5,8 @@ Default is "reduceScience".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
 
+from .recipes_common import makeIRAFCompatible
+
 
 def reduceScience(p):
     """
@@ -75,6 +77,5 @@ def reduceStandard(p):
     p.storeProcessedStandard()
     p.writeOutputs()
 
-
-
 _default = reduceScience
+
