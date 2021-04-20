@@ -4,6 +4,7 @@ Default is "makeProcessedBias".
 """
 recipe_tags = {'GMOS', 'CAL', 'BIAS'}
 
+from .recipes_common import makeIRAFCompatible
 
 def makeProcessedBias(p):
     """

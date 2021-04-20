@@ -704,10 +704,11 @@ class AstroDataGmos(AstroDataGemini):
             id_descriptor_list = ['filter_name']
         elif 'SPECT' in tags and ('FLAT' in tags or 'SLITILLUM' in tags
                 or 'ARC' in tags):
-            # unclear if STANDARD requires central_wavelength
-            # depends on the effects of grating efficiency as f(cwave)
             id_descriptor_list = ['filter_name', 'central_wavelength']
-        else:
+        elif 'SPECT' in tags and 'STANDARD' in tags:
+            id_descriptor_list = ['observation_id', 'filter_name',
+                                  'central_wavelength']
+        else:  # SPECT science
             id_descriptor_list = ['observation_id', 'filter_name']
 
         # Add in all of the common descriptors required

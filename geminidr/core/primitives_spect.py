@@ -1124,7 +1124,7 @@ class Spect(PrimitivesBASE):
                         in_vacuo=in_vacuo)
 
                 # Find peaks; convert width FWHM to sigma
-                widths = 0.42466 * fwidth * np.arange(0.7, 1.2, 0.05)  # TODO!
+                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                       variance=variance, min_snr=min_snr,
                                                       min_sep=min_sep, reject_bad=False)
@@ -1673,7 +1673,7 @@ class Spect(PrimitivesBASE):
                 peaks_and_snrs = tracing.find_peaks(
                     profile, widths, mask=prof_mask & DQ.not_signal,
                     variance=1.0 if this_use_snr else None, reject_bad=False,
-                    min_snr=3, min_frac=0.2)
+                    min_snr=3, min_frac=0.2, pinpoint_index=0)
 
                 if peaks_and_snrs.size == 0:
                     log.warning("Found no sources")
@@ -2616,8 +2616,8 @@ class Spect(PrimitivesBASE):
 
                     # Recalculate aperture limits after rectification
                     apcoords = m_final(np.arange(ext.shape[dispaxis]))
-                    model_dict['aper_lower'] = aperture['aper_lower'] + (location - np.min(apcoords))
-                    model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
+                    model_dict['aper_lower'] = aperture['aper_lower'] # + (location - np.min(apcoords))
+                    model_dict['aper_upper'] = aperture['aper_upper'] # - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()
                                              if k not in all_column_names])
                     all_model_dicts.append(model_dict)
