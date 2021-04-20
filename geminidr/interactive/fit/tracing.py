@@ -88,7 +88,7 @@ DETAILED_HELP = """
 
 
 # noinspection PyUnusedLocal,PyMissingConstructor
-class TraceAperturesParametersUI(FittingParametersUI):
+class FittingParametersForTracedDataUI(FittingParametersUI):
     """
     Represents the panel with the adjustable parameters for fitting the
     trace.
@@ -195,7 +195,7 @@ class TraceAperturesTab(Fit1DPanel):
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
                                       listeners=listeners)
 
-        self.fitting_parameters_ui = TraceAperturesParametersUI(
+        self.fitting_parameters_ui = FittingParametersForTracedDataUI(
             visualizer, self.fit, self.fitting_parameters)
 
         self.pars_column, self.controller_help = self.create_pars_column(
