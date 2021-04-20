@@ -178,12 +178,12 @@ div.tab-content {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #8888aa88;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.2));
     z-index: 2;
     text-align: center;
     font-size: 32px;
     font-family: sans-serif;
-    padding-top: 200px;
+    padding-top: 70px;
 }
 
 .param_section {
