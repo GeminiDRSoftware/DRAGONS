@@ -316,6 +316,7 @@ class TraceAperturesTab(Fit1DPanel):
                         y_range=y_range)
 
         p_main.height_policy = 'fit'
+        p_main.margin = (15, 0, 0, 15)
         p_main.width_policy = 'fit'
 
         # Enable region selection ----------------------------------------------
@@ -361,6 +362,7 @@ class TraceAperturesTab(Fit1DPanel):
                          y_range=None)
 
         p_resid.height_policy = 'fixed'
+        p_resid.margin = (0, 0, 0, 15)
         p_resid.width_policy = 'fit'
 
         connect_figure_extras(p_resid, None, self.band_model)
@@ -400,8 +402,9 @@ class TraceAperturesTab(Fit1DPanel):
         if self.band_model:
             region_editor = RegionEditor(self.band_model)
             region_editor_wgt = region_editor.get_widget()
-            region_editor_wgt.align = "center"
+            region_editor_wgt.align = "start"
             region_editor_wgt.max_width = 835
+            region_editor_wgt.margin = (0, 0, 15, 15)
             region_editor_wgt.sizing_mode = "stretch_width"
             region_editor_wgt.width_policy = "fit"
             fig_column.append(region_editor_wgt)
