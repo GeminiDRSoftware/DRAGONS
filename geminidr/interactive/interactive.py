@@ -1191,7 +1191,7 @@ class RegionEditor(GIRegionListener):
     """
     def __init__(self, region_model):
         self.text_input = TextInput(
-            title="Regions (i.e. 100:500,510:900,950: Press 'Enter' to apply):",
+            title="Regions (i.e. 101:500,511:900,951: Press 'Enter' to apply):",
             max_width=600,
             sizing_mode="stretch_width",
             width_policy="max",
@@ -1203,7 +1203,7 @@ class RegionEditor(GIRegionListener):
 
         self.error_message = Div(text="<b> <span style='color:red'> "
                                       "  Please use comma separated : delimited "
-                                      "  values (i.e. 100:500,510:900,950:)"
+                                      "  values (i.e. 101:500,511:900,951:)"
                                       "</span></b>")
 
         self.error_message.visible = False
