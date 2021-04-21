@@ -1,4 +1,9 @@
 /* https://codepen.io/KanatSahanov/pen/raGXXa */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 
 body {
     background-color: white;
@@ -96,6 +101,10 @@ div.tab-content {
 .bk-canvas-events {
     cursor: crosshair;
 }
+.bk-root {
+    height: 100%;
+    width: 100%;
+}
 
 .bk-root .bk-button-bar {
   background-color: whitesmoke;
@@ -144,6 +153,11 @@ div.tab-content {
 .bk-root .bk-toolbar.bk-right .bk-toolbar-button.bk-active {
   background-color: white;
   filter: brightness(80%);
+}
+
+.content {
+    display: table-row;
+    height: 100%;
 }
 
 .controller_div {
@@ -229,6 +243,13 @@ div.tab-content {
     bottom: 0;
     text-align: right;
     width: 100%;
+
+    /* Used in traceApertures - which one do we want to keep? */
+    /*
+        position: static;
+        text-align: right;
+        width: inherit;
+    */
 }
 
 #footer a {
@@ -313,6 +334,7 @@ div.tab-content {
 
 #top .logo {
     float: left;
+    margin-bottom: -35px;
     padding: 10px;
 }
 
