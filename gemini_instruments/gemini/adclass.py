@@ -261,9 +261,9 @@ class AstroDataGemini(AstroData):
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
-                try:
+                if self.is_single:
                     sections = '[1:{1},1:{0}]'.format(*self.shape)
-                except AttributeError:
+                else:
                     sections = ['[1:{1},1:{0}]'.format(*ext.shape)
                                 for ext in self]
             else:
