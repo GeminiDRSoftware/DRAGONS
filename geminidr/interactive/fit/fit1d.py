@@ -828,10 +828,13 @@ class Fit1DPanel:
             fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
+
         if central_plot:
-            self.component = row(col, controls, Spacer(width=20))
+            self.component = row(col, controls, Spacer(width=20),
+                                 css_classes=["tab-content"], spacing=5)
         else:
-            self.component = row(controls, col)
+            self.component = row(controls, col,
+                                 css_classes=["tab-content"], spacing=5)
 
     def model_change_handler(self):
         """
@@ -1157,17 +1160,28 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col = column(self.tabs, )
         col.sizing_mode = 'scale_width'
 
+        self.submit_button.align = 'end'
+        self.submit_button.height = 35
+        self.submit_button.height_policy = "fixed"
+        self.submit_button.margin = (0, 5, -30, 5)
+        self.submit_button.width = 212
+        self.submit_button.width_policy = "fixed"
+
         layout_ls = list()
         if self.filename_info:
             # self.submit_button.align = 'center'
             # layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
             #                      sizing_mode="scale_width"))
             self.submit_button.align = 'end'
-            layout_ls.append(row(Spacer(width=250), column(self.get_filename_div(), self.submit_button),
-                                 Spacer(width=10), align="end"))
+            layout_ls.append(row(Spacer(width=250),
+                                 column(self.get_filename_div(), self.submit_button),
+                                 Spacer(width=10),
+                                 align="end", css_classes=['top-row']))
             # sizing_mode="scale_width"))
         else:
-            layout_ls.append(self.submit_button)
+            layout_ls.append(self.submit_button,
+                             align="end", css_classes=['top-row'])
+
         if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
             layout_ls.append(Spacer(height=10))
