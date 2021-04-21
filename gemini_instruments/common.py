@@ -11,7 +11,6 @@ gemini_instruments, and:
     - it doesn't make sense to put the code in a method, as it
       doesn't rely on internal knowledge of a class.
 """
-
 __all__ = ['Section']
 
 from .gmu import sectionStrToIntList
@@ -26,8 +25,8 @@ class Section:
                       for x in (f"{axis}1", f"{axis}2")]
         self._dict = {k: v for k, v in zip(axis_names, args +
                                            ('',) * len(kwargs))}
+        self._axis_names = tuple(self._dict.keys())
         self._dict.update(kwargs)
-        self._naxes = len(self._dict) // 2
         if list(self._dict.values()).count('') or (len(self._dict) % 2):
             raise ValueError("Cannot initialize 'Section' object")
 
@@ -36,27 +35,33 @@ class Section:
             return self._dict[attr]
         raise AttributeError(f"No such attribute '{attr}'")
 
+    def __getitem__(self, item):
+        try:
+            return self._dict[self._axis_names[item]]
+        except TypeError:  # allow to work like getattr
+            return self._dict[item]
+
     def __iter__(self):
-        for k in self._dict.keys():
+        for k in self._axis_names:
             yield self._dict[k]
 
     def __repr__(self):
         return ("Section(" +
                 ", ".join([f"{k}={self._dict[k]}"
-                           for k in self._dict.keys()]) + ")")
+                           for k in self._axis_names]) + ")")
 
     def __str__(self):
         """Produce string of style '[x1:x2,y1:y2]' that is 1-indexed
         and end-inclusive"""
         return ("[" +
-                ",".join([":".join([str(self._dict[f"{axis}1"]+1),
-                                    str(self._dict[f"{axis}2"])])
-                          for axis in self.AXIS_ORDER[:self._naxes]]) + "]")
+                ",".join([":".join([str(self._dict[axis]+1),
+                                    str(self._dict[axis.replace("1", "2")])])
+                          for axis in self._axis_names[::2]]) + "]")
 
     def asslice(self):
         """Return the Section object as a slice/list of slices"""
-        return [slice(self._dict[f"{axis}1"], self._dict[f"{axis}2"])
-                for axis in reversed(self.AXIS_ORDER[:self._naxes])]
+        return [slice(self._dict[axis], self._dict[axis.replace("1", "2")])
+                for axis in reversed(self._axis_names[::2])]
 
     @staticmethod
     def from_shape(value):
