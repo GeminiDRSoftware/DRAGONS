@@ -13,7 +13,6 @@ gemini_instruments, and:
 """
 __all__ = ['Section']
 
-from builtins import tuple as _tuple
 
 class Section(tuple):
     """A class to handle n-dimensional sections"""
@@ -27,7 +26,7 @@ class Section(tuple):
         _dict.update(kwargs)
         if list(_dict.values()).count('') or (len(_dict) % 2):
             raise ValueError("Cannot initialize 'Section' object")
-        instance = _tuple.__new__(cls, tuple(_dict.values()))
+        instance = tuple.__new__(cls, tuple(_dict.values()))
         instance._axis_names = tuple(_dict.keys())
         return instance
 
