@@ -10,25 +10,29 @@
 
 {% block inner_body %}
 <!-- modal, for long running bokeh code -->
-<div id="top">
-    <div id="top-icon"></div>
-    <div id="top-banner">
-        <div id="top-primitive-info">
-            <div id="top-primitive-name">{{ primitive_name }}</div>
+<div class="container">
+
+    <header id="top">
+        <div class="logo"><img src="dragons/static/DRAGONS.png"></div>
+        <div class="banner">
+            <span class="title">{{ primitive_name }}</span>
         </div>
-    </div>
-</div>
-<div id="plot_div" style="border: 0px solid">
-    <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
-    <div id="main_div">
-        {% block main_div %}
-          <div class="detailed_help">
-            {{ help_text | indent(10) }}
-          </div>
-        {% endblock %}
-    </div>
-</div>
-<div id="footer">
-Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
+    </header>
+
+    <section id="plot_div" class="content" style="border: 0px solid">
+        <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
+        <div id="main_div" class="help-page">
+            {% block main_div %}
+              <div class="detailed_help">
+                {{ help_text | indent(10) }}
+              </div>
+            {% endblock %}
+        </div>
+    </section>
+
+  <header id="footer">
+  Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
+  </header>
+
 </div>
 {% endblock %}

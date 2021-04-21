@@ -183,6 +183,12 @@ div.tab-content {
     text-align: left;
 }
 
+.help-page {
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    margin: auto;
+}
+
 .modal_overlay {
     visibility: hidden;
     position: fixed;
