@@ -47,7 +47,7 @@ class Section(tuple):
                 ", ".join([f"{k}={self.__dict__[k]}"
                            for k in self._axis_names]) + ")")
 
-    def __str__(self):
+    def asIRAFsection(self):
         """Produce string of style '[x1:x2,y1:y2]' that is 1-indexed
         and end-inclusive"""
         return ("[" +
