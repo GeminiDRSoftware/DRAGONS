@@ -261,8 +261,8 @@ class TraceAperturesTab(Fit1DPanel):
                                  })
 
         controls_ls = fit_pars_ui
-        controls_ls.append(rms_div)
         controls_ls.append(reset_button)
+        controls_ls.append(rms_div)
         controls_ls.append(controller_help)
 
         controls_col = column(*controls_ls,
@@ -881,7 +881,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         "max_missed": RangeField("Max Missed", int, 5, min=0),
         "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
         "nsum": RangeField("Lines to sum", int, 10, min=1),
-        "step": RangeField("Tracing step: ", int, 10, min=1),
+        "step": RangeField("Tracing step", int, 10, min=1),
     }
 
     if (2 - ext.dispersion_axis()) == 1:
