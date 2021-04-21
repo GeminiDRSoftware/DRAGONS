@@ -830,11 +830,13 @@ class Fit1DPanel:
         col.sizing_mode = 'scale_width'
 
         if central_plot:
-            self.component = row(col, controls, Spacer(width=20),
-                                 css_classes=["tab-content"], spacing=5)
+            self.component = row(col, controls,
+                                 css_classes=["tab-content"],
+                                 spacing=10)
         else:
             self.component = row(controls, col,
-                                 css_classes=["tab-content"], spacing=5)
+                                 css_classes=["tab-content"],
+                                 spacing=10)
 
     def model_change_handler(self):
         """
