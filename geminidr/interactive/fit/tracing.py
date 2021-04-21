@@ -857,7 +857,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     reinit_extras = {
         "max_missed": RangeField("Max Missed", int, 5, min=0),
         "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
-        "nsum": RangeField("Number of lines to sum", int, 10, min=1),
+        "nsum": RangeField("Lines to sum", int, 10, min=1),
         "step": RangeField("Tracing step: ", int, 10, min=1),
     }
 
