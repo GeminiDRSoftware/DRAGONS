@@ -766,8 +766,6 @@ class ApertureView:
     def update_viewport_callback(self, start, end):
         self._pending_update_viewport = False
         self._reload_holoviews()
-        for widget in self.widgets.values():
-            widget[1].update_viewport(start, end)
 
     def update_aperture(self, aperture_id):
         """Handle an updated or added aperture."""
