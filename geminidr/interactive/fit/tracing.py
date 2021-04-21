@@ -898,15 +898,16 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     visualizer = TraceAperturesVisualizer(
         data_provider,
         config=config,
+        domains=domain_list,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
+        primitive_name="traceApertures",
+        reinit_extras=reinit_extras,
         tab_name_fmt="Aperture {}",
+        title="Interactive Trace Apertures",
         xlabel=xlabel,
         ylabel=ylabel,
-        reinit_extras=reinit_extras,
-        domains=domain_list,
-        template="trace_apertures.html",
-        title="traceApertures")
+    )
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()

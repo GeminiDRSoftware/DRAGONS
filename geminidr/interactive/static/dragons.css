@@ -300,6 +300,13 @@ div.tab-content {
     outline: none;
 }
 
+#main_div {
+    height: 100%;
+    padding: 0px 15px 0px 15px;
+    display: table-cell;
+    overflow-y: auto;
+    }
+
 #plot_div {
     margin: 8px 8px 30px 8px;
 }
