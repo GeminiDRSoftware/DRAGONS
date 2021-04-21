@@ -21,6 +21,7 @@ class Section:
     AXIS_ORDER = "xyzuvw"
 
     def __init__(self, *args, **kwargs):
+        # Ensure that the order of keys is what we want
         axis_names = [x for axis in self.AXIS_ORDER
                       for x in (f"{axis}1", f"{axis}2")]
         self._dict = {k: v for k, v in zip(axis_names, args +
@@ -35,10 +36,14 @@ class Section:
             return self._dict[attr]
         raise AttributeError(f"No such attribute '{attr}'")
 
+    def __iter__(self):
+        for k in self._dict.keys():
+            yield self._dict[k]
+
     def __repr__(self):
         return ("Section(" +
                 ", ".join([f"{k}={self._dict[k]}"
-                           for k in sorted(self._dict.keys())]) + ")")
+                           for k in self._dict.keys()]) + ")")
 
     def __str__(self):
         """Produce string of style '[x1:x2,y1:y2]' that is 1-indexed
