@@ -13,7 +13,7 @@ gemini_instruments, and:
 """
 __all__ = ['Section']
 
-from .gmu import sectionStrToIntList
+import numpy as np
 
 class Section:
     """A class to handle n-dimensional sections"""
@@ -29,6 +29,9 @@ class Section:
         self._dict.update(kwargs)
         if list(self._dict.values()).count('') or (len(self._dict) % 2):
             raise ValueError("Cannot initialize 'Section' object")
+
+    def __array__(self):
+        return np.array(tuple(self))
 
     def __getattr__(self, attr):
         if attr in self._dict:
