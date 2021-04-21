@@ -14,11 +14,58 @@ gemini_instruments, and:
 
 __all__ = ['Section']
 
-from collections import namedtuple
-
 from .gmu import sectionStrToIntList
 
-Section = namedtuple('Section', 'x1 x2 y1 y2')
+class Section:
+    """A class to handle n-dimensional sections"""
+    AXIS_ORDER = "xyzuvw"
+
+    def __init__(self, *args, **kwargs):
+        axis_names = [x for axis in self.AXIS_ORDER
+                      for x in (f"{axis}1", f"{axis}2")]
+        self._dict = {k: v for k, v in zip(axis_names, args +
+                                           ('',) * len(kwargs))}
+        self._dict.update(kwargs)
+        self._naxes = len(self._dict) // 2
+        if list(self._dict.values()).count('') or (len(self._dict) % 2):
+            raise ValueError("Cannot initialize 'Section' object")
+
+    def __getattr__(self, attr):
+        if attr in self._dict:
+            return self._dict[attr]
+        raise AttributeError(f"No such attribute '{attr}'")
+
+    def __repr__(self):
+        return ("Section(" +
+                ", ".join([f"{k}={self._dict[k]}"
+                           for k in sorted(self._dict.keys())]) + ")")
+
+    def __str__(self):
+        """Produce string of style '[x1:x2,y1:y2]' that is 1-indexed
+        and end-inclusive"""
+        return ("[" +
+                ",".join([":".join([str(self._dict[f"{axis}1"]+1),
+                                    str(self._dict[f"{axis}2"])])
+                          for axis in self.AXIS_ORDER[:self._naxes]]) + "]")
+
+    def asslice(self):
+        """Return the Section object as a slice/list of slices"""
+        return [slice(self._dict[f"{axis}1"], self._dict[f"{axis}2"])
+                for axis in reversed(self.AXIS_ORDER[:self._naxes])]
+
+    @staticmethod
+    def from_shape(value):
+        """produce a Section object defining a given shape"""
+        return Section(*[y for x in reversed(value) for y in (0, x)])
+
+    @staticmethod
+    def from_string(value):
+        """The inverse of __str__, produce a Section object from a string"""
+        return Section(*[y for x in value.strip("[]").split(",")
+                         for start, end in [x.split(":")]
+                         for y in (None if start == '' else int(start)-1,
+                                   None if end == '' else int(end))])
+
 
 def build_group_id(ad, desc_list, prettify=(), force_list=(), additional=None):
     """
@@ -73,22 +120,6 @@ def build_group_id(ad, desc_list, prettify=(), force_list=(), additional=None):
     # Create and return the final group_id string
     return '_'.join(desc_object_string_list)
 
-def section_to_tuple(section):
-    """
-    Takes a string describing a section in the raw format found on
-    headers ("[x1:x2,y1:y2]"), and returns a `Section` named tuple
-    with the values as integers.
-
-    Parameters
-    ----------
-    section: str
-             The section (in the form [x1:x2,y1:y2]) to be converted to a tuple
-
-    Returns
-    -------
-    An instance of `Section`
-    """
-    return Section(*sectionStrToIntList(section))
 
 def build_ir_section(ad, pretty=False):
     """

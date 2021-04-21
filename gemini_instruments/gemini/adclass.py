@@ -18,7 +18,7 @@ from astrodata import astro_data_descriptor
 from astrodata import TagSet
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
-from ..common import section_to_tuple
+from ..common import Section
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -257,15 +257,15 @@ class AstroDataGemini(AstroData):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = (str if pretty else section_to_tuple)
+            value_filter = (str if pretty else Section.from_string)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
                 try:
-                    sections = '[1:{1},1:{0}]'.format(*self.data.shape)
+                    sections = '[1:{1},1:{0}]'.format(*self.shape)
                 except AttributeError:
                     sections = ['[1:{1},1:{0}]'.format(*ext.shape)
-                                for ext in self.data]
+                                for ext in self]
             else:
                 sections = self.hdr.get(keyword)
             if self.is_single:
