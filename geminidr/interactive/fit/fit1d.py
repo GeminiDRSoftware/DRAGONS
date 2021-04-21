@@ -46,8 +46,9 @@ USER_MASK_NAME = 'rejected (user)'
 
 class InteractiveModel(ABC):
     MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
-    MARKERS = ['triangle', 'triangle', 'circle', 'square']
-    PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')  # Category10[4]
+    MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square']
+    # PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')
+    PALETTE = ('lightsteelblue', 'lightskyblue', 'black', 'darksalmon')  # Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -821,7 +822,11 @@ class Fit1DPanel:
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3, color='red')
+        self.line = p_main.line(x='xlinspace',
+                                y='model',
+                                source=self.fit.evaluation,
+                                line_width=3,
+                                color='crimson')
 
         if self.band_model:
             region_editor = RegionEditor(self.band_model)

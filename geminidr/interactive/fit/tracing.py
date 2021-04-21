@@ -395,7 +395,7 @@ class TraceAperturesTab(Fit1DPanel):
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model',
                                 source=self.fit.evaluation, line_width=3,
-                                color='red')
+                                color='crimson')
 
         fig_column = [p_main, p_resid]
 
