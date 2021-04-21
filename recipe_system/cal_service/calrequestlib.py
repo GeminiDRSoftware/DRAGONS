@@ -88,8 +88,6 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
     """
     options = {'central_wavelength': {'asMicrometers': True}}
 
-    handle_returns = (lambda x: x) if is_local else _handle_returns
-
     rq_events = []
     for ad in inputs:
         log.debug("Received calibration request for {}".format(ad.filename))
@@ -104,7 +102,7 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
             else:
                 kwargs = options[desc_name] if desc_name in list(options.keys()) else {}
                 try:
-                    dv = handle_returns(descriptor(**kwargs))
+                    dv = _handle_returns(descriptor(**kwargs))
                 except:
                     dv = None
                 # Munge list to value if all item(s) are the same
@@ -118,10 +116,11 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
 
 
 def _handle_returns(dv):
-    # TODO: This sends "old style" request for data section, where the section
-    #       is converted to a regular 4-element list. In "new style" requests,
-    #       we send the Section as-is. This will need to be revised when
-    #       (eventually) FitsStorage upgrades to new AstroData
-    if isinstance(dv, list) and isinstance(dv[0], Section):
-        return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
+    # This turns all namedtuple objects into simple tuples so that the str()
+    # method drops the name of the class and they can be interpreted without
+    # needing that class to be defined at the other end of the transportation
+    if isinstance(dv, list) and isinstance(dv[0], tuple):
+        return [tuple(el) for el in dv]
+    elif isinstance(dv, tuple):
+        return tuple(dv)
     return dv
