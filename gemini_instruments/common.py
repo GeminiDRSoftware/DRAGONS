@@ -13,57 +13,52 @@ gemini_instruments, and:
 """
 __all__ = ['Section']
 
-import numpy as np
+from builtins import tuple as _tuple
 
-class Section:
+class Section(tuple):
     """A class to handle n-dimensional sections"""
-    AXIS_ORDER = "xyzuvw"
 
-    def __init__(self, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):
         # Ensure that the order of keys is what we want
-        axis_names = [x for axis in self.AXIS_ORDER
+        axis_names = [x for axis in "xyzuvw"
                       for x in (f"{axis}1", f"{axis}2")]
-        self._dict = {k: v for k, v in zip(axis_names, args +
-                                           ('',) * len(kwargs))}
-        self._axis_names = tuple(self._dict.keys())
-        self._dict.update(kwargs)
-        if list(self._dict.values()).count('') or (len(self._dict) % 2):
+        _dict = {k: v for k, v in zip(axis_names, args +
+                                      ('',) * len(kwargs))}
+        _dict.update(kwargs)
+        if list(_dict.values()).count('') or (len(_dict) % 2):
             raise ValueError("Cannot initialize 'Section' object")
+        instance = _tuple.__new__(cls, tuple(_dict.values()))
+        instance._axis_names = tuple(_dict.keys())
+        return instance
 
-    def __array__(self):
-        return np.array(tuple(self))
+    @property
+    def __dict__(self):
+        return dict(zip(self._axis_names, self))
+
+    def __getnewargs__(self):
+        return tuple(self)
 
     def __getattr__(self, attr):
-        if attr in self._dict:
-            return self._dict[attr]
+        if attr in self._axis_names:
+            return self.__dict__[attr]
         raise AttributeError(f"No such attribute '{attr}'")
-
-    def __getitem__(self, item):
-        try:
-            return self._dict[self._axis_names[item]]
-        except TypeError:  # allow to work like getattr
-            return self._dict[item]
-
-    def __iter__(self):
-        for k in self._axis_names:
-            yield self._dict[k]
 
     def __repr__(self):
         return ("Section(" +
-                ", ".join([f"{k}={self._dict[k]}"
+                ", ".join([f"{k}={self.__dict__[k]}"
                            for k in self._axis_names]) + ")")
 
     def __str__(self):
         """Produce string of style '[x1:x2,y1:y2]' that is 1-indexed
         and end-inclusive"""
         return ("[" +
-                ",".join([":".join([str(self._dict[axis]+1),
-                                    str(self._dict[axis.replace("1", "2")])])
+                ",".join([":".join([str(self.__dict__[axis]+1),
+                                    str(self.__dict__[axis.replace("1", "2")])])
                           for axis in self._axis_names[::2]]) + "]")
 
     def asslice(self):
         """Return the Section object as a slice/list of slices"""
-        return [slice(self._dict[axis], self._dict[axis.replace("1", "2")])
+        return [slice(self.__dict__[axis], self.__dict__[axis.replace("1", "2")])
                 for axis in reversed(self._axis_names[::2])]
 
     @staticmethod
