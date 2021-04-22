@@ -11,6 +11,7 @@ gemini_instruments, and:
     - it doesn't make sense to put the code in a method, as it
       doesn't rely on internal knowledge of a class.
 """
+from astrodata import Section
 
 def build_group_id(ad, desc_list, prettify=(), force_list=(), additional=None):
     """
