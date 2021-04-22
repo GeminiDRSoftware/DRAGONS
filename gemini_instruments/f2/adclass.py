@@ -1,11 +1,12 @@
 import re
 import math
 
-from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
+from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
+                       returns_list, Section)
 from ..gemini import AstroDataGemini
 from .lookup import array_properties, nominal_zeropoints
 
-from ..common import Section, build_group_id
+from ..common import build_group_id
 from .. import gmu
 
 

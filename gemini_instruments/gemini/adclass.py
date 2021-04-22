@@ -15,10 +15,9 @@ import numpy as np
 from astrodata import AstroData
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
-from astrodata import TagSet
+from astrodata import TagSet, Section
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
-from ..common import Section
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation

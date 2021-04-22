@@ -5,8 +5,6 @@
 # ------------------------------------------------------------------------------
 import hashlib
 
-from gemini_instruments.common import Section
-
 from gempy.utils import logutils
 
 # GetterError is needed by a module that imports this one
