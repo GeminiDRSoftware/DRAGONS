@@ -21,7 +21,7 @@
 
     <section id="plot_div" class="content" style="border: 0px solid">
         <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
-        <div id="main_div" class="help-page">
+        <div id="main_div">
             {% block main_div %}
               <div class="detailed_help">
                 {{ help_text | indent(10) }}
@@ -30,9 +30,9 @@
         </div>
     </section>
 
-  <header id="footer">
+  <footer id="footer">
   Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
-  </header>
+  </footer>
 
 </div>
 {% endblock %}
