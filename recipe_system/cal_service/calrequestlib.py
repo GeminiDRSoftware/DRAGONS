@@ -117,8 +117,10 @@ def _handle_returns(dv):
     # This turns all namedtuple objects into simple tuples so that the str()
     # method drops the name of the class and they can be interpreted without
     # needing that class to be defined at the other end of the transportation
+    # TODO: 4/22/2021: Coercing to lists to ensure functionality with
+    #  existing FitsStorage code
     if isinstance(dv, list) and isinstance(dv[0], tuple):
-        return [tuple(el) for el in dv]
+        return [list(el) for el in dv]
     elif isinstance(dv, tuple):
-        return tuple(dv)
+        return list(dv)
     return dv
