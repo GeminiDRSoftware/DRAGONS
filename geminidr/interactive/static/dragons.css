@@ -244,18 +244,9 @@ div.tab-content {
     font-style: normal;
     margin: 10px 0px 0px 0px;
     padding: 5px;
-    position: fixed;
-    left: 0;
-    bottom: 0;
+    position: static;
     text-align: right;
-    width: 100%;
-
-    /* Used in traceApertures - which one do we want to keep? */
-    /*
-        position: static;
-        text-align: right;
-        width: inherit;
-    */
+    width: inherit;
 }
 
 #footer a {
