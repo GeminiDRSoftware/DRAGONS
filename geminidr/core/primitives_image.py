@@ -10,7 +10,7 @@ from copy import deepcopy
 from scipy.ndimage import binary_dilation
 
 from astrodata.provenance import add_provenance
-from gemini_instruments.common import Section
+from astrodata import Section
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.utils.md5 import md5sum
