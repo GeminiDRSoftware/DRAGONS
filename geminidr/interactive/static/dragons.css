@@ -19,6 +19,7 @@ body {
  */
 div.container {
     background-color: whitesmoke;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
     display: table;
     height: 100%;
     margin: auto;
@@ -34,7 +35,7 @@ div.plot_tools_help div {
     padding: 4px;
     margin: 8px;
     background: white;
-    filter: drop-shadow(0px 0px 5px whitesmoke);
+    filter: drop-shadow(2px 2px 2px gray);
 }
 
 div.plot_tools_help div span {
@@ -49,10 +50,8 @@ div.scrollable {
 /**
  * This element holds the tab area
  */
-.bk.tab-content {
+div.tab-content {
     background-color: white;
-    border-left: solid 1px gainsboro;
-    border-right: solid 1px gainsboro;
 }
 
 .bk-btn:active {
@@ -191,6 +190,12 @@ div.scrollable {
     text-align: left;
 }
 
+.help-page {
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    margin: auto;
+}
+
 .modal_overlay {
     visibility: hidden;
     position: fixed;
@@ -244,7 +249,7 @@ div.scrollable {
     color: gainsboro;
     font-size: 14px;
     font-style: normal;
-    margin: 0px;
+    margin: 10px 0px 0px 0px;
     padding: 5px;
     position: static;
     text-align: right;
@@ -307,7 +312,7 @@ div.scrollable {
     }
 
 #plot_div {
-    margin-bottom: 27px;
+    margin: 8px 8px 30px 8px;
 }
 
 #top {
