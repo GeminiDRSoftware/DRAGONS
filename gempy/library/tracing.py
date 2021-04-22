@@ -802,6 +802,18 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
     return optimize.bisect(func, limit, peak)
 
 
+def stack_slit(ext, percentile=50, dispaxis=None):
+    if dispaxis is None:
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+    if ext.mask is None:
+        return np.percentile(ext.data, percentile, axis=dispaxis)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='All-NaN slice')
+        profile = np.nanpercentile(np.where(ext.mask, np.nan, ext.data),
+                                   percentile, axis=dispaxis)
+    return np.nan_to_num(profile, copy=False, nan=np.nanmedian(profile))
+
+
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
