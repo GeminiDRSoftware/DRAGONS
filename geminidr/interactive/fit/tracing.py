@@ -11,8 +11,8 @@ from copy import deepcopy
 from gempy.library import astromodels, astrotools as at, tracing
 from gempy.library.config import RangeField
 
-from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
+from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
     connect_figure_extras, GIRegionModel, RegionEditor)
 
@@ -22,93 +22,6 @@ from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
 
 __all__ = ["interactive_trace_apertures", ]
 
-DETAILED_HELP = """
-    <h1>Help for traceApertures</h1>
-    
-    <p> Traces the spectrum in 2D spectral images for each aperture center 
-        stored in the APERTURE on each extension. The tracing starts at the 
-        brightest region, instead of one of the edges of the detector. This 
-        allows overcoming issues with sources with (almost) no flux in the 
-        blue/red extremes. </p> 
-        
-    <p> The leftmost panel, named Tracing Parameters, in the Web User Interface 
-        contains parameters used to perform the tracing, i.e., to follow how the 
-        position in the spatial direction of our target changes along the 
-        spectral direction. The Tracing Parameters are applied to all 
-        appertures. </p>
-        
-    <p> You can find the traced data in the top plot where X represents the 
-        pixels in the spectral direction and Y the pixels in the spatial 
-        direction. Each traced data is represented by a black circle. </p>
-    
-    <p> You can perform a new tracing by changing the Tracing Parameters and 
-        by clicking on the Trace Apertures button. Tracing can take a few 
-        seconds deppending on your input parameters. If tracing fails, your will 
-        receive an error message and the Web UI will return to the previous 
-        working state. </p>
-    
-    <p> The red line in the top plot shows the function that better represents 
-        how our target's spatial position varies continuously along the 
-        dispersion direction, following the traced data using a Chebyshev 
-        function. <p>  
-         
-    <p> You can change the parameters in the rightmost column within each tab, 
-        which contains the Fitting Parameters for each APERTURE. If you change 
-        a parameter, this primitive will fit again using the most recent parameters 
-        and update the line in the plot area. </p>
-        
-    <p> For both Tracing Parameters and Fitting Parameters, you will find a 
-        reset button. Each reset button only resets the parameters in the same 
-        column it belongs. </p>        
-    
-    <p> Once you are satisfied with the tracing and the fit, press the Accept 
-        button at the top right to continue your data reduction using the 
-        parameters on screen. </p>
-    
-    <h2> Tracing Parameters: </h2>
-    <dl>
-        <dt> Max Missed </dt>
-        <dd> Maximum number of steps to miss before a line is lost. </dd> 
-    
-        <dt> Max Shifted </dt>
-        <dd> Maximum shift per pixel in line position. </dd>
-    
-        <dt> Number of Lines to Sum </dt>
-        <dd> Number of lines to sum. </dd> 
-    
-        <dt> Tracing Step </dt>
-        <dd> Step in rows/columns for tracing. </dd>
-    </dl>
-    
-    <h2> Fitting Parameters </h2>
-    <dl> 
-        <dt> Function </dt>
-        <dd> This is the Function used to fit the traced data. For this 
-        primitive, we use Chebyshev. </dd>
-    
-        <dt> Order </dt>
-        <dd> Order of Chebyshev function. </dd> 
-    
-        <dt> Max Iteractions </dt>
-        <dd> Maximum number of rejection iterations. You can skip data rejection
-             if you set this parameter to Zero. </dd>
-    
-        <dt> Sigma Clip </dt> 
-        <dd> Reject outliers using sigma-clip. </dd>
-    
-        <dt> Sigma (Lower) </dt>
-        <dd> Number of sigma used as lower threshold. </dd>
-    
-        <dt> Sigma (Upper) </dt>
-        <dd> Number of sigma used as upper threshold/ </dd>
-        
-        <dt> Grow </dt> 
-        <dd> If a point is rejected, then any points within a distance grow get 
-             rejected too. </dd>
-
-    </dl>
-    """
-
 
 # noinspection PyUnusedLocal,PyMissingConstructor
 class FittingParametersForTracedDataUI(FittingParametersUI):
@@ -116,6 +29,7 @@ class FittingParametersForTracedDataUI(FittingParametersUI):
     Represents the panel with the adjustable parameters for fitting the
     trace.
     """
+
     def build_column(self):
         """
         Override the standard column order.
@@ -191,14 +105,16 @@ class TraceAperturesTab(Fit1DPanel):
         X coordinate values
     y : :class:`~numpy.ndarray`
         Y coordinate values
-    xlabel : str
+    xlabel : str, optional
         label for X axis
-    ylabel : str
+    ylabel : str, optional
         label for Y axis
-    plot_width : int
+    plot_width : int, optional
         width of plot area in pixels
-    plot_height : int
+    plot_height : int, optional
         height of plot area in pixels
+    weights : :class:`~numpy.ndarray`, optional
+        Coordinates weights.
     """
 
     def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
@@ -474,8 +390,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     Custom visualizer for traceApertures().
     """
 
-    def __init__(self, data_source, fitting_parameters, config, domains=None,
-                 filename_info=None, modal_button_label="Trace apertures",
+    def __init__(self, data_source, fitting_parameters, config,
+                 domains=None, filename_info=None, help_text=None,
+                 modal_button_label="Trace apertures",
                  modal_message="Tracing apertures...",
                  primitive_name=None, reinit_extras=None, reinit_params=None,
                  tab_name_fmt='{}', template="fit1d.html", title=None,
@@ -483,11 +400,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         super(Fit1DVisualizer, self).__init__(config=config,
                                               filename_info=filename_info,
+                                              help_text=help_text,
                                               primitive_name=primitive_name,
                                               template=template,
                                               title=title)
 
-        self.help_text = DETAILED_HELP
         self.layout = None
         self.last_changed = None
         self.reinit_extras = [] if reinit_extras is None else reinit_extras
@@ -534,7 +451,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 raise ValueError("Different numbers of models and coordinates")
             self.nfits = len(fitting_parameters)
         else:
-            if allx.size != ally.size:
+            if len(allx) != len(ally):
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
 
@@ -698,9 +615,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         modal_message : str
             Displays message as a Modal Div element while performing tracing on
             the background.
-        reinit_params : dict
+        reinit_params : list
             Parameters for re-tracing.
-        reinit_extras : dict
+        reinit_extras : list
             Extra parameters for re-tracing.
         """
         # No panel required if we are not re-creating data
@@ -854,7 +771,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                              spacing=15,
                              sizing_mode="stretch_both")
 
-        doc.template_variables["primitive_long_help"] = DETAILED_HELP
+        # doc.template_variables["primitive_long_help"] = (help.DEFAULT_HELP
+        #                                                  + DETAILED_HELP
+        #                                                  + help.PLOT_TOOLS_HELP_SUBTEXT
+        #                                                  + help.REGION_EDITING_HELP_SUBTEXT)
+
         doc.add_root(all_content)
 
 
@@ -904,6 +825,10 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         domains=domain_list,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
+        help_text=(help.DEFAULT_HELP
+                   + help.TRACE_APERTURES
+                   + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
+                   + help.REGION_EDITING_HELP_SUBTEXT),
         primitive_name="traceApertures",
         reinit_extras=reinit_extras,
         tab_name_fmt="Aperture {}",
