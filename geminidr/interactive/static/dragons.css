@@ -50,8 +50,11 @@ div.scrollable {
 /**
  * This element holds the tab area
  */
-div.tab-content {
-    background-color: white;
+.bk .tab-content {
+  background-color: white;
+  border-left: solid 1px rgb(230, 230, 230);
+  border-right: solid 1px rgb(230, 230, 230);
+  border-bottom: solid 1px rgb(230, 230, 230);
 }
 
 .bk-btn:active {
@@ -98,9 +101,6 @@ div.tab-content {
     transition: all .2s ease-in-out;
 }
 
-.bk-canvas-events {
-    cursor: crosshair;
-}
 .bk-root {
     height: 100%;
     width: 100%;
