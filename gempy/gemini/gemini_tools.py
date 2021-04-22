@@ -1775,12 +1775,11 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                          f'keeping the data from the section {datasecStr}')
 
             # Trim SCI, VAR, DQ to new section
-            ext.reset(ext.nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])
+            ext.reset(ext.nddata[datasec.asslice()])
             # And OBJMASK (if it exists)
             # TODO: should check more generally for any image extensions
             if hasattr(ext, 'OBJMASK'):
-                ext.OBJMASK = ext.OBJMASK[datasec.y1:datasec.y2,
-                                          datasec.x1:datasec.x2]
+                ext.OBJMASK = ext.OBJMASK[datasec.asslice()]
 
             # Update header keys to match new dimensions
             newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
