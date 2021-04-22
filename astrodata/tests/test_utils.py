@@ -55,7 +55,7 @@ def test_section():
     s = Section.from_string("[1:1024,1:512")
     assert tuple(s) == (0, 1024, 0, 512)
     assert s.asIRAFsection() == "[1:1024,1:512]"
-    assert s.asslice() == [slice(0, 512), slice(0, 1024)]
+    assert s.asslice() == (slice(0, 512), slice(0, 1024))
     assert (s.x1, s.x2, s.y1, s.y2) == (0, 1024, 0, 512)
     assert (s[0], s[1], s[2], s[3]) == (0, 1024, 0, 512)
 

@@ -261,8 +261,9 @@ class Section(tuple):
 
     def asslice(self):
         """Return the Section object as a slice/list of slices"""
-        return [slice(self.__dict__[axis], self.__dict__[axis.replace("1", "2")])
-                for axis in reversed(self._axis_names[::2])]
+        return tuple(slice(self.__dict__[axis],
+                           self.__dict__[axis.replace("1", "2")])
+                     for axis in reversed(self._axis_names[::2]))
 
     @staticmethod
     def from_shape(value):
