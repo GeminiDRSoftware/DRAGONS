@@ -4,7 +4,7 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = {'GMOS', 'IMAGE', 'CAL', 'FLAT'}
 
-from .recipes_common import makeIRAFCompatible
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
 
 
 def makeProcessedFlat(p):
