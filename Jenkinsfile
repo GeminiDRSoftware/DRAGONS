@@ -58,7 +58,6 @@ pipeline {
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
-                        echo "Using ${TMPDIR} as temporary folder"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
                         sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
@@ -72,20 +71,13 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
+                            dir ( '$TMPDIR' ) { deleteDir() }
+                            echo "Delete Tox Environment: .tox/py37-unit"
+                            dir ( ".tox/py37-unit" ) { deleteDir() }
                         }
                         failure {
                             echo "Archiving tests results for Unit Tests"
                             sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
-        //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
-                        }
-                        success {
-                            echo "Delete Tox Environment: .tox/py37-unit"
-                            dir ( ".tox/py37-unit" ) {
-                                deleteDir()
-                            }
                         }
                     }
 
@@ -117,15 +109,9 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
-                        }
-                        success {
+                            dir ( '$TMPDIR' ) { deleteDir() }
                             echo "Delete Tox Environment: .tox/py37-integ"
-                            dir ( ".tox/py37-integ" ) {
-                                deleteDir()
-                            }
+                            dir ( ".tox/py37-integ" ) { deleteDir() }
                         }
                     } // end post
                 } // end stage
@@ -156,15 +142,9 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
-                        }
-                        success {
+                            dir ( '$TMPDIR' ) { deleteDir() }
                             echo "Delete Tox Environment: .tox/py37-reg"
-                            dir ( ".tox/py37-reg" ) {
-                                deleteDir()
-                            }
+                            dir ( ".tox/py37-reg" ) { deleteDir() }
                         }
                     } // end post
                 }
@@ -196,16 +176,10 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
-                        }  // end always
-                        success {
+                            dir ( '$TMPDIR' ) { deleteDir() }
                             echo "Delete Tox Environment: .tox/py37-gmosls"
-                            dir( '.tox/py37-gmosls' ) {
-                                deleteDir()
-                            }
-                        }
+                            dir( '.tox/py37-gmosls' ) { deleteDir() }
+                        }  // end always
                     }  // end post
                 }  // end stage
 
@@ -238,15 +212,9 @@ pipeline {
                         testResults: 'reports/*_results.xml'
                     )
                     echo "Delete temporary folder: ${TMPDIR}"
-                    dir ( '$TMPDIR' ) {
-                        deleteDir()
-                    }
-                }
-                success {
+                    dir ( '$TMPDIR' ) { deleteDir() }
                     echo "Delete Tox Environment: .tox/py37-slow"
-                    dir( '.tox/py37-slow' ) {
-                        deleteDir()
-                    }
+                    dir( '.tox/py37-slow' ) { deleteDir() }
                 }
             } // end post
         }
