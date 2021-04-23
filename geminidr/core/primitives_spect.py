@@ -425,10 +425,10 @@ class Spect(PrimitivesBASE):
 
             if interactive:
                 all_shapes = [x[0].shape[0] for x in all_exts]
-                all_waves = [x[1] for x in all_exts]
-                all_zpt = [x[2] for x in all_exts]
-                all_weights = [x[3] for x in all_exts]
-                all_fp_init = [fit_1D.translate_params(params)] * len(all_exts)
+                all_waves = np.array([x[1] for x in all_exts])
+                all_zpt = np.array([x[2] for x in all_exts])
+                all_weights = np.array([x[3] for x in all_exts])
+                all_fp_init = np.array([fit_1D.translate_params(params)] * len(all_exts))
 
                 # build config for interactive
                 config = self.params[self.myself()]
