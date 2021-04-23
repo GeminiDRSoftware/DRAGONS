@@ -88,6 +88,14 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        # Do this now for memory management reasons. We'll be creating large
+        # arrays temporarily and don't want the permanent mask arrays to
+        # fragment the free memory.
+        for ad in adinputs:
+            for ext in ad:
+                if ext.mask is None:
+                    ext.mask = np.zeros_like(ext.data).astype(DQ.datatype)
+
         for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
@@ -96,10 +104,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 continue
 
             ybin = ad.detector_y_bin()
-            for ext in ad:
-                if ext.mask is None:
-                    ext.mask = np.zeros_like(ext.data).astype(DQ.datatype)
-
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
                              for detsec in ad_detsec)
@@ -124,14 +128,12 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     log.warning(f"MDF not found for {ad.filename} - cannot "
                                 "add illumination mask.")
                     continue
+
                 # Default operation for GMOS full-frame LS
-                # The 95% cut should ensure that we're sampling something
-                # bright (even for an arc)
-                # The max is intended to handle R150 data, where many of
-                # the extensions are unilluminated
-                row_medians = np.prod(np.array([np.percentile(
-                    ext.data, 95, axis=1)
-                    for ext in ad]), axis=0)
+                # Sadly, we cannot do this reliably without concatenating the
+                # arrays and using a big chunk of memory.
+                row_medians = np.percentile(np.concatenate(
+                    [ext.data for ext in ad], axis=1), 95, axis=1)
 
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
@@ -149,6 +151,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     model[yccd[0]:yccd[1]+1] = 1
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
+
                 if shift is None:
                     mshift = max_shift // ybin + 2
                     edges = 50  # try to eliminate issues at the very edges
