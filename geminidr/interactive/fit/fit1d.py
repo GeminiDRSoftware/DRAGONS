@@ -1076,7 +1076,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.reinit_panel = column(*reinit_widgets)
         else:
             # left panel with just the function selector (Chebyshev, etc.)
-            self.reinit_panel = column()
+            self.reinit_panel = None  # column()
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -1189,7 +1189,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             layout_ls.append(self.submit_button,
                              align="end", css_classes=['top-row'])
 
-        if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
+        if self.reinit_panel is None:
+            layout_ls.append(col)
+        elif len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
             layout_ls.append(Spacer(height=10))
             layout_ls.append(col)
