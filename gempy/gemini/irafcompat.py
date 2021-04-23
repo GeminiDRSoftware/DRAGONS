@@ -20,7 +20,7 @@ def pipeline2iraf(ad, verbose=False):
     return
 
 def compat_with_iraf_GMOS(ad, verbose):
-    verbose=True
+
     # The mighty GMOS OBSMODE
     obsmode = _get_gmos_obsmode(ad)
     if verbose:
