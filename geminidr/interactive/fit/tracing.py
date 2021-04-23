@@ -1,24 +1,24 @@
 """
 Interactive function and helper functions used to trace apertures.
 """
-import numpy as np
-from astropy import table
-from bokeh import models as bm
-from bokeh.layouts import column, layout, row, Spacer
-from bokeh.plotting import figure
 from copy import deepcopy
 
-from gempy.library import astromodels, astrotools as at, tracing
-from gempy.library.config import RangeField
+import numpy as np
+from astropy import table
+from bokeh import events
+from bokeh import models as bm
+from bokeh.layouts import column, row, Spacer
+from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
     connect_figure_extras, GIRegionModel, RegionEditor)
-
-from .. import server
+from gempy.library import astromodels, astrotools as at, tracing
+from gempy.library.config import RangeField
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
                     FittingParametersUI, InteractiveModel1D)
+from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
 
@@ -182,7 +182,7 @@ class TraceAperturesTab(Fit1DPanel):
         controls_ls.append(controller_help)
 
         controls_col = column(*controls_ls,
-                              css_classes=["fitpars-column"],
+                              css_classes=["column-fitpars"],
                               max_width=column_width,
                               margin=(0, 0, 0, 10),
                               width_policy="fit")
@@ -218,7 +218,8 @@ class TraceAperturesTab(Fit1DPanel):
         tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
 
         # Create main plot area ------------------------------------------------
-        p_main = figure(max_height=1000,
+        p_main = figure(css_classes=['plot-main'],
+                        max_height=1000,
                         min_height=100,
                         min_width=400,
                         output_backend="webgl",
@@ -263,6 +264,8 @@ class TraceAperturesTab(Fit1DPanel):
         _controller = Controller(p_main, None, self.band_model,
                                  self.controller_help,
                                  mask_handlers=mask_handlers)
+
+        self.add_custom_cursor_behavior(p_main)
 
         # Create residual plot area --------------------------------------------
         # x_range is linked to the main plot so that zooming tracks between them
@@ -334,6 +337,39 @@ class TraceAperturesTab(Fit1DPanel):
                      width_policy='fit')
 
         return col, _controller
+
+    @staticmethod
+    def add_custom_cursor_behavior(p):
+        """
+        Customize cursor behavior depending on which tool is active.
+        """
+        pan_start = '''
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var active = [...mainPlot.getElementsByClassName('bk-active')];
+
+            console.log(active);
+            
+            if ( active.some(e => e.title == "Pan") ) { 
+                Bokeh.cursor = 'move'; }
+        '''
+
+        pan_end = '''
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
+            
+            Bokeh.cursor = 'default';
+            elm.style.cursor = Bokeh.cursor;
+        '''
+
+        mouse_move = """
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
+            elm.style.cursor = Bokeh.cursor;
+        """
+
+        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
+        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
+        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
     def create_rms_div(self):
         """
