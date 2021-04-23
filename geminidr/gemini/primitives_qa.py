@@ -134,7 +134,7 @@ class QA(PrimitivesBASE):
             # Report measurement to fitsstore
             if self.upload and "metrics" in self.upload:
                 qap.fitsstore_report(ad, "sb", report.info_list(),
-                                     self.calurl_dict, self.mode, upload=True)
+                                     self.mode, upload=True)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -263,7 +263,7 @@ class QA(PrimitivesBASE):
                 # Also report to fitsstore
                 if self.upload and "metrics" in self.upload:
                     qap.fitsstore_report(ad, "zp", report.info_list(),
-                                         self.calurl_dict, self.mode, upload=True)
+                                         self.mode, upload=True)
             else:
                 log.stdinfo(f"    Filename: {ad.filename}")
                 log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
@@ -385,7 +385,7 @@ class QA(PrimitivesBASE):
                     # Report measurement to fitsstore
                     if self.upload and "metrics" in self.upload:
                         qap.fitsstore_report(ad, "iq", report.info_list(),
-                                             self.calurl_dict, self.mode, upload=True)
+                                             self.mode, upload=True)
 
                     # Store measurements in the PHU if desired
                     if (len(ad) == 1 or not separate_ext) and not is_ao:

@@ -3,12 +3,12 @@
 from gempy.library import config
 from astrodata import AstroData
 from geminidr.core import parameters_stack, parameters_photometry
+from geminidr.core import parameters_generic
 
-class fringeCorrectConfig(config.Config):
+class fringeCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_fringeCorrected", optional=True)
     fringe = config.ListField("Fringe frame to subtract", (str, AstroData),
                           None, optional=True, single=True)
-    do_fringe = config.Field("Perform fringe correction?", bool, None, optional=True)
     scale = config.Field("Scale fringe frame?", bool, None, optional=True)
     scale_factor = config.ListField("Scale factor for fringe frame", float, None,
                                     optional=True, single=True)

@@ -384,7 +384,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
                               "nsamples": int(num_matched)}]
                 # Report the measurement to the fitsstore
                 if self.upload and "metrics" in self.upload:
-                    qap.fitsstore_report(ad, "pe", info_list, self.calurl_dict,
+                    qap.fitsstore_report(ad, "pe", info_list,
                                          self.mode, upload=True)
 
                 # Update OBJCAT (X_WORLD, Y_WORLD)

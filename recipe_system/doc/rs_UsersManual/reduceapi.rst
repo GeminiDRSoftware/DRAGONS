@@ -178,16 +178,11 @@ upload              <type 'list' of 'str'>     None
     implemented.  It is also useful for testing and for getting full control
     of the calibrations being used.
 
-    The format for this attribute's value is somewhat complicated.  It is
-    recommended to use the ``normalize_ucals`` function in the
-    ``recipe_system.utils.reduce_utils`` module to get the dictionary this
-    attribute expects.
+    The format for this attribute's value needs to looks like this::
 
-    The format needs to looks like this::
+        {'processed_bias': '/path/master_bias.fits'}
 
-        {(ad.calibration_key(), 'processed_bias'): '/path/master_bias.fits'}
-
-    There must be one entry per input files for each type of calibrations.
+    There must be one entry for each type of calibrations.
 
     The recognized calibration types are currently:
 
@@ -196,7 +191,15 @@ upload              <type 'list' of 'str'>     None
     * processed_dark
     * processed_flat
     * processed_fringe
+    * processed_slitillum
     * processed_standard
+
+    The ``normalize_ucals`` function in the
+    ``recipe_system.utils.reduce_utils`` module will convert a list of
+    strings (in the format required for the command-line interface) into the
+    appropriate dictionary *and* check that the specified calibrations files
+    are readable and have the required tags. However, it is not necessary to
+    make use of this function.
 
     Here's how to use ``normalize_ucals``::
 
@@ -205,8 +208,7 @@ upload              <type 'list' of 'str'>     None
         mycalibrations = ['processed_bias:/path/master_bias.fits',
                           'processed_flat:/path/master_Bflat.fits']
 
-        ucals_dict = normalize_ucals(myreduce.files, mycalibrations)
-        myreduce.ucals = ucals_dict
+        myreduce.ucals = normalize_ucals(mycalibrations)
 
 
 **uparms**
@@ -222,5 +224,5 @@ upload              <type 'list' of 'str'>     None
 **upload**
     **Internal use only**.  Specify which types of product to upload to the
     Gemini internal database.  Allowed values are "metrics", "calibs", and
-    "science", the latter is planned but not yet implemented.
+    "science".
 

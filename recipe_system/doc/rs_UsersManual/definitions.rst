@@ -54,7 +54,7 @@ Mode
 ====
 The ``mode`` defines the type of reduction one wants to perform:
 science quality ("sq"), quick look reduction ("ql"), or quality assessment
-("qa").  Each ``mode`` defines its own set of recipe libraries. The mode is
+("qa"). Each ``mode`` defines its own set of recipe libraries. The mode is
 switched through command line flags or the ``Reduce`` class ``mode`` attribute.
 
 If not specified, the default is science quality, "sq".  Currently, only
@@ -64,18 +64,26 @@ cannot select other modes.
 Recipe libraries of the same name but assigned different mode are often very
 different from each other since the products are expected to be different.
 
-The quality assesment mode, "qa", is used mostly at the Observatory, at night
-to measure sky condition metrics and provide a visual assessment of the data.
+The quality assessment mode, "qa", is used mostly at the Observatory, at night
+to measure sky condition metrics and provide a visual assessment of the data. It
+does not require calibrations since we might not have all the calibrations needed
+at the time that the data was obtained.
 
 The quick look mode, "ql", is intended for quick, close to but not necessarily
-science quality reduction, the objective as the name entails being to do a
+science quality reduction. The objective as the name entails being to do a
 quick and automatic reduction for quick scientific and technical evaluation
-of the data.
+of the data. This mode does not require calibrations either, but both QA and QL
+modes can use calibrations if they are found.
 
 The science quality mode, "sq", the default mode, is to be used in most cases.
 The recipes in "sq" mode contain all the steps required to fully reduce data
-without cutting corners.  Some steps can be lengthy, some steps might offer
-an optional interactive interface for optimization.
+without cutting corners. Some steps can be lengthy, some steps might offer
+an optional interactive interface for optimization. This mode requires all
+the calibrations and will return an error in case some of the is not found.
+
+It is important to notice that a calibration processed with a mode cannot be
+used in another mode. So make sure you are reducing all your data using the same
+mode.
 
 
 Recipe

@@ -14,6 +14,13 @@ from gwcs.wcs import WCS as gWCS
 
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
+FrameMapping = namedtuple("FrameMapping", "cls description")
+
+# Type of CoordinateFrame to construct for a FITS keyword and
+# readable name so user knows what's going on
+frame_mapping = {'WAVE': FrameMapping(cf.SpectralFrame, "Wavelength in vacuo"),
+                 'AWAV': FrameMapping(cf.SpectralFrame, "Wavelength in air")}
+
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
 #-----------------------------------------------------------------------------
@@ -24,8 +31,6 @@ def fitswcs_to_gwcs(hdr):
     Create and return a gWCS object from a FITS header. If it can't
     construct one, it should quietly return None.
     """
-    # Type of CoordinateFrame to construct for a FITS keyword
-    frame_mapping = {'WAVE': cf.SpectralFrame}
     # coordinate names for CelestialFrame
     coordinate_outputs = {'alpha_C', 'delta_C'}
 
@@ -51,14 +56,19 @@ def fitswcs_to_gwcs(hdr):
         except TypeError:
             unit = None
         try:
-            frame = frame_mapping[output[:4].upper()](axes_order=(i,), unit=unit,
-                                          axes_names=(output,), name=output)
+            frame_type = output[:4].upper()
+            frame_info = frame_mapping[frame_type]
         except KeyError:
             if output in coordinate_outputs:
                 continue
             frame = cf.CoordinateFrame(naxes=1, axes_type=("SPATIAL",),
                                        axes_order=(i,), unit=unit,
                                        axes_names=(output,), name=output)
+        else:
+            frame = frame_info.cls(axes_order=(i,), unit=unit,
+                                   axes_names=(frame_type,),
+                                   name=frame_info.description)
+
         out_frames.append(frame)
 
     if coordinate_outputs.issubset(outputs):
@@ -175,7 +185,7 @@ def gwcs_to_fits(ndd, hdr=None):
             continue
         if axis_type == "SPECTRAL":
             wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
-            wcs_dict[f'CTYPE{i}'] = 'WAVE'
+            wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = 0
 
@@ -558,6 +568,10 @@ def fitswcs_linear(header):
         FITS Header or dict with basic FITS WCS keywords.
 
     """
+    # We *always* want the wavelength solution model to be called "WAVE"
+    # even if the CTYPE keyword is "AWAV"
+    model_name_mapping = {"AWAV": "WAVE"}
+
     if isinstance(header, fits.Header):
         wcs_info = read_wcs_from_header(header)
     elif isinstance(header, dict):
@@ -582,7 +596,8 @@ def fitswcs_linear(header):
                                             name='crpix' + str(pixel_axis + 1)) |
                             models.Scale(cd[ax, pixel_axis]) |
                             models.Shift(crval[ax]))
-            linear_model.name = wcs_info['CTYPE'][ax][:4].upper()
+            ctype = wcs_info['CTYPE'][ax][:4].upper()
+            linear_model.name = model_name_mapping.get(ctype, ctype)
             linear_model.outputs = (wcs_info['CTYPE'][ax],)
             linear_model.meta.update({'input_axes': pixel_axes,
                                       'output_axes': [ax]})

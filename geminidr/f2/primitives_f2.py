@@ -25,8 +25,8 @@ class F2(Gemini, NearIR):
     tagset = {"GEMINI", "F2"}
 
     def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.f2.lookups'
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_f2)
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):

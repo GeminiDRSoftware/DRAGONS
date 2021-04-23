@@ -210,6 +210,11 @@ class AstroDataGemini(AstroData):
                                            'NON_SIDEREAL', 'AZEL_TARGET'])
 
     @astro_data_tag
+    def _type_mos_mask(self):
+        if self.phu.get('OBSTYPE', '').upper() == "MASK":
+            return TagSet(['MASK'], blocks=['IMAGE', 'SPECT'])
+
+    @astro_data_tag
     def _status_raw(self):
         if 'GEM-TLM' not in self.phu:
             return TagSet(['RAW'])
@@ -233,7 +238,7 @@ class AstroDataGemini(AstroData):
     @astro_data_tag
     def _status_processed_cals(self):
         kwords = {'PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
-                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND', 'PROCILLM'}
+                      'GIFLAT', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND', 'PROCILLM'}
 
         if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])

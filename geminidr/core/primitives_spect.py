@@ -7,6 +7,7 @@
 # ------------------------------------------------------------------------------
 import os
 import re
+import warnings
 from bisect import bisect
 from copy import copy
 from functools import reduce
@@ -18,6 +19,8 @@ import numpy as np
 from astropy import units as u
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.registry import IORegistryError
+from astropy.io import fits
+from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table, vstack
@@ -28,6 +31,7 @@ from numpy.ma.extras import _ezclump
 from scipy import optimize, spatial
 from scipy.signal import correlate
 from specutils import SpectralRegion
+from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
 import geminidr.interactive.server
@@ -108,7 +112,8 @@ class Spect(PrimitivesBASE):
 
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
-            data = np.ma.array(ext.data, mask=(ext.mask > 0))
+            data = np.ma.array(ext.data, mask=None if ext.mask is None
+                               else (ext.mask > 0))
             data = np.ma.masked_invalid(data)
             return data.mean(axis=dispaxis)
 
@@ -116,7 +121,7 @@ class Spect(PrimitivesBASE):
         refad = adinputs[0]
         ref_sky_model = am.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
         ref_sky_model.name = None
-        log.stdinfo("Reference image: {}".format(refad.filename))
+        log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
             ref_profile = stack_slit(refad[0])
@@ -131,7 +136,10 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs[1:]:
             for method in methods:
-                adjust = True  # optimistic expectation
+                if method is None:
+                    break
+
+                adjust = False
                 dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
                 # Calculate offset determined by header (WCS or offsets)
@@ -143,23 +151,41 @@ class Spect(PrimitivesBASE):
                 else:
                     hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
 
-                # Cross-correlate to find real offset and compare
+                # Cross-correlate to find real offset and compare. Only look
+                # for a peak in the range defined by "tolerance".
                 if 'sources' in method:
                     profile = stack_slit(ad[0])
                     corr = np.correlate(ref_profile, profile, mode='full')
-                    peak = tracing.pinpoint_peaks(corr, None, [np.argmax(corr)])[0]
-                    offset = peak - ref_profile.shape[0] + 1
+                    expected_peak = corr.size // 2 + hdr_offset
+                    peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),
+                                                     reject_bad=False, pinpoint_index=0)
+                    if peaks.size:
+                        if tolerance is None:
+                            found_peak = peaks[snrs.argmax()]
+                        else:
+                            # Go down the peaks in order of decreasing SNR
+                            # until we find one within "tolerance"
+                            found_peak = None
+                            for peak, snr in sorted(zip(peaks, snrs),
+                                                    key=lambda pair: pair[1],
+                                                    reverse=True):
+                                if (abs(peak - expected_peak) <=
+                                        tolerance / ad.pixel_scale()):
+                                    found_peak = peak
+                                    break
+                        if found_peak:
+                            # found_peak = tracing.pinpoint_peaks(corr, None, found_peak)[0]
+                            offset = found_peak - ref_profile.shape[0] + 1
+                            adjust = True
+                        else:
+                            log.warning("No cross-correlation peak found for "
+                                        f"{ad.filename} within tolerance")
+                    else:
+                        log.warning(f"{ad.filename}: Cross-correlation failed")
 
-                    # Check that the offset is similar to the one from headers
-                    offset_diff = hdr_offset - offset
-                    if (tolerance is not None and
-                            np.abs(offset_diff * ad.pixel_scale()) > tolerance):
-                        log.warning("Offset for {} ({:.2f}) disagrees with "
-                                    "expected value ({:.2f})".format(
-                            ad.filename, offset, hdr_offset))
-                        adjust = False
                 elif method == 'offsets':
                     offset = hdr_offset
+                    adjust = True
 
                 if adjust:
                     wcs = ad[0].wcs
@@ -310,7 +336,7 @@ class Spect(PrimitivesBASE):
 
             exptime = ad.exposure_time()
             if 'WIDTH' not in spec_table.colnames:
-                log.warning("Using default bandpass of {} nm".format(bandpass))
+                log.warning(f"Using default bandpass of {bandpass} nm")
                 spec_table['WIDTH'] = bandpass * u.nm
 
             # Do some checks now to avoid failing on every extension
@@ -342,7 +368,8 @@ class Spect(PrimitivesBASE):
                 for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
                                             spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                    data, mask, variance = spectrum.signal(region)
+                    data, mask, variance = spectrum.signal(
+                        region, interpolate=DQ.bad_pixel)
                     if mask == 0 and fluxdens > 0:
                         # Regardless of whether FLUX column is f_nu or f_lambda
                         flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
@@ -356,6 +383,14 @@ class Spect(PrimitivesBASE):
                 wave = at.array_from_list(wave, unit=u.nm)
                 zpt = at.array_from_list(zpt)
                 weights = 1. / array_from_list(zpt_err) if zpt_err else None
+
+                # Correct for atmospheric extinction. This correction makes
+                # the real data brighter, so makes the zpt magnitude more +ve
+                # (since "data" is in the denominator)
+                if airmass0 and site is not None and airmass is not None:
+                    zpt += u.Magnitude(airmass *
+                                       extinct.extinction(wave, site=site))
+
                 return wave, zpt, weights
 
             # We can only calculate the sensitivity for one extension in
@@ -557,7 +592,7 @@ class Spect(PrimitivesBASE):
                 if fwidth is None:
                     data, _, _, _ = _average_along_slit(ext, center=None, nsum=nsum)
                     fwidth = tracing.estimate_peak_width(data)
-                    log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+                    log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 if initial_peaks is None:
                     data, mask, variance, extract_slice = _average_along_slit(ext, center=None, nsum=nsum)
@@ -565,10 +600,10 @@ class Spect(PrimitivesBASE):
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
                     # Find peaks; convert width FWHM to sigma
-                    widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
+                    widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                     initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                           variance=variance, min_snr=min_snr)
-                    log.stdinfo("Found {} peaks".format(len(initial_peaks)))
+                    log.stdinfo(f"Found {len(initial_peaks)} peaks")
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
@@ -683,42 +718,47 @@ class Spect(PrimitivesBASE):
         arc = params["arc"]
         order = params["order"]
         subsample = params["subsample"]
+        do_cal = params["do_cal"]
+
+        if do_cal == 'skip':
+            log.warning('Distortion correction has been turned off.')
+            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
-            self.getProcessedArc(adinputs, refresh=False)
-            arc_list = self._get_cal(adinputs, 'processed_arc')
+            arc_list = self.caldb.get_processed_arc(adinputs)
         else:
-            arc_list = arc
+            arc_list = (arc, None)
 
         adoutputs = []
-        # Provide an arc AD object for every science frame
-        for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
+        # Provide an arc AD object for every science frame, and an origin
+        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
+                                                  force_ad=(1,))):
             # We don't check for a timestamp since it's not unreasonable
             # to do multiple distortion corrections on a single AD object
 
             len_ad = len(ad)
             if arc is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     # TODO: Think about this when we have MOS/XD/IFU
                     if len(ad) == 1:
-                        log.warning("No changes will be made to {}, since no "
-                                    "arc was specified".format(ad.filename))
+                        log.warning(f"{ad.filename}: no arc was specified. "
+                                    "Continuing.")
                         adoutputs.append(ad)
                     else:
-                        log.warning("{} will only be mosaicked, since no "
-                                    "arc was specified".format(ad.filename))
+                        log.warning(f"{ad.filename}: no arc was specified. "
+                                    "Image will be mosaicked.")
                         adoutputs.extend(self.mosaicDetectors([ad]))
                     continue
-                else:
-                    raise OSError('No processed arc listed for {}'.
-                                  format(ad.filename))
 
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
+                        f"{origin_str}")
             len_arc = len(arc)
             if len_arc not in (1, len_ad):
-                log.warning("Science frame {} has {} extensions and arc {} "
-                            "has {} extensions.".format(ad.filename, len_ad,
-                                                        arc.filename, len_arc))
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{arc.filename} had {len_arc} extensions so "
+                            "cannot correct the distortion.")
                 adoutputs.append(ad)
                 continue
 
@@ -730,7 +770,7 @@ class Spect(PrimitivesBASE):
 
             # Read all the arc's distortion maps. Do this now so we only have
             # one block of reading and verifying them
-            distortion_models, wave_models = [], []
+            distortion_models, wave_models, wave_frames = [], [], []
             for ext in arc:
                 wcs = ext.nddata.wcs
 
@@ -752,15 +792,20 @@ class Spect(PrimitivesBASE):
                 # relies on a no-op forward model to size the output correctly:
                 m_distcorr = models.Identity(2)
                 input_frame = wcs.input_frame
-                m_distcorr.inverse = wcs.get_transform(input_frame, 'distortion_corrected').inverse
+                m_distcorr.inverse = wcs.get_transform(
+                    input_frame, 'distortion_corrected').inverse
                 distortion_models.append(m_distcorr)
 
                 try:
-                    wave_model = am.get_named_submodel(wcs.forward_transform, 'WAVE')
+                    wave_model = am.get_named_submodel(wcs.forward_transform,
+                                                       'WAVE')
                 except IndexError:
                     wave_models.append(None)
+                    wave_frames.append(None)
                 else:
                     wave_models.append(wave_model)
+                    wave_frames.extend([frame for frame in wcs.output_frame.frames
+                                        if isinstance(frame, cf.SpectralFrame)])
 
             if not distortion_models:
                 log.warning("Could not find a 'distortion_corrected' frame "
@@ -906,7 +951,8 @@ class Spect(PrimitivesBASE):
                         log.warning(f"{arc.filename} extension {ext.id} has "
                                     "no wavelength solution")
 
-            for i, (ext, wave_model) in enumerate(zip(ad_out, wave_models)):
+            for i, (ext, wave_model, wave_frame) in enumerate(
+                    zip(ad_out, wave_models, wave_frames)):
                 # TODO: remove this; for debugging purposes only
                 if arc is not None and hasattr(arc[i], "WAVECAL"):
                     ad_out[i].WAVECAL = arc[i].WAVECAL
@@ -915,8 +961,14 @@ class Spect(PrimitivesBASE):
                     t = wave_model & sky_model
                 else:
                     t = sky_model & wave_model
+                # We need to create a new output frame with a copy of the
+                # ARC's SpectralFrame in case there's a change from air->vac
+                # or vice versa
+                new_output_frame = cf.CompositeFrame(
+                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame) else
+                     frame for frame in ext.wcs.output_frame.frames])
                 ext.wcs = gWCS([(ext.wcs.input_frame, t),
-                                (ext.wcs.output_frame, None)])
+                                (new_output_frame, None)])
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
@@ -1023,6 +1075,7 @@ class Spect(PrimitivesBASE):
         cenwave = params["central_wavelength"]
         dw0 = params["dispersion"]
         arc_file = params["linelist"]
+        in_vacuo = params["in_vacuo"]
         nbright = params.get("nbright", 0)
         alt_centers = params["alternative_centers"]
         debug = params["debug"]
@@ -1105,19 +1158,17 @@ class Spect(PrimitivesBASE):
 
                 if fwidth is None:
                     fwidth = tracing.estimate_peak_width(data, mask=mask)
-                    log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+                    log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 # Don't read linelist if it's the one we already have
                 # (For user-supplied, we read it at the start, so don't do this at all)
                 if arc_file is None:
-                    arc_lines, arc_weights = self._get_arc_linelist(ext, w1=c0-abs(c1),
-                                                                    w2=c0+abs(c1), dw=dw0)
-                if min(arc_lines) > c0 + abs(c1):
-                    log.warning("Line list appears to be in Angstroms; converting to nm")
-                    arc_lines *= 0.1
+                    arc_lines, arc_weights = self._get_arc_linelist(
+                        ext, w1=c0-abs(c1), w2=c0+abs(c1), dw=dw0,
+                        in_vacuo=in_vacuo)
 
                 # Find peaks; convert width FWHM to sigma
-                widths = 0.42466 * fwidth * np.arange(0.7, 1.2, 0.05)  # TODO!
+                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                       variance=variance, min_snr=min_snr,
                                                       min_sep=min_sep, reject_bad=False)
@@ -1239,15 +1290,16 @@ class Spect(PrimitivesBASE):
                 rms = m.rms_output
                 nmatched = len(m)
                 log.stdinfo(m_final)
-                log.stdinfo("Matched {}/{} lines with rms = {:.3f} nm.".format(nmatched, len(peaks), rms))
+                log.stdinfo(f"Matched {nmatched}/{len(peaks)} lines with "
+                            f"rms = {rms:.3f} nm.")
 
                 max_rms = 0.2 * rms / abs(dw0)  # in pixels
                 max_dev = 3 * max_rms
                 m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                                                  max_deviation=max_dev)
                 inv_rms = np.std(m_inverse(m_final(m.input_coords)) - m.input_coords)
-                log.stdinfo("Inverse model has rms = {:.3f} pixels.".format(inv_rms))
-                m_final.name = "WAVE"
+                log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
+                m_final.name = "WAVE"  # always WAVE, never AWAV
                 m_final.inverse = m_inverse
 
                 m.sort()
@@ -1274,22 +1326,34 @@ class Spect(PrimitivesBASE):
                                    list(temptable[0].values()) + [0] * pad_rows,
                                    incoords, outcoords],
                                   names=("name", "coefficients", "peaks", "wavelengths"),
+                                  units=(None, None, u.pix, u.nm),
                                   meta=temptable.meta)
-                fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
-                                              'peaks column is 1-indexed']
+                medium = "vacuo" if in_vacuo else "air"
+                fit_table.meta['comments'] = [
+                    'coefficients are based on 0-indexing',
+                    'peaks column is 1-indexed',
+                    f'calibrated with wavelengths in {medium}']
                 ext.WAVECAL = fit_table
+
+                spectral_frame = (ext.wcs.output_frame if ext.data.ndim == 1
+                                  else ext.wcs.output_frame.frames[0])
+                axis_name = "WAVE" if in_vacuo else "AWAV"
+                new_spectral_frame = cf.SpectralFrame(
+                    axes_order=spectral_frame.axes_order,
+                    unit=spectral_frame.unit, axes_names=(axis_name,),
+                    name=astrodata.wcs.frame_mapping[axis_name].description)
 
                 if ext.data.ndim == 1:
                     ext.wcs.set_transform(ext.wcs.input_frame,
-                                          ext.wcs.output_frame, m_final)
+                                          new_spectral_frame, m_final)
                 else:
                     # Write out a simplified WCS model so it's easier to
                     # extract what we need later
-                    spatial_frame = cf.CoordinateFrame(naxes=1, axes_type="SPATIAL",
-                                                       axes_order=(1,), unit=u.pix,
-                                                       name="SPATIAL")
-                    output_frame = cf.CompositeFrame([ext.wcs.output_frame.frames[0],
-                                                      spatial_frame], name='world')
+                    spatial_frame = cf.CoordinateFrame(
+                        naxes=1, axes_type="SPATIAL", axes_order=(1,),
+                        unit=u.pix, name="SPATIAL")
+                    output_frame = cf.CompositeFrame(
+                        [new_spectral_frame, spatial_frame], name='world')
                     try:
                         slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
                     except IndexError:
@@ -1391,8 +1455,8 @@ class Spect(PrimitivesBASE):
 
                 num_spec = len(aptable)
                 if num_spec == 0:
-                    log.warning("{} has an empty APERTURE table. Cannot "
-                                "extract spectra.".format(ad.filename))
+                    log.warning(f"{ad.filename} has an empty APERTURE table. "
+                                "Cannot extract spectra.")
                     continue
 
                 try:
@@ -1400,6 +1464,13 @@ class Spect(PrimitivesBASE):
                 except (AttributeError, IndexError):
                     log.warning(f"Cannot find wavelength solution for {extname}")
                     wave_model = None
+                else:
+                    axes_names = tuple(frame.axes_names[0]
+                                       for frame in ext.wcs.output_frame.frames
+                                       if isinstance(frame, cf.SpectralFrame))
+                    if len(axes_names) != 1:
+                        log.warning("Problem with identifying spectral axis "
+                                    f"for {extname}")
 
                 log.stdinfo(f"Extracting {num_spec} spectra from {extname}")
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -1462,7 +1533,7 @@ class Spect(PrimitivesBASE):
                                                              handle_mask=np.bitwise_or))
                         else:
                             log.warning("Difficulty finding sky aperture. No sky"
-                                        " subtraction for aperture {}".format(apnum))
+                                        f" subtraction for aperture {apnum}")
                             ad_spec.append(ndd_spec)
                     else:
                         ad_spec.append(ndd_spec)
@@ -1475,7 +1546,8 @@ class Spect(PrimitivesBASE):
                         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                                       axes_order=(0,), unit=u.pix,
                                                       axes_names=('x',), name='pixels')
-                        out_frame = cf.SpectralFrame(unit=u.nm, name='world')
+                        out_frame = cf.SpectralFrame(unit=u.nm, name='world',
+                                                     axes_names=axes_names)
                         ext_spec.wcs = gWCS([(in_frame, wave_model),
                                              (out_frame, None)])
                     ext_spec.hdr[ad._keyword_for('aperture_number')] = apnum
@@ -1606,6 +1678,8 @@ class Spect(PrimitivesBASE):
                     if 'APERTURE' in ext.tables:
                         del ext.APERTURE
                     continue
+                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+                log.stdinfo(f"Found sources at: {locstr}")
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1621,8 +1695,8 @@ class Spect(PrimitivesBASE):
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
-                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})"
-                              .format(loc, lower, upper))
+                    log.debug("Limits for source "
+                              f"{loc:.1f} ({lower:.1f}, +{upper:.1f})")
 
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
@@ -1896,39 +1970,47 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         std = params["standard"]
         final_units = params["units"]
+        do_cal = params["do_cal"]
 
         # Expectation is that the SENSFUNC table will be in units
         # like (electron/s) / (W/m^2)
         flux_units = u.Unit("W m-2")
 
-        # Get a suitable arc frame (with distortion map) for every science AD
-        if std is None:
-            self.getProcessedStandard(adinputs, refresh=False)
-            std_list = self._get_cal(adinputs, 'processed_standard')
-        else:
-            std_list = std
+        if do_cal == 'skip':
+            log.warning("Flux calibration has been turned off.")
+            return adinputs
 
-        for ad, std in zip(*gt.make_lists(adinputs, std_list, force_ad=True)):
+        # Get a suitable specphot standard (with sensitivity function)
+        if std is None:
+            std_list = self.caldb.get_processed_standard(adinputs)
+        else:
+            std_list = (std, None)
+
+        # Provide a standard AD object for every science frame, and an origin
+        for ad, std, origin in zip(*gt.make_lists(adinputs, *std_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by fluxCalibrate".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "fluxCalibrate. Continuing.")
                 continue
 
             if std is None:
-                if 'sq' in self.mode:
+                if 'sq' in self.mode and do_cal != 'force':
                     raise OSError('No processed standard listed for {}'.
                                   format(ad.filename))
                 else:
-                    log.warning("No changes will be made to {}, since no "
-                                "standard was specified".format(ad.filename))
+                    log.warning(f"{ad.filename}: no standard was specified. "
+                                "Continuing.")
                     continue
 
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
+                        f"{origin_str}")
             len_std, len_ad = len(std), len(ad)
             if len_std not in (1, len_ad):
-                log.warning("{} has {} extensions so cannot be used to "
-                            "calibrate {} with {} extensions".
-                            format(std.filename, len_std, ad.filename, len_ad))
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{std.filename} has {len_std} extensions so "
+                            "cannot flux calibrate.")
                 continue
 
             if not all(hasattr(ext, "SENSFUNC") for ext in std):
@@ -1941,7 +2023,7 @@ class Spect(PrimitivesBASE):
             # wrong wavelength solution in other columns/rows
             if (any(len(ext.shape) == 2 for ext in ad) and
                     not self.timestamp_keys['distortionCorrect'] in ad.phu):
-                log.warning("{} has not been distortion corrected".format(ad.filename))
+                log.warning(f"{ad.filename} has not been distortion corrected")
 
             telescope = ad.telescope()
             exptime = ad.exposure_time()
@@ -2220,7 +2302,7 @@ class Spect(PrimitivesBASE):
                                                                        fit1d_params["order"]),
                                                tol=1e-7, method='Nelder-Mead')
                     if not result.success:
-                        log.warning("Problem with spline fitting: {}".format(result.message))
+                        log.warning(f"Problem with spline fitting: {result.message}")
 
                     # Rescale coefficients so centre-left CCD is unscaled
                     coeffs = np.insert(result.x, 0, [1])
@@ -2569,8 +2651,8 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning("{} has not been distortion corrected. Sky "
-                            "subtraction is likely to be poor.".format(ad.filename))
+                log.warning(f"{ad.filename} has not been distortion corrected."
+                            " Sky subtraction is likely to be poor.")
 
             for ext in ad:
                 axis = ext.dispersion_axis() - 1  # python sense
@@ -2762,6 +2844,12 @@ class Spect(PrimitivesBASE):
                         values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
                         ref_coords, in_coords = values[:2], values[2:]
 
+                        # log aperture
+                        min_value = in_coords[1 - dispaxis].min()
+                        max_value = in_coords[1 - dispaxis].max()
+                        log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
+                                  f"to {max_value}")
+
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
                         try:
@@ -2771,6 +2859,7 @@ class Spect(PrimitivesBASE):
                                 order=order,
                                 points=in_coords[1 - dispaxis],
                                 **fit1d_params)
+
 
                         # This hides a multitude of sins, including no points
                         # returned by the trace, or insufficient points to
@@ -2801,9 +2890,9 @@ class Spect(PrimitivesBASE):
                         # Recalculate aperture limits after rectification
                         apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
                         this_aptable["aper_lower"] = \
-                            aperture["aper_lower"] + (location - apcoords.min())
+                            aperture["aper_lower"] #+ (location - apcoords.min())
                         this_aptable["aper_upper"] = \
-                            aperture["aper_upper"] - (apcoords.max() - location)
+                            aperture["aper_upper"] # - (apcoords.max() - location)
                         all_aperture_tables.append(this_aptable)
 
                     ext.APERTURE = vstack(all_aperture_tables,
@@ -2814,7 +2903,176 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, **kwargs):
+    def write1DSpectra(self, adinputs=None, **params):
+        """
+        Write 1D spectra to files listing the wavelength and data (and
+        optionally variance and mask) in one of a range of possible formats.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+        format : str
+            format for writing output files
+        header : bool
+            write FITS header before data values?
+        extension : str
+            extension to be used in output filenames
+        apertures : str
+            comma-separated list of aperture numbers to write
+        dq : bool
+            write DQ (mask) plane?
+        var : bool
+            write VAR (variance) plane?
+        overwrite : bool
+            overwrite existing files?
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The unmodified input files.
+        """
+        # dict of {format parameter: (Table format, file suffix)}
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        fmt = params["format"]
+        header = params["header"]
+        extension = params["extension"]
+        apertures = params["apertures"]
+        if apertures:
+            these_apertures = [int(x) for x in str(apertures).split(",")]
+        write_dq = params["dq"]
+        write_var = params["var"]
+        overwrite = params["overwrite"]
+
+        for ad in adinputs:
+            aperture_map = dict(zip(range(len(ad)), ad.hdr.get("APERTURE")))
+            if apertures is None:
+                these_apertures = sorted(list(aperture_map.values()))
+            for aperture in these_apertures:
+                indices = [k for k, v in aperture_map.items() if v == aperture]
+                if len(indices) > 2:
+                    log.warning(f"{ad.filename} has more than one aperture "
+                                f"numbered {aperture} - continuing")
+                    continue
+                elif not indices:
+                    log.warning(f"{ad.filename} does not have an aperture "
+                                f"numbered {aperture} - continuing")
+                    continue
+
+                ext = ad[indices.pop()]
+                if ext.data.ndim != 1:
+                    log.warning(f"{ad.filename} aperture {aperture} is not a "
+                                "1D array - continuing")
+                    continue
+
+                data_unit = u.Unit(ext.hdr.get("BUNIT"))
+                t = Table((ext.wcs(range(ext.data.size)), ext.data),
+                          names=("wavelength", "data"),
+                          units=(ext.wcs.output_frame.unit[0], str(data_unit)))
+                if write_dq:
+                    t.add_column(ext.mask, name="dq")
+                if write_var:
+                    t.add_column(ext.variance, name="variance")
+                    t["variance"].unit = str(data_unit ** 2)
+                    var_col = len(t.colnames)
+
+                filename = (os.path.splitext(ad.filename)[0] +
+                            f"_{aperture:03d}.{extension}")
+                log.stdinfo(f"Writing {filename}")
+                try:
+                    if header:
+                        with open(filename, "w" if overwrite else "x") as f:
+                            for line in (repr(ext.phu) + repr(ext.hdr)).split("\n"):
+                                if line != " " * len(line):
+                                    f.write(f"# {line.strip()}\n")
+                            t.write(f, format=fmt)
+                    elif fmt == "fits":
+                        # Table.write isn't happy with the unit 'electron'
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore", category=AstropyUserWarning)
+                            thdu = fits.table_to_hdu(t)
+                        if "TUNIT2" not in thdu.header:
+                            thdu.header["TUNIT2"] = str(data_unit)
+                        if write_var and f"TUNIT{var_col}" not in thdu.header:
+                            thdu.header[f"TUNIT{var_col}"] = str(data_unit ** 2)
+                        hlist = fits.HDUList([fits.PrimaryHDU(), thdu])
+                        hlist.writeto(filename, overwrite=overwrite)
+                    else:
+                        t.write(filename, format=fmt, overwrite=overwrite)
+                except OSError:
+                    log.warning(f"{filename} already exists - cannot write")
+
+        return adinputs
+
+    def _read_and_convert_linelist(self, filename, w2=None, in_vacuo=False):
+        """
+        Reads a standard-format linelist and returns a list of wavelengths
+        (in nm) and weights (if they are included in the file), converted to
+        air or vacuum if needed.
+
+        Parameters
+        ----------
+        filename : str
+            name of file to read
+        w2 : float
+            longest wavelength of data; used to determine if the linelist is
+            in Angstroms rather than nm (if it doesn't specify its units)
+        in_vacuo : bool
+            return vacuum wavelengths (rather than air)?
+
+        Returns
+        -------
+        tuple : wavelengths (in nm), and weights/None
+        """
+        def identity(x):
+            return x
+
+        r = re.compile(".*\sunits\s+(.+)")
+        units = None
+
+        with open(filename, "r") as f:
+            lines = f.readlines()
+
+        converter = None
+        while converter is None:
+            try:
+                next_line = lines.pop(0).strip()
+            except IndexError:  # run out of lines
+                raise OSError("AIR or VACUUM wavelengths not specified in "
+                              f"{filename}")
+
+            # We accept any case if there's a space before it, or require
+            # all caps, to avoid matching stuff like "Blair & Brown (2010)"
+            if " AIR" in next_line.upper() or "AIR" in next_line:
+                converter = air_to_vac if in_vacuo else identity
+            elif " VACUUM" in next_line.upper():
+                converter = identity if in_vacuo else vac_to_air
+            m = r.match(next_line)
+            if m:
+                try:
+                    units = u.Unit(m.group(1))
+                except ValueError:
+                    pass
+
+        wavelengths = np.genfromtxt(lines, usecols=[0])
+        try:
+            weights = np.genfromtxt(lines, usecols=[1])
+        except ValueError:
+            weights = None
+
+        if units:
+            wavelengths *= units
+        elif w2 is not None and wavelengths.min() > w2:
+            self.log.warning("Line list appears to be in Angstroms")
+            wavelengths *= u.AA
+        else:
+            wavelengths *= u.nm
+        # Return in nm
+        return converter(wavelengths).to(u.nm).value, weights
+
+    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None,
+                          in_vacuo=False):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -2824,15 +3082,14 @@ class Spect(PrimitivesBASE):
         ----------
         ext : single-slice AD object
             Extension being calibrated (allows descriptors to be calculated).
-
         w1 : float
             Approximate shortest wavelength (nm).
-
         w2 : float
             Approximate longest wavelength (nm).
-
         dw : float
             Approximate dispersion (nm/pixel).
+        output : str ["air" | "vacuum"]
+            wavelength scale to get returned
 
         Returns
         -------
@@ -2842,14 +3099,11 @@ class Spect(PrimitivesBASE):
         array_like or None
             arc line weights
         """
-        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
-        arc_lines = np.loadtxt(filename, usecols=[0])
-        try:
-            weights = np.loadtxt(filename, usecols=[1])
-        except IndexError:
-            weights = None
-        return arc_lines, weights
+        return self._read_and_convert_linelist(filename, w2=w2,
+                                               in_vacuo=in_vacuo)
 
     def _get_spectrophotometry(self, filename):
         """

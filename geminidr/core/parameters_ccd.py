@@ -2,12 +2,12 @@
 # in the primitives_ccd.py file, in alphabetical order.
 from gempy.library import config
 from astrodata import AstroData
+from . import parameters_generic
 
-class biasCorrectConfig(config.Config):
+class biasCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_biasCorrected", optional=True)
     bias = config.ListField("Bias(es) to subtract", (AstroData, str), None,
                             optional=True, single=True)
-    do_bias = config.Field("Perform bias subtraction?", bool, True)
 
 
 class subtractOverscanConfig(config.core_1Dfitting_config):

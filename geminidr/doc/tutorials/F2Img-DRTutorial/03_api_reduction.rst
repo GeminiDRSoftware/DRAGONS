@@ -101,14 +101,13 @@ Setting up the Calibration Service
 Before we continue, let's be sure we have properly setup our calibration
 database and the calibration association service.
 
-First, check that you have already a ``rsys.cfg`` file inside the
-``~/.geminidr/``. It should contain:
+First, check that you have already a ``dragonsrc`` file inside the
+``~/.dragons/``. It should contain:
 
 .. code-block:: none
 
     [calibs]
-    standalone = True
-    database_dir = ${path_to_my_data}/f2img_tutorial/playground
+    databases = ${path_to_my_data}/f2img_tutorial/playground/cal_manager.db get
 
 
 This tells the system where to put the calibration database. This
@@ -116,25 +115,25 @@ database will keep track of the processed calibrations as we add them
 to it.
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
-    Also, mind the dot in ``.geminidr``.
+    Also, mind the dot in ``.dragons``.
 
-The calibration database is initialized and the calibration service is
-configured as follow:
+The calibration database is initialized as follows:
 
 .. code-block:: python
     :linenos:
     :lineno-start: 10
 
-    caldb = cal_service.CalibrationService()
-    caldb.config()
+    caldb = cal_service.set_local_database()
     caldb.init()
-
-    cal_service.set_calservice()
 
 The calibration service is now ready to use. If you need more details,
 check the
 `Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
-
+You may wonder why the name of the calibration database needs to be specified
+here when it is in the ``dragonsrc`` file. The reason is that ``dragonsrc``
+defines how to retrieve and store calibrations and can refer to more than one
+database, whereas we will be using the ``caldb`` API to add (and, if
+necessary, remove) files from a *single* database.
 
 .. _create_file_lists:
 
@@ -244,7 +243,9 @@ We first create the master dark for the science target, then add it to the
 calibration database. The name of the output master dark is
 ``N20160102S0423_dark.fits``. The output is written to disk and its name is
 stored in the Reduce instance. The calibration service expects the name of a
-file on disk.
+file on disk. Note that, even though the database is not configured for
+(automatic) storage in the ``dragonsrc`` file, the ``add_cal()`` method will
+still add the file to it.
 
 .. code-block:: python
     :linenos:

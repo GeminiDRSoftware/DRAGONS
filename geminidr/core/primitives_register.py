@@ -464,7 +464,6 @@ class Register(PrimitivesBASE):
             # Report the measurement to the fitsstore
             if self.upload and "metrics" in self.upload:
                 fitsdict = qap.fitsstore_report(ad, "pe", info_list,
-                                                self.calurl_dict,
                                                 self.mode, upload=True)
 
             # Timestamp and update filename

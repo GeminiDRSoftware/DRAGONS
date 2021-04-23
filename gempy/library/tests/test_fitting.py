@@ -41,7 +41,8 @@ class TestFit1D:
                Gaussian1D(amplitude=1., mean=15.8, stddev=2.)(slit))
 
         # A continuum level makes for a more stable comparison of fit vs data:
-        sky = sky_model(wav.value) + 30.
+        self.bglev = 30.
+        sky = sky_model(wav.value) + self.bglev
 
         data = obj + sky
 
@@ -122,7 +123,7 @@ class TestFit1D:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=40., rtol=0.025)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=15., rtol=0.015)
 
     def test_chebyshev_ax1_quartic_grow2(self):
         """
@@ -136,7 +137,7 @@ class TestFit1D:
                           sigma_lower=3.7, sigma_upper=3.7, niter=5, grow=2,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=15., rtol=0.015)
 
     def test_chebyshev_single_quartic(self):
         """
@@ -148,7 +149,8 @@ class TestFit1D:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj[16], atol=30., rtol=0.02)
+        assert_allclose(fit_vals, self.obj[16] + self.bglev, atol=5.,
+                        rtol=0.015)
 
     def test_chebyshev_1_model_def_ax_quartic(self):
         """
@@ -160,10 +162,8 @@ class TestFit1D:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        # This should work, but currently fails because fit_1D is returning
-        # a result with shape (140, 1) from (1, 140) inputs.
-
-        assert_allclose(fit_vals, self.obj[16:17], atol=30., rtol=0.02)
+        assert_allclose(fit_vals, self.obj[16:17] + self.bglev, atol=5.,
+                        rtol=0.015)
 
     def test_chebyshev_1_model_ax0_lin(self):
         """
@@ -240,7 +240,7 @@ class TestFit1D:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5, grow=1,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj + 30, atol=25., rtol=0.02)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=20., rtol=0.01)
 
     def test_legendre_ax1_quartic(self):
         """
@@ -252,7 +252,7 @@ class TestFit1D:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=20., rtol=0.01)
 
     def test_chebyshev_def_ax_quartic_masked(self):
         """
@@ -264,7 +264,7 @@ class TestFit1D:
                        sigma_lower=2.5, sigma_upper=2.5, niter=5, plot=debug)
         fit_vals = fit1d.evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=40., rtol=0.02)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=20., rtol=0.01)
 
         # Ensure that masked input values have been passed through to the
         # output mask by the fitter:
@@ -285,7 +285,7 @@ class TestFit1D:
                        plot=debug)
         fit_vals = fit1d.evaluate()
 
-        assert_allclose(fit_vals, self.obj + 30, atol=25., rtol=0.02)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=20., rtol=0.01)
 
         # Ensure that masked input values have been passed through to the
         # output mask by the fitter:
@@ -309,7 +309,8 @@ class TestFit1DCube:
                           x_stddev=2.1, y_stddev=1.9)(x, y))
 
         # A continuum level makes for a more stable comparison of fit vs data:
-        sky = sky_model(wav) + 30.
+        self.bglev = 30.
+        sky = sky_model(wav) + self.bglev
 
         data = obj + sky
 
@@ -332,7 +333,7 @@ class TestFit1DCube:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=20., rtol=0.01)
 
     def test_chebyshev_def_ax_quartic(self):
         """
@@ -350,7 +351,7 @@ class TestFit1DCube:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
+        assert_allclose(fit_vals, self.obj.T + self.bglev, atol=20., rtol=0.01)
 
     def test_cubic_spline_ax0_ord3(self):
         """
@@ -363,7 +364,7 @@ class TestFit1DCube:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj, atol=45., rtol=0.015)
+        assert_allclose(fit_vals, self.obj + self.bglev, atol=20., rtol=0.01)
 
     def test_cubic_spline_def_ax_ord3(self):
         """
@@ -376,7 +377,7 @@ class TestFit1DCube:
                           sigma_lower=2.5, sigma_upper=2.5, niter=5,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, self.obj.T, atol=45., rtol=0.015)
+        assert_allclose(fit_vals, self.obj.T + self.bglev, atol=20., rtol=0.01)
 
     def test_cubic_spline_ax1_ord3_grow1(self):
         """
@@ -390,8 +391,8 @@ class TestFit1DCube:
                           sigma_lower=3.5, sigma_upper=3.5, niter=5, grow=1,
                           plot=debug).evaluate()
 
-        assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2) + 30,
-                        atol=25., rtol=0.015)
+        assert_allclose(fit_vals, np.rollaxis(self.obj, 0, 2) + self.bglev,
+                        atol=20., rtol=0.01)
 
 
 class TestFit1DNewPoints:
