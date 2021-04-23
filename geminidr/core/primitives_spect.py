@@ -334,47 +334,15 @@ class Spect(PrimitivesBASE):
                         ad.phu["EXTCURVE"] = (
                             site, self.keyword_comments["EXTCURVE"])
 
-            # We can only calculate the sensitivity for one extension in
-            # non-XD data, so keep track of this in case it's not the first one
-            calculated = False
-            for ext in ad:
-                if len(ext.shape) != 1:
-                    log.warning(f"{ad.filename} extension {ext.id} is not a "
-                                "1D spectrum")
-                    continue
+            def _get_fit1d_input_data(ext, exptime, spec_table):
+                spectrum = Spek1D(ext) / (exptime * u.s)
+                wave, zpt, zpt_err = [], [], []
 
-            if interactive:
-                all_exts = list()
-                all_shapes = list()
-                all_pixels = list()
-                all_masked_data = list()
-                all_weights = list()
-                all_fp_init = list()
-
-                for ext in ad:
-                    if len(ext.shape) != 1:
-                        log.warning("{}:{} is not a 1D spectrum".
-                                    format(ad.filename, ext.hdr['EXTVER']))
-                        continue
-
-                    if calculated and 'XD' not in ad.tags:
-                        log.warning("Found additional 1D extensions in non-XD data."
-                                    " Ignoring.")
-                        break
-
-                    spectrum = Spek1D(ext) / (exptime * u.s)
-                    wave, zpt, zpt_err = [], [], []
-
-                # Compute values in counts / (exptime * flux_density * bandpass)
+                # Compute values that are counts / (exptime * flux_density * bandpass)
                 for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                            spec_table['WIDTH'].quantity,
-                                            spec_table['FLUX'].quantity):
+                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                    # We don't want a single bad pixel to ruin an entire
-                    # bandpass, so exclude pixels with the DQ.bad_pixel bit
-                    # set and assign them the average of the other pixels
-                    data, mask, variance = spectrum.signal(
-                        region, interpolate=DQ.bad_pixel)
+                    data, mask, variance = spectrum.signal(region)
                     if mask == 0 and fluxdens > 0:
                         # Regardless of whether FLUX column is f_nu or f_lambda
                         flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
@@ -385,43 +353,61 @@ class Spect(PrimitivesBASE):
                             zpt.append(u.Magnitude(flux / data))
                             if variance is not None:
                                 zpt_err.append(np.log(1 + np.sqrt(variance) / data))
-                wave = array_from_list(wave, unit=u.nm)
-                zpt = array_from_list(zpt)
-                weights = 1./array_from_list(zpt_err) if zpt_err else None
+                wave = at.array_from_list(wave, unit=u.nm)
+                zpt = at.array_from_list(zpt)
+                weights = 1. / array_from_list(zpt_err) if zpt_err else None
+                return wave, zpt, weights
 
-                # Correct for atmospheric extinction. This correction makes
-                # the real data brighter, so makes the zpt magnitude more +ve
-                # (since "data" is in the denominator)
-                if airmass0 and site is not None and airmass is not None:
-                    zpt += u.Magnitude(airmass *
-                                       extinct.extinction(wave, site=site))
+            # We can only calculate the sensitivity for one extension in
+            # non-XD data, so keep track of this in case it's not the first one
+            calculated = False
+            xunits = yunits = None
+            all_exts = list()
+            for ext in ad:
+                if len(ext.shape) != 1:
+                    log.warning(f"{ad.filename} extension {ext.id} is not a "
+                                "1D spectrum")
+                    continue
 
-                all_exts.append(ext)
-                all_shapes.append(ext.shape[0])
-                all_pixels.append(wave.value)
-                all_masked_data.append(zpt.value)
-                all_weights.append(weights)
-                all_fp_init.append(fit_1D.translate_params(params))
+                if calculated and 'XD' not in ad.tags:
+                    log.warning("Found additional 1D extensions in non-XD data."
+                                " Ignoring.")
+                    break
 
+                waves, zpt, weights = _get_fit1d_input_data(ext, exptime, spec_table)
+                if xunits is None:
+                    xunits = waves.unit
+                elif xunits != waves.unit:
+                    log.warning(f"Unit mismatch between {xunits} and {waves.unit}")
+                    continue
+                if yunits is None:
+                    yunits = zpt.unit
+                elif xunits != zpt.unit:
+                    log.warning(f"Unit mismatch between {yunits} and {zpt.unit}")
+                    continue
+                all_exts.append((ext, waves, zpt, weights))
                 calculated = True
 
-                # ******************************************************************************************
+            if interactive:
+                all_shapes = [x[0].shape[0] for x in all_exts]
+                all_waves = [x[1] for x in all_exts]
+                all_zpt = [x[2] for x in all_exts]
+                all_weights = [x[3] for x in all_exts]
+                all_fp_init = [fit_1D.translate_params(params)] * len(all_exts)
+
+                # build config for interactive
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                # Hacking this out?
-                if ad.orig_filename:
-                    filename_info = ad.orig_filename
-                elif ad.filename:
-                    filename_info = ad.filename
-                else:
-                    filename_info = ''
-                visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
+                # Get filename to display in visualizer
+                filename_info = getattr(ad, 'filename', '')
+
+                visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
                                                    tab_name_fmt="CCD {}",
-                                                   xlabel='Wavelength (nm)',
-                                                   ylabel='Sensitivity (mag cm^2 electron / erg)',
+                                                   xlabel=f'Wavelength ({xunits})',
+                                                   ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_shapes,
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
@@ -431,49 +417,15 @@ class Spect(PrimitivesBASE):
 
                 all_m_final = visualizer.results()
                 for ext, fit in zip(all_exts, all_m_final):
-                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=wave.unit,
-                                                     yunit=zpt.unit)
+                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=xunits,
+                                                     yunit=yunits)
             else:
-                calculated = False
-                for ext in ad:
-                    if len(ext.shape) != 1:
-                        log.warning(f"{ad.filename} extension {ext.id} is not a "
-                                    "1D spectrum")
-                        continue
-
-                    if calculated and 'XD' not in ad.tags:
-                        log.warning("Found additional 1D extensions in non-XD data."
-                                    " Ignoring.")
-                        break
-
-                    # Non-interactive
-                    spectrum = Spek1D(ext) / (exptime * u.s)
-                    wave, zpt, zpt_err = [], [], []
-
-                    # Compute values that are counts / (exptime * flux_density * bandpass)
-                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                        data, mask, variance = spectrum.signal(region)
-                        if mask == 0 and fluxdens > 0:
-                            # Regardless of whether FLUX column is f_nu or f_lambda
-                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                            if data > 0:
-                                wave.append(w0)
-                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(flux / data))
-                                if variance is not None:
-                                    zpt_err.append(np.log(1 + np.sqrt(variance) / data))
-                    wave = at.array_from_list(wave, unit=u.nm)
-                    zpt = at.array_from_list(zpt)
-                    weights = 1. / array_from_list(zpt_err) if zpt_err else None
-                    fit_1d = fit_1D(zpt.value, points=wave.value,
+                for (ext, waves, zpt, weights) in all_exts:
+                    fit_1d = fit_1D(zpt.value, points=waves.value,
                                     weights=weights, **fit1d_params,
                                     plot=debug_plot)
-                    ext.SENSFUNC = am.model_to_table(fit_1d.model, xunit=wave.unit,
+                    ext.SENSFUNC = am.model_to_table(fit_1d.model, xunit=waves.unit,
                                                      yunit=zpt.unit)
-                    calculated = True
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
