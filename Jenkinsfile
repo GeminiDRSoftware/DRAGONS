@@ -71,9 +71,9 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
+                            dir ( '$TMPDIR' ) { deleteDir() }
+                            echo "Delete Tox Environment: .tox/py37-unit"
+                            dir ( ".tox/py37-unit" ) { deleteDir() }
                         }
                         failure {
                             echo "Archiving tests results for Unit Tests"
@@ -81,8 +81,6 @@ pipeline {
         //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
                         }
                         success {
-                            echo "Delete Tox Environment: .tox/py37-unit"
-                            dir ( ".tox/py37-unit" ) { deleteDir() }
                             echo "Delete Outputs folder: "
                             dir ( "${DRAGONS_TEST_OUT}" ) { deleteDir() }
                         }
@@ -116,13 +114,11 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
-                        }
-                        success {
+                            dir ( '$TMPDIR' ) { deleteDir() }
                             echo "Delete Tox Environment: .tox/py37-integ"
                             dir ( ".tox/py37-integ" ) { deleteDir() }
+                        }
+                        success {
                             echo "Delete Outputs folder: "
                             dir ( "${DRAGONS_TEST_OUT}" ) { deleteDir() }
                         }
@@ -155,13 +151,11 @@ pipeline {
                                 testResults: 'reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
-                        }
-                        success {
+                            dir ( '$TMPDIR' ) { deleteDir() }
                             echo "Delete Tox Environment: .tox/py37-reg"
                             dir ( ".tox/py37-reg" ) { deleteDir() }
+                        }
+                        success {
                             echo "Delete Outputs folder: "
                             dir ( "${DRAGONS_TEST_OUT}" ) { deleteDir() }
                         }
@@ -196,10 +190,10 @@ pipeline {
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
                             dir ( '$TMPDIR' ) { deleteDir() }
-                        }  // end always
-                        success {
                             echo "Delete Tox Environment: .tox/py37-gmosls"
                             dir( '.tox/py37-gmosls' ) { deleteDir() }
+                        }  // end always
+                        success {
                             echo "Delete Outputs folder: "
                             dir ( "${DRAGONS_TEST_OUT}" ) { deleteDir() }
                         }
@@ -235,13 +229,11 @@ pipeline {
                         testResults: 'reports/*_results.xml'
                     )
                     echo "Delete temporary folder: ${TMPDIR}"
-                    dir ( '$TMPDIR' ) {
-                        deleteDir()
-                    }
-                }
-                success {
+                    dir ( '$TMPDIR' ) { deleteDir() }
                     echo "Delete Tox Environment: .tox/py37-slow"
                     dir( '.tox/py37-slow' ) { deleteDir() }
+                }
+                success {
                     echo "Delete Outputs folder: "
                     dir ( "${DRAGONS_TEST_OUT}" ) { deleteDir() }
                 }
