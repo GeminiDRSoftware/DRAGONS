@@ -83,6 +83,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                        ("GMOS-N", "EEV"): 0.7,
                        ("GMOS-S", "Hamamatsu-S"): 5.5,
                        ("GMOS-S", "EEV"): 3.8}
+        edges = 50  # try to eliminate issues at the very edges
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -133,7 +134,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # Sadly, we cannot do this reliably without concatenating the
                 # arrays and using a big chunk of memory.
                 row_medians = np.percentile(np.concatenate(
-                    [ext.data for ext in ad], axis=1), 95, axis=1)
+                    [ext.data for ext in ad], axis=1),
+                    95, axis=1)
+                row_medians -= at.boxcar(row_medians, size=50 // ybin)
 
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
@@ -152,15 +155,16 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
 
+
                 if shift is None:
+                    max_shift = 50
                     mshift = max_shift // ybin + 2
-                    edges = 50  # try to eliminate issues at the very edges
                     mshift2 = mshift + edges
                     # model[] indexing avoids reduction in signal as slit
                     # is shifted off the top of the image
+                    cntr = model.size - edges - mshift2 - 1
                     xcorr = correlate(row_medians[edges:-edges], model[mshift2:-mshift2],
-                                      mode='same')[model.size // 2 - edges - mshift:
-                                                   model.size // 2 - edges + mshift]
+                                      mode='full')[cntr - mshift:cntr + mshift]
                     # This line avoids numerical errors in the spline fit
                     xcorr -= np.median(xcorr)
                     # This calculates the offsets of each point from the
@@ -170,9 +174,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     xspline = fit_1D(xcorr, function="spline3", order=None,
                                      weights=np.full(len(xcorr), 1. / std)).evaluate()
                     yshift = xspline.argmax() - mshift
-                    maxima = np.logical_and(np.diff(xspline[:-1]) > 0.1 * std,
-                                            np.diff(xspline[1:]) < -0.1 * std)
-                    if maxima.sum() > 1 or abs(yshift // ybin) > max_shift:
+                    maxima = xspline[1:-1][np.logical_and(np.diff(xspline[:-1]) > 0,
+                                                          np.diff(xspline[1:]) < 0)]
+                    significant_maxima = (maxima > xspline.max() - 3 * std).sum()
+                    if significant_maxima > 1 or abs(yshift // ybin) > max_shift:
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
