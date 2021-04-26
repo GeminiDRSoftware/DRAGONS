@@ -92,6 +92,7 @@ pipeline {
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/integ/"
                     }
+                    options { quietPeriod(60) }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
@@ -118,6 +119,7 @@ pipeline {
 
                 stage('Regression Tests') {
                     agent { label "master" }
+                    options { quietPeriod(120) }
                     environment {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
@@ -151,6 +153,7 @@ pipeline {
 
                 stage('GMOS LS Tests') {
                     agent { label "master" }
+                    options { quietPeriod(180) }
                     environment {
                         MPLBACKEND = "agg"
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
