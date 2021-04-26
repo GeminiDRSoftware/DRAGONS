@@ -84,10 +84,19 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                        ("GMOS-N", "EEV"): 0.7,
                        ("GMOS-S", "Hamamatsu-S"): 5.5,
                        ("GMOS-S", "EEV"): 3.8}
+        edges = 50  # try to eliminate issues at the very edges
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        # Do this now for memory management reasons. We'll be creating large
+        # arrays temporarily and don't want the permanent mask arrays to
+        # fragment the free memory.
+        for ad in adinputs:
+            for ext in ad:
+                if ext.mask is None:
+                    ext.mask = np.zeros_like(ext.data).astype(DQ.datatype)
 
         for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
             if ad.phu.get(timestamp_key):
@@ -97,10 +106,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 continue
 
             ybin = ad.detector_y_bin()
-            for ext in ad:
-                if ext.mask is None:
-                    ext.mask = np.zeros_like(ext.data).astype(DQ.datatype)
-
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
                              for detsec in ad_detsec)
@@ -125,14 +130,14 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     log.warning(f"MDF not found for {ad.filename} - cannot "
                                 "add illumination mask.")
                     continue
+
                 # Default operation for GMOS full-frame LS
-                # The 95% cut should ensure that we're sampling something
-                # bright (even for an arc)
-                # The max is intended to handle R150 data, where many of
-                # the extensions are unilluminated
-                row_medians = np.prod(np.array([np.percentile(
-                    ext.data, 95, axis=1)
-                    for ext in ad]), axis=0)
+                # Sadly, we cannot do this reliably without concatenating the
+                # arrays and using a big chunk of memory.
+                row_medians = np.percentile(np.concatenate(
+                    [ext.data for ext in ad], axis=1),
+                    95, axis=1)
+                row_medians -= at.boxcar(row_medians, size=50 // ybin)
 
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
@@ -150,15 +155,15 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     model[yccd[0]:yccd[1]+1] = 1
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
+
                 if shift is None:
                     mshift = max_shift // ybin + 2
-                    edges = 50  # try to eliminate issues at the very edges
                     mshift2 = mshift + edges
                     # model[] indexing avoids reduction in signal as slit
                     # is shifted off the top of the image
+                    cntr = model.size - edges - mshift2 - 1
                     xcorr = correlate(row_medians[edges:-edges], model[mshift2:-mshift2],
-                                      mode='same')[model.size // 2 - edges - mshift:
-                                                   model.size // 2 - edges + mshift]
+                                      mode='full')[cntr - mshift:cntr + mshift]
                     # This line avoids numerical errors in the spline fit
                     xcorr -= np.median(xcorr)
                     # This calculates the offsets of each point from the
@@ -168,9 +173,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     xspline = fit_1D(xcorr, function="spline3", order=None,
                                      weights=np.full(len(xcorr), 1. / std)).evaluate()
                     yshift = xspline.argmax() - mshift
-                    maxima = np.logical_and(np.diff(xspline[:-1]) > 0.1 * std,
-                                            np.diff(xspline[1:]) < -0.1 * std)
-                    if maxima.sum() > 1 or abs(yshift // ybin) > max_shift:
+                    maxima = xspline[1:-1][np.logical_and(np.diff(xspline[:-1]) > 0,
+                                                          np.diff(xspline[1:]) < 0)]
+                    significant_maxima = (maxima > xspline.max() - 3 * std).sum()
+                    if significant_maxima > 1 or abs(yshift // ybin) > max_shift:
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
