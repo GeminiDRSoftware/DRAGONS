@@ -134,6 +134,7 @@ def test_header_offset(adinputs2, caplog):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.skip("Improved primitive doesn't fail any more")
 def test_header_offset_fallback(adinputs2, caplog):
     """For this dataset the correlation method fails, and give an offset very
     different from the header one. So we check that the fallback to the header
