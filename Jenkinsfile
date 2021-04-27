@@ -59,6 +59,7 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
+                        sh 'pip install -U pip'
                         echo "Print environment variables"
                         sh 'env'
                         echo "Running tests with Python 3.7"
