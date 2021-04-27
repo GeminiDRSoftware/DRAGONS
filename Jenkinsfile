@@ -40,8 +40,8 @@ pipeline {
             }
         }
 
-//         stage('Normal tests') {
-//             parallel {
+        stage('Normal tests') {
+            parallel {
 
                 stage('Unit tests') {
 
@@ -185,8 +185,8 @@ pipeline {
                     }  // end post
                 }  // end stage
 
-//             }  // end parallel
-//         }
+            }  // end parallel
+        }
 
         stage('Slow Tests') {
             agent { label "master" }
