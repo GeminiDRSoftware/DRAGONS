@@ -41,9 +41,9 @@ class AstroDataGnirs(AstroDataGemini):
             return TagSet(['IMAGE'])
 
     @astro_data_tag
-    def _type_mask(self):
+    def _type_thruslit(self):
         if 'Acq' not in self.phu.get('SLIT', ''):
-            return TagSet(['MASK'], if_present=['ACQUISITION'])
+            return TagSet(['THRUSLIT'], if_present=['IMAGE'])
 
     @astro_data_tag
     def _type_spect(self):

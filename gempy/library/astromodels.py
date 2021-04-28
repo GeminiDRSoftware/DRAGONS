@@ -219,6 +219,14 @@ class UnivariateSplineWithOutlierRemoval:
         maximum number of clipping iterations to perform
     grow: int
         radius to reject pixels adjacent to masked pixels
+    knot_spacing : str
+        describes how the knots should be spaced if order is not None.
+        "limits": equally in x between the min/max x values
+        "points": so that there are the same number of points in each region
+        "good": so that there are the same number of good points in each region
+    downscale_order: bool
+        reduce number of spline pieces in direct proportion to the fraction
+        of initially masked pixels?
     outlier_kwargs: dict-like
         parameter dict to pass to outlier_func()
 
@@ -229,7 +237,8 @@ class UnivariateSplineWithOutlierRemoval:
     """
     def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=True, outlier_func=sigma_clip,
-                niter=0, grow=0, debug=False, **outlier_kwargs):
+                niter=0, grow=0, debug=False, knot_spacing="good",
+                downscale_order=True, **outlier_kwargs):
 
         log = logutils.get_logger(__name__)
 
@@ -257,14 +266,6 @@ class UnivariateSplineWithOutlierRemoval:
             outlier_kwargs.get('sigma_upper', None) is not None:
             outlier_kwargs['sigma'] = 0.0
 
-        # Both spline classes require sorted x, so do that here. We also
-        # require unique x values, so we're going to deal with duplicates by
-        # making duplicated values slightly larger. But we have to do this
-        # iteratively in case of a basket-case scenario like (1, 1, 1, 1+eps, 2)
-        # which would become (1, 1+eps, 1+2*eps, 1+eps, 2), which still has
-        # duplicates and isn't sorted!
-        # I can't think of any better way to cope with this, other than write
-        # least-squares spline-fitting code that handles duplicates from scratch
         epsf = np.finfo(float).eps
 
         orig_mask = np.zeros(y.shape, dtype=bool)
@@ -300,34 +301,37 @@ class UnivariateSplineWithOutlierRemoval:
             print('y=', y)
             print('orig_mask=', orig_mask.astype(int))
 
-        while True:
-            xunique, indices = np.unique(x, return_index=True)
-            if indices.size == x.size:
-                # All unique x values so continue
-                break
-            if order is None:
-                raise ValueError("Must specify spline order when there are "
-                                 "duplicate x values")
-            for i in range(x.size):
-                if i not in indices:
-                    xunique[i] *= (1.0 + epsf)
+        if (order is None or s == 0) and (np.unique(x).size < x.size):
+            raise ValueError("Must specify spline order or have s > 0 when "
+                             "there are duplicate x values")
+        xunique = x
+        sort_indices = np.argsort(xunique)
 
         if (~orig_mask).sum() <= k:
             log.warning("Too few unmasked points. Unmasking all data.")
             orig_mask[:] = False
         if order is not None:
+            if downscale_order:
+             order = int(order * (~orig_mask).sum() / orig_mask.size + 0.5)
             if order > (~orig_mask).sum() - k:
                 order = (~orig_mask).sum() - k
                 log.warning("Underconstrained fit. Reducing number of spline "
                             f"pieces to {order}")
-            knots = [xunique[int(xx + 0.5)]
-                     for xx in np.linspace(0, xunique.size - 1, order + 1)]
+
+            if knot_spacing == "limits":
+                knots = np.linspace(xunique.min(), xunique.max(), order + 1)
+            elif knot_spacing == "points":
+                knots = np.interp(np.linspace(0, xunique.size - 1, order + 1),
+                                  range(xunique.size), xunique[sort_indices])
+            elif knot_spacing == "good":
+                knots = np.interp(
+                    np.linspace(0, xunique[~orig_mask].size - 1, order + 1),
+                    range(xunique[~orig_mask].size), sorted(xunique[~orig_mask]))
+            else:
+                raise ValueError(f"Unrecognized option: knot_spacing='{knot_spacing}'")
             spline_kwargs["t"] = knots[1:-1]
-            # Space knots equally based on density of unique x values
             if debug:
                 print("KNOTS", knots)
-
-        sort_indices = np.argsort(xunique)
 
         iteration = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"

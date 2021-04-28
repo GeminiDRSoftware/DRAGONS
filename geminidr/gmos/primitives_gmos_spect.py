@@ -169,19 +169,24 @@ class GMOSSpect(Spect, GMOS):
         sfx = params["suffix"]
         arc = params["arc"]
         use_iraf = params["use_iraf"]
+        do_cal = params["do_cal"]
+
+        if do_cal == 'skip':
+            log.warning("QE correction has been turned off.")
+            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
-            self.getProcessedArc(adinputs, refresh=False)
-            arc_list = self._get_cal(adinputs, 'processed_arc')
+            arc_list = self.caldb.get_processed_arc(adinputs)
         else:
-            arc_list = arc
+            arc_list = (arc, None)
 
-        for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
+        # Provide an arc AD object for every science frame, and an origin
+        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
+                                                  force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by QECorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by QECorrect. "
+                            "Continuing.")
                 continue
 
             if 'e2v' in ad.detector_name(pretty=True):
@@ -202,8 +207,7 @@ class GMOSSpect(Spect, GMOS):
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             if arc is not None and (arc.detector_x_bin() != xbin or
                                     arc.detector_y_bin() != ybin):
-                log.warning("Science frame {} and arc {} have different binnings,"
-                            "so cannot use arc".format(ad.filename, arc.filename))
+                log.warning("Science frame and arc have different binnings.")
                 arc = None
 
             # The plan here is to attach the mosaic gWCS to the science frame,
@@ -219,15 +223,19 @@ class GMOSSpect(Spect, GMOS):
                             "frame. This is unexpected but I'll continue.")
 
             if arc is None:
-                if 'sq' in self.mode:
+                if 'sq' in self.mode or do_cal == 'force':
                     raise OSError(f"No processed arc listed for {ad.filename}")
                 else:
-                    log.warning(f"No arc supplied for {ad.filename}")
+                    log.warning(f"{ad.filename}: no arc was specified. Using "
+                                "wavelength solution in science frame.")
             else:
                 # OK, we definitely want to try to do this, get a wavelength solution
+                origin_str = f" (obtained from {origin})" if origin else ""
+                log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
+                            f"{origin_str}")
                 if self.timestamp_keys['determineWavelengthSolution'] not in arc.phu:
                     msg = f"Arc {arc.filename} (for {ad.filename} has not been wavelength calibrated."
-                    if 'sq' in self.mode:
+                    if 'sq' in self.mode or do_cal == 'force':
                         raise IOError(msg)
                     else:
                         log.warning(msg)
@@ -236,7 +244,7 @@ class GMOSSpect(Spect, GMOS):
                 arc_wcs = deepcopy(arc[0].wcs)
                 if 'distortion_corrected' not in arc_wcs.available_frames:
                     msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
-                    if 'sq' in self.mode:
+                    if 'sq' in self.mode or do_cal == 'force':
                         raise OSError(msg)
                     else:
                         log.warning(msg)
@@ -250,9 +258,8 @@ class GMOSSpect(Spect, GMOS):
                 ad_detsec = ad.detector_section()
                 arc_detsec = arc.detector_section()[0]
                 if (ad_detsec[0].x1, ad_detsec[-1].x2) != (arc_detsec.x1, arc_detsec.x2):
-                    raise ValueError("I don't know how to process the "
-                                     f"offsets between {ad.filename} "
-                                     f"and {arc.filename}")
+                    raise ValueError("Cannot process the offsets between "
+                                     f"{ad.filename} and {arc.filename}")
 
                 yoff1 = arc_detsec.y1 - ad_detsec[0].y1
                 yoff2 = arc_detsec.y2 - ad_detsec[0].y2
@@ -443,11 +450,11 @@ class GMOSSpect(Spect, GMOS):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None):
+    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, in_vacuo=False):
         use_second_order = w2 > 1000 and abs(dw) < 0.2
         use_second_order = False
-        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
-        wavelengths = np.loadtxt(filename, usecols=[0])
-        return wavelengths, None
+        return self._read_and_convert_linelist(filename, w2=w2, in_vacuo=in_vacuo)

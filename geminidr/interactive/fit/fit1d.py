@@ -241,10 +241,10 @@ class InteractiveModel1D(InteractiveModel):
                 if any(y.mask):
                     init_mask = y.mask
                 else:
-                    init_mask = np.zeros_like(x, dtype=bool)
+                    init_mask = np.array(np.zeros_like(x, dtype=bool))
                 # init_mask = y.mask or np.zeros_like(x, dtype=bool)
             except AttributeError:
-                init_mask = np.zeros_like(x, dtype=bool)
+                init_mask = np.array(np.zeros_like(x, dtype=bool))
             else:
                 y = y.data
         else:
@@ -259,15 +259,15 @@ class InteractiveModel1D(InteractiveModel):
         # "section" is the valid section provided by the user,
         # i.e., points not in this region(s) are user-masked
         if self.section is None:
-            self.user_mask = np.zeros_like(self.fit_mask)
+            self.user_mask = np.array(np.zeros_like(self.fit_mask))
         else:
-            self.user_mask = np.ones_like(self.fit_mask)
+            self.user_mask = np.array(np.ones_like(self.fit_mask))
             for slice_ in self.section:
                 self.user_mask[slice_.start < x < slice_.stop] = False
 
         if self.band_mask is None:
             # otherwise we want to keep the band mask as we still have the bands in place
-            self.band_mask = np.zeros_like(self.fit_mask)
+            self.band_mask = np.array(np.zeros_like(self.fit_mask))
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
@@ -1076,7 +1076,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.reinit_panel = column(*reinit_widgets)
         else:
             # left panel with just the function selector (Chebyshev, etc.)
-            self.reinit_panel = column()
+            self.reinit_panel = None  # column()
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
@@ -1189,7 +1189,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             layout_ls.append(self.submit_button,
                              align="end", css_classes=['top-row'])
 
-        if len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
+        if self.reinit_panel is None:
+            layout_ls.append(col)
+        elif len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
             layout_ls.append(Spacer(height=10))
             layout_ls.append(col)

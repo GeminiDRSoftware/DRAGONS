@@ -140,7 +140,7 @@ def reduce_flat(change_working_dir):
             reduce = Reduce()
             reduce.files.extend(flat_fnames)
             reduce.mode = 'ql'
-            reduce.ucals = normalize_ucals(reduce.files, calibration_files)
+            reduce.ucals = normalize_ucals(calibration_files)
             reduce.runr()
 
             master_flat = reduce.output_filenames.pop()

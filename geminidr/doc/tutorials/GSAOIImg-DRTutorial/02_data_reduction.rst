@@ -70,21 +70,20 @@ calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+In ``~/.dragons/``, create or edit the configuration file ``dragons`` as
 follow:
 
 .. code-block:: none
 
     [calibs]
-    standalone = True
-    database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
+    databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
 send to it.
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
-   Also, mind the dot in ``.geminidr``.
+   Also, mind the dot in ``.dragons``.
 
 Then initialize the calibration database:
 

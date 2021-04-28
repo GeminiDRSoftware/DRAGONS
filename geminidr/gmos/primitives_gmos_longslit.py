@@ -795,7 +795,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         return adinputs
 
     def slitIllumCorrect(self, adinputs=None, slit_illum=None,
-                               do_illum=True, suffix="_illumCorrected"):
+                               do_cal=None, suffix="_illumCorrected"):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding slit illumination image. If the inputs contain
@@ -808,15 +808,15 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             Data to be corrected.
         slit_illum : str or AstroData
             Slit illumination path or AstroData object.
-        do_illum: bool, optional
-            Perform slit illumination correction? (Default: True)
+        do_cal: str
+            Perform slit illumination correction? (Default: 'procmode')
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         qecorr_key = self.timestamp_keys['QECorrect']
 
-        if not do_illum:
+        if do_cal == 'skip':
             log.warning("Slit Illumination correction has been turned off.")
             return adinputs
 
@@ -836,7 +836,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 continue
 
             if slit_illum_ad is None:
-                if self.mode in ['sq']:
+                if self.mode in ['sq'] or do_cal == 'force':
                     raise OSError(
                         "No processed slit illumination listed for {}".format(
                             ad.filename))

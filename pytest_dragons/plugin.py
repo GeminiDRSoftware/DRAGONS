@@ -74,6 +74,13 @@ def pytest_collection_modifyitems(config, items):
             if "interactive" in item.keywords:
                 item.add_marker(marker)
 
+    if "GITHUB_WORKFLOW" in os.environ:
+        marker = pytest.mark.skip(
+            reason="GitHub Actions do not support tests with preprocessed data")
+        for item in items:
+            if "preprocessed_data" in item.keywords:
+                item.add_marker(marker)
+
 
 def pytest_report_header(config):
     return f"DRAGONS_TEST directory: {os.getenv('DRAGONS_TEST')}"

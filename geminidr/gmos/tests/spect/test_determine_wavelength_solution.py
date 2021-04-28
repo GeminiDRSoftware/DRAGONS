@@ -33,10 +33,13 @@ import glob
 import os
 import tarfile
 import logging
+from copy import deepcopy
 
 import numpy as np
 import pytest
 from matplotlib import pyplot as plt
+from astropy import units as u
+from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata
 import geminidr
@@ -200,11 +203,39 @@ def test_regression_determine_wavelength_solution(
     slit_size_in_px = slit_size_in_arcsec / pixel_scale
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
+    # We don't care about what the wavelength solution is doing at
+    # wavelengths where there's no data
+    indices = np.where(np.logical_and(ref_wavelength > 300, ref_wavelength < 1200))
     tolerance = 0.5 * (slit_size_in_px * dispersion)
-    np.testing.assert_allclose(wavelength, ref_wavelength, rtol=tolerance)
+    np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
+                               rtol=tolerance)
 
     if request.config.getoption("--do-plots"):
         do_plots(wcalibrated_ad)
+
+
+# We only need to test this with one input
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
+                         indirect=True)
+def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
+    p = GMOSLongslit([])
+    p.viewer = geminidr.dormantViewer(p, None)
+
+    ad_air = p.determineWavelengthSolution(
+        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=False, **determine_wavelength_solution_parameters).pop()
+    ad_vac = p.determineWavelengthSolution(
+        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=True, **determine_wavelength_solution_parameters).pop()
+    wave_air = am.get_named_submodel(ad_air[0].wcs.forward_transform, "WAVE")
+    wave_vac = am.get_named_submodel(ad_vac[0].wcs.forward_transform, "WAVE")
+    x = np.arange(ad_air[0].shape[1])
+    wair = wave_air(x)
+    wvac = air_to_vac(wair * u.nm).to(u.nm).value
+    dw = wvac - wave_vac(x)
+    assert abs(dw).max() < 0.001
 
 
 # Local Fixtures and Helper Functions ------------------------------------------

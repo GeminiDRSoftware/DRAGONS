@@ -15,7 +15,6 @@ from .reduceActions import ParameterAction
 from .reduceActions import CalibrationAction
 from .reduceActions import UnitaryArgumentAction
 
-from ..cal_service import localmanager_available
 # ------------------------------------------------------------------------------
 
 class ReduceHelpFormatter(RawDescriptionHelpFormatter):
@@ -159,12 +158,11 @@ def buildParser(version):
                         "calibration types. "
                         "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
-    if localmanager_available:
-        parser.add_argument("--local_db_dir", dest='local_db_dir', default=None,
-                            nargs="*", action=UnitaryArgumentAction,
-                            help="Point to a directory where the local database "
-                            "for calibration association can be found. Default "
-                            "is to look it up in the config file (if any).")
+    parser.add_argument("-c", "--config", dest='config', default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Load a specific config file, overriding the "
+                             "~/.geminidr/rsys.cfg file and the $DRAGONSRC "
+                             "environment variable.")
     return parser
 
 
@@ -278,9 +276,8 @@ def normalize_args(args):
         args.drpkg = args.drpkg[0]
     if isinstance(args.recipename, list):
         args.recipename = args.recipename[0]
-    if localmanager_available:
-        if isinstance(args.local_db_dir, list):
-            args.local_db_dir = args.local_db_dir[0]
+    if isinstance(args.config, list):
+        args.config = args.config[0]
     if isinstance(args.logmode, list):
         args.logmode = args.logmode[0]
     if isinstance(args.logfile, list):
@@ -322,7 +319,7 @@ def normalize_upload(upload):
     return
 
 
-def normalize_ucals(files, cals):
+def normalize_ucals(cals):
     """
     When a user passes a --user_cal argument of the form,
 
@@ -333,12 +330,10 @@ def normalize_ucals(files, cals):
     ['processed_bias:/path/to/foo.fits']
 
     This list would pass to the Reduce __init__ as such, but, this function
-    will translate and apply all user cals to all passed files.
+    will translate into a dict and confirm that the provided file exists and
+    is of the correct type.
 
-    {(ad.calibration_key(), 'processed_bias'): '/path/to/foo.fits'}
-
-    This dictionary is of the same form as the calibrations dictionary for
-    retrieved and stored calibrations.
+    {'processed_bias': '/path/to/foo.fits'}
 
     User calibrations always take precedence over nominal calibration
     retrieval. User calibrations are not cached because they are not
@@ -346,8 +341,6 @@ def normalize_ucals(files, cals):
 
     Parameters
     ----------
-    files : list
-        A list containing the input files.
     cals : list
         A list of strings like, 'caltype:calfilepath'.
 
@@ -355,13 +348,7 @@ def normalize_ucals(files, cals):
     -------
     normalz : dict
         a dictionary of the cal types applied to input files.
-
-    Example
-    -------
-    a returned dict,
-        {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
     """
-
     normalz = {}
     if cals is None:
         return normalz
@@ -376,9 +363,6 @@ def normalize_ucals(files, cals):
         except AssertionError:
             errmsg = "Calibration type {}\ndoes not match file {}"
             raise TypeError(errmsg.format(ctype, cpath))
-
-        for f in files:
-            ad = astrodata.open(f)
-            normalz.update({(ad.calibration_key(), ctype): cpath})
+        normalz[ctype] = cpath
 
     return normalz

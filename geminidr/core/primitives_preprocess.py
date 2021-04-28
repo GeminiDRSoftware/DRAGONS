@@ -241,6 +241,7 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
+        has_skytable = [False] * len(adinputs)
         if not adinputs or not ad_skies:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
@@ -251,7 +252,7 @@ class Preprocess(PrimitivesBASE):
             sky_times = dict(zip(ad_skies,
                                  [ad.ut_datetime() for ad in ad_skies]))
 
-            for ad in adinputs:
+            for i, ad in enumerate(adinputs):
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
                 if params["use_all"]:
@@ -298,11 +299,36 @@ class Preprocess(PrimitivesBASE):
                     for sky in sky_list:
                         log.stdinfo("  {}".format(sky.filename))
                     ad.SKYTABLE = sky_table
+                    has_skytable[i] = True
                 else:
                     log.warning("No sky frames available for {}".format(ad.filename))
 
         # Need to update sky stream in case it came from the "sky" parameter
         self.streams['sky'] = ad_skies
+
+        # if none of frames have sky tables, just pass them all through
+        # if only some frames did not have sky corrected, move them out of main and
+        # to the "no_skytable" stream.
+        if not any(has_skytable):  # "all false", none have been sky corrected
+            log.warning(
+                'Sky frames could not be associated to any input frames.'
+                'Sky subtraction will not be possible.')
+        elif not all(
+                has_skytable):  # "some false", some frames were NOT sky corrected
+            log.stdinfo('')  # for readablity
+            false_idx = [idx for idx, trueval in enumerate(has_skytable) if
+                         not trueval]
+            for idx in reversed(false_idx):
+                ad = adinputs[idx]
+                log.warning(f'{ad.filename} does not have any associated skies'
+                            ' and cannot be sky-subtracted, moving to '
+                            '"no_skies" stream')
+                if "no_skies" in self.streams:
+                    self.streams["no_skies"].append(ad)
+                else:
+                    self.streams["no_skies"] = [ad]
+                del adinputs[idx]
+
         return adinputs
 
     def correctBackgroundToReference(self, adinputs=None, suffix=None,
@@ -383,13 +409,13 @@ class Preprocess(PrimitivesBASE):
 
         return adinputs
 
-    def darkCorrect(self, adinputs=None, suffix=None, dark=None, do_dark=True):
+    def darkCorrect(self, adinputs=None, suffix=None, dark=None, do_cal=None):
         """
         This primitive will subtract each SCI extension of the inputs by those
         of the corresponding dark. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the subtraction on the
-        data. If no dark is provided, getProcessedDark will be called to
-        ensure a dark exists for every adinput.
+        data. If no dark is provided, the calibration database(s) will be
+        queried.
 
         Parameters
         ----------
@@ -404,33 +430,32 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if not do_dark:
+        if do_cal == 'skip':
             log.warning("Dark correction has been turned off.")
             return adinputs
 
         if dark is None:
-            self.getProcessedDark(adinputs, refresh=False)
-            dark_list = self._get_cal(adinputs, 'processed_dark')
+            dark_list = self.caldb.get_processed_dark(adinputs)
         else:
-            dark_list = dark
+            dark_list = (dark, None)
 
-        # Provide a dark AD object for every science frame
-        for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
-                                           force_ad=True)):
+        # Provide a dark AD object for every science frame, and an origin
+        for ad, dark, origin in zip(*gt.make_lists(adinputs, *dark_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by darkCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "darkCorrect. Continuing.")
                 continue
 
             if dark is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "dark was specified".format(ad.filename))
                     continue
                 else:
-                    raise OSError("No processed dark listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no dark was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching binning, shapes & units
             # TODO: Check exposure time?
@@ -445,9 +470,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, dark, check_filter=False,
                                       check_units=True)
 
-            log.fullinfo("Subtracting the dark ({}) from the input "
-                         "AstroData object {}".
-                         format(dark.filename, ad.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.fullinfo(f"{ad.filename}: subtracting the dark "
+                         f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename
@@ -501,6 +526,7 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
+
 
     def fixPixels(self, adinputs=None, **params):
         """
@@ -695,13 +721,14 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_flat=True):
+
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the division on the data.
-        If no flatfield is provided, getProcessedFlat will be called
-        to ensure a flat exists for every adinput.
+        If no flatfield is provided, the calibration database(s) will be
+        queried.
 
         If the flatfield has had a QE correction applied, this information is
         copied into the science header to avoid the correction being applied
@@ -721,34 +748,33 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         qecorr_key = self.timestamp_keys['QECorrect']
 
-        if not do_flat:
+        if do_cal == 'skip':
             log.warning("Flat correction has been turned off.")
             return adinputs
 
         if flat is None:
-            self.getProcessedFlat(adinputs, refresh=False)
-            flat_list = self._get_cal(adinputs, 'processed_flat')
+            flat_list = self.caldb.get_processed_flat(adinputs)
         else:
-            flat_list = flat
+            flat_list = (flat, None)
 
-        # Provide a flatfield AD object for every science frame
-        for ad, flat in zip(*gt.make_lists(adinputs, flat_list,
-                                           force_ad=True)):
+        # Provide a bflat AD object for every science frame, and an origin
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by flatCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "flatCorrect. Continuing.")
                 continue
 
             if flat is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "flatfield has been specified".
                                 format(ad.filename))
                     continue
                 else:
-                    raise OSError("No processed flat listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no flat was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -763,8 +789,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, flat)
 
             # Do the division
-            log.fullinfo("Dividing the input AstroData object {} by this "
-                         "flat:\n{}".format(ad.filename, flat.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: dividing by the flat "
+                         f"{flat.filename}{origin_str}")
             ad.divide(flat)
 
             # Update the header and filename, copying QECORR keyword from flat
