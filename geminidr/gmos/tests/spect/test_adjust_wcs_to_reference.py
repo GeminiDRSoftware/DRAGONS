@@ -29,6 +29,8 @@ def test_adjust_wcs(files, path_to_inputs):
     so they're wrong (except for the first one, which is the reference)
     """
     adinputs = [astrodata.open(os.path.join(path_to_inputs, f)) for f in files]
+    pixel_scale = adinputs[0].pixel_scale()
+
     # Hack the WCS of all but the first input so they're wrong
     for ad in adinputs[1:]:
         ad[0].wcs.pipeline[0].transform['crpix2'].offset = 600
@@ -40,7 +42,7 @@ def test_adjust_wcs(files, path_to_inputs):
                  for ad in adinputs]
     c0 = skycoords[0]
     for c in skycoords[1:]:
-        assert c0.separation(c).arcsecond < 0.05
+        assert c0.separation(c).arcsecond < pixel_scale
 
 
 # Todo: Implement recipe to create input files

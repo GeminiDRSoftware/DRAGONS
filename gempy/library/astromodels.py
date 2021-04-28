@@ -389,6 +389,7 @@ class UnivariateSplineWithOutlierRemoval:
                 break
 
             full_mask = mask
+
             # Check if the mask is unchanged
             if not np.logical_or.reduce(last_mask ^ full_mask):
                 if debug:

@@ -435,6 +435,7 @@ class traceAperturesConfig(config.Config):
                           str, "_aperturesTraced", optional=True)
 
 
+
 class write1DSpectraConfig(config.Config):
     #format = config.Field("Format for writing", str, "ascii")
     format = config.ChoiceField("Format for writing", str,
