@@ -18,6 +18,7 @@ from astropy.utils import minversion
 from geminidr.gmos import primitives_gmos_longslit
 from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
 from gempy.utils import logutils
+from gempy.library import astrotools as at
 from recipe_system.reduction.coreReduce import Reduce
 
 ASTROPY_LT_42 = not minversion(astropy, '4.2')
@@ -85,8 +86,12 @@ def test_regression_sky_correct_from_slit(filename, params, refname,
 
     ref_ad = astrodata.open(os.path.join(path_to_refs, refname))
 
+    # Require that <1% of unmasked pixels differ by >1 sigma
     for ext, ref_ext in zip(sky_subtracted_ad, ref_ad):
-        np.testing.assert_allclose(ext.data, ref_ext.data, atol=0.01)
+        mask = ext.mask | ref_ext.mask | (ext.variance == 0)
+        sigma_diffs = (at.divide0(ext.data - ref_ext.data,
+                                  np.sqrt(ext.variance)))[mask == 0]
+        assert (abs(sigma_diffs) > 1).sum() < 0.01 * sigma_diffs.size
 
 
 # -- Recipe to create pre-processed data --------------------------------------
