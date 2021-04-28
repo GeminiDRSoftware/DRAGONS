@@ -31,6 +31,7 @@ Recipe System Programmers Manual
    :maxdepth: 1
    
    appendices/drpkg
+   appendices/caldb
    appendices/jit
    appendices/glossary
    

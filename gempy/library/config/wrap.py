@@ -19,8 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from past.builtins import basestring
-
 import inspect
 import re
 import importlib
@@ -41,7 +39,7 @@ _dtypeMap = {
     "double": float,
     "float": float,
     "std::int64_t": int,
-    "std::string": basestring
+    "std::string": str
 }
 
 _containerRegex = re.compile(r"(std::)?(vector|list)<\s*(?P<type>[a-z0-9_:]+)\s*>")
@@ -129,7 +127,7 @@ def makeConfigClass(ctrl, name=None, base=Config, doc=None, module=0, cls=None):
                 frame = getCallerFrame(module)
                 moduleObj = inspect.getmodule(frame)
                 moduleName = moduleObj.__name__
-            elif isinstance(module, basestring):
+            elif isinstance(module, str):
                 moduleName = module
                 moduleObj = __import__(moduleName)
             else:

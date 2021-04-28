@@ -23,16 +23,24 @@ test_data = [
     ("S20191005S0051_distortionCorrected.fits", 261),  # GS-2019B-Q-132-35-001 R400 0.73um
 ]
 
+# Parameters for test_find_apertures_with_fake_data(...)
+# ToDo - Explore a bit more the parameter space (e.g., larger seeing)
+seeing_pars = [0.5, 1.0, 1.25]
+position_pars = [500]
+value_pars = [50, 100, 500]
+
 
 @pytest.mark.gmosls
-@pytest.mark.parametrize("seeing", [1.0])  # [0.5, 0.75, 1.0, 1.5, 2.0])
-def test_find_apertures_with_fake_data(seeing):
+@pytest.mark.parametrize("peak_position", position_pars)
+@pytest.mark.parametrize("peak_value", value_pars)
+@pytest.mark.parametrize("seeing", seeing_pars)
+def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrofaker):
     """
     Creates a fake AD object with a gaussian profile in spacial direction with a
     fwhm defined by the seeing variable in arcsec. Then add some noise, and
     test if p.findAperture can find its position.
     """
-    astrofaker = pytest.importorskip("astrofaker")
+    np.random.seed(42)
 
     gmos_fake_noise = 4  # adu
     gmos_plate_scale = 0.0807  # arcsec . px-1
@@ -41,11 +49,10 @@ def test_find_apertures_with_fake_data(seeing):
     ad = astrofaker.create('GMOS-S', mode='SPECT')
     ad.init_default_extensions()
 
-    y0 = np.random.randint(low=100, high=ad[0].shape[0] - 100)
     fwhm = seeing / gmos_plate_scale
     stddev = fwhm / fwhm_to_stddev
 
-    model = Gaussian1D(mean=y0, stddev=stddev, amplitude=50)
+    model = Gaussian1D(mean=peak_position, stddev=stddev, amplitude=peak_value)
     rows, cols = np.mgrid[:ad.shape[0][0], :ad.shape[0][1]]
 
     for ext in ad:
@@ -55,9 +62,11 @@ def test_find_apertures_with_fake_data(seeing):
         ext.mask = np.zeros_like(ext.data, dtype=np.uint)
 
     p = GMOSSpect([ad])
-    _ad = p.findSourceApertures()[0]
+    _ad = p.findSourceApertures(max_apertures=1)[0]
 
-    print(_ad.info)
+    for _ext in _ad:
+        # ToDo - Could we improve the primitive to have atol=0.50 or less?
+        np.testing.assert_allclose(_ext.APERTURE['c0'], peak_position, atol=0.6)
 
 
 @pytest.mark.gmosls

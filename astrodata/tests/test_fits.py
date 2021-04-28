@@ -212,6 +212,27 @@ def test_slice(GMOSN_SPECT):
 
 
 @pytest.mark.dragons_remote_data
+def test_slice_single_element(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
+    assert ad.is_sliced is False
+
+    metadata = ('SCI', 2)
+
+    ext = ad[1:2]
+    assert ext.is_single is False
+    assert ext.is_sliced is True
+    assert ext.indices == [1]
+    assert isinstance(ext.data, list) and len(ext.data) == 1
+
+    ext = ext[0]
+    assert ext.id == 2
+    assert ext.is_single is True
+    assert ext.is_sliced is True
+    assert ext.hdr['EXTNAME'] == metadata[0]
+    assert ext.hdr['EXTVER'] == metadata[1]
+
+
+@pytest.mark.dragons_remote_data
 def test_slice_multiple(GMOSN_SPECT):
     ad = astrodata.open(GMOSN_SPECT)
 
@@ -756,27 +777,29 @@ def test_add_table():
     ad = astrodata.create({'OBJECT': 'M42'})
     ad.append(fakedata)
 
-    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.TABLE1 = tbl
+    ad.TABLE1 = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1'}
 
-    ad.TABLE2 = tbl
+    ad.TABLE2 = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1', 'TABLE2'}
 
-    ad.MYTABLE = tbl
+    ad.MYTABLE = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
 
-    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad[0].TABLE3 = tbl
-    ad[0].TABLE4 = tbl
-    ad[0].OTHERTABLE = tbl
+    ad[0].TABLE3 = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad[0].TABLE4 = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad[0].OTHERTABLE = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
 
     assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
 
-    expected_tables = {'MYTABLE', 'OTHERTABLE', 'TABLE1', 'TABLE2',
-                       'TABLE3', 'TABLE4'}
-    assert ad[0].tables == expected_tables
-    assert ad[0].exposed == expected_tables
+    assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
+    assert ad[0].tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
+    assert ad[0].ext_tables == {'OTHERTABLE', 'TABLE3', 'TABLE4'}
+    assert ad[0].exposed == {'MYTABLE', 'OTHERTABLE', 'TABLE1', 'TABLE2',
+                             'TABLE3', 'TABLE4'}
+
+    with pytest.raises(AttributeError):
+        ad.ext_tables
 
     assert set(ad[0].nddata.meta['other'].keys()) == {'OTHERTABLE',
                                                       'TABLE3', 'TABLE4'}

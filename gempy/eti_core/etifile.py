@@ -23,11 +23,11 @@ class ETIFile:
         self.directory = tempfile.mkdtemp(prefix='dragons.')
 
     def prepare(self):
-        print("ETIFile prepare()")
+        log.debug("ETIFile prepare()")
 
     def recover(self):
-        print("ETIFile recover()")
+        log.debug("ETIFile recover()")
 
     def clean(self):
-        print("ETIFile clean()")
+        log.debug("ETIFile clean()")
         shutil.rmtree(self.directory)

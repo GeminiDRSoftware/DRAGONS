@@ -124,10 +124,9 @@ class AstroDataGmos(AstroDataGemini):
             return TagSet(['IFU', mapping[mskn]])
 
     @astro_data_tag
-    def _tag_mask(self):
-        spg = self.phu.get
-        if spg('GRATING') == 'MIRROR' and spg('MASKTYP') != 0:
-            return TagSet(['MASK'])
+    def _tag_thruslit(self):
+        if self.phu.get('MASKTYP') != 0:
+            return TagSet(['THRUSLIT'], if_present=['IMAGE'])
 
     @astro_data_tag
     def _tag_image_or_spect(self):

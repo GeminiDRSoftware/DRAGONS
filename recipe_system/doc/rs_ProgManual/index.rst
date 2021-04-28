@@ -26,6 +26,7 @@ Recipe System Programmers Manual
    :caption: Appendices
 
    appendices/drpkg
+   appendices/caldb
    appendices/jit
    appendices/glossary
    api

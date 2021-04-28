@@ -73,8 +73,8 @@ it will not break anything.
 
 :mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
 darks, the flats and the science observations. The
-:mod:`~recipe_system.cal_service` package is our interface with the local
-calibration database. Finally, the
+:mod:`~recipe_system.cal_service` package is our interface with the
+calibration databases. Finally, the
 :class:`~recipe_system.reduction.coreReduce.Reduce` class is used to set up
 and run the data reduction.
 
@@ -99,14 +99,13 @@ Setting up the Calibration Service
 Before we continue, let's be sure we have properly setup our calibration
 database and the calibration association service.
 
-First, check that you have already a ``rsys.cfg`` file inside the
-``~/.geminidr/``. It should contain:
+First, check that you have already a ``dragonsrc`` file inside the
+``~/.dragons/``. It should contain:
 
 .. code-block:: none
 
     [calibs]
-    standalone = True
-    database_dir = /path_to_my_data/gmosimg_tutorial_api/playground
+    databases = /path_to_my_data/gmosimg_tutorial_api/playground/cal_manager.db get
 
 
 This tells the system where to put the calibration database. This
@@ -114,7 +113,7 @@ database will keep track of the processed calibrations as we add them
 to it.
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
-    Also, mind the dot in ``.geminidr``.
+    Also, mind the dot in ``.dragons``.
 
 The calibration database is initialized and the calibration service is
 configured as follow:
@@ -123,11 +122,8 @@ configured as follow:
     :linenos:
     :lineno-start: 10
 
-    caldb = cal_service.CalibrationService()
-    caldb.config()
+    caldb = cal_service.set_local_database()
     caldb.init()
-
-    cal_service.set_calservice()
 
 The calibration service is now ready to use. If you need more details,
 check the

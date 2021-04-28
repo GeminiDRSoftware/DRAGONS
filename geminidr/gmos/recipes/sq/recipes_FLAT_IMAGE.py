@@ -22,7 +22,6 @@ def makeProcessedFlat(p):
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.getProcessedBias()
     p.biasCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)

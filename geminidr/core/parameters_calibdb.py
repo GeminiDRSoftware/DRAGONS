@@ -5,9 +5,9 @@ in primitives_calibdb.py, in alphabetical order.
 from gempy.library import config
 
 
-class addCalibrationConfig(config.Config):
+class setCalibrationConfig(config.Config):
     caltype = config.ChoiceField(
-        "Type of calibration required",
+        "Type of calibration assigned",
         str,
         allowed={"processed_arc": "processed ARC",
                  "processed_bias": "procsessed BIAS",
@@ -21,53 +21,32 @@ class addCalibrationConfig(config.Config):
     calfile = config.Field("Filename of calibration", str)
 
 
-class getCalibrationConfig(config.Config):
-    caltype = config.ChoiceField(
-        "Type of calibration required",
-        str,
-        allowed={"processed_arc": "processed ARC",
-                 "processed_bias": "procsessed BIAS",
-                 "processed_dark": "processed DARK",
-                 "processed_flat": "processed FLAT",
-                 "processed_fringe": "processed fringe",
-                 "processed_standard": "processed standard",
-                 "processed_slitillum": "processed slitillum",
-                 },
-        optional=False
-    )
-    procmode = config.Field("Processing mode", str, None, optional=True)
-    refresh = config.Field(
-        "Refresh existing calibration associations?", bool, True)
-    howmany = config.RangeField(
-        "Maximum number of calibrations to return", int, None, min=1, optional=True)
-
-
 class getProcessedArcConfig(config.Config):
-    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+    pass
 
 
 class getProcessedBiasConfig(config.Config):
-    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+    pass
 
 
 class getProcessedDarkConfig(config.Config):
-    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+    pass
 
 
 class getProcessedFlatConfig(config.Config):
-    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+    pass
 
 
 class getProcessedFringeConfig(config.Config):
-    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+    pass
 
 
 class getProcessedStandardConfig(config.Config):
-    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+    pass
 
 
 class getProcessedSlitIllumConfig(config.Config):
-    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+    pass
 
 
 class getMDFConfig(config.Config):
@@ -83,9 +62,6 @@ class storeCalibrationConfig(config.Config):
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
                  "bpm": "bad pixel mask",
-                 "sq": "science quality",
-                 "qa": "QA",
-                 "ql": "quick look",
                  "processed_standard": "processed standard",
                  "processed_slitillum": "processed slitillum",
                  },
