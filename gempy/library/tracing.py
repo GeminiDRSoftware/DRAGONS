@@ -438,7 +438,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     if max_width > 10:
         data = at.boxcar(data, size=2)
 
-    wavelet_transformed_data = signal.cwt(data, signal.ricker, widths)
+    wavelet_transformed_data = cwt_ricker(data, widths)
 
     eps = np.finfo(np.float32).eps  # Minimum representative data
     wavelet_transformed_data[np.nan_to_num(wavelet_transformed_data) < eps] = eps
@@ -906,7 +906,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                            variance=None)
 
     if rwidth:
-        data = signal.cwt(data, signal.ricker, widths=[rwidth])[0]
+        data = cwt_ricker(data, widths=[rwidth])[0]
 
     # Get better peak positions if requested
     if initial_tolerance is None:
@@ -954,7 +954,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                 var[i] = np.where(v <= 0, np.inf, v)
                 if rwidth:
                     data[i] = np.where(d / np.sqrt(var[i]) > 0.5,
-                                       signal.cwt(d, signal.ricker, widths=[rwidth])[0], 0)
+                                       cwt_ricker(d, widths=[rwidth])[0], 0)
                 else:
                     data[i] = np.where(d / np.sqrt(var[i]) > 0.5, d, 0)
                 if m is not None:
@@ -1128,3 +1128,18 @@ def find_apertures_peaks(profile, prof_mask, max_apertures, direction,
                             method=sizing_method)
 
     return locations, all_limits
+
+
+def cwt_ricker(data, widths, **kwargs):
+    """
+    Continuous wavelet transform, using the Ricker filter.
+
+    Hacked from scipy.cwt to ensure that the convolution is done with
+    a wavelet that has an odd number of pixels.
+    """
+    output = np.zeros((len(widths), len(data)), dtype=np.float64)
+    for ind, width in enumerate(widths):
+        N = int(np.min([10 * width, len(data)])) // 2 * 2 - 1
+        wavelet_data = np.conj(signal.ricker(N, width, **kwargs)[::-1])
+        output[ind] = np.convolve(data, wavelet_data, mode='same')
+    return output
