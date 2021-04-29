@@ -470,7 +470,6 @@ class MeasureGapSizeLocally(abc.ABC):
         y, v = normalize_data(y, v)
 
         y.mask = np.logical_or(y.mask, y < 0.01)
-        x = np.ma.masked_array(x, mask=y.mask)
 
         split_mask = ad[0].mask >= 16
         y[split_mask] = 0
@@ -599,7 +598,7 @@ class MeasureGapSizeLocally(abc.ABC):
             yy = yy[self.bad_cols:-self.bad_cols]
 
             ww = self.w_solution(xx)
-            xx.mask = np.logical_or(xx.mask, model.mask)
+            yy.mask = np.logical_or(yy.mask, model.mask)
             yy.mask = np.logical_or(yy.mask, ww < self.wav_min)
             yy.mask = np.logical_or(yy.mask, ww > self.wav_max)
 
