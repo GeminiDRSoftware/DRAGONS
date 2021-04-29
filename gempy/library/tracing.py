@@ -1056,7 +1056,8 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
                                     maxiters=1)
 
-    full_mask = ext.mask > 0
+    full_mask = (ext.mask > 0 if ext.mask is not None else
+                 np.zeros(ext.shape, dtype=bool))
 
     # Mask sky-line regions and find clumps of unmasked pixels
     mask1d[var_excess > 5 * std] = 1
@@ -1075,8 +1076,9 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     signal = (ext.data if (ext.variance is None or not use_snr) else
               np.divide(ext.data, np.sqrt(ext.variance),
                         out=np.zeros_like(ext.data), where=ext.variance > 0))
-    masked_data = np.where(np.logical_or(full_mask, ext.variance == 0),
-                           np.nan, signal)
+    if ext.variance is not None:
+        full_mask |= ext.variance == 0
+    masked_data = np.where(full_mask, np.nan, signal)
     prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
 
     # Need to catch warnings for rows full of NaNs
