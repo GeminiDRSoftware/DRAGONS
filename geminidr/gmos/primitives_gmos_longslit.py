@@ -157,7 +157,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                       mode='full')[cntr - mshift:cntr + mshift]
                     # This line avoids numerical errors in the spline fit
                     xcorr -= np.median(xcorr)
-                    pixels = np.arange(xcorr)
+                    pixels = np.arange(xcorr.size)
                     # This calculates the offsets of each point from the
                     # straight line between its neighbours
                     std = (xcorr[1:-1] - 0.5 *
