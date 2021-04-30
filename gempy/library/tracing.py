@@ -142,11 +142,11 @@ class Aperture:
 
     def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
-        slitlength = data.shape[0]
         all_x1 = self._center_pixels + aper_lower
         all_x2 = self._center_pixels + aper_upper
 
-        ext = NDAstroData(data, mask=mask, variance=var)
+        ext = NDAstroData(data, mask=mask)
+        ext.variance = var
         results = [sum1d(ext[:, i], x1, x2)
                    for i, (x1, x2) in enumerate(zip(all_x1, all_x2))]
         self.data[:] = [result.data for result in results]
