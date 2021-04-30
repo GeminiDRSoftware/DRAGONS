@@ -1,18 +1,22 @@
+import re
 from abc import ABC, abstractmethod
 from copy import copy
+from functools import cmp_to_key
 
-from bokeh.layouts import row, column
-from bokeh.models import Slider, TextInput, ColumnDataSource, BoxAnnotation, Button, CustomJS, Label, \
-    Dropdown, RangeSlider, Span, NumeralTickFormatter
+from bokeh.layouts import column, row
+from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
 
 from geminidr.interactive import server
+from geminidr.interactive.fit.help import DEFAULT_HELP
+from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import cartesian_regions_to_slices
-
 from gempy.library.config import FieldValidationError
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title=''):
+    def __init__(self, config=None, title='', primitive_name='',
+                 filename_info='', template=None, help_text=None):
         """
         Initialize a visualizer.
 
@@ -21,8 +25,28 @@ class PrimitiveVisualizer(ABC):
         submit if that happens.  The submit button will cause the `bokeh`
         event loop to exit and the code will resume executing in whatever
         top level call you are visualizing from.
+
+        Parameters
+        ----------
+        config : `~gempy.library.config.Config`
+            DRAGONS primitive configuration data to work from
+        title : str
+            Title fo the primitive for display, currently not used
+        primitive_name : str
+            Name of the primitive function related to this UI, used in the title bar
+        filename_info : str
+            Information about the file being operated on
+        template : str
+            Optional path to an html template to render against, if customization is desired
         """
+        # set help to default, subclasses should override this with something specific to them
+        self.help_text = help_text if help_text else DEFAULT_HELP
+
+        self.exited = False
         self.title = title
+        self.filename_info = filename_info if filename_info else ''
+        self.primitive_name = primitive_name if primitive_name else ''
+        self.template = template
         self.extras = dict()
         if config is None:
             self.config = None
@@ -31,13 +55,51 @@ class PrimitiveVisualizer(ABC):
 
         self.user_satisfied = False
 
-        self.submit_button = Button(label="Submit", align='center', button_type='success', width_policy='min')
-        self.submit_button.on_click(self.submit_button_handler)
+        self.bokeh_legend = Div(text='Plot Tools<br/><img src="dragons/static/bokehlegend.png" />')
+        self.submit_button = Button(align='center',
+                                    button_type='success',
+                                    css_classes=["submit_btn"],
+                                    id="_submit_btn",
+                                    label="Accept",
+                                    name="submit_btn",
+                                    width_policy='min',
+                                    )
+
+        # This now happens indirectly via the /shutdown ajax js callback
+        # Remove this line if we stick with that
+        # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            window.close();
+            $.ajax('/shutdown').done(function() 
+                {
+                    window.close();
+                });
         """)
         self.submit_button.js_on_click(callback)
         self.doc = None
+
+    def make_ok_cancel_dialog(self, btn, message, callback):
+        # This is a bit hacky, but bokeh makes it very difficult to bridge the python-js gap.
+        def _internal_handler(args):
+            if callback:
+                if args['result'] == [b'confirmed']:
+                    result = True
+                else:
+                    result = False
+                self.do_later(lambda: callback(result))
+
+        callback_name = register_callback(_internal_handler)
+
+        js_confirm_callback = CustomJS(code="""
+            cb_obj.name = '';
+            var confirmed = confirm('%s');
+            var cbid = '%s';
+            if (confirmed) {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+            } else {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+            }
+            """ % (message, callback_name))
+        btn.js_on_click(js_confirm_callback)
 
     def submit_button_handler(self, stuff):
         """
@@ -53,8 +115,24 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
-        self.user_satisfied = True
-        server.stop_server()
+        if not self.exited:
+            self.exited = True
+            self.user_satisfied = True
+            server.stop_server()
+
+    def get_filename_div(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = Div(text=f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}",
+                  style={
+                         "color": "dimgray",
+                         "font-size": "16px",
+                         "float": "right",
+                  },
+                  align="end",
+                  )
+        return div
 
     def visualize(self, doc):
         """
@@ -75,12 +153,8 @@ class PrimitiveVisualizer(ABC):
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
 
-        # curdoc().template_variables["primitive_name"] = 'Cheeeeeze'  # self.title
-
-        # callback = CustomJS(code="""
-        #     setVersion('2.2.1');
-        # """)
-        # self.doc.add_next_tick_callback(callback)
+        # doc.add_root(self._ok_cancel_dlg.layout)
+        # Add an OK/Cancel dialog we can tap into later
 
     def do_later(self, fn):
         """
@@ -98,9 +172,11 @@ class PrimitiveVisualizer(ABC):
             Function to execute in the bokeh loop (should not take required arguments)
         """
         if self.doc is None:
-            if self.log is not None:
+            if hasattr(self, 'log') and self.log is not None:
                 self.log.warn("Call to do_later, but no document is set.  Does this PrimitiveVisualizer call "
                               "super().visualize(doc)?")
+            # no doc, probably ok to just execute
+            fn()
         else:
             self.doc.add_next_tick_callback(lambda: fn())
 
@@ -133,7 +209,8 @@ class PrimitiveVisualizer(ABC):
         """ % message)
         widget.js_on_change('disabled', callback)
 
-    def make_widgets_from_config(self, params, extras, reinit_live):
+    def make_widgets_from_config(self, params, extras, reinit_live,
+                                 slider_width=256):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -146,12 +223,17 @@ class PrimitiveVisualizer(ABC):
         extras : dict
             Dictionary of additional field definitions for anything not included in the primitive configuration
         reinit_live : bool
-            True if recalcuating points is cheap, in which case we don't need a button and do it on any change
+            True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
+            Currently only viable for text-slider style inputs
+        slider_width : int (default: 256)
+            Default width for sliders created here.
 
         Returns
         -------
         list : Returns a list of widgets to display in the UI.
         """
+        extras = [] if extras is None else extras
+        params = [] if params is None else params
         widgets = []
         if self.config is None:
             self.log.warn("No config, unable to make widgets")
@@ -171,7 +253,11 @@ class PrimitiveVisualizer(ABC):
                 if end is None:
                     end = 50
                 step = start
-                widget = build_text_slider(doc, value, step, start, end, obj=self.config, attr=pname)
+
+                widget = build_text_slider(doc, value, step, start, end,
+                                           obj=self.config, attr=pname,
+                                           slider_width=slider_width)
+
                 self.widgets[pname] = widget.children[0]
             elif hasattr(field, 'allowed'):
                 # ChoiceField => drop-down menu
@@ -184,6 +270,7 @@ class PrimitiveVisualizer(ABC):
             # Complex multi-widgets will already have been added
             if pname not in self.widgets:
                 self.widgets[pname] = widget
+
         for pname, field in extras.items():
             # Do some inspection of the config to determine what sort of widget we want
             doc = field.doc.split('\n')[0]
@@ -197,12 +284,14 @@ class PrimitiveVisualizer(ABC):
                     end = 50
                 step = start
 
-                def handler(val):
-                    self.extras[pname] = val
-                    if reinit_live:
-                        self.reconstruct_points()
-                widget = build_text_slider(doc, field.default, step, start, end, obj=self.extras, attr=pname,
-                                           handler=handler, throttled=True)
+                widget = build_text_slider(
+                    doc, field.default, step, start, end,
+                    obj=self.extras, attr=pname,
+                    handler=self.slider_handler_factory(
+                        pname, reinit_live=reinit_live),
+                    throttled=True,
+                    slider_width=slider_width)
+
                 self.widgets[pname] = widget.children[0]
                 self.extras[pname] = field.default
             else:
@@ -217,9 +306,33 @@ class PrimitiveVisualizer(ABC):
 
         return widgets
 
+    def slider_handler_factory(self, key, reinit_live=False):
+        """
+        Returns a function that updates the `extras` attribute.
 
-def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=None, handler=None,
-                      throttled=False):
+        Parameters
+        ----------
+        key : str
+            The parameter name to be updated.
+        reinit_live : bool, optional
+            Update the reconstructed points on "real time".
+
+        Returns
+        -------
+        function : callback called when we change the slider value.
+        """
+
+        def handler(val):
+            self.extras[key] = val
+            if reinit_live:
+                self.reconstruct_points()
+
+        return handler
+
+
+def build_text_slider(title, value, step, min_value, max_value, obj=None,
+                      attr=None, handler=None, throttled=False,
+                      slider_width=256, config=None):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -247,29 +360,73 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
     Returns
     -------
         :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
-    """
-    is_float = True
-    if isinstance(value, int):
-        is_float = False
 
-    start = min(value, min_value) if min_value else min(value, 0)
-    end = max(value, max_value) if max_value else max(10, value*2)
+    """
+    if min_value is None and config is not None:
+        field = config._fields.get(attr, None)
+        if field is not None:
+            if hasattr(field, 'min'):
+                min_value = field.min
+    if max_value is None and config is not None:
+        field = config._fields.get(attr, None)
+        if field is not None:
+            if hasattr(field, 'max'):
+                max_value = field.max
+
+    start = min(value, min_value) if min_value is not None else min(value, 0)
+    end = max(value, max_value) if max_value is not None else max(10, value*2)
 
     # trying to convince int-based sliders to behave
+    is_float = not isinstance(value, int) or \
+               (min_value is not None and not isinstance(min_value, int)) or \
+               (max_value is not None and not isinstance(max_value, int))
+    if step is None:
+        if is_float:
+            step = 0.1
+        else:
+            step = 1
+    fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
-        slider = Slider(start=start, end=end, value=value, step=step, title=title, format=fmt)
+        slider = Slider(start=start, end=end, value=value, step=step,
+                        title=title, format=fmt)
     else:
-        slider = Slider(start=start, end=end, value=value, step=step, title=title)
-    slider.width = 256
+        slider = Slider(start=start, end=end, value=value, step=step,
+                        title=title)
 
-    text_input = TextInput()
-    text_input.width = 64
-    text_input.value = str(value)
-    component = row(slider, text_input)
+    slider.width = slider_width
 
-    slider = slider
-    text_input = text_input
+    # NOTE: although NumericInput can handle a high/low limit, it
+    # offers no feedback to the user when it does.  Since some of our
+    # inputs are capped and others open-ended, we use the js callbacks
+    # below to enforce the range limits, if any.
+    text_input = NumericInput(width=64, value=value,
+                              format=fmt,
+                              mode='float' if is_float else 'int')
+
+    # Custom range enforcement with alert messages
+    if max_value is not None:
+        text_input.js_on_change('value', CustomJS(
+            args=dict(inp=text_input),
+            code="""
+                debugger;
+                if (inp.value > %s) {
+                    alert('Maximum is %s');
+                    inp.value = %s;
+                }
+            """ % (max_value, max_value, max_value)))
+    if min_value is not None:
+        text_input.js_on_change('value', CustomJS(
+            args=dict(inp=text_input),
+            code="""
+                debugger;
+                if (inp.value < %s) {
+                    alert('Minimum is %s');
+                    inp.value = %s;
+                }
+            """ % (min_value, min_value, min_value)))
+
+    component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
@@ -297,30 +454,29 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
                 ival = int(new)
             if ival > slider.end and not max_value:
                 slider.end = ival
+            if ival < slider.end and end < slider.end:
+                slider.end = max(end, ival)
             if 0 <= ival < slider.start and min_value is None:
                 slider.start = ival
+            if ival > slider.start and start > slider.start:
+                slider.start = min(ival, start)
             if slider.start <= ival <= slider.end:
                 slider.value = ival
 
     def update_text_input(attrib, old, new):
         # Update the text input
         if new != old:
-            text_input.value = str(new)
+            text_input.value = new
 
     def handle_value(attrib, old, new):
         # Handle a new value and set the registered object/attribute accordingly
         # Also updates the slider and calls the registered handler function, if any
-        numeric_value = None
-        if is_float:
-            numeric_value = float(new)
-        else:
-            numeric_value = int(new)
         if obj and attr:
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
-                    obj[attr] = numeric_value
+                    obj[attr] = new
                 else:
-                    obj.__setattr__(attr, numeric_value)
+                    obj.__setattr__(attr, new)
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
@@ -329,8 +485,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None, attr=N
             else:
                 update_slider(attrib, old, new)
         if handler:
-            if numeric_value is not None:
-                handler(numeric_value)
+            if new is not None:
+                handler(new)
             else:
                 handler(new)
 
@@ -608,66 +764,15 @@ def connect_figure_extras(fig, aperture_model, region_model):
     # If we have regions or apertures to show, show them
     if region_model:
         regions = GIRegionView(fig, region_model)
-    if aperture_model:
-        aperture_view = GIApertureView(aperture_model, fig)
+    # This no longer works as we now require holoviews
+    # TODO remove from args to method
+    # if aperture_model:
+    #     aperture_view = GIApertureView(aperture_model, fig)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
     # apertures and regions will not update properly after the figure is visible.
     fig.js_on_change('center', CustomJS(args=dict(plot=fig),
                                         code="plot.properties.renderers.change.emit()"))
-
-
-_hamburger_order_number = 1
-
-
-def hamburger_helper(title, widget):
-    """
-    Create a bokeh layout with a top title and hamburger button
-    to show/hide the given widget.
-
-    This will make a wrapper column around whatever you pass in
-    and give a control for showing and hiding it.  It is useful
-    for potentially larger sets of controls such as a list of
-    aperture controls.
-
-    Parameters
-    ----------
-    title : str
-        Text to put in the top area
-    widget : :class:`~bokeh.models.layouts.LayoutDOM`
-        Component to show/hide with the hamburger action
-
-    Returns
-    -------
-    :class:`~bokeh.models.layouts.Column` : bokeh column to add into your document
-    """
-    global _hamburger_order_number
-    if widget.css_classes:
-        widget.css_classes.append('hamburger_helper_%s' % _hamburger_order_number)
-    else:
-        widget.css_classes = list('hamburger_helper_%s' % _hamburger_order_number)
-    _hamburger_order_number = _hamburger_order_number+1
-
-    # TODO Hamburger icon
-    button = Button(label=title, css_classes=['hamburger_helper',])
-
-    top = button
-
-    def burger_action():
-        if widget.visible:
-            # button.label = "HamburgerHamburgerHamburger"
-            widget.visible = False
-        else:
-            # button.label = "CheeseburgerCheeseburgerCheeseburger"
-            widget.visible = True
-            # try to force resizing, bokeh bug workaround
-            if hasattr(widget, "children") and widget.children:
-                last_child = widget.children[len(widget.children) - 1]
-                widget.children.remove(last_child)
-                widget.children.append(last_child)
-
-    button.on_click(burger_action)
-    return column(top, widget)
 
 
 class GIRegionListener(ABC):
@@ -712,7 +817,7 @@ class GIRegionListener(ABC):
         pass
 
 
-class GIRegionModel(object):
+class GIRegionModel:
     """
     Model for tracking a set of regions.
     """
@@ -744,14 +849,25 @@ class GIRegionModel(object):
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
+    def clear_regions(self):
+        """
+        Deletes all regions.
+        """
+        for region_id in self.regions.keys():
+            for listener in self.listeners:
+                listener.delete_region(region_id)
+        self.regions = dict()
+
     def load_from_tuples(self, tuples):
-        region_ids = list(self.regions.keys())
-        for region_id in region_ids:
-            self.delete_region(region_id)
-        self.region_id=1
+        self.clear_regions()
+        # region_ids = list(self.regions.keys())
+        # for region_id in region_ids:
+        #     self.delete_region(region_id)
+        self.region_id = 1
         for tup in tuples:
             self.adjust_region(self.region_id, tup.start, tup.stop)
             self.region_id = self.region_id + 1
+        self.finish_regions()
 
     def load_from_string(self, region_string):
         self.load_from_tuples(cartesian_regions_to_slices(region_string))
@@ -794,9 +910,10 @@ class GIRegionModel(object):
             ID of the region to delete
 
         """
-        del self.regions[region_id]
-        for listener in self.listeners:
-            listener.delete_region(region_id)
+        if self.regions[region_id]:
+            del self.regions[region_id]
+            for listener in self.listeners:
+                listener.delete_region(region_id)
 
     def finish_regions(self):
         """
@@ -899,19 +1016,41 @@ class GIRegionModel(object):
         if len(self.regions.values()) == 0:
             return True
         for b in self.regions.values():
-            if (b[0] is None or b[0] < x) and (b[1] is None or x < b[1]):
+            if (b[0] is None or b[0] <= x) and (b[1] is None or x <= b[1]):
                 return True
         return False
 
     def build_regions(self):
+
+        def none_cmp(x, y):
+            if x is None and y is None:
+                return 0
+            if x is None:
+                return -1
+            if y is None:
+                return 1
+            return x - y
+
+        def region_sorter(a, b):
+            retval = none_cmp(a[0], b[0])
+            if retval == 0:
+                retval = none_cmp(a[1], b[1])
+            return retval
+
         def deNone(val, offset=0):
             return '' if val is None else val + offset
+
         if self.regions is None or len(self.regions.values()) == 0:
-            return None
-        return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in self.regions.values()])
+            return ''
+
+        sorted_regions = list()
+        sorted_regions.extend(self.regions.values())
+        sorted_regions.sort(key=cmp_to_key(region_sorter))
+        return ', '.join(['{}:{}'.format(deNone(b[0], offset=1), deNone(b[1]))
+                          for b in sorted_regions])
 
 
-class RegionHolder(object):
+class RegionHolder:
     """
     Used by `~geminidr.interactive.interactive.GIRegionView` to track start/stop
     independently of the bokeh Annotation since we want to support `None`.
@@ -1041,470 +1180,114 @@ class GIRegionView(GIRegionListener):
         pass
 
 
-class GIApertureModel(ABC):
-    """
-    Model for tracking the Apertures.
-
-    This tracks the apertures and a list of subscribers
-    to notify when there are any changes.
-    """
-    def __init__(self):
-        self.aperture_id = 1
-        self.listeners = list()
-        # spare_ids holds any IDs that were returned to
-        # us via a delete, so we can re-use them for
-        # new apertures
-        self.spare_ids = list()
-
-    def add_listener(self, listener):
-        """
-        Add a listener for update to the apertures.
-
-        Parameters
-        ----------
-        listener : :class:`~geminidr.interactive.interactive.GIApertureView`
-            The listener to notify if there are any updates
-        """
-        self.listeners.append(listener)
-
-    @abstractmethod
-    def add_aperture(self, start, end):
-        """
-        Add a new aperture, using the next available ID
-
-        Parameters
-        ----------
-        start : float
-            x coordinate the aperture starts at
-        end : float
-            x coordinate the aperture ends at
-
-        Returns
-        -------
-            int id of the aperture
-        """
-        pass
-
-    @abstractmethod
-    def adjust_aperture(self, aperture_id, location, start, end):
-        """
-        Adjust an existing aperture by ID to a new range.
-        This will alert all subscribed listeners.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to adjust
-        location : float
-            X coordinate of the location of the aperture
-        start : float
-            X coordinate of the new start of range
-        end : float
-            X coordinate of the new end of range
-        """
-        pass
-
-    @abstractmethod
-    def delete_aperture(self, aperture_id):
-        """
-        Delete an aperture by ID.
-
-        This will notify all subscribers of the removal
-        of this aperture and return it's ID to the available
-        pool.
-
-        Parameters
-        ----------
-        aperture_id : int
-            The ID of the aperture to delete
-
-        Returns
-        -------
-
-        """
-        pass
-
-    @abstractmethod
-    def clear_apertures(self):
-        """
-        Remove all apertures, calling delete on the listeners for each.
-        """
-        pass
-
-    @abstractmethod
-    def get_profile(self):
-        pass
-
-    @abstractmethod
-    def find_closest(self, x):
-        pass
-
-
-class GISingleApertureView(object):
-    def __init__(self, fig, aperture_id, location, start, end):
-        """
-        Create a visible glyph-set to show the existance
-        of an aperture on the given figure.  This display
-        will update as needed in response to panning/zooming.
-
-        Parameters
-        ----------
-        gifig : :class:`~bokeh.plotting.Figure`
-            Bokeh Figure to attach to
-        aperture_id : int
-            ID of the aperture (for displaying)
-        start : float
-            Start of the x-range for the aperture
-        end : float
-            End of the x-range for the aperture
-        """
-        self.aperture_id = aperture_id
-        self.box = None
-        self.label = None
-        self.left_source = None
-        self.left = None
-        self.right_source = None
-        self.right = None
-        self.line_source = None
-        self.line = None
-        self.location = None
-        self.fig = None
-        if fig.document:
-            fig.document.add_next_tick_callback(lambda: self.build_ui(fig, aperture_id, location, start, end))
-        else:
-            self.build_ui(fig, aperture_id, location, start, end)
-
-    def build_ui(self, fig, aperture_id, location, start, end):
-        """
-        Build the view in the figure.
-
-        This call creates the UI elements for this aperture in the
-        parent figure.  It also wires up event listeners to adjust
-        the displayed glyphs as needed when the view changes.
-
-        Parameters
-        ----------
-        fig : :class:`~bokeh.plotting.Figure`
-            bokeh figure to attach glyphs to
-        aperture_id : int
-            ID of this aperture, displayed
-        location : float
-            Location of the aperture
-        start : float
-            Start of x-range of aperture
-        end : float
-            End of x-range of aperture
-
-        """
-        if fig.y_range.start is not None and fig.y_range.end is not None:
-            ymin = fig.y_range.start
-            ymax = fig.y_range.end
-            ymid = (ymax-ymin)*.8+ymin
-            ytop = ymid + 0.05*(ymax-ymin)
-            ybottom = ymid - 0.05*(ymax-ymin)
-        else:
-            ymin=0
-            ymax=0
-            ymid=0
-            ytop=0
-            ybottom=0
-        self.box = BoxAnnotation(left=start, right=end, fill_alpha=0.1, fill_color='green')
-        fig.add_layout(self.box)
-        self.label = Label(x=location+2, y=ymid, text="%s" % aperture_id)
-        fig.add_layout(self.label)
-        self.left_source = ColumnDataSource({'x': [start, start], 'y': [ybottom, ytop]})
-        self.left = fig.line(x='x', y='y', source=self.left_source, color="purple")
-        self.right_source = ColumnDataSource({'x': [end, end], 'y': [ybottom, ytop]})
-        self.right = fig.line(x='x', y='y', source=self.right_source, color="purple")
-        self.line_source = ColumnDataSource({'x': [start, end], 'y': [ymid, ymid]})
-        self.line = fig.line(x='x', y='y', source=self.line_source, color="purple")
-        self.location = Span(location=location, dimension='height', line_color='green', line_dash='dashed',
-                             line_width=1)
-        fig.add_layout(self.location)
-
-        self.fig = fig
-
-        fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
-        fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
-        # feels like I need this to convince the aperture lines to update on zoom
-        fig.y_range.js_on_change('end', CustomJS(args=dict(plot=fig),
-                                                 code="plot.properties.renderers.change.emit()"))
-
-    def update_viewport(self):
-        """
-        Update the view in the figure.
-
-        This call is made whenever we detect a change in the display
-        area of the view.  By redrawing, we ensure the lines and
-        axis label are in view, at 80% of the way up the visible
-        Y axis.
-
-        """
-        if self.fig.y_range.start is not None and self.fig.y_range.end is not None:
-            ymin = self.fig.y_range.start
-            ymax = self.fig.y_range.end
-            ymid = (ymax-ymin)*.8+ymin
-            ytop = ymid + 0.05*(ymax-ymin)
-            ybottom = ymid - 0.05*(ymax-ymin)
-            self.left_source.data = {'x': self.left_source.data['x'], 'y': [ybottom, ytop]}
-            self.right_source.data = {'x': self.right_source.data['x'], 'y': [ybottom, ytop]}
-            self.line_source.data = {'x':  self.line_source.data['x'], 'y': [ymid, ymid]}
-            self.label.y = ymid
-
-    def update(self, location, start, end):
-        """
-        Alter the coordinate range for this aperture.
-
-        This will adjust the shaded area and the arrows/label for this aperture
-        as displayed on the figure.
-
-        Parameters
-        ----------
-        start : float
-            new starting x coordinate
-        end : float
-            new ending x coordinate
-        """
-        self.box.left = start
-        self.box.right = end
-        self.left_source.data = {'x': [start, start], 'y': self.left_source.data['y']}
-        self.right_source.data = {'x': [end, end], 'y': self.right_source.data['y']}
-        self.line_source.data = {'x': [start, end], 'y': self.line_source.data['y']}
-        self.location.location = location
-        self.label.x = location+2
-
-    def delete(self):
-        """
-        Delete this aperture from it's view.
-        """
-        self.fig.renderers.remove(self.line)
-        self.fig.renderers.remove(self.left)
-        self.fig.renderers.remove(self.right)
-        # TODO removing causes problems, because bokeh, sigh
-        # TODO could create a list of disabled labels/boxes to reuse instead of making new ones
-        #  (if we have one to recycle)
-        self.label.text = ""
-        self.box.fill_alpha = 0.0
-        self.location.visible=False
-
-
-class GIApertureSliders(object):
-    def __init__(self, fig, model, aperture_id, location, start, end):
-        """
-        Create range sliders for an aperture.
-
-        This creates a range slider and a pair of linked text
-        entry boxes for the start and end of an aperture.
-
-        Parameters
-        ----------
-        fig : :class:`~bokeh.plotting.Figure`
-            The bokeh figure being plotted in, for handling zoom in/out
-        model : :class:`~geminidr.interactive.interactive.GIApertureModel`
-            The model that tracks the apertures and their ranges
-        aperture_id : int
-            The ID of the aperture
-        start : float
-            The start of the aperture
-        end : float
-            The end of the aperture
-        """
-        # self.view = view
-        self.model = model
-        self.aperture_id = aperture_id
-        self.location = location
-        self.start = start
-        self.end = end
-
-        slider_start = fig.x_range.start
-        slider_end = fig.x_range.end
-
-        self.slider = build_range_slider("%s" % aperture_id, location, start, end, 0.01, slider_start, slider_end,
-                                         obj=self, location_attr="location", start_attr="start", end_attr="end",
-                                         handler=self.do_update)
-        button = Button(label="Del")
-        button.on_click(self.delete_from_model)
-        button.width = 48
-
-        self.component = row(self.slider, button)
-
-    def set_title(self, title):
-        self.slider.children[0].title = title
-
-    def delete_from_model(self):
-        """
-        Delete this aperture from the model
-        """
-        self.model.delete_aperture(self.aperture_id)
-
-    def update_viewport(self, start, end):
-        """
-        Respond to a viewport update.
-
-        This checks the visible range of the viewport against
-        the current range of this aperture.  If the aperture
-        is not fully contained within the new visible area,
-        all UI elements are disabled.  If the aperture is in
-        range, the start and stop values for the slider are
-        capped to the visible range.
-
-        Parameters
-        ----------
-        start : float
-            Visible start of x axis
-        end : float
-            Visible end of x axis
-        """
-        if self.start < start or self.end > end:
-            self.slider.children[0].disabled = True
-            self.slider.children[1].disabled = True
-            self.slider.children[2].disabled = True
-            self.slider.children[3].disabled = True
-        else:
-            self.slider.children[0].disabled = False
-            self.slider.children[1].disabled = False
-            self.slider.children[2].disabled = False
-            self.slider.children[3].disabled = False
-            self.slider.children[0].start = start
-            self.slider.children[0].end = end
-
-    def do_update(self):
-        if self.start > self.end:
-            self.model.adjust_aperture(self.aperture_id, self.location, self.end, self.start)
-        else:
-            self.model.adjust_aperture(self.aperture_id, self.location, self.start, self.end)
-
-
-class GIApertureView(object):
-    """
-    UI elements for displaying the current set of apertures.
-
-    This class manages a set of colored regions on a figure to
-    show where the defined apertures are, along with a numeric
-    ID for each.
-    """
-    def __init__(self, model, fig):
-        """
-
-        Parameters
-        ----------
-        model : :class:`~geminidr.interactive.interactive.GIApertureModel`
-            Model for tracking the apertures, may be shared across multiple views
-        fig : :class:`~bokeh.plotting.Figure`
-            bokeh plot for displaying the regions
-        """
-        self.aps = list()
-        self.ap_sliders = list()
-
-        self.fig = fig
-        self.controls = column()
-        self.controls.height_policy = "auto"
-        self.inner_controls = column()
-        self.inner_controls.height_policy = "auto"
-        self.controls = hamburger_helper("Apertures", self.inner_controls)
-
-        self.model = model
-        model.add_listener(self)
-
-        self.view_start = fig.x_range.start
-        self.view_end = fig.x_range.end
-
-        # listen here because ap sliders can come and go, and we don't have to
-        # convince the figure to release those references since it just ties to
-        # this top-level container
-        fig.x_range.on_change('start', lambda attr, old, new: self.update_viewport(new, self.view_end))
-        fig.x_range.on_change('end', lambda attr, old, new: self.update_viewport(self.view_start, new))
-
-    def update_viewport(self, start, end):
-        """
-        Handle a change in the view.
-
-        We will adjust the slider ranges and/or disable them.
-
-        Parameters
-        ----------
-        start
-        end
-        """
-        # Bokeh docs provide no indication of the datatype or orientation of the start/end
-        # tuples, so I have left the doc blank for now
-        self.view_start = start
-        self.view_end = end
-        for ap_slider in self.ap_sliders:
-            ap_slider.update_viewport(start, end)
-
-    def handle_aperture(self, aperture_id, location, start, end):
-        """
-        Handle an updated or added aperture.
-
-        We either update an existing aperture if we recognize the `aperture_id`
-        or we create a new one.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to update or create in the view
-        start : float
-            Start of the aperture in x coordinates
-        end : float
-            End of the aperture in x coordinates
-
-        """
-        if aperture_id <= len(self.aps):
-            ap = self.aps[aperture_id-1]
-            ap.update(location, start, end)
-        else:
-            ap = GISingleApertureView(self.fig, aperture_id, location, start, end)
-            self.aps.append(ap)
-            slider = GIApertureSliders(self.fig, self.model, aperture_id, location, start, end)
-            self.ap_sliders.append(slider)
-            self.inner_controls.children.append(slider.component)
-
-    def delete_aperture(self, aperture_id):
-        """
-        Remove an aperture by ID.  If the ID is not recognized, do nothing.
-
-        Parameters
-        ----------
-        aperture_id : int
-            ID of the aperture to remove
-        """
-        if aperture_id <= len(self.aps):
-            ap = self.aps[aperture_id-1]
-            ap.delete()
-            self.inner_controls.children.remove(self.ap_sliders[aperture_id-1].component)
-            del self.aps[aperture_id-1]
-            del self.ap_sliders[aperture_id-1]
-        for ap in self.aps[aperture_id-1:]:
-            ap.aperture_id = ap.aperture_id-1
-            ap.label.text = "%s" % ap.aperture_id
-        for ap_slider in self.ap_sliders[aperture_id-1:]:
-            ap_slider.aperture_id = ap_slider.aperture_id-1
-            ap_slider.set_title("%s" % ap_slider.aperture_id)
-            # ap_slider.label.text = "<h3>Aperture %s</h3>" % ap_slider.aperture_id
-
-
 class RegionEditor(GIRegionListener):
+    """
+    Widget used to create/edit fitting Regions.
+
+    Parameters
+    ----------
+    region_model : GIRegionModel
+        Class that connects this element to the regions on plots.
+    """
     def __init__(self, region_model):
-        self.text_input = TextInput(title="Regions (i.e. 100:500,510:900,950:   press 'Enter' to apply")
+        self.text_input = TextInput(
+            title="Regions (i.e. 101:500,511:900,951: Press 'Enter' to apply):",
+            max_width=600,
+            sizing_mode="stretch_width",
+            width_policy="max",
+        )
         self.text_input.value = region_model.build_regions()
         self.region_model = region_model
         self.region_model.add_listener(self)
         self.text_input.on_change("value", self.handle_text_value)
 
+        self.error_message = Div(text="<b> <span style='color:red'> "
+                                      "  Please use comma separated : delimited "
+                                      "  values (i.e. 101:500,511:900,951:)"
+                                      "</span></b>")
+
+        self.error_message.visible = False
+        self.widget = column(self.text_input, self.error_message)
+        self.handling = False
+
     def adjust_region(self, region_id, start, stop):
         pass
 
     def delete_region(self, region_id):
-        pass
+        self.text_input.value = self.region_model.build_regions()
 
     def finish_regions(self):
         self.text_input.value = self.region_model.build_regions()
 
+    @staticmethod
+    def standardize_region_text(region_text):
+        """
+        Remove spaces near commas separating values, and removes
+        leading/trailing commas in string.
+
+        Parameters
+        ----------
+        region_text : str
+            Region text to clean up.
+
+        Returns
+        -------
+        str : Clean region text.
+        """
+        # Handles when deleting last region
+        region_text = '' if region_text is None else region_text
+
+        # Replace " ," or ", " with ","
+        region_text = re.sub(r'[ ,]+', ',', region_text)
+
+        # Remove comma if region_text starts with ","
+        region_text = re.sub(r'^,', '', region_text)
+
+        # Remove comma if region_text ends with ","
+        region_text = re.sub(r',$', '', region_text)
+
+        return region_text
+
     def handle_text_value(self, attr, old, new):
-        current = self.region_model.build_regions()
-        if current != new:
-            self.region_model.load_from_string(new)
+        """
+        Handles the new text value inside the Text Input field. The
+        (attr, old, new) callback signature is a requirement from Bokeh.
+
+        Parameters
+        ----------
+        attr :
+            Attribute that would be changed. Not used here.
+        old : str
+            Old attribute value. Not used here.
+        new : str
+            New attribute value. Used to update regions.
+        """
+        if not self.handling:
+            self.handling = True
+            region_text = self.standardize_region_text(new)
+            current = self.region_model.build_regions()
+
+            # Clean up regions if text input is empty
+            if not region_text or region_text.isspace():
+                self.region_model.clear_regions()
+                self.text_input.value = ""
+                current = None
+                region_text = None
+                self.region_model.finish_regions()
+
+            if current != region_text:
+                if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
+                    self.region_model.load_from_string(region_text)
+                    self.text_input.value = self.region_model.build_regions()
+                    self.error_message.visible = False
+                else:
+                    self.text_input.value = current
+                    if 'region_input_error' not in self.text_input.css_classes:
+                        self.error_message.visible = True
+            else:
+                self.error_message.visible = False
+
+            self.handling = False
 
     def get_widget(self):
-        return self.text_input
+        return self.widget

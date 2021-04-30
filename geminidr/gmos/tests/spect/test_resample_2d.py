@@ -40,14 +40,18 @@ def test_correlation(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
 
-    ad = p.stackFrames()[0]
+    p.findSourceApertures(max_apertures=1)
+    np.testing.assert_allclose([ad[0].APERTURE['c0']
+                                for ad in p.streams['main']], 260.6, atol=0.25)
+
+    ad = p.stackFrames(reject_method="sigclip")[0]
     assert ad[0].shape == (512, 3869)
 
     caplog.clear()
     ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    #assert caplog.records[3].message == 'Found sources at rows: 260.8'
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.25)
+    #assert caplog.records[3].message == 'Found sources at rows: 260.6'
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (3869,)
@@ -66,13 +70,17 @@ def test_correlation_and_trim(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15, trim_data=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
 
-    ad = p.stackFrames()[0]
+    p.findSourceApertures(max_apertures=1)
+    np.testing.assert_allclose([ad[0].APERTURE['c0']
+                                for ad in p.streams['main']], 260.6, atol=0.25)
+
+    ad = p.stackFrames(reject_method="sigclip")[0]
     assert ad[0].shape == (512, 3139)
 
     caplog.clear()
     ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.25)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (3139,)

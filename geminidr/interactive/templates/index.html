@@ -26,6 +26,8 @@
 <!-- end favico stuff -->
 
 <link rel="stylesheet" href="dragons/static/dragons.css">
+<link rel="stylesheet" href="dragons/static/css/loading.css">
+
 
 <script
   src="https://code.jquery.com/jquery-3.5.1.min.js"
@@ -33,24 +35,48 @@
   crossorigin="anonymous"></script>
 <script src="dragons/static/modal.js"></script>
 <script src="dragons/static/version.js"></script>
+<script src="dragons/static/js/loading.js"></script>
 {% endblock %}
 
 {% block contents %}
-<!-- modal, for long running bokeh code -->
-<div class="modal_overlay">
-    <b>Thinking...</b>
-</div>
-<!-- end modal -->
 
-<div id="top">
-    <div id="top-icon"></div>
-    <div id="top-title">{{ primitive_name }}</div>
-</div>
-<div id="plot_div" style="border: 0px solid">
-    <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
-<!-- I'm a little teapot. -->
-    {{ super() }}
-</div>
+    <!-- modal, for long running bokeh code -->
+    <div class="modal_overlay">
+        <div class="modal_textbox">
+            <b>Thinking...</b>
+        </div>
+    </div>
+
+<div class="container">
+
+    <header id="top">
+        <div class="logo"><img src="dragons/static/DRAGONS.png"></div>
+        <div class="banner">
+            <span class="title">{{ primitive_name }}</span>
+            <button id="help-btn" type="button" onclick="openHelpPopup('Trace Apertures - Help')">Help</button>
+        </div>
+    </header>
+
+    <section id="plot_div" class="content" style="border: 0px solid">
+        <!-- add tabIndex="-1" to the div if we need to make it key-listenable -->
+        <div id="main_div">
+            {% block main_div %}
+                {% for doc in docs %}
+                    {{ embed(doc) if doc.elementid }}
+                    {% for root in doc.roots %}
+                        {{ embed(root) | indent(10) }}
+                    {% endfor %}
+                {% endfor %}
+            {% endblock %}
+        </div>
+    </section>
+
+    <footer id="footer">
+    Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
+    </footer>
+
+</div> <!-- end container -->
+
 <script type="text/javascript">
     // $("#plot_div").keydown(function(event) {
     // document.getElementById("plot_div").addEventListener("keydown", function(event){
@@ -106,6 +132,14 @@
             $.ajax('/handle_key?key=u');
             event.preventDefault()
             break;
+        case 's':
+            $.ajax('/handle_key?key=s');
+            event.preventDefault()
+            break;
+        case 'c':
+            $.ajax('/handle_key?key=c');
+            event.preventDefault()
+            break;
         //case 65:
         //  tabs.active = 0;
         //  event.preventDefault()
@@ -116,8 +150,22 @@
         //  break;
         }
      });
+     var help_popup = null;
+     function openHelpPopup() {
+       if (help_popup == null || help_popup.closed) {
+         help_popup = window.open(
+           window.location + "help",
+           "Find Source Apertures Help",
+           "resizable=yes,scrollbars=yes,status=yes,height=800,width=800"
+         );
+       }
+       else {
+         help_popup.focus();
+       };
+     };
+     window.onbeforeunload = function() {
+       help_popup.close();
+     };
 </script>
-<div id="footer">
-Made with <a href="https://github.com/GeminiDRSoftware/DRAGONS">DRAGONS</a>&nbsp;&nbsp;
-</div>
+
 {% endblock %}

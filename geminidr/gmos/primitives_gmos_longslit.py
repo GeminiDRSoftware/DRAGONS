@@ -43,6 +43,7 @@ from . import parameters_gmos_longslit
 
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
+from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
 
 
 @parameter_override
@@ -155,9 +156,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
 
-
                 if shift is None:
-                    max_shift = 50
                     mshift = max_shift // ybin + 2
                     mshift2 = mshift + edges
                     # model[] indexing avoids reduction in signal as slit
@@ -700,7 +699,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # Create a 'row' parameter to add to the UI so the user can select the row they
                 # want to fit.
                 reinit_params = ["row", ]
-                reinit_extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
+                reinit_extras = {"row": RangeField("Row of data", int, int(nrows/2), min=1, max=nrows)}
 
                 # This function is used by the interactive fitter to generate the x,y,weights to use
                 # for each fit.  We only want to fit a single row of data interactively, so that we can
@@ -708,7 +707,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # slider for the user and we will have access to the selected value in the 'extras'
                 # dictionary passed in here.
                 def reconstruct_points(conf, extras):
-                    r = min(0, extras['row'] - 1)
+                    r = max(0, extras['row'] - 1)
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
                         masked_data = np.ma.masked_array(rpext.data[r],
@@ -719,18 +718,28 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             weights = np.sqrt(at.divide0(1., rpext.variance[r]))
                         all_coords.append([rppixels, masked_data, weights])
                     return all_coords
-
+                if ad.orig_filename:
+                    filename_info = ad.orig_filename
+                elif ad.filename:
+                    filename_info = ad.filename
+                else:
+                    filename_info = ''
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
                                                    config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
                                                    tab_name_fmt="CCD {}",
-                                                   xlabel='x', ylabel='y',
-                                                   reinit_live=True,
+                                                   xlabel='x (pixels)', ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
-                                                   enable_user_masking=False)
+                                                   primitive_name="normalizeFlat",
+                                                   filename_info=filename_info,
+                                                   enable_user_masking=False,
+                                                   enable_regions=True,
+                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                   recalc_inputs_above=True)
                 geminidr.interactive.server.interactive_fitter(visualizer)
+                log.stdinfo('Interactive Parameters retrieved, performing flat normalization...')
 
                 # The fit models were done on a single row, so we need to
                 # get the parameters that were used in the final fit for

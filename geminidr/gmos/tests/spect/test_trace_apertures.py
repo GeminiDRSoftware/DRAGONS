@@ -72,6 +72,26 @@ def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
         np.testing.assert_allclose(desired, actual, atol=0.05)
 
 
+@pytest.mark.interactive
+@pytest.mark.parametrize("ad", [test_datasets[0]], indirect=True)
+def test_interactive_trace_apertures(ad, change_working_dir):
+    """
+    Simply tests it we can run traceApertures() in interactive mode easily.
+
+    Parameters
+    ----------
+    ad : fixture
+        Custom fixture that loads the input AstroData object.
+    change_working_dir : fixture
+        Custom fixture that changes the current working directory.
+    """
+    with change_working_dir():
+        logutils.config(file_name="log_regression_{}.txt".format(ad.data_label()))
+        p = primitives_gmos_spect.GMOSSpect([ad])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.traceApertures(interactive=True, niter=5)
+
+
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')
 def ad(path_to_inputs, request):

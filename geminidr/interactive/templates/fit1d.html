@@ -1,0 +1,10 @@
+{% extends 'index.html' %}
+
+{% block main_div %}
+    {% for doc in docs %}
+    {{ embed(doc) if doc.elementid }}
+    {% for root in doc.roots %}
+        {{ embed(root) | indent(10) }}
+    {% endfor %}
+    {% endfor %}
+{% endblock %}

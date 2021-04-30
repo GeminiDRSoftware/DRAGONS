@@ -40,6 +40,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
+from geminidr.interactive.fit.tracing import interactive_trace_apertures
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
@@ -51,6 +52,7 @@ from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -351,137 +353,107 @@ class Spect(PrimitivesBASE):
                         ad.phu["EXTCURVE"] = (
                             site, self.keyword_comments["EXTCURVE"])
 
+            def _get_fit1d_input_data(ext, exptime, spec_table):
+                spectrum = Spek1D(ext) / (exptime * u.s)
+                wave, zpt, zpt_err = [], [], []
+
+                # Compute values that are counts / (exptime * flux_density * bandpass)
+                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
+                    data, mask, variance = spectrum.signal(
+                        region, interpolate=DQ.bad_pixel)
+                    if mask == 0 and fluxdens > 0:
+                        # Regardless of whether FLUX column is f_nu or f_lambda
+                        flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
+                                           equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
+                        if data > 0:
+                            wave.append(w0)
+                            # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
+                            zpt.append(u.Magnitude(flux / data))
+                            if variance is not None:
+                                zpt_err.append(np.log(1 + np.sqrt(variance) / data))
+                wave = at.array_from_list(wave, unit=u.nm)
+                zpt = at.array_from_list(zpt)
+                weights = 1. / array_from_list(zpt_err) if zpt_err else None
+
+                # Correct for atmospheric extinction. This correction makes
+                # the real data brighter, so makes the zpt magnitude more +ve
+                # (since "data" is in the denominator)
+                if airmass0 and site is not None and airmass is not None:
+                    zpt += u.Magnitude(airmass *
+                                       extinct.extinction(wave, site=site))
+
+                return wave, zpt, weights
+
             # We can only calculate the sensitivity for one extension in
             # non-XD data, so keep track of this in case it's not the first one
             calculated = False
+            xunits = yunits = None
+            all_exts = list()
             for ext in ad:
                 if len(ext.shape) != 1:
                     log.warning(f"{ad.filename} extension {ext.id} is not a "
                                 "1D spectrum")
                     continue
 
+                if calculated and 'XD' not in ad.tags:
+                    log.warning("Found additional 1D extensions in non-XD data."
+                                " Ignoring.")
+                    break
+
+                waves, zpt, weights = _get_fit1d_input_data(ext, exptime, spec_table)
+                if xunits is None:
+                    xunits = waves.unit
+                elif xunits != waves.unit:
+                    log.warning(f"Unit mismatch between {xunits} and {waves.unit}")
+                    continue
+                if yunits is None:
+                    yunits = zpt.unit
+                elif xunits != zpt.unit:
+                    log.warning(f"Unit mismatch between {yunits} and {zpt.unit}")
+                    continue
+                all_exts.append((ext, waves, zpt, weights))
+                calculated = True
+
             if interactive:
-                all_exts = list()
-                all_shapes = list()
-                all_pixels = list()
-                all_masked_data = list()
-                all_weights = list()
-                all_fp_init = list()
+                all_shapes = [x[0].shape[0] for x in all_exts]
+                all_waves = np.array([x[1] for x in all_exts])
+                all_zpt = np.array([x[2] for x in all_exts])
+                all_weights = np.array([x[3] for x in all_exts])
+                all_fp_init = np.array([fit_1D.translate_params(params)] * len(all_exts))
 
-                for ext in ad:
-                    if len(ext.shape) != 1:
-                        log.warning("{}:{} is not a 1D spectrum".
-                                    format(ad.filename, ext.hdr['EXTVER']))
-                        continue
-
-                    if calculated and 'XD' not in ad.tags:
-                        log.warning("Found additional 1D extensions in non-XD data."
-                                    " Ignoring.")
-                        break
-
-                    spectrum = Spek1D(ext) / (exptime * u.s)
-                    wave, zpt, zpt_err = [], [], []
-
-                    # Compute values in counts / (exptime * flux_density * bandpass)
-                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                                spec_table['WIDTH'].quantity,
-                                                spec_table['FLUX'].quantity):
-                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                        # We don't want a single bad pixel to ruin an entire
-                        # bandpass, so exclude pixels with the DQ.bad_pixel bit
-                        # set and assign them the average of the other pixels
-                        data, mask, variance = spectrum.signal(
-                            region, interpolate=DQ.bad_pixel)
-                        if mask == 0 and fluxdens > 0:
-                            # Regardless of whether FLUX column is f_nu or f_lambda
-                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                            if data > 0:
-                                wave.append(w0)
-                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(flux / data))
-                                if variance is not None:
-                                    zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
-                    wave = array_from_list(wave, unit=u.nm)
-                    zpt = array_from_list(zpt)
-                    weights = 1./array_from_list(zpt_err) if zpt_err else None
-
-                    # Correct for atmospheric extinction. This correction makes
-                    # the real data brighter, so makes the zpt magnitude more +ve
-                    # (since "data" is in the denominator)
-                    if airmass0 and site is not None and airmass is not None:
-                        zpt += u.Magnitude(airmass *
-                                           extinct.extinction(wave, site=site))
-
-                    all_exts.append(ext)
-                    all_shapes.append(ext.shape[0])
-                    all_pixels.append(wave.value)
-                    all_masked_data.append(zpt.value)
-                    all_weights.append(weights)
-                    all_fp_init.append(fit_1D.translate_params(params))
-
-                    calculated = True
-
-                # ************************************************************
+                # build config for interactive
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                # Hacking this out?
-                visualizer = fit1d.Fit1DVisualizer((all_pixels, all_masked_data, all_weights),
+                # Get filename to display in visualizer
+                filename_info = getattr(ad, 'filename', '')
+
+                visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
                                                    tab_name_fmt="CCD {}",
-                                                   xlabel='x', ylabel='y',
-                                                   reinit_live=True,
+                                                   xlabel=f'Wavelength ({xunits})',
+                                                   ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_shapes,
-                                                   title="Calculate Sensitivity")
+                                                   title="Calculate Sensitivity",
+                                                   primitive_name="calculateSensitivity",
+                                                   filename_info=filename_info,
+                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
                 for ext, fit in zip(all_exts, all_m_final):
-                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=wave.unit,
-                                                     yunit=zpt.unit)
+                    ext.SENSFUNC = am.model_to_table(fit.model, xunit=xunits,
+                                                     yunit=yunits)
             else:
-                calculated = False
-                for ext in ad:
-                    if len(ext.shape) != 1:
-                        log.warning(f"{ad.filename} extension {ext.id} is not a "
-                                    "1D spectrum")
-                        continue
-
-                    if calculated and 'XD' not in ad.tags:
-                        log.warning("Found additional 1D extensions in non-XD data."
-                                    " Ignoring.")
-                        break
-
-                    # Non-interactive
-                    spectrum = Spek1D(ext) / (exptime * u.s)
-                    wave, zpt, zpt_err = [], [], []
-
-                    # Compute values that are counts / (exptime * flux_density * bandpass)
-                    for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                                                spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                        region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
-                        data, mask, variance = spectrum.signal(region)
-                        if mask == 0 and fluxdens > 0:
-                            # Regardless of whether FLUX column is f_nu or f_lambda
-                            flux = fluxdens.to(u.Unit('erg cm-2 s-1 nm-1'),
-                                               equivalencies=u.spectral_density(w0)) * dw.to(u.nm)
-                            if data > 0:
-                                wave.append(w0)
-                                # This is (counts/s) / (erg/cm^2/s), in magnitudes (like IRAF)
-                                zpt.append(u.Magnitude(flux / data))
-                                if variance is not None:
-                                    zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
-                    wave = at.array_from_list(wave, unit=u.nm)
-                    zpt = at.array_from_list(zpt)
-                    weights = 1. / array_from_list(zpt_err) if zpt_err else None
-                    fitter = fit_1D(zpt.value, points=wave.value,
-                                   weights=weights, **fit1d_params,
-                                   plot=debug_plot)
-                    ext.SENSFUNC = am.model_to_table(fitter.model, xunit=wave.unit,
+                for (ext, waves, zpt, weights) in all_exts:
+                    fit_1d = fit_1D(zpt.value, points=waves.value,
+                                    weights=weights, **fit1d_params,
+                                    plot=debug_plot)
+                    ext.SENSFUNC = am.model_to_table(fit_1d.model, xunit=waves.unit,
                                                      yunit=zpt.unit)
-                    calculated = True
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1608,13 +1580,14 @@ class Spect(PrimitivesBASE):
         The primitive operates by first collapsing the 2D spectral image in
         the spatial direction to identify sky lines as regions of high
         pixel-to-pixel variance, and the regions between the sky lines which
-        consist of at least `min_sky_pix` pixels are selected. These are then
-        collapsed in the dispersion direction to produce a 1D spatial profile,
-        from which sources are identified using a peak-finding algorithm.
+        consist of at least `min_sky_region` pixels are selected. These are
+        then collapsed in the dispersion direction to produce a 1D spatial
+        profile, from which sources are identified using a peak-finding
+        algorithm.
 
         The widths of the apertures are determined by calculating a threshold
-        level relative to the peak, or an integrated flux relative to the
-        total between the minima on either side and determining where a smoothed
+        level relative to the peak, or an integrated flux relative to the total
+        between the minima on either side and determining where a smoothed
         version of the source profile reaches this threshold.
 
         Parameters
@@ -1633,7 +1606,7 @@ class Spect(PrimitivesBASE):
             indicating the region(s) over which the spectral signal should be
             used. The first and last values can be blank, indicating to
             continue to the end of the data
-        min_sky_pregion : int
+        min_sky_region : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
         use_snr : bool
@@ -1661,26 +1634,17 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        max_apertures = params["max_apertures"]
-        percentile = params["percentile"]
-        section = params["section"]
-        min_sky_pix = params["min_sky_region"]
-        use_snr = params["use_snr"]
-        threshold = params["threshold"]
-        sizing_method = params["sizing_method"]
+        suffix = params["suffix"]
         interactive = params["interactive"]
 
-        sec_regions = []
-        if section:
-            for x1, x2 in (s.split(':') for s in section.split(',')):
-                sec_regions.append(slice(None if x1 == '' else int(x1) - 1,
-                                         None if x2 == '' else int(x2)))
+        aper_params = {key: params[key] for key in (
+            'max_apertures', 'min_sky_region', 'percentile',
+            'section', 'sizing_method', 'threshold', 'use_snr')}
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning("{} has not been distortion corrected".
-                            format(ad.filename))
+                log.warning(f"{ad.filename} has not been distortion corrected")
+
             for ext in ad:
                 log.stdinfo(f"Searching for sources in {ad.filename} "
                             f"extension {ext.id}")
@@ -1690,97 +1654,25 @@ class Spect(PrimitivesBASE):
 
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
-                data, mask, variance = _transpose_if_needed(ext.data, ext.mask,
-                                                            ext.variance, transpose=dispaxis == 0)
-                direction = "column" if dispaxis == 0 else "row"
+                if dispaxis == 0:
+                    ext = ext.transpose()
 
-                # Collapse image along spatial direction to find noisy regions
-                # (caused by sky lines, regardless of whether image has been
-                # sky-subtracted or not)
-                data1d, mask1d, var1d = NDStacker.mean(data, mask=mask,
-                                                       variance=variance)
-                # Very light sigma-clipping to remove bright sky lines
-                var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_pix // 2)
-                mean, median, std = sigma_clipped_stats(var_excess, mask=mask1d,
-                                                        sigma=5.0, maxiters=1)
-
-                # Mask sky-line regions and find clumps of unmasked pixels
-                mask1d[var_excess > 5 * std] = 1
-                slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
-                sky_regions = [slice_ for slice_ in slices
-                               if slice_.stop - slice_.start >= min_sky_pix]
-                if not sky_regions:  # make sure we have something!
-                    sky_regions = [slice(None)]
-
-                sky_mask = np.ones_like(mask1d, dtype=bool)
-                for reg in sky_regions:
-                    sky_mask[reg] = False
-                if sec_regions:
-                    sec_mask = np.ones_like(mask1d, dtype=bool)
-                    for reg in sec_regions:
-                        sec_mask[reg] = False
-                else:
-                    sec_mask = False
-                full_mask = (mask > 0) | sky_mask | sec_mask
-
-                this_use_snr = use_snr and (variance is not None)
-                signal = (data if not this_use_snr else
-                          np.divide(data, np.sqrt(variance),
-                                    out=np.zeros_like(data), where=variance>0))
-                masked_data = np.where(np.logical_or(full_mask, variance == 0),
-                                       np.nan, signal)
-                # Need to catch warnings for rows full of NaNs
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('ignore', message='All-NaN slice')
-                    warnings.filterwarnings('ignore', message='Mean of empty slice')
-                    if percentile:
-                        profile = np.nanpercentile(masked_data, percentile, axis=1)
-                    else:
-                        profile = np.nanmean(masked_data, axis=1)
-                prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
+                aper_params['direction'] = "column" if dispaxis == 0 else "row"
 
                 if interactive:
-                    locations, all_limits = interactive_find_source_apertures(ext, profile, prof_mask,
-                                                                              threshold, sizing_method,
-                                                                              max_apertures)
-                    if locations is None or len(locations) == 0:
-                        log.warning("Found no sources")
-                        # Delete existing APERTURE table
-                        try:
-                            del ext.APERTURE
-                        except AttributeError:
-                            pass
-                        continue
+                    locations, all_limits = interactive_find_source_apertures(
+                        ext, **aper_params)
                 else:
-                    # TODO: find_peaks might not be best considering we have no
-                    #   idea whether sources will be extended or not
-                    # We only use the lightly-smoothed profile to pinpoint
-                    # the peak positions
-                    widths = np.arange(3, 20)
-                    peaks_and_snrs = tracing.find_peaks(
-                        profile, widths, mask=prof_mask & DQ.not_signal,
-                        variance=1.0 if this_use_snr else None, reject_bad=False,
-                        min_snr=3, min_frac=0.2, pinpoint_index=0)
+                    locations, all_limits, _, _ = tracing.find_apertures(
+                        ext, **aper_params)
 
-                    if peaks_and_snrs.size == 0:
-                        log.warning("Found no sources")
-                        # Delete existing APERTURE table
-                        try:
-                            del ext.APERTURE
-                        except AttributeError:
-                            pass
-                        continue
-
-                    # Reverse-sort by SNR and return only the locations
-                    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                                reverse=True)[:max_apertures]).T[0]
-                    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                    log.stdinfo(f"Found sources at {direction}s: {locstr}")
-
-                    if np.isnan(profile[prof_mask==0]).any():
-                        log.warning("There are unmasked NaNs in the spatial profile")
-                    all_limits = tracing.get_limits(np.nan_to_num(profile), prof_mask, peaks=locations,
-                                                    threshold=threshold, method=sizing_method)
+                if locations is None or len(locations) == 0:
+                    # Delete existing APERTURE table
+                    if 'APERTURE' in ext.tables:
+                        del ext.APERTURE
+                    continue
+                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+                log.stdinfo(f"Found sources at: {locstr}")
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1802,12 +1694,11 @@ class Spect(PrimitivesBASE):
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
                 new_order = ["number"] + [c for c in aptable.colnames if c != "number"]
-                aptable = aptable[new_order]
-                ext.APERTURE = aptable
+                ext.APERTURE = aptable[new_order]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def flagCosmicRays(self, adinputs=None, **params):
@@ -2813,27 +2704,34 @@ class Spect(PrimitivesBASE):
         direction, and estimates the optimal extraction aperture size from the
         spatial profile of each source.
 
+        This primitive is now designed to run on tiled and mosaicked data so
+        normal long-slit spectra will be in a single extension. We keep the loop
+        over extensions to allow the possibility of expanding it to cases where
+        we have multiple extensions (e.g. Multi-Object Spectroscopy).
+
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Science data as 2D spectral images with a `.APERTURE` table attached
             to one or more of its extensions.
-        suffix : str
-            Suffix to be added to output files.
-        order : int
-            Fitting order along spectrum. Default: 2
-        step : int
-            Step size for sampling along dispersion direction. Default: 10
-        nsum : int
-            Number of rows/columns to combine at each step. Default: 10
-        max_missed : int
+        debug: bool, optional
+            draw aperture traces on image display window? Default: False
+        interactive: bool, optional
+            Run primitive interactively? Default: False
+        max_missed : int, optional
             Maximum number of interactions without finding line before line is
             considered lost forever. Default: 5
-        max_shift : float
+        max_shift : float, optional
             Maximum perpendicular shift (in pixels) from pixel to pixel.
             Default: 0.05
-        debug: bool
-            draw aperture traces on image display window?
+        nsum : int, optional
+            Number of rows/columns to combine at each step. Default: 10
+        order : int, optional
+            Fitting order along spectrum. Default: 2
+        step : int, optional
+            Step size for sampling along dispersion direction. Default: 10
+        suffix : str, optional
+            Suffix to be added to output files. Default: "_aperturesTraced".
 
         Returns
         -------
@@ -2847,28 +2745,35 @@ class Spect(PrimitivesBASE):
 
         """
 
-        def averaging_func(data, mask=None, variance=None):
-            """Use a sigma-clipped mean to collapse in the dispersion
-            direction, which should reject sky lines"""
-            return NDStacker.mean(*NDStacker.sigclip(data, mask=mask,
-                                                     variance=variance))
-
+        # Setup log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        step = params["step"]
-        nsum = params["nsum"]
+
+        # Parse parameters
+        debug = params["debug"]
+        interactive = params["interactive"]
         max_missed = params["max_missed"]
         max_shift = params["max_shift"]
-        debug = params["debug"]
-        fit1d_params = fit_1D.translate_params({**params,
-                                                "function": "chebyshev"})
-        # pop "order" seing we may need to call fit_1D with a different value
-        order = fit1d_params.pop("order")
+        nsum = params["nsum"]
+        sfx = params["suffix"]
+        step = params["step"]
 
+        fit1d_params = fit_1D.translate_params(
+            {**params, "function": "chebyshev"})
+
+        # order is pulled out for the non-interactive version
+        order = None
+        if not interactive:
+            # pop "order" seeing we may need to call fit_1D with a
+            #  different value for the non-interactive version
+            order = fit1d_params.pop("order")
+
+        # Main Loop
         for ad in adinputs:
             for ext in ad:
+
+                # Verify inputs
                 try:
                     aptable = ext.APERTURE
                     locations = aptable['c0'].data
@@ -2880,83 +2785,111 @@ class Spect(PrimitivesBASE):
                 if debug:
                     self.viewer.display_image(ext, wcs=False)
                     self.viewer.width = 2
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                    self.viewer.color = "blue"
 
-                # For efficiency, we would like to trace all sources
-                # simultaneously (like we do with arc lines), but we need to
-                # start somewhere the source is bright enough, and there may
-                # not be a single location where that is true for all sources
-                for i, loc in enumerate(locations):
-                    c0 = int(loc + 0.5)
-                    spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:,c0]
-                    start = np.argmax(at.boxcar(spectrum, size=3))
+                if interactive:
+                    # Pass the primitive configuration to the interactive object.
+                    _config = self.params[self.myself()]
+                    _config.update(**params)
+                    ext.APERTURE = interactive_trace_apertures(
+                        ext, _config, fit1d_params)
 
-                    # The coordinates are always returned as (x-coords, y-coords)
-                    ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                start=start, initial=[loc],
-                                                                rwidth=None, cwidth=5, step=step,
-                                                                nsum=nsum, max_missed=max_missed,
-                                                                initial_tolerance=None,
-                                                                max_shift=max_shift,
-                                                                viewer=self.viewer if debug else None)
-                    if i:
-                        all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
-                        all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
-                    else:
-                        all_ref_coords = ref_coords
-                        all_in_coords = in_coords
+                else:
+                    dispaxis = 2 - ext.dispersion_axis()  # python sense
+                    all_aperture_tables = []
 
-                self.viewer.color = "blue"
-                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-                all_tables = []
-                for aperture in aptable:
-                    location = aperture['c0']
-                    # Funky stuff to extract the traced coords associated with
-                    # each aperture (there's just a big list of all the coords
-                    # from all the apertures) and sort them by coordinate
-                    # along the spectrum
-                    coords = np.array([list(c1) + list(c2)
-                                       for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
-                                       if c1[dispaxis] == location])
-                    values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
-                    ref_coords, in_coords = values[:2], values[2:]
-                    min_value = in_coords[1 - dispaxis].min()
-                    max_value = in_coords[1 - dispaxis].max()
-                    log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
-                              f"to {max_value}")
+                    # For efficiency, we would like to trace all sources
+                    #  simultaneously (like we do with arc lines), but we need
+                    #  to start somewhere the source is bright enough, and there
+                    #  may not be a single location where that is true for all
+                    #  sources
+                    for i, loc in enumerate(locations):
+                        c0 = int(loc + 0.5)
+                        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+                        start = np.argmax(at.boxcar(spectrum, size=3))
 
-                    # Find model to transform actual (x,y) locations to the
-                    # value of the reference pixel along the dispersion axis
-                    try:
-                        fit1d = fit_1D(in_coords[dispaxis], points=in_coords[1 - dispaxis],
-                                       domain=[0, ext.shape[dispaxis] - 1],
-                                       order=order, **fit1d_params)
-                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        # The coordinates are always returned as (x-coords, y-coords)
+                        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                                    start=start, initial=[loc],
+                                                                    rwidth=None, cwidth=5, step=step,
+                                                                    nsum=nsum, max_missed=max_missed,
+                                                                    initial_tolerance=None,
+                                                                    max_shift=max_shift,
+                                                                    viewer=self.viewer if debug else None)
+                        if i:
+                            all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+                            all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+                        else:
+                            all_ref_coords = ref_coords
+                            all_in_coords = in_coords
+
+                    spectral_coords = np.arange(0, ext.shape[dispaxis], step)
+
+                    for aperture in aptable:
+                        location = aperture['c0']
+                        # Funky stuff to extract the traced coords associated with
+                        # each aperture (there's just a big list of all the coords
+                        # from all the apertures) and sort them by coordinate
+                        # along the spectrum
+                        coords = np.array([list(c1) + list(c2)
+                                           for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
+                                           if c1[dispaxis] == location])
+                        values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
+                        ref_coords, in_coords = values[:2], values[2:]
+
+                        # log aperture
+                        min_value = in_coords[1 - dispaxis].min()
+                        max_value = in_coords[1 - dispaxis].max()
+                        log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
+                                  f"to {max_value}")
+
+                        # Find model to transform actual (x,y) locations to the
+                        # value of the reference pixel along the dispersion axis
+                        try:
+                            _fit_1d = fit_1D(
+                                in_coords[dispaxis],
+                                domain=[0, ext.shape[dispaxis] - 1],
+                                order=order,
+                                points=in_coords[1 - dispaxis],
+                                **fit1d_params)
+
+
                         # This hides a multitude of sins, including no points
                         # returned by the trace, or insufficient points to
                         # constrain fit. We call fit1d with dummy points to
                         # ensure we get the same type of result as if it had
                         # been successful.
-                        log.warning(f"Unable to trace aperture {aperture['number']}")
-                        fit1d = fit_1D(np.full_like(spectral_coords, c0),
-                                       points=spectral_coords,
-                                       domain=[0, ext.shape[dispaxis] - 1],
-                                       order=0, **fit1d_params)
-                    else:
-                        if debug:
-                            plot_coords = np.array([spectral_coords, fit1d.evaluate(spectral_coords)]).T
-                            self.viewer.polygon(plot_coords, closed=False,
-                                                xfirst=(dispaxis == 1), origin=0)
-                    this_aptable = am.model_to_table(fit1d.model)
+                        except (IndexError, np.linalg.linalg.LinAlgError):
+                            log.warning(
+                                f"Unable to trace aperture {aperture['number']}")
 
-                    # Recalculate aperture limits after rectification
-                    apcoords = fit1d.evaluate(np.arange(ext.shape[dispaxis]))
-                    this_aptable["aper_lower"] = aperture["aper_lower"]  #+ (location - apcoords.min())
-                    this_aptable["aper_upper"] = aperture["aper_upper"]  #- (apcoords.max() - location)
-                    all_tables.append(this_aptable)
+                            _fit_1d = fit_1D(
+                                np.full_like(spectral_coords, c0),
+                                domain=[0, ext.shape[dispaxis] - 1],
+                                order=0,
+                                points=spectral_coords,
+                                **fit1d_params)
 
-                new_aptable = vstack(all_tables, metadata_conflicts="silent")
-                ext.APERTURE = new_aptable
+                        else:
+                            if debug:
+                                plot_coords = np.array(
+                                    [spectral_coords,
+                                     _fit_1d.evaluate(spectral_coords)]).T
+                                self.viewer.polygon(plot_coords, closed=False,
+                                                    xfirst=(dispaxis == 1), origin=0)
+
+                        this_aptable = am.model_to_table(_fit_1d.model)
+
+                        # Recalculate aperture limits after rectification
+                        apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
+                        this_aptable["aper_lower"] = \
+                            aperture["aper_lower"] #+ (location - apcoords.min())
+                        this_aptable["aper_upper"] = \
+                            aperture["aper_upper"] # - (apcoords.max() - location)
+                        all_aperture_tables.append(this_aptable)
+
+                    ext.APERTURE = vstack(all_aperture_tables,
+                                          metadata_conflicts="silent")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
