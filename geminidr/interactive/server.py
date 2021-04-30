@@ -1,4 +1,4 @@
-from bokeh.io import curdoc
+import uuid
 
 from astrodata import version
 
@@ -8,7 +8,7 @@ import tornado
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader
 
 from geminidr.interactive import controls
 
@@ -17,19 +17,86 @@ __all__ = ["interactive_fitter", "stop_server"]
 _bokeh_server = None
 _visualizer = None
 
-
 __version__ = version()
+
+TEMPLATE_PATH = '%s/templates' % pathlib.Path(__file__).parent.absolute()
 
 
 class VersionHandler(tornado.web.RequestHandler):
+    """
+    Handler for geting the DRAGONS version.
+    """
     def get(self):
         self.write(__version__)
 
 
 def _handle_key(doc):
+    """
+    Web endpoint for telling the bokeh python a key was pressed.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        Document reference for the user's browser tab to hold the user interface.
+
+    Returns
+    -------
+    none
+    """
     key = doc.session_context.request.arguments['key'][0].decode('utf-8')
     if controls.controller:
         controls.controller.handle_key(key)
+
+
+# to store the mapping from ID to callable for the registered web callbacks
+_callbacks = dict()
+
+
+def register_callback(fn):
+    """
+    Register a function with the `callback` web endpoint.
+
+    This will register a function to respond to calls to the `callback`
+    web endpoint.  It will assign the function a unique UUID and return it
+    to the caller as a string.  This ID should be passed in the web calls
+    as the query argument `callback`.
+
+    Parameters
+    ----------
+    fn : callable
+        Function to call when callback is accessed via the URL.  It will be passed the web call arguments.
+
+    Returns
+    -------
+    str : Unique ID for the callback, to be passed in the URL
+    """
+    name = str(uuid.uuid1())
+    _callbacks[name] = fn
+    return name
+
+
+def _handle_callback(doc):
+    """
+    Web handler for 'callback' urls.
+
+    This handler is for functions registered as callbacks for the javascript.
+    This allows us to write javascript logic that calls back down into the python
+    via this endpoint.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        Document reference for the user's browser tab to hold the user interface.
+
+    Returns
+    -------
+    none
+    """
+    cb = doc.session_context.request.arguments['callback'][0].decode('utf-8')
+    args = doc.session_context.request.arguments
+    callback = _callbacks.get(cb)
+    if callback is not None:
+        callback(args)
 
 
 def _bkapp(doc):
@@ -49,19 +116,45 @@ def _bkapp(doc):
     -------
     none
     """
-    global _visualizer
-
-    with open('%s/templates/index.html' % pathlib.Path(__file__).parent.absolute()) as f:
-        # Because Bokeh has broken templating...
+    template = "index.html"
+    if _visualizer.template:
+        template = _visualizer.template
+    with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
         title = _visualizer.title
         if not title:
             title = 'Interactive'
+        primitive_name = _visualizer.primitive_name
         template = f.read()
-        template = template.replace('{{ primitive_name }}', title)
-
-        t = Template(template)
+        t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
+        doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
+        doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
+
+        if hasattr(_visualizer, "filename_info"):
+            doc.template_variables['filename_info'] = _visualizer.filename_info
+
     _visualizer.visualize(doc)
+    doc.title = title
+
+
+def _helpapp(doc):
+    with open(f'{TEMPLATE_PATH}/help.html') as f:
+        template = f.read()
+
+    title = _visualizer.title or 'Interactive'
+    primitive_name = _visualizer.primitive_name
+    t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
+    doc.template = t
+    doc.template_variables.update({
+        'help_text': _visualizer.help_text,
+        'primitive_title': title.replace(' ', '&nbsp;'),
+        'primitive_name': primitive_name.replace(' ', '&nbsp;'),
+    })
+    doc.title = title
+
+
+def _shutdown(doc):
+    _visualizer.submit_button_handler(None)
 
 
 def set_visualizer(visualizer):
@@ -101,8 +194,18 @@ def start_server():
         port = 5006
         while port < 5701 and _bokeh_server is None:
             try:
-                _bokeh_server = Server({'/': _bkapp, '/dragons': static_app, '/handle_key': _handle_key,
-                                        }, num_procs=1, extra_patterns=[('/version', VersionHandler),], port=port)
+                _bokeh_server = Server(
+                    {
+                        '/': _bkapp,
+                        '/dragons': static_app,
+                        '/handle_key': _handle_key,
+                        '/handle_callback': _handle_callback,
+                        '/help': _helpapp,
+                        '/shutdown': _shutdown,
+                    },
+                    num_procs=1,
+                    extra_patterns=[('/version', VersionHandler)],
+                    port=port)
             except OSError:
                 port = port+1
                 if port >= 5701:

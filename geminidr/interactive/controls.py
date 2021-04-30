@@ -16,11 +16,9 @@ inactive state.
 """
 from abc import ABC, abstractmethod
 
-from bokeh.events import PointEvent
+from bokeh.events import PointEvent, SelectionGeometry, Tap
 
 __all__ = ["controller", "Controller"]
-
-from gempy.library.tracing import pinpoint_peaks
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -28,6 +26,7 @@ Controller instances will set this to listen to key presses.  The bokeh server w
 it recieves from the clients.  Everyone else should leave it alone!
 """
 controller = None
+_pending_handle_mouse = False
 
 
 class Controller(object):
@@ -43,14 +42,16 @@ class Controller(object):
     `add_next_tick_callback`.  That is because our key press is coming in via
     a different path than the normal bokeh interactivity.
 
-    The controler maintains a set of :class:`~Task` instances.  One :class:`~Task` is operating at a time.
-    An active task receives all the key presses and when it is done, it returns
-    control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
+    The controller maintains a set of :class:`~Task` instances.
+    One :class:`~Task` is operating at a time. An active task receives all the
+    key presses and when it is done, it returns control to the
+    :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, helptext, mask_handlers=None):
+    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True):
         """
-        Create a controller to manage the given aperture and region models on the given GIFigure
+        Create a controller to manage the given aperture and region models on
+        the given GIFigure.
 
         Parameters
         ----------
@@ -60,35 +61,62 @@ class Controller(object):
             model for apertures for this plot/dataset, or None
         region_model : :class:`GIRegionModel`
             model for regions for this plot/dataset, or None
-        helptext : :class:`Div`
+        help_text : :class:`Div`
             div to update text in to provide help to the user
+        mask_handlers : None or tuple of {2,3} functions
+            The first two functions handle mask/unmask commands, the third (optional)
+            function handles 'P' point mask requests.
         """
+
+        # set the class for the help_text div so we can have a common style
+        help_text.css_classes.append('controller_div')
+
+        self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
-        self.helptext = helptext
+
+        self.helpmaskingtext = (
+            "<b>Masking</b> <br/> "
+            "Select points using the toolbar on the right side of "
+            "the plot. These will be the points to be masked or unmasked. Hold "
+            "SHIFT during select to combine multiple selections or points.<br/>"
+            "<b>M</b> - Mask selected/closest<br/>"
+            "<b>U</b> - Unmask selected/closest<br/>") if mask_handlers else ''
+
+        self.helpmaskingtext += "<br/>" if mask_handlers else ''
+
+        self.helpintrotext = "While the mouse is over the upper plot, " \
+                             "choose from the following commands:<br/><br/>\n" if showing_residuals \
+            else "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+
+        self.helptooltext = ''
+        self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
         if mask_handlers:
-            if len(mask_handlers) != 2:
+            if len(mask_handlers) < 2:
                 raise ValueError("Must pass tuple (mask_fn, unmask_fn) to mask_handlers argument of Controller")
             self.mask_handler = mask_handlers[0]
             self.unmask_handler = mask_handlers[1]
+            self.pointmask_handler = mask_handlers[2] if len(mask_handlers) > 2 else None
         else:
             self.mask_handler = None
             self.unmask_handler = None
+            self.pointmask_handler = None
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model, helptext)
+            self.tasks['a'] = ApertureTask(aperture_model, help_text, fig)
         if region_model:
-            self.tasks['r'] = RegionTask(region_model, helptext)
+            self.tasks['r'] = RegionTask(region_model, help_text)
         self.task = None
         self.x = None
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        fig.on_event('mousemove', self.on_mouse_move)
-        fig.on_event('mouseenter', self.on_mouse_enter)
-        fig.on_event('mouseleave', self.on_mouse_leave)
-
+        if aperture_model or region_model:
+            fig.on_event('mousemove', self.on_mouse_move)
+            fig.on_event('mouseenter', self.on_mouse_enter)
+            fig.on_event('mouseleave', self.on_mouse_leave)
         self.set_help_text(None)
+        self.fig = fig
 
     def set_help_text(self, text=None):
         """
@@ -104,25 +132,19 @@ class Controller(object):
             html to display in the div
         """
         if text is not None:
-            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
-            if self.enable_user_masking:
-                ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                    "<b>U</b> - Unmask selected points<br/><br/>"
-            ht = ht + text
+            ht = self.helpintrotext + self.helpmaskingtext + text
         else:
-            # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
-            ht = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
-            if self.enable_user_masking:
-                ht = ht + "Masking<br/><b>M</b> - Add selected points to mask<br/>" \
-                    "<b>U</b> - Unmask selected points<br/><br/>"
-            if len(self.tasks) == 1:
-                # for k, v in self.tasks.items():
-                #     self.task = v
-                task = next(iter(self.tasks.values()))
-                ht = ht + task.helptext()
+            if self.tasks or self.enable_user_masking:
+                # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
+                ht = self.helpintrotext + self.helpmaskingtext
+                if len(self.tasks) == 1:
+                    task = next(iter(self.tasks.values()))
+                    ht = ht + task.helptext()
+                else:
+                    for key, task in sorted(self.tasks.items()):
+                        ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
             else:
-                for key, task in sorted(self.tasks.items()):
-                    ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
+                ht = ""
 
         # This has to be done via a callback.  During the key press, we are outside the context of
         # the widget's bokeh document
@@ -212,26 +234,37 @@ class Controller(object):
             Key that was pressed, such as 'a'
 
         """
-        def _ui_loop_handle_key(key):
-            if key == 'm' or key == 'M':
+        def _ui_loop_handle_key(_key):
+
+            if _key == 'm' or _key == 'M':
                 if self.mask_handler:
-                    self.mask_handler()
-            elif key == 'u' or key == 'U':
+                    # mult is used to convert the y distance to be in x-equivalent-pixel terms
+                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
+                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
+                    self.mask_handler(self.x, self.y, mult)
+
+            elif _key == 'u' or _key == 'U':
                 if self.unmask_handler:
-                    self.unmask_handler()
+                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
+                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
+                    self.unmask_handler(self.x, self.y, mult)
+
             elif self.task:
-                if self.task.handle_key(key):
+                if self.task.handle_key(_key):
                     if len(self.tasks) > 1:
                         # only if we have multiple tasks, otherwise no point in offering 1 task option
                         self.task = None
                         self.set_help_text()
-            elif key in self.tasks:
-                self.task = self.tasks[key]
+
+            elif _key in self.tasks:
+                self.task = self.tasks[_key]
                 self.set_help_text(self.task.helptext())
                 self.task.start(self.x, self.y)
+
         if self.helptext.document:
             # we now have an associated document, need to do this inside that context
-            self.helptext.document.add_next_tick_callback(lambda: _ui_loop_handle_key(key=key))
+            self.helptext.document.add_next_tick_callback(
+                lambda: _ui_loop_handle_key(_key=key))
 
     def handle_mouse(self, x, y):
         """
@@ -253,8 +286,16 @@ class Controller(object):
         """
         self.x = x
         self.y = y
+        global _pending_handle_mouse
+        if not _pending_handle_mouse:
+            _pending_handle_mouse = True
+            self.helptext.document.add_timeout_callback(self.handle_mouse_callback, 100)
+
+    def handle_mouse_callback(self):
+        global _pending_handle_mouse
+        _pending_handle_mouse = False
         if self.task:
-            if self.task.handle_mouse(x, y):
+            if self.task.handle_mouse(self.x, self.y):
                 self.task = None
                 self.set_help_text()
 
@@ -305,7 +346,7 @@ class ApertureTask(Task):
     """
     Task for controlling apertures.
     """
-    def __init__(self, aperture_model, helptext):
+    def __init__(self, aperture_model, helptext, fig):
         """
         Create aperture task for the given model.
 
@@ -314,32 +355,23 @@ class ApertureTask(Task):
         aperture_model : :class:`GIApertureModel`
             The aperture model to operate on
         """
-        self.mode = "location"  # location, width, left, right for placing location, width (both) or left/right side
+        # location, width, left, right for placing location, width (both)
+        # or left/right side
+        self.mode = ""
         self.aperture_model = aperture_model
-        self.aperture_center = None
-        self.left = None
-        self.right = None
         self.aperture_id = None
         self.last_x = None
         self.last_y = None
+        self.fig = fig
         self.helptext_area = helptext
+        self.helptext_area.text = self.helptext()
 
     def start(self, x, y):
         self.last_x = x
         self.last_y = y
-        self.aperture_center = None
-        self.left = None
-        self.right = None
         self.aperture_id = None
-        self.mode = "location"
 
     def stop(self):
-        """
-        Stop updating the current aperture.
-
-        This causes the interactivity to end.
-
-        """
         self.stop_aperture()
 
     def start_aperture(self, x, y):
@@ -351,35 +383,25 @@ class ApertureTask(Task):
 
         Parameters
         ----------
-        x : float
-            x coordinate in data space
-        y : float
-            y coordinate in data space (unused)
+        x, y : float
+            x, y coordinate in data space
         """
-        self.aperture_center = x
-        self.left = x
-        self.right = x
         self.aperture_id = self.aperture_model.add_aperture(x, x, x)
         self.mode = "width"
-        self.update_help(self.mode)
 
     def stop_aperture(self):
+        """Stop updating the current aperture. This causes the interactivity
+        to end.
         """
-        Stop updating the current aperture.
-
-        This causes the interactivity to end.
-
-        """
-        self.aperture_center = None
         self.aperture_id = None
         self.mode = ""
-        self.update_help(self.mode)
 
     def handle_key(self, key):
         """
         Handle a key press.
 
-        This will listen for a press of 'a' to tell the task to stop updating the aperture.
+        This will listen for a press of 'a' to tell the task to stop updating
+        the aperture.
 
         Parameters
         ----------
@@ -388,89 +410,91 @@ class ApertureTask(Task):
 
         Returns
         -------
-            True if the task is finished and the controller should take over, False if we are not done with the Task
+            True if the task is finished and the controller should take over,
+            False if we are not done with the Task
         """
-        if key == 'a':
-            if self.aperture_center is None:
+        keymodes = {'[': 'left', ']': 'right', 'l': 'location'}
+
+        def _handle_key():
+            if self.aperture_id is None or self.mode == '':
+                # get closest one
+                self.aperture_id = self.aperture_model.find_closest(
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
+                if self.aperture_id is None:
+                    return False
+                self.mode = keymodes[key]
+                return False
+            else:
+                self.stop_aperture()
+                return True
+
+        if key in '[l]':
+            return _handle_key()
+        elif key == 's':
+            self.aperture_id = self.aperture_model.find_closest(
+                self.last_x, self.fig.x_range.start, self.fig.x_range.end, prefer_selected=False)
+            self.aperture_model.select_aperture(self.aperture_id)
+            return False
+        elif key == 'c':
+            self.aperture_id = None
+            self.aperture_model.select_aperture(None)
+            return False
+        elif key == 'a':
+            if self.aperture_id is None:
                 self.start_aperture(self.last_x, self.last_y)
                 return False
             else:
                 self.stop_aperture()
                 return True
-        if key == 'f':
-            if self.aperture_center is None:
-                peaks = pinpoint_peaks(self.aperture_model.get_profile(), None, [self.last_x, ], halfwidth=20,
-                                       threshold=0)
-                if len(peaks) > 0:
-                    self.start_aperture(peaks[0], self.last_y)
-                else:
-                    self.start_aperture(self.last_x, self.last_y)
-        if key == '[':
-            if self.aperture_center is None:
+        elif key == 'f':
+            if self.aperture_id is None:
+                self.aperture_model.find_peak(self.last_x)
+                return True
+        elif key == 'd':
+            if self.aperture_id is None:
                 # get closest one
-                self.aperture_id, self.aperture_center, self.left, self.right \
-                    = self.aperture_model.find_closest(self.last_x)
+                self.aperture_id = self.aperture_model.find_closest(
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
                 if self.aperture_id is None:
                     return False
-            self.mode = 'left'
-            self.update_help(self.mode)
-            return False
-        if key == ']':
-            if self.aperture_center is None:
-                # get closest one
-                self.aperture_id, self.aperture_center, self.left, self.right \
-                    = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
-            self.mode = 'right'
-            self.update_help(self.mode)
-            return False
-        if key == 'l':
-            if self.aperture_center is None:
-                # get closest one
-                self.aperture_id, self.aperture_center, self.left, self.right \
-                    = self.aperture_model.find_closest(self.last_x)
-                if self.aperture_id is None:
-                    return False
-            self.mode = 'location'
-            self.update_help(self.mode)
-            return False
-        if key == 'd':
-            if self.aperture_center is not None:
-                self.aperture_model.delete_aperture(self.aperture_id)
+            self.aperture_model.delete_aperture(self.aperture_id)
             self.stop_aperture()
             return True
         return False
 
     def handle_mouse(self, x, y):
         """
-        Handle a mouse movement.
-
-        We respond to the mouse by continuously updating the active aperture
-        around it's center point to a width to match the mouse position.
+        Handle a mouse movement.  We respond to the mouse by continuously
+        updating the active aperture around it's center point to a width to
+        match the mouse position.
 
         Parameters
         ----------
-        x : float
-            mouse x coordinate in data space
-        y : float
-            mouse y coordinate in data space
+        x, y : float
+            mouse x, y coordinate in data space
         """
         # we are in aperture mode
-        if self.aperture_center:
-            width = abs(self.aperture_center - x)
+        if self.aperture_id:
+            if self.aperture_id not in self.aperture_model.aperture_models.keys():
+                pass
+            model = self.aperture_model.aperture_models[self.aperture_id]
+            location = model.source.data['location'][0]
+
             if self.mode == 'width':
-                self.left = self.aperture_center-width
-                self.right = self.aperture_center+width
+                width = abs(location - x)
+                model.update_values(start=location - width,
+                                    end=location + width)
             elif self.mode == 'left':
-                self.left = min(self.aperture_center, x)
+                if x < location:
+                    model.update_values(start=x)
             elif self.mode == 'right':
-                self.right = max(self.aperture_center, x)
+                if x > location:
+                    model.update_values(end=x)
             elif self.mode == 'location':
-                self.aperture_center = x
-                self.right = max(self.right, x)
-                self.left = min(self.left, x)
-            self.aperture_model.adjust_aperture(self.aperture_id, self.aperture_center, self.left, self.right)
+                diff = x - location
+                model.update_values(location=x,
+                                    start=model.source.data['start'][0] + diff,
+                                    end=model.source.data['end'][0] + diff)
 
         self.last_x = x
         self.last_y = y
@@ -479,46 +503,17 @@ class ApertureTask(Task):
     def description(self):
         return "Edit <b>apertures</b> interactively"
 
-    def update_help(self, mode):
-        if self.mode == 'width':
-            controller.set_help_text("""
-              Drag to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'left':
-            controller.set_help_text("""
-              Drag left side to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'right':
-            controller.set_help_text("""
-              Drag right side to desired aperture width<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>L</b> to edit the location<br/>
-              <b>D</b> to delete the aperture""")
-        elif self.mode == 'location':
-            controller.set_help_text("""
-              Drag to desired aperture location<br/>
-              <b>A</b> to set the aperture<br/>
-              <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-              <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-              <b>D</b> to delete the aperture""")
-        else:
-            self.helptext_area.text = self.helptext()
-
     def helptext(self):
-        return """<b>A</b> to start the aperture<br/>
-                  <b>F</b> to find a nearby peak to the cursor to start with<br/>
-                  <b>[</b> to only edit the left edge (must remain left of the location)<br/>
-                  <b>]</b> to only edit the right edge (must remain right of the location)<br/>
-                  <b>L</b> to edit the location<br/>
-                  <b>D</b> to delete the aperture"""
+        return """
+        <b>A</b> to start the aperture or set the value<br/>
+        <b>S</b> to select an existing aperture<br/>
+        <b>C</b> to clear the selection<br/>
+        <b>F</b> to find a peak close to the cursor (+/- 20 pixels)<br/>
+        <b>[</b> to edit the left edge of selected or closest<br/>
+        <b>]</b> to edit the right edge of selected or closest<br/>
+        <b>L</b> to edit the location of selected or closest<br/>
+        <b>D</b> to delete the selected or closest aperture
+        """
 
 
 class RegionTask(Task):
@@ -611,6 +606,8 @@ class RegionTask(Task):
         if key == 'e':
             if self.region_edge is None:
                 self.region_id, self.region_edge = self.region_model.closest_region(self.last_x)
+            else:
+                self.stop_region()
             self.update_help()
             return False
         if key == 'd':
@@ -675,23 +672,13 @@ class RegionTask(Task):
 
     def update_help(self):
         if self.region_id is not None:
-            # self.helptext_area.text = """Drag to desired region width.<br/>\n
-            #       <b>R</b> to set the region<br/>\n
-            #       <b>D</b> to delete/cancel the current region<br/>
-            #       <b>*</b> to extend to maximum on this side
-            #       """
             controller.set_help_text("""Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n
                   <b>D</b> to delete/cancel the current region<br/>
                   <b>*</b> to extend to maximum on this side
                   """)
         else:
-            # self.helptext_area.text = """<b>Edit Regions:</b><br/>\n
-            #       <b>R</b> to start a new region<br/>\n
-            #       <b>E</b> to edit nearest region<br/>\n
-            #       <b>D</b> to delete the nearest region
-            #       """
-            controller.set_help_text("""<b>Edit Regions:</b><br/>\n
+            controller.set_help_text("""<b> Edit Regions: </b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete the nearest region
@@ -705,7 +692,7 @@ class RegionTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Edit Regions<br/>\n
+        return """<b> Edit Regions </b> <br/>\n
                   <b>R</b> to start a new region or set the edge if editing<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete/cancel the current/nearest region

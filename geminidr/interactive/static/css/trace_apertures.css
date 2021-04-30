@@ -1,0 +1,30 @@
+
+.help-page {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 25px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow-y: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+  transition: all .5s linear;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.help-page .help-content {
+    background-color: white;
+    border: 1px solid darkgray;
+    border-radius: 10px;
+    box-shadow: 0px 0px 30px rgba(0,0,0,0.4);
+    margin: auto;
+    margin-bottom: 100px;
+    overflow: scroll;
+    padding: 10px 20px 20px 20px;
+    width: 90%;
+}
+

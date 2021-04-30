@@ -175,6 +175,8 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
             values = [dtype(x) if x else None
                       for x in range_.replace("-", ":", 1).split(":")]
             assert len(values) in (1, 2, 2+allow_step)
+            if len(values) > 1 and values[0] is not None and values[1] is not None and values[0] > values[1]:
+                values[0], values[1] = values[1], values[0]
         except (ValueError, AssertionError):
             raise ValueError(f"Failed to parse sample regions '{regions}'")
         ranges.append(tuple(values))
