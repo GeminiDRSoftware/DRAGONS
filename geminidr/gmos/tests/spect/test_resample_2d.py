@@ -42,7 +42,7 @@ def test_correlation(adinputs, caplog):
 
     p.findSourceApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
-                                for ad in p.streams['main']], atol=0.2)
+                                for ad in p.streams['main']], 260.6, atol=0.25)
 
     ad = p.stackFrames(reject_method="sigclip")[0]
     assert ad[0].shape == (512, 3869)
@@ -72,7 +72,7 @@ def test_correlation_and_trim(adinputs, caplog):
 
     p.findSourceApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
-                                for ad in p.streams['main']], atol=0.2)
+                                for ad in p.streams['main']], 260.6, atol=0.25)
 
     ad = p.stackFrames(reject_method="sigclip")[0]
     assert ad[0].shape == (512, 3139)
