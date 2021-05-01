@@ -77,7 +77,7 @@ def test_processed_flat_has_small_std(processed_flat):
 @pytest.mark.preprocessed_data
 def test_regression_processed_flat(processed_flat, ref_ad_factory):
     """
-    Tests if the processed flat contains values around one.
+    Regression tests for the standard makeProcessedFlat recipe.
 
     Parameters
     ----------
@@ -89,8 +89,10 @@ def test_regression_processed_flat(processed_flat, ref_ad_factory):
     """
     ref_flat = ref_ad_factory(processed_flat.filename)
     for ext, ext_ref in zip(processed_flat, ref_flat):
-        astrodata.testing.assert_most_equal(ext.mask, ext_ref.mask, 10)
-        astrodata.testing.assert_most_close(ext.data, ext_ref.data, 10, atol=0.05)
+        astrodata.testing.assert_most_equal(ext.mask, ext_ref.mask, 200)
+        astrodata.testing.assert_most_close(
+            ext.data[ext.mask==0], ext_ref.data[ext_ref.mask==0],
+            200, atol=0.01)
 
 
 # -- Fixtures ----------------------------------------------------------------
