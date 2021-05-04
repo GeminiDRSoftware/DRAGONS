@@ -1042,23 +1042,6 @@ class Spect(PrimitivesBASE):
         # if not all(len(ad)==1 for ad in adinputs):
         #    raise ValueError("Not all inputs are single-extension AD objects")
 
-        # Get list of arc lines (probably from a text file dependent on the
-        # input spectrum, so a private method of the primitivesClass)
-        if arc_file is not None:
-            try:
-                arc_lines = np.loadtxt(arc_file, usecols=[0])
-            except (OSError, TypeError):
-                log.warning("Cannot read file {} - using default linelist".format(arc_file))
-                arc_file = None
-            else:
-                log.stdinfo("Read arc line list {}".format(arc_file))
-                try:
-                    arc_weights = np.sqrt(np.loadtxt(arc_file, usecols=[1]))
-                except IndexError:
-                    arc_weights = None
-                else:
-                    log.stdinfo("Read arc line relative weights")
-
         for ad in adinputs:
             log.info("Determining wavelength solution for {}".format(ad.filename))
             for ext in ad:
@@ -1114,6 +1097,19 @@ class Spect(PrimitivesBASE):
 
                 # Don't read linelist if it's the one we already have
                 # (For user-supplied, we read it at the start, so don't do this at all)
+                if arc_file is not None:
+                    try:  # don't read the linelist if we've already read it!
+                        arc_lines
+                    except NameError:
+                        try:
+                            arc_lines, arc_weights = self._read_and_convert_linelist(
+                                arc_file, w2=c0+abs(c1), in_vacuo=in_vacuo)
+                        except OSError:
+                            log.warning("Cannot read file {} - using default linelist".format(arc_file))
+                            arc_file = None
+                        else:
+                            log.stdinfo(f"Read arc line list {arc_file}")
+
                 if arc_file is None:
                     arc_lines, arc_weights = self._get_arc_linelist(
                         ext, w1=c0-abs(c1), w2=c0+abs(c1), dw=dw0,
