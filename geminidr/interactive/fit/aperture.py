@@ -351,8 +351,7 @@ class FindSourceAperturesModel:
         data = np.ma.array(self.profile, mask=self.prof_mask)
         initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
 
-        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx],
-                               halfwidth=20, threshold=0)
+        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
         if len(peaks) > 0:
             limits = get_limits(np.nan_to_num(self.profile),
                                 self.prof_mask,
