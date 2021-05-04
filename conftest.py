@@ -5,6 +5,8 @@ Configuration for tests that will propagate inside DRAGONS.
 import os
 import pytest
 
+import astrodata
+
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
     astrofaker,
@@ -58,3 +60,25 @@ def pytest_collection_modifyitems(config, items):
 
 def pytest_report_header(config):
     return f"DRAGONS_TEST directory: {os.getenv('DRAGONS_TEST')}"
+
+
+@pytest.fixture(scope="module")
+def ref_ad_factory(path_to_refs):
+    """
+    Read the reference file.
+
+    Parameters
+    ----------
+    path_to_refs : pytest.fixture
+        Fixture containing the root path to the reference files.
+
+    Returns
+    -------
+    function : function that loads the reference file.
+    """
+
+    def _reference_ad(filename):
+        path = os.path.join(path_to_refs, filename)
+        return astrodata.open(path)
+
+    return _reference_ad
