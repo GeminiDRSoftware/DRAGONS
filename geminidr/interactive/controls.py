@@ -76,9 +76,9 @@ class Controller(object):
 
         self.helpmaskingtext = (
             "<b>Masking</b> <br/> "
-            "Select points using the toolbar on the right side of "
-            "the plot. These will be the points to be masked or unmasked. Hold "
-            "SHIFT during select to combine multiple selections or points.<br/>"
+            "To mark or unmark one point at a time, select \"Tap\" on the toolbar on "
+            "the right side of the plot.  To mark/unmark a group of point, activate "
+            "\"Box Select\" on the toolbar.<br/>"
             "<b>M</b> - Mask selected/closest<br/>"
             "<b>U</b> - Unmask selected/closest<br/>") if mask_handlers else ''
 
