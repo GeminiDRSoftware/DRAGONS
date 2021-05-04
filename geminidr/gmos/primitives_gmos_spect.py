@@ -23,7 +23,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups import geometry_conf as geotable
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import transform
+from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -450,11 +450,44 @@ class GMOSSpect(Spect, GMOS):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, in_vacuo=False):
-        use_second_order = w2 > 1000 and abs(dw) < 0.2
+    def standardizeWCS(self, adinputs=None, suffix=None):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+
+        This is a GMOS-specific primitive due to the systematic offsets for
+        GMOS-S at central wavelengths > 950nm.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+
+        """
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
+            cenwave = ad.central_wavelength(asNanometers=True)
+            if ad.instrument() == "GMOS-S" and cenwave > 950:
+                cenwave += (6.89483617 - 0.00332086 * cenwave) * cenwave - 3555.048
+            else:
+                cenwave = None
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+    def _get_arc_linelist(self, waves=None):
+        use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
         use_second_order = False
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
-        return self._read_and_convert_linelist(filename, w2=w2, in_vacuo=in_vacuo)
+        return wavecal.LineList(filename)

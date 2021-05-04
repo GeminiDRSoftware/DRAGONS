@@ -54,9 +54,6 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     regions = config.Field("Sample regions", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
-    interactive_spline = config.Field("Interactive spline selection?", bool, False)
-    niter = config.RangeField("Maximum number of clipping iterations to perform of spline fit", int, 3, min=1)
-    grow = config.RangeField("Radius to reject pixels adjacent to masked pixels of spline fit", int, 0, min=0)
     interactive = config.Field("Display interactive fitter?", bool, False)
 
     def setDefaults(self):
@@ -77,7 +74,6 @@ class determineDistortionConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Display line traces on image display?", bool, False)
-    interactive = config.Field("Display interactive fitter?", bool, False)
 
 
 class determineWavelengthSolutionConfig(config.Config):
@@ -88,19 +84,20 @@ class determineWavelengthSolutionConfig(config.Config):
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     min_sep = config.RangeField("Minimum feature separation (pixels)", float, 2., min=1.)
     weighting = config.ChoiceField("Weighting of identified peaks", str,
-                                   allowed={"none": "no weighting",
-                                            "natural": "natural weighting",
-                                            "relative": "relative to local peaks"},
-                                   default="natural")
+                                   allowed={"uniform": "uniform weighting",
+                                            "global": "weighted by strength",
+                                            "local": "weighted by strength relative to local peaks"},
+                                   default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
-    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
-                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
-    alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
+    debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
+                                   check=list_of_ints_check)
+    debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
+    interactive = config.Field("Display interactive fitter?", bool, False)
     debug = config.Field("Make diagnostic plots?", bool, False)
 
 

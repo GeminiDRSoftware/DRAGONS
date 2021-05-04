@@ -12,7 +12,6 @@ from scipy.ndimage import measurements
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
-from gempy.library.transform import add_longslit_wcs
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -368,35 +367,7 @@ class Standardize(PrimitivesBASE):
     def standardizeStructure(self, adinputs=None, **params):
         return adinputs
 
-    def standardizeWCS(self, adinputs=None, suffix=None):
-        """
-        This primitive updates the WCS attribute of each NDAstroData extension
-        in the input AstroData objects. For spectroscopic data, it means
-        replacing an imaging WCS with an approximate spectroscopic WCS.
-        For multi-extension ADs, it means prepending a tiling and/or mosaic
-        transform before the pixel->world transform, and giving all extensions
-        copies of the reference extension's pixel->world transform.
-
-        Parameters
-        ----------
-        suffix: str/None
-            suffix to be added to output files
-
-        """
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        for ad in adinputs:
-            # TODO: work towards making this "if 'SPECT' in ad.tags"
-            # which is why it's here and not in primitives_gmos_spect
-            if {'GMOS', 'SPECT', 'LS'}.issubset(ad.tags):
-                log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-                add_longslit_wcs(ad)
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
+    def standardizeWCS(self, adinputs=None, **params):
         return adinputs
 
     def validateData(self, adinputs=None, suffix=None):

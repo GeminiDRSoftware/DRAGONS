@@ -140,7 +140,7 @@ class fit_1D:
                  grow=False, regions=None, plot=False):
 
         # Save the fitting parameter values:
-        self.points = None if points is None else np.array(points)
+        self.points = None if points is None else np.asarray(points)
         self.function = function
         self.domain = domain
         self.order = order
@@ -164,7 +164,7 @@ class fit_1D:
         if not regions or isinstance(regions, str):
             self._slices = (at.cartesian_regions_to_slices(regions)
                             if points is None else
-                            at.parse_user_regions(regions, dtype=points.dtype))
+                            at.parse_user_regions(regions, dtype=self.points.dtype))
         else:
             self._slices = None
             try:

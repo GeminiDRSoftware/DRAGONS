@@ -292,6 +292,29 @@ def get_spline3_extrema(spline):
     return np.array(minima), np.array(maxima)
 
 
+def transpose_if_needed(*args, transpose=False, section=slice(None)):
+    """
+    This function takes a list of arrays and returns them (or a section of them),
+    either untouched, or transposed, according to the parameter.
+
+    Parameters
+    ----------
+    args : sequence of arrays
+        The input arrays.
+    transpose : bool
+        If True, return transposed versions.
+    section : slice object
+        Section of output data to return.
+
+    Returns
+    -------
+    list of arrays
+        The input arrays, or their transposed versions.
+    """
+    return list(None if arg is None
+                else arg.T[section] if transpose else arg[section] for arg in args)
+
+
 def rotate_2d(degs):
     """
     Little helper function to return a basic 2-D rotation matrix.

@@ -18,7 +18,6 @@ from astrodata.provenance import add_provenance
 from astropy import visualization as vis
 from astropy.modeling import models, fitting
 
-from geminidr.core.primitives_spect import _transpose_if_needed
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
@@ -299,7 +298,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             dispaxis = 2 - mosaicked_ad[0].dispersion_axis()  # python sense
             should_transpose = dispaxis == 1
 
-            data, mask, variance = _transpose_if_needed(
+            data, mask, variance = at.transpose_if_needed(
                 mosaicked_ad[0].data, mosaicked_ad[0].mask,
                 mosaicked_ad[0].variance, transpose=should_transpose)
 
@@ -371,7 +370,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
             del cols_fit, cols_val, rows_fit, rows_val
 
-            _data, _mask, _variance = _transpose_if_needed(
+            _data, _mask, _variance = at.transpose_if_needed(
                 slit_response_data, slit_response_mask, slit_response_var,
                 transpose=dispaxis == 1)
 
@@ -499,7 +498,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # The [::-1] is needed to put the fist extension in the bottom
                 for i, ext in enumerate(slit_response_ad[::-1]):
 
-                    ext_data, ext_mask, ext_variance = _transpose_if_needed(
+                    ext_data, ext_mask, ext_variance = at.transpose_if_needed(
                         ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
 
                     ext_data = np.ma.masked_array(ext_data, mask=ext_mask)
