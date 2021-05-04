@@ -143,7 +143,7 @@ class SpinnerInputLine(CustomWidget):
 
 class TextInputLine(CustomWidget):
     def build(self):
-        self.text_input = TextInput(value=self.value, width=256, **self.kwargs)
+        self.text_input = TextInput(value=self.value if self.value else '', width=256, **self.kwargs)
         self.text_input.on_change("value", self.handler)
         return row([Div(text=self.title, align='center'),
                     Spacer(width_policy='max'),
