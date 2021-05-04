@@ -444,7 +444,7 @@ class Spect(PrimitivesBASE):
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
-                for ext, fit in zip(all_exts, all_m_final):
+                for (ext, _, _, _), fit in zip(all_exts, all_m_final):
                     ext.SENSFUNC = am.model_to_table(fit.model, xunit=xunits,
                                                      yunit=yunits)
             else:
