@@ -395,7 +395,8 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.direction, self.threshold, self.sizing_method)
+                self.direction, self.threshold, self.sizing_method,
+                self.use_snr)
 
         self.aperture_models.clear()
 
