@@ -26,6 +26,7 @@ $ conda create -n geminiconda python=3.6 gemini stsci
 You might need to add two relevant conda channels if you haven't already:
 
 $ conda config --add channels http://ssb.stsci.edu/astroconda
+
 $ conda config --add channels http://astroconda.gemini.edu/public
 
 
