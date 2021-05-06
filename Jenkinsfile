@@ -68,7 +68,7 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/py37-unit/reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
                             dir ( '$TMPDIR' ) {
@@ -113,7 +113,7 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/py37-integ/reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
                             dir ( '$TMPDIR' ) {
@@ -152,7 +152,7 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/py37-reg/reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
                             dir ( '$TMPDIR' ) {
@@ -192,7 +192,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/gmosls/reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
                             dir ( '$TMPDIR' ) {
