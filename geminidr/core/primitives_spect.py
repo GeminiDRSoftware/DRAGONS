@@ -2655,7 +2655,7 @@ class Spect(PrimitivesBASE):
                 # flagged as CRs) and/or DQ.overlap unmasked here?
                 sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
                             if ext.mask is None else
-                            ext.mask.copy() & DQ.not_signal)
+                            ext.mask & DQ.not_signal)
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
@@ -2685,8 +2685,14 @@ class Spect(PrimitivesBASE):
                 else:
                     sky_weights = np.sqrt(at.divide0(1., ext.variance))
 
-                # This would combine the specified mask with any existing mask,
-                # but should we include some specific set of DQ codes here?
+                # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
+                # chip gaps) to avoid a zillion warnings about insufficient
+                # unmasked points
+                no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
+                if axis == 0:
+                    sky_mask ^= no_data
+                else:
+                    sky_mask ^= no_data[:, None]
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
                                    axis=axis, plot=debug_plot).evaluate()
