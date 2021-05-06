@@ -815,7 +815,7 @@ class ApertureView:
 
     def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
         da = self._prepare_data_for_holoviews(aperture_model, x_max, y_max)
-        cmap = [None, '#d1efd1', '#ff8888']
+        cmap = ['#ffffff00', '#d1efd1', '#ff8888']
         xyz = Stream.define('XYZ', data=da)
         self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
         self.qm_dmap.opts(cmap=cmap,
