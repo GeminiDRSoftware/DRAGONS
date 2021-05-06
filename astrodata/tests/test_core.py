@@ -13,6 +13,15 @@ from astropy.table import Table
 SHAPE = (4, 5)
 
 
+def test_import_holoviews():
+    """
+    Holoviews broke Tox when running locally (i.e., not on GitHub Actions
+    nor on Jenkins). We don't know what causes it but this test helps tracking
+    what is going on. """
+    import holoviews as hv
+    assert True
+
+
 @pytest.fixture
 def ad1():
     hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
