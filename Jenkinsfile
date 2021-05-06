@@ -192,7 +192,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/gmosls/reports/*_results.xml'
+                                testResults: '.tmp/py37-gmosls/reports/*_results.xml'
                             )
                             echo "Delete temporary folder: ${TMPDIR}"
                             dir ( '$TMPDIR' ) {
