@@ -69,10 +69,15 @@ class PrimitiveVisualizer(ABC):
         # Remove this line if we stick with that
         # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            $.ajax('/shutdown').done(function() 
-                {
-                    window.close();
+            $.ajax('/shutdown').done(function() {
+                window.close();
                 });
+            
+            //console.log('in button callback');
+            //$.ajax('/shutdown').done(function() {
+            //    console.log('shutdown succeeded');
+            //    delayed_close();
+            //});
         """)
         self.submit_button.js_on_click(callback)
         self.doc = None

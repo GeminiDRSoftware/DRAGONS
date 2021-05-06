@@ -78,6 +78,27 @@
 </div> <!-- end container -->
 
 <script type="text/javascript">
+    // we have to wait for the server to drop or
+    // Safari will cause stack traces in Tornado
+    // in the bokeh server.
+    function delayed_close() {
+        console.log('in delayed_close');
+        $.ajax({
+                url: '/dragons',
+                timeout: 100
+                }).done(function() {
+            // try again in 1/4 second
+            console.log('call to /dragons succeeded, sleeping 250ms and retrying');
+            setTimeout(delayed_close, 250);
+        }).fail(function() {
+            console.log('call to /dragons failed, we can close the browser now');
+            debugger;
+            window.close();
+        });
+    };
+</script>
+
+<script type="text/javascript">
     // $("#plot_div").keydown(function(event) {
     // document.getElementById("plot_div").addEventListener("keydown", function(event){
     // doing whole document.  Or we could figure out how to target a bokeh-generated container div

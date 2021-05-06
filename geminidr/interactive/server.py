@@ -1,4 +1,5 @@
 import uuid
+from time import sleep
 
 from astrodata import version
 
@@ -212,7 +213,7 @@ def start_server():
                     raise
         _bokeh_server.start()
 
-    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
+    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", browser="chrome")
     _bokeh_server.io_loop.start()
 
     # The server normally stops when the user hits the Submit button in the
