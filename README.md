@@ -21,8 +21,13 @@ There is no spectroscopy support in this release.  To reduce Gemini spectroscopy
 data, please continue to use the [Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
 
 To install:
-
 $ conda create -n geminiconda python=3.6 gemini stsci
+
+You might need to add two relevant conda channels if you haven't already:
+
+$ conda config --add channels http://ssb.stsci.edu/astroconda
+$ conda config --add channels http://astroconda.gemini.edu/public
+
 
 A list of changes since 2.1.0. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v2.1.1/changes.html).
 
