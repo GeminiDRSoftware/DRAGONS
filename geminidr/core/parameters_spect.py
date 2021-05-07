@@ -54,8 +54,6 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     regions = config.Field("Sample regions", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
-    niter = config.RangeField("Maximum number of clipping iterations to perform of spline fit", int, 3, min=1)
-    grow = config.RangeField("Radius to reject pixels adjacent to masked pixels of spline fit", int, 0, min=0)
     interactive = config.Field("Display interactive fitter?", bool, False)
 
     def setDefaults(self):
@@ -419,7 +417,7 @@ class traceAperturesConfig(config.Config):
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     niter = config.RangeField("Maximum number of rejection iterations",
-                              int, None, min=0, optional=True)
+                              int, 0, min=0)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     order = config.RangeField("Order of fitting function",
