@@ -46,6 +46,7 @@ from geminidr.gmos import primitives_gmos_spect
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from gempy.library import astromodels as am
 from gempy.utils import logutils
+from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
