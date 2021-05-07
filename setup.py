@@ -40,7 +40,7 @@ SCRIPTS += [
     for name in ('dataselect', 'fwhm_histogram', 'gmosn_fix_headers',
                  'gmoss_fix_HAM_BPMs.py', 'gmoss_fix_headers.py',
                  'pipeline2iraf', 'profile_all_obj', 'psf_plot', 'showrecipes',
-                 'showd', 'showpars', 'swapper', 'typewalk', 'zp_histogram')
+                 'showd', 'showpars', 'typewalk', 'zp_histogram')
 ]
 
 # EXTENSIONS
