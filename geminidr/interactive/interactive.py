@@ -69,7 +69,7 @@ class PrimitiveVisualizer(ABC):
         # Remove this line if we stick with that
         # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            $.ajax('/shutdown').done(function() 
+            $.ajax('/shutdown').done(function()
                 {
                     window.close();
                 });
@@ -409,7 +409,6 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                debugger;
                 if (inp.value > %s) {
                     alert('Maximum is %s');
                     inp.value = %s;
@@ -419,7 +418,6 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                debugger;
                 if (inp.value < %s) {
                     alert('Minimum is %s');
                     inp.value = %s;
