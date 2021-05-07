@@ -29,7 +29,6 @@ Notes
 """
 import glob
 import os
-from warnings import warn
 import tarfile
 import logging
 from copy import deepcopy
@@ -279,6 +278,33 @@ def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
     wvac = air_to_vac(wair * u.nm).to(u.nm).value
     dw = wvac - wave_vac(x)
     assert abs(dw).max() < 0.001
+
+
+# We only need to test this with one input
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
+                         indirect=True)
+@pytest.mark.parametrize("in_vacuo", (True, False))
+def test_user_defined_linelist(ad, fwidth, order, min_snr, in_vacuo):
+    p = GMOSLongslit([])
+    p.viewer = geminidr.dormantViewer(p, None)
+    params = determine_wavelength_solution_parameters.copy()
+    params.pop("linelist")
+
+    linelist = os.path.join(os.path.dirname(primitives_gmos_spect.__file__),
+                            "lookups", "CuAr_GMOS.dat")
+
+    ad_out = p.determineWavelengthSolution(
+        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=in_vacuo, linelist=None, **params).pop()
+    ad_out2 = p.determineWavelengthSolution(
+        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=in_vacuo, linelist=linelist, **params).pop()
+    wave1 = am.get_named_submodel(ad_out[0].wcs.forward_transform, "WAVE")
+    wave2 = am.get_named_submodel(ad_out2[0].wcs.forward_transform, "WAVE")
+    x = np.arange(ad_out[0].shape[1])
+    np.testing.assert_array_equal(wave1(x), wave2(x))
 
 
 # Local Fixtures and Helper Functions ------------------------------------------

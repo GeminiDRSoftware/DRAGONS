@@ -5,6 +5,8 @@ Configuration for tests that will propagate inside DRAGONS.
 import os
 import pytest
 
+import astrodata
+
 # noinspection PyUnresolvedReferences
 from astrodata.testing import (
     astrofaker,

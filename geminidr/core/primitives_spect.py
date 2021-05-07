@@ -106,13 +106,6 @@ class Spect(PrimitivesBASE):
         if {len(ad[0].shape) for ad in adinputs} != {2}:
             raise OSError("All inputs must be two dimensional")
 
-        def stack_slit(ext):
-            dispaxis = 2 - ext.dispersion_axis()  # python sense
-            data = np.ma.array(ext.data, mask=None if ext.mask is None
-                               else (ext.mask > 0))
-            data = np.ma.masked_invalid(data)
-            return data.mean(axis=dispaxis)
-
         # Use first image in list as reference
         refad = adinputs[0]
         ref_sky_model = astromodels.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
@@ -120,7 +113,7 @@ class Spect(PrimitivesBASE):
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
-            ref_profile = stack_slit(refad[0])
+            ref_profile = tracing.stack_slit(refad[0])
         if 'sources_wcs' in methods:
             world_coords = (refad[0].central_wavelength(asNanometers=True),
                             refad.target_ra(), refad.target_dec())
@@ -150,7 +143,7 @@ class Spect(PrimitivesBASE):
                 # Cross-correlate to find real offset and compare. Only look
                 # for a peak in the range defined by "tolerance".
                 if 'sources' in method:
-                    profile = stack_slit(ad[0])
+                    profile = tracing.stack_slit(ad[0])
                     corr = np.correlate(ref_profile, profile, mode='full')
                     expected_peak = corr.size // 2 + hdr_offset
                     peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),
@@ -1046,23 +1039,6 @@ class Spect(PrimitivesBASE):
         # if not all(len(ad)==1 for ad in adinputs):
         #    raise ValueError("Not all inputs are single-extension AD objects")
 
-        # Get list of arc lines (probably from a text file dependent on the
-        # input spectrum, so a private method of the primitivesClass)
-        if arc_file is not None:
-            try:
-                arc_lines = np.loadtxt(arc_file, usecols=[0])
-            except (OSError, TypeError):
-                log.warning("Cannot read file {} - using default linelist".format(arc_file))
-                arc_file = None
-            else:
-                log.stdinfo("Read arc line list {}".format(arc_file))
-                try:
-                    arc_weights = np.sqrt(np.loadtxt(arc_file, usecols=[1]))
-                except IndexError:
-                    arc_weights = None
-                else:
-                    log.stdinfo("Read arc line relative weights")
-
         for ad in adinputs:
             log.info("Determining wavelength solution for {}".format(ad.filename))
             for ext in ad:
@@ -1118,6 +1094,19 @@ class Spect(PrimitivesBASE):
 
                 # Don't read linelist if it's the one we already have
                 # (For user-supplied, we read it at the start, so don't do this at all)
+                if arc_file is not None:
+                    try:  # don't read the linelist if we've already read it!
+                        arc_lines
+                    except NameError:
+                        try:
+                            arc_lines, arc_weights = self._read_and_convert_linelist(
+                                arc_file, w2=c0+abs(c1), in_vacuo=in_vacuo)
+                        except OSError:
+                            log.warning("Cannot read file {} - using default linelist".format(arc_file))
+                            arc_file = None
+                        else:
+                            log.stdinfo(f"Read arc line list {arc_file}")
+
                 if arc_file is None:
                     arc_lines, arc_weights = self._get_arc_linelist(
                         ext, w1=c0-abs(c1), w2=c0+abs(c1), dw=dw0,

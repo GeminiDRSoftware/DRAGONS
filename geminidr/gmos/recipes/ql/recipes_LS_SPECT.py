@@ -5,8 +5,7 @@ Default is "reduceScience".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
 
-from .recipes_common import makeIRAFCompatible
-
+from geminidr.gmos.recipes.ql.recipes_common import makeIRAFCompatible
 
 def reduceScience(p):
     """

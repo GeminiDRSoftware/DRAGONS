@@ -15,12 +15,14 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
-import numpy as np
 import warnings
-from scipy import signal, interpolate, optimize
-from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip, sigma_clipped_stats
 
+import numpy as np
+from astropy.modeling import fitting, models
+from astropy.stats import sigma_clip, sigma_clipped_stats
+from scipy import interpolate, optimize, signal
+
+from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
@@ -28,14 +30,10 @@ from gempy.utils import logutils
 from . import astrotools as at
 from .astrotools import divide0
 
-from astrodata import NDAstroData
-from matplotlib import pyplot as plt
-from datetime import datetime
-
 log = logutils.get_logger(__name__)
 
 
-################################################################################
+###############################################################################
 class Aperture:
     """
     A class describing an aperture. It has the following attributes:
@@ -144,13 +142,13 @@ class Aperture:
 
     def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
-        slitlength = data.shape[0]
         all_x1 = self._center_pixels + aper_lower
         all_x2 = self._center_pixels + aper_upper
 
         ext = NDAstroData(data, mask=mask)
         ext.variance = var
-        results = [sum1d(ext[:,i], x1, x2) for i, (x1, x2) in enumerate(zip(all_x1, all_x2))]
+        results = [sum1d(ext[:, i], x1, x2)
+                   for i, (x1, x2) in enumerate(zip(all_x1, all_x2))]
         self.data[:] = [result.data for result in results]
         if mask is not None:
             self.mask[:] = [result.mask for result in results]
@@ -396,6 +394,7 @@ def estimate_peak_width(data, mask=None):
         niters += 1
     return sigma_clip(widths).mean()
 
+
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
                min_frac=0.25, reject_bad=True, pinpoint_index=-1):
     """
@@ -441,7 +440,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     if max_width > 10:
         data = at.boxcar(data, size=2)
 
-    wavelet_transformed_data = signal.cwt(data, signal.ricker, widths)
+    wavelet_transformed_data = cwt_ricker(data, widths)
 
     eps = np.finfo(np.float32).eps  # Minimum representative data
     wavelet_transformed_data[np.nan_to_num(wavelet_transformed_data) < eps] = eps
@@ -806,6 +805,18 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
     return optimize.bisect(func, limit, peak)
 
 
+def stack_slit(ext, percentile=50, dispaxis=None):
+    if dispaxis is None:
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+    if ext.mask is None:
+        return np.percentile(ext.data, percentile, axis=dispaxis)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='All-NaN slice')
+        profile = np.nanpercentile(np.where(ext.mask, np.nan, ext.data),
+                                   percentile, axis=dispaxis)
+    return np.nan_to_num(profile, copy=False, nan=np.nanmedian(profile))
+
+
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
@@ -897,7 +908,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                            variance=None)
 
     if rwidth:
-        data = signal.cwt(data, signal.ricker, widths=[rwidth])[0]
+        data = cwt_ricker(data, widths=[rwidth])[0]
 
     # Get better peak positions if requested
     if initial_tolerance is None:
@@ -945,7 +956,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                 var[i] = np.where(v <= 0, np.inf, v)
                 if rwidth:
                     data[i] = np.where(d / np.sqrt(var[i]) > 0.5,
-                                       signal.cwt(d, signal.ricker, widths=[rwidth])[0], 0)
+                                       cwt_ricker(d, widths=[rwidth])[0], 0)
                 else:
                     data[i] = np.where(d / np.sqrt(var[i]) > 0.5, d, 0)
                 if m is not None:
@@ -1026,3 +1037,18 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis
     return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
+
+
+def cwt_ricker(data, widths, **kwargs):
+    """
+    Continuous wavelet transform, using the Ricker filter.
+
+    Hacked from scipy.cwt to ensure that the convolution is done with
+    a wavelet that has an odd number of pixels.
+    """
+    output = np.zeros((len(widths), len(data)), dtype=np.float64)
+    for ind, width in enumerate(widths):
+        N = int(np.min([10 * width, len(data)])) // 2 * 2 - 1
+        wavelet_data = np.conj(signal.ricker(N, width, **kwargs)[::-1])
+        output[ind] = np.convolve(data, wavelet_data, mode='same')
+    return output
