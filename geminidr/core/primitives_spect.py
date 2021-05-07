@@ -104,13 +104,6 @@ class Spect(PrimitivesBASE):
         if {len(ad[0].shape) for ad in adinputs} != {2}:
             raise OSError("All inputs must be two dimensional")
 
-        def stack_slit(ext):
-            dispaxis = 2 - ext.dispersion_axis()  # python sense
-            data = np.ma.array(ext.data, mask=None if ext.mask is None
-                               else (ext.mask > 0))
-            data = np.ma.masked_invalid(data)
-            return data.mean(axis=dispaxis)
-
         # Use first image in list as reference
         refad = adinputs[0]
         ref_sky_model = astromodels.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
@@ -118,7 +111,7 @@ class Spect(PrimitivesBASE):
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
-            ref_profile = stack_slit(refad[0])
+            ref_profile = tracing.stack_slit(refad[0])
         if 'sources_wcs' in methods:
             world_coords = (refad[0].central_wavelength(asNanometers=True),
                             refad.target_ra(), refad.target_dec())
@@ -148,7 +141,7 @@ class Spect(PrimitivesBASE):
                 # Cross-correlate to find real offset and compare. Only look
                 # for a peak in the range defined by "tolerance".
                 if 'sources' in method:
-                    profile = stack_slit(ad[0])
+                    profile = tracing.stack_slit(ad[0])
                     corr = np.correlate(ref_profile, profile, mode='full')
                     expected_peak = corr.size // 2 + hdr_offset
                     peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),
