@@ -292,6 +292,57 @@ class TestFit1D:
         assert_equal(fit1d.mask[4:6,80:93], True)
         assert_equal(fit1d.mask[24:27,24:27], True)
 
+    def test_chebyshev_single_masked(self):
+        """
+        Fit a completely-masked single 1D array (which should return zeroes
+        without actually fitting a model).
+        """
+
+        masked_row = np.ma.masked_array(self.data[16], mask=True)
+
+        fit1d = fit_1D(masked_row, weights=self.weights[16],
+                       function='chebyshev', order=4,
+                       sigma_lower=2.5, sigma_upper=2.5, niter=5, plot=debug)
+        fit_vals = fit1d.evaluate()
+
+        assert_allclose(fit_vals, 0., atol=1e-6, rtol=0.)
+        assert_equal(fit1d.mask, True)
+
+    def test_chebyshev_1_unmasked_row(self):
+        """
+        Fit object spectrum with Chebyshev polynomial, where all rows but 1
+        are masked (leaving a single model to fit, rather than a set).
+        """
+
+        masked_data = np.ma.masked_array(self.data, mask=False)
+        masked_data.mask[1:] = True
+
+        fit1d = fit_1D(masked_data, weights=self.weights, function='chebyshev',
+                       order=4, sigma_lower=2.5, sigma_upper=2.5, niter=5,
+                       plot=debug)
+        fit_vals = fit1d.evaluate()
+
+        assert_allclose(fit_vals[0], (self.obj + self.bglev)[0],
+                        atol=5., rtol=0.005)
+        assert_allclose(fit_vals[1:], 0., atol=1e-6, rtol=0.)
+        assert_equal(fit1d.mask[1:], True)
+
+    def test_chebyshev_all_rows_masked(self):
+        """
+        Fit a completely-masked 2D array (which should return zeroes without
+        actually fitting a model).
+        """
+
+        masked_data = np.ma.masked_array(self.data, mask=True)
+
+        fit1d = fit_1D(masked_data, weights=self.weights, function='chebyshev',
+                       order=4, sigma_lower=2.5, sigma_upper=2.5, niter=5,
+                       plot=debug)
+        fit_vals = fit1d.evaluate()
+
+        assert_allclose(fit_vals, 0., atol=1e-6, rtol=0.)
+        assert_equal(fit1d.mask, True)
+
 
 class TestFit1DCube:
     """
