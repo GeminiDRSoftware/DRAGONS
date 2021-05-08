@@ -523,7 +523,14 @@ class fit_1D:
                   or `astromodels.UnivariateSplineWithOutlierRemoval:`)
                   representing the model fit
         """
-        if self._models is None or len(self._models) > 1:
+        # If no models were fitted because the input is entirely masked, return
+        # a model of the expected type with all zeroes, for compatibility:
+        if self._models is None:
+            return self.model_class(degree=self.order, n_models=1,
+                                    domain=self.domain, model_set_axis=None,
+                                    **self.model_args)
+
+        if len(self._models) > 1:
             raise ValueError("Can only provide model property if there is a "
                              "single model.")
         astropy_model = isinstance(self._models, Model)
