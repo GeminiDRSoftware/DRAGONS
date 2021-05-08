@@ -385,7 +385,7 @@ class fit_1D:
         self.rms = rms
 
         # Plot the fit:
-        if plot:
+        if plot is not False:
             self._plot(origim, index=None if plot is True else plot)
 
     # Basic plot for debugging/inspection (interactive plotting will be handled
