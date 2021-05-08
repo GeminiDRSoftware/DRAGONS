@@ -2684,15 +2684,22 @@ class Spect(PrimitivesBASE):
                     sky_weights = None
                 else:
                     sky_weights = np.sqrt(at.divide0(1., ext.variance))
+                    # Handle columns were all the weights are zero
+                    zeros = np.sum(sky_weights, axis=axis) == 0
+                    if axis == 0:
+                        sky_weights[:, zeros] = 1
+                    else:
+                        sky_weights[zeros] = 1
 
                 # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
                 # chip gaps) to avoid a zillion warnings about insufficient
-                # unmasked points
-                #no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
-                #if axis == 0:
-                #    sky_mask ^= no_data
-                #else:
-                #    sky_mask ^= no_data[:, None]
+                # unmasked points.
+                no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
+                if axis == 0:
+                    sky_mask ^= no_data
+                else:
+                    sky_mask ^= no_data[:, None]
+
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
                                    axis=axis, plot=debug_plot).evaluate()
