@@ -1393,8 +1393,6 @@ class Spect(PrimitivesBASE):
         grow : float
             Avoidance region around each source aperture if a sky aperture
             is required. Default: 10.
-        interactive: bool
-            Perform extraction interactively
         subtract_sky : bool
             Extract and subtract sky spectra from object spectra if the 2D
             spectral image has not been sky subtracted?
