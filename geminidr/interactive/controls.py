@@ -115,8 +115,8 @@ class Controller(object):
             fig.on_event('mousemove', self.on_mouse_move)
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
-        self.set_help_text(None)
         self.fig = fig
+        self.set_help_text(None)
 
     def set_help_text(self, text=None):
         """
@@ -152,7 +152,8 @@ class Controller(object):
             # we now have an associated document, need to do this inside that context
             self.helptext.document.add_next_tick_callback(lambda: self.helptext.update(text=ht))
         else:
-            self.helptext.text = ht
+            # no document, we can update directly
+            self.helptext.update(text=ht)
 
     def on_mouse_enter(self, event):
         """
@@ -261,9 +262,9 @@ class Controller(object):
                 self.set_help_text(self.task.helptext())
                 self.task.start(self.x, self.y)
 
-        if self.helptext.document:
+        if self.fig.document:
             # we now have an associated document, need to do this inside that context
-            self.helptext.document.add_next_tick_callback(
+            self.fig.document.add_next_tick_callback(
                 lambda: _ui_loop_handle_key(_key=key))
 
     def handle_mouse(self, x, y):
@@ -289,7 +290,10 @@ class Controller(object):
         global _pending_handle_mouse
         if not _pending_handle_mouse:
             _pending_handle_mouse = True
-            self.helptext.document.add_timeout_callback(self.handle_mouse_callback, 100)
+            if self.fig.document is not None:
+                self.fig.document.add_timeout_callback(self.handle_mouse_callback, 100)
+            else:
+                self.handle_mouse_callback()
 
     def handle_mouse_callback(self):
         global _pending_handle_mouse
