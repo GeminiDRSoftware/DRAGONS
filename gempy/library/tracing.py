@@ -565,13 +565,13 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
             continue
         x1 = int(xc - halfwidth)
         x2 = int(xc + halfwidth + 1)
-        xvalues = np.arange(x1, x2)
+        xvalues = np.arange(masked_data.size)
 
         # We fit splines to y(x) and x * y(x)
-        t, c, k = interpolate.splrep(xvalues, masked_data[x1:x2], k=3,
+        t, c, k = interpolate.splrep(xvalues, masked_data, k=3,
                                      s=0)
         spline1 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
-        t, c, k = interpolate.splrep(xvalues, masked_data[x1:x2] * xvalues,
+        t, c, k = interpolate.splrep(xvalues, masked_data * xvalues,
                                      k=3, s=0)
         spline2 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
 
@@ -588,7 +588,6 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
             sum1 = (splint2[1] - splint2[0] - splint2[2] +
                     (xc - halfwidth) * splint1[0] - xc * splint1[1] + (xc + halfwidth) * splint1[2])
             sum2 = splint1[1] - splint1[0] - splint1[2]
-
             if sum2 == 0:
                 break
 
@@ -599,11 +598,11 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
             if abs(dx) < 0.001:
                 final_peak = xc
                 break
-            if abs(dx) > dxlast + 0.005:
+            if abs(dx) > dxlast + 0.001:
                 dxcheck += 1
                 if dxcheck > 3:
                     break
-            elif abs(dx) > dxlast - 0.005:
+            elif abs(dx) > dxlast - 0.001:
                 xc -= 0.5 * max(-1, min(1, dx))
                 dxcheck = 0
             else:
@@ -820,7 +819,7 @@ def stack_slit(ext, percentile=50, dispaxis=None):
 
 def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum=10,
                 step=10, initial_tolerance=1.0, max_shift=0.05, max_missed=5,
-                func=NDStacker.mean, viewer=None):
+                func=NDStacker.median, viewer=None):
     """
     This function traces features along one axis of a two-dimensional image.
     Initial peak locations are provided and then these are matched to peaks
