@@ -840,10 +840,10 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
     # Create parameters to add to the UI
     reinit_extras = {
-        "max_missed": RangeField("Max Missed", int, 5, min=0),
-        "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
-        "nsum": RangeField("Lines to sum", int, 10, min=1),
-        "step": RangeField("Tracing step", int, 10, min=1),
+        "max_missed": RangeField("Max Missed", int, config.max_missed, min=0),
+        "max_shift": RangeField("Max Shifted", float, config.max_shifted, min=0.001, max=0.1),
+        "nsum": RangeField("Lines to sum", int, config.nsum, min=1),
+        "step": RangeField("Tracing step", int, config.setp, min=1),
     }
 
     if (2 - ext.dispersion_axis()) == 1:
