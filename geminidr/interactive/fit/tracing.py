@@ -928,7 +928,7 @@ def trace_apertures_data_provider(ext, conf, extra):
     for i, loc in enumerate(ext.APERTURE['c0'].data):
         c0 = int(loc + 0.5)
         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-        start = np.argmax(at.boxcar(spectrum, size=3))
+        start = np.argmax(at.boxcar(spectrum, size=20))
 
         # The coordinates are always returned as (x-coords, y-coords)
         ref_coords, in_coords = tracing.trace_lines(
