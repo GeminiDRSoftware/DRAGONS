@@ -16,6 +16,7 @@ import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
+from gempy.library import astromodels as am
 from recipe_system.testing import ref_ad_factory
 
 
@@ -64,11 +65,18 @@ def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
         assert input_table['aper_lower'][0] <= 0
         assert input_table['aper_upper'][0] >= 0
 
-        # aper_lower and aper_upper aren't part of traceApertures
-        keys = [k for k in ext.APERTURE.colnames if not k.startswith("aper_")]
-        actual = np.array([input_table[k] for k in keys])
-        desired = np.array([reference_table[k] for k in keys])
-        np.testing.assert_allclose(desired, actual, atol=0.05)
+        assert len(input_table) == len(reference_table)
+
+        for input_row, ref_row in zip(input_table, reference_table):
+            model_dict = dict(zip(input_table.colnames, input_row))
+            input_model = am.dict_to_chebyshev(model_dict)
+            model_dict = dict(zip(reference_table.colnames, ref_row))
+            ref_model = am.dict_to_chebyshev(model_dict)
+            pixels = np.arange(*input_model.domain)
+            actual = input_model(pixels)
+            desired = ref_model(pixels)
+
+            np.testing.assert_allclose(desired, actual, atol=0.2)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
