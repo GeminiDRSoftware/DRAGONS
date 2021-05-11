@@ -1393,8 +1393,6 @@ class Spect(PrimitivesBASE):
         grow : float
             Avoidance region around each source aperture if a sky aperture
             is required. Default: 10.
-        interactive: bool
-            Perform extraction interactively
         subtract_sky : bool
             Extract and subtract sky spectra from object spectra if the 2D
             spectral image has not been sky subtracted?
@@ -2806,7 +2804,7 @@ class Spect(PrimitivesBASE):
                     _config.update(**params)
                     ext.APERTURE = interactive_trace_apertures(
                         ext, _config, fit1d_params)
-
+                    print("end of interactive traceApertures")
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     all_aperture_tables = []
@@ -2903,6 +2901,7 @@ class Spect(PrimitivesBASE):
 
                     ext.APERTURE = vstack(all_aperture_tables,
                                           metadata_conflicts="silent")
+                    print("end of noninteractive traceApertures")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

@@ -15,7 +15,7 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-def build_fit_1D(fit1d_params, data, points, weights):
+def build_fit_1D(fit1d_params, data, points, weights, domain):
     """
     Create a fit_1D from the given parameter dictionary and x/y/weights
 
@@ -37,6 +37,7 @@ def build_fit_1D(fit1d_params, data, points, weights):
     return fit_1D(data,
                   points=points,
                   weights=weights,
+                  domain=domain,
                   **fit1d_params)
 
 
@@ -433,7 +434,7 @@ class InteractiveFit1D:
         goodpix = ~parent.user_mask
 
         self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
-                                weights=None if parent.weights is None else parent.weights[goodpix])
+                                domain=self.domain, weights=None if parent.weights is None else parent.weights[goodpix])
         parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
         if parent.sigma_clip:
             # Now pull in the sigma mask
