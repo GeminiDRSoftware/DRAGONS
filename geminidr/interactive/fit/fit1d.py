@@ -1201,6 +1201,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
         doc.add_root(self.layout)
 
+        # Simulate a click of the accept button
+        self.do_later(lambda: self.submit_button_handler(None))
+
+
     def reconstruct_points(self):
         """
         Reconstruct the initial points to work with.

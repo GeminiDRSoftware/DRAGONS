@@ -133,7 +133,7 @@ def _bkapp(doc):
         if hasattr(_visualizer, "filename_info"):
             doc.template_variables['filename_info'] = _visualizer.filename_info
 
-    _visualizer.visualize(doc)
+    _visualizer.show(doc)
     doc.title = title
 
 
