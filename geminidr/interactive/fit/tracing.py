@@ -834,16 +834,16 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     """
     ap_table = ext.APERTURE
     fit_par_list = [fit1d_params] * len(ap_table)
-    domain_list = [[ap_table.meta["header"][kw]
-                    for kw in ("DOMAIN_START", "DOMAIN_END")]
+
+    domain_list = [[ap[kw] for kw in ("domain_start", "domain_end")]
                    for ap in ap_table]
 
     # Create parameters to add to the UI
     reinit_extras = {
-        "max_missed": RangeField("Max Missed", int, 5, min=0),
-        "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
-        "nsum": RangeField("Lines to sum", int, 10, min=1),
-        "step": RangeField("Tracing step", int, 10, min=1),
+        "max_missed": RangeField("Max Missed", int, config.max_missed, min=0),
+        "max_shift": RangeField("Max Shifted", float, config.max_shift, min=0.001, max=0.1),
+        "nsum": RangeField("Lines to sum", int, config.nsum, min=1),
+        "step": RangeField("Tracing step", int, config.step, min=1),
     }
 
     if (2 - ext.dispersion_axis()) == 1:
