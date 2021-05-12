@@ -44,6 +44,12 @@ class adjustWCSToReferenceConfig(config.Config):
                                   float, 1, min=0., optional=True)
 
 
+class attachWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionAttached", optional=True)
+    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
+                           optional=True, single=True)
+
+
 class calculateSensitivityConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)

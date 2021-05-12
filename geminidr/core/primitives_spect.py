@@ -219,11 +219,10 @@ class Spect(PrimitivesBASE):
 
     def attachWavelengthSolution(self, adinputs=None, **params):
         """
-        Corrects optical distortion in science frames using a `processed_arc`
-        with attached distortion map (a Chebyshev2D model).
-
-        If the input image requires mosaicking, then this is done as part of
-        the resampling, to ensure one, rather than two, interpolations.
+        Attach the distortion map (a Chebyshev2D model) and the mapping from
+        distortion-corrected pixels to wavelengths (a Chebyshev1D model, when
+        available after successful line matching) from a processed arc, or
+        similar wavelength reference, to the WCS of the input data.
 
         Parameters
         ----------
@@ -232,16 +231,13 @@ class Spect(PrimitivesBASE):
         suffix : str
             Suffix to be added to output files.
         arc : :class:`~astrodata.AstroData` or str or None
-            Arc(s) containing distortion map.
-        order : int (0 - 5)
-            Order of interpolation when resampling.
-        subsample : int
-            Pixel subsampling factor.
+            Arc(s) containing distortion map & wavelength calibration.
 
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            Modified input objects with distortion correct applied.
+            Modified input objects with the WCS updated for each extension.
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -249,19 +245,14 @@ class Spect(PrimitivesBASE):
 
         sfx = params["suffix"]
         arc = params["arc"]
-        order = params["order"]
-        subsample = params["subsample"]
-        do_cal = params["do_cal"]
-
-        if do_cal == 'skip':
-            log.warning('Distortion correction has been turned off.')
-            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
             arc_list = self.caldb.get_processed_arc(adinputs)
         else:
             arc_list = (arc, None)
+
+        fail = False
 
         adoutputs = []
         # Provide an arc AD object for every science frame, and an origin
@@ -272,17 +263,20 @@ class Spect(PrimitivesBASE):
 
             len_ad = len(ad)
             if arc is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    # TODO: Think about this when we have MOS/XD/IFU
-                    if len(ad) == 1:
-                        log.warning(f"{ad.filename}: no arc was specified. "
-                                    "Continuing.")
-                        adoutputs.append(ad)
-                    else:
-                        log.warning(f"{ad.filename}: no arc was specified. "
-                                    "Image will be mosaicked.")
-                        adoutputs.extend(self.mosaicDetectors([ad]))
-                    continue
+                log.warning(f"{ad.filename}: no arc was specified. "
+                            "Continuing.")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+                # By analogy with distortionCorrect, we should probably still
+                # attach the mosaic transform here if there's no arc and the
+                # data are not already mosaicked, but it would be better to
+                # separate that out into a different step anyway (and call it
+                # here if necessary), so leave that for further refactoring
+                # and just keep the original WCS for now (which currently won't
+                # prevent distortionCorrect from mosaicking the data).
 
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
@@ -291,13 +285,17 @@ class Spect(PrimitivesBASE):
             if len_arc not in (1, len_ad):
                 log.warning(f"{ad.filename} has {len_ad} extensions but "
                             f"{arc.filename} had {len_arc} extensions so "
-                            "cannot correct the distortion.")
+                            "cannot calibrate the distortion.")
+                if 'sq' in self.mode:
+                    fail = True
                 adoutputs.append(ad)
                 continue
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
                 log.warning("Science frame and arc have different binnings.")
+                if 'sq' in self.mode:
+                    fail = True
                 adoutputs.append(ad)
                 continue
 
@@ -311,22 +309,15 @@ class Spect(PrimitivesBASE):
                 # ADs, so just set the found transforms to empty and present
                 # the warning at the end
                 try:
-                    if 'distortion_corrected' in wcs.available_frames:
-                        pipeline = wcs.pipeline
-                    else:
+                    if 'distortion_corrected' not in wcs.available_frames:
                         distortion_models = []
                         break
                 except AttributeError:
                     distortion_models = []
                     break
 
-                # We could just pass the forward transform of the WCS, which
-                # already has its inverse attached, but the code currently
-                # relies on a no-op forward model to size the output correctly:
-                m_distcorr = models.Identity(2)
-                input_frame = wcs.input_frame
-                m_distcorr.inverse = wcs.get_transform(
-                    input_frame, 'distortion_corrected').inverse
+                m_distcorr = wcs.get_transform(wcs.input_frame,
+                                               'distortion_corrected')
                 distortion_models.append(m_distcorr)
 
                 try:
@@ -344,11 +335,26 @@ class Spect(PrimitivesBASE):
                 log.warning("Could not find a 'distortion_corrected' frame "
                             f"in arc {arc.filename} extension {ext.id} - "
                             "continuing")
+                if 'sq' in self.mode:
+                    fail = True
                 continue
 
             # Determine whether we're producing a single-extension AD
             # or keeping the number of extensions as-is
             if len_arc == 1:
+
+                distortion_models *= len_ad
+                wave_models *= len_ad
+                wave_frames *= len_ad
+
+                # Save spatial WCS from input ext we're transforming WRT:
+                ref_idx = transform.find_reference_extension(ad)
+                sky_models = [
+                    am.get_named_submodel(ad[ref_idx].wcs.forward_transform,
+                                          'SKY')
+                ] * len_ad
+                output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
+
                 arc_detsec = arc.detector_section()[0]
                 ad_detsec = ad.detector_section()
                 if len_ad > 1:
@@ -362,7 +368,8 @@ class Spect(PrimitivesBASE):
                         for item in ext.wcs.pipeline:
                             if item[0].name == 'mosaic':
                                 new_pipeline.extend([(item[0], m_distcorr),
-                                                     (cf.Frame2D(name='distortion_corrected'), item[1])])
+                                                     (cf.Frame2D(name='distortion_corrected'), None)])
+                                break
                             else:
                                 new_pipeline.append(item)
                         ext.wcs = gWCS(new_pipeline)
@@ -405,8 +412,6 @@ class Spect(PrimitivesBASE):
 
                     for ext in ad:
                         ext.wcs.insert_transform('mosaic', origin_shift, after=True)
-                        #ext.wcs.insert_transform('distortion_corrected',
-                        #                         origin_shift.inverse, after=False)
 
                     # ARC and AD aren't the same size
                     if nzeros < 4:
@@ -435,9 +440,12 @@ class Spect(PrimitivesBASE):
                     ad_detsec = ad.detector_section()[0]
                     if ad_detsec != arc_detsec:
                         if self.timestamp_keys['mosaicDetectors'] in ad.phu:
-                            log.warning("Cannot distortionCorrect mosaicked "
-                                        "data unless calibration has the "
+                            # Shouldn't this be allowed with a full-frame arc?
+                            log.warning("Cannot calibrate distortions in "
+                                        "mosaicked data unless arc has the "
                                         "same ROI. Continuing.")
+                            if 'sq' in self.mode:
+                                fail = True
                             adoutputs.append(ad)
                             continue
                         # No mosaicking, so we can just do a shift
@@ -446,21 +454,27 @@ class Spect(PrimitivesBASE):
                         m_distcorr = m_shift | m_distcorr
                     # TODO: use insert_frame method
                     new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
-                                    (cf.Frame2D(name='distortion_corrected'), ad[0].wcs.pipeline[0][1])]
-                    new_pipeline.extend(ad[0].wcs.pipeline[1:])
+                                    (cf.Frame2D(name='distortion_corrected'), None)]
                     ad[0].wcs = gWCS(new_pipeline)
-
-                ad_out = transform.resample_from_wcs(ad, 'distortion_corrected',
-                                                     order=order, subsample=subsample,
-                                                     parallel=False)
 
                 if wave_model is None:
                     log.warning(f"{arc.filename} has no wavelength solution")
+                    if 'sq' in self.mode:
+                        fail = True
 
             else:
-                log.warning("Distortion correction with multiple-extension "
+                log.warning("Distortion calibration with multiple-extension "
                             "arcs has not been tested.")
+
+                sky_models, output_frames = [], []
+
                 for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
+                    # Save spatial WCS from input ext we're transforming WRT:
+                    sky_models.append(
+                        am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
+                    )
+                    output_frames.append(ext.wcs.output_frame.frames)
+
                     # Shift science so its pixel coords match the arc's before
                     # applying the distortion correction
                     shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
@@ -469,27 +483,19 @@ class Spect(PrimitivesBASE):
                                   models.Shift(shifts[1] / ybin)) | dist_model
                     # TODO: use insert_frame method
                     new_pipeline = [(ext.wcs.input_frame, dist_model),
-                                    (cf.Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0][1])]
-                    new_pipeline.extend(ext.wcs.pipeline[1:])
+                                    (cf.Frame2D(name='distortion_corrected'), None)]
                     ext.wcs = gWCS(new_pipeline)
-                    if i == 0:
-                        ad_out = transform.resample_from_wcs(ext, order=order,
-                                                             subsample=subsample,
-                                                             parallel=False)
-                    else:
-                        ad_out.append(transform.resample_from_wcs(ext, order=order,
-                                                                  subsample=subsample,
-                                                                  parallel=False))
+
                     if wave_model is None:
                         log.warning(f"{arc.filename} extension {ext.id} has "
                                     "no wavelength solution")
+                        if 'sq' in self.mode:
+                            fail = True
 
-            for i, (ext, wave_model, wave_frame) in enumerate(
-                    zip(ad_out, wave_models, wave_frames)):
-                # TODO: remove this; for debugging purposes only
-                if arc is not None and hasattr(arc[i], "WAVECAL"):
-                    ad_out[i].WAVECAL = arc[i].WAVECAL
-                sky_model = am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
+            for i, (ext, wave_model, wave_frame, sky_model, output_frame) in \
+              enumerate(zip(ad, wave_models, wave_frames, sky_models,
+                            output_frames)):
+
                 if ext.dispersion_axis() == 1:
                     t = wave_model & sky_model
                 else:
@@ -498,14 +504,20 @@ class Spect(PrimitivesBASE):
                 # ARC's SpectralFrame in case there's a change from air->vac
                 # or vice versa
                 new_output_frame = cf.CompositeFrame(
-                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame) else
-                     frame for frame in ext.wcs.output_frame.frames])
-                ext.wcs = gWCS([(ext.wcs.input_frame, t),
-                                (new_output_frame, None)])
+                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame)
+                     else frame for frame in output_frame], name='world'
+                )
+                ext.wcs.insert_frame('distortion_corrected', t,
+                                     new_output_frame)
+
             # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad_out)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad)
+
+        if fail:
+            raise OSError("No suitable arc calibration for one or more "
+                          "input(s)")
 
         return adoutputs
 
