@@ -451,7 +451,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         # Save parameters in case we want to reset them
         self._reinit_extras = {} if reinit_extras is None \
             else {key: val.default for key, val in self.reinit_extras.items()}
-        self._reinit_pars = {} if reinit_params is None \
+        self._reinit_params = {} if reinit_params is None \
             else {key: val for key, val in config.items() if key in reinit_params}
 
         self.function_name = 'chebyshev'
@@ -757,7 +757,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             if param is None:
                 reset_value = val
             elif key == param:
-                reset_value = self._reinit_pars[key]
+                reset_value = self._reinit_params[key]
             else:
                 continue
 
@@ -864,6 +864,12 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
     # Create parameters to add to the UI
     reinit_params = ["max_missed", "max_shift", "nsum", "step"]
+
+    # Update doc for a more compact version
+    config._fields["max_missed"].doc = "Max Missed"
+    config._fields["max_shift"].doc = "Max Shifted"
+    config._fields["nsum"].doc = "Lines to sum"
+    config._fields["step"].doc = "Tracing step"
 
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
