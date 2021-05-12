@@ -589,12 +589,22 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                             "to previous working configuration."
 
                     self.reset_tracing_panel(param=self.last_changed)
-                    _extras[self.last_changed] = \
-                        self._reinit_extras[self.last_changed]
+
+                    if self.last_changed in self._reinit_extras.keys():
+                        _extras[self.last_changed] = \
+                            self._reinit_extras[self.last_changed]
+
+                    elif self.last_changed in self._reinit_params.keys():
+                        setattr(_config, self.last_changed,
+                                self._reinit_params[self.last_changed])
+
                     data = data_source(_config, _extras)
                 else:
                     # Store successful pars
                     self._reinit_extras = deepcopy(_extras)
+                    self._reinit_params = {
+                        key: val for key, val in _config.items()
+                        if key in reinit_params}
 
                 return data
 
@@ -721,6 +731,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         return reinit_panel
 
+    # noinspection PyProtectedMember
     def reset_tracing_panel(self, param=None):
         """
         Reset all the parameters in the Tracing Panel (leftmost column).
@@ -755,7 +766,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 continue
 
             if param is None:
-                reset_value = val
+                reset_value = self.config._fields[key].default
             elif key == param:
                 reset_value = self._reinit_params[key]
             else:
