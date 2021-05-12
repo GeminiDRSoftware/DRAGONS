@@ -451,6 +451,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         # Save parameters in case we want to reset them
         self._reinit_extras = {} if reinit_extras is None \
             else {key: val.default for key, val in self.reinit_extras.items()}
+        self._reinit_pars = {} if reinit_params is None \
+            else {key: val for key, val in config.items() if key in reinit_params}
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
@@ -654,7 +656,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             the background.
         reinit_params : list
             Parameters for re-tracing.
-        reinit_extras : list
+        reinit_extras : dict
             Extra parameters for re-tracing.
         """
         # No panel required if we are not re-creating data
@@ -746,6 +748,27 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Update Text Field via callback function
             for callback in self.widgets[key]._callbacks['value_throttled']:
                 callback(attrib='value_throttled', old=old, new=reset_value)
+
+        for key, val in self.config.items():
+
+            if key not in self.reinit_params:
+                continue
+
+            if param is None:
+                reset_value = val
+            elif key == param:
+                reset_value = self._reinit_pars[key]
+            else:
+                continue
+
+            old = self.widgets[key].value
+
+            # Update Slider Value
+            self.widgets[key].update(value=reset_value)
+
+            # Update Text Field via callback function
+            for callback in self.widgets[key]._callbacks['value']:
+                callback('value', old=old, new=reset_value)
 
     def register_last_changed(self, key):
         """
