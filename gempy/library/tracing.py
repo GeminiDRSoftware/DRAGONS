@@ -899,10 +899,11 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
     # Get accurate starting positions for all peaks
     halfwidth = cwidth // 2
-    y1 = int(start - 0.5 * nsum + 0.5)
-    data, mask, var = func(ext_data[y1:y1 + nsum],
-                           mask=None if ext_mask is None else ext_mask[y1:y1 + nsum],
-                           variance=None)
+    y1 = max(int(start - 0.5 * nsum + 0.5), 0)
+    _slice = slice(min(y1, ext_data.size - nsum),
+                   min(y1 + nsum, ext_data.size))
+    data, mask, var = func(ext_data[_slice], mask=None if ext_mask is None
+                           else ext_mask[_slice], variance=None)
 
     if rwidth:
         data = cwt_ricker(data, widths=[rwidth])[0]
