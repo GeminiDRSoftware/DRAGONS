@@ -76,6 +76,15 @@ def compat_with_iraf_F2(ad, verbose):
         print("Copy WCS to PHU.")
     _copy_wcs_to_phu(ad)
 
+    if 'NSCIEXT' not in ad.phu:
+        if verbose:
+            print("Add NSCIEXT to PHU")
+        ad.phu.set('NSCIEXT', len(ad), "For IRAF compatibility")
+    elif ad.phu['NSCIEXT'] != len(ad):
+        if verbose:
+            print("Update NSCIEXT to match number of science extensions")
+        ad.phu.set('NSCIEXT', len(ad), "For IRAF compatibility")
+
     return
 
 def _get_gmos_obsmode(ad):
