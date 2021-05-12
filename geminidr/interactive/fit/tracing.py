@@ -443,7 +443,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         self.layout = None
         self.last_changed = None
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
+        self.reinit_extras = {} if reinit_extras is None else reinit_extras
+        self.reinit_params = [] if reinit_params is None else reinit_params
         self.widgets = {}
         self.error_alert = self.create_error_alert()
 
@@ -823,8 +824,8 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     ----------
     ext : AstroData
         Single extension extracted from an AstroData object.
-    config : dict
-        Dictionary containing the parameters from traceApertures().
+    config : :class:`geminidr.code.spect.traceAperturesConfig`
+        Configuration object containing the parameters from traceApertures().
     fit1d_params : dict
         Dictionary containing initial parameters for fitting a model.
 
@@ -839,12 +840,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
                    for ap in ap_table]
 
     # Create parameters to add to the UI
-    reinit_extras = {
-        "max_missed": RangeField("Max Missed", int, config.max_missed, min=0),
-        "max_shift": RangeField("Max Shifted", float, config.max_shift, min=0.001, max=0.1),
-        "nsum": RangeField("Lines to sum", int, config.nsum, min=1),
-        "step": RangeField("Tracing step", int, config.step, min=1),
-    }
+    reinit_params = ["max_missed", "max_shift", "nsum", "step"]
 
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
@@ -854,7 +850,18 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         ylabel = "x / columns [px]"
 
     def data_provider(conf, extra):
-        return trace_apertures_data_provider(ext, conf, extra)
+        """
+        Callback function used to recreate the data for fitting.
+
+        Parameters
+        ----------
+        conf : :class:`geminidr.core.parameters_spect.traceAperturesConfig`
+            Standard configuration object.
+        extra : dict
+            Dictionary containing parameters not defined in the configuration
+            object. Not used in this case.
+        """
+        return trace_apertures_data_provider(ext, conf)
 
     # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
@@ -868,7 +875,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
                    + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
                    + help.REGION_EDITING_HELP_SUBTEXT),
         primitive_name="traceApertures",
-        reinit_extras=reinit_extras,
+        reinit_params=reinit_params,
         tab_name_fmt="Aperture {}",
         title="Interactive Trace Apertures",
         xlabel=xlabel,
@@ -901,7 +908,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
 
 # noinspection PyUnusedLocal
-def trace_apertures_data_provider(ext, conf, extra):
+def trace_apertures_data_provider(ext, conf):
     """
     Function used by the interactive fitter to generate the a list with
     pairs of [x, y] data containing the knots used for tracing.
@@ -910,11 +917,8 @@ def trace_apertures_data_provider(ext, conf, extra):
     ----------
     ext : AstroData
         Single extension of data containing an .APERTURE table.
-    conf : dict
+    conf : :class:`geminidr.gmos.spect.traceAperturesConfig`
         Dictionary containing default traceApertures() parameters.
-    extra : dict
-        Dictionary containing extra parameters used to re-create the input data
-        for fitting interactively.
 
     Returns
     -------
@@ -924,6 +928,9 @@ def trace_apertures_data_provider(ext, conf, extra):
     """
     all_tracing_knots = []
     dispaxis = 2 - ext.dispersion_axis()  # python sense
+
+    # Convert configuration object into dictionary for easy access to its values
+    conf_as_dict = {key: val for key, val in conf.items()}
 
     for i, loc in enumerate(ext.APERTURE['c0'].data):
         c0 = int(loc + 0.5)
@@ -937,12 +944,12 @@ def trace_apertures_data_provider(ext, conf, extra):
             cwidth=5,
             initial=[loc],
             initial_tolerance=None,
-            max_missed=extra['max_missed'],
-            max_shift=extra['max_shift'],
-            nsum=extra['nsum'],
+            max_missed=conf_as_dict['max_missed'],
+            max_shift=conf_as_dict['max_shift'],
+            nsum=conf_as_dict['nsum'],
             rwidth=None,
             start=start,
-            step=extra['step'],
+            step=conf_as_dict['step'],
         )
 
         in_coords = np.ma.masked_array(in_coords)
