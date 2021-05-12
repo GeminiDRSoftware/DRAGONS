@@ -112,8 +112,6 @@ class determineWavelengthSolutionConfig(config.Config):
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
-    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
-                           optional=True, single=True)
     order = config.RangeField("Interpolation order", int, 3, min=0, max=5, inclusiveMax=True)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
