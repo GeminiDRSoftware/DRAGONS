@@ -181,32 +181,8 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
-        _ad = p.makeIRAFCompatible()[0]
-
-        width = _ad[0].shape[1]
-
-        aperture = table.Table(
-            [[1],  # Number
-             [1],  # ndim
-             [0],  # degree
-             [0],  # domain_start
-             [width - 1],  # domain_end
-             [center],  # c0
-             [-10],  # aper_lower
-             [10],  # aper_upper
-             ],
-            names=[
-                'number',
-                'ndim',
-                'degree',
-                'domain_start',
-                'domain_end',
-                'c0',
-                'aper_lower',
-                'aper_upper']
-        )
-
-        _ad[0].APERTURE = aperture
+        p.makeIRAFCompatible()
+        _ad = p.findSourceApertures()[0]
 
         os.chdir("inputs/")
         _ad.write(overwrite=True)
