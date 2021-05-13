@@ -1,4 +1,5 @@
 from geminidr.core import primitives_spect
+from geminidr.core.tests import ad_compare
 from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata, fake_point_source_spatial_profile, \
     get_aperture_table
 from geminidr.interactive import interactive
@@ -36,12 +37,13 @@ def test_trace_apertures_interactive():
     ad_out = _p.traceApertures([ad], order=len(trace_model_parameters) + 1)[0]
 
     # # iad = make_test_ad()
-    # iad = create_zero_filled_fake_astrodata(height, width)
-    # iad[0].data += fake_point_source_spatial_profile(height, width, trace_model_parameters)
-    # iad[0].APERTURE = get_aperture_table(height, width)
-    # _p = primitives_spect.Spect([])
-    # iad_out = _p.traceApertures([iad], order=len(trace_model_parameters) + 1, interactive=True)[0]
+    iad = create_zero_filled_fake_astrodata(height, width)
+    iad[0].data += fake_point_source_spatial_profile(height, width, trace_model_parameters)
+    iad[0].APERTURE = get_aperture_table(height, width)
+    _p = primitives_spect.Spect([])
+    iad_out = _p.traceApertures([iad], order=len(trace_model_parameters) + 1, interactive=True)[0]
 
     # assert(ad_out == iad_out)
+    assert(ad_compare(ad_out, iad_out))
     pass
 
