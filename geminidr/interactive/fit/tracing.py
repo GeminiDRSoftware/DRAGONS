@@ -870,7 +870,8 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     ap_table = ext.APERTURE
     fit_par_list = [fit1d_params] * len(ap_table)
 
-    domain_list = [[ap[kw] for kw in ("domain_start", "domain_end")]
+    domain_list = [[ap_table.meta["header"][kw]
+                    for kw in ("DOMAIN_START", "DOMAIN_END")]
                    for ap in ap_table]
 
     # Create parameters to add to the UI
