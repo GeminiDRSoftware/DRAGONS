@@ -415,7 +415,7 @@ class traceAperturesConfig(config.Config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     niter = config.RangeField("Maximum number of rejection iterations",
                               int, 0, min=0)
     nsum = config.RangeField("Number of lines to sum",
