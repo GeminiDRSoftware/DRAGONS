@@ -2898,6 +2898,7 @@ class Spect(PrimitivesBASE):
 
                     # Recalculate aperture limits after rectification
                     #apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
+                    this_aptable["number"] = aperture["number"]
                     this_aptable["aper_lower"] = \
                         aperture["aper_lower"] #+ (location - apcoords.min())
                     this_aptable["aper_upper"] = \
@@ -2908,9 +2909,14 @@ class Spect(PrimitivesBASE):
                 # values that vstack will mask, so we have to set those to zero
                 new_aptable = vstack(all_aperture_tables,
                                      metadata_conflicts="silent")
-                for col in new_aptable.colnames:
+                colnames = new_aptable.colnames
+                new_col_order = (["number"] + sorted(c for c in colnames
+                                                     if c.startswith("c")) +
+                                 ["aper_lower", "aper_upper"])
+                for col in colnames:
                     if isinstance(new_aptable[col], MaskedColumn):
                         new_aptable[col] = new_aptable[col].filled(fill_value=0)
+                ext.APERTURE = new_aptable[new_col_order]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
