@@ -233,7 +233,7 @@ def start_server():
 
     # to force a browser, add browser="chrome" tp this add_callback
     if test_mode:
-        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu"]}
+        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu", "--dump-dom"]}
         kwargs = {"browser": "chrome"}
     else:
         kwargs = {}
