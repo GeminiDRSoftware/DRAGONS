@@ -14,11 +14,6 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.config import FieldValidationError
 
 
-# Set to True to tell the interactive code to automatically submit in
-# order to test the interactive paths automatically
-test_mode = True
-
-
 class PrimitiveVisualizer(ABC):
     def __init__(self, config=None, title='', primitive_name='',
                  filename_info='', template=None, help_text=None):
@@ -181,7 +176,7 @@ class PrimitiveVisualizer(ABC):
 
         self.visualize(doc)
 
-        if test_mode:
+        if server.test_mode:
             # Simulate a click of the accept button
             self.do_later(lambda: self.submit_button_handler(None))
 

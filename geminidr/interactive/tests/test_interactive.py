@@ -2,16 +2,16 @@ from geminidr.core import primitives_spect
 from geminidr.core.tests import ad_compare
 from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata, fake_point_source_spatial_profile, \
     get_aperture_table
-from geminidr.interactive import interactive
+from geminidr.interactive import server
 import gemini_instruments
 
 
 def interactive_test(tst):
     def set_test_mode():
-        save_itm = interactive.test_mode
-        interactive.test_mode = True
+        save_itm = server.test_mode
+        server.test_mode = True
         tst()
-        interactive.test_mode = save_itm
+        server.test_mode = save_itm
     return set_test_mode
 
 
