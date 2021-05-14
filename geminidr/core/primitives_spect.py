@@ -1669,8 +1669,6 @@ class Spect(PrimitivesBASE):
                     if 'APERTURE' in ext.tables:
                         del ext.APERTURE
                     continue
-                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo(f"Found sources at: {locstr}")
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1679,15 +1677,19 @@ class Spect(PrimitivesBASE):
                 all_tables = []
                 for i, (loc, limits) in enumerate(zip(locations, all_limits),
                                                   start=1):
-                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
+                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1],
+                                              c0=loc)
                     aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
                     aptable["number"] = i
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
-                    log.debug("Limits for source "
-                              f"{loc:.1f} ({lower:.1f}, +{upper:.1f})")
+                    log.stdinfo(f"Aperture {i} found at {loc:.2f} "
+                                f"({lower:.2f}, +{upper:.2f})")
+                    if lower > 0 or upper < 0:
+                        log.warning("Problem with automated sizing of "
+                                    f"aperture {i}")
 
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column

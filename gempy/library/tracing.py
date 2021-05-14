@@ -1115,8 +1115,6 @@ def find_apertures_peaks(profile, prof_mask, max_apertures, direction,
     # Reverse-sort by SNR and return only the locations
     locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
                                 reverse=True)[:max_apertures]).T[0]
-    locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-    log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
 
     if np.isnan(profile[prof_mask == 0]).any():
         log.warning("There are unmasked NaNs in the spatial profile")
