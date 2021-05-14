@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
-from astropy.table import Table, vstack
+from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
@@ -2804,12 +2804,11 @@ class Spect(PrimitivesBASE):
                     # Pass the primitive configuration to the interactive object.
                     _config = self.params[self.myself()]
                     _config.update(**params)
-                    ext.APERTURE = interactive_trace_apertures(
+                    aperture_models = interactive_trace_apertures(
                         ext, _config, fit1d_params)
-                    print("end of interactive traceApertures")
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    all_aperture_tables = []
+                    aperture_models = []
 
                     # For efficiency, we would like to trace all sources
                     #  simultaneously (like we do with arc lines), but we need
@@ -2891,19 +2890,27 @@ class Spect(PrimitivesBASE):
                                 self.viewer.polygon(plot_coords, closed=False,
                                                     xfirst=(dispaxis == 1), origin=0)
 
-                        this_aptable = am.model_to_table(_fit_1d.model)
+                        aperture_models.append(_fit_1d.model)
 
-                        # Recalculate aperture limits after rectification
-                        apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
-                        this_aptable["aper_lower"] = \
-                            aperture["aper_lower"] #+ (location - apcoords.min())
-                        this_aptable["aper_upper"] = \
-                            aperture["aper_upper"] # - (apcoords.max() - location)
-                        all_aperture_tables.append(this_aptable)
+                all_aperture_tables = []
+                for model, aperture in zip(aperture_models, aptable):
+                    this_aptable = am.model_to_table(model)
 
-                    ext.APERTURE = vstack(all_aperture_tables,
-                                          metadata_conflicts="silent")
-                    print("end of noninteractive traceApertures")
+                    # Recalculate aperture limits after rectification
+                    #apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
+                    this_aptable["aper_lower"] = \
+                        aperture["aper_lower"] #+ (location - apcoords.min())
+                    this_aptable["aper_upper"] = \
+                        aperture["aper_upper"] # - (apcoords.max() - location)
+                    all_aperture_tables.append(this_aptable)
+
+                # If the traces have different orders, there will be missing
+                # values that vstack will mask, so we have to set those to zero
+                new_aptable = vstack(all_aperture_tables,
+                                     metadata_conflicts="silent")
+                for col in new_aptable.colnames:
+                    if isinstance(new_aptable[col], MaskedColumn):
+                        new_aptable[col] = new_aptable[col].filled(fill_value=0)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

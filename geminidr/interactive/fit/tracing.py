@@ -865,7 +865,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
     Returns
     -------
-    Table : new aperture table.
+    list of models describing the aperture curvature
     """
     ap_table = ext.APERTURE
     fit_par_list = [fit1d_params] * len(ap_table)
@@ -925,27 +925,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()
-
-    all_aperture_tables = []
-    dispaxis = 2 - ext.dispersion_axis()  # python sense
-
-    for final_model, ap in zip(models, ap_table):
-        location = ap['c0']
-        this_aptable = astromodels.model_to_table(final_model.model)
-
-        # Recalculate aperture limits after rectification
-        apcoords = final_model.evaluate(np.arange(ext.shape[dispaxis]))
-
-        this_aptable["aper_lower"] = (
-                ap["aper_lower"] + (location - apcoords.min()))
-
-        this_aptable["aper_upper"] = (
-                ap["aper_upper"] - (apcoords.max() - location))
-
-        all_aperture_tables.append(this_aptable)
-
-    new_aptable = table.vstack(all_aperture_tables, metadata_conflicts="silent")
-    return new_aptable
+    return [m.model for m in models]
 
 
 # noinspection PyUnusedLocal
