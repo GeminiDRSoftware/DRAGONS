@@ -1672,8 +1672,6 @@ class Spect(PrimitivesBASE):
                 # Reverse-sort by SNR and return only the locations
                 locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
                                             reverse=True)[:max_apertures]).T[0]
-                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo(f"Found sources at {direction}s: {locstr}")
 
                 if np.isnan(profile[prof_mask==0]).any():
                     log.warning("There are unmasked NaNs in the spatial profile")
@@ -1681,15 +1679,19 @@ class Spect(PrimitivesBASE):
                                                 threshold=threshold, method=sizing_method)
 
                 all_model_dicts = []
-                for loc, limits in zip(locations, all_limits):
+                for i, (loc, limits) in enumerate(zip(locations, all_limits),
+                                                  start=1):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
                     model_dict = astromodels.chebyshev_to_dict(cheb)
                     lower, upper = limits - loc
                     model_dict['aper_lower'] = lower
                     model_dict['aper_upper'] = upper
                     all_model_dicts.append(model_dict)
-                    log.debug("Limits for source "
-                              f"{loc:.1f} ({lower:.1f}, +{upper:.1f})")
+                    log.stdinfo(f"Aperture {i} found at {loc:.2f} "
+                                f"({lower:.2f}, +{upper:.2f})")
+                    if lower > 0 or upper < 0:
+                        log.warning("Problem with automated sizing of "
+                                    f"aperture {i}")
 
                 aptable = Table([np.arange(len(locations)) + 1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
