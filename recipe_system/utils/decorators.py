@@ -253,8 +253,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
                 clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
-                if hasattr(ad, 'PROVENANCE_HISTORY'):
-                    clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
+                clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
             else:
                 if hasattr(ad, 'PROVENANCE_HISTORY'):
                     clone_hist = False

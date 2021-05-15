@@ -54,16 +54,9 @@ def test_standardize_observatory_headers(gemini_image):
 
     assert isinstance(expected_timestamp, str), "phu SDZHDRSG tag not found!"
 
-    numb_of_extensions = processed_af.phu['NSCIEXT']
-
-    assert isinstance(numb_of_extensions, int), "phu NSCIEXT tag not found!"
-    assert (numb_of_extensions == 1), "one science extension expected, more/less found"
-
     new_af = copy.deepcopy(processed_af)
     test_gemini2 = gemini.Gemini([new_af])
     processed_af2 = test_gemini2.standardizeObservatoryHeaders()[0]
     expected_timestamp2 = processed_af2.phu['SDZHDRSG']
-    numb_of_extensions2 = processed_af2.phu['NSCIEXT']
 
     assert (expected_timestamp == expected_timestamp2)
-    assert (numb_of_extensions == numb_of_extensions2)
