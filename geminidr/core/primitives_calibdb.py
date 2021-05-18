@@ -75,6 +75,8 @@ class CalibDB(PrimitivesBASE):
             if not calurl and "sq" in self.mode:
                 log.warning(self._not_found.format(ad.filename))
                 #raise OSError(self._not_found.format(ad.filename))
+            elif calurl:
+                log.stdinfo('Using '+calurl+' for '+ad.filename)
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
