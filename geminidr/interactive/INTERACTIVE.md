@@ -367,6 +367,17 @@ this, it will make a text input that is linked to the `GIRegionModel`.  Just cal
 `get_widget()` on the `RegionEditor` after you make it to get a widget you can add
 to a bokeh layout.
 
+## TabsTurboInjector
+
+The `Tabs` in `bokeh` do a poor job of managing the DOM.  If you have many tabs
+with content, it can drastically impair the performance.  As a workaround, you
+can initialize your tabs using the provided `TabsTurboInjector` in the `interactive`
+module.  First, you instantiate one of these helpers passing an empty bokeh `Tabs`
+to it to be managed.  Then, instead of adding child tab `Panel`s to your `Tabs`, 
+you call the injector's helper method to add the child with a passed title.
+
+A side effect of the injector is that, on tab changes, you'll get a momentary blank tab.
+
 ## Modules
 
 The top-level module is for the bokeh server and for custom UI elements and helpers.  It

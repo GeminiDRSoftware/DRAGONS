@@ -13,7 +13,7 @@ from bokeh.plotting import figure
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
-    connect_figure_extras, GIRegionModel, RegionEditor)
+    connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
 from gempy.library import astromodels, astrotools as at, tracing
 from gempy.library.config import RangeField
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
@@ -504,16 +504,17 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
         if self.nfits > 1:
+            # more than one tab, turbo it
+            self.turbo = TabsTurboInjector(self.tabs)
+
             if domains is None:
                 domains = [None] * len(fitting_parameters)
             if all_weights is None:
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                # tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, index=i, **kwargs)
                 tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
-                tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
-                self.tabs.tabs.append(tab)
+                self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
                 self.fits.append(tui.fit)
         else:
 
