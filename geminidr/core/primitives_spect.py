@@ -9,7 +9,7 @@ import os
 import re
 import warnings
 from copy import copy
-from functools import reduce
+from functools import partial, reduce
 from importlib import import_module
 
 import matplotlib
@@ -37,7 +37,7 @@ from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.fit.tracing import interactive_trace_apertures
-from geminidr.interactive.fit.wavecal import interactive_wavelength_calibration
+from geminidr.interactive.fit.wavecal import WavelengthSolutionVisualizer
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
@@ -1075,53 +1075,50 @@ class Spect(PrimitivesBASE):
             except OSError:
                 log.warning(f"Cannot read file {arc_file} - "
                             "using default linelist")
-                arc_file = None
             else:
                 log.stdinfo(f"Read arc line list {arc_file}")
 
         # Pass the primitive configuration to the interactive object.
-        _config = self.params[self.myself()]
-        _config.update(**params)
+        config = copy(self.params[self.myself()])
+        config.update(**params)
 
-        all_fit1d = []
         for ad in adinputs:
             log.info(f"Determining wavelength solution for {ad.filename}")
-            for ext in ad:
-                if len(ad) > 1 and not interactive:
-                    log.info(f"Determining solution for extension {ext.id}")
-
-                input_data = wavecal.get_all_input_data(
-                        ext, self, _config, linelist=linelist, bad_bits=DQ.not_signal)
-                data = input_data["data"]
-                init_models = input_data["init_models"]
-                peaks, weights = input_data["peaks"], input_data["weights"]
-                linelist = input_data["linelist"]
-                fwidth = input_data["fwidth"]
-
-                dw0 = abs(np.diff(init_models[0](np.arange(data.size))).mean())
-                kdsigma = fwidth * abs(dw0)
-                k = 1 if kdsigma < 3 else 2
-
-                fit1d, acceptable_fit = wavecal.find_solution(
-                    init_models, _config, peaks=peaks, peak_weights=weights[weighting],
-                    linelist=linelist, fwidth=fwidth, kdsigma=kdsigma, k=k,
-                    filename=ad.filename)
-
-                if not acceptable_fit:
-                    log.warning(f"No acceptable wavelength solution found for {ext.id}")
-
-                if interactive:
-                    all_fit1d.append(fit1d)
-                else:
-                    wavecal.save_fit_as_pdf(data, fit1d.points[~fit1d.mask],
-                                            fit1d.image[~fit1d.mask], ad.filename)
-                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, _config)
 
             if interactive:
-                results = None  # call Visualizer
-                for ext, fit1d in zip(ad, results):
+                all_fp_init = [fit_1D.translate_params(
+                    {**params, "function": "chebyshev"})] * len(ad)
+                reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
+                            linelist=linelist, bad_bits=DQ.not_signal)
+                visualizer = WavelengthSolutionVisualizer(
+                    reconstruct_points,
+                    all_fp_init, config=config,
+                    reinit_params=["center", "nsum", "min_snr", "min_sep",
+                                   "fwidth", "central_wavelength", "dispersion"],
+                    modal_message="Hang on, this stuff is tricky",
+                    tab_name_fmt="Slit {}",
+                    title="Wavelength Solution",
+                    primitive_name=self.myself(),
+                    filename_info=ad.filename)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                for ext, fit1d, other in zip(ad, visualizer.results(),
+                                             visualizer.other_data):
                     # Try to get rid of input_data here
-                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, _config)
+                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+            else:
+                for ext in ad:
+                    if len(ad) > 1:
+                        log.info(f"Determining solution for extension {ext.id}")
+
+                    input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                        ext, config, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                    if not acceptable_fit:
+                        log.warning("No acceptable wavelength solution found "
+                                    f"for {ext.id}")
+
+                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
+                    wavecal.save_fit_as_pdf(input_data["spectrum"], fit1d.points[~fit1d.mask],
+                                            fit1d.image[~fit1d.mask], ad.filename)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

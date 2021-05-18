@@ -343,6 +343,62 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
     return model
 
 
+def create_interactive_inputs(ad, config, extras, p=None,
+                              linelist=None, bad_bits=0):
+    all_fits = []
+    for ext in ad:
+        data, fit1d, _ = get_automated_fit(
+            ext, config, p=p, linelist=linelist, bad_bits=bad_bits)
+        # peak locations and line wavelengths of matched peaks/lines
+        all_fits.append([fit1d.points[~fit1d.mask], fit1d.image[~fit1d.mask],
+                         None, data])
+    return all_fits
+
+
+def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
+    """
+    Produces a wavelength fit for a given slice of an AstroData object.
+    In non-interactive mode, this is the final result; in interactive mode
+    it provides the starting point with a list of matched peaks and arc
+    lines.
+
+    Parameters
+    ----------
+    ext : single-slice AstroData
+        the extension
+    config
+    p
+    linelist
+    bad_bits
+
+    Returns
+    -------
+    input_data : a dict containing useful information
+        (see get_all_input_data)
+    fit1d : a fit_1D object
+        containing the wavelength solution, plus an "image" attribute that
+        lists the matched arc line wavelengths
+    acceptable_fit : bool
+        whether this fit is likely to be good
+    """
+
+    input_data = get_all_input_data(
+        ext, p, config, linelist=linelist, bad_bits=bad_bits)
+    spectrum = input_data["spectrum"]
+    init_models = input_data["init_models"]
+    peaks, weights = input_data["peaks"], input_data["weights"]
+    fwidth = input_data["fwidth"]
+
+    dw = np.diff(init_models[0](np.arange(spectrum.size))).mean()
+    kdsigma = fwidth * abs(dw)
+    k = 1 if kdsigma < 3 else 2
+    fit1d, acceptable_fit = find_solution(
+        init_models, config, peaks=peaks, peak_weights=weights[config.weighting],
+        linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
+        filename=ext.filename)
+    return input_data, fit1d, acceptable_fit
+
+
 def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     """
     There's a specific order needed to do things:
@@ -364,7 +420,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     Returns
     -------
     dict : all input information, namely the following:
-    "data" : np.ma.masked_array of the 1D spectrum
+    "spectrum" : np.ma.masked_array of the 1D spectrum
     "init_models" : list of initial wavelength solution model(s)
     "peaks" : array of peak locations
     "weights" : dict of peaks weights in various weighting schemes
@@ -438,7 +494,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
                 m_init.extend(alt_models)
                 log.warning(f"Alternative model(s) found: {alt_models}")
 
-    return {"data": np.ma.masked_array(data, mask=mask),
+    return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location}
 

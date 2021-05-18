@@ -16,12 +16,237 @@ from .. import server
 
 
 class WavelengthSolutionPanel(Fit1DPanel):
-    pass
+    def __init__(self, visualizer, fitting_parameters, domain, x, y,
+                 weights=None, xlabel='x', ylabel='y',
+                 plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
+                 enable_user_masking=True, enable_regions=True, central_plot=True):
+        """
+        Panel for visualizing a 1-D fit, perhaps in a tab
+
+        Parameters
+        ----------
+        visualizer : :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
+            visualizer to associate with
+        fitting_parameters : dict
+            parameters for this fit
+        domain : list of pixel coordinates
+            Used for new fit_1D fitter
+        x : :class:`~numpy.ndarray`
+            X coordinate values
+        y : :class:`~numpy.ndarray`
+            Y coordinate values
+        xlabel : str
+            label for X axis
+        ylabel : str
+            label for Y axis
+        plot_width : int
+            width of plot area in pixels
+        plot_height : int
+            height of plot area in pixels
+        plot_residuals : bool
+            True if we want the lower plot showing the differential between the data and the fit
+        plot_ratios : bool
+            True if we want the lower plot showing the ratio between the data and the fit
+        enable_user_masking : bool
+            True to enable fine-grained data masking by the user using bokeh selections
+        enable_regions : bool
+            True if we want to allow user-defind regions as a means of masking the data
+        """
+        # Just to get the doc later
+        self.visualizer = visualizer
+
+        self.info_panel = InfoPanel()
+        self.info_div = self.info_panel.component
+
+        # Make a listener to update the info panel with the RMS on a fit
+        listeners = [lambda f: self.info_panel.update(f), ]
+
+        self.fitting_parameters = fitting_parameters
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+
+        # also listen for updates to the masks
+        self.fit.add_mask_listener(self.info_panel.update_mask)
+
+        fit = self.fit
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
+
+        controls_ls = list()
+
+        controls_column = self.fitting_parameters_ui.get_bokeh_components()
+
+        reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
+
+        def reset_dialog_handler(result):
+            if result:
+                self.fitting_parameters_ui.reset_ui()
+
+        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
+                                                                  'Reset will change all inputs for this tab back '
+                                                                  'to their original values.  Proceed?',
+                                                                  reset_dialog_handler)
+
+        controller_div = Div(margin=(20, 0, 0, 0),
+                             width=220,
+                             style={
+                                 "color": "gray",
+                                 "padding": "5px",
+                             })
+
+        controls_ls.extend(controls_column)
+
+        controls_ls.append(reset_button)
+        controls_ls.append(controller_div)
+
+        controls = column(*controls_ls, width=220)
+
+        # Now the figures
+        x_range = None
+        y_range = None
+        try:
+            if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
+                x_min = min(self.fit.data.data['x'])
+                x_max = max(self.fit.data.data['x'])
+                x_pad = (x_max - x_min) * 0.1
+                x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
+            if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
+                y_min = min(self.fit.data.data['y'])
+                y_max = max(self.fit.data.data['y'])
+                y_pad = (y_max - y_min) * 0.1
+                y_range = Range1d(y_min - y_pad, y_max + y_pad)
+        except:
+            pass  # ok, we don't *need* ranges...
+        if enable_user_masking:
+            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
+        else:
+            tools = "pan,wheel_zoom,box_zoom,reset"
+        p_main = figure(plot_width=plot_width, plot_height=plot_height,
+                        min_width=400,
+                        title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
+                        tools=tools,
+                        output_backend="webgl", x_range=x_range, y_range=y_range)
+        p_main.height_policy = 'fixed'
+        p_main.width_policy = 'fit'
+
+        if enable_regions:
+            self.band_model = GIRegionModel()
+
+            def update_regions():
+                self.fit.model.regions = self.band_model.build_regions()
+
+            self.band_model.add_listener(Fit1DRegionListener(update_regions))
+            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+
+            connect_figure_extras(p_main, None, self.band_model)
+
+            if enable_user_masking:
+                mask_handlers = (self.mask_button_handler,
+                                 self.unmask_button_handler)
+            else:
+                mask_handlers = None
+        else:
+            self.band_model = None
+            mask_handlers = None
+
+        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
+        fig_column = [p_main, self.info_div]
+
+        if plot_residuals:
+            # x_range is linked to the main plot so that zooming tracks between them
+            p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
+                             min_width=400,
+                             title='Fit Residuals',
+                             x_axis_label=xlabel, y_axis_label='Delta',
+                             tools="pan,box_zoom,reset",
+                             output_backend="webgl", x_range=p_main.x_range, y_range=None)
+            p_resid.height_policy = 'fixed'
+            p_resid.width_policy = 'fit'
+            p_resid.sizing_mode = 'stretch_width'
+            connect_figure_extras(p_resid, None, self.band_model)
+            # Initalizing this will cause the residuals to be calculated
+            self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
+            p_resid.scatter(x='x', y='residuals', source=self.fit.data,
+                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        if plot_ratios:
+            p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
+                              min_width=400,
+                              title='Fit Ratios',
+                              x_axis_label=xlabel, y_axis_label='Ratio',
+                              tools="pan,box_zoom,reset",
+                              output_backend="webgl", x_range=p_main.x_range, y_range=None)
+            p_ratios.height_policy = 'fixed'
+            p_ratios.width_policy = 'fit'
+            p_ratios.sizing_mode = 'stretch_width'
+            connect_figure_extras(p_ratios, None, self.band_model)
+            # Initalizing this will cause the residuals to be calculated
+            self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
+            p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
+                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        if plot_residuals and plot_ratios:
+            tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
+            tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
+            tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
+            fig_column.append(tabs)
+        elif plot_residuals:
+            fig_column.append(p_resid)
+        elif plot_ratios:
+            fig_column.append(p_ratios)
+
+        # Initializing regions here ensures the listeners are notified of the region(s)
+        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
+            region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
+            self.band_model.load_from_tuples(region_tuples)
+
+        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
+                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        self.fit.add_listener(self.model_change_handler)
+
+        # TODO refactor? this is dupe from band_model_handler
+        # hacking it in here so I can account for the initial
+        # state of the band model (which used to be always empty)
+        x_data = self.fit.data.data['x']
+        for i in np.arange(len(x_data)):
+            if not self.band_model or self.band_model.contains(x_data[i]):
+                self.fit.band_mask[i] = 0
+            else:
+                self.fit.band_mask[i] = 1
+
+        self.fit.perform_fit()
+        self.line = p_main.line(x='xlinspace',
+                                y='model',
+                                source=self.fit.evaluation,
+                                line_width=3,
+                                color='crimson')
+
+        if self.band_model:
+            region_editor = RegionEditor(self.band_model)
+            fig_column.append(region_editor.get_widget())
+        col = column(*fig_column)
+        col.sizing_mode = 'scale_width'
+
+        if central_plot:
+            self.component = row(col, controls,
+                                 css_classes=["tab-content"],
+                                 spacing=10)
+        else:
+            self.component = row(controls, col,
+                                 css_classes=["tab-content"],
+                                 spacing=10)
 
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
-    The generic class for interactive fitting of one or more 1D functions
+    A Visualizer specific to determineWavelengthSolution
+
+    This differs from the parent class in the following ways:
+    1) __init__()
+        (a) each tab is a WavelengthSolutionPanel, not a Fit1DPanel
+        (b) the data_source returns a fourth column, a dict containing
+            additional information, that gets put in an "other_data" attribute
+            and its "spectrum" element is passed to the InteractiveModel1D
+            object in the Panel
+
+    2) reconstruct_points()
+        (a) this has to deal with the same issue as 1(b)
 
     Attributes:
         reinit_panel: layout containing widgets that control the parameters
@@ -83,11 +308,13 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         help_text : str
             HTML help text for popup help, or None to use the default
         """
-        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
-                         template=template, help_text=help_text)
+        super(Fit1DVisualizer, self).__init__(
+            config=config, title=title, primitive_name=primitive_name,
+            filename_info=filename_info, template=template, help_text=help_text)
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
+        self.other_data = []
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
@@ -128,10 +355,12 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             for dat in data:
                 allx.append(dat[0])
                 ally.append(dat[1])
-                if len(dat) >= 3:
+                if len(dat) > 2:
                     all_weights.append(dat[2])
-            if len(all_weights) == 0:
-                all_weights = None
+                    if len(dat) > 3:
+                        self.other_data.append(dat[3])
+                else:
+                    all_weights.append(None)
         else:
             self.reconstruct_points_fn = None
             if reinit_params:
@@ -166,14 +395,13 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         if self.nfits > 1:
             if domains is None:
                 domains = [None] * len(fitting_parameters)
-            if all_weights is None:
-                all_weights = [None] * len(fitting_parameters)
-            for i, (fitting_parms, domain, x, y, weights) in \
-                    enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
+            for i, (fitting_parms, domain, x, y, weights, other) in \
+                    enumerate(zip(fitting_parameters, domains, allx, ally, all_weights, self.other_data), start=1):
+                tui = WavelengthSolutionPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
+                tui.fit.spectrum = other["spectrum"]
         else:
 
             # ToDo: Review if there is a better way of handling this.
@@ -186,55 +414,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
-
-    def visualize(self, doc):
-        """
-        Start the bokeh document using this visualizer.
-
-        This call is responsible for filling in the bokeh document with
-        the user interface.
-
-        Parameters
-        ----------
-        doc : :class:`~bokeh.document.Document`
-            bokeh document to draw the UI in
-        """
-        super().visualize(doc)
-        col = column(self.tabs, )
-        col.sizing_mode = 'scale_width'
-
-        self.submit_button.align = 'end'
-        self.submit_button.height = 35
-        self.submit_button.height_policy = "fixed"
-        self.submit_button.margin = (0, 5, -30, 5)
-        self.submit_button.width = 212
-        self.submit_button.width_policy = "fixed"
-
-        layout_ls = list()
-        if self.filename_info:
-            # self.submit_button.align = 'center'
-            # layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
-            #                      sizing_mode="scale_width"))
-            self.submit_button.align = 'end'
-            layout_ls.append(row(Spacer(width=250),
-                                 column(self.get_filename_div(), self.submit_button),
-                                 Spacer(width=10),
-                                 align="end", css_classes=['top-row']))
-            # sizing_mode="scale_width"))
-        else:
-            layout_ls.append(self.submit_button,
-                             align="end", css_classes=['top-row'])
-
-        if self.reinit_panel is None:
-            layout_ls.append(col)
-        elif len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
-            layout_ls.append(row(self.reinit_panel))
-            layout_ls.append(Spacer(height=10))
-            layout_ls.append(col)
-        else:
-            layout_ls.append(row(self.reinit_panel, col))
-        self.layout = column(*layout_ls, sizing_mode="stretch_width")
-        doc.add_root(self.layout)
+            tui.fit.spectrum = self.other_data[0]["data"]
 
     def reconstruct_points(self):
         """
@@ -265,10 +445,14 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
         if self.reconstruct_points_fn is not None:
             def rfn():
+                self.other_data = []
                 all_coords = self.reconstruct_points_fn(self.config, self.extras)
                 for fit, coords in zip(self.fits, all_coords):
                     if len(coords) > 2:
                         fit.weights = coords[2]
+                        if len(coords) > 3:
+                            self.other_data.append(coords[3])
+                            fit.spectrum = coords[3]["spectrum"]
                     else:
                         fit.weights = None
                     fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
@@ -277,21 +461,3 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     self.reinit_button.disabled = False
 
             self.do_later(rfn)
-
-    def results(self):
-        """
-        Get the results of the interactive fit.
-
-        This gets the list of `~gempy.library.fitting.fit_1D` fits of
-        the data to be used by the caller.
-
-        Returns
-        -------
-        list of `~gempy.library.fitting.fit_1D`
-        """
-        return [fit.model.fit for fit in self.fits]
-
-
-
-def interactive_wavelength_calibration():
-    pass
