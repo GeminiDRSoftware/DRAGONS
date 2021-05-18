@@ -1342,7 +1342,7 @@ class TabsTurboInjector:
         :param title: str
             Title for the new tab
         """
-        tab_dummy = row()
+        tab_dummy = row(Div(),)
         tab_child = child
 
         self.tab_children.append(child)
