@@ -314,7 +314,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
-        self.other_data = []
+        other_data = []
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
@@ -355,12 +355,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             for dat in data:
                 allx.append(dat[0])
                 ally.append(dat[1])
-                if len(dat) > 2:
-                    all_weights.append(dat[2])
-                    if len(dat) > 3:
-                        self.other_data.append(dat[3])
-                else:
-                    all_weights.append(None)
+                all_weights.append(dat[2] if len(dat) > 2 else None)
+                other_data.append(dat[3] if len(dat) > 3 else None)
         else:
             self.reconstruct_points_fn = None
             if reinit_params:
@@ -369,10 +365,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 raise ValueError("Saw reinit_extras but data_source is not a callable")
             allx = data_source[0]
             ally = data_source[1]
-            if len(data_source) >= 3:
-                all_weights = data_source[2]
-            else:
-                all_weights = None
+            all_weights = data_source[2] if len(data_source) > 2 else [None]
+            other_data = data_source[3] if len(data_source) > 3 else [None]
 
         # Some sanity checks now
         if isinstance(fitting_parameters, list):
@@ -396,25 +390,20 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             if domains is None:
                 domains = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights, other) in \
-                    enumerate(zip(fitting_parameters, domains, allx, ally, all_weights, self.other_data), start=1):
+                    enumerate(zip(fitting_parameters, domains, allx, ally, all_weights, other_data), start=1):
                 tui = WavelengthSolutionPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
-                tui.fit.spectrum = other["spectrum"]
+                tui.fit.other_data = other
         else:
-
-            # ToDo: Review if there is a better way of handling this.
-            if all_weights is None:
-                all_weights = [None]
-
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
             tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
-            tui.fit.spectrum = self.other_data[0]["data"]
+            tui.fit.other = other_data
 
     def reconstruct_points(self):
         """
@@ -445,14 +434,12 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
         if self.reconstruct_points_fn is not None:
             def rfn():
-                self.other_data = []
                 all_coords = self.reconstruct_points_fn(self.config, self.extras)
                 for fit, coords in zip(self.fits, all_coords):
                     if len(coords) > 2:
                         fit.weights = coords[2]
                         if len(coords) > 3:
-                            self.other_data.append(coords[3])
-                            fit.spectrum = coords[3]["spectrum"]
+                            fit.other = coords[3]
                     else:
                         fit.weights = None
                     fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)

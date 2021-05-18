@@ -1057,7 +1057,6 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        weighting = params["weighting"]
         arc_file = params["linelist"]
         interactive = params["interactive"]
 
@@ -1090,15 +1089,23 @@ class Spect(PrimitivesBASE):
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)
+                # This feels like I shouldn't have to do it here
+                domains = []
+                for ext in ad:
+                    axis = 0 if ext.data.ndim == 1 else 2 - ext.dispersion_axis()
+                    domains.append([0, ext.shape[axis] - 1])
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points,
                     all_fp_init, config=config,
-                    reinit_params=["center", "nsum", "min_snr", "min_sep",
-                                   "fwidth", "central_wavelength", "dispersion"],
+                    reinit_params=[#"center",
+                                   "nsum", "min_snr", "min_sep",
+                                   #"fwidth", "central_wavelength", "dispersion"
+                                   ],
                     modal_message="Hang on, this stuff is tricky",
                     tab_name_fmt="Slit {}",
+                    domains=domains,
                     title="Wavelength Solution",
                     primitive_name=self.myself(),
                     filename_info=ad.filename)

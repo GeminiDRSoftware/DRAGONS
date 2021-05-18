@@ -76,9 +76,8 @@ class determineDistortionConfig(config.Config):
     debug = config.Field("Display line traces on image display?", bool, False)
 
 
-class determineWavelengthSolutionConfig(config.Config):
+class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
-    order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
@@ -98,8 +97,10 @@ class determineWavelengthSolutionConfig(config.Config):
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
-    debug = config.Field("Make diagnostic plots?", bool, False)
 
+    def setDefaults(self):
+        del self.function
+        del self.grow
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
