@@ -417,7 +417,9 @@ class Spect(PrimitivesBASE):
                 all_waves = np.array([x[1] for x in all_exts])
                 all_zpt = np.array([x[2] for x in all_exts])
                 all_weights = np.array([x[3] for x in all_exts])
-                all_fp_init = np.array([fit_1D.translate_params(params)] * len(all_exts))
+                all_fp_init = []
+                for i in range(len(all_exts)):
+                    all_fp_init.append(fit_1D.translate_params(params))
 
                 # build config for interactive
                 config = self.params[self.myself()]

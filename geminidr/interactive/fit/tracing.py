@@ -869,7 +869,9 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     list of models describing the aperture curvature
     """
     ap_table = ext.APERTURE
-    fit_par_list = [fit1d_params] * len(ap_table)
+    fit_par_list = list()
+    for i in range(len(ap_table)):
+        fit_par_list.append({x: y for x, y in fit1d_params.items()})
 
     domain_list = [[ap_table.meta["header"][kw]
                     for kw in ("DOMAIN_START", "DOMAIN_END")]

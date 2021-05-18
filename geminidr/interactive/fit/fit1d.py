@@ -674,7 +674,7 @@ class Fit1DPanel:
         listeners = [lambda f: self.info_panel.update(f), ]
 
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights, listeners=listeners)
 
         # also listen for updates to the masks
         self.fit.add_mask_listener(self.info_panel.update_mask)
