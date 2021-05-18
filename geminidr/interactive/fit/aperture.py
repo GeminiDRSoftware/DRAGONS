@@ -143,7 +143,7 @@ class SpinnerInputLine(CustomWidget):
 
 class TextInputLine(CustomWidget):
     def build(self):
-        self.text_input = TextInput(value=self.value, width=256, **self.kwargs)
+        self.text_input = TextInput(value=self.value if self.value else '', width=256, **self.kwargs)
         self.text_input.on_change("value", self.handler)
         return row([Div(text=self.title, align='center'),
                     Spacer(width_policy='max'),
@@ -351,8 +351,7 @@ class FindSourceAperturesModel:
         data = np.ma.array(self.profile, mask=self.prof_mask)
         initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
 
-        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx],
-                               halfwidth=20, threshold=0)
+        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
         if len(peaks) > 0:
             limits = get_limits(np.nan_to_num(self.profile),
                                 self.prof_mask,
@@ -395,7 +394,8 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.direction, self.threshold, self.sizing_method)
+                self.direction, self.threshold, self.sizing_method,
+                self.use_snr)
 
         self.aperture_models.clear()
 
@@ -815,7 +815,7 @@ class ApertureView:
 
     def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
         da = self._prepare_data_for_holoviews(aperture_model, x_max, y_max)
-        cmap = [None, '#d1efd1', '#ff8888']
+        cmap = ['#ffffff00', '#d1efd1', '#ff8888']
         xyz = Stream.define('XYZ', data=da)
         self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
         self.qm_dmap.opts(cmap=cmap,

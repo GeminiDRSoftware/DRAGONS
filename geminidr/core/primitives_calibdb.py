@@ -209,16 +209,21 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
     def storeProcessedScience(self, adinputs=None, suffix=None):
-        if self.mode not in ['sq', 'ql', 'qa']:
-            self.log.warning(f'Mode {self.mode} not recognized in storeScience, not saving anything')
-            return adinputs
-
         for ad in adinputs:
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCSCI")
             ad.update_filename(suffix=suffix, strip=True)
             ad.phu.set('PROCMODE', self.mode)
+            ad.write(overwrite=True)
 
-            if self.mode != 'qa' and self.upload and 'science' in self.upload:
+        if self.mode not in ['sq', 'ql', 'qa']:
+            self.log.warning(f'Mode {self.mode} not recognized in '
+                             'storeScience, not storing anything')
+            return adinputs
+
+        # This logic will be handled by the CalDB objects, but check here to
+        # avoid changing and resetting filenames
+        if self.mode != 'qa' and self.upload and 'science' in self.upload:
+            for ad in adinputs:
                 old_filename = ad.filename
                 ad.update_filename(suffix=f"_{self.mode}"+suffix, strip=True)
                 self.caldb.store_calibration(ad, caltype="processed_science")

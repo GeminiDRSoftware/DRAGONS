@@ -117,7 +117,6 @@ class extract1DSpectraConfig(config.Config):
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
-    interactive = config.Field("Perform extraction interactively", bool, False)
     subtract_sky = config.Field("Subtract sky spectra if the data have not been sky corrected?", bool, True)
     debug = config.Field("Draw extraction apertures on image display? (not used with interactive)", bool, False)
 
@@ -417,9 +416,9 @@ class traceAperturesConfig(config.Config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     niter = config.RangeField("Maximum number of rejection iterations",
-                              int, None, min=0, optional=True)
+                              int, 0, min=0)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     order = config.RangeField("Order of fitting function",

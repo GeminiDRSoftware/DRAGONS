@@ -16,20 +16,21 @@ import geminidr
 
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
+from gempy.library import astromodels as am
 from recipe_system.testing import ref_ad_factory
 
 
 # Test parameters --------------------------------------------------------------
 test_datasets = [
-    "N20180508S0021_mosaic.fits",  # B600 720
-    "N20180509S0010_mosaic.fits",  # R400 900
-    "N20180516S0081_mosaic.fits",  # R600 860
-    "N20190201S0163_mosaic.fits",  # B600 530
-    "N20190313S0114_mosaic.fits",  # B600 482
-    "N20190427S0123_mosaic.fits",  # R400 525
-    "N20190427S0126_mosaic.fits",  # R400 625
-    "N20190427S0127_mosaic.fits",  # R400 725
-    "N20190427S0141_mosaic.fits",  # R150 660
+    "N20180508S0021_aperturesFound.fits",  # B600 720
+    "N20180509S0010_aperturesFound.fits",  # R400 900
+    "N20180516S0081_aperturesFound.fits",  # R600 860
+    "N20190201S0163_aperturesFound.fits",  # B600 530
+    "N20190313S0114_aperturesFound.fits",  # B600 482
+    "N20190427S0123_aperturesFound.fits",  # R400 525
+    "N20190427S0126_aperturesFound.fits",  # R400 625
+    "N20190427S0127_aperturesFound.fits",  # R400 725
+    "N20190427S0141_aperturesFound.fits",  # R150 660
 ]
 
 fixed_test_parameters_for_determine_distortion = {
@@ -65,11 +66,16 @@ def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
         assert input_table['aper_lower'][0] <= 0
         assert input_table['aper_upper'][0] >= 0
 
-        # aper_lower and aper_upper aren't part of traceApertures
-        keys = [k for k in ext.APERTURE.colnames if not k.startswith("aper_")]
-        actual = np.array([input_table[k] for k in keys])
-        desired = np.array([reference_table[k] for k in keys])
-        np.testing.assert_allclose(desired, actual, atol=0.05)
+        assert len(input_table) == len(reference_table)
+
+        for input_row, ref_row in zip(input_table, reference_table):
+            input_model = am.table_to_model(input_row)
+            ref_model = am.table_to_model(ref_row)
+            pixels = np.arange(*input_model.domain)
+            actual = input_model(pixels)
+            desired = ref_model(pixels)
+
+            np.testing.assert_allclose(desired, actual, atol=0.5)
 
 
 @pytest.mark.interactive
@@ -175,32 +181,8 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
-        _ad = p.makeIRAFCompatible()[0]
-
-        width = _ad[0].shape[1]
-
-        aperture = table.Table(
-            [[1],  # Number
-             [1],  # ndim
-             [0],  # degree
-             [0],  # domain_start
-             [width - 1],  # domain_end
-             [center],  # c0
-             [-10],  # aper_lower
-             [10],  # aper_upper
-             ],
-            names=[
-                'number',
-                'ndim',
-                'degree',
-                'domain_start',
-                'domain_end',
-                'c0',
-                'aper_lower',
-                'aper_upper']
-        )
-
-        _ad[0].APERTURE = aperture
+        p.makeIRAFCompatible()
+        _ad = p.findSourceApertures()[0]
 
         os.chdir("inputs/")
         _ad.write(overwrite=True)

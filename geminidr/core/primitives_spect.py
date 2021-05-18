@@ -21,7 +21,7 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip
-from astropy.table import Table, vstack
+from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
@@ -440,7 +440,7 @@ class Spect(PrimitivesBASE):
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
-                for ext, fit in zip(all_exts, all_m_final):
+                for (ext, _, _, _), fit in zip(all_exts, all_m_final):
                     ext.SENSFUNC = am.model_to_table(fit.model, xunit=xunits,
                                                      yunit=yunits)
             else:
@@ -1154,8 +1154,6 @@ class Spect(PrimitivesBASE):
         grow : float
             Avoidance region around each source aperture if a sky aperture
             is required. Default: 10.
-        interactive: bool
-            Perform extraction interactively
         subtract_sky : bool
             Extract and subtract sky spectra from object spectra if the 2D
             spectral image has not been sky subtracted?
@@ -1432,8 +1430,6 @@ class Spect(PrimitivesBASE):
                     if 'APERTURE' in ext.tables:
                         del ext.APERTURE
                     continue
-                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo(f"Found sources at: {locstr}")
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1442,15 +1438,19 @@ class Spect(PrimitivesBASE):
                 all_tables = []
                 for i, (loc, limits) in enumerate(zip(locations, all_limits),
                                                   start=1):
-                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
+                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1],
+                                              c0=loc)
                     aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
                     aptable["number"] = i
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
-                    log.debug("Limits for source "
-                              f"{loc:.1f} ({lower:.1f}, +{upper:.1f})")
+                    log.stdinfo(f"Aperture {i} found at {loc:.2f} "
+                                f"({lower:.2f}, +{upper:.2f})")
+                    if lower > 0 or upper < 0:
+                        log.warning("Problem with automated sizing of "
+                                    f"aperture {i}")
 
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
@@ -2416,7 +2416,7 @@ class Spect(PrimitivesBASE):
                 # flagged as CRs) and/or DQ.overlap unmasked here?
                 sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
                             if ext.mask is None else
-                            ext.mask.copy() & DQ.not_signal)
+                            ext.mask & DQ.not_signal)
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
@@ -2445,9 +2445,22 @@ class Spect(PrimitivesBASE):
                     sky_weights = None
                 else:
                     sky_weights = np.sqrt(at.divide0(1., ext.variance))
+                    # Handle columns were all the weights are zero
+                    zeros = np.sum(sky_weights, axis=axis) == 0
+                    if axis == 0:
+                        sky_weights[:, zeros] = 1
+                    else:
+                        sky_weights[zeros] = 1
 
-                # This would combine the specified mask with any existing mask,
-                # but should we include some specific set of DQ codes here?
+                # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
+                # chip gaps) to avoid a zillion warnings about insufficient
+                # unmasked points.
+                no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
+                if axis == 0:
+                    sky_mask ^= no_data
+                else:
+                    sky_mask ^= no_data[:, None]
+
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
                                    axis=axis, plot=debug_plot).evaluate()
@@ -2552,12 +2565,11 @@ class Spect(PrimitivesBASE):
                     # Pass the primitive configuration to the interactive object.
                     _config = self.params[self.myself()]
                     _config.update(**params)
-                    ext.APERTURE = interactive_trace_apertures(
+                    aperture_models = interactive_trace_apertures(
                         ext, _config, fit1d_params)
-
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    all_aperture_tables = []
+                    aperture_models = []
 
                     # For efficiency, we would like to trace all sources
                     #  simultaneously (like we do with arc lines), but we need
@@ -2567,7 +2579,7 @@ class Spect(PrimitivesBASE):
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(at.boxcar(spectrum, size=3))
+                        start = np.argmax(at.boxcar(spectrum, size=20))
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
@@ -2639,18 +2651,33 @@ class Spect(PrimitivesBASE):
                                 self.viewer.polygon(plot_coords, closed=False,
                                                     xfirst=(dispaxis == 1), origin=0)
 
-                        this_aptable = am.model_to_table(_fit_1d.model)
+                        aperture_models.append(_fit_1d.model)
 
-                        # Recalculate aperture limits after rectification
-                        apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
-                        this_aptable["aper_lower"] = \
-                            aperture["aper_lower"] #+ (location - apcoords.min())
-                        this_aptable["aper_upper"] = \
-                            aperture["aper_upper"] # - (apcoords.max() - location)
-                        all_aperture_tables.append(this_aptable)
+                all_aperture_tables = []
+                for model, aperture in zip(aperture_models, aptable):
+                    this_aptable = am.model_to_table(model)
 
-                    ext.APERTURE = vstack(all_aperture_tables,
-                                          metadata_conflicts="silent")
+                    # Recalculate aperture limits after rectification
+                    #apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
+                    this_aptable["number"] = aperture["number"]
+                    this_aptable["aper_lower"] = \
+                        aperture["aper_lower"] #+ (location - apcoords.min())
+                    this_aptable["aper_upper"] = \
+                        aperture["aper_upper"] # - (apcoords.max() - location)
+                    all_aperture_tables.append(this_aptable)
+
+                # If the traces have different orders, there will be missing
+                # values that vstack will mask, so we have to set those to zero
+                new_aptable = vstack(all_aperture_tables,
+                                     metadata_conflicts="silent")
+                colnames = new_aptable.colnames
+                new_col_order = (["number"] + sorted(c for c in colnames
+                                                     if c.startswith("c")) +
+                                 ["aper_lower", "aper_upper"])
+                for col in colnames:
+                    if isinstance(new_aptable[col], MaskedColumn):
+                        new_aptable[col] = new_aptable[col].filled(fill_value=0)
+                ext.APERTURE = new_aptable[new_col_order]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

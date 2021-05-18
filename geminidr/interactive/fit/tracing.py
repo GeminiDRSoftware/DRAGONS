@@ -13,7 +13,7 @@ from bokeh.plotting import figure
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
-    connect_figure_extras, GIRegionModel, RegionEditor)
+    connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
 from gempy.library import astromodels, astrotools as at, tracing
 from gempy.library.config import RangeField
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
@@ -443,13 +443,16 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         self.layout = None
         self.last_changed = None
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
+        self.reinit_extras = {} if reinit_extras is None else reinit_extras
+        self.reinit_params = [] if reinit_params is None else reinit_params
         self.widgets = {}
         self.error_alert = self.create_error_alert()
 
         # Save parameters in case we want to reset them
         self._reinit_extras = {} if reinit_extras is None \
             else {key: val.default for key, val in self.reinit_extras.items()}
+        self._reinit_params = {} if reinit_params is None \
+            else {key: val for key, val in config.items() if key in reinit_params}
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
@@ -501,16 +504,17 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
         if self.nfits > 1:
+            # more than one tab, turbo it
+            self.turbo = TabsTurboInjector(self.tabs)
+
             if domains is None:
                 domains = [None] * len(fitting_parameters)
             if all_weights is None:
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                # tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, index=i, **kwargs)
                 tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
-                tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
-                self.tabs.tabs.append(tab)
+                self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
                 self.fits.append(tui.fit)
         else:
 
@@ -586,12 +590,22 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                             "to previous working configuration."
 
                     self.reset_tracing_panel(param=self.last_changed)
-                    _extras[self.last_changed] = \
-                        self._reinit_extras[self.last_changed]
+
+                    if self.last_changed in self._reinit_extras.keys():
+                        _extras[self.last_changed] = \
+                            self._reinit_extras[self.last_changed]
+
+                    elif self.last_changed in self._reinit_params.keys():
+                        setattr(_config, self.last_changed,
+                                self._reinit_params[self.last_changed])
+
                     data = data_source(_config, _extras)
                 else:
                     # Store successful pars
                     self._reinit_extras = deepcopy(_extras)
+                    self._reinit_params = {
+                        key: val for key, val in _config.items()
+                        if key in reinit_params}
 
                 return data
 
@@ -653,7 +667,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             the background.
         reinit_params : list
             Parameters for re-tracing.
-        reinit_extras : list
+        reinit_extras : dict
             Extra parameters for re-tracing.
         """
         # No panel required if we are not re-creating data
@@ -718,6 +732,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         return reinit_panel
 
+    # noinspection PyProtectedMember
     def reset_tracing_panel(self, param=None):
         """
         Reset all the parameters in the Tracing Panel (leftmost column).
@@ -745,6 +760,27 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Update Text Field via callback function
             for callback in self.widgets[key]._callbacks['value_throttled']:
                 callback(attrib='value_throttled', old=old, new=reset_value)
+
+        for key, val in self.config.items():
+
+            if key not in self.reinit_params:
+                continue
+
+            if param is None:
+                reset_value = self.config._fields[key].default
+            elif key == param:
+                reset_value = self._reinit_params[key]
+            else:
+                continue
+
+            old = self.widgets[key].value
+
+            # Update Slider Value
+            self.widgets[key].update(value=reset_value)
+
+            # Update Text Field via callback function
+            for callback in self.widgets[key]._callbacks['value']:
+                callback('value', old=old, new=reset_value)
 
     def register_last_changed(self, key):
         """
@@ -823,26 +859,30 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     ----------
     ext : AstroData
         Single extension extracted from an AstroData object.
-    config : dict
-        Dictionary containing the parameters from traceApertures().
+    config : :class:`geminidr.code.spect.traceAperturesConfig`
+        Configuration object containing the parameters from traceApertures().
     fit1d_params : dict
         Dictionary containing initial parameters for fitting a model.
 
     Returns
     -------
-    Table : new aperture table.
+    list of models describing the aperture curvature
     """
     ap_table = ext.APERTURE
     fit_par_list = [fit1d_params] * len(ap_table)
-    domain_list = [[ap['domain_start'], ap['domain_end']] for ap in ap_table]
+
+    domain_list = [[ap_table.meta["header"][kw]
+                    for kw in ("DOMAIN_START", "DOMAIN_END")]
+                   for ap in ap_table]
 
     # Create parameters to add to the UI
-    reinit_extras = {
-        "max_missed": RangeField("Max Missed", int, 5, min=0),
-        "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
-        "nsum": RangeField("Lines to sum", int, 10, min=1),
-        "step": RangeField("Tracing step", int, 10, min=1),
-    }
+    reinit_params = ["max_missed", "max_shift", "nsum", "step"]
+
+    # Update doc for a more compact version
+    config._fields["max_missed"].doc = "Max Missed"
+    config._fields["max_shift"].doc = "Max Shifted"
+    config._fields["nsum"].doc = "Lines to sum"
+    config._fields["step"].doc = "Tracing step"
 
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
@@ -852,7 +892,18 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         ylabel = "x / columns [px]"
 
     def data_provider(conf, extra):
-        return trace_apertures_data_provider(ext, conf, extra)
+        """
+        Callback function used to recreate the data for fitting.
+
+        Parameters
+        ----------
+        conf : :class:`geminidr.core.parameters_spect.traceAperturesConfig`
+            Standard configuration object.
+        extra : dict
+            Dictionary containing parameters not defined in the configuration
+            object. Not used in this case.
+        """
+        return trace_apertures_data_provider(ext, conf)
 
     # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
@@ -866,7 +917,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
                    + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
                    + help.REGION_EDITING_HELP_SUBTEXT),
         primitive_name="traceApertures",
-        reinit_extras=reinit_extras,
+        reinit_params=reinit_params,
         tab_name_fmt="Aperture {}",
         title="Interactive Trace Apertures",
         xlabel=xlabel,
@@ -875,31 +926,11 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()
-
-    all_aperture_tables = []
-    dispaxis = 2 - ext.dispersion_axis()  # python sense
-
-    for final_model, ap in zip(models, ap_table):
-        location = ap['c0']
-        this_aptable = astromodels.model_to_table(final_model.model)
-
-        # Recalculate aperture limits after rectification
-        apcoords = final_model.evaluate(np.arange(ext.shape[dispaxis]))
-
-        this_aptable["aper_lower"] = (
-                ap["aper_lower"] + (location - apcoords.min()))
-
-        this_aptable["aper_upper"] = (
-                ap["aper_upper"] - (apcoords.max() - location))
-
-        all_aperture_tables.append(this_aptable)
-
-    new_aptable = table.vstack(all_aperture_tables, metadata_conflicts="silent")
-    return new_aptable
+    return [m.model for m in models]
 
 
 # noinspection PyUnusedLocal
-def trace_apertures_data_provider(ext, conf, extra):
+def trace_apertures_data_provider(ext, conf):
     """
     Function used by the interactive fitter to generate the a list with
     pairs of [x, y] data containing the knots used for tracing.
@@ -908,11 +939,8 @@ def trace_apertures_data_provider(ext, conf, extra):
     ----------
     ext : AstroData
         Single extension of data containing an .APERTURE table.
-    conf : dict
+    conf : :class:`geminidr.gmos.spect.traceAperturesConfig`
         Dictionary containing default traceApertures() parameters.
-    extra : dict
-        Dictionary containing extra parameters used to re-create the input data
-        for fitting interactively.
 
     Returns
     -------
@@ -923,10 +951,13 @@ def trace_apertures_data_provider(ext, conf, extra):
     all_tracing_knots = []
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
+    # Convert configuration object into dictionary for easy access to its values
+    conf_as_dict = {key: val for key, val in conf.items()}
+
     for i, loc in enumerate(ext.APERTURE['c0'].data):
         c0 = int(loc + 0.5)
         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-        start = np.argmax(at.boxcar(spectrum, size=3))
+        start = np.argmax(at.boxcar(spectrum, size=20))
 
         # The coordinates are always returned as (x-coords, y-coords)
         ref_coords, in_coords = tracing.trace_lines(
@@ -935,12 +966,12 @@ def trace_apertures_data_provider(ext, conf, extra):
             cwidth=5,
             initial=[loc],
             initial_tolerance=None,
-            max_missed=extra['max_missed'],
-            max_shift=extra['max_shift'],
-            nsum=extra['nsum'],
+            max_missed=conf_as_dict['max_missed'],
+            max_shift=conf_as_dict['max_shift'],
+            nsum=conf_as_dict['nsum'],
             rwidth=None,
             start=start,
-            step=extra['step'],
+            step=conf_as_dict['step'],
         )
 
         in_coords = np.ma.masked_array(in_coords)

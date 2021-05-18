@@ -194,6 +194,20 @@ def start_server():
         port = 5006
         while port < 5701 and _bokeh_server is None:
             try:
+                # NOTE:
+                # Tornado generates a WebSocketClosedError when the user
+                # is on Safari.  This seems to be a regression as Safari
+                # has had this problem before with bokeh and web scokets.
+                # Chrome and FireFox work fine.
+                #
+                # To get Safari to behave, I have added the
+                # keep_alive_milliseconds=0 argument below.  This
+                # disables the keep alive heartbeat that causes the
+                # above error.  If you remove that argument, bokeh
+                # will re-enable the heartbeat but Safari won't work
+                # in interactive mode any more.  See below for a way
+                # to make interactive use "chrome" (or "firefox")
+                # regardless of the selected browser if desired.
                 _bokeh_server = Server(
                     {
                         '/': _bkapp,
@@ -203,6 +217,7 @@ def start_server():
                         '/help': _helpapp,
                         '/shutdown': _shutdown,
                     },
+                    keep_alive_milliseconds=0,
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],
                     port=port)
@@ -212,6 +227,7 @@ def start_server():
                     raise
         _bokeh_server.start()
 
+    # to force a browser, add browser="chrome" tp this add_callback
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
     _bokeh_server.io_loop.start()
 

@@ -3,9 +3,11 @@ from abc import ABC, abstractmethod
 from copy import copy
 from functools import cmp_to_key
 
+from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
                           NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
+from bokeh import models as bm
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
@@ -69,7 +71,7 @@ class PrimitiveVisualizer(ABC):
         # Remove this line if we stick with that
         # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            $.ajax('/shutdown').done(function() 
+            $.ajax('/shutdown').done(function()
                 {
                     window.close();
                 });
@@ -232,7 +234,7 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        extras = [] if extras is None else extras
+        extras = {} if extras is None else extras
         params = [] if params is None else params
         widgets = []
         if self.config is None:
@@ -409,7 +411,6 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                debugger;
                 if (inp.value > %s) {
                     alert('Maximum is %s');
                     inp.value = %s;
@@ -419,7 +420,6 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                debugger;
                 if (inp.value < %s) {
                     alert('Minimum is %s');
                     inp.value = %s;
@@ -1291,3 +1291,80 @@ class RegionEditor(GIRegionListener):
 
     def get_widget(self):
         return self.widget
+
+
+class TabsTurboInjector:
+    """
+    This helper class wraps a bokeh Tabs widget
+    and improves performance by dynamically
+    adding and removing children from the DOM
+    as their tabs are un/selected.
+
+    There is a moment when the new tab is visually
+    blank before the contents pop in, but I think
+    the tradeoff is worth it if you're finding your
+    tabs unresponsive at scale.
+    """
+    def __init__(self, tabs: bm.layouts.Tabs):
+        """
+        Create a tabs turbo helper for the given bokeh Tabs.
+
+        :param tabs: :class:`~bokeh.model.layout.Tabs`
+            bokeh Tabs to manage
+        """
+        if tabs.tabs:
+            raise ValueError("TabsTurboInjector expects an empty Tabs object")
+
+        self.tabs = tabs
+        self.tab_children = list()
+        self.tab_dummy_children = list()
+
+        for i, tab in enumerate(tabs.tabs):
+            self.tabs.append(tab)
+            self.tab_children.append(tab.child)
+            self.tab_dummy_children.append(row())
+
+            if i != tabs.active:
+                tab.child = self.tab_dummy_children[i]
+
+        tabs.on_change('active', self.tabs_callback)
+
+    def add_tab(self, child: Instance(bm.layouts.LayoutDOM), title: str):
+        """
+        Add the given bokeh widget as a tab with the given title.
+
+        This child widget will be tracked by the Turbo helper.  When the tab
+        becomes active, the child will be placed into the tab.  When the
+        tab is inactive, it will be cleared to improve performance.
+
+        :param child: :class:~bokeh.core.properties.Instance(bokeh.models.layouts.LayoutDOM)
+            Widget to add as a panel's contents
+        :param title: str
+            Title for the new tab
+        """
+        tab_dummy = row(Div(),)
+        tab_child = child
+
+        self.tab_children.append(child)
+        self.tab_dummy_children.append(tab_dummy)
+
+        if self.tabs.tabs:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_dummy,), title=title))
+        else:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_child,), title=title))
+
+    def tabs_callback(self, attr, old, new):
+        """
+        This callback will be used when the tab selection changes.  It will clear the DOM
+        of the contents of the inactive tab and add back the new tab to the DOM.
+
+        :param attr: str
+            unused, will be ``active``
+        :param old: int
+            The old selection
+        :param new: int
+            The new selection
+        """
+        if old != new:
+            self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
+            self.tabs.tabs[new].child.children[0] = self.tab_children[new]
