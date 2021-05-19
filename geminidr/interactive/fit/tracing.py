@@ -17,7 +17,7 @@ from geminidr.interactive.interactive import (
 from gempy.library import astromodels, astrotools as at, tracing
 from gempy.library.config import RangeField
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D)
+                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d)
 from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
@@ -53,7 +53,7 @@ class FittingParametersForTracedDataUI(FittingParametersUI):
         )
 
         column_list = [column_title, self.order_slider, rejection_title,
-                       self.niter_slider, self.sigma_button,
+                       self.sigma_button, self.niter_slider,
                        self.sigma_lower_slider, self.sigma_upper_slider,
                        self.grow_slider]
 
@@ -76,6 +76,8 @@ class FittingParametersForTracedDataUI(FittingParametersUI):
             new value of the toggle button
         """
         self.fit.sigma_clip = bool(new)
+
+        self.enable_disable_sigma_inputs()
 
         if self.fit.sigma_clip:
             self.fitting_parameters["sigma_upper"] = \
@@ -128,6 +130,10 @@ class TraceAperturesTab(Fit1DPanel):
         self.rms_div = self.create_rms_div()
 
         listeners = [lambda f: self.update_info(self.rms_div, f), ]
+
+        # prep params to clean up sigma related inputs for the interface
+        # i.e. niter min of 1, etc.
+        prep_fit1d_params_for_fit1d(fitting_parameters)
 
         self.fitting_parameters = fitting_parameters
 

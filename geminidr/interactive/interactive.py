@@ -432,6 +432,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Check if the value is viable as an int or float, according to our type
         if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
             return True
+        if val is None:
+            return False
         try:
             if is_float:
                 float(val)
@@ -445,7 +447,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Update the slider with the new value from the text input
         if not _input_check(new):
             if _input_check(old):
-                text_input.value = str(old)
+                text_input.value = old
             return
         if old != new:
             if is_float:

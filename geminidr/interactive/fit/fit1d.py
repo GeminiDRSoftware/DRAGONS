@@ -199,7 +199,7 @@ class InteractiveModel1D(InteractiveModel):
         weights = self.populate_bokeh_objects(x, y, weights=weights, mask=mask)
         self.weights = weights
 
-        if "sigma_lower" in fitting_parameters or "sigma_upper" in fitting_parameters:
+        if "sigma" in fitting_parameters and fitting_parameters["sigma"]:
             self.sigma_clip = True
         else:
             self.sigma_clip = False
@@ -433,7 +433,13 @@ class InteractiveFit1D:
         # goodpix = ~(parent.user_mask | parent.band_mask)
         goodpix = ~parent.user_mask
 
-        self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
+        if parent.sigma_clip:
+            fitparms = {x: y for x, y in self.fitting_parameters.items()
+                        if x not in ['sigma']}
+        else:
+            fitparms = {x: y for x, y in self.fitting_parameters.items()
+                        if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
+        self.fit = build_fit_1D(fitparms, parent.y[goodpix], points=parent.x[goodpix],
                                 domain=self.domain, weights=None if parent.weights is None else parent.weights[goodpix])
         parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
         if parent.sigma_clip:
@@ -472,20 +478,22 @@ class FittingParametersUI:
         self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None,
                                                           fitting_parameters, "order", fit.perform_fit, throttled=True,
                                                           config=vis.config, slider_width=128)
-        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
+        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)",
+                                                                fitting_parameters["sigma_upper"],
                                                                 None, None, None,
                                                                 fitting_parameters, "sigma_upper",
                                                                 self.sigma_slider_handler,
                                                                 throttled=True,
                                                                 config=vis.config, slider_width=128)
-        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
+        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)",
+                                                                fitting_parameters["sigma_lower"],
                                                                 None, None, None,
                                                                 fitting_parameters, "sigma_lower",
                                                                 self.sigma_slider_handler,
                                                                 throttled=True,
                                                                 config=vis.config, slider_width=128)
         self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                          None, None, None,
+                                                          None, 1, None,
                                                           fitting_parameters, "niter",
                                                           fit.perform_fit,
                                                           throttled=True,
@@ -499,7 +507,30 @@ class FittingParametersUI:
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
 
+        self.enable_disable_sigma_inputs()
+
         self.controls_column = self.build_column()
+
+    def enable_disable_sigma_inputs(self):
+        # enable/disable sliders
+        if self.fit.sigma_clip:
+            for c in self.niter_slider.children:
+                c.disabled = False
+            for c in self.sigma_upper_slider.children:
+                c.disabled = False
+            for c in self.sigma_lower_slider.children:
+                c.disabled = False
+            for c in self.grow_slider.children:
+                c.disabled = False
+        else:
+            for c in self.niter_slider.children:
+                c.disabled = True
+            for c in self.sigma_upper_slider.children:
+                c.disabled = True
+            for c in self.sigma_lower_slider.children:
+                c.disabled = True
+            for c in self.grow_slider.children:
+                c.disabled = True
 
     def build_column(self):
         """
@@ -513,12 +544,12 @@ class FittingParametersUI:
         """
         if self.function:
             column_list = [self.function, self.order_slider, self.description,
-                           self.niter_slider, self.sigma_button,
+                           self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider, self.sigma_upper_slider,
                            self.grow_slider]
         else:
             column_list = [self.order_slider, self.description,
-                           self.niter_slider, self.sigma_button,
+                           self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider,
                            self.sigma_upper_slider, self.grow_slider]
 
@@ -579,6 +610,9 @@ class FittingParametersUI:
             new value of the toggle button
         """
         self.fit.sigma_clip = bool(new)
+
+        self.enable_disable_sigma_inputs()
+
         if self.fit.sigma_clip:
             self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
             self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
@@ -672,6 +706,10 @@ class Fit1DPanel:
 
         # Make a listener to update the info panel with the RMS on a fit
         listeners = [lambda f: self.info_panel.update(f), ]
+
+        # prep params to clean up sigma related inputs for the interface
+        # i.e. niter min of 1, etc.
+        prep_fit1d_params_for_fit1d(fitting_parameters)
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights, listeners=listeners)
@@ -1255,3 +1293,18 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         list of `~gempy.library.fitting.fit_1D`
         """
         return [fit.model.fit for fit in self.fits]
+
+
+def prep_fit1d_params_for_fit1d(fit1d_params):
+    # If niter is 0, set sigma to None and niter to 1
+    if 'niter' in fit1d_params and fit1d_params['niter'] == 0:
+        # we use a min of 1 for niter, then remove the sigmas
+        # to clue the UI in that we are not sigma clipping.
+        # If we disable sigma clipping, niter will be disabled
+        # in the UI.  Allowing a niter selection of 0 with
+        # sigma clipping turned on is counterintuitive for
+        # the user.
+        fit1d_params['niter'] = 1
+        fit1d_params['sigma'] = False
+    else:
+        fit1d_params['sigma'] = True
