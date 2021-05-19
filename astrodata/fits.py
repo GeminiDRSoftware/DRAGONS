@@ -470,7 +470,18 @@ def read_fits(cls, source, extname_parser=None):
                     parts[part_name] = FitsLazyLoadable(parts[part_name])
                 else:
                     # Otherwise use the data array
-                    parts[part_name] = parts[part_name].data
+                    #parts[part_name] = parts[part_name].data
+                    # TODO: we open the file with do_not_scale_data=True, so
+                    #  the data array does not have the correct data values.
+                    #  AstroData handles scaling internally, and we can ensure
+                    #  it does that by making the data a FitsLazyLoadable; the
+                    #  side-effect of this is that the is_lazy() function will
+                    #  return True, but this has minimal knock-on effects.
+                    #  Hopefully astropy will handle this better in future.
+                    if hdulist._file is not None:  # probably compressed
+                        parts[part_name] = FitsLazyLoadable(parts[part_name])
+                    else:  # for astrodata.create() files
+                        parts[part_name] = parts[part_name].data
 
         # handle the variance if not lazy
         if (parts['uncertainty'] is not None and

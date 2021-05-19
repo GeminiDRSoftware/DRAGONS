@@ -1167,6 +1167,8 @@ def fit_continuum(ad):
                     if (m_final.amplitude_0 > 0.5*(maxflux-m_final.amplitude_2) and
                         pixels.min()+1 < m_final.mean_0 < pixels.max()-1):
                         fwhm = abs(2 * np.sqrt(2*np.log(2)) * m_final.stddev_0)
+                        if fwhm < 1.5:
+                            continue
                         fwhm_list.append(fwhm)
                         if dispaxis == 0:
                             x_list.append(m_final.mean_0.value)
@@ -1193,7 +1195,8 @@ def fit_continuum(ad):
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~sigma_clip(table['fwhm_arcsec']).mask]
+            table = table[~sigma_clip(table['fwhm_arcsec'], sigma=2,
+                                      maxiters=2).mask]
         good_sources.append(table)
 
     return good_sources[0] if single else good_sources
@@ -1235,8 +1238,9 @@ def make_lists(*args, **kwargs):
     ----------
     args: lists of str/AD (or single str/AD)
         key_list and auxiliary things to be matched to each AD
-    kwargs["force_ad"]: bool
-        coerce strings into AD objects?
+    kwargs["force_ad"]: bool/tuple
+        coerce strings into AD objects? If True, coerce all objects, if a
+        tuple/list, then convert only objects in that list (0-indexed)
 
     Returns
     -------
@@ -1260,21 +1264,28 @@ def make_lists(*args, **kwargs):
             if len(ret_value[i]) == 1:
                 ret_value[i] *= len_list
 
-    if force_ad:
-        # We only want to open as many AD objects as there are unique entries,
-        # so collapse all items in lists to a set and multiple keys with the
-        # same value will be assigned references to the same open AD object
-        ad_map_dict = {}
-        for x in set(itertools.chain(*ret_value)):
-            try:
-                ad_map_dict.update({x: x if isinstance(x, astrodata.AstroData)
-                                        or x is None else astrodata.open(x)})
-            except:
-                ad_map_dict.update({x: None})
-                log.warning(f"Cannot open file {x}")
-        ret_value = [[ad_map_dict[x] for x in List] for List in ret_value]
+    if not force_ad:
+        return ret_value
 
-    return ret_value
+    # We only want to open as many AD objects as there are unique entries,
+    # so collapse all items in lists to a set and multiple keys with the
+    # same value will be assigned references to the same open AD object
+    ad_map_dict = {}
+    ret_lists = []
+    for i, _list in enumerate(ret_value):
+        if force_ad is True or i in force_ad:
+            for x in set(_list):
+                if x not in ad_map_dict:
+                    try:
+                        ad_map_dict.update({x: astrodata.open(x)
+                                            if isinstance(x, str) else x})
+                    except OSError:
+                        ad_map_dict.update({x: None})
+                        log.warning(f"Cannot open file {x}")
+            ret_lists.append([ad_map_dict[x] for x in _list])
+        else:
+            ret_lists.append(_list)
+    return ret_lists
 
 @handle_single_adinput
 def mark_history(adinput=None, keyword=None, primname=None, comment=None):

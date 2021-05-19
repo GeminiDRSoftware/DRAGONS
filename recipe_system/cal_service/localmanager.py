@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 
 import os
-from os.path import abspath, basename, dirname, isdir
+from os.path import abspath, basename, dirname
 
 import warnings
 from importlib import reload
@@ -61,8 +61,6 @@ args_for_cals = {
     'processed_slitillum': ('slitillum', {'processed': True}),
 }
 
-DEFAULT_DB_NAME = 'cal_manager.db'
-
 ERROR_CANT_WIPE = 0
 ERROR_CANT_CREATE = 1
 ERROR_CANT_READ = 2
@@ -79,10 +77,7 @@ class LocalManagerError(Exception):
 
 class LocalManager:
     def __init__(self, db_path):
-        if isdir(db_path):
-            self._db_path = os.path.join(db_path, DEFAULT_DB_NAME)
-        else:
-            self._db_path = db_path
+        self._db_path = db_path
         self.session = None
         self._reset()
 
@@ -239,7 +234,6 @@ class LocalManager:
         caltype = rq.caltype
         descripts = rq.descriptors
         types = rq.tags
-        log.stdinfo("LOCAL CALIBRATION SEARCH:")
 
         if "ut_datetime" in descripts:
             utc = descripts["ut_datetime"]

@@ -1,8 +1,17 @@
+# Adding a central location for any configurable
+# options we may want.
+
 from recipe_system.config import globalConf
 
+# Hit if we want to show or hide the add aperture button
+# It was decided to remove it in favor of keystrokes
+# but at some point I may want it back for Jupyter
+show_add_aperture_button = False
 
+# Theme related settings
 bokeh_theme = 'caliber'
 bokeh_data_color = 'black'
+bokeh_line_color = 'crimson'
 bokeh_template_css = 'template_default.css'
 
 
@@ -23,3 +32,5 @@ try:
 except KeyError:
     # ok, no config section for us, use defaults
     pass
+
+

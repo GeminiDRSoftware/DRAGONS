@@ -32,7 +32,7 @@ def array_from_list(list_of_quantities, unit=None):
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
 
-def boxcar(data, operation=np.median, size=1):
+def boxcar(data, operation=np.ma.median, size=1):
     """
     "Smooth" a 1D array by applying a boxcar filter along it. Any operation
     can be performed, as long as it can take a sequence and return a single
@@ -190,6 +190,8 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
             values = [dtype(x) if x else None
                       for x in range_.replace("-", ":", 1).split(":")]
             assert len(values) in (1, 2, 2+allow_step)
+            if len(values) > 1 and values[0] is not None and values[1] is not None and values[0] > values[1]:
+                values[0], values[1] = values[1], values[0]
         except (ValueError, AssertionError):
             raise ValueError(f"Failed to parse sample regions '{regions}'")
         ranges.append(tuple(values))
@@ -252,6 +254,43 @@ def get_corners(shape):
             corners.append(newcorner)
 
     return corners
+
+
+def get_spline3_extrema(spline):
+    """
+    Find the locations of the minima and maxima of a cubic spline.
+
+    Parameters
+    ----------
+    spline: a callable spline object
+
+    Returns
+    -------
+    minima, maxima: 1D arrays
+    """
+    derivative = spline.derivative()
+    try:
+        knots = derivative.get_knots()
+    except AttributeError:  # for BSplines
+        knots = derivative.k
+
+    minima, maxima = [], []
+    # We take each pair of knots and map to interval [-1,1]
+    for xm, xp in zip(knots[:-1], knots[1:]):
+        ym, y0, yp = derivative([xm, 0.5*(xm+xp), xp])
+        # a*x^2 + b*x + c
+        a = 0.5 * (ym+yp) - y0
+        b = 0.5 * (yp-ym)
+        c = y0
+        for root in np.roots([a, b, c]):
+            if np.isreal(root) and abs(root) <= 1:
+                x = 0.5 * (root * (xp-xm) + (xp+xm))  # unmapped from [-1, 1]
+                if 2*a*root + b > 0:
+                    minima.append(x)
+                else:
+                    maxima.append(x)
+    return np.array(minima), np.array(maxima)
+
 
 def rotate_2d(degs):
     """

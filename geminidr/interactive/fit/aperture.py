@@ -15,6 +15,7 @@ from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
 from geminidr.interactive.interactive_config import bokeh_data_color
+from geminidr.interactive.interactive_config import show_add_aperture_button
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
@@ -143,7 +144,7 @@ class SpinnerInputLine(CustomWidget):
 
 class TextInputLine(CustomWidget):
     def build(self):
-        self.text_input = TextInput(value=self.value, width=256, **self.kwargs)
+        self.text_input = TextInput(value=self.value if self.value else '', width=256, **self.kwargs)
         self.text_input.on_change("value", self.handler)
         return row([Div(text=self.title, align='center'),
                     Spacer(width_policy='max'),
@@ -351,8 +352,7 @@ class FindSourceAperturesModel:
         data = np.ma.array(self.profile, mask=self.prof_mask)
         initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
 
-        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx],
-                               halfwidth=20, threshold=0)
+        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
         if len(peaks) > 0:
             limits = get_limits(np.nan_to_num(self.profile),
                                 self.prof_mask,
@@ -395,7 +395,8 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.direction, self.threshold, self.sizing_method)
+                self.direction, self.threshold, self.sizing_method,
+                self.use_snr)
 
         self.aperture_models.clear()
 
@@ -610,8 +611,11 @@ class SelectedApertureLineView:
             self.apertures_model.selected = model.source.data['id'][0]
         else:
             self.select.value = "None"
+            self.start_input.value = None
             self.start_input.disabled = True
+            self.location_input.value = None
             self.location_input.disabled = True
+            self.end_input.value = None
             self.end_input.disabled = True
             self.button.disabled = True
 
@@ -763,8 +767,6 @@ class ApertureView:
     def update_viewport_callback(self, start, end):
         self._pending_update_viewport = False
         self._reload_holoviews()
-        for widget in self.widgets.values():
-            widget[1].update_viewport(start, end)
 
     def update_aperture(self, aperture_id):
         """Handle an updated or added aperture."""
@@ -814,7 +816,7 @@ class ApertureView:
 
     def _make_holoviews_quadmeshed(self, aperture_model, x_max, y_max):
         da = self._prepare_data_for_holoviews(aperture_model, x_max, y_max)
-        cmap = [None, '#d1efd1', '#ff8888']
+        cmap = ['#ffffff00', '#d1efd1', '#ff8888']
         xyz = Stream.define('XYZ', data=da)
         self.qm_dmap = hv.DynamicMap(hv.QuadMesh, streams=[xyz()])
         self.qm_dmap.opts(cmap=cmap,
@@ -881,9 +883,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                     widget.reset()
                 self.model.recalc_apertures()
 
+        find_button = Button(label="Find apertures", button_type='primary',
+                             default_size=200)
+
         def _find_handler(result):
             if result:
-                self.model.recalc_apertures()
+                find_button.disabled = True
+                def fn():
+                    self.model.recalc_apertures()
+                    find_button.disabled = False
+                self.do_later(fn)
 
         # Profile parameters
         percentile = TextSlider("Percentile (use mean if no value)", model,
@@ -911,13 +920,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                    'back to their original values.  Proceed?',
                                    _reset_handler)
 
-        find_button = Button(label="Find apertures", button_type='primary',
-                             default_size=200)
-
         self.make_ok_cancel_dialog(find_button,
                                    'All apertures will be recomputed and '
                                    'changes will be lost. Proceed?',
                                    _find_handler)
+        self.make_modal(find_button, 'Recalculating Apertures...')
 
         return column(
             Div(text="Parameters to compute the profile:",
@@ -953,9 +960,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                color=bokeh_data_color, mode="center")
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
-        add_button = Button(label="Add Aperture", button_type='primary',
-                            default_size=200)
-        add_button.on_click(self.add_aperture)
+        # making button configurable so we can add it conditionally for notebooks in future
+        if show_add_aperture_button:
+            add_button = Button(label="Add Aperture", button_type='primary',
+                                default_size=200)
+            add_button.on_click(self.add_aperture)
 
         renumber_button = Button(label="Renumber apertures",
                                  button_type='primary', default_size=200)
@@ -965,7 +974,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         controls = column(children=[
             params,
             aperture_view.controls,
-            row(renumber_button, add_button),
+            row(renumber_button, add_button) if show_add_aperture_button else renumber_button,
         ])
 
         self.model.recalc_apertures()
@@ -974,14 +983,27 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
-        toolbar = row(
-            children=[
-                Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
-                Spacer(sizing_mode='scale_width'),
-                self.submit_button,
-                Spacer(sizing_mode='scale_width'),
-            ],
-        )
+        # toolbar = row(
+        #     children=[
+        #         Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
+        #         Spacer(sizing_mode='scale_width'),
+        #         self.submit_button,
+        #         Spacer(sizing_mode='scale_width'),
+        #     ],
+        # )
+        self.submit_button.align = 'end'
+        self.submit_button.height = 35
+        self.submit_button.height_policy = "fixed"
+        self.submit_button.margin = (0, 5, 5, 5)
+        self.submit_button.width = 212
+        self.submit_button.width_policy = "fixed"
+
+        toolbar = row(Spacer(width=250),
+                      column(self.get_filename_div(), self.submit_button),
+                      Spacer(width=10),
+                      align="end", css_classes=['top-row'])
+        # toolbar = row(Spacer(width=250), self.submit_button, self.get_filename_div(),
+        #               sizing_mode="scale_width")
 
         layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'

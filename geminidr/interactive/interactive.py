@@ -1,10 +1,13 @@
 import re
 from abc import ABC, abstractmethod
 from copy import copy
+from functools import cmp_to_key
 
+from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div)
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
+from bokeh import models as bm
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
@@ -61,13 +64,14 @@ class PrimitiveVisualizer(ABC):
                                     id="_submit_btn",
                                     label="Accept",
                                     name="submit_btn",
-                                    width_policy='min')
+                                    width_policy='min',
+                                    )
 
         # This now happens indirectly via the /shutdown ajax js callback
         # Remove this line if we stick with that
         # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            $.ajax('/shutdown').done(function() 
+            $.ajax('/shutdown').done(function()
                 {
                     window.close();
                 });
@@ -118,6 +122,20 @@ class PrimitiveVisualizer(ABC):
             self.user_satisfied = True
             server.stop_server()
 
+    def get_filename_div(self):
+        """
+        Returns a Div element that displays the current filename.
+        """
+        div = Div(text=f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}",
+                  style={
+                         "color": "dimgray",
+                         "font-size": "16px",
+                         "float": "right",
+                  },
+                  align="end",
+                  )
+        return div
+
     def visualize(self, doc):
         """
         Perform the visualization.
@@ -156,9 +174,11 @@ class PrimitiveVisualizer(ABC):
             Function to execute in the bokeh loop (should not take required arguments)
         """
         if self.doc is None:
-            if self.log is not None:
+            if hasattr(self, 'log') and self.log is not None:
                 self.log.warn("Call to do_later, but no document is set.  Does this PrimitiveVisualizer call "
                               "super().visualize(doc)?")
+            # no doc, probably ok to just execute
+            fn()
         else:
             self.doc.add_next_tick_callback(lambda: fn())
 
@@ -214,7 +234,7 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        extras = [] if extras is None else extras
+        extras = {} if extras is None else extras
         params = [] if params is None else params
         widgets = []
         if self.config is None:
@@ -266,15 +286,13 @@ class PrimitiveVisualizer(ABC):
                     end = 50
                 step = start
 
-                def handler(val):
-                    self.extras[pname] = val
-                    if reinit_live:
-                        self.reconstruct_points()
-
-                widget = build_text_slider(doc, field.default, step, start, end,
-                                           obj=self.extras, attr=pname,
-                                           handler=handler, throttled=True,
-                                           slider_width=slider_width)
+                widget = build_text_slider(
+                    doc, field.default, step, start, end,
+                    obj=self.extras, attr=pname,
+                    handler=self.slider_handler_factory(
+                        pname, reinit_live=reinit_live),
+                    throttled=True,
+                    slider_width=slider_width)
 
                 self.widgets[pname] = widget.children[0]
                 self.extras[pname] = field.default
@@ -290,10 +308,33 @@ class PrimitiveVisualizer(ABC):
 
         return widgets
 
+    def slider_handler_factory(self, key, reinit_live=False):
+        """
+        Returns a function that updates the `extras` attribute.
+
+        Parameters
+        ----------
+        key : str
+            The parameter name to be updated.
+        reinit_live : bool, optional
+            Update the reconstructed points on "real time".
+
+        Returns
+        -------
+        function : callback called when we change the slider value.
+        """
+
+        def handler(val):
+            self.extras[key] = val
+            if reinit_live:
+                self.reconstruct_points()
+
+        return handler
+
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256):
+                      slider_width=256, config=None):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -323,12 +364,30 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
 
     """
-    is_float = not isinstance(value, int)
+    if min_value is None and config is not None:
+        field = config._fields.get(attr, None)
+        if field is not None:
+            if hasattr(field, 'min'):
+                min_value = field.min
+    if max_value is None and config is not None:
+        field = config._fields.get(attr, None)
+        if field is not None:
+            if hasattr(field, 'max'):
+                max_value = field.max
 
-    start = min(value, min_value) if min_value else min(value, 0)
-    end = max(value, max_value) if max_value else max(10, value*2)
+    start = min(value, min_value) if min_value is not None else min(value, 0)
+    end = max(value, max_value) if max_value is not None else max(10, value*2)
 
     # trying to convince int-based sliders to behave
+    is_float = not isinstance(value, int) or \
+               (min_value is not None and not isinstance(min_value, int)) or \
+               (max_value is not None and not isinstance(max_value, int))
+    if step is None:
+        if is_float:
+            step = 0.1
+        else:
+            step = 1
+    fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
         slider = Slider(start=start, end=end, value=value, step=step,
@@ -339,13 +398,42 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     slider.width = slider_width
 
-    text_input = TextInput(width=64, value=str(value))
-    component = row(slider, text_input, css_classes=["text_sider_%s" % attr,])
+    # NOTE: although NumericInput can handle a high/low limit, it
+    # offers no feedback to the user when it does.  Since some of our
+    # inputs are capped and others open-ended, we use the js callbacks
+    # below to enforce the range limits, if any.
+    text_input = NumericInput(width=64, value=value,
+                              format=fmt,
+                              mode='float' if is_float else 'int')
+
+    # Custom range enforcement with alert messages
+    if max_value is not None:
+        text_input.js_on_change('value', CustomJS(
+            args=dict(inp=text_input),
+            code="""
+                if (inp.value > %s) {
+                    alert('Maximum is %s');
+                    inp.value = %s;
+                }
+            """ % (max_value, max_value, max_value)))
+    if min_value is not None:
+        text_input.js_on_change('value', CustomJS(
+            args=dict(inp=text_input),
+            code="""
+                if (inp.value < %s) {
+                    alert('Minimum is %s');
+                    inp.value = %s;
+                }
+            """ % (min_value, min_value, min_value)))
+
+    component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
         if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
             return True
+        if val is None:
+            return False
         try:
             if is_float:
                 float(val)
@@ -359,7 +447,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Update the slider with the new value from the text input
         if not _input_check(new):
             if _input_check(old):
-                text_input.value = str(old)
+                text_input.value = old
             return
         if old != new:
             if is_float:
@@ -368,30 +456,29 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                 ival = int(new)
             if ival > slider.end and not max_value:
                 slider.end = ival
+            if ival < slider.end and end < slider.end:
+                slider.end = max(end, ival)
             if 0 <= ival < slider.start and min_value is None:
                 slider.start = ival
+            if ival > slider.start and start > slider.start:
+                slider.start = min(ival, start)
             if slider.start <= ival <= slider.end:
                 slider.value = ival
 
     def update_text_input(attrib, old, new):
         # Update the text input
         if new != old:
-            text_input.value = str(new)
+            text_input.value = new
 
     def handle_value(attrib, old, new):
         # Handle a new value and set the registered object/attribute accordingly
         # Also updates the slider and calls the registered handler function, if any
-        numeric_value = None
-        if is_float:
-            numeric_value = float(new)
-        else:
-            numeric_value = int(new)
         if obj and attr:
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
-                    obj[attr] = numeric_value
+                    obj[attr] = new
                 else:
-                    obj.__setattr__(attr, numeric_value)
+                    obj.__setattr__(attr, new)
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
@@ -400,8 +487,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             else:
                 update_slider(attrib, old, new)
         if handler:
-            if numeric_value is not None:
-                handler(numeric_value)
+            if new is not None:
+                handler(new)
             else:
                 handler(new)
 
@@ -764,14 +851,25 @@ class GIRegionModel:
             raise ValueError("must be a BandListener")
         self.listeners.append(listener)
 
+    def clear_regions(self):
+        """
+        Deletes all regions.
+        """
+        for region_id in self.regions.keys():
+            for listener in self.listeners:
+                listener.delete_region(region_id)
+        self.regions = dict()
+
     def load_from_tuples(self, tuples):
-        region_ids = list(self.regions.keys())
-        for region_id in region_ids:
-            self.delete_region(region_id)
-        self.region_id=1
+        self.clear_regions()
+        # region_ids = list(self.regions.keys())
+        # for region_id in region_ids:
+        #     self.delete_region(region_id)
+        self.region_id = 1
         for tup in tuples:
             self.adjust_region(self.region_id, tup.start, tup.stop)
             self.region_id = self.region_id + 1
+        self.finish_regions()
 
     def load_from_string(self, region_string):
         self.load_from_tuples(cartesian_regions_to_slices(region_string))
@@ -814,9 +912,10 @@ class GIRegionModel:
             ID of the region to delete
 
         """
-        del self.regions[region_id]
-        for listener in self.listeners:
-            listener.delete_region(region_id)
+        if self.regions[region_id]:
+            del self.regions[region_id]
+            for listener in self.listeners:
+                listener.delete_region(region_id)
 
     def finish_regions(self):
         """
@@ -919,19 +1018,38 @@ class GIRegionModel:
         if len(self.regions.values()) == 0:
             return True
         for b in self.regions.values():
-            if (b[0] is None or b[0] < x) and (b[1] is None or x < b[1]):
+            if (b[0] is None or b[0] <= x) and (b[1] is None or x <= b[1]):
                 return True
         return False
 
     def build_regions(self):
+
+        def none_cmp(x, y):
+            if x is None and y is None:
+                return 0
+            if x is None:
+                return -1
+            if y is None:
+                return 1
+            return x - y
+
+        def region_sorter(a, b):
+            retval = none_cmp(a[0], b[0])
+            if retval == 0:
+                retval = none_cmp(a[1], b[1])
+            return retval
+
         def deNone(val, offset=0):
             return '' if val is None else val + offset
+
         if self.regions is None or len(self.regions.values()) == 0:
-            return None
+            return ''
+
         sorted_regions = list()
         sorted_regions.extend(self.regions.values())
-        sorted_regions.sort()
-        return ','.join(['{}:{}'.format(deNone(b[0],offset=1), deNone(b[1])) for b in sorted_regions])
+        sorted_regions.sort(key=cmp_to_key(region_sorter))
+        return ', '.join(['{}:{}'.format(deNone(b[0], offset=1), deNone(b[1]))
+                          for b in sorted_regions])
 
 
 class RegionHolder:
@@ -1065,9 +1183,17 @@ class GIRegionView(GIRegionListener):
 
 
 class RegionEditor(GIRegionListener):
+    """
+    Widget used to create/edit fitting Regions.
+
+    Parameters
+    ----------
+    region_model : GIRegionModel
+        Class that connects this element to the regions on plots.
+    """
     def __init__(self, region_model):
         self.text_input = TextInput(
-            title="Regions (i.e. 100:500,510:900,950: Press 'Enter' to apply):",
+            title="Regions (i.e. 101:500,511:900,951: Press 'Enter' to apply):",
             max_width=600,
             sizing_mode="stretch_width",
             width_policy="max",
@@ -1076,7 +1202,12 @@ class RegionEditor(GIRegionListener):
         self.region_model = region_model
         self.region_model.add_listener(self)
         self.text_input.on_change("value", self.handle_text_value)
-        self.error_message = Div(text="<b><span style='color:red'>please use comma separated : delimited values (i.e. 100:500,510:900,950:)</span></b>")
+
+        self.error_message = Div(text="<b> <span style='color:red'> "
+                                      "  Please use comma separated : delimited "
+                                      "  values (i.e. 101:500,511:900,951:)"
+                                      "</span></b>")
+
         self.error_message.visible = False
         self.widget = column(self.text_input, self.error_message)
         self.handling = False
@@ -1090,28 +1221,152 @@ class RegionEditor(GIRegionListener):
     def finish_regions(self):
         self.text_input.value = self.region_model.build_regions()
 
-    def standardize_region_text(self, region_text):
+    @staticmethod
+    def standardize_region_text(region_text):
+        """
+        Remove spaces near commas separating values, and removes
+        leading/trailing commas in string.
+
+        Parameters
+        ----------
+        region_text : str
+            Region text to clean up.
+
+        Returns
+        -------
+        str : Clean region text.
+        """
+        # Handles when deleting last region
+        region_text = '' if region_text is None else region_text
+
+        # Replace " ," or ", " with ","
         region_text = re.sub(r'[ ,]+', ',', region_text)
+
+        # Remove comma if region_text starts with ","
         region_text = re.sub(r'^,', '', region_text)
+
+        # Remove comma if region_text ends with ","
         region_text = re.sub(r',$', '', region_text)
+
         return region_text
 
     def handle_text_value(self, attr, old, new):
+        """
+        Handles the new text value inside the Text Input field. The
+        (attr, old, new) callback signature is a requirement from Bokeh.
+
+        Parameters
+        ----------
+        attr :
+            Attribute that would be changed. Not used here.
+        old : str
+            Old attribute value. Not used here.
+        new : str
+            New attribute value. Used to update regions.
+        """
         if not self.handling:
             self.handling = True
             region_text = self.standardize_region_text(new)
             current = self.region_model.build_regions()
+
+            # Clean up regions if text input is empty
+            if not region_text or region_text.isspace():
+                self.region_model.clear_regions()
+                self.text_input.value = ""
+                current = None
+                region_text = None
+                self.region_model.finish_regions()
+
             if current != region_text:
                 if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
                     self.region_model.load_from_string(region_text)
                     self.text_input.value = self.region_model.build_regions()
                     self.error_message.visible = False
                 else:
+                    self.text_input.value = current
                     if 'region_input_error' not in self.text_input.css_classes:
                         self.error_message.visible = True
             else:
                 self.error_message.visible = False
+
             self.handling = False
 
     def get_widget(self):
         return self.widget
+
+
+class TabsTurboInjector:
+    """
+    This helper class wraps a bokeh Tabs widget
+    and improves performance by dynamically
+    adding and removing children from the DOM
+    as their tabs are un/selected.
+
+    There is a moment when the new tab is visually
+    blank before the contents pop in, but I think
+    the tradeoff is worth it if you're finding your
+    tabs unresponsive at scale.
+    """
+    def __init__(self, tabs: bm.layouts.Tabs):
+        """
+        Create a tabs turbo helper for the given bokeh Tabs.
+
+        :param tabs: :class:`~bokeh.model.layout.Tabs`
+            bokeh Tabs to manage
+        """
+        if tabs.tabs:
+            raise ValueError("TabsTurboInjector expects an empty Tabs object")
+
+        self.tabs = tabs
+        self.tab_children = list()
+        self.tab_dummy_children = list()
+
+        for i, tab in enumerate(tabs.tabs):
+            self.tabs.append(tab)
+            self.tab_children.append(tab.child)
+            self.tab_dummy_children.append(row())
+
+            if i != tabs.active:
+                tab.child = self.tab_dummy_children[i]
+
+        tabs.on_change('active', self.tabs_callback)
+
+    def add_tab(self, child: Instance(bm.layouts.LayoutDOM), title: str):
+        """
+        Add the given bokeh widget as a tab with the given title.
+
+        This child widget will be tracked by the Turbo helper.  When the tab
+        becomes active, the child will be placed into the tab.  When the
+        tab is inactive, it will be cleared to improve performance.
+
+        :param child: :class:~bokeh.core.properties.Instance(bokeh.models.layouts.LayoutDOM)
+            Widget to add as a panel's contents
+        :param title: str
+            Title for the new tab
+        """
+        tab_dummy = row(Div(),)
+        tab_child = child
+
+        self.tab_children.append(child)
+        self.tab_dummy_children.append(tab_dummy)
+
+        if self.tabs.tabs:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_dummy,), title=title))
+        else:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_child,), title=title))
+
+    def tabs_callback(self, attr, old, new):
+        """
+        This callback will be used when the tab selection changes.  It will clear the DOM
+        of the contents of the inactive tab and add back the new tab to the DOM.
+
+        :param attr: str
+            unused, will be ``active``
+        :param old: int
+            The old selection
+        :param new: int
+            The new selection
+        """
+        if old != new:
+            self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
+            self.tabs.tabs[new].child.children[0] = self.tab_children[new]

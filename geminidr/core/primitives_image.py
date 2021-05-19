@@ -59,7 +59,7 @@ class Image(Preprocess, Register, Resample):
         timestamp_key = self.timestamp_keys[self.myself()]
         fringe = params["fringe"]
         scale = params["scale"]
-        do_fringe = params["do_fringe"]
+        do_cal = params["do_cal"]
 
         # Exit now if nothing needs a correction, to avoid an error when the
         # calibration search fails. If images with different exposure times
@@ -67,18 +67,18 @@ class Image(Preprocess, Register, Resample):
         # search will succeed), so still need to check individual inputs later.
         needs_correction = [self._needs_fringe_correction(ad) for ad in adinputs]
         if any(needs_correction):
-            if do_fringe == False:
+            if do_cal == 'skip':
                 log.warning("Fringe correction has been turned off but is "
                             "recommended.")
                 return adinputs
         else:
-            if not do_fringe:  # False or None
-                if do_fringe is None:
-                    log.stdinfo("No input images require a fringe correction.")
+            if do_cal == 'procmode' or do_cal == 'skip':
+                log.stdinfo("No input images require a fringe correction.")
                 return adinputs
-            else:
-                log.warning("Fringe correction has been turned on but may not "
+            else:  # do_cal == 'force':
+                log.warning("Fringe correction has been forced on but may not "
                             "be required.")
+
 
         if fringe is None:
             # This logic is for QAP
@@ -88,11 +88,11 @@ class Image(Preprocess, Register, Resample):
                 scale = False
                 log.stdinfo("Using fringe frame in 'fringe' stream. "
                             "Setting scale=False")
+                fringe_list = (fringe_list[0], "stream")
             except (KeyError, AssertionError):
-                self.getProcessedFringe(adinputs, refresh=False)
-                fringe_list = self._get_cal(adinputs, "processed_fringe")
+                fringe_list = self.caldb.get_processed_fringe(adinputs)
         else:
-            fringe_list = fringe
+            fringe_list = (fringe, None)
 
         # Usual stuff to ensure that we have an iterable of the correct length
         # for the scale factors regardless of what the input is
@@ -107,17 +107,18 @@ class Image(Preprocess, Register, Resample):
                 factors = iter(scale_factor * len(adinputs))
 
         # Get a fringe AD object for every science frame
-        for ad, fringe, correct in zip(*(gt.make_lists(adinputs, fringe_list, force_ad=True)
-                                      + [needs_correction])):
+        for ad, fringe, origin, correct in zip(*gt.make_lists(
+                adinputs, *fringe_list, needs_correction, force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractFringe".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "fringeCorrect. Continuing.")
                 continue
 
             # Logic to deal with different exposure times where only
             # some inputs might require fringe correction
-            if do_fringe is None and not correct:
+            # KL: for now, I'm not allowing the "force" to do anything when
+            #     the correction is not needed.
+            if (do_cal == 'procmode' or do_cal == 'force') and not correct:
                 log.stdinfo("{} does not require a fringe correction".
                             format(ad.filename))
                 ad.update_filename(suffix=params["suffix"], strip=True)
@@ -126,14 +127,15 @@ class Image(Preprocess, Register, Resample):
             # At this point, we definitely want to do a fringe correction
             # so we'd better have a fringe frame!
             if fringe is None:
-                if 'sq' not in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "fringe frame has been specified".
                                 format(ad.filename))
                     continue
                 else:
-                    raise OSError("No processed fringe listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no fringe was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -144,6 +146,9 @@ class Image(Preprocess, Register, Resample):
                 gt.check_inputs_match(ad, fringe)
 
             #
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the fringe frame "
+                         f"{fringe.filename}{origin_str}")
             matched_groups = (ad.group_id() == fringe.group_id())
             if scale or (scale is None and not matched_groups):
                 factor = next(factors)

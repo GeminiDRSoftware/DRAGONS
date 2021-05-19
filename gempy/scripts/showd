@@ -9,6 +9,7 @@ Eg. showd N20120212S0012.fits -d camera filter_name
 
 import sys
 import argparse
+from inspect import signature
 
 from importlib import import_module
 
@@ -45,7 +46,12 @@ def get_descriptor_value(ad, descriptors, pretty=True):
     """
     values = []
     for descriptor in descriptors:
-        values.append(getattr(ad, descriptor)(pretty=pretty))
+        sig = signature(getattr(ad, descriptor))
+        if 'pretty' in sig.parameters:
+            values.append(getattr(ad, descriptor)(pretty=pretty))
+        else:
+            values.append(getattr(ad, descriptor)())
+
     return values
 
 def printtable(results):

@@ -140,7 +140,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
 
     r = Reduce()
     r.files = file_list
-    r.ucals = normalize_ucals(r.files, calib_files)
+    r.ucals = normalize_ucals(calib_files)
     r.uparms = user_pars
 
     if recipe_name:

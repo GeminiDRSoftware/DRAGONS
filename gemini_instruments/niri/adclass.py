@@ -257,6 +257,7 @@ class AstroDataNiri(AstroDataGemini):
         str
             The name of the disperser with or without the component ID.
         """
+        stripID |= pretty
         try:
             filter3 = self.phu['FILTER3']
         except KeyError:

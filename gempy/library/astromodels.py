@@ -27,7 +27,9 @@ from astropy.stats import sigma_clip
 from astropy.table import Table
 from astropy import units as u
 from astropy.io.fits import Header
-from scipy.interpolate import BSpline, LSQUnivariateSpline, UnivariateSpline
+from scipy.interpolate import splrep, BSpline
+
+from gempy.utils import logutils
 
 # -----------------------------------------------------------------------------
 # NEW MODEL CLASSES
@@ -217,6 +219,14 @@ class UnivariateSplineWithOutlierRemoval:
         maximum number of clipping iterations to perform
     grow: int
         radius to reject pixels adjacent to masked pixels
+    knot_spacing : str
+        describes how the knots should be spaced if order is not None.
+        "limits": equally in x between the min/max x values
+        "points": so that there are the same number of points in each region
+        "good": so that there are the same number of good points in each region
+    downscale_order: bool
+        reduce number of spline pieces in direct proportion to the fraction
+        of initially masked pixels?
     outlier_kwargs: dict-like
         parameter dict to pass to outlier_func()
 
@@ -227,21 +237,21 @@ class UnivariateSplineWithOutlierRemoval:
     """
     def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=True, outlier_func=sigma_clip,
-                niter=0, grow=0, debug=False, **outlier_kwargs):
+                niter=0, grow=0, debug=False, knot_spacing="good",
+                downscale_order=True, **outlier_kwargs):
+
+        log = logutils.get_logger(__name__)
 
         if niter is None:
             niter = 100  # really should converge by this point
-        # Decide what sort of spline object we're making
-        spline_kwargs = {'bbox': bbox, 'k': k, 'ext': ext,
-                         'check_finite': check_finite}
+
+        spline_kwargs = {"xb": bbox[0], "xe": bbox[1], "k": k, "s": s}
         if order is None:
-            cls_ = UnivariateSpline
-            spline_args = ()
-            spline_kwargs['s'] = s
+            spline_kwargs["task"] = 0
         elif s is None:
-            cls_ = LSQUnivariateSpline
+            spline_kwargs["task"] = -1
         else:
-            raise ValueError("Both t and s have been specified")
+            raise ValueError("Both order and s have been specified")
 
         # For compatibility with an older version which was using
         # NDStacker.sigclip, rename parameters for sigma_clip
@@ -250,14 +260,12 @@ class UnivariateSplineWithOutlierRemoval:
         if 'hsigma' in outlier_kwargs:
             outlier_kwargs['sigma_upper'] = outlier_kwargs.pop('hsigma')
 
-        # Both spline classes require sorted x, so do that here. We also
-        # require unique x values, so we're going to deal with duplicates by
-        # making duplicated values slightly larger. But we have to do this
-        # iteratively in case of a basket-case scenario like (1, 1, 1, 1+eps, 2)
-        # which would become (1, 1+eps, 1+2*eps, 1+eps, 2), which still has
-        # duplicates and isn't sorted!
-        # I can't think of any better way to cope with this, other than write
-        # least-squares spline-fitting code that handles duplicates from scratch
+        # Override sigma if we have upper/lower set.  Otherwise astropy treats
+        # a 0.0 lower/upper sigma as a request to use sigma
+        if outlier_kwargs.get('sigma_lower', None) is not None and \
+            outlier_kwargs.get('sigma_upper', None) is not None:
+            outlier_kwargs['sigma'] = 0.0
+
         epsf = np.finfo(float).eps
 
         orig_mask = np.zeros(y.shape, dtype=bool)
@@ -266,71 +274,100 @@ class UnivariateSplineWithOutlierRemoval:
                 orig_mask = y.mask.astype(bool)
             y = y.data
 
-        if w is not None:
+        # Setting a lot of weights to zero can cause problems with the spline
+        # fitting, so instead we set weights to epsf. To ensure this is a
+        # sufficiently small value to be zero-like, we scale the input weights
+        # so that the smallest "real" weight is 1.0. Input points with a weight
+        # of zero are masked
+        if w is None:
+            wts = np.ones_like(x)
+        elif np.any(w < 0):
+            raise ValueError("Weights should not be negative")
+        else:
             orig_mask |= (w == 0)
+            try:
+                wmin = w[w > 0].min()
+            except ValueError:  # all w==0
+                wts = np.ones_like(x)
+            else:
+                wts = w / wmin
+
+        if check_finite:
+            if (not np.isfinite(x).all() or not np.isfinite(y).all() or
+                    not np.isfinite(wts).all()):
+                raise ValueError("Input arrays must not contain NaNs or Infs.")
 
         if debug:
             print('y=', y)
             print('orig_mask=', orig_mask.astype(int))
 
+        if (order is None or s == 0) and (np.unique(x).size < x.size):
+            raise ValueError("Must specify spline order or have s > 0 when "
+                             "there are duplicate x values")
+        xunique = x
+        sort_indices = np.argsort(xunique)
+
+        if (~orig_mask).sum() <= k:
+            log.warning("Too few unmasked points. Unmasking all data.")
+            orig_mask[:] = False
+        if order is not None:
+            if downscale_order:
+             order = int(order * (~orig_mask).sum() / orig_mask.size + 0.5)
+            if order > (~orig_mask).sum() - k:
+                order = (~orig_mask).sum() - k
+                log.warning("Underconstrained fit. Reducing number of spline "
+                            f"pieces to {order}")
+
+            if knot_spacing == "limits":
+                knots = np.linspace(xunique.min(), xunique.max(), order + 1)
+            elif knot_spacing == "points":
+                knots = np.interp(np.linspace(0, xunique.size - 1, order + 1),
+                                  range(xunique.size), xunique[sort_indices])
+            elif knot_spacing == "good":
+                knots = np.interp(
+                    np.linspace(0, xunique[~orig_mask].size - 1, order + 1),
+                    range(xunique[~orig_mask].size), sorted(xunique[~orig_mask]))
+            else:
+                raise ValueError(f"Unrecognized option: knot_spacing='{knot_spacing}'")
+            spline_kwargs["t"] = knots[1:-1]
+            if debug:
+                print("KNOTS", knots)
+
         iteration = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
         while iteration < niter+1:
+            # There's a problem if too many inter-knot regions have no data
+            # with non-zero weights so we fix this by setting the weights to
+            # epsf instead in such cases. Remember that the knots are in the
+            # x-value space, not the x-index space!
+            if order is not None:
+                if order > 0:
+                    fully_masked_regions = np.sum(
+                        full_mask[np.logical_and(xunique>=x1, xunique<=x2)].all()
+                        for x1, x2 in zip(knots[:-1], knots[1:]))
+                    wts[full_mask] = epsf if fully_masked_regions > min(k, order) else epsf
+                else:
+                    wts = w.copy()
+
             last_mask = full_mask
-            x_to_fit = x.astype(float)
-
-            if order is not None:
-                # Determine actual order to apply based on fraction of unmasked
-                # pixels, and unmask everything if there are too few good pixels
-                this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
-                if this_order == 0 and order > 0:
-                    full_mask = np.zeros(x.shape, dtype=bool)
-                    if w is not None and not all(w == 0):
-                        full_mask |= (w == 0)
-                    this_order = int(order * (1 - np.sum(full_mask) / full_mask.size) + 0.5)
-                    if debug:
-                        print("FULL MASK", full_mask)
-
-            xgood = x_to_fit[~full_mask]
-            while True:
-                if debug:
-                    print(f"Iter {iteration}: epsf loop")
-                xunique, indices = np.unique(xgood, return_index=True)
-                if indices.size == xgood.size:
-                    # All unique x values so continue
-                    break
-                if order is None:
-                    raise ValueError("Must specify spline order when there are "
-                                     "duplicate x values")
-                for i in range(xgood.size):
-                    if i not in indices:
-                        xgood[i] *= (1.0 + epsf)
-
-            # Space knots equally based on density of unique x values
-            if order is not None:
-                knots = [xunique[int(xx+0.5)]
-                         for xx in np.linspace(0, xunique.size-1, this_order+1)[1:-1]]
-                spline_args = (knots,)
-                if debug:
-                    print("KNOTS", knots)
-
-            sort_indices = np.argsort(xgood)
-            # Create appropriate spline object using current mask
-            if order is None or this_order > 0:
-                spline = cls_(
-                    xgood[sort_indices], y[~full_mask][sort_indices],
-                    *spline_args,
-                    w=None if w is None else w[~full_mask][sort_indices],
-                    **spline_kwargs
-                )
+            avg_y = np.average(y, weights=wts)
+            if order is None or order > 0:
+                tck = splrep(xunique[sort_indices], y[sort_indices],
+                             w=wts[sort_indices], **spline_kwargs)
+                spline = BSpline(*tck)
+                # Ensure we get a real-valued fit
+                if np.isnan(tck[1]).any():
+                    spline = lambda xx: avg_y
             else:
-                avg_y = np.average(y[~full_mask],
-                                   weights=None if w is None else w[~full_mask])
                 spline = lambda xx: avg_y
-
             spline_y = spline(x)
-            masked_residuals = outlier_func(np.ma.array(spline_y - y,
-                                                        mask=full_mask),
+
+            # on last pass, do not update sigma clipping
+            if iteration >= niter:
+                break
+
+            masked_residuals = outlier_func(np.ma.array(y - spline_y,
+                                                        mask=full_mask | np.isnan(spline_y)),
                                             **outlier_kwargs)
             mask = masked_residuals.mask
 
@@ -346,6 +383,11 @@ class UnivariateSplineWithOutlierRemoval:
                     if debug:
                         print('mask after growth=', mask.astype(int))
 
+            if order > (~mask).sum() - k:
+                log.warning("Too many points rejected - "
+                            f"exiting after {iteration} iterations")
+                break
+
             full_mask = mask
 
             # Check if the mask is unchanged
@@ -353,21 +395,20 @@ class UnivariateSplineWithOutlierRemoval:
                 if debug:
                     print(f"Iter {iteration}: Breaking")
                 break
+
             if debug:
                 print(f"Iter {iteration}: Starting new iteration")
             iteration += 1
 
         # Create a standard BSpline object
-        try:
-            bspline = BSpline(*spline._eval_args)
-        except AttributeError:
+        if not isinstance(spline, BSpline):
             # Create a spline object that's just a constant
-            bspline = BSpline(np.r_[(x[0],)*4, (x[-1],)*4],
-                              np.r_[(spline(0),)*4, (0.,)*4], 3)
+            spline = BSpline(np.r_[(x[0],)*4, (x[-1],)*4],
+                             np.r_[(spline(0),)*4, (0.,)*4], 3)
         # Attach the mask and model (may be useful)
-        bspline.mask = full_mask
-        bspline.data = spline_y
-        return bspline
+        spline.mask = full_mask
+        spline.data = spline_y
+        return spline
 
 
 # -----------------------------------------------------------------------------

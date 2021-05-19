@@ -1,9 +1,22 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_spect.py file, in alphabetical order.
-from astropy import units as u
+from astropy import table, units as u
+from astropy.io import registry
 
 from astrodata import AstroData
+from geminidr.core import parameters_generic
 from gempy.library import config, astrotools as at
+
+
+def list_of_ints_check(value):
+    [int(x) for x in str(value).split(',')]
+    return True
+
+
+def table_writing_formats():
+    t = registry.get_formats(table.Table, readwrite="Write")
+    return {fmt: "" for fmt, dep in t["Format", "Deprecated"] if dep != "Yes"}
+
 
 def validate_regions_float(value):
     at.parse_user_regions(value, dtype=float, allow_step=False)
@@ -41,9 +54,6 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     regions = config.Field("Sample regions", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
-    interactive_spline = config.Field("Interactive spline selection?", bool, False)
-    niter = config.RangeField("Maximum number of clipping iterations to perform of spline fit", int, 3, min=1)
-    grow = config.RangeField("Radius to reject pixels adjacent to masked pixels of spline fit", int, 0, min=0)
     interactive = config.Field("Display interactive fitter?", bool, False)
 
     def setDefaults(self):
@@ -64,12 +74,6 @@ class determineDistortionConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Display line traces on image display?", bool, False)
-    interactive = config.Field("Display interactive fitter?", bool, False)
-
-
-def min_lines_check(value):
-    [int(x) for x in str(value).split(',')]
-    return True
 
 
 class determineWavelengthSolutionConfig(config.Config):
@@ -86,16 +90,17 @@ class determineWavelengthSolutionConfig(config.Config):
                                    default="natural")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
-                             check=min_lines_check)
+                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
+    in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
     alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     debug = config.Field("Make diagnostic plots?", bool, False)
 
 
-class distortionCorrectConfig(config.Config):
+class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
                            optional=True, single=True)
@@ -111,7 +116,6 @@ class extract1DSpectraConfig(config.Config):
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
-    interactive = config.Field("Perform extraction interactively", bool, False)
     subtract_sky = config.Field("Subtract sky spectra if the data have not been sky corrected?", bool, True)
     debug = config.Field("Draw extraction apertures on image display? (not used with interactive)", bool, False)
 
@@ -335,7 +339,7 @@ def flux_units_check(value):
     return True
 
 
-class fluxCalibrateConfig(config.Config):
+class fluxCalibrateConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_fluxCalibrated", optional=True)
     standard = config.ListField("Standard(s) with sensitivity function", (AstroData, str),
                                 None, optional=True, single=True)
@@ -411,9 +415,9 @@ class traceAperturesConfig(config.Config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     niter = config.RangeField("Maximum number of rejection iterations",
-                              int, None, min=0, optional=True)
+                              int, 0, min=0)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     order = config.RangeField("Order of fitting function",
@@ -425,5 +429,22 @@ class traceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix",
                           str, "_aperturesTraced", optional=True)
 
-    def setDefaults(self):
-        self.order = 2
+
+
+class write1DSpectraConfig(config.Config):
+    #format = config.Field("Format for writing", str, "ascii")
+    format = config.ChoiceField("Format for writing", str,
+                                allowed=table_writing_formats(),
+                                default="ascii", optional=False)
+    header = config.Field("Write full FITS header?", bool, False)
+    extension = config.Field("Filename extension", str, "dat")
+    apertures = config.Field("Apertures to write", (str, int), None,
+                             optional=True, check=list_of_ints_check)
+    dq = config.Field("Write Data Quality values?", bool, False)
+    var = config.Field("Write Variance values?", bool, False)
+    overwrite = config.Field("Overwrite existing files?", bool, False)
+
+    def validate(self):
+        config.Config.validate(self)
+        if self.header and not self.format.startswith("ascii"):
+            raise ValueError("FITS header can only be written with ASCII formats")

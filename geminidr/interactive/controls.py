@@ -42,14 +42,16 @@ class Controller(object):
     `add_next_tick_callback`.  That is because our key press is coming in via
     a different path than the normal bokeh interactivity.
 
-    The controler maintains a set of :class:`~Task` instances.  One :class:`~Task` is operating at a time.
-    An active task receives all the key presses and when it is done, it returns
-    control to the :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
+    The controller maintains a set of :class:`~Task` instances.
+    One :class:`~Task` is operating at a time. An active task receives all the
+    key presses and when it is done, it returns control to the
+    :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, helptext, mask_handlers=None, showing_residuals=True):
+    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True):
         """
-        Create a controller to manage the given aperture and region models on the given GIFigure
+        Create a controller to manage the given aperture and region models on
+        the given GIFigure.
 
         Parameters
         ----------
@@ -59,57 +61,51 @@ class Controller(object):
             model for apertures for this plot/dataset, or None
         region_model : :class:`GIRegionModel`
             model for regions for this plot/dataset, or None
-        helptext : :class:`Div`
+        help_text : :class:`Div`
             div to update text in to provide help to the user
+        mask_handlers : None or tuple of {2,3} functions
+            The first two functions handle mask/unmask commands, the third (optional)
+            function handles 'P' point mask requests.
         """
 
-        # set the class for the helptext div so we can have a common style
-        helptext.css_classes.append('controller_div')
+        # set the class for the help_text div so we can have a common style
+        help_text.css_classes.append('controller_div')
 
         self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
 
-        self.helpmaskingtext = "Masking<br/>" \
-                               "<i>Select points using the toolbar on the right side of the plot.  These" \
-                               "will be the points to be masked/unmasked.  Hold </i>shift<i> during select to " \
-                               "combine multiple selections or points.</i><br/>" \
-                               "<b>M</b> - Add selected points to mask<br/>" \
-                               "<b>U</b> - Unmask selected points<br/><br/>" if mask_handlers else ''
+        self.helpmaskingtext = (
+            "<b>Masking</b> <br/> "
+            "To mark or unmark one point at a time, select \"Tap\" on the toolbar on "
+            "the right side of the plot.  To mark/unmark a group of point, activate "
+            "\"Box Select\" on the toolbar.<br/>"
+            "<b>M</b> - Mask selected/closest<br/>"
+            "<b>U</b> - Unmask selected/closest<br/>") if mask_handlers else ''
 
-        # If we support masking, we also want to wait for the first select event
-        # and remove the additional text when it happens.
-        if mask_handlers:
-            self.removed_selection_note = False
-
-            def cb(sg):
-                if not self.removed_selection_note:
-                    self.helpmaskingtext = "Masking<br/>" \
-                                           "<b>M</b> - Add selected points to mask<br/>" \
-                                           "<b>U</b> - Unmask selected points<br/><br/>"
-                    self.set_help_text(None)
-                    self.removed_selection_note = True
-            fig.on_event(SelectionGeometry, cb)
+        self.helpmaskingtext += "<br/>" if mask_handlers else ''
 
         self.helpintrotext = "While the mouse is over the upper plot, " \
                              "choose from the following commands:<br/><br/>\n" if showing_residuals \
             else "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
 
         self.helptooltext = ''
-        self.helptext = helptext
+        self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
         if mask_handlers:
-            if len(mask_handlers) != 2:
+            if len(mask_handlers) < 2:
                 raise ValueError("Must pass tuple (mask_fn, unmask_fn) to mask_handlers argument of Controller")
             self.mask_handler = mask_handlers[0]
             self.unmask_handler = mask_handlers[1]
+            self.pointmask_handler = mask_handlers[2] if len(mask_handlers) > 2 else None
         else:
             self.mask_handler = None
             self.unmask_handler = None
+            self.pointmask_handler = None
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model, helptext, fig)
+            self.tasks['a'] = ApertureTask(aperture_model, help_text, fig)
         if region_model:
-            self.tasks['r'] = RegionTask(region_model, helptext)
+            self.tasks['r'] = RegionTask(region_model, help_text)
         self.task = None
         self.x = None
         self.y = None
@@ -119,6 +115,7 @@ class Controller(object):
             fig.on_event('mousemove', self.on_mouse_move)
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
+        self.fig = fig
         self.set_help_text(None)
 
     def set_help_text(self, text=None):
@@ -155,7 +152,8 @@ class Controller(object):
             # we now have an associated document, need to do this inside that context
             self.helptext.document.add_next_tick_callback(lambda: self.helptext.update(text=ht))
         else:
-            self.helptext.text = ht
+            # no document, we can update directly
+            self.helptext.update(text=ht)
 
     def on_mouse_enter(self, event):
         """
@@ -237,26 +235,37 @@ class Controller(object):
             Key that was pressed, such as 'a'
 
         """
-        def _ui_loop_handle_key(key):
-            if key == 'm' or key == 'M':
+        def _ui_loop_handle_key(_key):
+
+            if _key == 'm' or _key == 'M':
                 if self.mask_handler:
-                    self.mask_handler()
-            elif key == 'u' or key == 'U':
+                    # mult is used to convert the y distance to be in x-equivalent-pixel terms
+                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
+                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
+                    self.mask_handler(self.x, self.y, mult)
+
+            elif _key == 'u' or _key == 'U':
                 if self.unmask_handler:
-                    self.unmask_handler()
+                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
+                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
+                    self.unmask_handler(self.x, self.y, mult)
+
             elif self.task:
-                if self.task.handle_key(key):
+                if self.task.handle_key(_key):
                     if len(self.tasks) > 1:
                         # only if we have multiple tasks, otherwise no point in offering 1 task option
                         self.task = None
                         self.set_help_text()
-            elif key in self.tasks:
-                self.task = self.tasks[key]
+
+            elif _key in self.tasks:
+                self.task = self.tasks[_key]
                 self.set_help_text(self.task.helptext())
                 self.task.start(self.x, self.y)
-        if self.helptext.document:
+
+        if self.fig.document:
             # we now have an associated document, need to do this inside that context
-            self.helptext.document.add_next_tick_callback(lambda: _ui_loop_handle_key(key=key))
+            self.fig.document.add_next_tick_callback(
+                lambda: _ui_loop_handle_key(_key=key))
 
     def handle_mouse(self, x, y):
         """
@@ -281,7 +290,10 @@ class Controller(object):
         global _pending_handle_mouse
         if not _pending_handle_mouse:
             _pending_handle_mouse = True
-            self.helptext.document.add_timeout_callback(self.handle_mouse_callback, 100)
+            if self.fig.document is not None:
+                self.fig.document.add_timeout_callback(self.handle_mouse_callback, 100)
+            else:
+                self.handle_mouse_callback()
 
     def handle_mouse_callback(self):
         global _pending_handle_mouse
@@ -598,6 +610,8 @@ class RegionTask(Task):
         if key == 'e':
             if self.region_edge is None:
                 self.region_id, self.region_edge = self.region_model.closest_region(self.last_x)
+            else:
+                self.stop_region()
             self.update_help()
             return False
         if key == 'd':
@@ -668,7 +682,7 @@ class RegionTask(Task):
                   <b>*</b> to extend to maximum on this side
                   """)
         else:
-            controller.set_help_text("""<b>Edit Regions:</b><br/>\n
+            controller.set_help_text("""<b> Edit Regions: </b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete the nearest region
@@ -682,7 +696,7 @@ class RegionTask(Task):
         -------
             str HTML help text for the task
         """
-        return """Edit Regions<br/>\n
+        return """<b> Edit Regions </b> <br/>\n
                   <b>R</b> to start a new region or set the edge if editing<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete/cancel the current/nearest region

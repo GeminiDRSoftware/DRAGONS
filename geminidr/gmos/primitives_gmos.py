@@ -28,8 +28,8 @@ class GMOS(Gemini, CCD):
     tagset = {"GEMINI", "GMOS"}
 
     def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gmos.lookups'
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos)
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):

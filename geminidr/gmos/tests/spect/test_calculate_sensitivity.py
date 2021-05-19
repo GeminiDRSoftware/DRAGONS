@@ -233,7 +233,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_flat_{}.txt'.format(data_label))
         flat_reduce = Reduce()
         flat_reduce.files.extend(flat_path)
-        flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
+        flat_reduce.ucals = normalize_ucals(calibration_files)
         flat_reduce.runr()
         flat_master = flat_reduce.output_filenames.pop()
         calibration_files.append('processed_flat:{}'.format(flat_master))
@@ -243,7 +243,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
         arc_reduce = Reduce()
         arc_reduce.files.extend(arc_path)
-        arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+        arc_reduce.ucals = normalize_ucals(calibration_files)
         arc_reduce.runr()
         arc_master = arc_reduce.output_filenames.pop()
         del arc_reduce
@@ -256,7 +256,7 @@ def create_inputs_recipe():
         p.addVAR(read_noise=True, poisson_noise=False)
         p.overscanCorrect(function="spline", high_reject=3., low_reject=3.,
                           nbiascontam=0, niterate=2, order=None)
-        p.biasCorrect(bias=bias_master, do_bias=True)
+        p.biasCorrect(bias=bias_master, do_bias='procmode')
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
         p.flatCorrect(flat=flat_master)

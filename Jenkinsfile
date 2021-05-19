@@ -53,13 +53,14 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "unit_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -67,13 +68,23 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/py37-unit/reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
                         }
                         failure {
                             echo "Archiving tests results for Unit Tests"
                             sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
         //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
+                        }
+                        success {
+                            echo "Delete Tox Environment: .tox/py37-unit"
+                            dir ( ".tox/py37-unit" ) {
+                                deleteDir()
+                            }
                         }
                     }
 
@@ -86,6 +97,7 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "./integ_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/integ/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -93,7 +105,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Integration tests"
-                        sh 'tox -e py37-integ -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py37-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F integration'
                     } // end steps
@@ -101,8 +113,18 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/py37-integ/reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
+                        }
+                        success {
+                            echo "Delete Tox Environment: .tox/py37-integ"
+                            dir ( ".tox/py37-integ" ) {
+                                deleteDir()
+                            }
                         }
                     } // end post
                 } // end stage
@@ -114,6 +136,7 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "regression_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/regr/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -121,7 +144,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Regression tests"
-                        sh 'tox -e py37-reg -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py37-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F regression'
                     } // end steps
@@ -129,8 +152,18 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/py37-reg/reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
+                        }
+                        success {
+                            echo "Delete Tox Environment: .tox/py37-reg"
+                            dir ( ".tox/py37-reg" ) {
+                                deleteDir()
+                            }
                         }
                     } // end post
                 }
@@ -142,6 +175,7 @@ pipeline {
                         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "gmosls_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/gmosls/"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -158,9 +192,19 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: 'reports/*_results.xml'
+                                testResults: '.tmp/py37-gmosls/reports/*_results.xml'
                             )
+                            echo "Delete temporary folder: ${TMPDIR}"
+                            dir ( '$TMPDIR' ) {
+                                deleteDir()
+                            }
                         }  // end always
+                        success {
+                            echo "Delete Tox Environment: .tox/py37-gmosls"
+                            dir( '.tox/py37-gmosls' ) {
+                                deleteDir()
+                            }
+                        }
                     }  // end post
                 }  // end stage
 
@@ -174,16 +218,17 @@ pipeline {
                 PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "regression_tests_outputs"
                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                TMPDIR = "${env.WORKSPACE}/.tmp/slow/"
             }
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
                 echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
-                echo "Slow tests"
-                sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F slow'
+//                 echo "Slow tests"
+//                 sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
+//                 echo "Reporting coverage"
+//                 sh 'tox -e codecov -- -F slow'
             } // end steps
             post {
                 always {
@@ -191,6 +236,16 @@ pipeline {
                         allowEmptyResults: true,
                         testResults: 'reports/*_results.xml'
                     )
+                    echo "Delete temporary folder: ${TMPDIR}"
+                    dir ( '$TMPDIR' ) {
+                        deleteDir()
+                    }
+                }
+                success {
+                    echo "Delete Tox Environment: .tox/py37-slow"
+                    dir( '.tox/py37-slow' ) {
+                        deleteDir()
+                    }
                 }
             } // end post
         }

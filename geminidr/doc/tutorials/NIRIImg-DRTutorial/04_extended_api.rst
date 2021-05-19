@@ -97,18 +97,17 @@ Archive.  This allows the ``Reduce`` instance to make requests for matching
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/``, edit the configuration file ``rsys.cfg`` as follow::
+In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
 
     [calibs]
-    standalone = True
-    database_dir = <where_the_data_package_is>/niriimg_tutorial/playground
+    databases = <where_the_data_package_is>/niriimg_tutorial/playground/cal_manager.db get
 
 This tells the system where to put the calibration database, the
 database that will keep track of the processed calibration we are going to
 send to it.
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
-    Also, mind the dot in ``.geminidr``.
+    Also, mind the dot in ``.dragons``.
 
 The calibration database is initialized and the calibration service is
 configured like this:
@@ -117,11 +116,9 @@ configured like this:
     :linenos:
     :lineno-start: 11
 
-    caldb = cal_service.CalibrationService()
-    caldb.config()
+    caldb = cal_service.set_local_database()
     caldb.init()
 
-    cal_service.set_calservice()
 
 The calibration service is now ready to use.  If you need more details,
 check the "|caldb|" documentation in the Recipe System User Manual.
