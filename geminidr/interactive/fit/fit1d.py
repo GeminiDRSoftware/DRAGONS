@@ -272,7 +272,8 @@ class InteractiveModel1D(InteractiveModel):
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
-        bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x)}
+        bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x),
+                      'model': np.zeros_like(y)}
         for extra_column in ('residuals', 'ratio'):
             if extra_column in self.data.data:
                 bokeh_data[extra_column] = np.zeros_like(y)
@@ -352,10 +353,11 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.model.perform_fit(self)
         self.update_mask()
+        self.data.data['fitted'] = self.evaluate(self.x)
         if 'residuals' in self.data.data:
-            self.data.data['residuals'] = self.y - self.evaluate(self.x)
+            self.data.data['residuals'] = self.y - self.data.data['fitted']
         if 'ratio' in self.data.data:
-            self.data.data['ratio'] = self.y / self.evaluate(self.x)
+            self.data.data['ratio'] = self.y / self.data.data['fitted']
         self.notify_listeners()
 
     def evaluate(self, x):

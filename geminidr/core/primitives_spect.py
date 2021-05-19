@@ -1105,14 +1105,16 @@ class Spect(PrimitivesBASE):
                                    ],
                     modal_message="Hang on, this stuff is tricky",
                     tab_name_fmt="Slit {}",
+                    xlabel="Fitted wavelength (nm)",
                     domains=domains,
                     title="Wavelength Solution",
                     primitive_name=self.myself(),
-                    filename_info=ad.filename)
+                    filename_info=ad.filename,
+                    enable_regions=False, plot_ratios=False, plot_height=350)
                 geminidr.interactive.server.interactive_fitter(visualizer)
-                for ext, fit1d, other in zip(ad, visualizer.results(),
-                                             visualizer.other_data):
-                    # Try to get rid of input_data here
+                for ext, fit1d, image, other in zip(ad, visualizer.results(),
+                                             visualizer.image, visualizer.other_data):
+                    fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
                 for ext in ad:

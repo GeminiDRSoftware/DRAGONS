@@ -563,8 +563,9 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 # Probably incoords and outcoords as defined here should go to
                 # the interactive fitter, but cull to derive the "best" model
                 fit1d = fit_1D(outcoords, points=incoords, function="chebyshev",
-                               order=m_final.degree, domain=m_final.domain, niter=10,
-                               sigma_lower=3.0, sigma_upper=3.0)
+                               order=m_final.degree, domain=m_final.domain,
+                               niter=config.niter, sigma_lower=config.lsigma,
+                               sigma_upper=config.hsigma)
                 fit1d.image = np.asarray(outcoords)
             except ValueError:
                 log.warning("Line-matching failed")

@@ -1,9 +1,12 @@
+import numpy as np
+
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
 from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
 
 from geminidr.interactive import interactive
+from .fit1d import InfoPanel
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor
@@ -17,7 +20,7 @@ from .. import server
 
 class WavelengthSolutionPanel(Fit1DPanel):
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
-                 weights=None, xlabel='x', ylabel='y',
+                 weights=None, other_data=None, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True):
         """
@@ -63,6 +66,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.fit.other_data = other_data
 
         # also listen for updates to the masks
         self.fit.add_mask_listener(self.info_panel.update_mask)
@@ -100,6 +104,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         controls = column(*controls_ls, width=220)
 
         # Now the figures
+        # Because I'm not plotting x against y, I don't want to set the ranges
+        # (or at least, not like this)
         x_range = None
         y_range = None
         try:
@@ -115,6 +121,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 y_range = Range1d(y_min - y_pad, y_max + y_pad)
         except:
             pass  # ok, we don't *need* ranges...
+        x_range = None
+        y_range = None
         if enable_user_masking:
             tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
         else:
@@ -126,6 +134,19 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         output_backend="webgl", x_range=x_range, y_range=y_range)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
+
+        p_spectrum = figure(plot_width=plot_width, plot_height=plot_height,
+                            min_width=400,
+                            title='Spectrum', x_axis_label=xlabel, y_axis_label=ylabel,
+                            tools=tools,
+                            output_backend="webgl", x_range=p_main.x_range, y_range=None)
+        p_spectrum.height_policy = 'fixed'
+        p_spectrum.width_policy = 'fit'
+        p_spectrum.sizing_mode = 'stretch_width'
+        self.spectrum = bm.ColumnDataSource({'wavelengths': self.fit.evaluate(np.arange(domain[0], domain[1]+1)),
+                                             'spectrum': self.fit.other_data["spectrum"]})
+        p_spectrum.line(x='wavelengths', y='spectrum', source=self.spectrum, line_width=1,
+                        color="blue")
 
         if enable_regions:
             self.band_model = GIRegionModel()
@@ -148,7 +169,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             mask_handlers = None
 
         Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
-        fig_column = [p_main, self.info_div]
+        fig_column = [p_spectrum, p_main, self.info_div]
 
         if plot_residuals:
             # x_range is linked to the main plot so that zooming tracks between them
@@ -164,7 +185,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             connect_figure_extras(p_resid, None, self.band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
-            p_resid.scatter(x='x', y='residuals', source=self.fit.data,
+            p_resid.scatter(x='fitted', y='residuals', source=self.fit.data,
                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         if plot_ratios:
             p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
@@ -179,7 +200,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             connect_figure_extras(p_ratios, None, self.band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
-            p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
+            p_ratios.scatter(x='fitted', y='ratio', source=self.fit.data,
                              size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         if plot_residuals and plot_ratios:
             tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
@@ -196,7 +217,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
 
-        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
+        self.scatter = p_main.scatter(x='fitted', y='y', source=self.fit.data,
                                       size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
 
@@ -211,7 +232,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace',
+        self.line = p_main.line(x='model',
                                 y='model',
                                 source=self.fit.evaluation,
                                 line_width=3,
@@ -231,6 +252,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.component = row(controls, col,
                                  css_classes=["tab-content"],
                                  spacing=10)
+
+    # I could put the extra stuff in a second listener but the name of this
+    # is generic
+    def model_change_handler(self):
+        """
+        If the `~fit` changes, this gets called to evaluate the fit and save the results.
+        """
+        super().model_change_handler()
+        domain = self.fit.model.domain
+        self.spectrum.data['wavelengths'] = self.fit.evaluate(
+            np.arange(domain[0], domain[1]+1))
 
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
@@ -391,19 +423,21 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 domains = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights, other) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights, other_data), start=1):
-                tui = WavelengthSolutionPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = WavelengthSolutionPanel(
+                    self, fitting_parms, domain, x, y, weights,
+                    other_data=other_data, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.fit)
-                tui.fit.other_data = other
         else:
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
-            tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
+            tui = WavelengthSolutionPanel(
+                self, fitting_parameters[0], domains[0], allx[0], ally[0],
+                all_weights[0], other_data=other_data[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
-            tui.fit.other = other_data
 
     def reconstruct_points(self):
         """
@@ -448,3 +482,11 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     self.reinit_button.disabled = False
 
             self.do_later(rfn)
+
+    @property
+    def other_data(self):
+        return [fit.other_data for fit in self.fits]
+
+    @property
+    def image(self):
+        return [fit.data.data["y"] for fit in self.fits]
