@@ -6,6 +6,7 @@ from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
 from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
+from bokeh import events
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
@@ -610,15 +611,7 @@ class FittingParametersUI:
             new value of the toggle button
         """
         self.fit.sigma_clip = bool(new)
-
         self.enable_disable_sigma_inputs()
-
-        if self.fit.sigma_clip:
-            self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
-            self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
-        else:
-            self.fitting_parameters["sigma_upper"] = None
-            self.fitting_parameters["sigma_lower"] = None
         self.fit.perform_fit()
 
     def sigma_slider_handler(self, val):
@@ -726,14 +719,10 @@ class Fit1DPanel:
 
         reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
 
-        def reset_dialog_handler(result):
-            if result:
-                self.fitting_parameters_ui.reset_ui()
-
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
                                                                   'Reset will change all inputs for this tab back '
                                                                   'to their original values.  Proceed?',
-                                                                  reset_dialog_handler)
+                                                                  self.reset_dialog_handler)
 
         controller_div = Div(margin=(20, 0, 0, 0),
                              width=220,
@@ -779,11 +768,7 @@ class Fit1DPanel:
 
         if enable_regions:
             self.band_model = GIRegionModel()
-
-            def update_regions():
-                self.fit.model.regions = self.band_model.build_regions()
-
-            self.band_model.add_listener(Fit1DRegionListener(update_regions))
+            self.band_model.add_listener(Fit1DRegionListener(self.update_regions))
             self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
             connect_figure_extras(p_main, None, self.band_model)
@@ -798,6 +783,7 @@ class Fit1DPanel:
             mask_handlers = None
 
         Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
+        self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main, self.info_div]
 
         if plot_residuals:
@@ -881,6 +867,17 @@ class Fit1DPanel:
             self.component = row(controls, col,
                                  css_classes=["tab-content"],
                                  spacing=10)
+
+    def reset_dialog_handler(self, result):
+        """
+        Reset fit parameter values.
+        """
+        if result:
+            self.fitting_parameters_ui.reset_ui()
+
+    def update_regions(self):
+        """ Update fitting regions """
+        self.fit.model.regions = self.band_model.build_regions()
 
     def model_change_handler(self):
         """
@@ -996,6 +993,39 @@ class Fit1DPanel:
         # TODO figure out if we are using this or band_mask
         # self.fitting_parameters.regions = self.band_model.build_regions()
         self.visualizer.do_later(self.fit.perform_fit)
+
+    @staticmethod
+    def add_custom_cursor_behavior(p):
+        """
+        Customize cursor behavior depending on which tool is active.
+        """
+        pan_start = '''
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var active = [...mainPlot.getElementsByClassName('bk-active')];
+
+            console.log(active);
+
+            if ( active.some(e => e.title == "Pan") ) { 
+                Bokeh.cursor = 'move'; }
+        '''
+
+        pan_end = '''
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
+
+            Bokeh.cursor = 'default';
+            elm.style.cursor = Bokeh.cursor;
+        '''
+
+        mouse_move = """
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
+            elm.style.cursor = Bokeh.cursor;
+        """
+
+        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
+        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
+        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
 
 class Fit1DRegionListener(GIRegionListener):

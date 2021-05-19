@@ -5,7 +5,6 @@ from copy import deepcopy
 
 import numpy as np
 from astropy import table
-from bokeh import events
 from bokeh import models as bm
 from bokeh.layouts import column, row, Spacer
 from bokeh.plotting import figure
@@ -58,36 +57,6 @@ class FittingParametersForTracedDataUI(FittingParametersUI):
                        self.grow_slider]
 
         return column_list
-
-    def sigma_button_handler(self, attr, old, new):
-        """
-        Handle the sigma clipping being turned on or off.
-
-        This will also trigger a fit since the result may
-        change.
-
-        Parameters
-        ----------
-        attr : Any
-            unused
-        old : str
-            old value of the toggle button
-        new : str
-            new value of the toggle button
-        """
-        self.fit.sigma_clip = bool(new)
-
-        self.enable_disable_sigma_inputs()
-
-        if self.fit.sigma_clip:
-            self.fitting_parameters["sigma_upper"] = \
-                self.sigma_upper_slider.children[0].value
-            self.fitting_parameters["sigma_lower"] = \
-                self.sigma_lower_slider.children[0].value
-        else:
-            self.fitting_parameters["sigma_upper"] = None
-            self.fitting_parameters["sigma_lower"] = None
-        self.fit.perform_fit()
 
 
 # noinspection PyMissingConstructor
@@ -344,39 +313,6 @@ class TraceAperturesTab(Fit1DPanel):
 
         return col, _controller
 
-    @staticmethod
-    def add_custom_cursor_behavior(p):
-        """
-        Customize cursor behavior depending on which tool is active.
-        """
-        pan_start = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var active = [...mainPlot.getElementsByClassName('bk-active')];
-
-            console.log(active);
-            
-            if ( active.some(e => e.title == "Pan") ) { 
-                Bokeh.cursor = 'move'; }
-        '''
-
-        pan_end = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-            
-            Bokeh.cursor = 'default';
-            elm.style.cursor = Bokeh.cursor;
-        '''
-
-        mouse_move = """
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-            elm.style.cursor = Bokeh.cursor;
-        """
-
-        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
-        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
-        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
-
     def create_rms_div(self):
         """
         Creates a bm.Div placeholder to print out the RMS information.
@@ -401,13 +337,6 @@ class TraceAperturesTab(Fit1DPanel):
 
         return rms_div
 
-    def reset_dialog_handler(self, result):
-        """
-        Reset fit parameter values.
-        """
-        if result:
-            self.fitting_parameters_ui.reset_ui()
-
     @staticmethod
     def update_info(info_div, f):
         """
@@ -421,10 +350,6 @@ class TraceAperturesTab(Fit1DPanel):
             ???
         """
         info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
-
-    def update_regions(self):
-        """ Update fitting regions """
-        self.fit.model.regions = self.band_model.build_regions()
 
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
