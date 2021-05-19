@@ -12,7 +12,7 @@ from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor
-from geminidr.interactive.interactive_config import interactiveConf
+from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
@@ -66,7 +66,7 @@ class InteractiveModel(ABC):
     """
 
     def __init__(self, model):
-        bokeh_data_color = interactiveConf().bokeh_data_color
+        bokeh_data_color = interactive_conf().bokeh_data_color
         InteractiveModel.PALETTE[2] = bokeh_data_color
 
         self.model = model

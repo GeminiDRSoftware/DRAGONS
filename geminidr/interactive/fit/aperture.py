@@ -14,7 +14,7 @@ from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
-from geminidr.interactive.interactive_config import interactiveConf
+from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
@@ -953,7 +953,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().visualize(doc)
 
-        bokeh_data_color = interactiveConf().bokeh_data_color
+        bokeh_data_color = interactive_conf().bokeh_data_color
 
         params = self.parameters_view()
 

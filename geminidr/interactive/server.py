@@ -14,7 +14,7 @@ from geminidr.interactive import controls
 
 __all__ = ["interactive_fitter", "stop_server"]
 
-from geminidr.interactive.interactive_config import interactiveConf
+from geminidr.interactive.interactive_config import interactive_conf
 
 from recipe_system.config import globalConf
 
@@ -120,7 +120,7 @@ def _bkapp(doc):
     -------
     none
     """
-    ic = interactiveConf()
+    ic = interactive_conf()
     bokeh_theme = ic.bokeh_theme
     bokeh_template_css = ic.bokeh_template_css
 
@@ -238,7 +238,7 @@ def start_server():
         _bokeh_server.start()
 
     # to force a browser, add browser="chrome" tp this add_callback
-    ic = interactiveConf()
+    ic = interactive_conf()
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", browser=ic.browser)
     _bokeh_server.io_loop.start()
 

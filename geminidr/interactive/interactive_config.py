@@ -3,14 +3,35 @@
 
 from recipe_system.config import globalConf
 
+
+__all__ = ["interactive_conf", "show_add_aperture_button"]
+
+
 # Hit if we want to show or hide the add aperture button
 # It was decided to remove it in favor of keystrokes
 # but at some point I may want it back for Jupyter
 show_add_aperture_button = False
 
 
+# This is a singleton, Guido van Rossum’s implementation
 class InteractiveConfig:
-    def __init__(self, theme=None):
+    """
+    Singleton configuration data for interactive code.
+
+    This should be created after the core DRAGONS
+    ``globalConf``.  To ensure this happens, I
+    recommend only putting it inside of the methods
+    of the interactive server and interfaces.
+    """
+    def __new__(cls, *args, **kwds):
+        it = cls.__dict__.get("__it__")
+        if it is not None:
+            return it
+        cls.__it__ = it = object.__new__(cls)
+        it.init(*args, **kwds)
+        return it
+
+    def init(self, *args, **kwargs):
         self.bokeh_theme = 'caliber'
         self.bokeh_data_color = 'black'
         self.bokeh_line_color = 'crimson'
@@ -40,5 +61,10 @@ class InteractiveConfig:
             pass
 
 
-def interactiveConf():
+def interactive_conf():
+    """
+    Get the interactive configuration singleton.
+
+    :return:
+    """
     return InteractiveConfig()
