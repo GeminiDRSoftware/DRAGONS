@@ -12,7 +12,7 @@ from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor
-from geminidr.interactive.interactive_config import bokeh_data_color
+from geminidr.interactive.interactive_config import interactiveConf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
@@ -48,9 +48,10 @@ USER_MASK_NAME = 'rejected (user)'
 
 
 class InteractiveModel(ABC):
+
     MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square']
-    PALETTE = ('lightsteelblue', 'lightskyblue', bokeh_data_color, 'darksalmon')  # Category10[4]
+    PALETTE = ['lightsteelblue', 'lightskyblue', 'black', 'darksalmon']  # Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -65,6 +66,9 @@ class InteractiveModel(ABC):
     """
 
     def __init__(self, model):
+        bokeh_data_color = interactiveConf().bokeh_data_color
+        InteractiveModel.PALETTE[2] = bokeh_data_color
+
         self.model = model
         self.listeners = []
         self.mask_listeners = []
@@ -783,7 +787,7 @@ class Fit1DPanel:
             mask_handlers = None
 
         Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
-        self.add_custom_cursor_behavior(p_main)
+        # self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main, self.info_div]
 
         if plot_residuals:
@@ -995,6 +999,8 @@ class Fit1DPanel:
         # self.fitting_parameters.regions = self.band_model.build_regions()
         self.visualizer.do_later(self.fit.perform_fit)
 
+    # TODO refactored this down from tracing, but it breaks
+    # x/y tracking when the mouse moves in the figure for calculateSensitivity
     @staticmethod
     def add_custom_cursor_behavior(p):
         """

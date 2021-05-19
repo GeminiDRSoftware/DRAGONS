@@ -3,6 +3,19 @@ body {
     color: white;
 }
 
+div.container {
+    background-color: black;
+    color: white;
+}
+
+.bk .tab-content {
+    background-color: black;
+    border-left: solid 1px  #555555;
+    border-right: solid 1px  #555555;
+    border-bottom: solid 1px  #555555;
+    border-top: solid 1px  #555555;
+}
+
 .bk-root .bk-tabs-header .bk-tab.bk-active {
     color: white;
     background-color: #333333;
@@ -12,4 +25,49 @@ body {
 .bk-root .bk-input {
     background-color: #333333;
     color: white;
+}
+
+.bk-root .bk-button-bar {
+  background-color: #333333;
+  border-radius: 0px 5px 5px 0px;
+}
+
+.bk-root .bk-toolbar.bk-right {
+    background-color: black;
+    margin: 5px;
+    height: 100%;
+}
+
+/**
+ * Updates the appearance of the buttons in the Bokeh's toolbar on the right
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button {
+  background-color: #666666;
+  filter: brightness(125%);
+  margin: 0px;
+  border: 1px 1px 1px 0px solid white;
+  border-radius: 0px 5px 5px 0px;
+  transition: all .25s linear;
+}
+
+/**
+ * These buttons get a bit darker when the user hovers the mouse over them
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button:hover {
+  filter: brightness(90%);
+}
+
+/**
+ * Overrides the "active" state to make it more obvious
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button.bk-active {
+  background-color: #333333;
+  filter: brightness(80%);
+}
+
+/**
+ * Override the highlight along the tab top
+ */
+.bk-root .bk-tabs-header.bk-above .bk-headers-wrapper {
+    border-bottom: 1px solid #333333;
 }

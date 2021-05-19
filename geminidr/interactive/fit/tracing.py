@@ -21,8 +21,7 @@ from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
 
-from ..interactive_config import bokeh_data_color, bokeh_line_color
-
+from ..interactive_config import interactiveConf
 
 # noinspection PyUnusedLocal,PyMissingConstructor
 class FittingParametersForTracedDataUI(FittingParametersUI):
@@ -174,6 +173,9 @@ class TraceAperturesTab(Fit1DPanel):
         Creates the central plot area with the main plot, the residuals and
         a text field where the user can select regions.
         """
+        ic = interactiveConf()
+        bokeh_line_color = ic.bokeh_line_color
+
         # Now the figures
         x_range = None
         y_range = None
