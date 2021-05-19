@@ -21,6 +21,7 @@ from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
 
+from ..interactive_config import interactive_conf
 
 # noinspection PyUnusedLocal,PyMissingConstructor
 class FittingParametersForTracedDataUI(FittingParametersUI):
@@ -123,6 +124,8 @@ class TraceAperturesTab(Fit1DPanel):
         self.component = row(self.plots_column, self.pars_column,
                              css_classes=["tab-content"], spacing=5)
 
+        self.line = None
+
     def create_pars_column(self, fit_pars_ui, rms_div, column_width=220):
         """
         Creates the control panel on the left of the page where one can set
@@ -170,6 +173,9 @@ class TraceAperturesTab(Fit1DPanel):
         Creates the central plot area with the main plot, the residuals and
         a text field where the user can select regions.
         """
+        ic = interactive_conf()
+        bokeh_line_color = ic.bokeh_line_color
+
         # Now the figures
         x_range = None
         y_range = None
@@ -287,9 +293,8 @@ class TraceAperturesTab(Fit1DPanel):
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model',
-                                source=self.fit.evaluation, line_width=3,
-                                color='crimson')
+        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3,
+                                color=bokeh_line_color)
 
         fig_column = [p_main, p_resid]
 

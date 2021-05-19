@@ -14,6 +14,7 @@ from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
+from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
@@ -26,6 +27,7 @@ renderer = hv.renderer('bokeh')
 __all__ = ["interactive_find_source_apertures", ]
 
 log = logutils.get_logger(__name__)
+
 
 DETAILED_HELP = """
 
@@ -951,12 +953,14 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().visualize(doc)
 
+        bokeh_data_color = interactive_conf().bokeh_data_color
+
         params = self.parameters_view()
 
         ymax = 100  # we will update this when we have a profile
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
         aperture_view.fig.step(x='x', y='y', source=self.model.profile_source,
-                               color="black", mode="center")
+                               color=bokeh_data_color, mode="center")
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
         # making button configurable so we can add it conditionally for notebooks in future
