@@ -1431,6 +1431,10 @@ class Spect(PrimitivesBASE):
                 log.stdinfo(f"Sky subtraction has not been performed on {ad.filename}"
                             " - extracting sky from separate apertures")
 
+            kw_to_delete = [ad._keyword_for(desc)
+                            for desc in ("detector_section", "array_section")]
+            kw_datasec = ad._keyword_for("data_section")
+
             for ext in ad:
                 extname = f"{ad.filename} extension {ext.id}"
                 if debug:
@@ -1553,10 +1557,11 @@ class Spect(PrimitivesBASE):
                                                 'Aperture upper limit')
 
                     # Delete unnecessary keywords
-                    for descriptor in ('detector_section', 'array_section'):
-                        kw = ad._keyword_for(descriptor)
+                    for kw in kw_to_delete:
                         if kw in ext_spec.hdr:
                             del ext_spec.hdr[kw]
+
+                    ext_spec.hdr[kw_datasec] = f"[1:{ext_spec.data.size}]"
 
             # Don't output a file with no extracted spectra
             if len(ad_spec) > 0:

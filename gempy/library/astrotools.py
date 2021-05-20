@@ -7,10 +7,8 @@ The astroTools module contains astronomy specific utility functions
 import os
 import re
 import numpy as np
-from collections import namedtuple
 from astropy import units as u
 
-Section = namedtuple('Section', 'x1 x2 y1 y2')
 
 def array_from_list(list_of_quantities, unit=None):
     """
@@ -103,19 +101,6 @@ def divide0(numerator, denominator):
 
         return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
-
-def section_str_to_tuple(section, log=None):
-    warn = log.warning if log else print
-    if section is not None:
-        try:
-            x1, x2, y1, y2 = [int(v) for v in section.strip('[]').
-                replace(',', ':').split(':')]
-        except (AttributeError, ValueError):
-            warn("Cannot parse section. Using full frame for statistics")
-            section = None
-        else:
-            section = Section(x1-1, x2, y1-1, y2)
-    return section
 
 
 def cartesian_regions_to_slices(regions):

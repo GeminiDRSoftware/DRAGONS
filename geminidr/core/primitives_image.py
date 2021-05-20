@@ -10,8 +10,8 @@ from copy import deepcopy
 from scipy.ndimage import binary_dilation
 
 from astrodata.provenance import add_provenance
+from astrodata import Section
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.utils.md5 import md5sum
 
@@ -371,7 +371,8 @@ class Image(Preprocess, Register, Resample):
                         "different sizes. Turning off.")
             separate_ext = False
 
-        section = at.section_str_to_tuple(section)
+        if section is not None:
+            section = Section.from_string(section)
 
         # I'm not making the assumption that all extensions are the same shape
         # This makes things more complicated, but more general
@@ -380,13 +381,12 @@ class Image(Preprocess, Register, Resample):
             all_data = []
             for index, ext in enumerate(ad):
                 if section is None:
-                    x1, y1 = 0, 0
-                    y2, x2 = ext.data.shape
+                    _slice = None
                 else:
-                    x1, x2, y1, y2 = section
-                data = ext.data[y1:y2, x1:x2]
+                    _slice = section.asslice()
+                data = ext.data[_slice]
                 if data.size:
-                    mask = None if ext.mask is None else ext.mask[y1:y2, x1:x2]
+                    mask = None if ext.mask is None else ext.mask[_slice]
                 else:
                     log.warning("Section does not intersect with data for "
                                 f"{ad.filename} extension {ext.id}."
