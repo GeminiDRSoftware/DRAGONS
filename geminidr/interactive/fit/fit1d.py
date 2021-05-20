@@ -9,7 +9,7 @@ from bokeh.plotting import figure
 from bokeh import events
 
 from geminidr.interactive import interactive
-from geminidr.interactive.controls import Controller
+from geminidr.interactive.controls import Controller, Handler
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor
 from geminidr.interactive.interactive_config import interactive_conf

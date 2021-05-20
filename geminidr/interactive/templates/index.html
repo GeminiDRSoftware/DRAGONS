@@ -84,6 +84,12 @@
     // doing whole document.  Or we could figure out how to target a bokeh-generated container div
     // preventDefault causes the key not to pass to any widgets that are in focus, such as a text input
     document.addEventListener("keydown", function(event){
+        if ((event.key >= 'a' && event.key <= 'z') || event.key === '*' || event.key === '[' || event.key === ']') {
+            var url = '/handle_key?key=' + event.key
+            $.ajax(url)
+            event.preventDefault()
+            return
+        }
         switch(event.key){
         case 'a':
             $.ajax('/handle_key?key=a');
@@ -141,14 +147,6 @@
             $.ajax('/handle_key?key=c');
             event.preventDefault()
             break;
-        //case 65:
-        //  tabs.active = 0;
-        //  event.preventDefault()
-        //  break;
-        //case 66:
-        //  tabs.active = 1;
-        //  event.preventDefault()
-        //  break;
         }
      });
      var help_popup = null;

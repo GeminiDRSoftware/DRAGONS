@@ -284,18 +284,6 @@ class Controller(object):
         def _ui_loop_handle_key(_key):
             if _key in self.handlers.keys():
                 self.handlers[_key].handle(_key, self.x, self.y)
-            # if _key == 'm' or _key == 'M':
-            #     if self.mask_handler:
-            #         # mult is used to convert the y distance to be in x-equivalent-pixel terms
-            #         mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
-            #                ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
-            #         self.mask_handler(self.x, self.y, mult)
-            #
-            # elif _key == 'u' or _key == 'U':
-            #     if self.unmask_handler:
-            #         mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
-            #                ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
-            #         self.unmask_handler(self.x, self.y, mult)
 
             elif self.task:
                 if self.task.handle_key(_key):
