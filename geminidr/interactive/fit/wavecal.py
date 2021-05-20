@@ -67,12 +67,19 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
         self.fit.other_data = other_data
+        linear_model = self.linear_model
+        self.fit.data.data['fitted'] = self.fit.evaluate(self.fit.data.data['x'])
+        self.fit.data.data['nonlinear'] = self.fit.data.data['y'] - linear_model(self.fit.data.data['x'])
+        self.fit.evaluation.data['nonlinear'] = self.fit.evaluation.data['model'] - linear_model(self.fit.evaluation.data['xlinspace'])
 
         # also listen for updates to the masks
         self.fit.add_mask_listener(self.info_panel.update_mask)
 
         fit = self.fit
         self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
+
+        self.spectrum = bm.ColumnDataSource({'wavelengths': self.fit.evaluate(np.arange(domain[0], domain[1]+1)),
+                                             'spectrum': self.fit.other_data["spectrum"]})
 
         controls_ls = list()
 
@@ -137,16 +144,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         p_spectrum = figure(plot_width=plot_width, plot_height=plot_height,
                             min_width=400,
-                            title='Spectrum', x_axis_label=xlabel, y_axis_label=ylabel,
+                            title='Spectrum', x_axis_label=xlabel, y_axis_label="Signal",
                             tools=tools,
                             output_backend="webgl", x_range=p_main.x_range, y_range=None)
         p_spectrum.height_policy = 'fixed'
         p_spectrum.width_policy = 'fit'
         p_spectrum.sizing_mode = 'stretch_width'
-        self.spectrum = bm.ColumnDataSource({'wavelengths': self.fit.evaluate(np.arange(domain[0], domain[1]+1)),
-                                             'spectrum': self.fit.other_data["spectrum"]})
-        p_spectrum.line(x='wavelengths', y='spectrum', source=self.spectrum, line_width=1,
-                        color="blue")
+        p_spectrum.step(x='wavelengths', y='spectrum', source=self.spectrum, line_width=1,
+                        color="blue", mode="center")
 
         if enable_regions:
             self.band_model = GIRegionModel()
@@ -217,7 +222,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
 
-        self.scatter = p_main.scatter(x='fitted', y='y', source=self.fit.data,
+        self.scatter = p_main.scatter(x='fitted', y='nonlinear', source=self.fit.data,
                                       size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
 
@@ -233,7 +238,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.fit.perform_fit()
         self.line = p_main.line(x='model',
-                                y='model',
+                                y='nonlinear',
                                 source=self.fit.evaluation,
                                 line_width=3,
                                 color='crimson')
@@ -253,14 +258,25 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                  css_classes=["tab-content"],
                                  spacing=10)
 
+    @property
+    def linear_model(self):
+        """Return only the linear part of a model. It doesn't work for
+        splines, which is why it's not in the InteractiveModel1D class"""
+        model = self.fit.model.fit._models
+        return model.__class__(degree=1, c0=model.c0, c1=model.c1, domain=model.domain)
+
     # I could put the extra stuff in a second listener but the name of this
-    # is generic
+    # is generic, so let's just super() it and then do the extra stuff
     def model_change_handler(self):
         """
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
         super().model_change_handler()
-        domain = self.fit.model.domain
+        self.fit.data.data['fitted'] = self.fit.evaluate(self.fit.data.data['x'])
+        linear_model = self.linear_model
+        self.fit.data.data['nonlinear'] = self.fit.data.data['y'] - linear_model(self.fit.data.data['x'])
+        self.fit.evaluation.data['nonlinear'] = self.fit.evaluation.data['model'] - linear_model(self.fit.evaluation.data['xlinspace'])
+        domain = self.fit.domain
         self.spectrum.data['wavelengths'] = self.fit.evaluate(
             np.arange(domain[0], domain[1]+1))
 

@@ -272,8 +272,7 @@ class InteractiveModel1D(InteractiveModel):
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
-        bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x),
-                      'model': np.zeros_like(y)}
+        bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x)}
         for extra_column in ('residuals', 'ratio'):
             if extra_column in self.data.data:
                 bokeh_data[extra_column] = np.zeros_like(y)
@@ -353,11 +352,10 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.model.perform_fit(self)
         self.update_mask()
-        self.data.data['fitted'] = self.evaluate(self.x)
         if 'residuals' in self.data.data:
-            self.data.data['residuals'] = self.y - self.data.data['fitted']
+            self.data.data['residuals'] = self.y - self.evaluate(self.x)
         if 'ratio' in self.data.data:
-            self.data.data['ratio'] = self.y / self.data.data['fitted']
+            self.data.data['ratio'] = self.y / self.evaluate(self.x)
         self.notify_listeners()
 
     def evaluate(self, x):
@@ -471,33 +469,27 @@ class FittingParametersUI:
 
         self.description = self.build_description()
 
-        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None,
-                                                          fitting_parameters, "order", fit.perform_fit, throttled=True,
-                                                          config=vis.config, slider_width=128)
-        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)", fitting_parameters["sigma_upper"],
-                                                                None, None, None,
-                                                                fitting_parameters, "sigma_upper",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True,
-                                                                config=vis.config, slider_width=128)
-        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)", fitting_parameters["sigma_lower"],
-                                                                None, None, None,
-                                                                fitting_parameters, "sigma_lower",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True,
-                                                                config=vis.config, slider_width=128)
-        self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                          None, None, None,
-                                                          fitting_parameters, "niter",
-                                                          fit.perform_fit,
-                                                          throttled=True,
-                                                          config=vis.config, slider_width=128)
-        self.grow_slider = interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                         None, None, None,
-                                                         fitting_parameters, "grow",
-                                                         fit.perform_fit,
-                                                         throttled=True,
-                                                         config=vis.config, slider_width=128)
+        self.order_slider = interactive.build_text_slider(
+            "Order", fitting_parameters["order"], None, None, None,
+            fitting_parameters, "order", fit.perform_fit, throttled=True,
+            config=vis.config, slider_width=128)
+        self.sigma_upper_slider = interactive.build_text_slider(
+            "Sigma (Upper)", fitting_parameters["sigma_upper"], None, None,
+            None, fitting_parameters, "sigma_upper", self.sigma_slider_handler,
+            throttled=True, config=vis.config, slider_width=128)
+        self.sigma_lower_slider = interactive.build_text_slider(
+            "Sigma (Lower)", fitting_parameters["sigma_lower"], None, None,
+            None, fitting_parameters, "sigma_lower", self.sigma_slider_handler,
+            throttled=True, config=vis.config, slider_width=128)
+        self.niter_slider = interactive.build_text_slider(
+            "Max iterations", fitting_parameters["niter"], None, None, None,
+            fitting_parameters, "niter", fit.perform_fit, throttled=True,
+            config=vis.config, slider_width=128)
+        if "grow" in fitting_parameters:  # not all have them
+            self.grow_slider = interactive.build_text_slider(
+                "Grow", fitting_parameters["grow"], None, None, None,
+                fitting_parameters, "grow", fit.perform_fit, throttled=True,
+                config=vis.config, slider_width=128)
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
 
@@ -516,13 +508,14 @@ class FittingParametersUI:
         if self.function:
             column_list = [self.function, self.order_slider, self.description,
                            self.niter_slider, self.sigma_button,
-                           self.sigma_lower_slider, self.sigma_upper_slider,
-                           self.grow_slider]
+                           self.sigma_lower_slider, self.sigma_upper_slider]
         else:
             column_list = [self.order_slider, self.description,
                            self.niter_slider, self.sigma_button,
                            self.sigma_lower_slider,
-                           self.sigma_upper_slider, self.grow_slider]
+                           self.sigma_upper_slider]
+        if hasattr(self, "grow_slider"):
+            column_list.append(self.grow_slider)
 
         return column_list
 
@@ -550,14 +543,14 @@ class FittingParametersUI:
 
     def reset_ui(self):
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
-        for slider, key in [(self.order_slider, "order"),
-                            (self.sigma_upper_slider, "sigma_upper"),
-                            (self.sigma_lower_slider, "sigma_lower"),
-                            (self.niter_slider, "niter"),
-                            (self.grow_slider, "grow")
-                            ]:
-            slider.children[0].value = self.fitting_parameters[key]
-            slider.children[1].value = self.fitting_parameters[key]
+        for key in ("order", "sigma_upper", "sigma_lower", "niter", "grow"):
+            try:
+                slider = self.getattr(f"{key}_slider")
+            except AttributeError:
+                pass
+            else:
+                slider.children[0].value = self.fitting_parameters[key]
+                slider.children[1].value = self.fitting_parameters[key]
         self.sigma_button.active = [0] if self.saved_sigma_clip else []
         self.fit.perform_fit()
 

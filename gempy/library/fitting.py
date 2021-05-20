@@ -557,11 +557,12 @@ class fit_1D:
         if niter is None:
             niter = 100
 
-        new_params = {"grow": params.get("grow", 0),
-                      "niter": niter,
+        new_params = {"niter": niter,
                       "order": params["order"],
                       "function": params["function"],
                       "sigma_lower": lsigma,
                       "sigma_upper": hsigma,
                       "regions": params.get("regions")}
+        if "grow" in params:
+            new_params["grow"] = params["grow"]
         return new_params

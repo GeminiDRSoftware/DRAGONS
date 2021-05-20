@@ -1105,7 +1105,7 @@ class Spect(PrimitivesBASE):
                                    ],
                     modal_message="Hang on, this stuff is tricky",
                     tab_name_fmt="Slit {}",
-                    xlabel="Fitted wavelength (nm)",
+                    xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     title="Wavelength Solution",
                     primitive_name=self.myself(),
