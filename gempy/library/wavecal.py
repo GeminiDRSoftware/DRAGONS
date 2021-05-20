@@ -114,7 +114,7 @@ class LineList:
 
         # If we're converting between air and vacuum, we want the transformed
         # wavelengths to have the same number of decimal places as the input
-        self._decimals = max(len((line.strip().split()[0]+".").split("."))
+        self._decimals = max(len((line.strip().split()[0]+".").split(".")[1])
                              for line in data_lines)
         self._lines = np.genfromtxt(data_lines, usecols=[0])
         try:
