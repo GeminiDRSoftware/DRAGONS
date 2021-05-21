@@ -641,7 +641,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Reset tracing parameter
             reset_tracing_button = bm.Button(
                 align='start',
-                button_type='danger',
+                button_type='warning',
                 height=35,
                 id='reset-tracing-pars',
                 label="Reset",

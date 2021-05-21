@@ -898,7 +898,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         def _use_snr_handler(new):
             model.use_snr = 0 in new
 
-        reset_button = Button(label="Reset", button_type='danger',
+        reset_button = Button(label="Reset", button_type='warning',
                               default_size=200)
 
         def _reset_handler(result):
