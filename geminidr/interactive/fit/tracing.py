@@ -119,7 +119,7 @@ class TraceAperturesTab(Fit1DPanel):
 
         self.plots_column, self.controller = self.create_plots_column(
             plot_height=plot_height, plot_title=plot_title,
-            plot_width=plot_width, xlabel=xlabel, ylabel=ylabel)
+            plot_width=plot_width, xlabel=xlabel, ylabel=ylabel, domain=domain)
 
         self.component = row(self.plots_column, self.pars_column,
                              css_classes=["tab-content"], spacing=5)
@@ -168,7 +168,7 @@ class TraceAperturesTab(Fit1DPanel):
         return controls_col, controller_help
 
     def create_plots_column(self, plot_width, plot_height, plot_title, xlabel,
-                            ylabel, enable_regions=True):
+                            ylabel, enable_regions=True, domain=None):
         """
         Creates the central plot area with the main plot, the residuals and
         a text field where the user can select regions.
@@ -220,7 +220,7 @@ class TraceAperturesTab(Fit1DPanel):
         # Enable region selection ----------------------------------------------
         if enable_regions:
 
-            self.band_model = GIRegionModel()
+            self.band_model = GIRegionModel(domain=domain)
 
             def update_regions():
                 self.fit.model.regions = self.band_model.build_regions()
@@ -244,7 +244,8 @@ class TraceAperturesTab(Fit1DPanel):
 
         _controller = Controller(p_main, None, self.band_model,
                                  self.controller_help,
-                                 mask_handlers=mask_handlers)
+                                 mask_handlers=mask_handlers,
+                                 domain=domain)
 
         self.add_custom_cursor_behavior(p_main)
 

@@ -12,7 +12,7 @@ from bokeh import models as bm
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
-from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_regions
 from gempy.library.config import FieldValidationError
 
 
@@ -823,7 +823,7 @@ class GIRegionModel:
     """
     Model for tracking a set of regions.
     """
-    def __init__(self):
+    def __init__(self, domain=None):
         # Right now, the region model is effectively stateless, other
         # than maintaining the set of registered listeners.  That is
         # because the regions are not used for anything, so there is
@@ -833,6 +833,12 @@ class GIRegionModel:
         self.region_id = 1
         self.listeners = list()
         self.regions = dict()
+        if domain:
+            self.min_x = domain[0]
+            self.max_x = domain[1]
+        else:
+            self.min_x = None
+            self.max_x = None
 
     def add_listener(self, listener):
         """
@@ -867,7 +873,15 @@ class GIRegionModel:
         #     self.delete_region(region_id)
         self.region_id = 1
         for tup in tuples:
-            self.adjust_region(self.region_id, tup.start, tup.stop)
+            start = tup.start
+            stop = tup.stop
+            if self.min_x is not None:
+                start = max(start, self.min_x)
+                stop = max(stop, self.min_x)
+            if self.max_x is not None:
+                start = min(start, self.max_x)
+                stop = min(stop, self.max_x)
+            self.adjust_region(self.region_id, start, stop)
             self.region_id = self.region_id + 1
         self.finish_regions()
 
@@ -1278,7 +1292,12 @@ class RegionEditor(GIRegionListener):
                 self.region_model.finish_regions()
 
             if current != region_text:
-                if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
+                unparseable = False
+                try:
+                    parse_user_regions(region_text)
+                except ValueError:
+                    unparseable = True
+                if not unparseable and re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
                     self.region_model.load_from_string(region_text)
                     self.text_input.value = self.region_model.build_regions()
                     self.error_message.visible = False

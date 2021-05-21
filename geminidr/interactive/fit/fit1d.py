@@ -771,7 +771,7 @@ class Fit1DPanel:
         p_main.width_policy = 'fit'
 
         if enable_regions:
-            self.band_model = GIRegionModel()
+            self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
             self.band_model.add_listener(Fit1DRegionListener(self.update_regions))
             self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
@@ -786,7 +786,8 @@ class Fit1DPanel:
             self.band_model = None
             mask_handlers = None
 
-        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
+        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers,
+                   domain=[0, domain] if isinstance(domain, int) else domain)
         # self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main, self.info_div]
 
