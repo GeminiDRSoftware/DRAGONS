@@ -171,11 +171,7 @@ class InteractiveModel1D(InteractiveModel):
         weights = self.populate_bokeh_objects(x, y, weights=weights, mask=mask)
         self.weights = weights
 
-        if "sigma" in fitting_parameters and fitting_parameters["sigma"]:
-            self.sigma_clip = True
-        else:
-            self.sigma_clip = False
-
+        self.sigma_clip = "sigma" in fitting_parameters and fitting_parameters["sigma"]
         model.perform_fit(self)
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
                                                'model': self.evaluate(xlinspace)})
@@ -470,7 +466,7 @@ class FittingParametersUI:
             None, fitting_parameters, "sigma_lower", self.sigma_slider_handler,
             throttled=True, config=vis.config, slider_width=128)
         self.niter_slider = interactive.build_text_slider(
-            "Max iterations", fitting_parameters["niter"], None, None, None,
+            "Max iterations", fitting_parameters["niter"], None, 1, None,
             fitting_parameters, "niter", fit.perform_fit, throttled=True,
             config=vis.config, slider_width=128)
         if "grow" in fitting_parameters:  # not all have them
@@ -487,26 +483,16 @@ class FittingParametersUI:
 
     def enable_disable_sigma_inputs(self):
         # enable/disable sliders
-        if self.fit.sigma_clip:
-            for c in self.niter_slider.children:
-                c.disabled = False
-            for c in self.sigma_upper_slider.children:
-                c.disabled = False
-            for c in self.sigma_lower_slider.children:
-                c.disabled = False
-            if hasattr(self, "grow_slider"):
-                for c in self.grow_slider.children:
-                    c.disabled = False
-        else:
-            for c in self.niter_slider.children:
-                c.disabled = True
-            for c in self.sigma_upper_slider.children:
-                c.disabled = True
-            for c in self.sigma_lower_slider.children:
-                c.disabled = True
-            if hasattr(self, "grow_slider"):
-                for c in self.grow_slider.children:
-                    c.disabled = True
+        disabled = not self.fit.sigma_clip
+        for c in self.niter_slider.children:
+            c.disabled = disabled
+        for c in self.sigma_upper_slider.children:
+            c.disabled = disabled
+        for c in self.sigma_lower_slider.children:
+            c.disabled = disabled
+        if hasattr(self, "grow_slider"):
+            for c in self.grow_slider.children:
+                c.disabled = disabled
 
     def build_column(self):
         """
