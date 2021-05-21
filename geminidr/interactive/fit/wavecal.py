@@ -1,6 +1,7 @@
 import numpy as np
 
 from bokeh import models as bm, transform as bt
+from bokeh.io import curdoc
 from bokeh.layouts import row, column
 from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
@@ -12,9 +13,10 @@ from geminidr.interactive.interactive import GIRegionModel, connect_figure_extra
     RegionEditor
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
+from gempy.library.matching import match_sources
 
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D)
+                    FittingParametersUI, InteractiveModel1D, BAND_MASK_NAME)
 from .. import server
 
 
@@ -58,18 +60,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # Just to get the doc later
         self.visualizer = visualizer
 
-        self.info_panel = InfoPanel()
-        self.info_div = self.info_panel.component
+        info_panel = InfoPanel()
 
         # Make a listener to update the info panel with the RMS on a fit
-        listeners = [lambda f: self.info_panel.update(f), ]
+        listeners = [lambda f: info_panel.update(f), ]
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
         self.fit.other_data = other_data
 
         # also listen for updates to the masks
-        self.fit.add_mask_listener(self.info_panel.update_mask)
+        self.fit.add_mask_listener(info_panel.update_mask)
 
         fit = self.fit
         self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
@@ -77,6 +78,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # No need to compute wavelengths here as the model_change_handler() does it
         self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(self.fit.other_data["spectrum"]),
                                              'spectrum': self.fit.other_data["spectrum"]})
+        self.id_spacer = 0.02 * self.spectrum.data['spectrum'].max()  # gap above line before wavelength string
 
         # This updates everything so we use it here to create all the
         # extra columns we need for this Visualizer
@@ -144,6 +146,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
+        # Here's my Wavecal-specific block
         p_spectrum = figure(plot_width=plot_width, plot_height=plot_height,
                             min_width=400, title='Spectrum',
                             x_axis_label=xlabel, y_axis_label="Signal",
@@ -154,11 +157,20 @@ class WavelengthSolutionPanel(Fit1DPanel):
         p_spectrum.sizing_mode = 'stretch_width'
         p_spectrum.step(x='wavelengths', y='spectrum', source=self.spectrum,
                         line_width=1, color="blue", mode="center")
-        glyph = bm.glyphs.Text(x='fitted', y='peaks', text='lines',
-                               angle=0.5*np.pi, text_color='black',
-                               text_baseline='middle')
-        p_spectrum.add_glyph(self.fit.data, glyph)
+        p_spectrum.text(x='fitted', y='heights', text='lines',
+                        source=self.fit.data, angle=0.5*np.pi,
+                        text_color=self.fit.mask_rendering_kwargs()['color'],
+                        text_baseline='middle')
         self.spectrum_plot = p_spectrum
+
+        self.line_chooser = row(bm.Div())
+
+        identify_button = bm.Button(label="Identify lines")
+        identify_button.on_click(self.identify_lines)
+        #curdoc().add_root(identify_button)
+
+        identify_panel = row(self.line_chooser, identify_button)
+        # Here endeth my Wavecal-specific block
 
         if enable_regions:
             self.band_model = GIRegionModel()
@@ -181,7 +193,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             mask_handlers = None
 
         Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
-        fig_column = [p_spectrum, p_main, self.info_div]
+        fig_column = [p_spectrum, identify_panel, p_main, info_panel.component]
 
         if plot_residuals:
             # x_range is linked to the main plot so that zooming tracks between them
@@ -237,11 +249,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
         x_data = self.fit.data.data['x']
+        mask = self.fit.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
-            if not self.band_model or self.band_model.contains(x_data[i]):
-                self.fit.band_mask[i] = 0
-            else:
-                self.fit.band_mask[i] = 1
+            if self.band_model and not self.band_model.contains(x_data[i]) and mask[i] == 'good':
+                mask[i] = BAND_MASK_NAME
+        fit.data.data['mask'] = mask
+        self.fit.perform_fit()
 
         self.fit.perform_fit()
         self.line = p_main.line(x='model',
@@ -285,7 +298,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.fit.data.data['fitted'] = self.fit.evaluate(x)
         self.fit.data.data['nonlinear'] = y - linear_model(x)
-        self.fit.data.data['peaks'] = [self.spectrum.data['spectrum'][int(xx + 0.5)] + 0.02 * self.spectrum.data['spectrum'].max() for xx in x]
+        self.fit.data.data['heights'] = [self.spectrum.data['spectrum'][int(xx + 0.5)] + 0.02 * self.spectrum.data['spectrum'].max() for xx in x]
         self.fit.data.data['lines'] = [str(np.round(yy, decimals=6)) for yy in y]
 
         self.fit.evaluation.data['nonlinear'] = self.fit.evaluation.data['model'] - linear_model(self.fit.evaluation.data['xlinspace'])
@@ -293,6 +306,68 @@ class WavelengthSolutionPanel(Fit1DPanel):
         domain = self.fit.domain
         self.spectrum.data['wavelengths'] = self.fit.evaluate(
             np.arange(domain[0], domain[1]+1))
+
+    def add_identified_line(self, peak, wavelength):
+        """
+        Add a new line to the ColumnDataSource and performs a new fit
+
+        Parameters
+        ----------
+        peak : float
+            pixel locations of peak
+        wavelength : float
+            wavelengths
+        """
+        new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
+                    'fitted': [0], 'nonlinear': [0], 'heights': [0],
+                    'lines': [str(np.round(wavelength, decimals=6))],
+                   }
+        self.fit.data.stream(new_data)
+        self.fit.perform_fit()
+
+    def identify_lines(self):
+        """
+        Called when the user clicks the "Identify Lines" button. This:
+        1) Removes any masked points (user-masked or sigma-clipped) from the fit data
+        2) Gets all the already-identified peaks that aren't in the fit
+        3) Calculates the wavelengths of these peaks, based on the fit
+        4) Matches those to unmatched lines in the linelist based on some criteria
+        5) Adds new matches to the list
+        6) Performs a new fit, triggering a plot update
+        """
+        print("IDENTIFY LINES")
+        dw = self.linear_model.c1
+        matching_distance = abs(self.fit.other_data["fwidth"] * dw)
+        all_lines = self.fit.other_data["linelist"].wavelengths(
+            in_vacuo=self.visualizer.config.in_vacuo, units="nm")
+
+        good_data = {}
+        for k, v in self.fit.data.data.items():
+            good_data[k] = [vv for vv, mask in zip(v, self.fit.data.data['mask'])
+                            if mask == 'good']
+
+        matches = match_sources(all_lines, good_data['y'], radius=0.01 * abs(dw))
+        unmatched_lines = [l for l, m in zip(all_lines, matches) if m == -1]
+
+        new_peaks = np.setdiff1d(self.fit.other_data["peaks"],
+                                 good_data['x'], assume_unique=True)
+        new_waves = self.fit.evaluate(new_peaks)
+
+        matches = match_sources(new_waves, unmatched_lines, radius=matching_distance)
+        for peak, m in zip(new_peaks, matches):
+            if m != -1:
+                good_data['x'].append(peak)
+                good_data['y'].append(unmatched_lines[m])
+                good_data['mask'].append('good')
+                good_data['fitted'].append(0)
+                good_data['nonlinear'].append(0)
+                good_data['heights'].append(0)
+                good_data['residuals'].append(0)
+                good_data['lines'].append(str(np.round(unmatched_lines[m], decimals=6)))
+                print("NEW LINE", peak, unmatched_lines[m])
+
+        self.fit.data.data = good_data
+        self.fit.perform_fit()
 
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):

@@ -43,10 +43,11 @@ def build_fit_1D(fit1d_params, data, points, weights, domain):
 
 SIGMA_MASK_NAME = 'rejected (sigma)'
 USER_MASK_NAME = 'rejected (user)'
+BAND_MASK_NAME = 'excluded'
 
 
 class InteractiveModel(ABC):
-    MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
+    MASK_TYPE = [BAND_MASK_NAME, USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square']
     # PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')
     PALETTE = ('lightsteelblue', 'lightskyblue', 'black', 'darksalmon')  # Category10[4]
@@ -57,10 +58,6 @@ class InteractiveModel(ABC):
         (c) the way the fitting is performed
         (d) the input and output coordinates, mask, and weights
 
-    There will be 3 masks defined (all booleans):
-        user_mask: points masked by the user
-        fit_mask:  points rejected by the fit
-        band_mask: points rejected by not being in a selection band (only if bands exist)
     """
 
     def __init__(self, model):
@@ -98,11 +95,7 @@ class InteractiveModel(ABC):
 
     def notify_mask_listeners(self):
         for mask_listener in self.mask_listeners:
-            mask_listener(
-                self.band_mask,
-                self.user_mask,
-                self.fit_mask
-            )
+            mask_listener(self.data.data['mask'])
 
     @abstractmethod
     def perform_fit(self):
@@ -137,27 +130,6 @@ class InteractiveModel(ABC):
         return {'marker': bt.factor_mark('mask', self.MARKERS, self.MASK_TYPE),
                 'color': bt.factor_cmap('mask', self.PALETTE, self.MASK_TYPE)}
 
-    def update_mask(self):
-        """
-        Update the internal mask on the data using the various boolean masks.
-
-        This will consolidate the `~geminidr.interactive.fit.fit1d.InteractiveModel.band_mask`,
-        `~geminidr.interactive.fit.fit1d.InteractiveModel.user_mask`, and
-        `~geminidr.interactive.fit.fit1d.InteractiveModel.fit_mask` into a unified data mask.
-        Order of preference is `user`, `band`, `fit`, `init`
-        """
-        # Update the "mask" column to change the glyphs
-        new_mask = ['good'] * len(self.data.data['mask'])
-        for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
-            if fm:
-                new_mask[i] = SIGMA_MASK_NAME
-            if bdm:
-                new_mask[i] = 'excluded'
-            if um:
-                new_mask[i] = USER_MASK_NAME
-        self.data.data['mask'] = new_mask
-        self.notify_mask_listeners()
-
 
 class InteractiveModel1D(InteractiveModel):
     """
@@ -183,10 +155,6 @@ class InteractiveModel1D(InteractiveModel):
         """
         model = InteractiveFit1D(fitting_parameters, domain, listeners=listeners)
         super().__init__(model)
-
-        self.user_mask = None
-        self.fit_mask = None
-        self.band_mask = None
 
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
@@ -256,28 +224,28 @@ class InteractiveModel1D(InteractiveModel):
         if weights is not None:
             weights = weights[~init_mask]
 
-        self.fit_mask = np.zeros_like(x, dtype=bool)
         # "section" is the valid section provided by the user,
         # i.e., points not in this region(s) are user-masked
         if self.section is None:
-            self.user_mask = np.array(np.zeros_like(self.fit_mask))
+            mask = ['good'] * len(x)
         else:
-            self.user_mask = np.array(np.ones_like(self.fit_mask))
+            user_mask = np.array(np.ones_like(x, dtype=bool))
             for slice_ in self.section:
-                self.user_mask[slice_.start < x < slice_.stop] = False
+                user_mask[slice_.start < x < slice_.stop] = False
+            mask = list(np.where(user_mask, USER_MASK_NAME, 'good'))
 
-        if self.band_mask is None:
-            # otherwise we want to keep the band mask as we still have the bands in place
-            self.band_mask = np.array(np.zeros_like(self.fit_mask))
+        #if self.band_mask is None:
+        #    # otherwise we want to keep the band mask as we still have the bands in place
+        #    self.band_mask = np.array(np.zeros_like(self.fit_mask))
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
-        bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x)}
+        bokeh_data = {'x': x, 'y': y, 'mask': mask}
         for extra_column in ('residuals', 'ratio'):
             if extra_column in self.data.data:
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
-        self.update_mask()
+        self.notify_mask_listeners()
 
         return weights
 
@@ -290,7 +258,7 @@ class InteractiveModel1D(InteractiveModel):
         -------
         array of double : x coordinates
         """
-        return self.data.data['x']
+        return np.asarray(self.data.data['x'])
 
     @property
     def y(self):
@@ -301,7 +269,7 @@ class InteractiveModel1D(InteractiveModel):
         -------
         array of double : y coordinates
         """
-        return self.data.data['y']
+        return np.asarray(self.data.data['y'])
 
     @property
     def sigma(self):
@@ -351,7 +319,6 @@ class InteractiveModel1D(InteractiveModel):
         changed so they can respond.
         """
         self.model.perform_fit(self)
-        self.update_mask()
         if 'residuals' in self.data.data:
             self.data.data['residuals'] = self.y - self.evaluate(self.x)
         if 'ratio' in self.data.data:
@@ -431,14 +398,20 @@ class InteractiveFit1D:
 
         # TODO switch back if we use the region string...
         # goodpix = ~(parent.user_mask | parent.band_mask)
-        goodpix = ~parent.user_mask
+        goodpix = np.array([m != USER_MASK_NAME for m in parent.data.data['mask']])
 
         self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
                                 domain=self.domain, weights=None if parent.weights is None else parent.weights[goodpix])
-        parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
+        mask = parent.data.data['mask'].copy()
+        fit_mask = np.zeros_like(parent.x, dtype=bool)
         if parent.sigma_clip:
             # Now pull in the sigma mask
-            parent.fit_mask[goodpix] = self.fit.mask
+            fit_mask[goodpix] = self.fit.mask
+        for i in range(fit_mask.size):
+            if fit_mask[i] and mask[i] == 'good':
+                mask[i] = SIGMA_MASK_NAME
+        parent.data.data['mask'] = mask
+
         for ll in self.listeners:
             ll(self.fit)
 
@@ -465,7 +438,12 @@ class FittingParametersUI:
 
             self.function.on_change('value', fn_select_change)
         else:
-            self.function = None
+            # If the function is fixed
+            self.function = bm.Div(
+            text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
+            min_width=100, max_width=202, sizing_mode='stretch_width',
+            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+            width_policy='max')
 
         self.description = self.build_description()
 
@@ -601,9 +579,9 @@ class InfoPanel:
         self.user_count = 0
         self.fit_count = 0
         self.component = Div(text='')
-        self.recalc()
+        self.update_panel()
 
-    def recalc(self):
+    def update_panel(self):
         rms = '<b>RMS:</b> {rms:.4f}<br/>'.format(rms=self.rms)
         band = '<b>Band Masked:</b> {band_count}<br/>'.format(band_count=self.band_count) if self.band_count else ''
         user = '<b>User Masked:</b> {user_count}<br/>'.format(user_count=self.user_count) if self.user_count else ''
@@ -613,13 +591,13 @@ class InfoPanel:
 
     def update(self, f):
         self.rms = f.rms
-        self.recalc()
+        self.update_panel()
 
-    def update_mask(self, band_mask, user_mask, fit_mask):
-        self.band_count = sum(band_mask)
-        self.user_count = sum(user_mask)
-        self.fit_count = sum(fit_mask) - self.band_count
-        self.recalc()
+    def update_mask(self, mask):
+        self.band_count = mask.count(BAND_MASK_NAME)
+        self.user_count = mask.count(USER_MASK_NAME)
+        self.fit_count = mask.count(SIGMA_MASK_NAME)
+        self.update_panel()
 
 
 class Fit1DPanel:
@@ -811,13 +789,13 @@ class Fit1DPanel:
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
         x_data = self.fit.data.data['x']
+        mask = self.fit.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
-            if not self.band_model or self.band_model.contains(x_data[i]):
-                self.fit.band_mask[i] = 0
-            else:
-                self.fit.band_mask[i] = 1
-
+            if self.band_model and not self.band_model.contains(x_data[i]) and mask[i] == 'good':
+                mask[i] = BAND_MASK_NAME
+        fit.data.data['mask'] = mask
         self.fit.perform_fit()
+
         self.line = p_main.line(x='xlinspace',
                                 y='model',
                                 source=self.fit.evaluation,
@@ -863,8 +841,10 @@ class Fit1DPanel:
             self._point_mask_handler(x, y, mult, 'mask')
         else:
             self.fit.data.selected.update(indices=[])
+            mask = self.fit.data.data['mask'].copy()
             for i in indices:
-                self.fit.user_mask[i] = 1
+                mask[i] = USER_MASK_NAME
+            self.fit.data.data['mask'] = mask
             self.fit.perform_fit()
 
     def unmask_button_handler(self, x, y, mult):
@@ -881,12 +861,17 @@ class Fit1DPanel:
             This is ignored, but the button passes it
         """
         indices = self.fit.data.selected.indices
+        x_data = self.fit.data.data['x']
         if not indices:
             self._point_mask_handler(x, y, mult, 'unmask')
         else:
             self.fit.data.selected.update(indices=[])
+            mask = self.fit.data.data['mask'].copy()
             for i in indices:
-                self.fit.user_mask[i] = 0
+                if mask[i] == USER_MASK_NAME:
+                    mask[i] = ('good' if self.band_model.contains(x_data[i])
+                               else BAND_MASK_NAME)
+            self.fit.data.data['mask'] = mask
             self.fit.perform_fit()
 
     def _point_mask_handler(self, x, y, mult, action):
@@ -908,12 +893,11 @@ class Fit1DPanel:
         sel = None
         xarr = self.fit.data.data['x']
         yarr = self.fit.data.data['y']
+        mask = self.fit.data.data['mask']
         if action not in ('mask', 'unmask'):
             action = None
         for i in range(len(xarr)):
-            if action is None or \
-                    (action == 'unmask' and self.fit.user_mask[i]) or \
-                    (action == 'mask' and self.fit.user_mask[i] == 0):
+            if action is None or ((action == 'mask') ^ (mask[i] == USER_MASK_NAME)):
                 xd = xarr[i]
                 yd = yarr[i]
                 if xd is not None and yd is not None:
@@ -922,11 +906,12 @@ class Fit1DPanel:
                         dist = ddist
                         sel = i
         if sel is not None:
-            # we have a closest point, toggle the user mask
-            if self.fit.user_mask[sel]:
-                self.fit.user_mask[sel] = 0
+            # we have a clos_maskest point, toggle the user mask
+            if mask[sel] == USER_MASK_NAME:
+                mask[sel] = ('good' if self.band_model.contains(xarr[sel])
+                               else BAND_MASK_NAME)
             else:
-                self.fit.user_mask[sel] = 1
+                mask[sel] = USER_MASK_NAME
 
         self.fit.perform_fit()
 
@@ -942,11 +927,15 @@ class Fit1DPanel:
         marking all points as included.
         """
         x_data = self.fit.data.data['x']
+        mask = self.fit.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
             if self.band_model.contains(x_data[i]):
-                self.fit.band_mask[i] = 0
-            else:
-                self.fit.band_mask[i] = 1
+                # User mask takes preference
+                if mask[i] != USER_MASK_NAME:
+                    mask[i] = 'good'
+            elif mask[i] != USER_MASK_NAME:
+                mask[i] = BAND_MASK_NAME
+        self.fit.data.data['mask'] = mask
         # Band operations can come in through the keypress URL
         # so we defer the fit back onto the Bokeh IO event loop
 

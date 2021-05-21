@@ -457,9 +457,9 @@ class fit_1D:
             stack_shape = self._stack_shape
         else:
             tmpshape = list(self._tmpshape)
-            tmpshape[tmpaxis] = points.size
+            tmpshape[tmpaxis] = np.asarray(points).size
             stack_shape = list(self._stack_shape)
-            stack_shape[tmpaxis] = points.size
+            stack_shape[tmpaxis] = tmpshape[tmpaxis]
 
         # Create an output array of the same shape & type as the fitted input
         # image (except for any change of sample "points" along the fitted
