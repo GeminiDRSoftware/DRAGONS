@@ -868,19 +868,27 @@ class GIRegionModel:
 
     def load_from_tuples(self, tuples):
         self.clear_regions()
-        # region_ids = list(self.regions.keys())
-        # for region_id in region_ids:
-        #     self.delete_region(region_id)
         self.region_id = 1
+
+        def constrain_min(val, min):
+            if val is None:
+                return min
+            if min is None:
+                return val
+            return max(val, min)
+        def constrain_max(val, max):
+            if val is None:
+                return max
+            if max is None:
+                return val
+            return min(val, max)
         for tup in tuples:
             start = tup.start
             stop = tup.stop
-            if self.min_x is not None:
-                start = max(start, self.min_x)
-                stop = max(stop, self.min_x)
-            if self.max_x is not None:
-                start = min(start, self.max_x)
-                stop = min(stop, self.max_x)
+            start = constrain_min(start, self.min_x)
+            stop = constrain_min(stop, self.min_x)
+            start = constrain_max(start, self.max_x)
+            stop = constrain_max(stop, self.max_x)
             self.adjust_region(self.region_id, start, stop)
             self.region_id = self.region_id + 1
         self.finish_regions()
@@ -1219,7 +1227,8 @@ class RegionEditor(GIRegionListener):
 
         self.error_message = Div(text="<b> <span style='color:red'> "
                                       "  Please use comma separated : delimited "
-                                      "  values (i.e. 101:500,511:900,951:)"
+                                      "  values (i.e. 101:500,511:900,951:). "
+                                      " Negative values are not allowed."
                                       "</span></b>")
 
         self.error_message.visible = False

@@ -133,7 +133,7 @@ class TraceAperturesTab(Fit1DPanel):
         """
         # Create the reset button, add its functionality and add it to the layout
         reset_button = bm.Button(align='start',
-                                 button_type='danger',
+                                 button_type='warning',
                                  height=35,
                                  label="Reset",
                                  width=202)
