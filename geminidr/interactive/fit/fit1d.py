@@ -494,8 +494,9 @@ class FittingParametersUI:
                 c.disabled = False
             for c in self.sigma_lower_slider.children:
                 c.disabled = False
-            for c in self.grow_slider.children:
-                c.disabled = False
+            if hasattr(self, "grow_slider"):
+                for c in self.grow_slider.children:
+                    c.disabled = False
         else:
             for c in self.niter_slider.children:
                 c.disabled = True
@@ -503,8 +504,9 @@ class FittingParametersUI:
                 c.disabled = True
             for c in self.sigma_lower_slider.children:
                 c.disabled = True
-            for c in self.grow_slider.children:
-                c.disabled = True
+            if hasattr(self, "grow_slider"):
+                for c in self.grow_slider.children:
+                    c.disabled = True
 
     def build_column(self):
         """
