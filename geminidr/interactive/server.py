@@ -18,6 +18,10 @@ __all__ = ["test_mode", "interactive_fitter", "stop_server"]
 # order to test the interactive paths automatically
 test_mode = True
 
+from geminidr.interactive.interactive_config import interactive_conf
+
+from recipe_system.config import globalConf
+
 _bokeh_server = None
 _visualizer = None
 
@@ -120,7 +124,12 @@ def _bkapp(doc):
     -------
     none
     """
+    ic = interactive_conf()
+    bokeh_theme = ic.bokeh_theme
+    bokeh_template_css = ic.bokeh_template_css
+
     template = "index.html"
+    doc.theme = bokeh_theme
     if _visualizer.template:
         template = _visualizer.template
     with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
@@ -131,6 +140,7 @@ def _bkapp(doc):
         template = f.read()
         t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
+        doc.template_variables['css_template'] = bokeh_template_css
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
         doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
 
@@ -231,12 +241,12 @@ def start_server():
                     raise
         _bokeh_server.start()
 
-    # to force a browser, add browser="chrome" tp this add_callback
     if test_mode:
         # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu", "--dump-dom"]}
         kwargs = {"browser": "chrome"}
     else:
-        kwargs = {}
+        ic = interactive_conf()
+        kwargs = {"browser": ic.browser}
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", **kwargs)
     _bokeh_server.io_loop.start()
 

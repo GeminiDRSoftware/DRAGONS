@@ -3,14 +3,16 @@ from abc import ABC, abstractmethod
 from copy import copy
 from functools import cmp_to_key
 
+from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
                           NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
+from bokeh import models as bm
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
-from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_regions
 from gempy.library.config import FieldValidationError
 
 
@@ -256,7 +258,7 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        extras = [] if extras is None else extras
+        extras = {} if extras is None else extras
         params = [] if params is None else params
         widgets = []
         if self.config is None:
@@ -454,6 +456,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Check if the value is viable as an int or float, according to our type
         if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
             return True
+        if val is None:
+            return False
         try:
             if is_float:
                 float(val)
@@ -467,7 +471,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Update the slider with the new value from the text input
         if not _input_check(new):
             if _input_check(old):
-                text_input.value = str(old)
+                text_input.value = old
             return
         if old != new:
             if is_float:
@@ -843,7 +847,7 @@ class GIRegionModel:
     """
     Model for tracking a set of regions.
     """
-    def __init__(self):
+    def __init__(self, domain=None):
         # Right now, the region model is effectively stateless, other
         # than maintaining the set of registered listeners.  That is
         # because the regions are not used for anything, so there is
@@ -853,6 +857,12 @@ class GIRegionModel:
         self.region_id = 1
         self.listeners = list()
         self.regions = dict()
+        if domain:
+            self.min_x = domain[0]
+            self.max_x = domain[1]
+        else:
+            self.min_x = None
+            self.max_x = None
 
     def add_listener(self, listener):
         """
@@ -887,7 +897,15 @@ class GIRegionModel:
         #     self.delete_region(region_id)
         self.region_id = 1
         for tup in tuples:
-            self.adjust_region(self.region_id, tup.start, tup.stop)
+            start = tup.start
+            stop = tup.stop
+            if self.min_x is not None:
+                start = max(start, self.min_x)
+                stop = max(stop, self.min_x)
+            if self.max_x is not None:
+                start = min(start, self.max_x)
+                stop = min(stop, self.max_x)
+            self.adjust_region(self.region_id, start, stop)
             self.region_id = self.region_id + 1
         self.finish_regions()
 
@@ -1298,7 +1316,12 @@ class RegionEditor(GIRegionListener):
                 self.region_model.finish_regions()
 
             if current != region_text:
-                if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
+                unparseable = False
+                try:
+                    parse_user_regions(region_text)
+                except ValueError:
+                    unparseable = True
+                if not unparseable and re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
                     self.region_model.load_from_string(region_text)
                     self.text_input.value = self.region_model.build_regions()
                     self.error_message.visible = False
@@ -1313,3 +1336,80 @@ class RegionEditor(GIRegionListener):
 
     def get_widget(self):
         return self.widget
+
+
+class TabsTurboInjector:
+    """
+    This helper class wraps a bokeh Tabs widget
+    and improves performance by dynamically
+    adding and removing children from the DOM
+    as their tabs are un/selected.
+
+    There is a moment when the new tab is visually
+    blank before the contents pop in, but I think
+    the tradeoff is worth it if you're finding your
+    tabs unresponsive at scale.
+    """
+    def __init__(self, tabs: bm.layouts.Tabs):
+        """
+        Create a tabs turbo helper for the given bokeh Tabs.
+
+        :param tabs: :class:`~bokeh.model.layout.Tabs`
+            bokeh Tabs to manage
+        """
+        if tabs.tabs:
+            raise ValueError("TabsTurboInjector expects an empty Tabs object")
+
+        self.tabs = tabs
+        self.tab_children = list()
+        self.tab_dummy_children = list()
+
+        for i, tab in enumerate(tabs.tabs):
+            self.tabs.append(tab)
+            self.tab_children.append(tab.child)
+            self.tab_dummy_children.append(row())
+
+            if i != tabs.active:
+                tab.child = self.tab_dummy_children[i]
+
+        tabs.on_change('active', self.tabs_callback)
+
+    def add_tab(self, child: Instance(bm.layouts.LayoutDOM), title: str):
+        """
+        Add the given bokeh widget as a tab with the given title.
+
+        This child widget will be tracked by the Turbo helper.  When the tab
+        becomes active, the child will be placed into the tab.  When the
+        tab is inactive, it will be cleared to improve performance.
+
+        :param child: :class:~bokeh.core.properties.Instance(bokeh.models.layouts.LayoutDOM)
+            Widget to add as a panel's contents
+        :param title: str
+            Title for the new tab
+        """
+        tab_dummy = row(Div(),)
+        tab_child = child
+
+        self.tab_children.append(child)
+        self.tab_dummy_children.append(tab_dummy)
+
+        if self.tabs.tabs:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_dummy,), title=title))
+        else:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_child,), title=title))
+
+    def tabs_callback(self, attr, old, new):
+        """
+        This callback will be used when the tab selection changes.  It will clear the DOM
+        of the contents of the inactive tab and add back the new tab to the DOM.
+
+        :param attr: str
+            unused, will be ``active``
+        :param old: int
+            The old selection
+        :param new: int
+            The new selection
+        """
+        if old != new:
+            self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
+            self.tabs.tabs[new].child.children[0] = self.tab_children[new]

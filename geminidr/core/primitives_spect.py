@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
-from astropy.table import Table, vstack
+from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
@@ -421,7 +421,9 @@ class Spect(PrimitivesBASE):
                 all_waves = np.array([x[1] for x in all_exts])
                 all_zpt = np.array([x[2] for x in all_exts])
                 all_weights = np.array([x[3] for x in all_exts])
-                all_fp_init = np.array([fit_1D.translate_params(params)] * len(all_exts))
+                all_fp_init = []
+                for i in range(len(all_exts)):
+                    all_fp_init.append(fit_1D.translate_params(params))
 
                 # build config for interactive
                 config = self.params[self.myself()]
@@ -1393,8 +1395,6 @@ class Spect(PrimitivesBASE):
         grow : float
             Avoidance region around each source aperture if a sky aperture
             is required. Default: 10.
-        interactive: bool
-            Perform extraction interactively
         subtract_sky : bool
             Extract and subtract sky spectra from object spectra if the 2D
             spectral image has not been sky subtracted?
@@ -1430,6 +1430,10 @@ class Spect(PrimitivesBASE):
             if skysub_needed:
                 log.stdinfo(f"Sky subtraction has not been performed on {ad.filename}"
                             " - extracting sky from separate apertures")
+
+            kw_to_delete = [ad._keyword_for(desc)
+                            for desc in ("detector_section", "array_section")]
+            kw_datasec = ad._keyword_for("data_section")
 
             for ext in ad:
                 extname = f"{ad.filename} extension {ext.id}"
@@ -1553,10 +1557,11 @@ class Spect(PrimitivesBASE):
                                                 'Aperture upper limit')
 
                     # Delete unnecessary keywords
-                    for descriptor in ('detector_section', 'array_section'):
-                        kw = ad._keyword_for(descriptor)
+                    for kw in kw_to_delete:
                         if kw in ext_spec.hdr:
                             del ext_spec.hdr[kw]
+
+                    ext_spec.hdr[kw_datasec] = f"[1:{ext_spec.data.size}]"
 
             # Don't output a file with no extracted spectra
             if len(ad_spec) > 0:
@@ -1671,8 +1676,6 @@ class Spect(PrimitivesBASE):
                     if 'APERTURE' in ext.tables:
                         del ext.APERTURE
                     continue
-                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo(f"Found sources at: {locstr}")
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1681,15 +1684,19 @@ class Spect(PrimitivesBASE):
                 all_tables = []
                 for i, (loc, limits) in enumerate(zip(locations, all_limits),
                                                   start=1):
-                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
+                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1],
+                                              c0=loc)
                     aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
                     aptable["number"] = i
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
-                    log.debug("Limits for source "
-                              f"{loc:.1f} ({lower:.1f}, +{upper:.1f})")
+                    log.stdinfo(f"Aperture {i} found at {loc:.2f} "
+                                f"({lower:.2f}, +{upper:.2f})")
+                    if lower > 0 or upper < 0:
+                        log.warning("Problem with automated sizing of "
+                                    f"aperture {i}")
 
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
@@ -2804,12 +2811,11 @@ class Spect(PrimitivesBASE):
                     # Pass the primitive configuration to the interactive object.
                     _config = self.params[self.myself()]
                     _config.update(**params)
-                    ext.APERTURE = interactive_trace_apertures(
+                    aperture_models = interactive_trace_apertures(
                         ext, _config, fit1d_params)
-                    print("end of interactive traceApertures")
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    all_aperture_tables = []
+                    aperture_models = []
 
                     # For efficiency, we would like to trace all sources
                     #  simultaneously (like we do with arc lines), but we need
@@ -2819,7 +2825,7 @@ class Spect(PrimitivesBASE):
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(at.boxcar(spectrum, size=3))
+                        start = np.argmax(at.boxcar(spectrum, size=20))
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
@@ -2891,19 +2897,33 @@ class Spect(PrimitivesBASE):
                                 self.viewer.polygon(plot_coords, closed=False,
                                                     xfirst=(dispaxis == 1), origin=0)
 
-                        this_aptable = am.model_to_table(_fit_1d.model)
+                        aperture_models.append(_fit_1d.model)
 
-                        # Recalculate aperture limits after rectification
-                        apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
-                        this_aptable["aper_lower"] = \
-                            aperture["aper_lower"] #+ (location - apcoords.min())
-                        this_aptable["aper_upper"] = \
-                            aperture["aper_upper"] # - (apcoords.max() - location)
-                        all_aperture_tables.append(this_aptable)
+                all_aperture_tables = []
+                for model, aperture in zip(aperture_models, aptable):
+                    this_aptable = am.model_to_table(model)
 
-                    ext.APERTURE = vstack(all_aperture_tables,
-                                          metadata_conflicts="silent")
-                    print("end of noninteractive traceApertures")
+                    # Recalculate aperture limits after rectification
+                    #apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
+                    this_aptable["number"] = aperture["number"]
+                    this_aptable["aper_lower"] = \
+                        aperture["aper_lower"] #+ (location - apcoords.min())
+                    this_aptable["aper_upper"] = \
+                        aperture["aper_upper"] # - (apcoords.max() - location)
+                    all_aperture_tables.append(this_aptable)
+
+                # If the traces have different orders, there will be missing
+                # values that vstack will mask, so we have to set those to zero
+                new_aptable = vstack(all_aperture_tables,
+                                     metadata_conflicts="silent")
+                colnames = new_aptable.colnames
+                new_col_order = (["number"] + sorted(c for c in colnames
+                                                     if c.startswith("c")) +
+                                 ["aper_lower", "aper_upper"])
+                for col in colnames:
+                    if isinstance(new_aptable[col], MaskedColumn):
+                        new_aptable[col] = new_aptable[col].filled(fill_value=0)
+                ext.APERTURE = new_aptable[new_col_order]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
