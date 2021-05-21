@@ -7,7 +7,8 @@ accordingly to the :class:`~astrodata.TagSet` received.
 
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'astro_data_descriptor', 'astro_data_tag',
-           'open', 'create', '__version__', 'version', 'add_header_to_table']
+           'open', 'create', '__version__', 'version', 'add_header_to_table',
+           'Section']
 
 
 from .core import AstroData

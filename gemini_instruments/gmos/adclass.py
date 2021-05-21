@@ -3,11 +3,11 @@ import numpy as np
 import re
 from datetime import date
 
-from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
+from astrodata import (astro_data_tag, astro_data_descriptor, returns_list,
+                       TagSet, Section)
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
-from ..common import Section
 from ..gemini import AstroDataGemini
 
 

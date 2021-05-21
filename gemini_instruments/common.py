@@ -11,14 +11,7 @@ gemini_instruments, and:
     - it doesn't make sense to put the code in a method, as it
       doesn't rely on internal knowledge of a class.
 """
-
-__all__ = ['Section']
-
-from collections import namedtuple
-
-from .gmu import sectionStrToIntList
-
-Section = namedtuple('Section', 'x1 x2 y1 y2')
+from astrodata import Section
 
 def build_group_id(ad, desc_list, prettify=(), force_list=(), additional=None):
     """
@@ -73,22 +66,6 @@ def build_group_id(ad, desc_list, prettify=(), force_list=(), additional=None):
     # Create and return the final group_id string
     return '_'.join(desc_object_string_list)
 
-def section_to_tuple(section):
-    """
-    Takes a string describing a section in the raw format found on
-    headers ("[x1:x2,y1:y2]"), and returns a `Section` named tuple
-    with the values as integers.
-
-    Parameters
-    ----------
-    section: str
-             The section (in the form [x1:x2,y1:y2]) to be converted to a tuple
-
-    Returns
-    -------
-    An instance of `Section`
-    """
-    return Section(*sectionStrToIntList(section))
 
 def build_ir_section(ad, pretty=False):
     """

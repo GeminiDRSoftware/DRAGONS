@@ -14,6 +14,10 @@ from geminidr.interactive import controls
 
 __all__ = ["interactive_fitter", "stop_server"]
 
+from geminidr.interactive.interactive_config import interactive_conf
+
+from recipe_system.config import globalConf
+
 _bokeh_server = None
 _visualizer = None
 
@@ -116,7 +120,12 @@ def _bkapp(doc):
     -------
     none
     """
+    ic = interactive_conf()
+    bokeh_theme = ic.bokeh_theme
+    bokeh_template_css = ic.bokeh_template_css
+
     template = "index.html"
+    doc.theme = bokeh_theme
     if _visualizer.template:
         template = _visualizer.template
     with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
@@ -127,6 +136,7 @@ def _bkapp(doc):
         template = f.read()
         t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
+        doc.template_variables['css_template'] = bokeh_template_css
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
         doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
 
@@ -228,7 +238,8 @@ def start_server():
         _bokeh_server.start()
 
     # to force a browser, add browser="chrome" tp this add_callback
-    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
+    ic = interactive_conf()
+    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", browser=ic.browser)
     _bokeh_server.io_loop.start()
 
     # The server normally stops when the user hits the Submit button in the

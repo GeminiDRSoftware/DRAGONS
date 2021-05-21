@@ -6,11 +6,13 @@ from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
 from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
+from bokeh import events
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor
+from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
@@ -49,8 +51,7 @@ BAND_MASK_NAME = 'excluded'
 class InteractiveModel(ABC):
     MASK_TYPE = [BAND_MASK_NAME, USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square']
-    # PALETTE = ('#1f77b4', '#ff7f0e', '#000000', '#9467bd')
-    PALETTE = ('lightsteelblue', 'lightskyblue', 'black', 'darksalmon')  # Category10[4]
+    PALETTE = ['lightsteelblue', 'lightskyblue', 'black', 'darksalmon']  # Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model
@@ -61,6 +62,9 @@ class InteractiveModel(ABC):
     """
 
     def __init__(self, model):
+        bokeh_data_color = interactive_conf().bokeh_data_color
+        InteractiveModel.PALETTE[2] = bokeh_data_color
+
         self.model = model
         self.listeners = []
         self.mask_listeners = []
@@ -167,7 +171,7 @@ class InteractiveModel1D(InteractiveModel):
         weights = self.populate_bokeh_objects(x, y, weights=weights, mask=mask)
         self.weights = weights
 
-        if "sigma_lower" in fitting_parameters or "sigma_upper" in fitting_parameters:
+        if "sigma" in fitting_parameters and fitting_parameters["sigma"]:
             self.sigma_clip = True
         else:
             self.sigma_clip = False
@@ -400,7 +404,13 @@ class InteractiveFit1D:
         # goodpix = ~(parent.user_mask | parent.band_mask)
         goodpix = np.array([m != USER_MASK_NAME for m in parent.data.data['mask']])
 
-        self.fit = build_fit_1D(self.fitting_parameters, parent.y[goodpix], points=parent.x[goodpix],
+        if parent.sigma_clip:
+            fitparms = {x: y for x, y in self.fitting_parameters.items()
+                        if x not in ['sigma']}
+        else:
+            fitparms = {x: y for x, y in self.fitting_parameters.items()
+                        if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
+        self.fit = build_fit_1D(fitparms, parent.y[goodpix], points=parent.x[goodpix],
                                 domain=self.domain, weights=None if parent.weights is None else parent.weights[goodpix])
         mask = parent.data.data['mask'].copy()
         fit_mask = np.zeros_like(parent.x, dtype=bool)
@@ -471,7 +481,30 @@ class FittingParametersUI:
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
 
+        self.enable_disable_sigma_inputs()
+
         self.controls_column = self.build_column()
+
+    def enable_disable_sigma_inputs(self):
+        # enable/disable sliders
+        if self.fit.sigma_clip:
+            for c in self.niter_slider.children:
+                c.disabled = False
+            for c in self.sigma_upper_slider.children:
+                c.disabled = False
+            for c in self.sigma_lower_slider.children:
+                c.disabled = False
+            for c in self.grow_slider.children:
+                c.disabled = False
+        else:
+            for c in self.niter_slider.children:
+                c.disabled = True
+            for c in self.sigma_upper_slider.children:
+                c.disabled = True
+            for c in self.sigma_lower_slider.children:
+                c.disabled = True
+            for c in self.grow_slider.children:
+                c.disabled = True
 
     def build_column(self):
         """
@@ -485,11 +518,11 @@ class FittingParametersUI:
         """
         if self.function:
             column_list = [self.function, self.order_slider, self.description,
-                           self.niter_slider, self.sigma_button,
+                           self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider, self.sigma_upper_slider]
         else:
             column_list = [self.order_slider, self.description,
-                           self.niter_slider, self.sigma_button,
+                           self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider,
                            self.sigma_upper_slider]
         if hasattr(self, "grow_slider"):
@@ -552,12 +585,7 @@ class FittingParametersUI:
             new value of the toggle button
         """
         self.fit.sigma_clip = bool(new)
-        if self.fit.sigma_clip:
-            self.fitting_parameters["sigma_upper"] = self.sigma_upper_slider.children[0].value
-            self.fitting_parameters["sigma_lower"] = self.sigma_lower_slider.children[0].value
-        else:
-            self.fitting_parameters["sigma_upper"] = None
-            self.fitting_parameters["sigma_lower"] = None
+        self.enable_disable_sigma_inputs()
         self.fit.perform_fit()
 
     def sigma_slider_handler(self, val):
@@ -646,6 +674,10 @@ class Fit1DPanel:
         # Make a listener to update the info panel with the RMS on a fit
         listeners = [lambda f: self.info_panel.update(f), ]
 
+        # prep params to clean up sigma related inputs for the interface
+        # i.e. niter min of 1, etc.
+        prep_fit1d_params_for_fit1d(fitting_parameters)
+
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights, listeners=listeners)
 
@@ -661,14 +693,10 @@ class Fit1DPanel:
 
         reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
 
-        def reset_dialog_handler(result):
-            if result:
-                self.fitting_parameters_ui.reset_ui()
-
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
                                                                   'Reset will change all inputs for this tab back '
                                                                   'to their original values.  Proceed?',
-                                                                  reset_dialog_handler)
+                                                                  self.reset_dialog_handler)
 
         controller_div = Div(margin=(20, 0, 0, 0),
                              width=220,
@@ -713,12 +741,8 @@ class Fit1DPanel:
         p_main.width_policy = 'fit'
 
         if enable_regions:
-            self.band_model = GIRegionModel()
-
-            def update_regions():
-                self.fit.model.regions = self.band_model.build_regions()
-
-            self.band_model.add_listener(Fit1DRegionListener(update_regions))
+            self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
+            self.band_model.add_listener(Fit1DRegionListener(self.update_regions))
             self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
             connect_figure_extras(p_main, None, self.band_model)
@@ -732,7 +756,9 @@ class Fit1DPanel:
             self.band_model = None
             mask_handlers = None
 
-        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers)
+        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers,
+                   domain=[0, domain] if isinstance(domain, int) else domain)
+        # self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main, self.info_div]
 
         if plot_residuals:
@@ -782,7 +808,8 @@ class Fit1DPanel:
             self.band_model.load_from_tuples(region_tuples)
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
-                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+                                      size=5, legend_field='mask',
+                                      **self.fit.mask_rendering_kwargs())
         self.fit.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
@@ -816,6 +843,17 @@ class Fit1DPanel:
             self.component = row(controls, col,
                                  css_classes=["tab-content"],
                                  spacing=10)
+
+    def reset_dialog_handler(self, result):
+        """
+        Reset fit parameter values.
+        """
+        if result:
+            self.fitting_parameters_ui.reset_ui()
+
+    def update_regions(self):
+        """ Update fitting regions """
+        self.fit.model.regions = self.band_model.build_regions()
 
     def model_change_handler(self):
         """
@@ -942,6 +980,41 @@ class Fit1DPanel:
         # TODO figure out if we are using this or band_mask
         # self.fitting_parameters.regions = self.band_model.build_regions()
         self.visualizer.do_later(self.fit.perform_fit)
+
+    # TODO refactored this down from tracing, but it breaks
+    # x/y tracking when the mouse moves in the figure for calculateSensitivity
+    @staticmethod
+    def add_custom_cursor_behavior(p):
+        """
+        Customize cursor behavior depending on which tool is active.
+        """
+        pan_start = '''
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var active = [...mainPlot.getElementsByClassName('bk-active')];
+
+            console.log(active);
+
+            if ( active.some(e => e.title == "Pan") ) { 
+                Bokeh.cursor = 'move'; }
+        '''
+
+        pan_end = '''
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
+
+            Bokeh.cursor = 'default';
+            elm.style.cursor = Bokeh.cursor;
+        '''
+
+        mouse_move = """
+            var mainPlot = document.getElementsByClassName('plot-main')[0];
+            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
+            elm.style.cursor = Bokeh.cursor;
+        """
+
+        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
+        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
+        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
 
 class Fit1DRegionListener(GIRegionListener):
@@ -1239,3 +1312,18 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         list of `~gempy.library.fitting.fit_1D`
         """
         return [fit.model.fit for fit in self.fits]
+
+
+def prep_fit1d_params_for_fit1d(fit1d_params):
+    # If niter is 0, set sigma to None and niter to 1
+    if 'niter' in fit1d_params and fit1d_params['niter'] == 0:
+        # we use a min of 1 for niter, then remove the sigmas
+        # to clue the UI in that we are not sigma clipping.
+        # If we disable sigma clipping, niter will be disabled
+        # in the UI.  Allowing a niter selection of 0 with
+        # sigma clipping turned on is counterintuitive for
+        # the user.
+        fit1d_params['niter'] = 1
+        fit1d_params['sigma'] = False
+    else:
+        fit1d_params['sigma'] = True

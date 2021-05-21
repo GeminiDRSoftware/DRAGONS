@@ -5,7 +5,6 @@ from copy import deepcopy
 
 import numpy as np
 from astropy import table
-from bokeh import events
 from bokeh import models as bm
 from bokeh.layouts import column, row, Spacer
 from bokeh.plotting import figure
@@ -17,11 +16,12 @@ from geminidr.interactive.interactive import (
 from gempy.library import astromodels, astrotools as at, tracing
 from gempy.library.config import RangeField
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D)
+                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d)
 from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
 
+from ..interactive_config import interactive_conf
 
 # noinspection PyUnusedLocal,PyMissingConstructor
 class FittingParametersForTracedDataUI(FittingParametersUI):
@@ -53,39 +53,11 @@ class FittingParametersForTracedDataUI(FittingParametersUI):
         )
 
         column_list = [column_title, self.order_slider, rejection_title,
-                       self.niter_slider, self.sigma_button,
+                       self.sigma_button, self.niter_slider,
                        self.sigma_lower_slider, self.sigma_upper_slider,
                        self.grow_slider]
 
         return column_list
-
-    def sigma_button_handler(self, attr, old, new):
-        """
-        Handle the sigma clipping being turned on or off.
-
-        This will also trigger a fit since the result may
-        change.
-
-        Parameters
-        ----------
-        attr : Any
-            unused
-        old : str
-            old value of the toggle button
-        new : str
-            new value of the toggle button
-        """
-        self.fit.sigma_clip = bool(new)
-
-        if self.fit.sigma_clip:
-            self.fitting_parameters["sigma_upper"] = \
-                self.sigma_upper_slider.children[0].value
-            self.fitting_parameters["sigma_lower"] = \
-                self.sigma_lower_slider.children[0].value
-        else:
-            self.fitting_parameters["sigma_upper"] = None
-            self.fitting_parameters["sigma_lower"] = None
-        self.fit.perform_fit()
 
 
 # noinspection PyMissingConstructor
@@ -129,6 +101,10 @@ class TraceAperturesTab(Fit1DPanel):
 
         listeners = [lambda f: self.update_info(self.rms_div, f), ]
 
+        # prep params to clean up sigma related inputs for the interface
+        # i.e. niter min of 1, etc.
+        prep_fit1d_params_for_fit1d(fitting_parameters)
+
         self.fitting_parameters = fitting_parameters
 
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
@@ -143,10 +119,12 @@ class TraceAperturesTab(Fit1DPanel):
 
         self.plots_column, self.controller = self.create_plots_column(
             plot_height=plot_height, plot_title=plot_title,
-            plot_width=plot_width, xlabel=xlabel, ylabel=ylabel)
+            plot_width=plot_width, xlabel=xlabel, ylabel=ylabel, domain=domain)
 
         self.component = row(self.plots_column, self.pars_column,
                              css_classes=["tab-content"], spacing=5)
+
+        self.line = None
 
     def create_pars_column(self, fit_pars_ui, rms_div, column_width=220):
         """
@@ -155,7 +133,7 @@ class TraceAperturesTab(Fit1DPanel):
         """
         # Create the reset button, add its functionality and add it to the layout
         reset_button = bm.Button(align='start',
-                                 button_type='danger',
+                                 button_type='warning',
                                  height=35,
                                  label="Reset",
                                  width=202)
@@ -190,11 +168,14 @@ class TraceAperturesTab(Fit1DPanel):
         return controls_col, controller_help
 
     def create_plots_column(self, plot_width, plot_height, plot_title, xlabel,
-                            ylabel, enable_regions=True):
+                            ylabel, enable_regions=True, domain=None):
         """
         Creates the central plot area with the main plot, the residuals and
         a text field where the user can select regions.
         """
+        ic = interactive_conf()
+        bokeh_line_color = ic.bokeh_line_color
+
         # Now the figures
         x_range = None
         y_range = None
@@ -239,7 +220,7 @@ class TraceAperturesTab(Fit1DPanel):
         # Enable region selection ----------------------------------------------
         if enable_regions:
 
-            self.band_model = GIRegionModel()
+            self.band_model = GIRegionModel(domain=domain)
 
             def update_regions():
                 self.fit.model.regions = self.band_model.build_regions()
@@ -263,7 +244,8 @@ class TraceAperturesTab(Fit1DPanel):
 
         _controller = Controller(p_main, None, self.band_model,
                                  self.controller_help,
-                                 mask_handlers=mask_handlers)
+                                 mask_handlers=mask_handlers,
+                                 domain=domain)
 
         self.add_custom_cursor_behavior(p_main)
 
@@ -312,9 +294,8 @@ class TraceAperturesTab(Fit1DPanel):
                 self.fit.band_mask[i] = 1
 
         self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model',
-                                source=self.fit.evaluation, line_width=3,
-                                color='crimson')
+        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3,
+                                color=bokeh_line_color)
 
         fig_column = [p_main, p_resid]
 
@@ -337,39 +318,6 @@ class TraceAperturesTab(Fit1DPanel):
                      width_policy='fit')
 
         return col, _controller
-
-    @staticmethod
-    def add_custom_cursor_behavior(p):
-        """
-        Customize cursor behavior depending on which tool is active.
-        """
-        pan_start = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var active = [...mainPlot.getElementsByClassName('bk-active')];
-
-            console.log(active);
-            
-            if ( active.some(e => e.title == "Pan") ) { 
-                Bokeh.cursor = 'move'; }
-        '''
-
-        pan_end = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-            
-            Bokeh.cursor = 'default';
-            elm.style.cursor = Bokeh.cursor;
-        '''
-
-        mouse_move = """
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-            elm.style.cursor = Bokeh.cursor;
-        """
-
-        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
-        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
-        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
     def create_rms_div(self):
         """
@@ -395,13 +343,6 @@ class TraceAperturesTab(Fit1DPanel):
 
         return rms_div
 
-    def reset_dialog_handler(self, result):
-        """
-        Reset fit parameter values.
-        """
-        if result:
-            self.fitting_parameters_ui.reset_ui()
-
     @staticmethod
     def update_info(info_div, f):
         """
@@ -415,10 +356,6 @@ class TraceAperturesTab(Fit1DPanel):
             ???
         """
         info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
-
-    def update_regions(self):
-        """ Update fitting regions """
-        self.fit.model.regions = self.band_model.build_regions()
 
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
@@ -704,7 +641,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Reset tracing parameter
             reset_tracing_button = bm.Button(
                 align='start',
-                button_type='danger',
+                button_type='warning',
                 height=35,
                 id='reset-tracing-pars',
                 label="Reset",

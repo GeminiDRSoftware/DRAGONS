@@ -48,7 +48,8 @@ class Controller(object):
     :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True):
+    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True,
+                 domain=None):
         """
         Create a controller to manage the given aperture and region models on
         the given GIFigure.
@@ -66,6 +67,8 @@ class Controller(object):
         mask_handlers : None or tuple of {2,3} functions
             The first two functions handle mask/unmask commands, the third (optional)
             function handles 'P' point mask requests.
+        domain : tuple of 2 numbers, or None
+            The domain of the data being handled, used for region editing to constrain the values
         """
 
         # set the class for the help_text div so we can have a common style
@@ -105,7 +108,7 @@ class Controller(object):
         if aperture_model:
             self.tasks['a'] = ApertureTask(aperture_model, help_text, fig)
         if region_model:
-            self.tasks['r'] = RegionTask(region_model, help_text)
+            self.tasks['r'] = RegionTask(region_model, help_text, domain=domain)
         self.task = None
         self.x = None
         self.y = None
@@ -524,7 +527,7 @@ class RegionTask(Task):
     """
     Task for operating on the regions.
     """
-    def __init__(self, region_model, helptext):
+    def __init__(self, region_model, helptext, domain=None):
         """
         Create a region task for the given :class:`GIRegionModel`
 
@@ -539,6 +542,12 @@ class RegionTask(Task):
         self.helptext_area = helptext
         self.last_x = None
         self.last_y = None
+        if domain:
+            self.min_x = domain[0]
+            self.max_x = domain[1]
+        else:
+            self.min_x = None
+            self.max_x = None
 
     def start(self, x, y):
         """
@@ -553,6 +562,10 @@ class RegionTask(Task):
 
         """
         self.last_x = x
+        if self.min_x is not None and x is not None:
+            self.last_x = max(self.last_x, self.min_x)
+        if self.max_x is not None and x is not None:
+            self.last_x = min(self.last_x, self.max_x)
         self.last_y = y
 
     def start_region(self):
@@ -657,9 +670,13 @@ class RegionTask(Task):
         """
         self.last_x = x
         self.last_y = y
+        if self.min_x is not None:
+            self.last_x = max(self.last_x, self.min_x)
+        if self.max_x is not None:
+            self.last_x = min(self.last_x, self.max_x)
         # we are in region mode
         if self.region_id is not None:
-            start = x
+            start = self.last_x
             end = self.region_edge
             self.region_model.adjust_region(self.region_id, start, end)
         return False
