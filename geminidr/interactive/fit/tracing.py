@@ -4,7 +4,6 @@ Interactive function and helper functions used to trace apertures.
 from copy import deepcopy
 
 import numpy as np
-from astropy import table
 from bokeh import models as bm
 from bokeh.layouts import column, row, Spacer
 from bokeh.plotting import figure
@@ -13,8 +12,7 @@ from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
     connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
-from gempy.library import astromodels, astrotools as at, tracing
-from gempy.library.config import RangeField
+from gempy.library import astrotools as at, tracing
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
                     FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d)
 from .. import server
@@ -223,7 +221,7 @@ class TraceAperturesTab(Fit1DPanel):
             self.band_model = GIRegionModel(domain=domain)
 
             def update_regions():
-                self.fit.model.regions = self.band_model.build_regions()
+                self.fit.regions = self.band_model.build_regions()
 
             # Handles Bands Regions
             self.band_model.add_listener(
@@ -450,7 +448,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights=weights, **kwargs)
                 self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
                 self.fits.append(tui.fit)
         else:
@@ -626,6 +624,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 height=35,
                 label=modal_button_label,
                 width=202)
+            self.modal_widget = self.reinit_button
 
             def trace_apertures_handler(result):
                 if result:
@@ -779,11 +778,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                              id="top_level_layout",
                              spacing=15,
                              sizing_mode="stretch_both")
-
-        # doc.template_variables["primitive_long_help"] = (help.DEFAULT_HELP
-        #                                                  + DETAILED_HELP
-        #                                                  + help.PLOT_TOOLS_HELP_SUBTEXT
-        #                                                  + help.REGION_EDITING_HELP_SUBTEXT)
 
         doc.add_root(all_content)
 
