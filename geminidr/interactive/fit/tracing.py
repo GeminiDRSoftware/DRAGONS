@@ -30,34 +30,34 @@ class FittingParametersForTracedDataUI(FittingParametersUI):
     trace.
     """
 
-    def build_column(self):
-        """
-        Override the standard column order.
-        """
-        column_title = bm.Div(
-            text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
-            min_width=100,
-            max_width=202,
-            sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
-            width_policy='max',
-        )
-
-        rejection_title = bm.Div(
-            text="Rejection Parameters",
-            min_width=100,
-            max_width=202,
-            sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
-            width_policy='max',
-        )
-
-        column_list = [column_title, self.order_slider, rejection_title,
-                       self.sigma_button, self.niter_slider,
-                       self.sigma_lower_slider, self.sigma_upper_slider,
-                       self.grow_slider]
-
-        return column_list
+    # def build_column(self):
+    #     """
+    #     Override the standard column order.
+    #     """
+    #     column_title = bm.Div(
+    #         text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
+    #         min_width=100,
+    #         max_width=202,
+    #         sizing_mode='stretch_width',
+    #         style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+    #         width_policy='max',
+    #     )
+    #
+    #     rejection_title = bm.Div(
+    #         text="Rejection Parameters",
+    #         min_width=100,
+    #         max_width=202,
+    #         sizing_mode='stretch_width',
+    #         style={"color": "black", "font-size": "115%", "margin-top": "10px"},
+    #         width_policy='max',
+    #     )
+    #
+    #     column_list = [column_title, self.order_slider, rejection_title,
+    #                    self.sigma_button, self.niter_slider,
+    #                    self.sigma_lower_slider, self.sigma_upper_slider,
+    #                    self.grow_slider]
+    #
+    #     return column_list
 
 
 # noinspection PyMissingConstructor
@@ -450,7 +450,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, idx=i, weights=weights, **kwargs)
                 self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
                 self.fits.append(tui.fit)
         else:
@@ -461,7 +461,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
-            tui = TraceAperturesTab(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
+            tui = TraceAperturesTab(self, fitting_parameters[0], domains[0], allx[0], ally[0], 0,
+                                    all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)

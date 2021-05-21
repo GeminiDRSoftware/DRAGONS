@@ -478,8 +478,6 @@ class FittingParametersUI:
         else:
             self.function = None
 
-        self.description = self.build_description()
-
         self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None,
                                                           fitting_parameters, "order", fit.perform_fit, throttled=True,
                                                           config=vis.config, slider_width=128)
@@ -547,13 +545,31 @@ class FittingParametersUI:
         ------
         list : elements displayed in the column.
         """
+
+        rejection_title = bm.Div(
+            text="Rejection Parameters",
+            min_width=100,
+            max_width=202,
+            sizing_mode='stretch_width',
+            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
+            width_policy='max',
+        )
+
         if self.function:
-            column_list = [self.function, self.order_slider, self.description,
+            column_list = [self.function, self.order_slider, rejection_title,
                            self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider, self.sigma_upper_slider,
                            self.grow_slider]
         else:
-            column_list = [self.order_slider, self.description,
+            column_title = bm.Div(
+                text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
+                min_width=100,
+                max_width=202,
+                sizing_mode='stretch_width',
+                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                width_policy='max',
+            )
+            column_list = [column_title, self.order_slider, rejection_title,
                            self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider,
                            self.sigma_upper_slider, self.grow_slider]
@@ -576,9 +592,9 @@ class FittingParametersUI:
         return bm.Div(
             text=text,
             min_width=100,
-            max_width=200,
+            max_width=202,
             sizing_mode='stretch_width',
-            style={"color": "black"},
+            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
             width_policy='min',
         )
 
@@ -659,7 +675,7 @@ class InfoPanel:
 
 
 class Fit1DPanel:
-    def __init__(self, visualizer, fitting_parameters, domain, x, y,
+    def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
                  weights=None, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True):
@@ -697,7 +713,7 @@ class Fit1DPanel:
         """
         # Just to get the doc later
         self.visualizer = visualizer
-
+        self.index = idx
         self.info_panel = InfoPanel()
         self.info_div = self.info_panel.component
 
