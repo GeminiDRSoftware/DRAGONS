@@ -490,14 +490,14 @@ class AperturePlotView:
         fig = self.fig
         source = self.model.source
 
-        self.label = LabelSet(source=source, x="end", y=380,
-                              y_offset=2, y_units="screen", text="id")
-        fig.add_layout(self.label)
+        # self.label = LabelSet(source=source, x="end", y=380,
+        #                       y_offset=2, y_units="screen", text="id")
+        # fig.add_layout(self.label)
 
-        self.whisker = Whisker(source=source, base=380, lower="start",
-                               upper="end", dimension='width',
-                               base_units="screen", line_color="purple")
-        fig.add_layout(self.whisker)
+        # self.whisker = Whisker(source=source, base=380, lower="start",
+        #                        upper="end", dimension='width',
+        #                        base_units="screen", line_color="purple")
+        # fig.add_layout(self.whisker)
 
         self.location = Span(location=source.data['location'][0],
                              dimension='height', line_color='green',
@@ -518,9 +518,9 @@ class AperturePlotView:
         # TODO removing causes problems, because bokeh, sigh
         # TODO could create a list of disabled labels/boxes to reuse instead
         # of making new ones (if we have one to recycle)
-        self.label.visible = False
+        # self.label.visible = False
         self.location.visible = False
-        self.whisker.visible = False
+        # self.whisker.visible = False
 
 
 class SelectedApertureLineView:
@@ -756,6 +756,11 @@ class ApertureView:
         self.fig.x_range.on_change('end', lambda attr, old, new:
                                    self.update_viewport(end=new))
 
+        self.labels_source = ColumnDataSource(data=dict(id=[], end=[]))
+        self.labels = LabelSet(x='end', y=380, y_units='screen', text='id',
+                               y_offset=2, source=self.labels_source, render_mode='canvas')
+        self.fig.add_layout(self.labels)
+
     def update_viewport(self, start=None, end=None):
         """Handle a change in the view to enable/disable aperture lines."""
         if not self._pending_update_viewport:
@@ -773,10 +778,17 @@ class ApertureView:
         """Handle an updated or added aperture."""
         plot = self.widgets[aperture_id]
         plot.update()
+        for i in range(len(self.labels_source.data['id'])):
+            if self.labels_source.data['id'][i] == aperture_id:
+                self.labels_source.patch({'end': [(i, plot.model.source.data['end'][0])]})
+                # self.labels_source.data['end'][i] = plot.model.source.data['end'][0]
 
     def add_aperture(self, aperture_id, model):
         plot = AperturePlotView(self.fig, model)
         self.widgets[aperture_id] = plot
+        self.labels_source.stream({'id': [model.source.data['id'][0],], 'end': [model.source.data['end'][0],]})
+        # self.labels_source.data['id'].append(aperture_id)
+        # self.labels_source.data['end'].append(model.end)
 
     def delete_aperture(self, aperture_id):
         """Remove an aperture by ID."""
@@ -784,17 +796,31 @@ class ApertureView:
             plot = self.widgets[aperture_id]
             plot.delete()
             del self.widgets[aperture_id]
+            newdata = {'id': [], 'end': []}
+            for i in range(len(self.labels_source.data['id'])):
+                if self.labels_source.data['id'][i] != aperture_id:
+                    newdata['id'].append(self.labels_source.data['id'][i])
+                    newdata['end'].append(self.labels_source.data['end'][i])
+            self.labels_source.data = newdata
 
     def renumber_apertures(self):
         new_widgets = {}
+        newlabeldata = {'id': [], 'end': []}
         for plot in self.widgets.values():
             aperture_id = plot.model.source.data['id'][0]
             new_widgets[aperture_id] = plot
+            newlabeldata['id'].append(aperture_id)
+            newlabeldata['end'].append(plot.model.source.data['end'])
+        self.labels_source.data = newlabeldata
         self.widgets.clear()
         self.widgets.update(new_widgets)
 
     def update_view(self):
         self._reload_holoviews()
+        ymax = np.nanmax(self.model.profile)
+        if ymax:
+            self.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
+            self.fig.y_range.reset_end = self.fig.y_range.end
 
     def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
         if hasattr(self, 'fig'):
@@ -982,7 +1008,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         self.model.recalc_apertures()
         # now we have a height for the figure
-        aperture_view.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
+        # aperture_view.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
+        # aperture_view.fig.y_range.reset_end = aperture_view.fig.y_range.end
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
