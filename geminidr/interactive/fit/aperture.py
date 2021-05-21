@@ -898,13 +898,20 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         def _use_snr_handler(new):
             model.use_snr = 0 in new
 
+        reset_button = Button(label="Reset", button_type='danger',
+                              default_size=200)
+
         def _reset_handler(result):
             if result:
-                model.reset()
-                for widget in (maxaper, minsky, use_snr,
-                               threshold, percentile, sizing):
-                    widget.reset()
-                self.model.recalc_apertures()
+                reset_button.disabled = True
+                def fn():
+                    model.reset()
+                    for widget in (maxaper, minsky, use_snr,
+                                   threshold, percentile, sizing):
+                        widget.reset()
+                    self.model.recalc_apertures()
+                    reset_button.disabled = False
+                self.do_later(fn)
 
         find_button = Button(label="Find apertures", button_type='primary',
                              default_size=200)
@@ -935,9 +942,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
 
-        reset_button = Button(label="Reset", button_type='danger',
-                              default_size=200)
-
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
                                    'back to their original values.  Proceed?',
@@ -947,7 +951,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                    'All apertures will be recomputed and '
                                    'changes will be lost. Proceed?',
                                    _find_handler)
+
         self.make_modal(find_button, 'Recalculating Apertures...')
+        self.make_modal(reset_button, 'Recalculating Apertures...')
 
         return column(
             Div(text="Parameters to compute the profile:",
