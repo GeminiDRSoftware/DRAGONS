@@ -171,7 +171,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         identify_button = bm.Button(label="Identify lines")
         identify_button.on_click(self.identify_lines)
-        #curdoc().add_root(identify_button)
 
         identify_panel = row(self.line_chooser, identify_button)
         # Here endeth my Wavecal-specific block
