@@ -16,6 +16,10 @@ from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_reg
 from gempy.library.config import FieldValidationError
 
 
+# Singleton instance, there is only ever one of these
+_visualizer = None
+
+
 class PrimitiveVisualizer(ABC):
     def __init__(self, config=None, title='', primitive_name='',
                  filename_info='', template=None, help_text=None):
@@ -41,6 +45,9 @@ class PrimitiveVisualizer(ABC):
         template : str
             Optional path to an html template to render against, if customization is desired
         """
+        global _visualizer
+        _visualizer = self
+
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
 
@@ -744,7 +751,7 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
     return component
 
 
-def connect_figure_extras(fig, aperture_model, region_model):
+def connect_figure_extras(fig, region_model):
     """
     Connect a figure to an aperture and region model for rendering.
 
@@ -766,10 +773,6 @@ def connect_figure_extras(fig, aperture_model, region_model):
     # If we have regions or apertures to show, show them
     if region_model:
         regions = GIRegionView(fig, region_model)
-    # This no longer works as we now require holoviews
-    # TODO remove from args to method
-    # if aperture_model:
-    #     aperture_view = GIApertureView(aperture_model, fig)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
     # apertures and regions will not update properly after the figure is visible.
@@ -1398,3 +1401,22 @@ class TabsTurboInjector:
         if old != new:
             self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
+
+
+def do_later(fn):
+    """
+    Helper method to queue work to be done on the bokeh UI thread.
+
+    When actiona happen as a result of a key press, for instance, this comes in
+    on a different thread than bokeh UI is operating on.  Performing any UI
+    impacting changes on this other thread can cause issues.  Instead, wrap
+    the desired changes in a function and pass it in here to be run on the UI
+    thread.
+
+    This works by referencing the active singleton Visualizer, so that
+    code doesn't have to all track the visualizer.
+
+    :param fn:
+    :return:
+    """
+    _visualizer.do_later(fn)

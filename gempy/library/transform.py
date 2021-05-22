@@ -1403,7 +1403,7 @@ def add_mosaic_wcs(ad, geotable):
     return ad
 
 
-@insert_descriptor_values
+@insert_descriptor_values()
 def add_longslit_wcs(ad, central_wavelength=None):
     """
     Attach a gWCS object to all extensions of an AstroData objects,

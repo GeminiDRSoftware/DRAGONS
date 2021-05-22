@@ -181,7 +181,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.band_model.add_listener(Fit1DRegionListener(update_regions))
             self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
-            connect_figure_extras(p_main, None, self.band_model)
+            connect_figure_extras(p_main, self.band_model)
 
             if enable_user_masking:
                 mask_handlers = (self.mask_button_handler,
@@ -206,7 +206,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             p_resid.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_resid, None, self.band_model)
+            connect_figure_extras(p_resid, self.band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='fitted', y='residuals', source=self.fit.data,
@@ -221,7 +221,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             p_ratios.height_policy = 'fixed'
             p_ratios.width_policy = 'fit'
             p_ratios.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_ratios, None, self.band_model)
+            connect_figure_extras(p_ratios, self.band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
             p_ratios.scatter(x='fitted', y='ratio', source=self.fit.data,
