@@ -157,8 +157,8 @@ class InteractiveModel1D(InteractiveModel):
         super().__init__()
 
         self.band_model = band_model
-        if self.band_model:
-            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+        if band_model:
+            band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
         self.fitting_parameters = fitting_parameters
         self.domain = domain
@@ -680,12 +680,14 @@ class Fit1DPanel:
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
         if enable_regions:
-            self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
+            # self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
+            band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
         else:
-            self.band_model = None
+            # self.band_model = None
+            band_model = None
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
-                                      listeners=listeners, band_model=self.band_model)
+                                      listeners=listeners, band_model=band_model)
 
         # also listen for updates to the masks
         self.fit.add_mask_listener(self.info_panel.update_mask)
@@ -746,11 +748,11 @@ class Fit1DPanel:
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
-        if self.band_model:
-            self.band_model.add_listener(Fit1DRegionListener(self.update_regions))
+        if band_model:
+            band_model.add_listener(Fit1DRegionListener(self.update_regions))
             # self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
-            connect_figure_extras(p_main, self.band_model)
+            connect_figure_extras(p_main, band_model)
 
             if enable_user_masking:
                 mask_handlers = (self.mask_button_handler,
@@ -758,10 +760,9 @@ class Fit1DPanel:
             else:
                 mask_handlers = None
         else:
-            self.band_model = None
             mask_handlers = None
 
-        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers,
+        Controller(p_main, None, band_model, controller_div, mask_handlers=mask_handlers,
                    domain=[0, domain] if isinstance(domain, int) else domain)
         # self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main, self.info_div]
@@ -777,7 +778,7 @@ class Fit1DPanel:
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             p_resid.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_resid, self.band_model)
+            connect_figure_extras(p_resid, band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
@@ -792,7 +793,7 @@ class Fit1DPanel:
             p_ratios.height_policy = 'fixed'
             p_ratios.width_policy = 'fit'
             p_ratios.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_ratios, self.band_model)
+            connect_figure_extras(p_ratios, band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
             p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
@@ -810,7 +811,7 @@ class Fit1DPanel:
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
-            self.band_model.load_from_tuples(region_tuples)
+            band_model.load_from_tuples(region_tuples)
 
         self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
                                       size=5, legend_field='mask',
@@ -823,7 +824,7 @@ class Fit1DPanel:
         x_data = self.fit.data.data['x']
         mask = self.fit.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
-            if self.band_model and not self.band_model.contains(x_data[i]) and mask[i] == 'good':
+            if band_model and not band_model.contains(x_data[i]) and mask[i] == 'good':
                 mask[i] = BAND_MASK_NAME
         fit.data.data['mask'] = mask
         self.fit.perform_fit()
@@ -834,8 +835,8 @@ class Fit1DPanel:
                                 line_width=3,
                                 color='crimson')
 
-        if self.band_model:
-            region_editor = RegionEditor(self.band_model)
+        if band_model:
+            region_editor = RegionEditor(band_model)
             fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
@@ -858,7 +859,7 @@ class Fit1DPanel:
 
     def update_regions(self):
         """ Update fitting regions """
-        self.fit.regions = self.band_model.build_regions()
+        self.fit.regions = self.fit.band_model.build_regions()
 
     def model_change_handler(self, *args):
         """
@@ -912,7 +913,7 @@ class Fit1DPanel:
             mask = self.fit.data.data['mask'].copy()
             for i in indices:
                 if mask[i] == USER_MASK_NAME:
-                    mask[i] = ('good' if self.band_model.contains(x_data[i])
+                    mask[i] = ('good' if self.fit.band_model.contains(x_data[i])
                                else BAND_MASK_NAME)
             self.fit.data.data['mask'] = mask
             self.fit.perform_fit()
@@ -951,7 +952,7 @@ class Fit1DPanel:
         if sel is not None:
             # we have a clos_maskest point, toggle the user mask
             if mask[sel] == USER_MASK_NAME:
-                mask[sel] = ('good' if self.band_model.contains(xarr[sel])
+                mask[sel] = ('good' if self.fit.band_model.contains(xarr[sel])
                                else BAND_MASK_NAME)
             else:
                 mask[sel] = USER_MASK_NAME
