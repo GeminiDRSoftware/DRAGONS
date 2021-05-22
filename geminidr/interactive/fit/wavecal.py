@@ -16,7 +16,7 @@ from gempy.library.fitting import fit_1D
 from gempy.library.matching import match_sources
 
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D, BAND_MASK_NAME)
+                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d, BAND_MASK_NAME)
 from .. import server
 
 
@@ -64,6 +64,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Make a listener to update the info panel with the RMS on a fit
         listeners = [lambda f: info_panel.update(f), ]
+
+        # prep params to clean up sigma related inputs for the interface
+        # i.e. niter min of 1, etc.
+        prep_fit1d_params_for_fit1d(fitting_parameters)
 
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
