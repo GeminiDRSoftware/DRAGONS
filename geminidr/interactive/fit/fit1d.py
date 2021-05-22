@@ -11,7 +11,7 @@ from bokeh import events
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
-    RegionEditor
+    RegionEditor, do_later
 from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
@@ -141,7 +141,7 @@ class InteractiveModel1D(InteractiveModel):
     """
 
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
-                 section=None, listeners=[]):
+                 section=None, listeners=[], band_model=None):
         """
         Create base class with given parameters as initial model inputs.
 
@@ -159,6 +159,10 @@ class InteractiveModel1D(InteractiveModel):
         """
         model = InteractiveFit1D(fitting_parameters, domain, listeners=listeners)
         super().__init__(model)
+
+        self.band_model = band_model
+        if self.band_model:
+            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
@@ -211,7 +215,6 @@ class InteractiveModel1D(InteractiveModel):
                     init_mask = y.mask
                 else:
                     init_mask = np.array(np.zeros_like(x, dtype=bool))
-                # init_mask = y.mask or np.zeros_like(x, dtype=bool)
             except AttributeError:
                 init_mask = np.array(np.zeros_like(x, dtype=bool))
             else:
@@ -234,20 +237,54 @@ class InteractiveModel1D(InteractiveModel):
                 user_mask[slice_.start < x < slice_.stop] = False
             mask = list(np.where(user_mask, USER_MASK_NAME, 'good'))
 
-        #if self.band_mask is None:
-        #    # otherwise we want to keep the band mask as we still have the bands in place
-        #    self.band_mask = np.array(np.zeros_like(self.fit_mask))
-
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
+
+        # need to setup the mask
+        for i in np.arange(len(x)):
+            if self.band_model.contains(x[i]):
+                # User mask takes preference
+                if mask[i] != USER_MASK_NAME:
+                    mask[i] = 'good'
+            elif mask[i] != USER_MASK_NAME:
+                mask[i] = BAND_MASK_NAME
         bokeh_data = {'x': x, 'y': y, 'mask': mask}
         for extra_column in ('residuals', 'ratio'):
             if extra_column in self.data.data:
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
+
         self.notify_mask_listeners()
 
         return weights
+
+    def band_model_handler(self):
+        """
+        Respond when the band model changes.
+
+        When the band model has changed, we
+        brute force a new band mask by checking
+        each x coordinate against the band model
+        for inclusion.  The band model handles
+        the case where there are no bands by
+        marking all points as included.
+        """
+        x_data = self.data.data['x']
+        mask = self.data.data['mask'].copy()
+        for i in np.arange(len(x_data)):
+            if self.band_model.contains(x_data[i]):
+                # User mask takes preference
+                if mask[i] != USER_MASK_NAME:
+                    mask[i] = 'good'
+            elif mask[i] != USER_MASK_NAME:
+                mask[i] = BAND_MASK_NAME
+        self.data.data['mask'] = mask
+        # Band operations can come in through the keypress URL
+        # so we defer the fit back onto the Bokeh IO event loop
+
+        # TODO figure out if we are using this or band_mask
+        # self.fitting_parameters.regions = self.band_model.build_regions()
+        do_later(self.perform_fit)
 
     @property
     def x(self):
@@ -474,6 +511,7 @@ class FittingParametersUI:
                 "Grow", fitting_parameters["grow"], None, None, None,
                 fitting_parameters, "grow", fit.perform_fit, throttled=True,
                 config=vis.config, slider_width=128)
+
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
 
@@ -504,12 +542,30 @@ class FittingParametersUI:
         ------
         list : elements displayed in the column.
         """
+
+        rejection_title = bm.Div(
+            text="Rejection Parameters",
+            min_width=100,
+            max_width=202,
+            sizing_mode='stretch_width',
+            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
+            width_policy='max',
+        )
+
         if self.function:
-            column_list = [self.function, self.order_slider, self.description,
+            column_list = [self.function, self.order_slider, rejection_title,
                            self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider, self.sigma_upper_slider]
         else:
-            column_list = [self.order_slider, self.description,
+            column_title = bm.Div(
+                text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
+                min_width=100,
+                max_width=202,
+                sizing_mode='stretch_width',
+                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                width_policy='max',
+            )
+            column_list = [column_title, self.order_slider, rejection_title,
                            self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider,
                            self.sigma_upper_slider]
@@ -534,9 +590,9 @@ class FittingParametersUI:
         return bm.Div(
             text=text,
             min_width=100,
-            max_width=200,
+            max_width=202,
             sizing_mode='stretch_width',
-            style={"color": "black"},
+            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
             width_policy='min',
         )
 
@@ -617,7 +673,7 @@ class InfoPanel:
 
 
 class Fit1DPanel:
-    def __init__(self, visualizer, fitting_parameters, domain, x, y,
+    def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
                  weights=None, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True):
@@ -655,7 +711,7 @@ class Fit1DPanel:
         """
         # Just to get the doc later
         self.visualizer = visualizer
-
+        self.index = idx
         self.info_panel = InfoPanel()
         self.info_div = self.info_panel.component
 
@@ -666,8 +722,13 @@ class Fit1DPanel:
         # i.e. niter min of 1, etc.
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
+        if enable_regions:
+            self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
+        else:
+            self.band_model = None
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
+                                      listeners=listeners, band_model=self.band_model)
 
         # also listen for updates to the masks
         self.fit.add_mask_listener(self.info_panel.update_mask)
@@ -728,12 +789,11 @@ class Fit1DPanel:
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
-        if enable_regions:
-            self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
+        if self.band_model:
             self.band_model.add_listener(Fit1DRegionListener(self.update_regions))
-            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+            # self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
-            connect_figure_extras(p_main, None, self.band_model)
+            connect_figure_extras(p_main, self.band_model)
 
             if enable_user_masking:
                 mask_handlers = (self.mask_button_handler,
@@ -760,7 +820,7 @@ class Fit1DPanel:
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             p_resid.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_resid, None, self.band_model)
+            connect_figure_extras(p_resid, self.band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
             p_resid.scatter(x='x', y='residuals', source=self.fit.data,
@@ -775,7 +835,7 @@ class Fit1DPanel:
             p_ratios.height_policy = 'fixed'
             p_ratios.width_policy = 'fit'
             p_ratios.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_ratios, None, self.band_model)
+            connect_figure_extras(p_ratios, self.band_model)
             # Initalizing this will cause the residuals to be calculated
             self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
             p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
@@ -940,34 +1000,6 @@ class Fit1DPanel:
                 mask[sel] = USER_MASK_NAME
 
         self.fit.perform_fit()
-
-    def band_model_handler(self):
-        """
-        Respond when the band model changes.
-
-        When the band model has changed, we
-        brute force a new band mask by checking
-        each x coordinate against the band model
-        for inclusion.  The band model handles
-        the case where there are no bands by
-        marking all points as included.
-        """
-        x_data = self.fit.data.data['x']
-        mask = self.fit.data.data['mask'].copy()
-        for i in np.arange(len(x_data)):
-            if self.band_model.contains(x_data[i]):
-                # User mask takes preference
-                if mask[i] != USER_MASK_NAME:
-                    mask[i] = 'good'
-            elif mask[i] != USER_MASK_NAME:
-                mask[i] = BAND_MASK_NAME
-        self.fit.data.data['mask'] = mask
-        # Band operations can come in through the keypress URL
-        # so we defer the fit back onto the Bokeh IO event loop
-
-        # TODO figure out if we are using this or band_mask
-        # self.fitting_parameters.regions = self.band_model.build_regions()
-        self.visualizer.do_later(self.fit.perform_fit)
 
     # TODO refactored this down from tracing, but it breaks
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
@@ -1222,15 +1254,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         layout_ls = list()
         if self.filename_info:
-            # self.submit_button.align = 'center'
-            # layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
-            #                      sizing_mode="scale_width"))
             self.submit_button.align = 'end'
             layout_ls.append(row(Spacer(width=250),
                                  column(self.get_filename_div(), self.submit_button),
                                  Spacer(width=10),
                                  align="end", css_classes=['top-row']))
-            # sizing_mode="scale_width"))
         else:
             layout_ls.append(self.submit_button,
                              align="end", css_classes=['top-row'])
