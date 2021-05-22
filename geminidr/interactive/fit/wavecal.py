@@ -167,7 +167,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         text_baseline='middle')
         self.spectrum_plot = p_spectrum
 
-        self.line_chooser = row(bm.Div())
+        add_new_line_button = bm.Button(label="Add new line")
+        self.line_chooser = row(bm.Div(text="New line wavelength"),
+                                add_new_line_button)
 
         identify_button = bm.Button(label="Identify lines")
         identify_button.on_click(self.identify_lines)
@@ -323,6 +325,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
                     'fitted': [0], 'nonlinear': [0], 'heights': [0],
+                    'residuals': [0],
                     'lines': [str(np.round(wavelength, decimals=6))],
                    }
         self.fit.data.stream(new_data)
