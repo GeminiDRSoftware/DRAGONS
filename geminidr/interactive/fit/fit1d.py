@@ -308,8 +308,6 @@ class InteractiveModel1D(InteractiveModel):
         # Band operations can come in through the keypress URL
         # so we defer the fit back onto the Bokeh IO event loop
 
-        # TODO figure out if we are using this or band_mask
-        # self.fitting_parameters.regions = self.band_model.build_regions()
         do_later(self.perform_fit)
 
     @property
@@ -373,8 +371,6 @@ class InteractiveModel1D(InteractiveModel):
         # Note that band_mask is now handled by passing a region string to fit_1D
         # but we still use the band_mask for highlighting the affected points
 
-        # TODO switch back if we use the region string...
-        # goodpix = ~(parent.user_mask | parent.band_mask)
         goodpix = np.array([m != USER_MASK_NAME for m in self.data.data['mask']])
 
         if self.sigma_clip:
@@ -680,10 +676,8 @@ class Fit1DPanel:
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
         if enable_regions:
-            # self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
             band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
         else:
-            # self.band_model = None
             band_model = None
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
@@ -750,7 +744,6 @@ class Fit1DPanel:
 
         if band_model:
             band_model.add_listener(Fit1DRegionListener(self.update_regions))
-            # self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
 
             connect_figure_extras(p_main, band_model)
 
