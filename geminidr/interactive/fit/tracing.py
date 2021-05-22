@@ -186,7 +186,7 @@ class TraceAperturesTab(Fit1DPanel):
         if enable_regions:
 
             def update_regions():
-                self.fit.model.regions = self.band_model.build_regions()
+                self.fit.regions = self.band_model.build_regions()
 
             # Handles Bands Regions
             self.band_model.add_listener(
@@ -585,6 +585,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 height=35,
                 label=modal_button_label,
                 width=202)
+            self.modal_widget = self.reinit_button
 
             def trace_apertures_handler(result):
                 if result:
