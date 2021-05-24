@@ -4,7 +4,6 @@ Interactive function and helper functions used to trace apertures.
 from copy import deepcopy
 
 import numpy as np
-from astropy import table
 from bokeh import models as bm
 from bokeh.layouts import column, row, Spacer
 from bokeh.plotting import figure
@@ -13,51 +12,16 @@ from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
     connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
-from gempy.library import astromodels, astrotools as at, tracing
-from gempy.library.config import RangeField
+from gempy.library import astrotools as at, tracing
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d)
+                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d,
+                    BAND_MASK_NAME)
+
 from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
 
 from ..interactive_config import interactive_conf
-
-# noinspection PyUnusedLocal,PyMissingConstructor
-class FittingParametersForTracedDataUI(FittingParametersUI):
-    """
-    Represents the panel with the adjustable parameters for fitting the
-    trace.
-    """
-
-    def build_column(self):
-        """
-        Override the standard column order.
-        """
-        column_title = bm.Div(
-            text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
-            min_width=100,
-            max_width=202,
-            sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
-            width_policy='max',
-        )
-
-        rejection_title = bm.Div(
-            text="Rejection Parameters",
-            min_width=100,
-            max_width=202,
-            sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
-            width_policy='max',
-        )
-
-        column_list = [column_title, self.order_slider, rejection_title,
-                       self.sigma_button, self.niter_slider,
-                       self.sigma_lower_slider, self.sigma_upper_slider,
-                       self.grow_slider]
-
-        return column_list
 
 
 # noinspection PyMissingConstructor
@@ -107,10 +71,12 @@ class TraceAperturesTab(Fit1DPanel):
 
         self.fitting_parameters = fitting_parameters
 
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
-                                      listeners=listeners)
+        self.band_model = GIRegionModel(domain=domain)
 
-        self.fitting_parameters_ui = FittingParametersForTracedDataUI(
+        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
+                                      listeners=listeners, band_model=self.band_model)
+
+        self.fitting_parameters_ui = FittingParametersUI(
             visualizer, self.fit, self.fitting_parameters)
 
         self.pars_column, self.controller_help = self.create_pars_column(
@@ -212,7 +178,6 @@ class TraceAperturesTab(Fit1DPanel):
                         x_range=x_range,
                         y_axis_label=ylabel,
                         y_range=y_range)
-
         p_main.height_policy = 'fit'
         p_main.margin = (15, 0, 0, 15)
         p_main.width_policy = 'fit'
@@ -220,20 +185,14 @@ class TraceAperturesTab(Fit1DPanel):
         # Enable region selection ----------------------------------------------
         if enable_regions:
 
-            self.band_model = GIRegionModel(domain=domain)
-
             def update_regions():
-                self.fit.model.regions = self.band_model.build_regions()
+                self.fit.regions = self.band_model.build_regions()
 
             # Handles Bands Regions
             self.band_model.add_listener(
                 Fit1DRegionListener(update_regions))
 
-            # Handles Bands Masks
-            self.band_model.add_listener(
-                Fit1DRegionListener(self.band_model_handler))
-
-            connect_figure_extras(p_main, None, self.band_model)
+            connect_figure_extras(p_main, self.band_model)
 
             mask_handlers = (self.mask_button_handler,
                              self.unmask_button_handler)
@@ -261,12 +220,11 @@ class TraceAperturesTab(Fit1DPanel):
                          x_range=p_main.x_range,
                          y_axis_label='Delta',
                          y_range=None)
-
         p_resid.height_policy = 'fixed'
         p_resid.margin = (0, 0, 0, 15)
         p_resid.width_policy = 'fit'
 
-        connect_figure_extras(p_resid, None, self.band_model)
+        connect_figure_extras(p_resid, self.band_model)
 
         # Initializing this will cause the residuals to be calculated
         self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
@@ -284,14 +242,14 @@ class TraceAperturesTab(Fit1DPanel):
         self.fit.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
-        #   hacking it in here so I can account for the initial
-        #   state of the band model (which used to be always empty)
+        # hacking it in here so I can account for the initial
+        # state of the band model (which used to be always empty)
         x_data = self.fit.data.data['x']
+        mask = self.fit.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
-            if not self.band_model or self.band_model.contains(x_data[i]):
-                self.fit.band_mask[i] = 0
-            else:
-                self.fit.band_mask[i] = 1
+            if self.band_model and not self.band_model.contains(x_data[i]) and mask[i] == 'good':
+                mask[i] = BAND_MASK_NAME
+        self.fit.data.data['mask'] = mask
 
         self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3,
@@ -450,7 +408,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, idx=i, weights=weights, **kwargs)
                 self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
                 self.fits.append(tui.fit)
         else:
@@ -461,7 +419,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
-            tui = TraceAperturesTab(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
+            tui = TraceAperturesTab(self, fitting_parameters[0], domains[0], allx[0], ally[0], 0,
+                                    all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.fit)
@@ -626,6 +585,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 height=35,
                 label=modal_button_label,
                 width=202)
+            self.modal_widget = self.reinit_button
 
             def trace_apertures_handler(result):
                 if result:
@@ -779,11 +739,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                              id="top_level_layout",
                              spacing=15,
                              sizing_mode="stretch_both")
-
-        # doc.template_variables["primitive_long_help"] = (help.DEFAULT_HELP
-        #                                                  + DETAILED_HELP
-        #                                                  + help.PLOT_TOOLS_HELP_SUBTEXT
-        #                                                  + help.REGION_EDITING_HELP_SUBTEXT)
 
         doc.add_root(all_content)
 
