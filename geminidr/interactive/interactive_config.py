@@ -32,7 +32,7 @@ class InteractiveConfig:
         return it
 
     def init(self, *args, **kwargs):
-        self.bokeh_theme = 'caliber'
+        self.bokeh_theme = None
         self.bokeh_data_color = 'black'
         self.bokeh_line_color = 'crimson'
         self.bokeh_template_css = 'template_default.css'
