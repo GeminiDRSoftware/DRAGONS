@@ -413,7 +413,7 @@ class Spect(PrimitivesBASE):
                 calculated = True
 
             if interactive:
-                all_shapes = [x[0].shape[0] for x in all_exts]
+                all_domains = [(0, x[0].shape[0]) for x in all_exts]
                 all_waves = np.array([x[1] for x in all_exts])
                 all_zpt = np.array([x[2] for x in all_exts])
                 all_weights = np.array([x[3] for x in all_exts])
@@ -434,7 +434,7 @@ class Spect(PrimitivesBASE):
                                                    tab_name_fmt="CCD {}",
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
-                                                   domains=all_shapes,
+                                                   domains=all_domains,
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
                                                    filename_info=filename_info,
