@@ -125,7 +125,8 @@ def _bkapp(doc):
     bokeh_template_css = ic.bokeh_template_css
 
     template = "index.html"
-    doc.theme = bokeh_theme
+    # TODO figure out why this breaks the CSS (times roman vs sans)
+    # doc.theme = bokeh_theme
     if _visualizer.template:
         template = _visualizer.template
     with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
