@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 
 from bokeh.events import PointEvent, SelectionGeometry, Tap
 
-__all__ = ["controller", "Controller"]
+__all__ = ["controller", "Controller", "Handler"]
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
