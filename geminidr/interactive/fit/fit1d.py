@@ -333,6 +333,17 @@ class InteractiveModel1D(InteractiveModel):
         return np.asarray(self.data.data['y'])
 
     @property
+    def mask(self):
+        """
+        maps mask attribute internally to bokeh structures
+
+        Returns
+        -------
+        list of str : mask values
+        """
+        return self.data.data['mask']
+
+    @property
     def sigma(self):
         """
         Maps sigma attribute to :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma`
@@ -675,10 +686,9 @@ class Fit1DPanel:
         # i.e. niter min of 1, etc.
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
-        if enable_regions:
-            band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
-        else:
-            band_model = None
+        # Avoids having to check whether this is None all the time
+        band_model = GIRegionModel(domain=domain)
+
         self.fitting_parameters = fitting_parameters
         self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
                                       listeners=listeners, band_model=band_model)
@@ -742,21 +752,19 @@ class Fit1DPanel:
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
-        if band_model:
+        if enable_regions:
             band_model.add_listener(Fit1DRegionListener(self.update_regions))
 
             connect_figure_extras(p_main, band_model)
 
-            if enable_user_masking:
-                mask_handlers = (self.mask_button_handler,
-                                 self.unmask_button_handler)
-            else:
-                mask_handlers = None
+        if enable_user_masking:
+            mask_handlers = (self.mask_button_handler,
+                             self.unmask_button_handler)
         else:
             mask_handlers = None
 
         Controller(p_main, None, band_model, controller_div, mask_handlers=mask_handlers,
-                   domain=[0, domain] if isinstance(domain, int) else domain)
+                   domain=domain)
         # self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main, self.info_div]
 
@@ -814,11 +822,8 @@ class Fit1DPanel:
         # TODO refactor? this is dupe from band_model_handler
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
-        x_data = self.fit.data.data['x']
-        mask = self.fit.data.data['mask'].copy()
-        for i in np.arange(len(x_data)):
-            if band_model and not band_model.contains(x_data[i]) and mask[i] == 'good':
-                mask[i] = BAND_MASK_NAME
+        mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
+                for x, m in zip(self.fit.x, self.fit.mask)]
         fit.data.data['mask'] = mask
         self.fit.perform_fit()
 
@@ -854,7 +859,7 @@ class Fit1DPanel:
         """ Update fitting regions """
         self.fit.regions = self.fit.band_model.build_regions()
 
-    def model_change_handler(self, *args):
+    def model_change_handler(self, fit):
         """
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
@@ -898,12 +903,12 @@ class Fit1DPanel:
             This is ignored, but the button passes it
         """
         indices = self.fit.data.selected.indices
-        x_data = self.fit.data.data['x']
+        x_data = self.fit.x
         if not indices:
             self._point_mask_handler(x, y, mult, 'unmask')
         else:
             self.fit.data.selected.update(indices=[])
-            mask = self.fit.data.data['mask'].copy()
+            mask = self.fit.mask.copy()
             for i in indices:
                 if mask[i] == USER_MASK_NAME:
                     mask[i] = ('good' if self.fit.band_model.contains(x_data[i])
@@ -928,9 +933,8 @@ class Fit1DPanel:
         """
         dist = None
         sel = None
-        xarr = self.fit.data.data['x']
-        yarr = self.fit.data.data['y']
-        mask = self.fit.data.data['mask']
+        xarr, yarr = self.fit.x, self.fit.y
+        mask = self.fit.mask
         if action not in ('mask', 'unmask'):
             action = None
         for i in range(len(xarr)):
@@ -946,7 +950,7 @@ class Fit1DPanel:
             # we have a clos_maskest point, toggle the user mask
             if mask[sel] == USER_MASK_NAME:
                 mask[sel] = ('good' if self.fit.band_model.contains(xarr[sel])
-                               else BAND_MASK_NAME)
+                             else BAND_MASK_NAME)
             else:
                 mask[sel] = USER_MASK_NAME
 
