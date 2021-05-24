@@ -680,14 +680,14 @@ class Fit1DPanel:
         else:
             band_model = None
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
-                                      listeners=listeners, band_model=band_model)
+        self.model = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
+                                        listeners=listeners, band_model=band_model)
 
         # also listen for updates to the masks
-        self.fit.add_mask_listener(self.info_panel.update_mask)
+        self.model.add_mask_listener(self.info_panel.update_mask)
 
-        fit = self.fit
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
+        model = self.model
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, model, self.fitting_parameters)
 
         controls_ls = list()
 
@@ -718,14 +718,14 @@ class Fit1DPanel:
         x_range = None
         y_range = None
         try:
-            if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                x_min = min(self.fit.data.data['x'])
-                x_max = max(self.fit.data.data['x'])
+            if self.model.data and 'x' in self.model.data.data and len(self.model.data.data['x']) >= 2:
+                x_min = min(self.model.data.data['x'])
+                x_max = max(self.model.data.data['x'])
                 x_pad = (x_max - x_min) * 0.1
                 x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-            if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
-                y_min = min(self.fit.data.data['y'])
-                y_max = max(self.fit.data.data['y'])
+            if self.model.data and 'y' in self.model.data.data and len(self.model.data.data['y']) >= 2:
+                y_min = min(self.model.data.data['y'])
+                y_max = max(self.model.data.data['y'])
                 y_pad = (y_max - y_min) * 0.1
                 y_range = Range1d(y_min - y_pad, y_max + y_pad)
         except:
@@ -773,9 +773,9 @@ class Fit1DPanel:
             p_resid.sizing_mode = 'stretch_width'
             connect_figure_extras(p_resid, band_model)
             # Initalizing this will cause the residuals to be calculated
-            self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
-            p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+            self.model.data.data['residuals'] = np.zeros_like(self.model.x)
+            p_resid.scatter(x='x', y='residuals', source=self.model.data,
+                            size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
         if plot_ratios:
             p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
                               min_width=400,
@@ -788,9 +788,9 @@ class Fit1DPanel:
             p_ratios.sizing_mode = 'stretch_width'
             connect_figure_extras(p_ratios, band_model)
             # Initalizing this will cause the residuals to be calculated
-            self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
-            p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
-                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+            self.model.data.data['ratio'] = np.zeros_like(self.model.x)
+            p_ratios.scatter(x='x', y='ratio', source=self.model.data,
+                             size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
         if plot_residuals and plot_ratios:
             tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
             tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
@@ -806,25 +806,25 @@ class Fit1DPanel:
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             band_model.load_from_tuples(region_tuples)
 
-        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
+        self.scatter = p_main.scatter(x='x', y='y', source=self.model.data,
                                       size=5, legend_field='mask',
-                                      **self.fit.mask_rendering_kwargs())
-        self.fit.add_listener(self.model_change_handler)
+                                      **self.model.mask_rendering_kwargs())
+        self.model.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
-        x_data = self.fit.data.data['x']
-        mask = self.fit.data.data['mask'].copy()
+        x_data = self.model.data.data['x']
+        mask = self.model.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
             if band_model and not band_model.contains(x_data[i]) and mask[i] == 'good':
                 mask[i] = BAND_MASK_NAME
-        fit.data.data['mask'] = mask
-        self.fit.perform_fit()
+        model.data.data['mask'] = mask
+        self.model.perform_fit()
 
         self.line = p_main.line(x='xlinspace',
                                 y='model',
-                                source=self.fit.evaluation,
+                                source=self.model.evaluation,
                                 line_width=3,
                                 color='crimson')
 
@@ -852,13 +852,13 @@ class Fit1DPanel:
 
     def update_regions(self):
         """ Update fitting regions """
-        self.fit.regions = self.fit.band_model.build_regions()
+        self.model.regions = self.model.band_model.build_regions()
 
-    def model_change_handler(self, *args):
+    def model_change_handler(self, fit):
         """
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
-        self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
+        self.model.evaluation.data['model'] = self.model.evaluate(self.model.evaluation.data['xlinspace'])
 
     def mask_button_handler(self, x, y, mult):
         """
@@ -873,16 +873,16 @@ class Fit1DPanel:
         stuff : any
             This is ignored, but the button passes it
         """
-        indices = self.fit.data.selected.indices
+        indices = self.model.data.selected.indices
         if not indices:
             self._point_mask_handler(x, y, mult, 'mask')
         else:
-            self.fit.data.selected.update(indices=[])
-            mask = self.fit.data.data['mask'].copy()
+            self.model.data.selected.update(indices=[])
+            mask = self.model.data.data['mask'].copy()
             for i in indices:
                 mask[i] = USER_MASK_NAME
-            self.fit.data.data['mask'] = mask
-            self.fit.perform_fit()
+            self.model.data.data['mask'] = mask
+            self.model.perform_fit()
 
     def unmask_button_handler(self, x, y, mult):
         """
@@ -897,19 +897,19 @@ class Fit1DPanel:
         stuff : any
             This is ignored, but the button passes it
         """
-        indices = self.fit.data.selected.indices
-        x_data = self.fit.data.data['x']
+        indices = self.model.data.selected.indices
+        x_data = self.model.data.data['x']
         if not indices:
             self._point_mask_handler(x, y, mult, 'unmask')
         else:
-            self.fit.data.selected.update(indices=[])
-            mask = self.fit.data.data['mask'].copy()
+            self.model.data.selected.update(indices=[])
+            mask = self.model.data.data['mask'].copy()
             for i in indices:
                 if mask[i] == USER_MASK_NAME:
-                    mask[i] = ('good' if self.fit.band_model.contains(x_data[i])
+                    mask[i] = ('good' if self.model.band_model.contains(x_data[i])
                                else BAND_MASK_NAME)
-            self.fit.data.data['mask'] = mask
-            self.fit.perform_fit()
+            self.model.data.data['mask'] = mask
+            self.model.perform_fit()
 
     def _point_mask_handler(self, x, y, mult, action):
         """
@@ -928,9 +928,9 @@ class Fit1DPanel:
         """
         dist = None
         sel = None
-        xarr = self.fit.data.data['x']
-        yarr = self.fit.data.data['y']
-        mask = self.fit.data.data['mask']
+        xarr = self.model.data.data['x']
+        yarr = self.model.data.data['y']
+        mask = self.model.data.data['mask']
         if action not in ('mask', 'unmask'):
             action = None
         for i in range(len(xarr)):
@@ -945,12 +945,12 @@ class Fit1DPanel:
         if sel is not None:
             # we have a clos_maskest point, toggle the user mask
             if mask[sel] == USER_MASK_NAME:
-                mask[sel] = ('good' if self.fit.band_model.contains(xarr[sel])
+                mask[sel] = ('good' if self.model.band_model.contains(xarr[sel])
                                else BAND_MASK_NAME)
             else:
                 mask[sel] = USER_MASK_NAME
 
-        self.fit.perform_fit()
+        self.model.perform_fit()
 
     # TODO refactored this down from tracing, but it breaks
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
@@ -1178,7 +1178,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
-                self.fits.append(tui.fit)
+                self.fits.append(tui.model)
         else:
 
             # ToDo: Review if there is a better way of handling this.
@@ -1190,7 +1190,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             tui = Fit1DPanel(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
-            self.fits.append(tui.fit)
+            self.fits.append(tui.model)
 
     def visualize(self, doc):
         """
