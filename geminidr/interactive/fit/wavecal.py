@@ -73,7 +73,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         band_model = GIRegionModel(domain=domain)
 
         self.fitting_parameters = fitting_parameters
-        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
+                                        band_model=band_model, listeners=listeners)
         self.model.other_data = other_data
 
         # also listen for updates to the masks
