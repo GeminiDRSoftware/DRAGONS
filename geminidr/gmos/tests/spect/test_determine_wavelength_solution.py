@@ -56,7 +56,7 @@ determine_wavelength_solution_parameters = {
     'center': None,
     'nsum': 10,
     'linelist': None,
-    'weighting': 'natural',
+    'weighting': 'global',
     'nbright': 0
 }
 
