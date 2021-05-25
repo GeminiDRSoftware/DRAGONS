@@ -142,7 +142,7 @@ class LineList:
         """
         wavelengths = self._lines * self.units
         if self._in_vacuo:
-            wavelengths = np.round(air_to_vac(wavelengths),
+            wavelengths = np.round(vac_to_air(wavelengths),
                                    decimals=self._decimals)
         if units is None:
             return wavelengths
@@ -162,7 +162,7 @@ class LineList:
         """
         wavelengths = self._lines * self.units
         if not self._in_vacuo:
-            wavelengths =  np.round(vac_to_air(wavelengths),
+            wavelengths =  np.round(air_to_vac(wavelengths),
                                     decimals=self._decimals)
         if units is None:
             return wavelengths

@@ -101,6 +101,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     def setDefaults(self):
         del self.function
         del self.grow
+        self.niter = 3
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
