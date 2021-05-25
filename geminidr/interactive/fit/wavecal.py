@@ -73,25 +73,24 @@ class WavelengthSolutionPanel(Fit1DPanel):
         band_model = GIRegionModel(domain=domain)
 
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
-                                      listeners=listeners, band_model=band_model)
-        self.fit.other_data = other_data
+        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.model.other_data = other_data
 
         # also listen for updates to the masks
-        self.fit.add_mask_listener(info_panel.update_mask)
+        self.model.add_mask_listener(info_panel.update_mask)
 
-        fit = self.fit
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
+        model = self.model
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, model, self.fitting_parameters)
 
         # No need to compute wavelengths here as the model_change_handler() does it
-        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(self.fit.other_data["spectrum"]),
-                                             'spectrum': self.fit.other_data["spectrum"]})
+        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(self.model.other_data["spectrum"]),
+                                             'spectrum': self.model.other_data["spectrum"]})
         self.id_spacer = 0.02 * self.spectrum.data['spectrum'].max()  # gap above line before wavelength string
 
         # This updates everything so we use it here to create all the
         # extra columns we need for this Visualizer
         # There's unlikely to be any harm to doing this in the parent class
-        self.model_change_handler(self.fit.fit)
+        self.model_change_handler(self.model.fit)
 
         controls_ls = list()
 
@@ -128,14 +127,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
         x_range = None
         y_range = None
         try:
-            if self.fit.data and 'x' in self.fit.data.data and len(self.fit.x) >= 2:
-                x_min = min(self.fit.x)
-                x_max = max(self.fit.x)
+            if self.model.data and 'x' in self.model.data.data and len(self.model.x) >= 2:
+                x_min = min(self.model.x)
+                x_max = max(self.model.x)
                 x_pad = (x_max - x_min) * 0.1
                 x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-            if self.fit.data and 'y' in self.fit.data.data and len(self.fit.y) >= 2:
-                y_min = min(self.fit.y)
-                y_max = max(self.fit.y)
+            if self.model.data and 'y' in self.model.data.data and len(self.model.x) >= 2:
+                y_min = min(self.model.y)
+                y_max = max(self.model.y)
                 y_pad = (y_max - y_min) * 0.1
                 y_range = Range1d(y_min - y_pad, y_max + y_pad)
         except:
@@ -166,8 +165,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         p_spectrum.step(x='wavelengths', y='spectrum', source=self.spectrum,
                         line_width=1, color="blue", mode="center")
         p_spectrum.text(x='fitted', y='heights', text='lines',
-                        source=self.fit.data, angle=0.5*np.pi,
-                        text_color=self.fit.mask_rendering_kwargs()['color'],
+                        source=self.model.data, angle=0.5 * np.pi,
+                        text_color=self.model.mask_rendering_kwargs()['color'],
                         text_baseline='middle')
         self.spectrum_plot = p_spectrum
 
@@ -182,6 +181,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # Here endeth my Wavecal-specific block
 
         if enable_regions:
+            band_model = GIRegionModel()
+
+            def update_regions():
+                self.model.model.regions = self.band_model.build_regions()
             band_model.add_listener(Fit1DRegionListener(self.update_regions))
 
             connect_figure_extras(p_main, band_model)
@@ -208,9 +211,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
             p_resid.sizing_mode = 'stretch_width'
             connect_figure_extras(p_resid, band_model)
             # Initalizing this will cause the residuals to be calculated
-            self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
-            p_resid.scatter(x='fitted', y='residuals', source=self.fit.data,
-                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+            self.model.data.data['residuals'] = np.zeros_like(self.model.x)
+            p_resid.scatter(x='fitted', y='residuals', source=self.model.data,
+                            size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
         if plot_ratios:
             p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
                               min_width=400,
@@ -223,9 +226,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
             p_ratios.sizing_mode = 'stretch_width'
             connect_figure_extras(p_ratios, band_model)
             # Initalizing this will cause the residuals to be calculated
-            self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
-            p_ratios.scatter(x='fitted', y='ratio', source=self.fit.data,
-                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+            self.model.data.data['ratio'] = np.zeros_like(self.model.x)
+            p_ratios.scatter(x='fitted', y='ratio', source=self.model.data,
+                             size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
         if plot_residuals and plot_ratios:
             tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
             tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
@@ -241,21 +244,21 @@ class WavelengthSolutionPanel(Fit1DPanel):
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             band_model.load_from_tuples(region_tuples)
 
-        self.scatter = p_main.scatter(x='fitted', y='nonlinear', source=self.fit.data,
-                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
-        self.fit.add_listener(self.model_change_handler)
+        self.scatter = p_main.scatter(x='fitted', y='nonlinear', source=self.model.data,
+                                      size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
+        self.model.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
         mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
-                for x, m in zip(self.fit.x, self.fit.mask)]
-        fit.data.data['mask'] = mask
-        self.fit.perform_fit()
+                for x, m in zip(self.model.x, self.model.mask)]
+        model.data.data['mask'] = mask
+        self.model.perform_fit()
 
         self.line = p_main.line(x='model',
                                 y='nonlinear',
-                                source=self.fit.evaluation,
+                                source=self.model.evaluation,
                                 line_width=3,
                                 color='crimson')
 
@@ -278,7 +281,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
     def linear_model(self):
         """Return only the linear part of a model. It doesn't work for
         splines, which is why it's not in the InteractiveModel1D class"""
-        model = self.fit.fit._models
+        model = self.model.fit._models
         return model.__class__(degree=1, c0=model.c0, c1=model.c1,
                                domain=model.domain)
 
@@ -289,18 +292,18 @@ class WavelengthSolutionPanel(Fit1DPanel):
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
         super().model_change_handler(fit)
-        x, y = self.fit.x, self.fit.y
+        x, y = self.model.x, self.model.y
         linear_model = self.linear_model
 
-        self.fit.data.data['fitted'] = self.fit.evaluate(x)
-        self.fit.data.data['nonlinear'] = y - linear_model(x)
-        self.fit.data.data['heights'] = [self.spectrum.data['spectrum'][int(xx + 0.5)] + 0.02 * self.spectrum.data['spectrum'].max() for xx in x]
-        self.fit.data.data['lines'] = [str(np.round(yy, decimals=6)) for yy in y]
+        self.model.data.data['fitted'] = self.model.evaluate(x)
+        self.model.data.data['nonlinear'] = y - linear_model(x)
+        self.model.data.data['heights'] = [self.spectrum.data['spectrum'][int(xx + 0.5)] + 0.02 * self.spectrum.data['spectrum'].max() for xx in x]
+        self.model.data.data['lines'] = [str(np.round(yy, decimals=6)) for yy in y]
 
-        self.fit.evaluation.data['nonlinear'] = self.fit.evaluation.data['model'] - linear_model(self.fit.evaluation.data['xlinspace'])
+        self.model.evaluation.data['nonlinear'] = self.model.evaluation.data['model'] - linear_model(self.model.evaluation.data['xlinspace'])
 
-        domain = self.fit.domain
-        self.spectrum.data['wavelengths'] = self.fit.evaluate(
+        domain = self.model.domain
+        self.spectrum.data['wavelengths'] = self.model.evaluate(
             np.arange(domain[0], domain[1]+1))
 
     def add_identified_line(self, peak, wavelength):
@@ -319,8 +322,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                     'residuals': [0],
                     'lines': [str(np.round(wavelength, decimals=6))],
                    }
-        self.fit.data.stream(new_data)
-        self.fit.perform_fit()
+        self.model.data.stream(new_data)
+        self.model.perform_fit()
 
     def identify_lines(self):
         """
@@ -334,21 +337,21 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         print("IDENTIFY LINES")
         dw = self.linear_model.c1
-        matching_distance = abs(self.fit.other_data["fwidth"] * dw)
-        all_lines = self.fit.other_data["linelist"].wavelengths(
+        matching_distance = abs(self.model.other_data["fwidth"] * dw)
+        all_lines = self.model.other_data["linelist"].wavelengths(
             in_vacuo=self.visualizer.config.in_vacuo, units="nm")
 
         good_data = {}
-        for k, v in self.fit.data.data.items():
-            good_data[k] = [vv for vv, mask in zip(v, self.fit.data.data['mask'])
+        for k, v in self.model.data.data.items():
+            good_data[k] = [vv for vv, mask in zip(v, self.model.data.data['mask'])
                             if mask == 'good']
 
         matches = match_sources(all_lines, good_data['y'], radius=0.01 * abs(dw))
         unmatched_lines = [l for l, m in zip(all_lines, matches) if m == -1]
 
-        new_peaks = np.setdiff1d(self.fit.other_data["peaks"],
+        new_peaks = np.setdiff1d(self.model.other_data["peaks"],
                                  good_data['x'], assume_unique=True)
-        new_waves = self.fit.evaluate(new_peaks)
+        new_waves = self.model.evaluate(new_peaks)
 
         matches = match_sources(new_waves, unmatched_lines, radius=matching_distance)
         for peak, m in zip(new_peaks, matches):
@@ -363,8 +366,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 good_data['lines'].append(str(np.round(unmatched_lines[m], decimals=6)))
                 print("NEW LINE", peak, unmatched_lines[m])
 
-        self.fit.data.data = good_data
-        self.fit.perform_fit()
+        self.model.data.data = good_data
+        self.model.perform_fit()
 
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
@@ -530,7 +533,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     other_data=other_data, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
-                self.fits.append(tui.fit)
+                self.fits.append(tui.model)
         else:
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
@@ -539,7 +542,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 all_weights[0], other_data=other_data[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
-            self.fits.append(tui.fit)
+            self.fits.append(tui.model)
 
     def reconstruct_points(self):
         """

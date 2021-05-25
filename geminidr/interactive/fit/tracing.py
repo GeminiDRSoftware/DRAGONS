@@ -73,11 +73,11 @@ class TraceAperturesTab(Fit1DPanel):
 
         self.band_model = GIRegionModel(domain=domain)
 
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
-                                      listeners=listeners, band_model=self.band_model)
+        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
+                                        listeners=listeners, band_model=self.band_model)
 
         self.fitting_parameters_ui = FittingParametersUI(
-            visualizer, self.fit, self.fitting_parameters)
+            visualizer, self.model, self.fitting_parameters)
 
         self.pars_column, self.controller_help = self.create_pars_column(
             fit_pars_ui=self.fitting_parameters_ui.get_bokeh_components(),
@@ -146,19 +146,19 @@ class TraceAperturesTab(Fit1DPanel):
         x_range = None
         y_range = None
 
-        if self.fit.data:
+        if self.model.data:
 
-            if 'x' in self.fit.data.data:
-                if len(self.fit.data.data['x']) >= 2:
-                    x_min = min(self.fit.data.data['x'])
-                    x_max = max(self.fit.data.data['x'])
+            if 'x' in self.model.data.data:
+                if len(self.model.data.data['x']) >= 2:
+                    x_min = min(self.model.data.data['x'])
+                    x_max = max(self.model.data.data['x'])
                     x_pad = (x_max - x_min) * 0.1
                     x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
 
-            if 'y' in self.fit.data.data:
-                if len(self.fit.data.data['y']) >= 2:
-                    y_min = min(self.fit.data.data['y'])
-                    y_max = max(self.fit.data.data['y'])
+            if 'y' in self.model.data.data:
+                if len(self.model.data.data['y']) >= 2:
+                    y_min = min(self.model.data.data['y'])
+                    y_max = max(self.model.data.data['y'])
                     y_pad = (y_max - y_min) * 0.1
                     y_range = bm.Range1d(y_min - y_pad, y_max + y_pad)
 
@@ -186,7 +186,7 @@ class TraceAperturesTab(Fit1DPanel):
         if enable_regions:
 
             def update_regions():
-                self.fit.regions = self.band_model.build_regions()
+                self.model.regions = self.band_model.build_regions()
 
             # Handles Bands Regions
             self.band_model.add_listener(
@@ -227,32 +227,32 @@ class TraceAperturesTab(Fit1DPanel):
         connect_figure_extras(p_resid, self.band_model)
 
         # Initializing this will cause the residuals to be calculated
-        self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
+        self.model.data.data['residuals'] = np.zeros_like(self.model.x)
 
-        p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                        size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        p_resid.scatter(x='x', y='residuals', source=self.model.data,
+                        size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in self.fitting_parameters and self.fitting_parameters["regions"] is not None:
             region_tuples = at.cartesian_regions_to_slices(self.fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
 
-        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
-                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
-        self.fit.add_listener(self.model_change_handler)
+        self.scatter = p_main.scatter(x='x', y='y', source=self.model.data,
+                                      size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
+        self.model.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
-        x_data = self.fit.data.data['x']
-        mask = self.fit.data.data['mask'].copy()
+        x_data = self.model.data.data['x']
+        mask = self.model.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
             if self.band_model and not self.band_model.contains(x_data[i]) and mask[i] == 'good':
                 mask[i] = BAND_MASK_NAME
-        self.fit.data.data['mask'] = mask
+        self.model.data.data['mask'] = mask
 
-        self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model', source=self.fit.evaluation, line_width=3,
+        self.model.perform_fit()
+        self.line = p_main.line(x='xlinspace', y='model', source=self.model.evaluation, line_width=3,
                                 color=bokeh_line_color)
 
         fig_column = [p_main, p_resid]
@@ -410,7 +410,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
                 tui = TraceAperturesTab(self, fitting_parms, domain, x, y, idx=i, weights=weights, **kwargs)
                 self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
-                self.fits.append(tui.fit)
+                self.fits.append(tui.model)
         else:
 
             # ToDo: Review if there is a better way of handling this.
@@ -423,7 +423,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                     all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
-            self.fits.append(tui.fit)
+            self.fits.append(tui.model)
 
         self.add_callback_to_sliders()
 
