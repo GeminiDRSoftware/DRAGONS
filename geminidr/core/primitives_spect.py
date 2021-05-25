@@ -52,7 +52,8 @@ from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
-from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT
+from ..interactive.fit.fit1d import Fit1DVisualizer
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -2648,73 +2649,221 @@ class Spect(PrimitivesBASE):
         apgrow = params["aperture_growth"]
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
+        interactive = params["interactive"]
 
-        for ad in adinputs:
-            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning(f"{ad.filename} has not been distortion corrected."
-                            " Sky subtraction is likely to be poor.")
+        if interactive:
+            def recalc_fn(config, extras):
+                for ad in adinputs:
+                    if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                        log.warning(f"{ad.filename} has not been distortion corrected."
+                                    " Sky subtraction is likely to be poor.")
 
-            for ext in ad:
-                axis = ext.dispersion_axis() - 1  # python sense
+                    for ext in ad:
+                        axis = ext.dispersion_axis() - 1  # python sense
 
-                # We want to mask pixels in apertures in addition to the mask.
-                # Should we also leave DQ.cosmic_ray (because sky lines can get
-                # flagged as CRs) and/or DQ.overlap unmasked here?
-                sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
-                            if ext.mask is None else
-                            ext.mask & DQ.not_signal)
+                        # We want to mask pixels in apertures in addition to the mask.
+                        # Should we also leave DQ.cosmic_ray (because sky lines can get
+                        # flagged as CRs) and/or DQ.overlap unmasked here?
+                        sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
+                                    if ext.mask is None else
+                                    ext.mask & DQ.not_signal)
 
-                # If there's an aperture table, go through it row by row,
-                # masking the pixels
-                try:
-                    aptable = ext.APERTURE
-                except AttributeError:
-                    pass
-                else:
-                    for row in aptable:
-                        trace_model = am.table_to_model(row)
-                        aperture = tracing.Aperture(trace_model,
-                                                    aper_lower=row['aper_lower'],
-                                                    aper_upper=row['aper_upper'])
-                        sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
+                        # If there's an aperture table, go through it row by row,
+                        # masking the pixels
+                        try:
+                            aptable = ext.APERTURE
+                        except AttributeError:
+                            pass
+                        else:
+                            row = aptable[0]
+                            trace_model = am.table_to_model(row)
+                            aperture = tracing.Aperture(trace_model,
+                                                        aper_lower=row['aper_lower'],
+                                                        aper_upper=row['aper_upper'])
+                            sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
 
-                if debug_plot:
-                    from astropy.visualization import simple_norm
-                    fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
-                                                   sharey=True)
-                    ax1.imshow(ext.data, cmap='gray',
-                               norm=simple_norm(ext.data, max_percent=99))
-                    ax2.imshow(sky_mask, cmap='gray', vmax=4)
-                    plt.show()
+                        if ext.variance is None:
+                            sky_weights = None
+                        else:
+                            sky_weights = np.sqrt(at.divide0(1., ext.variance))
+                            # Handle columns were all the weights are zero
+                            zeros = np.sum(sky_weights, axis=axis) == 0
+                            if axis == 0:
+                                sky_weights[:, zeros] = 1
+                            else:
+                                sky_weights[zeros] = 1
 
-                if ext.variance is None:
-                    sky_weights = None
-                else:
-                    sky_weights = np.sqrt(at.divide0(1., ext.variance))
-                    # Handle columns were all the weights are zero
-                    zeros = np.sum(sky_weights, axis=axis) == 0
-                    if axis == 0:
-                        sky_weights[:, zeros] = 1
+                        # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
+                        # chip gaps) to avoid a zillion warnings about insufficient
+                        # unmasked points.
+                        no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
+                        if axis == 0:
+                            sky_mask ^= no_data
+                        else:
+                            sky_mask ^= no_data[:, None]
+
+                        sky = np.ma.masked_array(ext.data[2000], mask=sky_mask[2000])
+                        yield np.arange(len(sky)), sky, sky_weights[2000]
+
+            # build config for interactive
+            config = self.params[self.myself()]
+            config.update(**params)
+
+            all_shapes = []
+            count = 0
+            for ad in adinputs:
+                for ext in ad:
+                    count = count+1
+                    all_shapes.append((0, ext.shape[1]))  # extracting single line for interactive
+            fit1d_params = fit_1D.translate_params(params)
+            visualizer = fit1d.Fit1DVisualizer(recalc_fn,
+                                               fitting_parameters=[fit1d_params] * count,
+                                               config=config,
+                                               tab_name_fmt="CCD {}",
+                                               xlabel=f'x',
+                                               ylabel=f'y',
+                                               domains=all_shapes,
+                                               title="Calculate Sensitivity",
+                                               primitive_name="calculateSensitivity",
+                                               filename_info='filename_info',
+                                               help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
+                                               plot_ratios=False)
+            geminidr.interactive.server.interactive_fitter(visualizer)
+
+            for ad in adinputs:
+                if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                    log.warning(f"{ad.filename} has not been distortion corrected."
+                                " Sky subtraction is likely to be poor.")
+
+                for ext in ad:
+                    axis = ext.dispersion_axis() - 1  # python sense
+
+                    # We want to mask pixels in apertures in addition to the mask.
+                    # Should we also leave DQ.cosmic_ray (because sky lines can get
+                    # flagged as CRs) and/or DQ.overlap unmasked here?
+                    sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
+                                if ext.mask is None else
+                                ext.mask & DQ.not_signal)
+
+                    # If there's an aperture table, go through it row by row,
+                    # masking the pixels
+                    try:
+                        aptable = ext.APERTURE
+                    except AttributeError:
+                        pass
                     else:
-                        sky_weights[zeros] = 1
+                        for row in aptable:
+                            trace_model = am.table_to_model(row)
+                            aperture = tracing.Aperture(trace_model,
+                                                        aper_lower=row['aper_lower'],
+                                                        aper_upper=row['aper_upper'])
+                            sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
 
-                # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
-                # chip gaps) to avoid a zillion warnings about insufficient
-                # unmasked points.
-                no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
-                if axis == 0:
-                    sky_mask ^= no_data
-                else:
-                    sky_mask ^= no_data[:, None]
+                    if debug_plot:
+                        from astropy.visualization import simple_norm
+                        fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
+                                                       sharey=True)
+                        ax1.imshow(ext.data, cmap='gray',
+                                   norm=simple_norm(ext.data, max_percent=99))
+                        ax2.imshow(sky_mask, cmap='gray', vmax=4)
+                        plt.show()
 
-                sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
-                                   axis=axis, plot=debug_plot).evaluate()
-                ext.data -= sky_model
+                    if ext.variance is None:
+                        sky_weights = None
+                    else:
+                        sky_weights = np.sqrt(at.divide0(1., ext.variance))
+                        # Handle columns were all the weights are zero
+                        zeros = np.sum(sky_weights, axis=axis) == 0
+                        if axis == 0:
+                            sky_weights[:, zeros] = 1
+                        else:
+                            sky_weights[zeros] = 1
 
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+                    # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
+                    # chip gaps) to avoid a zillion warnings about insufficient
+                    # unmasked points.
+                    no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
+                    if axis == 0:
+                        sky_mask ^= no_data
+                    else:
+                        sky_mask ^= no_data[:, None]
+
+                    sky = np.ma.masked_array(ext.data, mask=sky_mask)
+                    sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
+                                       axis=axis, plot=debug_plot).evaluate()
+                    ext.data -= sky_model
+
+                # Timestamp and update the filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=sfx, strip=True)
+
+        else:
+            for ad in adinputs:
+                if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                    log.warning(f"{ad.filename} has not been distortion corrected."
+                                " Sky subtraction is likely to be poor.")
+
+                for ext in ad:
+                    axis = ext.dispersion_axis() - 1  # python sense
+
+                    # We want to mask pixels in apertures in addition to the mask.
+                    # Should we also leave DQ.cosmic_ray (because sky lines can get
+                    # flagged as CRs) and/or DQ.overlap unmasked here?
+                    sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
+                                if ext.mask is None else
+                                ext.mask & DQ.not_signal)
+
+                    # If there's an aperture table, go through it row by row,
+                    # masking the pixels
+                    try:
+                        aptable = ext.APERTURE
+                    except AttributeError:
+                        pass
+                    else:
+                        for row in aptable:
+                            trace_model = am.table_to_model(row)
+                            aperture = tracing.Aperture(trace_model,
+                                                        aper_lower=row['aper_lower'],
+                                                        aper_upper=row['aper_upper'])
+                            sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
+
+                    if debug_plot:
+                        from astropy.visualization import simple_norm
+                        fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
+                                                       sharey=True)
+                        ax1.imshow(ext.data, cmap='gray',
+                                   norm=simple_norm(ext.data, max_percent=99))
+                        ax2.imshow(sky_mask, cmap='gray', vmax=4)
+                        plt.show()
+
+                    if ext.variance is None:
+                        sky_weights = None
+                    else:
+                        sky_weights = np.sqrt(at.divide0(1., ext.variance))
+                        # Handle columns were all the weights are zero
+                        zeros = np.sum(sky_weights, axis=axis) == 0
+                        if axis == 0:
+                            sky_weights[:, zeros] = 1
+                        else:
+                            sky_weights[zeros] = 1
+
+                    # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
+                    # chip gaps) to avoid a zillion warnings about insufficient
+                    # unmasked points.
+                    no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
+                    if axis == 0:
+                        sky_mask ^= no_data
+                    else:
+                        sky_mask ^= no_data[:, None]
+
+                    sky = np.ma.masked_array(ext.data, mask=sky_mask)
+                    sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
+                                       axis=axis, plot=debug_plot).evaluate()
+                    ext.data -= sky_model
+
+                # Timestamp and update the filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 

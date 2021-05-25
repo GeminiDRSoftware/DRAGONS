@@ -266,3 +266,53 @@ TRACE_APERTURES = """
 
     </dl>
     """
+
+
+SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
+<h2>Help</h2>
+<p>
+<b>TODO Update</b>
+    Calculates the overall sensitivity of the observation system
+    (instrument, telescope, detector, etc) for each wavelength using
+    spectrophotometric data. It is obtained using the ratio
+    between the observed data and the reference look-up data.</p>
+<p>
+    For that, it looks for reference data using the stripped and lower
+    case name of the observed object inside geminidr.gemini.lookups,
+    geminidr.core.lookups and inside the instrument lookup module.
+</p>
+<p>
+    The reference data is fit using a Spline in order to match the input
+    data sampling.
+</p>
+<h3>Profile parameters</h3>
+<p>Those parameters applies to the computation of the 1D profile.</p>
+<dl>
+<dt>Order</dt>
+<dd>
+    Percentile to determine signal for each spatial pixel. Uses when
+    collapsing along the dispersion direction to obtain a slit profile.
+    If None, the mean is used instead.
+</dd>
+<dt>Sigma Clip, Upper, Lower</dt>
+<dd>
+    Enables sigma rejection with individually settable upper and lower
+    sigma bounds.
+</dd>
+<dt>Max Iterations</dt>
+<dd>
+    Maximum number of rejection iterations
+</dd>
+<dt>Grow</dt>
+<dd>
+    Radius to reject pixels adjacent to masked pixels of spline fit
+</dd>
+<dt>Regions</dt>
+<dd>
+    Comma-separated list of colon-separated pixel coordinate pairs
+    indicating the region(s) over which the input data should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data.
+</dd>
+</dl>
+""" + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT

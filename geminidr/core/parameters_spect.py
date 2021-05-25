@@ -397,6 +397,7 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     regions = config.Field("Sample regions", str, None, optional=True)
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
+    interactive = config.Field("Run primitive interactively?", bool, False)
 
     def setDefaults(self):
         self.order = 5
