@@ -262,10 +262,11 @@ class PrimitiveVisualizer(ABC):
                 if end is None:
                     end = 50
                 step = start
+                allow_none = field.optional
 
-                widget = build_text_slider(doc, value, step, start, end,
-                                           obj=self.config, attr=pname,
-                                           slider_width=slider_width)
+                widget = build_text_slider(
+                    doc, value, step, start, end, obj=self.config, attr=pname,
+                    slider_width=slider_width, allow_none=allow_none)
 
                 self.widgets[pname] = widget.children[0]
             elif hasattr(field, 'allowed'):
@@ -292,14 +293,14 @@ class PrimitiveVisualizer(ABC):
                 if end is None:
                     end = 50
                 step = start
+                allow_none = field.optional
 
                 widget = build_text_slider(
-                    doc, field.default, step, start, end,
-                    obj=self.extras, attr=pname,
-                    handler=self.slider_handler_factory(
+                    doc, field.default, step, start, end, obj=self.extras,
+                    attr=pname, handler=self.slider_handler_factory(
                         pname, reinit_live=reinit_live),
-                    throttled=True,
-                    slider_width=slider_width)
+                    throttled=True, slider_width=slider_width,
+                    allow_none=allow_none)
 
                 self.widgets[pname] = widget.children[0]
                 self.extras[pname] = field.default
