@@ -1043,6 +1043,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  xlabel='x', ylabel='y',
                  domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
+                 ui_params=None,
                  **kwargs):
         """
         Parameters
@@ -1080,9 +1081,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             Title for UI (Interactive <Title>)
         help_text : str
             HTML help text for popup help, or None to use the default
+        ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+            Parameter set for user input
         """
         super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
-                         template=template, help_text=help_text)
+                         template=template, help_text=help_text, ui_params=ui_params)
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
@@ -1098,8 +1101,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         if reinit_params is not None or reinit_extras is not None:
             # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
-
+            # reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
+            reinit_widgets = self.make_widgets_from_parameters(ui_params, reinit_live=modal_message is None)
             # This should really go in the parent class, like submit_button
             if modal_message:
                 if len(reinit_widgets) > 1:
@@ -1108,13 +1111,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     self.make_modal(self.reinit_button, modal_message)
                     reinit_widgets.append(self.reinit_button)
                     self.modal_widget = self.reinit_button
-                else:
+                elif len(reinit_widgets) == 1:
                     def kickoff_modal(attr, old, new):
                         self.reconstruct_points()
                     reinit_widgets[0].children[1].on_change('value', kickoff_modal)
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
-
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
             else:
@@ -1127,7 +1129,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # TODO revisit the raging debate on `callable` for Python 3
         if callable(data_source):
             self.reconstruct_points_fn = data_source
-            data = data_source(config, self.extras)
+            data = data_source(ui_params=ui_params)
             # For this, we need to remap from
             # [[x1, y1, weights1], [x2, y2, weights2], ...]
             # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
@@ -1257,20 +1259,24 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.modal_widget:
             self.modal_widget.disabled = True
 
+        # def fn():
+        #     """Top-level code to update the Config with the values from the widgets"""
+        #     config_update = {k: v.value for k, v in self.widgets.items()}
+        #     for extra in self.reinit_extras:
+        #         del config_update[extra]
+        #     for k, v in config_update.items():
+        #         print(f'{k} = {v}')
+        #     self.config.update(**config_update)
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
-            for extra in self.reinit_extras:
-                del config_update[extra]
-            for k, v in config_update.items():
-                print(f'{k} = {v}')
-            self.config.update(**config_update)
+            self.ui_params.values.update(**config_update)
 
         self.do_later(fn)
 
         if self.reconstruct_points_fn is not None:
             def rfn():
-                all_coords = self.reconstruct_points_fn(self.config, self.extras)
+                all_coords = self.reconstruct_points_fn(ui_params=self.ui_params)
                 for fit, coords in zip(self.fits, all_coords):
                     if len(coords) > 2:
                         fit.weights = coords[2]

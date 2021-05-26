@@ -1,6 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from copy import copy
+from enum import Enum
 from functools import cmp_to_key
 
 from bokeh.core.property.instance import Instance
@@ -13,8 +14,7 @@ from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_regions
-from gempy.library.config import FieldValidationError
-
+from gempy.library.config import FieldValidationError, Config
 
 # Singleton instance, there is only ever one of these
 _visualizer = None
@@ -22,7 +22,7 @@ _visualizer = None
 
 class PrimitiveVisualizer(ABC):
     def __init__(self, config=None, title='', primitive_name='',
-                 filename_info='', template=None, help_text=None):
+                 filename_info='', template=None, help_text=None, ui_params=None):
         """
         Initialize a visualizer.
 
@@ -61,6 +61,7 @@ class PrimitiveVisualizer(ABC):
             self.config = None
         else:
             self.config = copy(config)
+        self.ui_params = ui_params
 
         self.user_satisfied = False
 
@@ -217,6 +218,48 @@ class PrimitiveVisualizer(ABC):
             }
         """ % message)
         widget.js_on_change('disabled', callback)
+
+    def make_widgets_from_parameters(self, params, reinit_live: bool = True,
+                                     slider_width: int = 256):
+        """
+        Makes appropriate widgets for all the parameters in params,
+        using the config to determine the type. Also adds these widgets
+        to a dict so they can be accessed from the calling primitive.
+
+        Parameters
+        ----------
+        params : :class:`UIParameters`
+            Parameters to make widgets for
+        reinit_live : bool
+            True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
+            Currently only viable for text-slider style inputs
+        slider_width : int
+            Width of the sliders
+
+        Returns
+        -------
+        list : Returns a list of widgets to display in the UI.
+        """
+        widgets = []
+        for param in params.visible_params():
+            if param.start:
+                widget = build_text_slider(
+                    param.title, param.value, param.step, param.start, param.end, obj=params.values, attr=param.name,
+                    slider_width=slider_width, allow_none=param.allow_none, throttled=True,
+                    handler=self.slider_handler_factory(param.name, reinit_live=reinit_live))
+
+                self.widgets[param.name] = widget.children[0]
+            elif param.allowed:
+                # ChoiceField => drop-down menu
+                widget = Dropdown(label=param.title, menu=list(param.allowed.keys()))
+                self.widgets[param.name] = widget
+            else:
+                # Anything else
+                widget = TextInput(title=param.title)
+                self.widgets[param.name] = widget
+
+            widgets.append(widget)
+        return widgets
 
     def make_widgets_from_config(self, params, extras, reinit_live,
                                  slider_width=256):
@@ -1409,6 +1452,141 @@ class TabsTurboInjector:
         if old != new:
             self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
+
+
+class UIParameterType(Enum):
+    TEXTSLIDER = 1
+    DROPDOWN = 2
+    TEXTINPUT = 3
+
+
+class UIParameter:
+    """
+    Class to hold informatino about a single UI parameter.
+
+    Parameters
+    ----------
+    title : str
+        Title to use on the UI for this parameter
+    name : str
+        Name of the field, such as the key in the configuration
+    value : str, int, float
+        Initial value
+    start : int, flat
+        Lowest allowable value
+    end : int, float
+        Largest allowable value
+    step : int, float
+        Step size when adjusting a slider
+    allow_none: bool
+        Allow empty text to represent `None` for numeric inputs
+    allowed: list
+        List of allowable values for a dropdown
+    hidden: bool
+        If True, indicates this input should be hidden from the main reinit UI
+    """
+    def __init__(self, title: str = None, name: str = None, value: [str, int, float] = None,
+                 start: [int, float] = None, end: [int, float] = None,
+                 step: [int, float] = None, allow_none: bool = False, allowed: list = None,
+                 hidden: bool = False):
+        self.title = title
+        self.name = name
+        self.value = value
+        self.start = start
+        self.end = end
+        self.step = step
+        self.allow_none = allow_none
+        self.allowed = allowed
+        self.hidden = hidden
+        self.type = UIParameterType.TEXTINPUT
+        if min is not None:
+            self.type = UIParameterType.TEXTSLIDER
+        if allowed:
+            self.type = UIParameterType.DROPDOWN
+
+
+class UIParameters:
+    """
+    Holder class for the set of UI-adjustable parameters
+    """
+    def __init__(self, config: Config = None, params: list = None, hidden_params: list = None):
+        """
+        Create a UIParameters set of parameters for the UI.
+
+        This object holds a collection of parameters.  These are used for the visualizer to
+        provide user interactivity of the inputs.  Although we track a `value` here, note that
+        in some cases the UI may provide multiple tabs with distinct inputs.  In that case,
+        it is up to the visualizer to track changes to these inputs on a per tab basis itself.
+
+        Parameters
+        ----------
+        :config: :class:`~gempy.library.config.Config`
+            DRAGONS primitive configuration
+        :params: list
+            List of names of configuration fields to extract
+        :hidden_params: list
+            List of names of configuration fields to not show in the reinit panel
+        """
+        self.params = list()
+        self.param_map = dict()
+        self.values = dict()
+
+        if config:
+            for pname, value in config.items():
+                if params is not None and pname not in params:
+                    continue
+                field = config._fields[pname]
+                # Do some inspection of the config to determine what sort of widget we want
+                title = field.doc.split('\n')[0]
+                start = None
+                end = None
+                step = None
+                allowed = None
+                if hasattr(field, 'min'):
+                    start, end = field.min, field.max
+                    step = 1 if start <= 0 else start
+                if hasattr(field, 'allowed'):
+                    allowed = field.allowed
+                hidden = False
+                if hidden_params and pname in hidden_params:
+                    hidden = True
+                param = UIParameter(title=title, name=pname, value=value, start=start, end=end, step=step,
+                                    allow_none=field.optional, allowed=allowed, hidden=hidden)
+                self.add_param(param)
+
+    def add_param(self, param):
+        """
+        Add a parameter to the set of parameters
+
+        Parameters
+        ----------
+        param : :class:`~geminidr.interactive.interactive.UIParameter`
+            Parameter definition to add
+        """
+        self.params.append(param)
+        self.param_map[param.name] = param
+        self.values[param.name] = param.value
+
+    def visible_params(self):
+        """
+        Get the list of visible UI parameters.
+
+        This is useful when building the UI for the visualizer.
+        It will only return parameters that are intended for the user
+        to modify.  In the case of Fit1DVisualizer, we also are
+        hiding the fitting parameters so they can be tuned per-tab.
+
+        :return: list
+            List of :class:`~geminidr.interactive.interactive.UIParameter` that are visible
+        """
+        for param in self.params:
+            if not param.hidden:
+                yield param
+
+    def get_value(self, key):
+        if key not in self.param_map:
+            raise ValueError(f'Key {key} not recognized in UI Parameters list of {self.param_map.keys()}')
+        return self.param_map[key].value
 
 
 def do_later(fn):

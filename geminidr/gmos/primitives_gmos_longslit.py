@@ -43,6 +43,7 @@ from . import parameters_gmos_longslit
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
 from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
+from ..interactive.interactive import UIParameters, UIParameter
 
 
 @parameter_override
@@ -705,8 +706,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # be responsive in the UI.  The 'row' extra parameter defined above will create a
                 # slider for the user and we will have access to the selected value in the 'extras'
                 # dictionary passed in here.
-                def reconstruct_points(conf, extras):
-                    r = max(0, extras['row'] - 1)
+                def reconstruct_points(ui_params=None):
+                    r = max(0, ui_params.values['row'] - 1)
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
                         masked_data = np.ma.masked_array(rpext.data[r],
@@ -723,6 +724,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     filename_info = ad.filename
                 else:
                     filename_info = ''
+                uiparams = UIParameters(config, params=reinit_params)
+                uiparams.add_param(UIParameter(title='Row', name='row', value=int(nrows/2), start=1, end=nrows))
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
                                                    config=config,
                                                    reinit_params=reinit_params,
@@ -737,7 +740,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True,
-                                                   modal_message="Recalculating")
+                                                   modal_message="Recalculating",
+                                                   ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 log.stdinfo('Interactive Parameters retrieved, performing flat normalization...')
 

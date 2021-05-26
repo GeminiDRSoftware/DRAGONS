@@ -49,6 +49,7 @@ from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
 from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT
+from ..interactive.interactive import UIParameters
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -428,6 +429,7 @@ class Spect(PrimitivesBASE):
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
 
+                uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
                                                    fitting_parameters=all_fp_init,
                                                    config=config,
@@ -438,7 +440,8 @@ class Spect(PrimitivesBASE):
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
                                                    filename_info=filename_info,
-                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT)
+                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT,
+                                                   ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
