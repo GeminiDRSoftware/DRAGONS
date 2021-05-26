@@ -341,7 +341,7 @@ class PrimitiveVisualizer(ABC):
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256, config=None):
+                      slider_width=256, config=None, allow_none=False):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -365,6 +365,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Function to call after setting the attribute
     throttled : bool
         Set to `True` to limit handler calls to when the slider is released (default False)
+    allow_none : bool
+        Set to `True` to allow an empty text entry to specify a `None` value
 
     Returns
     -------
@@ -418,20 +420,20 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                if (inp.value > %s) {
+                if (%s inp.value > %s) {
                     alert('Maximum is %s');
                     inp.value = %s;
                 }
-            """ % (max_value, max_value, max_value)))
+            """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
     if min_value is not None:
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                if (inp.value < %s) {
+                if (%s inp.value < %s) {
                     alert('Minimum is %s');
                     inp.value = %s;
                 }
-            """ % (min_value, min_value, min_value)))
+            """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
 
     component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
@@ -439,8 +441,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Check if the value is viable as an int or float, according to our type
         if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
             return True
-        if val is None:
+        if val is None and not allow_none:
             return False
+        if val is None and allow_none:
+            return True
         try:
             if is_float:
                 float(val)
@@ -456,7 +460,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             if _input_check(old):
                 text_input.value = old
             return
-        if old != new:
+        if new is not None and old != new:
             if is_float:
                 ival = float(new)
             else:
@@ -471,6 +475,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                 slider.start = min(ival, start)
             if slider.start <= ival <= slider.end:
                 slider.value = ival
+            slider.show_value = True
+        elif new is None:
+            slider.show_value = False
 
     def update_text_input(attrib, old, new):
         # Update the text input
@@ -489,7 +496,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
-                text_input.value = str(old)
+                text_input.value = old
                 text_input.on_change("value", handle_value)
             else:
                 update_slider(attrib, old, new)
