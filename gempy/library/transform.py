@@ -56,6 +56,7 @@ import astrodata
 from astrodata import wcs as adwcs
 
 from .astromodels import Rotate2D, Shift2D, Scale2D
+from ..utils.decorators import insert_descriptor_values
 from ..utils import logutils
 
 log= logutils.get_logger(__name__)
@@ -1401,7 +1402,9 @@ def add_mosaic_wcs(ad, geotable):
 
     return ad
 
-def add_longslit_wcs(ad):
+
+@insert_descriptor_values()
+def add_longslit_wcs(ad, central_wavelength=None):
     """
     Attach a gWCS object to all extensions of an AstroData objects,
     representing the approximate spectroscopic WCS, as returned by
@@ -1409,8 +1412,10 @@ def add_longslit_wcs(ad):
 
     Parameters
     ----------
-    ad: AstroData
+    ad : AstroData
         the AstroData instance requiring a WCS
+    central_wavelength : float / None
+        central wavelength in nm (None => use descriptor)
 
     Returns
     -------
@@ -1418,8 +1423,6 @@ def add_longslit_wcs(ad):
     """
     if 'SPECT' not in ad.tags:
         raise ValueError(f"Image {ad.filename} is not of type SPECT")
-
-    cenwave = ad.central_wavelength(asNanometers=True)
 
     # TODO: This appears to be true for GMOS. Revisit for other multi-extension
     # spectrographs once they arrive and GMOS tests are written
@@ -1453,7 +1456,7 @@ def add_longslit_wcs(ad):
             sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(0)) | transform
         sky_model.name = 'SKY'
         wave_model = (models.Shift(crpix) | models.Scale(dw) |
-                      models.Shift(cenwave))
+                      models.Shift(central_wavelength))
         wave_model.name = 'WAVE'
 
         if dispaxis == 1:

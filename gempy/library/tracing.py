@@ -28,7 +28,7 @@ from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
 from . import astrotools as at
-from .astrotools import divide0
+from ..utils.decorators import insert_descriptor_values
 
 log = logutils.get_logger(__name__)
 
@@ -212,16 +212,16 @@ class Aperture:
                 profile_models.append(m_final(pixels))
             profile_model_spectrum = np.array([np.where(pm < 0, 0, pm) for pm in profile_models])
             sums = profile_model_spectrum.sum(axis=0)
-            model_profile = divide0(profile_model_spectrum, sums)
+            model_profile = at.divide0(profile_model_spectrum, sums)
 
             # Step 6: revise variance estimates
             var = np.where(var_mask | mask & BAD_BITS, var,
                            var_model(abs(model_profile * spectrum)))
-            inv_var = divide0(1.0, var)
+            inv_var = at.divide0(1.0, var)
 
             # Step 7: identify cosmic ray hits: we're (probably) OK
             # to flag more than 1 per wavelength
-            sigma_deviations = divide0(data - model_profile * spectrum, np.sqrt(var)) * unmask
+            sigma_deviations = at.divide0(data - model_profile * spectrum, np.sqrt(var)) * unmask
             mask[sigma_deviations > cr_rej] |= DQ.cosmic_ray
             # most_deviant = np.argmax(sigma_deviations, axis=0)
             # for i, most in enumerate(most_deviant):
@@ -232,8 +232,8 @@ class Aperture:
             unmask = (mask & BAD_BITS) == 0
             spec_numerator = np.sum(unmask * model_profile * data * inv_var, axis=0)
             spec_denominator = np.sum(unmask * model_profile ** 2 * inv_var, axis=0)
-            self.data = divide0(spec_numerator, spec_denominator)
-            self.var = divide0(np.sum(unmask * model_profile, axis=0), spec_denominator)
+            self.data = at.divide0(spec_numerator, spec_denominator)
+            self.var = at.divide0(np.sum(unmask * model_profile, axis=0), spec_denominator)
             self.mask = np.bitwise_and.reduce(mask, axis=0)
             spectrum = self.data
 
@@ -355,6 +355,52 @@ class Aperture:
 
 ###############################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
+@insert_descriptor_values("dispersion_axis")
+def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
+    """
+    Calculates the average along the slit and its pixel-by-pixel variance.
+
+    Parameters
+    ----------
+    ext : `AstroData` slice
+        2D spectral image from which trace is to be extracted.
+    center : float or None
+        Center of averaging region (None => center of axis).
+    nsum : int
+        Number of rows/columns to combine
+
+    Returns
+    -------
+    data : array_like
+        Averaged data of the extracted region.
+    mask : array_like
+        Mask of the extracted region.
+    variance : array_like
+        Variance of the extracted region based on pixel-to-pixel variation.
+    extract_slice : slice
+        Slice object for extraction region.
+    """
+    npix = ext.shape[1 - dispersion_axis]
+
+    if nsum is None:
+        nsum = npix
+    if center is None:
+        center = 0.5 * (npix - 1)
+
+    extract_slice = slice(max(0, int(center - 0.5 * nsum + 1)),
+                          min(npix, int(center + 0.5 * nsum + 1)))
+    data, mask, variance = at.transpose_if_needed(
+        ext.data, ext.mask, ext.variance,
+        transpose=(dispersion_axis == 0), section=extract_slice)
+
+    # Create 1D spectrum; pixel-to-pixel variation is a better indicator
+    # of S/N than the VAR plane
+    # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
+    #  Use "variance=None" to make them pass again.
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+
+    return data, mask, variance, extract_slice
+
 
 def estimate_peak_width(data, mask=None):
     """
@@ -698,7 +744,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
         sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
         w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
     else:
-        w = divide0(1.0, np.sqrt(variance))
+        w = at.divide0(1.0, np.sqrt(variance))
 
     # TODO: Consider outlier removal
     #spline = am.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=3)
@@ -802,15 +848,14 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
     return optimize.bisect(func, limit, peak)
 
 
-def stack_slit(ext, percentile=50, dispaxis=None):
-    if dispaxis is None:
-        dispaxis = 2 - ext.dispersion_axis()  # python sense
+@insert_descriptor_values("dispersion_axis")
+def stack_slit(ext, percentile=50, dispersion_axis=None):
     if ext.mask is None:
-        return np.percentile(ext.data, percentile, axis=dispaxis)
+        return np.percentile(ext.data, percentile, axis=dispersion_axis)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', message='All-NaN slice')
         profile = np.nanpercentile(np.where(ext.mask, np.nan, ext.data),
-                                   percentile, axis=dispaxis)
+                                   percentile, axis=dispersion_axis)
     return np.nan_to_num(profile, copy=False, nan=np.nanmedian(profile))
 
 

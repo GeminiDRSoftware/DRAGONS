@@ -16,6 +16,10 @@ from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_reg
 from gempy.library.config import FieldValidationError
 
 
+# Singleton instance, there is only ever one of these
+_visualizer = None
+
+
 class PrimitiveVisualizer(ABC):
     def __init__(self, config=None, title='', primitive_name='',
                  filename_info='', template=None, help_text=None):
@@ -41,6 +45,9 @@ class PrimitiveVisualizer(ABC):
         template : str
             Optional path to an html template to render against, if customization is desired
         """
+        global _visualizer
+        _visualizer = self
+
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
 
@@ -334,7 +341,7 @@ class PrimitiveVisualizer(ABC):
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256, config=None):
+                      slider_width=256, config=None, allow_none=False):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -358,6 +365,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Function to call after setting the attribute
     throttled : bool
         Set to `True` to limit handler calls to when the slider is released (default False)
+    allow_none : bool
+        Set to `True` to allow an empty text entry to specify a `None` value
 
     Returns
     -------
@@ -411,20 +420,20 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                if (inp.value > %s) {
+                if (%s inp.value > %s) {
                     alert('Maximum is %s');
                     inp.value = %s;
                 }
-            """ % (max_value, max_value, max_value)))
+            """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
     if min_value is not None:
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                if (inp.value < %s) {
+                if (%s inp.value < %s) {
                     alert('Minimum is %s');
                     inp.value = %s;
                 }
-            """ % (min_value, min_value, min_value)))
+            """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
 
     component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
@@ -432,8 +441,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Check if the value is viable as an int or float, according to our type
         if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
             return True
-        if val is None:
+        if val is None and not allow_none:
             return False
+        if val is None and allow_none:
+            return True
         try:
             if is_float:
                 float(val)
@@ -449,7 +460,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             if _input_check(old):
                 text_input.value = old
             return
-        if old != new:
+        if new is not None and old != new:
             if is_float:
                 ival = float(new)
             else:
@@ -464,6 +475,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                 slider.start = min(ival, start)
             if slider.start <= ival <= slider.end:
                 slider.value = ival
+            slider.show_value = True
+        elif new is None:
+            slider.show_value = False
 
     def update_text_input(attrib, old, new):
         # Update the text input
@@ -482,7 +496,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
-                text_input.value = str(old)
+                text_input.value = old
                 text_input.on_change("value", handle_value)
             else:
                 update_slider(attrib, old, new)
@@ -744,7 +758,7 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
     return component
 
 
-def connect_figure_extras(fig, aperture_model, region_model):
+def connect_figure_extras(fig, region_model):
     """
     Connect a figure to an aperture and region model for rendering.
 
@@ -766,10 +780,6 @@ def connect_figure_extras(fig, aperture_model, region_model):
     # If we have regions or apertures to show, show them
     if region_model:
         regions = GIRegionView(fig, region_model)
-    # This no longer works as we now require holoviews
-    # TODO remove from args to method
-    # if aperture_model:
-    #     aperture_view = GIApertureView(aperture_model, fig)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
     # apertures and regions will not update properly after the figure is visible.
@@ -1398,3 +1408,22 @@ class TabsTurboInjector:
         if old != new:
             self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
+
+
+def do_later(fn):
+    """
+    Helper method to queue work to be done on the bokeh UI thread.
+
+    When actiona happen as a result of a key press, for instance, this comes in
+    on a different thread than bokeh UI is operating on.  Performing any UI
+    impacting changes on this other thread can cause issues.  Instead, wrap
+    the desired changes in a function and pass it in here to be run on the UI
+    thread.
+
+    This works by referencing the active singleton Visualizer, so that
+    code doesn't have to all track the visualizer.
+
+    :param fn:
+    :return:
+    """
+    _visualizer.do_later(fn)

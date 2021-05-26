@@ -76,29 +76,32 @@ class determineDistortionConfig(config.Config):
     debug = config.Field("Display line traces on image display?", bool, False)
 
 
-class determineWavelengthSolutionConfig(config.Config):
+class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
-    order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     min_sep = config.RangeField("Minimum feature separation (pixels)", float, 2., min=1.)
     weighting = config.ChoiceField("Weighting of identified peaks", str,
-                                   allowed={"none": "no weighting",
-                                            "natural": "natural weighting",
-                                            "relative": "relative to local peaks"},
-                                   default="natural")
+                                   allowed={"uniform": "uniform weighting",
+                                            "global": "weighted by strength",
+                                            "local": "weighted by strength relative to local peaks"},
+                                   default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
-    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
-                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
-    alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
-    debug = config.Field("Make diagnostic plots?", bool, False)
+    debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
+                                   check=list_of_ints_check)
+    debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
+    interactive = config.Field("Display interactive fitter?", bool, False)
 
+    def setDefaults(self):
+        del self.function
+        del self.grow
+        self.niter = 3
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
@@ -405,30 +408,28 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
         self.grow = 2
 
 
-class traceAperturesConfig(config.Config):
+class traceAperturesConfig(config.core_1Dfitting_config):
     """
     Configuration for the traceApertures() primitive.
     """
-    debug = config.Field("Draw aperture traces on image display?",
-                         bool, False)
-    interactive = config.Field("Run primitive interactively?",
-                               bool, False)
+    suffix = config.Field("Filename suffix",
+                          str, "_aperturesTraced", optional=True)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
-    niter = config.RangeField("Maximum number of rejection iterations",
-                              int, 0, min=0)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
-    order = config.RangeField("Order of fitting function",
-                              int, 2, min=1)
-    sigma = config.RangeField("Rejection in sigma of fit",
-                              float, 3, min=0, optional=True)
     step = config.RangeField("Step in rows/columns for tracing",
                              int, 10, min=1)
-    suffix = config.Field("Filename suffix",
-                          str, "_aperturesTraced", optional=True)
+    interactive = config.Field("Run primitive interactively?",
+                               bool, False)
+    debug = config.Field("Draw aperture traces on image display?",
+                         bool, False)
+
+    def setDefaults(self):
+        del self.function
+        self.order = 2
 
 
 

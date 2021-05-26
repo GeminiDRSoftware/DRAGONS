@@ -4,14 +4,14 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
+from bokeh.models import Div, Select, Range1d, Spacer
 from bokeh.plotting import figure
 from bokeh import events
 
 from geminidr.interactive import interactive
-from geminidr.interactive.controls import Controller
+from geminidr.interactive.controls import Controller, Handler
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
-    RegionEditor
+    RegionEditor, do_later
 from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
@@ -45,11 +45,11 @@ def build_fit_1D(fit1d_params, data, points, weights, domain):
 
 SIGMA_MASK_NAME = 'rejected (sigma)'
 USER_MASK_NAME = 'rejected (user)'
+BAND_MASK_NAME = 'excluded'
 
 
 class InteractiveModel(ABC):
-
-    MASK_TYPE = ['excluded', USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
+    MASK_TYPE = [BAND_MASK_NAME, USER_MASK_NAME, 'good', SIGMA_MASK_NAME]
     MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square']
     PALETTE = ['lightsteelblue', 'lightskyblue', 'black', 'darksalmon']  # Category10[4]
     """
@@ -59,17 +59,12 @@ class InteractiveModel(ABC):
         (c) the way the fitting is performed
         (d) the input and output coordinates, mask, and weights
 
-    There will be 3 masks defined (all booleans):
-        user_mask: points masked by the user
-        fit_mask:  points rejected by the fit
-        band_mask: points rejected by not being in a selection band (only if bands exist)
     """
 
-    def __init__(self, model):
+    def __init__(self):
         bokeh_data_color = interactive_conf().bokeh_data_color
         InteractiveModel.PALETTE[2] = bokeh_data_color
 
-        self.model = model
         self.listeners = []
         self.mask_listeners = []
         self.data = None
@@ -103,11 +98,7 @@ class InteractiveModel(ABC):
 
     def notify_mask_listeners(self):
         for mask_listener in self.mask_listeners:
-            mask_listener(
-                self.band_mask,
-                self.user_mask,
-                self.fit_mask
-            )
+            mask_listener(self.data.data['mask'])
 
     @abstractmethod
     def perform_fit(self):
@@ -142,27 +133,6 @@ class InteractiveModel(ABC):
         return {'marker': bt.factor_mark('mask', self.MARKERS, self.MASK_TYPE),
                 'color': bt.factor_cmap('mask', self.PALETTE, self.MASK_TYPE)}
 
-    def update_mask(self):
-        """
-        Update the internal mask on the data using the various boolean masks.
-
-        This will consolidate the `~geminidr.interactive.fit.fit1d.InteractiveModel.band_mask`,
-        `~geminidr.interactive.fit.fit1d.InteractiveModel.user_mask`, and
-        `~geminidr.interactive.fit.fit1d.InteractiveModel.fit_mask` into a unified data mask.
-        Order of preference is `user`, `band`, `fit`, `init`
-        """
-        # Update the "mask" column to change the glyphs
-        new_mask = ['good'] * len(self.data.data['mask'])
-        for i, (bdm, um, fm) in enumerate(zip(self.band_mask, self.user_mask, self.fit_mask)):
-            if fm:
-                new_mask[i] = SIGMA_MASK_NAME
-            if bdm:
-                new_mask[i] = 'excluded'
-            if um:
-                new_mask[i] = USER_MASK_NAME
-        self.data.data['mask'] = new_mask
-        self.notify_mask_listeners()
-
 
 class InteractiveModel1D(InteractiveModel):
     """
@@ -170,14 +140,12 @@ class InteractiveModel1D(InteractiveModel):
     """
 
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
-                 section=None, listeners=[]):
+                 section=None, listeners=[], band_model=None):
         """
         Create base class with given parameters as initial model inputs.
 
         Parameters
         ----------
-        model : :class:`geminidr.interactive.fit.fit1d.InteractiveFit1D`
-            Model behind the 1-D fit.
         x : :class:`~numpy.ndarray`
             list of x coordinate values
         y : :class:`~numpy.ndarray`
@@ -186,12 +154,16 @@ class InteractiveModel1D(InteractiveModel):
             array of mask names for each point
         section
         """
-        model = InteractiveFit1D(fitting_parameters, domain, listeners=listeners)
-        super().__init__(model)
+        super().__init__()
 
-        self.user_mask = None
-        self.fit_mask = None
-        self.band_mask = None
+        self.band_model = band_model
+        if band_model:
+            band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+
+        self.fitting_parameters = fitting_parameters
+        self.domain = domain
+        self.fit = None
+        self.listeners = listeners
 
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
@@ -204,12 +176,8 @@ class InteractiveModel1D(InteractiveModel):
         weights = self.populate_bokeh_objects(x, y, weights=weights, mask=mask)
         self.weights = weights
 
-        if "sigma" in fitting_parameters and fitting_parameters["sigma"]:
-            self.sigma_clip = True
-        else:
-            self.sigma_clip = False
-
-        model.perform_fit(self)
+        self.sigma_clip = "sigma" in fitting_parameters and fitting_parameters["sigma"]
+        self.perform_fit()
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
                                                'model': self.evaluate(xlinspace)})
 
@@ -226,7 +194,32 @@ class InteractiveModel1D(InteractiveModel):
         fn : str
             Which fitter to use
         """
-        self.model.set_function(fn)
+        self.fitting_parameters["function"] = fn
+
+    @property
+    def regions(self):
+        """
+        Get the regions of the fitter.
+
+        Returns
+        -------
+        tuple of tuples : `regions` of the model we are wrapping
+        """
+        return self.fitting_parameters["regions"]
+
+    @regions.setter
+    def regions(self, regions):
+        """
+        Set the regions in this fitter.
+
+        This sets the regions.
+
+        Parameters
+        ----------
+        regions : tuple of tuples
+            regions to use in the fit
+        """
+        self.fitting_parameters["regions"] = regions
 
     def populate_bokeh_objects(self, x, y, weights, mask=None):
         """
@@ -248,7 +241,6 @@ class InteractiveModel1D(InteractiveModel):
                     init_mask = y.mask
                 else:
                     init_mask = np.array(np.zeros_like(x, dtype=bool))
-                # init_mask = y.mask or np.zeros_like(x, dtype=bool)
             except AttributeError:
                 init_mask = np.array(np.zeros_like(x, dtype=bool))
             else:
@@ -261,30 +253,62 @@ class InteractiveModel1D(InteractiveModel):
         if weights is not None:
             weights = weights[~init_mask]
 
-        self.fit_mask = np.zeros_like(x, dtype=bool)
         # "section" is the valid section provided by the user,
         # i.e., points not in this region(s) are user-masked
         if self.section is None:
-            self.user_mask = np.array(np.zeros_like(self.fit_mask))
+            mask = ['good'] * len(x)
         else:
-            self.user_mask = np.array(np.ones_like(self.fit_mask))
+            user_mask = np.array(np.ones_like(x, dtype=bool))
             for slice_ in self.section:
-                self.user_mask[slice_.start < x < slice_.stop] = False
-
-        if self.band_mask is None:
-            # otherwise we want to keep the band mask as we still have the bands in place
-            self.band_mask = np.array(np.zeros_like(self.fit_mask))
+                user_mask[slice_.start < x < slice_.stop] = False
+            mask = list(np.where(user_mask, USER_MASK_NAME, 'good'))
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
-        bokeh_data = {'x': x, 'y': y, 'mask': ['good'] * len(x)}
+
+        # need to setup the mask
+        for i in np.arange(len(x)):
+            if self.band_model.contains(x[i]):
+                # User mask takes preference
+                if mask[i] != USER_MASK_NAME:
+                    mask[i] = 'good'
+            elif mask[i] != USER_MASK_NAME:
+                mask[i] = BAND_MASK_NAME
+        bokeh_data = {'x': x, 'y': y, 'mask': mask}
         for extra_column in ('residuals', 'ratio'):
             if extra_column in self.data.data:
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
-        self.update_mask()
+
+        self.notify_mask_listeners()
 
         return weights
+
+    def band_model_handler(self):
+        """
+        Respond when the band model changes.
+
+        When the band model has changed, we
+        brute force a new band mask by checking
+        each x coordinate against the band model
+        for inclusion.  The band model handles
+        the case where there are no bands by
+        marking all points as included.
+        """
+        x_data = self.data.data['x']
+        mask = self.data.data['mask'].copy()
+        for i in np.arange(len(x_data)):
+            if self.band_model.contains(x_data[i]):
+                # User mask takes preference
+                if mask[i] != USER_MASK_NAME:
+                    mask[i] = 'good'
+            elif mask[i] != USER_MASK_NAME:
+                mask[i] = BAND_MASK_NAME
+        self.data.data['mask'] = mask
+        # Band operations can come in through the keypress URL
+        # so we defer the fit back onto the Bokeh IO event loop
+
+        do_later(self.perform_fit)
 
     @property
     def x(self):
@@ -295,7 +319,7 @@ class InteractiveModel1D(InteractiveModel):
         -------
         array of double : x coordinates
         """
-        return self.data.data['x']
+        return np.asarray(self.data.data['x'])
 
     @property
     def y(self):
@@ -306,7 +330,18 @@ class InteractiveModel1D(InteractiveModel):
         -------
         array of double : y coordinates
         """
-        return self.data.data['y']
+        return np.asarray(self.data.data['y'])
+
+    @property
+    def mask(self):
+        """
+        maps mask attribute internally to bokeh structures
+
+        Returns
+        -------
+        list of str : mask values
+        """
+        return self.data.data['mask']
 
     @property
     def sigma(self):
@@ -335,17 +370,6 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.lsigma = self.hsigma = float(value)
 
-    @property
-    def domain(self):
-        """
-        Maps requests for the domain to the contained model
-
-        Returns
-        -------
-
-        """
-        return self.model.domain
-
     def perform_fit(self, *args):
         """
         Perform the fit.
@@ -355,103 +379,48 @@ class InteractiveModel1D(InteractiveModel):
         It then notifies all listeners that the data and model have
         changed so they can respond.
         """
-        self.model.perform_fit(self)
-        self.update_mask()
-        if 'residuals' in self.data.data:
-            self.data.data['residuals'] = self.y - self.evaluate(self.x)
-        if 'ratio' in self.data.data:
-            self.data.data['ratio'] = self.y / self.evaluate(self.x)
-        self.notify_listeners()
-
-    def evaluate(self, x):
-        return self.model(x)
-
-
-class InteractiveFit1D:
-    def __init__(self, fitting_parameters, domain, listeners=[]):
-        """
-        Create `~InteractiveFit1D` wrapper around the new fit1d model.
-
-        The models don't like being modified, so this wrapper class handles
-        that for us.  We can just keep a reference to this and, when needed,
-        it will build a new `~fitting.fit_1D` instance and replace it's
-        previous copy.
-
-        Parameters
-        ----------
-        model : :class:`~fitting.fit_1D`
-            :class:`~fitting.fit_1D` instance to wrap
-        """
-        self.fitting_parameters = fitting_parameters
-        self.domain = domain
-        self.fit = None
-        self.listeners = listeners
-
-    def __call__(self, x):
-        return self.fit.evaluate(x)
-
-    def set_function(self, fn):
-        self.fitting_parameters["function"] = fn
-
-    @property
-    def regions(self):
-        """
-        Get the regions of the fitter.
-
-        Returns
-        -------
-        tuple of tuples : `regions` of the model we are wrapping
-        """
-        return self.fitting_parameters["regions"]
-
-    @regions.setter
-    def regions(self, regions):
-        """
-        Set the regions in this fitter.
-
-        This sets the regions.
-
-        Parameters
-        ----------
-        regions : tuple of tuples
-            regions to use in the fit
-        """
-        self.fitting_parameters["regions"] = regions
-
-    def perform_fit(self, parent):
-        """
-        Perform the fit, update self.model, parent.fit_mask
-
-        The upper layer is a :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D` that calls into
-        this method. It passes itself down as `parent` to give access to
-        various fields and allow this fit to be saved back up to it.
-
-        Parameters
-        ----------
-        parent : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
-            wrapper model passes itself when it calls into this method
-        """
         # Note that band_mask is now handled by passing a region string to fit_1D
         # but we still use the band_mask for highlighting the affected points
 
-        # TODO switch back if we use the region string...
-        # goodpix = ~(parent.user_mask | parent.band_mask)
-        goodpix = ~parent.user_mask
+        goodpix = np.array([m != USER_MASK_NAME for m in self.data.data['mask']])
 
-        if parent.sigma_clip:
+        if self.sigma_clip:
             fitparms = {x: y for x, y in self.fitting_parameters.items()
                         if x not in ['sigma']}
         else:
             fitparms = {x: y for x, y in self.fitting_parameters.items()
                         if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
-        self.fit = build_fit_1D(fitparms, parent.y[goodpix], points=parent.x[goodpix],
-                                domain=self.domain, weights=None if parent.weights is None else parent.weights[goodpix])
-        parent.fit_mask = np.zeros_like(parent.x, dtype=bool)
-        if parent.sigma_clip:
+
+        self.fit = build_fit_1D(fitparms, self.y[goodpix], points=self.x[goodpix],
+                                domain=self.domain, weights=None if self.weights is None else self.weights[goodpix])
+        self.fit_mask = np.zeros_like(self.x, dtype=bool)
+        if self.sigma_clip:
             # Now pull in the sigma mask
-            parent.fit_mask[goodpix] = self.fit.mask
+            self.fit_mask[goodpix] = self.fit.mask
+
+        self.update_mask()
+        if 'residuals' in self.data.data:
+            self.data.data['residuals'] = self.y - self.evaluate(self.x)
+        if 'ratio' in self.data.data:
+            self.data.data['ratio'] = self.y / self.evaluate(self.x)
+
         for ll in self.listeners:
             ll(self.fit)
+
+    def update_mask(self):
+        goodpix = np.array([m != USER_MASK_NAME for m in self.data.data['mask']])
+        mask = self.data.data['mask'].copy()
+        fit_mask = np.zeros_like(self.x, dtype=bool)
+        if self.sigma_clip:
+            # Now pull in the sigma mask
+            fit_mask[goodpix] = self.fit.mask
+        for i in range(fit_mask.size):
+            if fit_mask[i] and mask[i] == 'good':
+                mask[i] = SIGMA_MASK_NAME
+        self.data.data['mask'] = mask
+
+    def evaluate(self, x):
+        return self.fit.evaluate(x)
 
 
 class FittingParametersUI:
@@ -476,37 +445,37 @@ class FittingParametersUI:
 
             self.function.on_change('value', fn_select_change)
         else:
-            self.function = None
+            # If the function is fixed
+            self.function = bm.Div(
+            text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
+            min_width=100, max_width=202, sizing_mode='stretch_width',
+            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+            width_policy='max')
 
-        self.order_slider = interactive.build_text_slider("Order", fitting_parameters["order"], None, None, None,
-                                                          fitting_parameters, "order", fit.perform_fit, throttled=True,
-                                                          config=vis.config, slider_width=128)
-        self.sigma_upper_slider = interactive.build_text_slider("Sigma (Upper)",
-                                                                fitting_parameters["sigma_upper"],
-                                                                None, None, None,
-                                                                fitting_parameters, "sigma_upper",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True,
-                                                                config=vis.config, slider_width=128)
-        self.sigma_lower_slider = interactive.build_text_slider("Sigma (Lower)",
-                                                                fitting_parameters["sigma_lower"],
-                                                                None, None, None,
-                                                                fitting_parameters, "sigma_lower",
-                                                                self.sigma_slider_handler,
-                                                                throttled=True,
-                                                                config=vis.config, slider_width=128)
-        self.niter_slider = interactive.build_text_slider("Max iterations", fitting_parameters["niter"],
-                                                          None, 1, None,
-                                                          fitting_parameters, "niter",
-                                                          fit.perform_fit,
-                                                          throttled=True,
-                                                          config=vis.config, slider_width=128)
-        self.grow_slider = interactive.build_text_slider("Grow", fitting_parameters["grow"],
-                                                         None, None, None,
-                                                         fitting_parameters, "grow",
-                                                         fit.perform_fit,
-                                                         throttled=True,
-                                                         config=vis.config, slider_width=128)
+        self.description = self.build_description()
+
+        self.order_slider = interactive.build_text_slider(
+            "Order", fitting_parameters["order"], None, None, None,
+            fitting_parameters, "order", fit.perform_fit, throttled=True,
+            config=vis.config, slider_width=128)
+        self.sigma_upper_slider = interactive.build_text_slider(
+            "Sigma (Upper)", fitting_parameters["sigma_upper"], None, None,
+            None, fitting_parameters, "sigma_upper", self.sigma_slider_handler,
+            throttled=True, config=vis.config, slider_width=128)
+        self.sigma_lower_slider = interactive.build_text_slider(
+            "Sigma (Lower)", fitting_parameters["sigma_lower"], None, None,
+            None, fitting_parameters, "sigma_lower", self.sigma_slider_handler,
+            throttled=True, config=vis.config, slider_width=128)
+        self.niter_slider = interactive.build_text_slider(
+            "Max iterations", fitting_parameters["niter"], None, 1, None,
+            fitting_parameters, "niter", fit.perform_fit, throttled=True,
+            config=vis.config, slider_width=128)
+        if "grow" in fitting_parameters:  # not all have them
+            self.grow_slider = interactive.build_text_slider(
+                "Grow", fitting_parameters["grow"], None, None, None,
+                fitting_parameters, "grow", fit.perform_fit, throttled=True,
+                config=vis.config, slider_width=128)
+
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
 
@@ -516,24 +485,16 @@ class FittingParametersUI:
 
     def enable_disable_sigma_inputs(self):
         # enable/disable sliders
-        if self.fit.sigma_clip:
-            for c in self.niter_slider.children:
-                c.disabled = False
-            for c in self.sigma_upper_slider.children:
-                c.disabled = False
-            for c in self.sigma_lower_slider.children:
-                c.disabled = False
+        disabled = not self.fit.sigma_clip
+        for c in self.niter_slider.children:
+            c.disabled = disabled
+        for c in self.sigma_upper_slider.children:
+            c.disabled = disabled
+        for c in self.sigma_lower_slider.children:
+            c.disabled = disabled
+        if hasattr(self, "grow_slider"):
             for c in self.grow_slider.children:
-                c.disabled = False
-        else:
-            for c in self.niter_slider.children:
-                c.disabled = True
-            for c in self.sigma_upper_slider.children:
-                c.disabled = True
-            for c in self.sigma_lower_slider.children:
-                c.disabled = True
-            for c in self.grow_slider.children:
-                c.disabled = True
+                c.disabled = disabled
 
     def build_column(self):
         """
@@ -558,8 +519,7 @@ class FittingParametersUI:
         if self.function:
             column_list = [self.function, self.order_slider, rejection_title,
                            self.sigma_button, self.niter_slider,
-                           self.sigma_lower_slider, self.sigma_upper_slider,
-                           self.grow_slider]
+                           self.sigma_lower_slider, self.sigma_upper_slider]
         else:
             column_title = bm.Div(
                 text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
@@ -572,7 +532,9 @@ class FittingParametersUI:
             column_list = [column_title, self.order_slider, rejection_title,
                            self.sigma_button, self.niter_slider,
                            self.sigma_lower_slider,
-                           self.sigma_upper_slider, self.grow_slider]
+                           self.sigma_upper_slider]
+        if hasattr(self, "grow_slider"):
+            column_list.append(self.grow_slider)
 
         return column_list
 
@@ -600,14 +562,14 @@ class FittingParametersUI:
 
     def reset_ui(self):
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
-        for slider, key in [(self.order_slider, "order"),
-                            (self.sigma_upper_slider, "sigma_upper"),
-                            (self.sigma_lower_slider, "sigma_lower"),
-                            (self.niter_slider, "niter"),
-                            (self.grow_slider, "grow")
-                            ]:
-            slider.children[0].value = self.fitting_parameters[key]
-            slider.children[1].value = self.fitting_parameters[key]
+        for key in ("order", "sigma_upper", "sigma_lower", "niter", "grow"):
+            try:
+                slider = self.getattr(f"{key}_slider")
+            except AttributeError:
+                pass
+            else:
+                slider.children[0].value = self.fitting_parameters[key]
+                slider.children[1].value = self.fitting_parameters[key]
         self.sigma_button.active = [0] if self.saved_sigma_clip else []
         self.fit.perform_fit()
 
@@ -653,9 +615,9 @@ class InfoPanel:
         self.user_count = 0
         self.fit_count = 0
         self.component = Div(text='')
-        self.recalc()
+        self.update_panel()
 
-    def recalc(self):
+    def update_panel(self):
         rms = '<b>RMS:</b> {rms:.4f}<br/>'.format(rms=self.rms)
         band = '<b>Band Masked:</b> {band_count}<br/>'.format(band_count=self.band_count) if self.band_count else ''
         user = '<b>User Masked:</b> {user_count}<br/>'.format(user_count=self.user_count) if self.user_count else ''
@@ -665,13 +627,13 @@ class InfoPanel:
 
     def update(self, f):
         self.rms = f.rms
-        self.recalc()
+        self.update_panel()
 
-    def update_mask(self, band_mask, user_mask, fit_mask):
-        self.band_count = sum(band_mask)
-        self.user_count = sum(user_mask)
-        self.fit_count = sum(fit_mask) - self.band_count
-        self.recalc()
+    def update_mask(self, mask):
+        self.band_count = mask.count(BAND_MASK_NAME)
+        self.user_count = mask.count(USER_MASK_NAME)
+        self.fit_count = mask.count(SIGMA_MASK_NAME)
+        self.update_panel()
 
 
 class Fit1DPanel:
@@ -724,14 +686,18 @@ class Fit1DPanel:
         # i.e. niter min of 1, etc.
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
+        # Avoids having to check whether this is None all the time
+        band_model = GIRegionModel(domain=domain)
+
         self.fitting_parameters = fitting_parameters
-        self.fit = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights, listeners=listeners)
+        self.model = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
+                                        listeners=listeners, band_model=band_model)
 
         # also listen for updates to the masks
-        self.fit.add_mask_listener(self.info_panel.update_mask)
+        self.model.add_mask_listener(self.info_panel.update_mask)
 
-        fit = self.fit
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, fit, self.fitting_parameters)
+        model = self.model
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, model, self.fitting_parameters)
 
         controls_ls = list()
 
@@ -762,14 +728,14 @@ class Fit1DPanel:
         x_range = None
         y_range = None
         try:
-            if self.fit.data and 'x' in self.fit.data.data and len(self.fit.data.data['x']) >= 2:
-                x_min = min(self.fit.data.data['x'])
-                x_max = max(self.fit.data.data['x'])
+            if self.model.data and 'x' in self.model.data.data and len(self.model.data.data['x']) >= 2:
+                x_min = min(self.model.data.data['x'])
+                x_max = max(self.model.data.data['x'])
                 x_pad = (x_max - x_min) * 0.1
                 x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-            if self.fit.data and 'y' in self.fit.data.data and len(self.fit.data.data['y']) >= 2:
-                y_min = min(self.fit.data.data['y'])
-                y_max = max(self.fit.data.data['y'])
+            if self.model.data and 'y' in self.model.data.data and len(self.model.data.data['y']) >= 2:
+                y_min = min(self.model.data.data['y'])
+                y_max = max(self.model.data.data['y'])
                 y_pad = (y_max - y_min) * 0.1
                 y_range = Range1d(y_min - y_pad, y_max + y_pad)
         except:
@@ -787,23 +753,18 @@ class Fit1DPanel:
         p_main.width_policy = 'fit'
 
         if enable_regions:
-            self.band_model = GIRegionModel(domain=[0, domain] if isinstance(domain, int) else domain)
-            self.band_model.add_listener(Fit1DRegionListener(self.update_regions))
-            self.band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+            band_model.add_listener(Fit1DRegionListener(self.update_regions))
 
-            connect_figure_extras(p_main, None, self.band_model)
+            connect_figure_extras(p_main, band_model)
 
-            if enable_user_masking:
-                mask_handlers = (self.mask_button_handler,
-                                 self.unmask_button_handler)
-            else:
-                mask_handlers = None
+        if enable_user_masking:
+            mask_handlers = (self.mask_button_handler,
+                             self.unmask_button_handler)
         else:
-            self.band_model = None
             mask_handlers = None
 
-        Controller(p_main, None, self.band_model, controller_div, mask_handlers=mask_handlers,
-                   domain=[0, domain] if isinstance(domain, int) else domain)
+        Controller(p_main, None, band_model, controller_div, mask_handlers=mask_handlers,
+                   domain=domain)
         # self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main, self.info_div]
 
@@ -818,11 +779,11 @@ class Fit1DPanel:
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             p_resid.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_resid, None, self.band_model)
+            connect_figure_extras(p_resid, band_model)
             # Initalizing this will cause the residuals to be calculated
-            self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
-            p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                            size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+            self.model.data.data['residuals'] = np.zeros_like(self.model.x)
+            p_resid.scatter(x='x', y='residuals', source=self.model.data,
+                            size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
         if plot_ratios:
             p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
                               min_width=400,
@@ -833,11 +794,11 @@ class Fit1DPanel:
             p_ratios.height_policy = 'fixed'
             p_ratios.width_policy = 'fit'
             p_ratios.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_ratios, None, self.band_model)
+            connect_figure_extras(p_ratios, band_model)
             # Initalizing this will cause the residuals to be calculated
-            self.fit.data.data['ratio'] = np.zeros_like(self.fit.x)
-            p_ratios.scatter(x='x', y='ratio', source=self.fit.data,
-                             size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+            self.model.data.data['ratio'] = np.zeros_like(self.model.x)
+            p_ratios.scatter(x='x', y='ratio', source=self.model.data,
+                             size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
         if plot_residuals and plot_ratios:
             tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
             tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
@@ -851,32 +812,29 @@ class Fit1DPanel:
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
-            self.band_model.load_from_tuples(region_tuples)
+            band_model.load_from_tuples(region_tuples)
 
-        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
+        self.scatter = p_main.scatter(x='x', y='y', source=self.model.data,
                                       size=5, legend_field='mask',
-                                      **self.fit.mask_rendering_kwargs())
-        self.fit.add_listener(self.model_change_handler)
+                                      **self.model.mask_rendering_kwargs())
+        self.model.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
-        x_data = self.fit.data.data['x']
-        for i in np.arange(len(x_data)):
-            if not self.band_model or self.band_model.contains(x_data[i]):
-                self.fit.band_mask[i] = 0
-            else:
-                self.fit.band_mask[i] = 1
+        mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
+                for x, m in zip(self.model.x, self.model.mask)]
+        model.data.data['mask'] = mask
+        self.model.perform_fit()
 
-        self.fit.perform_fit()
         self.line = p_main.line(x='xlinspace',
                                 y='model',
-                                source=self.fit.evaluation,
+                                source=self.model.evaluation,
                                 line_width=3,
                                 color='crimson')
 
-        if self.band_model:
-            region_editor = RegionEditor(self.band_model)
+        if band_model:
+            region_editor = RegionEditor(band_model)
             fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
@@ -899,13 +857,13 @@ class Fit1DPanel:
 
     def update_regions(self):
         """ Update fitting regions """
-        self.fit.model.regions = self.band_model.build_regions()
+        self.model.regions = self.model.band_model.build_regions()
 
-    def model_change_handler(self):
+    def model_change_handler(self, fit):
         """
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
-        self.fit.evaluation.data['model'] = self.fit.evaluate(self.fit.evaluation.data['xlinspace'])
+        self.model.evaluation.data['model'] = self.model.evaluate(self.model.evaluation.data['xlinspace'])
 
     def mask_button_handler(self, x, y, mult):
         """
@@ -920,14 +878,16 @@ class Fit1DPanel:
         stuff : any
             This is ignored, but the button passes it
         """
-        indices = self.fit.data.selected.indices
+        indices = self.model.data.selected.indices
         if not indices:
             self._point_mask_handler(x, y, mult, 'mask')
         else:
-            self.fit.data.selected.update(indices=[])
+            self.model.data.selected.update(indices=[])
+            mask = self.model.data.data['mask'].copy()
             for i in indices:
-                self.fit.user_mask[i] = 1
-            self.fit.perform_fit()
+                mask[i] = USER_MASK_NAME
+            self.model.data.data['mask'] = mask
+            self.model.perform_fit()
 
     def unmask_button_handler(self, x, y, mult):
         """
@@ -942,14 +902,19 @@ class Fit1DPanel:
         stuff : any
             This is ignored, but the button passes it
         """
-        indices = self.fit.data.selected.indices
+        indices = self.model.data.selected.indices
+        x_data = self.model.x
         if not indices:
             self._point_mask_handler(x, y, mult, 'unmask')
         else:
-            self.fit.data.selected.update(indices=[])
+            self.model.data.selected.update(indices=[])
+            mask = self.model.mask.copy()
             for i in indices:
-                self.fit.user_mask[i] = 0
-            self.fit.perform_fit()
+                if mask[i] == USER_MASK_NAME:
+                    mask[i] = ('good' if self.model.band_model.contains(x_data[i])
+                               else BAND_MASK_NAME)
+            self.model.data.data['mask'] = mask
+            self.model.perform_fit()
 
     def _point_mask_handler(self, x, y, mult, action):
         """
@@ -968,14 +933,12 @@ class Fit1DPanel:
         """
         dist = None
         sel = None
-        xarr = self.fit.data.data['x']
-        yarr = self.fit.data.data['y']
+        xarr, yarr = self.model.x, self.model.y
+        mask = self.model.mask
         if action not in ('mask', 'unmask'):
             action = None
         for i in range(len(xarr)):
-            if action is None or \
-                    (action == 'unmask' and self.fit.user_mask[i]) or \
-                    (action == 'mask' and self.fit.user_mask[i] == 0):
+            if action is None or ((action == 'mask') ^ (mask[i] == USER_MASK_NAME)):
                 xd = xarr[i]
                 yd = yarr[i]
                 if xd is not None and yd is not None:
@@ -984,37 +947,14 @@ class Fit1DPanel:
                         dist = ddist
                         sel = i
         if sel is not None:
-            # we have a closest point, toggle the user mask
-            if self.fit.user_mask[sel]:
-                self.fit.user_mask[sel] = 0
+            # we have a clos_maskest point, toggle the user mask
+            if mask[sel] == USER_MASK_NAME:
+                mask[sel] = ('good' if self.model.band_model.contains(xarr[sel])
+                             else BAND_MASK_NAME)
             else:
-                self.fit.user_mask[sel] = 1
+                mask[sel] = USER_MASK_NAME
 
-        self.fit.perform_fit()
-
-    def band_model_handler(self):
-        """
-        Respond when the band model changes.
-
-        When the band model has changed, we
-        brute force a new band mask by checking
-        each x coordinate against the band model
-        for inclusion.  The band model handles
-        the case where there are no bands by
-        marking all points as included.
-        """
-        x_data = self.fit.data.data['x']
-        for i in np.arange(len(x_data)):
-            if self.band_model.contains(x_data[i]):
-                self.fit.band_mask[i] = 0
-            else:
-                self.fit.band_mask[i] = 1
-        # Band operations can come in through the keypress URL
-        # so we defer the fit back onto the Bokeh IO event loop
-
-        # TODO figure out if we are using this or band_mask
-        # self.fitting_parameters.regions = self.band_model.build_regions()
-        self.visualizer.do_later(self.fit.perform_fit)
+        self.model.perform_fit()
 
     # TODO refactored this down from tracing, but it breaks
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
@@ -1150,6 +1090,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # their properties if the default setup isn't great
         self.widgets = {}
 
+        # If we have a widget driving the modal dialog via it's enable/disable state,
+        # store it in this so the recalc knows to re-enable the widget
+        self.modal_widget = None
+
         # Make the panel with widgets to control the creation of (x, y) arrays
 
         if reinit_params is not None or reinit_extras is not None:
@@ -1158,10 +1102,18 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
             # This should really go in the parent class, like submit_button
             if modal_message:
-                self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
-                self.reinit_button.on_click(self.reconstruct_points)
-                self.make_modal(self.reinit_button, modal_message)
-                reinit_widgets.append(self.reinit_button)
+                if len(reinit_widgets) > 1:
+                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
+                    self.reinit_button.on_click(self.reconstruct_points)
+                    self.make_modal(self.reinit_button, modal_message)
+                    reinit_widgets.append(self.reinit_button)
+                    self.modal_widget = self.reinit_button
+                else:
+                    def kickoff_modal(attr, old, new):
+                        self.reconstruct_points()
+                    reinit_widgets[0].children[1].on_change('value', kickoff_modal)
+                    self.make_modal(reinit_widgets[0], modal_message)
+                    self.modal_widget = reinit_widgets[0]
 
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
@@ -1230,7 +1182,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
-                self.fits.append(tui.fit)
+                self.fits.append(tui.model)
         else:
 
             # ToDo: Review if there is a better way of handling this.
@@ -1242,7 +1194,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             tui = Fit1DPanel(self, fitting_parameters[0], domains[0] if domains else None, allx[0], ally[0], all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
-            self.fits.append(tui.fit)
+            self.fits.append(tui.model)
 
     def visualize(self, doc):
         """
@@ -1269,15 +1221,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         layout_ls = list()
         if self.filename_info:
-            # self.submit_button.align = 'center'
-            # layout_ls.append(row(Spacer(width=250), self.submit_button, self.get_filename_div(),
-            #                      sizing_mode="scale_width"))
             self.submit_button.align = 'end'
             layout_ls.append(row(Spacer(width=250),
                                  column(self.get_filename_div(), self.submit_button),
                                  Spacer(width=10),
                                  align="end", css_classes=['top-row']))
-            # sizing_mode="scale_width"))
         else:
             layout_ls.append(self.submit_button,
                              align="end", css_classes=['top-row'])
@@ -1306,8 +1254,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         expensive function is wrapped in the bokeh Tornado
         event look so the modal dialog can display.
         """
-        if hasattr(self, 'reinit_button'):
-            self.reinit_button.disabled = True
+        if self.modal_widget:
+            self.modal_widget.disabled = True
 
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
@@ -1330,8 +1278,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                         fit.weights = None
                     fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
                     fit.perform_fit()
-                if hasattr(self, 'reinit_button'):
-                    self.reinit_button.disabled = False
+                if self.modal_widget:
+                    self.modal_widget.disabled = False
 
             self.do_later(rfn)
 
@@ -1346,10 +1294,32 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         -------
         list of `~gempy.library.fitting.fit_1D`
         """
-        return [fit.model.fit for fit in self.fits]
+        return [fit.fit for fit in self.fits]
 
 
 def prep_fit1d_params_for_fit1d(fit1d_params):
+    """
+    In the UI, which relies on `fit1d_params`, we constrain
+    `niter` to 1 at the low end and separately have a `sigma`
+    boolean checkbox.
+
+    To support the `sigma` checkbox, here we remap the inputs
+    based on the value of `niter`.  If `niter` is 0, this
+    tells us no `sigma` rejection is desired.  So, in that
+    case, we set `sigma` to False.  We then set `niter` to
+    1 for the UI to work as desired.  Were `niter` passed
+    in as `1` originally, it would remain `1` but `sigma`
+    would be set to `True`.
+
+    The UI will disable all the sigma related inputs when
+    `sigma` is set to False.  It will also exclude them
+    from the parameters sent to `fit_1d`.
+
+    Parameters
+    ----------
+    :fit1d_params: dict
+        Dictionary of parameters for the UI and the `fit_1d` fitter, modified in place
+    """
     # If niter is 0, set sigma to None and niter to 1
     if 'niter' in fit1d_params and fit1d_params['niter'] == 0:
         # we use a min of 1 for niter, then remove the sigmas
