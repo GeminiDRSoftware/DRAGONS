@@ -2702,8 +2702,8 @@ class Spect(PrimitivesBASE):
                         else:
                             sky_mask ^= no_data[:, None]
 
-                        sky = np.ma.masked_array(ext.data[2000], mask=sky_mask[2000])
-                        yield np.arange(len(sky)), sky, sky_weights[2000]
+                        sky = np.ma.masked_array(ext.data[:,1000], mask=sky_mask[:,1000])
+                        yield np.arange(len(sky)), sky, sky_weights[:,1000]
 
             # build config for interactive
             config = self.params[self.myself()]
