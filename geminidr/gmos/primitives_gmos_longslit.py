@@ -737,7 +737,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True,
-                                                   modal_message="Recalculating Fit for Row")
+                                                   modal_message="Recalculating")
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 log.stdinfo('Interactive Parameters retrieved, performing flat normalization...')
 
