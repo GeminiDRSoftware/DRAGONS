@@ -329,8 +329,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                  tab_name_fmt='{}', template="fit1d.html", title=None,
                  xlabel='x', ylabel='y', ui_params=None, **kwargs):
 
-        super(Fit1DVisualizer, self).__init__(config=config,
-                                              filename_info=filename_info,
+        super(Fit1DVisualizer, self).__init__(filename_info=filename_info,
                                               help_text=help_text,
                                               primitive_name=primitive_name,
                                               template=template,
@@ -555,10 +554,12 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         if reinit_params is None and reinit_extras is None:
             return
 
-        reinit_widgets = self.make_widgets_from_config(reinit_params,
-                                                       reinit_extras,
-                                                       modal_message is None,
-                                                       slider_width=128)
+        reinit_widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False,
+                                                           slider_width=128)
+        # reinit_widgets = self.make_widgets_from_config(reinit_params,
+        #                                                reinit_extras,
+        #                                                modal_message is None,
+        #                                                slider_width=128)
 
         # This should really go in the parent class, like submit_button
         if modal_message:
@@ -643,13 +644,13 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             for callback in self.widgets[key]._callbacks['value_throttled']:
                 callback(attrib='value_throttled', old=old, new=reset_value)
 
-        for key, val in self.config.items():
+        for key, val in self.ui_params.param_map.items():
 
-            if key not in self.reinit_params:
+            if key in self.ui_params.hidden_params:
                 continue
 
             if param is None:
-                reset_value = self.config._fields[key].default
+                reset_value = val.default
             elif key == param:
                 reset_value = self._reinit_params[key]
             else:
@@ -663,6 +664,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Update Text Field via callback function
             for callback in self.widgets[key]._callbacks['value']:
                 callback('value', old=old, new=reset_value)
+            for callback in self.widgets[key]._callbacks['value_throttled']:
+                callback(attrib='value_throttled', old=old, new=reset_value)
 
     def register_last_changed(self, key):
         """

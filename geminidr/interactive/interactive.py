@@ -21,7 +21,7 @@ _visualizer = None
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title='', primitive_name='',
+    def __init__(self, title='', primitive_name='',
                  filename_info='', template=None, help_text=None, ui_params=None):
         """
         Initialize a visualizer.
@@ -34,8 +34,6 @@ class PrimitiveVisualizer(ABC):
 
         Parameters
         ----------
-        config : `~gempy.library.config.Config`
-            DRAGONS primitive configuration data to work from
         title : str
             Title fo the primitive for display, currently not used
         primitive_name : str
@@ -51,16 +49,13 @@ class PrimitiveVisualizer(ABC):
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
 
+        self.config = None
         self.exited = False
         self.title = title
         self.filename_info = filename_info if filename_info else ''
         self.primitive_name = primitive_name if primitive_name else ''
         self.template = template
         self.extras = dict()
-        if config is None:
-            self.config = None
-        else:
-            self.config = copy(config)
         self.ui_params = ui_params
 
         self.user_satisfied = False
@@ -242,7 +237,7 @@ class PrimitiveVisualizer(ABC):
         """
         widgets = []
         for param in params.visible_params():
-            if param.start:
+            if param.value or param.value == 0:
                 widget = build_text_slider(
                     param.title, param.value, param.step, param.start, param.end, obj=params.values, attr=param.name,
                     slider_width=slider_width, allow_none=param.allow_none, throttled=True,
@@ -259,104 +254,6 @@ class PrimitiveVisualizer(ABC):
                 self.widgets[param.name] = widget
 
             widgets.append(widget)
-        return widgets
-
-    def make_widgets_from_config(self, params, extras, reinit_live,
-                                 slider_width=256):
-        """
-        Makes appropriate widgets for all the parameters in params,
-        using the config to determine the type. Also adds these widgets
-        to a dict so they can be accessed from the calling primitive.
-
-        Parameters
-        ----------
-        params : list of str
-            which DRAGONS configuration fields to make a UI for
-        extras : dict
-            Dictionary of additional field definitions for anything not included in the primitive configuration
-        reinit_live : bool
-            True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
-            Currently only viable for text-slider style inputs
-        slider_width : int (default: 256)
-            Default width for sliders created here.
-
-        Returns
-        -------
-        list : Returns a list of widgets to display in the UI.
-        """
-        extras = {} if extras is None else extras
-        params = [] if params is None else params
-        widgets = []
-        if self.config is None:
-            self.log.warn("No config, unable to make widgets")
-            return widgets
-        for pname, value in self.config.items():
-            if pname not in params:
-                continue
-            field = self.config._fields[pname]
-            # Do some inspection of the config to determine what sort of widget we want
-            doc = field.doc.split('\n')[0]
-            if hasattr(field, 'min'):
-                # RangeField => Slider
-                start, end = field.min, field.max
-                # TODO: Be smarter here!
-                if start is None:
-                    start = -20
-                if end is None:
-                    end = 50
-                step = start
-                allow_none = field.optional
-
-                widget = build_text_slider(
-                    doc, value, step, start, end, obj=self.config, attr=pname,
-                    slider_width=slider_width, allow_none=allow_none)
-
-                self.widgets[pname] = widget.children[0]
-            elif hasattr(field, 'allowed'):
-                # ChoiceField => drop-down menu
-                widget = Dropdown(label=doc, menu=list(self.config.allowed.keys()))
-            else:
-                # Anything else
-                widget = TextInput(label=doc)
-
-            widgets.append(widget)
-            # Complex multi-widgets will already have been added
-            if pname not in self.widgets:
-                self.widgets[pname] = widget
-
-        for pname, field in extras.items():
-            # Do some inspection of the config to determine what sort of widget we want
-            doc = field.doc.split('\n')[0]
-            if hasattr(field, 'min'):
-                # RangeField => Slider
-                start, end = field.min, field.max
-                # TODO: Be smarter here!
-                if start is None:
-                    start = -20
-                if end is None:
-                    end = 50
-                step = start
-                allow_none = field.optional
-
-                widget = build_text_slider(
-                    doc, field.default, step, start, end, obj=self.extras,
-                    attr=pname, handler=self.slider_handler_factory(
-                        pname, reinit_live=reinit_live),
-                    throttled=True, slider_width=slider_width,
-                    allow_none=allow_none)
-
-                self.widgets[pname] = widget.children[0]
-                self.extras[pname] = field.default
-            else:
-                # Anything else
-                widget = TextInput(label=doc)
-                self.extras[pname] = ''
-
-            widgets.append(widget)
-            # Complex multi-widgets will already have been added
-            if pname not in self.widgets:
-                self.widgets[pname] = widget
-
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):
@@ -1492,6 +1389,7 @@ class UIParameter:
         self.title = title
         self.name = name
         self.value = value
+        self.default = value
         self.start = start
         self.end = end
         self.step = step
@@ -1531,6 +1429,7 @@ class UIParameters:
         self.params = list()
         self.param_map = dict()
         self.values = dict()
+        self.hidden_params = hidden_params
 
         if config:
             for pname, value in config.items():

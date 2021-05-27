@@ -564,7 +564,7 @@ class FittingParametersUI:
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
         for key in ("order", "sigma_upper", "sigma_lower", "niter", "grow"):
             try:
-                slider = self.getattr(f"{key}_slider")
+                slider = getattr(self, f"{key}_slider")
             except AttributeError:
                 pass
             else:
@@ -1035,7 +1035,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fits: list of InteractiveModel instances, one per (x,y) array
     """
 
-    def __init__(self, data_source, fitting_parameters, config,
+    def __init__(self, data_source, fitting_parameters,
                  reinit_params=None, reinit_extras=None,
                  modal_message=None,
                  modal_button_label=None,
@@ -1055,7 +1055,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             and returns [[x, y], [x, y].. or [[x, y, weights], [x, y, weights], ...
         fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters` or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             Description of parameters to use for `fit_1d`
-        config : Config instance describing primitive parameters and limitations
         reinit_params : list of str
             list of parameter names in config related to reinitializing fit arrays.  These cause the `data_source`
             function to be run to get the updated coordinates/weights.  Should not be passed if `data_source` is
@@ -1084,7 +1083,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         ui_params : :class:`~geminidr.interactive.interactive.UIParams`
             Parameter set for user input
         """
-        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
+        super().__init__(title=title, primitive_name=primitive_name, filename_info=filename_info,
                          template=template, help_text=help_text, ui_params=ui_params)
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
