@@ -417,6 +417,8 @@ class InteractiveModel1D(InteractiveModel):
         for i in range(fit_mask.size):
             if fit_mask[i] and mask[i] == 'good':
                 mask[i] = SIGMA_MASK_NAME
+            elif mask[i] == SIGMA_MASK_NAME:
+                mask[i] = 'good'
         self.data.data['mask'] = mask
 
     def evaluate(self, x):
@@ -1105,7 +1107,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             # This should really go in the parent class, like submit_button
             if modal_message:
                 if len(reinit_widgets) > 1:
-                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
+                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label
+                                                   else "Reconstruct points")
                     self.reinit_button.on_click(self.reconstruct_points)
                     self.make_modal(self.reinit_button, modal_message)
                     reinit_widgets.append(self.reinit_button)
