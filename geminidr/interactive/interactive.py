@@ -1509,7 +1509,8 @@ class UIParameters:
     """
     Holder class for the set of UI-adjustable parameters
     """
-    def __init__(self, config: Config = None, params: list = None, hidden_params: list = None):
+    def __init__(self, config: Config = None, params: list = None, hidden_params: list = None,
+                 title_overrides: dict = None):
         """
         Create a UIParameters set of parameters for the UI.
 
@@ -1537,14 +1538,23 @@ class UIParameters:
                     continue
                 field = config._fields[pname]
                 # Do some inspection of the config to determine what sort of widget we want
-                title = field.doc.split('\n')[0]
+                if title_overrides and pname in title_overrides:
+                    title = title_overrides[pname]
+                else:
+                    title = field.doc.split('\n')[0]
                 start = None
                 end = None
                 step = None
                 allowed = None
                 if hasattr(field, 'min'):
                     start, end = field.min, field.max
-                    step = 1 if start <= 0 else start
+                    if isinstance(value, float):
+                        step = 0.1 if start <= 0 else start
+                        if start and end and ((end-start)<(step*100.0)):
+                            step = float(end-start)/100.0
+                        step = float(step)
+                    else:
+                        step = 1 if start <= 0 else start
                 if hasattr(field, 'allowed'):
                     allowed = field.allowed
                 hidden = False
@@ -1582,6 +1592,11 @@ class UIParameters:
         for param in self.params:
             if not param.hidden:
                 yield param
+
+    def has_param(self, key):
+        if key in self.values:
+            return True
+        return False
 
     def get_value(self, key):
         if key not in self.param_map:

@@ -11,7 +11,7 @@ from bokeh.plotting import figure
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
-    connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
+    connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector, UIParameters)
 from gempy.library import astrotools as at, tracing
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
                     FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d,
@@ -327,14 +327,15 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                  modal_message="Tracing apertures...",
                  primitive_name=None, reinit_extras=None, reinit_params=None,
                  tab_name_fmt='{}', template="fit1d.html", title=None,
-                 xlabel='x', ylabel='y', **kwargs):
+                 xlabel='x', ylabel='y', ui_params=None, **kwargs):
 
         super(Fit1DVisualizer, self).__init__(config=config,
                                               filename_info=filename_info,
                                               help_text=help_text,
                                               primitive_name=primitive_name,
                                               template=template,
-                                              title=title)
+                                              title=title,
+                                              ui_params=ui_params)
 
         self.layout = None
         self.last_changed = None
@@ -361,9 +362,9 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         # Grab input coordinates or calculate if we were given a callable
         self.reconstruct_points_fn = self.data_source_factory(
-            data_source, reinit_extras=reinit_extras, reinit_params=reinit_params)
+            data_source)
 
-        data = self.reconstruct_points_fn(config, self.extras)
+        data = self.reconstruct_points_fn(self.ui_params)
 
         # For this, we need to remap from
         # [[x1, y1, weights1], [x2, y2, weights2], ...]
@@ -451,8 +452,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         holder.js_on_change('text', callback)
         return holder
 
-    def data_source_factory(self, data_source, reinit_extras=None,
-                            reinit_params=None):
+    def data_source_factory(self, data_source):
         """
         If our input data_source is an array, wraps it inside a callable
         function which is called later by the `...` method.
@@ -473,12 +473,12 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         """
         # TODO revisit the raging debate on `callable` for Python 3
         if callable(data_source):
-            def _data_source(_config, _extras):
+            def _data_source(ui_params):
                 """
                 Wraps the callable so we can handle the error properly.
                 """
                 try:
-                    data = data_source(_config, _extras)
+                    data = data_source(ui_params)
                 except IndexError:
 
                     self.error_alert.text = "Could not perform tracing with " \
@@ -487,33 +487,18 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
                     self.reset_tracing_panel(param=self.last_changed)
 
-                    if self.last_changed in self._reinit_extras.keys():
-                        _extras[self.last_changed] = \
-                            self._reinit_extras[self.last_changed]
+                    ui_params.values[self.last_changed] = self._ui_params[self.last_changed]
 
-                    elif self.last_changed in self._reinit_params.keys():
-                        setattr(_config, self.last_changed,
-                                self._reinit_params[self.last_changed])
-
-                    data = data_source(_config, _extras)
+                    data = data_source(ui_params)
                 else:
                     # Store successful pars
-                    self._reinit_extras = deepcopy(_extras)
-                    self._reinit_params = {
-                        key: val for key, val in _config.items()
-                        if key in reinit_params}
+                    self._ui_params = deepcopy(self.ui_params.values)
 
                 return data
 
         else:
-            def _data_source(_config, _extras):
+            def _data_source(ui_params):
                 """Simply passes the input data forward."""
-                if reinit_extras:
-                    raise ValueError("Saw reinit_extras but "
-                                     "data_source is not a callable")
-                if reinit_params:
-                    raise ValueError("Saw reinit_params but "
-                                     "data_source is not a callable")
                 if len(data_source) >= 3:
                     return data_source[0], data_source[1], data_source[2]
                 else:
@@ -743,7 +728,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         doc.add_root(all_content)
 
 
-def interactive_trace_apertures(ext, config, fit1d_params):
+def interactive_trace_apertures(ext, config, fit1d_params, ui_params: UIParameters):
     """
     Run traceApertures() interactively.
 
@@ -772,12 +757,6 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     # Create parameters to add to the UI
     reinit_params = ["max_missed", "max_shift", "nsum", "step"]
 
-    # Update doc for a more compact version
-    config._fields["max_missed"].doc = "Max Missed"
-    config._fields["max_shift"].doc = "Max Shifted"
-    config._fields["nsum"].doc = "Lines to sum"
-    config._fields["step"].doc = "Tracing step"
-
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
         ylabel = "y / rows [px]"
@@ -785,7 +764,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         xlabel = "y / rows [px]"
         ylabel = "x / columns [px]"
 
-    def data_provider(conf, extra):
+    def data_provider(ext, ui_params):  # conf, extra):
         """
         Callback function used to recreate the data for fitting.
 
@@ -796,12 +775,14 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         extra : dict
             Dictionary containing parameters not defined in the configuration
             object. Not used in this case.
+        ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+            UI Parameters to use as inputs
         """
-        return trace_apertures_data_provider(ext, conf)
+        return trace_apertures_data_provider(ext, ui_params)
 
     # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
-        data_provider,
+        lambda ui_params: data_provider(ext, ui_params),
         config=config,
         domains=domain_list,
         filename_info=ext.filename,
@@ -816,6 +797,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         title="Interactive Trace Apertures",
         xlabel=xlabel,
         ylabel=ylabel,
+        ui_params=ui_params
     )
 
     server.interactive_fitter(visualizer)
@@ -824,7 +806,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
 
 # noinspection PyUnusedLocal
-def trace_apertures_data_provider(ext, conf):
+def trace_apertures_data_provider(ext, ui_params):
     """
     Function used by the interactive fitter to generate the a list with
     pairs of [x, y] data containing the knots used for tracing.
@@ -833,8 +815,8 @@ def trace_apertures_data_provider(ext, conf):
     ----------
     ext : AstroData
         Single extension of data containing an .APERTURE table.
-    conf : :class:`geminidr.gmos.spect.traceAperturesConfig`
-        Dictionary containing default traceApertures() parameters.
+    ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+        UI parameters to use as inputs to generate the points
 
     Returns
     -------
@@ -846,7 +828,7 @@ def trace_apertures_data_provider(ext, conf):
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
     # Convert configuration object into dictionary for easy access to its values
-    conf_as_dict = {key: val for key, val in conf.items()}
+    # conf_as_dict = {key: val for key, val in conf.items()}
 
     for i, loc in enumerate(ext.APERTURE['c0'].data):
         c0 = int(loc + 0.5)
@@ -860,12 +842,12 @@ def trace_apertures_data_provider(ext, conf):
             cwidth=5,
             initial=[loc],
             initial_tolerance=None,
-            max_missed=conf_as_dict['max_missed'],
-            max_shift=conf_as_dict['max_shift'],
-            nsum=conf_as_dict['nsum'],
+            max_missed=ui_params.get_value('max_missed'),
+            max_shift=ui_params.get_value('max_shift'),
+            nsum=ui_params.get_value('nsum'),
             rwidth=None,
             start=start,
-            step=conf_as_dict['step'],
+            step=ui_params.get_value('step'),
         )
 
         in_coords = np.ma.masked_array(in_coords)

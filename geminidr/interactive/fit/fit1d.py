@@ -431,9 +431,9 @@ class FittingParametersUI:
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        if 'function' in vis.config._fields:
-            fn = vis.config.function
-            fn_allowed = [k for k in vis.config._fields['function'].allowed.keys()]
+        if vis.ui_params.has_param('function'):
+            fn = vis.ui_params.get_value('function')
+            fn_allowed = [k for k in vis.ui_params.param_map['function'].allowed.keys()]
 
             # Dropdown for selecting fit_1D function
             self.function = Select(title="Fitting Function:", value=fn,
@@ -447,34 +447,34 @@ class FittingParametersUI:
         else:
             # If the function is fixed
             self.function = bm.Div(
-            text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
-            min_width=100, max_width=202, sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
-            width_policy='max')
+                text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
+                min_width=100, max_width=202, sizing_mode='stretch_width',
+                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                width_policy='max')
 
         self.description = self.build_description()
 
-        self.order_slider = interactive.build_text_slider(
-            "Order", fitting_parameters["order"], None, None, None,
-            fitting_parameters, "order", fit.perform_fit, throttled=True,
-            config=vis.config, slider_width=128)
-        self.sigma_upper_slider = interactive.build_text_slider(
-            "Sigma (Upper)", fitting_parameters["sigma_upper"], None, None,
-            None, fitting_parameters, "sigma_upper", self.sigma_slider_handler,
-            throttled=True, config=vis.config, slider_width=128)
-        self.sigma_lower_slider = interactive.build_text_slider(
-            "Sigma (Lower)", fitting_parameters["sigma_lower"], None, None,
-            None, fitting_parameters, "sigma_lower", self.sigma_slider_handler,
-            throttled=True, config=vis.config, slider_width=128)
-        self.niter_slider = interactive.build_text_slider(
-            "Max iterations", fitting_parameters["niter"], None, 1, None,
-            fitting_parameters, "niter", fit.perform_fit, throttled=True,
-            config=vis.config, slider_width=128)
+        def builder(ui_params, key, title):
+            alt_keys = {
+                'sigma_upper': 'hsigma',
+                'sigma_lower': 'lsigma'
+            }
+            pkey = key
+            if pkey not in ui_params.param_map and key in alt_keys:
+                pkey = alt_keys[key]
+            parm = ui_params.param_map[pkey]
+            return interactive.build_text_slider(
+                title=title, value=fitting_parameters[key],
+                step=parm.step, min_value=parm.start, max_value=parm.end,
+                obj=fitting_parameters, attr=key, handler=fit.perform_fit, throttled=True,
+                slider_width=128)
+
+        self.order_slider = builder(vis.ui_params, 'order', 'Order')
+        self.sigma_upper_slider = builder(vis.ui_params, 'sigma_upper', 'Sigma (Upper)')
+        self.sigma_lower_slider = builder(vis.ui_params, 'sigma_lower', 'Sigma (Lower)')
+        self.niter_slider = builder(vis.ui_params, 'niter', 'Max Iterations')
         if "grow" in fitting_parameters:  # not all have them
-            self.grow_slider = interactive.build_text_slider(
-                "Grow", fitting_parameters["grow"], None, None, None,
-                fitting_parameters, "grow", fit.perform_fit, throttled=True,
-                config=vis.config, slider_width=128)
+            self.grow_slider = builder(vis.ui_params, 'grow', 'Grow')
 
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)

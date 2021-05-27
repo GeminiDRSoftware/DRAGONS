@@ -2584,8 +2584,19 @@ class Spect(PrimitivesBASE):
                     # Pass the primitive configuration to the interactive object.
                     _config = self.params[self.myself()]
                     _config.update(**params)
+
+                    title_overrides = {
+                        'max_missed': 'Max Missed',
+                        'max_shift':  'Max Shifted',
+                        'nsum':       'Lines to sum',
+                        'step':       'Tracing step',
+                    }
+                    ui_params = UIParameters(_config, params=["max_missed", "max_shift", "nsum", "step",
+                                                              "order", "niter", "hsigma", "lsigma", "grow"],
+                                             hidden_params=["order", "niter", "hsigma", "lsigma", "grow"],
+                                             title_overrides=title_overrides)
                     aperture_models = interactive_trace_apertures(
-                        ext, _config, fit1d_params)
+                        ext, _config, fit1d_params, ui_params=ui_params)
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     aperture_models = []
