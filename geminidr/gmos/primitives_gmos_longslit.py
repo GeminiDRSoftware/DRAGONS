@@ -724,10 +724,12 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     filename_info = ad.filename
                 else:
                     filename_info = ''
-                uiparams = UIParameters(config, params=reinit_params)
+                # params = ['row']
+                # params.extend(UIParameters.FIT1D_PARAMS)
+                uiparams = UIParameters(config, params=['row', *UIParameters.FIT1D_PARAMS],
+                                        hidden_params=UIParameters.FIT1D_PARAMS)
                 uiparams.add_param(UIParameter(title='Row', name='row', value=int(nrows/2), start=1, end=nrows))
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
-                                                   config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
                                                    tab_name_fmt="CCD {}",

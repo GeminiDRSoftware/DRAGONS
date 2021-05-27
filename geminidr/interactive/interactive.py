@@ -1404,6 +1404,8 @@ class UIParameter:
 
 
 class UIParameters:
+    FIT1D_PARAMS = ['function', 'order', 'lsigma', 'hsigma', 'niter', 'grow']
+
     """
     Holder class for the set of UI-adjustable parameters
     """
