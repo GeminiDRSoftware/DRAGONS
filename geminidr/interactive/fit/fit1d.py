@@ -280,7 +280,7 @@ class InteractiveModel1D(InteractiveModel):
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
 
-        self.notify_mask_listeners()
+        # self.notify_mask_listeners()
 
         return weights
 
@@ -406,6 +406,8 @@ class InteractiveModel1D(InteractiveModel):
 
         for ll in self.listeners:
             ll(self.fit)
+        for ml in self.mask_listeners:
+            ml(self.data.data['mask'])
 
     def update_mask(self):
         goodpix = np.array([m != USER_MASK_NAME for m in self.data.data['mask']])
