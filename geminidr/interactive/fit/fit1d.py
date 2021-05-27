@@ -1261,14 +1261,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.modal_widget:
             self.modal_widget.disabled = True
 
-        # def fn():
-        #     """Top-level code to update the Config with the values from the widgets"""
-        #     config_update = {k: v.value for k, v in self.widgets.items()}
-        #     for extra in self.reinit_extras:
-        #         del config_update[extra]
-        #     for k, v in config_update.items():
-        #         print(f'{k} = {v}')
-        #     self.config.update(**config_update)
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}

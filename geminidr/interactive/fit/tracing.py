@@ -742,9 +742,6 @@ def interactive_trace_apertures(ext, config, fit1d_params, ui_params: UIParamete
                     for kw in ("DOMAIN_START", "DOMAIN_END")]
                    for ap in ap_table]
 
-    # Create parameters to add to the UI
-    reinit_params = ["max_missed", "max_shift", "nsum", "step"]
-
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
         ylabel = "y / rows [px]"
