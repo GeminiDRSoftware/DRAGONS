@@ -417,6 +417,8 @@ class InteractiveModel1D(InteractiveModel):
         for i in range(fit_mask.size):
             if fit_mask[i] and mask[i] == 'good':
                 mask[i] = SIGMA_MASK_NAME
+            elif not fit_mask[i] and mask[i] == SIGMA_MASK_NAME:
+                mask[i] = 'good'
         self.data.data['mask'] = mask
 
     def evaluate(self, x):
