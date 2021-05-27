@@ -432,7 +432,6 @@ class Spect(PrimitivesBASE):
                 uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
                                                    fitting_parameters=all_fp_init,
-                                                   config=config,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
