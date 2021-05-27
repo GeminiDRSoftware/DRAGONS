@@ -43,6 +43,7 @@ from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list
+from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
@@ -2400,6 +2401,8 @@ class Spect(PrimitivesBASE):
             Masking growth radius (in pixels) for each aperture
         debug_plot : bool
             Show diagnostic plots?
+        interactive : bool
+            Show interactive interface?
 
         Returns
         -------
@@ -2423,6 +2426,7 @@ class Spect(PrimitivesBASE):
 
         if interactive:
             def recalc_fn(config, extras):
+                c = max(0, extras['col'] - 1)
                 for ad in adinputs:
                     if self.timestamp_keys['distortionCorrect'] not in ad.phu:
                         log.warning(f"{ad.filename} has not been distortion corrected."
@@ -2472,23 +2476,33 @@ class Spect(PrimitivesBASE):
                         else:
                             sky_mask ^= no_data[:, None]
 
-                        sky = np.ma.masked_array(ext.data[:,1000], mask=sky_mask[:,1000])
-                        yield np.arange(len(sky)), sky, sky_weights[:,1000]
+                        sky = np.ma.masked_array(ext.data[:,c], mask=sky_mask[:,c])
+                        yield np.arange(len(sky)), sky, sky_weights[:,c]
 
             # build config for interactive
             config = self.params[self.myself()]
             config.update(**params)
+
+            # Create a 'col' parameter to add to the UI so the user can select the column they
+            # want to fit.
+            # We pass a default column at the 1/3 mark, since dead center is flat
+            ncols = adinputs[0].shape[0][0]
+            reinit_params = ["col", ]
+            reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 3),
+                                               min=1, max=ncols)}
 
             all_shapes = []
             count = 0
             for ad in adinputs:
                 for ext in ad:
                     count = count+1
-                    all_shapes.append((0, ext.shape[1]))  # extracting single line for interactive
+                    all_shapes.append((0, ext.shape[0]))  # extracting single line for interactive
             fit1d_params = fit_1D.translate_params(params)
             visualizer = fit1d.Fit1DVisualizer(recalc_fn,
                                                fitting_parameters=[fit1d_params] * count,
                                                config=config,
+                                               reinit_params=reinit_params,
+                                               reinit_extras=reinit_extras,
                                                tab_name_fmt="CCD {}",
                                                xlabel=f'x',
                                                ylabel=f'y',
