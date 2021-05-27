@@ -321,11 +321,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     Custom visualizer for traceApertures().
     """
 
-    def __init__(self, data_source, fitting_parameters, config,
+    def __init__(self, data_source, fitting_parameters,
                  domains=None, filename_info=None, help_text=None,
                  modal_button_label="Trace apertures",
                  modal_message="Tracing apertures...",
-                 primitive_name=None, reinit_extras=None, reinit_params=None,
+                 primitive_name=None,
                  tab_name_fmt='{}', template="fit1d.html", title=None,
                  xlabel='x', ylabel='y', ui_params=None, **kwargs):
 
@@ -338,16 +338,8 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         self.layout = None
         self.last_changed = None
-        self.reinit_extras = {} if reinit_extras is None else reinit_extras
-        self.reinit_params = [] if reinit_params is None else reinit_params
         self.widgets = {}
         self.error_alert = self.create_error_alert()
-
-        # Save parameters in case we want to reset them
-        self._reinit_extras = {} if reinit_extras is None \
-            else {key: val.default for key, val in self.reinit_extras.items()}
-        self._reinit_params = {} if reinit_params is None \
-            else {key: val for key, val in config.items() if key in reinit_params}
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
@@ -355,9 +347,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         self.reinit_panel = self.create_tracing_panel(
             modal_button_label=modal_button_label,
-            modal_message=modal_message,
-            reinit_extras=reinit_extras,
-            reinit_params=reinit_params)
+            modal_message=modal_message)
 
         # Grab input coordinates or calculate if we were given a callable
         self.reconstruct_points_fn = self.data_source_factory(
@@ -531,8 +521,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         return div
 
     def create_tracing_panel(self, modal_button_label="Reconstruct points",
-                             modal_message=None, reinit_params=None,
-                             reinit_extras=None):
+                             modal_message=None):
         """
         Creates the Tracing (leftmost) Panel. This function had some code not
         used by TraceAperturesVisualizer, but this code helps to keep
@@ -551,15 +540,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             Extra parameters for re-tracing.
         """
         # No panel required if we are not re-creating data
-        if reinit_params is None and reinit_extras is None:
-            return
 
         reinit_widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False,
                                                            slider_width=128)
-        # reinit_widgets = self.make_widgets_from_config(reinit_params,
-        #                                                reinit_extras,
-        #                                                modal_message is None,
-        #                                                slider_width=128)
+        if not reinit_widgets:
+            return None
 
         # This should really go in the parent class, like submit_button
         if modal_message:
@@ -786,7 +771,6 @@ def interactive_trace_apertures(ext, config, fit1d_params, ui_params: UIParamete
     # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
         lambda ui_params: data_provider(ext, ui_params),
-        config=config,
         domains=domain_list,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
@@ -795,7 +779,6 @@ def interactive_trace_apertures(ext, config, fit1d_params, ui_params: UIParamete
                    + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
                    + help.REGION_EDITING_HELP_SUBTEXT),
         primitive_name="traceApertures",
-        reinit_params=reinit_params,
         tab_name_fmt="Aperture {}",
         title="Interactive Trace Apertures",
         xlabel=xlabel,
