@@ -417,6 +417,8 @@ class InteractiveModel1D(InteractiveModel):
         for i in range(fit_mask.size):
             if fit_mask[i] and mask[i] == 'good':
                 mask[i] = SIGMA_MASK_NAME
+            elif not fit_mask[i] and mask[i] == SIGMA_MASK_NAME:
+                mask[i] = 'good'
         self.data.data['mask'] = mask
 
     def evaluate(self, x):
@@ -724,22 +726,24 @@ class Fit1DPanel:
 
         controls = column(*controls_ls, width=220)
 
-        # Now the figures
-        x_range = None
-        y_range = None
-        try:
-            if self.model.data and 'x' in self.model.data.data and len(self.model.data.data['x']) >= 2:
-                x_min = min(self.model.data.data['x'])
-                x_max = max(self.model.data.data['x'])
-                x_pad = (x_max - x_min) * 0.1
-                x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-            if self.model.data and 'y' in self.model.data.data and len(self.model.data.data['y']) >= 2:
-                y_min = min(self.model.data.data['y'])
-                y_max = max(self.model.data.data['y'])
-                y_pad = (y_max - y_min) * 0.1
-                y_range = Range1d(y_min - y_pad, y_max + y_pad)
-        except:
-            pass  # ok, we don't *need* ranges...
+        # # Now the figures
+        # x_range = None
+        # y_range = None
+        # try:
+        #     if self.model.data and 'x' in self.model.data.data and len(self.model.data.data['x']) >= 2:
+        #         x_min = min(self.model.data.data['x'])
+        #         x_max = max(self.model.data.data['x'])
+        #         x_pad = (x_max - x_min) * 0.1
+        #         x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
+        #     if self.model.data and 'y' in self.model.data.data and len(self.model.data.data['y']) >= 2:
+        #         y_min = min(self.model.data.data['y'])
+        #         y_max = max(self.model.data.data['y'])
+        #         y_pad = (y_max - y_min) * 0.1
+        #         if y_min == y_max:
+        #             y_max = y_min + 1
+        #         y_range = Range1d(y_min - y_pad, y_max + y_pad)
+        # except:
+        #     pass  # ok, we don't *need* ranges...
         if enable_user_masking:
             tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
         else:
@@ -748,7 +752,7 @@ class Fit1DPanel:
                         min_width=400,
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                         tools=tools,
-                        output_backend="webgl", x_range=x_range, y_range=y_range)
+                        output_backend="webgl", x_range=None, y_range=None)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
