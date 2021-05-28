@@ -4,7 +4,7 @@ from bokeh import models as bm
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
 
-from geminidr.interactive.controls import Controller
+from geminidr.interactive.controls import Controller, Handler
 from gempy.library.matching import match_sources
 
 from .fit1d import (Fit1DPanel, Fit1DVisualizer, fit1d_figure,
@@ -54,6 +54,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         text_color=self.model.mask_rendering_kwargs()['color'],
                         text_baseline='middle')
         spectrum_plot = p_spectrum
+        delete_line_handler = Handler('d', "Delete arc line", self.delete_line)
+        Controller(p_spectrum, None, self.model.band_model, controller_div,
+                   mask_handlers=None, handlers=[delete_line_handler],
+                   domain=domain)
 
         add_new_line_button = bm.Button(label="Add new line")
         self.line_chooser = row(bm.Div(text="New line wavelength"),
@@ -112,6 +116,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
                     'lines': [str(np.round(wavelength, decimals=6))],
                    }
         self.model.data.stream(new_data)
+        self.model.perform_fit()
+
+    def delete_line(self, key, x, y):
+        """
+        Delete (not mask) from the fit the line nearest the cursor. This
+        operates only on the spectrum panel.
+        """
+        index = np.argmin(abs(self.model.data.data['fitted'] - x))
+        new_data = {col: list(values)[:index] + list(values)[index+1:]
+                    for col, values in self.model.data.data.items()}
+        self.model.data.data = new_data
         self.model.perform_fit()
 
     def identify_lines(self):
