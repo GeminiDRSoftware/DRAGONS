@@ -1518,7 +1518,7 @@ class Spect(PrimitivesBASE):
         # Only return extracted spectra
         return ad_extracted
 
-    def findSourceApertures(self, adinputs=None, **params):
+    def findApertures(self, adinputs=None, **params):
         """
         Finds sources in 2D spectral images and store them in an APERTURE table
         for each extension. Each table will, then, be used in later primitives
@@ -2381,7 +2381,7 @@ class Spect(PrimitivesBASE):
         --------
         :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
         :meth:`~geminidr.core.primitives_spect.Spect.distortionCorrect`,
-        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`,
+        :meth:`~geminidr.core.primitives_spect.Spect.findApertures`,
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -2499,7 +2499,7 @@ class Spect(PrimitivesBASE):
 
         See Also
         --------
-        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
+        :meth:`~geminidr.core.primitives_spect.Spect.findApertures`
 
         """
 

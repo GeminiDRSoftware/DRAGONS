@@ -40,7 +40,7 @@ def test_correlation(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
 
-    p.findSourceApertures(max_apertures=1)
+    p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
                                 for ad in p.streams['main']], 260.6, atol=0.25)
 
@@ -48,7 +48,7 @@ def test_correlation(adinputs, caplog):
     assert ad[0].shape == (512, 3869)
 
     caplog.clear()
-    ad = p.findSourceApertures(max_apertures=1)[0]
+    ad = p.findApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
     #assert caplog.records[3].message == 'Found sources at rows: 260.6'
     np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
@@ -70,7 +70,7 @@ def test_correlation_and_trim(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15, trim_data=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
 
-    p.findSourceApertures(max_apertures=1)
+    p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
                                 for ad in p.streams['main']], 260.6, atol=0.25)
 
@@ -78,7 +78,7 @@ def test_correlation_and_trim(adinputs, caplog):
     assert ad[0].shape == (512, 3139)
 
     caplog.clear()
-    ad = p.findSourceApertures(max_apertures=1)[0]
+    ad = p.findApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
     np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
 
@@ -268,7 +268,7 @@ def create_inputs_recipe():
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
         p.distortionCorrect(arc=arc)
-        p.findSourceApertures(max_apertures=1)
+        p.findApertures(max_apertures=1)
         p.skyCorrectFromSlit()
 
         os.chdir("inputs/")

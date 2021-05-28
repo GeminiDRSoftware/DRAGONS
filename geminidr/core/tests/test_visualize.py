@@ -195,7 +195,7 @@ def create_inputs():
         p.flatCorrect(do_cal=do_cal_flat, flat=master_quartz)
         p.QECorrect(arc=master_arc)
         p.distortionCorrect(arc=master_arc)
-        p.findSourceApertures(max_apertures=3)
+        p.findApertures(max_apertures=3)
         p.skyCorrectFromSlit()
         p.traceApertures()
         p.extract1DSpectra()

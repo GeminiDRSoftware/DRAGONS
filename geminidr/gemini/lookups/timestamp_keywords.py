@@ -33,7 +33,7 @@ timestamp_keys = {
     "divide": "DIVIDE",
     "extract1DSpectra": "EXTRACT",
     "findAcquisitionSlits": "FINDACQS",
-    "findSourceApertures": "FINDAPER",
+    "findApertures": "FINDAPER",
     "flatCorrect": "FLATCORR",
     "fluxCalibrate": "FLUXCAL",
     "fringeCorrect": "FRNGCORR",

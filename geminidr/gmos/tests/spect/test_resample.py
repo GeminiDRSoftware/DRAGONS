@@ -197,7 +197,7 @@ def create_inputs_recipe():
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
         p.distortionCorrect(arc=arc)
-        p.findSourceApertures(max_apertures=1)
+        p.findApertures(max_apertures=1)
         p.skyCorrectFromSlit()
         p.traceApertures()
         p.extract1DSpectra()

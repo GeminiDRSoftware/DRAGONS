@@ -31,7 +31,7 @@ def reduceScience(p):
     p.QECorrect()
     p.distortionCorrect()
     p.measureIQ(display=True)
-    p.findSourceApertures()
+    p.findApertures()
     p.skyCorrectFromSlit()
     p.measureIQ(display=True)
 
@@ -51,7 +51,7 @@ def reduceScience(p):
     p.adjustWCSToReference()
     p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.stackFrames()
-    p.findSourceApertures()
+    p.findApertures()
     p.measureIQ(display=True)
     p.traceApertures()
     p.extract1DSpectra()
@@ -82,7 +82,7 @@ def reduceStandard(p):
     p.flatCorrect()
     p.QECorrect()
     p.distortionCorrect()
-    p.findSourceApertures(max_apertures=1)
+    p.findApertures(max_apertures=1)
     p.skyCorrectFromSlit()
     p.measureIQ(display=True)
     p.traceApertures()
