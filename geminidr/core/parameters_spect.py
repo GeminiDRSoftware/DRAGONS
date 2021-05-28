@@ -96,7 +96,7 @@ class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
 
-class extract1DSpectraConfig(config.Config):
+class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
     method = config.ChoiceField("Extraction method", str,
                                 allowed={"standard": "no weighting",
