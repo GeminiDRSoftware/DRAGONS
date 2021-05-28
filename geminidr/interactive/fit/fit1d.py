@@ -17,32 +17,6 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-def build_fit_1D(fit1d_params, data, points, weights, domain):
-    """
-    Create a fit_1D from the given parameter dictionary and x/y/weights
-
-    Parameters
-    ----------
-    fit1d_params : dict
-        Dictionary of parameters for the fit_1D
-    data : list
-        X coordinates
-    points : list
-        Y values
-    weights : list
-        weights
-
-    Returns
-    -------
-        :class:`~gempy.library.fitting.fit_1D` fitter
-    """
-    return fit_1D(data,
-                  points=points,
-                  weights=weights,
-                  domain=domain,
-                  **fit1d_params)
-
-
 SIGMA_MASK_NAME = 'rejected (sigma)'
 USER_MASK_NAME = 'rejected (user)'
 BAND_MASK_NAME = 'excluded'
@@ -66,7 +40,6 @@ class InteractiveModel(ABC):
         InteractiveModel.PALETTE[2] = bokeh_data_color
 
         self.listeners = []
-        self.mask_listeners = []
         self.data = None
 
     def add_listener(self, listener):
@@ -89,16 +62,7 @@ class InteractiveModel(ABC):
         This calls all our registered listener functions to let them know we have changed.
         """
         for listener in self.listeners:
-            listener()
-
-    def add_mask_listener(self, mask_listener):
-        if not callable(mask_listener):
-            raise ValueError("Mask Listener must be callable")
-        self.mask_listeners.append(mask_listener)
-
-    def notify_mask_listeners(self):
-        for mask_listener in self.mask_listeners:
-            mask_listener(self.data.data['mask'])
+            listener(self)
 
     @abstractmethod
     def perform_fit(self):
@@ -280,8 +244,6 @@ class InteractiveModel1D(InteractiveModel):
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
 
-        self.notify_mask_listeners()
-
         return weights
 
     def band_model_handler(self):
@@ -391,12 +353,10 @@ class InteractiveModel1D(InteractiveModel):
             fitparms = {x: y for x, y in self.fitting_parameters.items()
                         if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
 
-        self.fit = build_fit_1D(fitparms, self.y[goodpix], points=self.x[goodpix],
-                                domain=self.domain, weights=None if self.weights is None else self.weights[goodpix])
-        self.fit_mask = np.zeros_like(self.x, dtype=bool)
-        if self.sigma_clip:
-            # Now pull in the sigma mask
-            self.fit_mask[goodpix] = self.fit.mask
+        self.fit = fit_1D(self.y[goodpix], points=self.x[goodpix],
+                          domain=self.domain,
+                          weights=None if self.weights is None else self.weights[goodpix],
+                          **fitparms)
 
         self.update_mask()
         if 'residuals' in self.data.data:
@@ -404,8 +364,7 @@ class InteractiveModel1D(InteractiveModel):
         if 'ratio' in self.data.data:
             self.data.data['ratio'] = self.y / self.evaluate(self.x)
 
-        for ll in self.listeners:
-            ll(self.fit)
+        self.notify_listeners()
 
     def update_mask(self):
         goodpix = np.array([m != USER_MASK_NAME for m in self.data.data['mask']])
@@ -612,35 +571,23 @@ class FittingParametersUI:
 
 class InfoPanel:
     def __init__(self):
-        self.rms = 0.0
-        self.band_count = 0
-        self.user_count = 0
-        self.fit_count = 0
         self.component = Div(text='')
-        self.update_panel()
 
-    def update_panel(self):
-        rms = '<b>RMS:</b> {rms:.4f}<br/>'.format(rms=self.rms)
-        band = '<b>Band Masked:</b> {band_count}<br/>'.format(band_count=self.band_count) if self.band_count else ''
-        user = '<b>User Masked:</b> {user_count}<br/>'.format(user_count=self.user_count) if self.user_count else ''
-        fit = '<b>Fit Masked:</b> {fit_count}<br/>'.format(fit_count=self.fit_count) if self.fit_count else ''
+    def model_change_handler(self, model):
+        rms = '<b>RMS:</b> {rms:.4f}<br/>'.format(rms=model.fit.rms)
+        band_count = model.mask.count(BAND_MASK_NAME)
+        user_count = model.mask.count(USER_MASK_NAME)
+        fit_count = model.mask.count(SIGMA_MASK_NAME)
+        band = f'<b>Band Masked:</b> {band_count}<br/>' if band_count else ''
+        user = f'<b>User Masked:</b> {user_count}<br/>' if user_count else ''
+        fit = f'<b>Fit Masked:</b> {fit_count}<br/>' if fit_count else ''
 
         self.component.update(text=rms + band + user + fit)
 
-    def update(self, f):
-        self.rms = f.rms
-        self.update_panel()
-
-    def update_mask(self, mask):
-        self.band_count = mask.count(BAND_MASK_NAME)
-        self.user_count = mask.count(USER_MASK_NAME)
-        self.fit_count = mask.count(SIGMA_MASK_NAME)
-        self.update_panel()
-
 
 class Fit1DPanel:
-    def __init__(self, visualizer, fitting_parameters, domain, x, y, idx=0,
-                 weights=None, xlabel='x', ylabel='y',
+    def __init__(self, visualizer, fitting_parameters, domain, x, y, weights=None,
+                 idx=0, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True):
         """
@@ -658,6 +605,8 @@ class Fit1DPanel:
             X coordinate values
         y : :class:`~numpy.ndarray`
             Y coordinate values
+        weights : None or :class:`~numpy.ndarray`
+            weights of individual points
         xlabel : str
             label for X axis
         ylabel : str
@@ -678,11 +627,15 @@ class Fit1DPanel:
         # Just to get the doc later
         self.visualizer = visualizer
         self.index = idx
-        self.info_panel = InfoPanel()
-        self.info_div = self.info_panel.component
 
-        # Make a listener to update the info panel with the RMS on a fit
-        listeners = [lambda f: self.info_panel.update(f), ]
+        self.width = plot_width
+        self.height = plot_height
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.enable_regions = enable_regions
+        self.enable_user_masking = enable_user_masking
+        self.xpoint = 'x'
+        self.ypoint = 'y'
 
         # prep params to clean up sigma related inputs for the interface
         # i.e. niter min of 1, etc.
@@ -690,168 +643,102 @@ class Fit1DPanel:
 
         # Avoids having to check whether this is None all the time
         band_model = GIRegionModel(domain=domain)
+        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
+                                        band_model=band_model)
+        self.model.add_listener(self.model_change_handler)
 
-        self.fitting_parameters = fitting_parameters
-        self.model = InteractiveModel1D(self.fitting_parameters, domain, x, y, weights,
-                                        listeners=listeners, band_model=band_model)
-
-        # also listen for updates to the masks
-        self.model.add_mask_listener(self.info_panel.update_mask)
-
-        model = self.model
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, model, self.fitting_parameters)
-
-        controls_ls = list()
-
+        self.fitting_parameters_ui = FittingParametersUI(visualizer, self.model,
+                                                         fitting_parameters)
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
-        reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
+        reset_button = bm.Button(label="Reset", align='center',
+                                 button_type='warning', width_policy='min')
+        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
+            reset_button, 'Reset will change all inputs for this tab back '
+            'to their original values.  Proceed?', self.reset_dialog_handler)
 
-        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
-                                                                  'Reset will change all inputs for this tab back '
-                                                                  'to their original values.  Proceed?',
-                                                                  self.reset_dialog_handler)
+        controller_div = Div(margin=(20, 0, 0, 0), width=220,
+                             style={"color": "gray", "padding": "5px"})
+        controls = column(*controls_column, reset_button, controller_div,
+                          width=220)
 
-        controller_div = Div(margin=(20, 0, 0, 0),
-                             width=220,
-                             style={
-                                 "color": "gray",
-                                 "padding": "5px",
-                             })
-
-        controls_ls.extend(controls_column)
-
-        controls_ls.append(reset_button)
-        controls_ls.append(controller_div)
-
-        controls = column(*controls_ls, width=220)
-
-        # Now the figures
-        x_range = None
-        y_range = None
-        try:
-            if self.model.data and 'x' in self.model.data.data and len(self.model.data.data['x']) >= 2:
-                x_min = min(self.model.data.data['x'])
-                x_max = max(self.model.data.data['x'])
-                x_pad = (x_max - x_min) * 0.1
-                x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-            if self.model.data and 'y' in self.model.data.data and len(self.model.data.data['y']) >= 2:
-                y_min = min(self.model.data.data['y'])
-                y_max = max(self.model.data.data['y'])
-                y_pad = (y_max - y_min) * 0.1
-                y_range = Range1d(y_min - y_pad, y_max + y_pad)
-        except:
-            pass  # ok, we don't *need* ranges...
-        if enable_user_masking:
-            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
-        else:
-            tools = "pan,wheel_zoom,box_zoom,reset"
-        p_main = figure(plot_width=plot_width, plot_height=plot_height,
-                        min_width=400,
-                        title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
-                        tools=tools,
-                        output_backend="webgl", x_range=x_range, y_range=y_range,
-                        min_border_left=80)
-        p_main.height_policy = 'fixed'
-        p_main.width_policy = 'fit'
-
-        if enable_regions:
-            band_model.add_listener(Fit1DRegionListener(self.update_regions))
-
-            connect_figure_extras(p_main, band_model)
-
-        if enable_user_masking:
-            mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler)
-        else:
-            mask_handlers = None
-
-        Controller(p_main, None, band_model, controller_div, mask_handlers=mask_handlers,
-                   domain=domain)
-        # self.add_custom_cursor_behavior(p_main)
-        fig_column = [p_main, self.info_div]
-
-        if plot_residuals:
-            # x_range is linked to the main plot so that zooming tracks between them
-            p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                             min_width=400,
-                             title='Fit Residuals',
-                             x_axis_label=xlabel, y_axis_label='Delta',
-                             tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=p_main.x_range, y_range=None,
-                             min_border_left=80)
-            p_resid.height_policy = 'fixed'
-            p_resid.width_policy = 'fit'
-            p_resid.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_resid, band_model)
-            # Initalizing this will cause the residuals to be calculated
-            self.model.data.data['residuals'] = np.zeros_like(self.model.x)
-            p_resid.scatter(x='x', y='residuals', source=self.model.data,
-                            size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        if plot_ratios:
-            p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                              min_width=400,
-                              title='Fit Ratios',
-                              x_axis_label=xlabel, y_axis_label='Ratio',
-                              tools="pan,box_zoom,reset",
-                              output_backend="webgl", x_range=p_main.x_range, y_range=None,
-                              min_border_left=80)
-            p_ratios.height_policy = 'fixed'
-            p_ratios.width_policy = 'fit'
-            p_ratios.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_ratios, band_model)
-            # Initalizing this will cause the residuals to be calculated
-            self.model.data.data['ratio'] = np.zeros_like(self.model.x)
-            p_ratios.scatter(x='x', y='ratio', source=self.model.data,
-                             size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        if plot_residuals and plot_ratios:
-            tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
-            tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
-            tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
-            fig_column.append(tabs)
-        elif plot_residuals:
-            fig_column.append(p_resid)
-        elif plot_ratios:
-            fig_column.append(p_ratios)
+        fig_column = self.build_figures(domain=domain, controller_div=controller_div,
+                                        plot_residuals=plot_residuals,
+                                        plot_ratios=plot_ratios)
 
         # Initializing regions here ensures the listeners are notified of the region(s)
-        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
+        if fitting_parameters.get("regions") is not None:
             region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
             band_model.load_from_tuples(region_tuples)
-
-        self.scatter = p_main.scatter(x='x', y='y', source=self.model.data,
-                                      size=5, legend_field='mask',
-                                      **self.model.mask_rendering_kwargs())
-        self.model.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
         mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
                 for x, m in zip(self.model.x, self.model.mask)]
-        model.data.data['mask'] = mask
+        self.model.data.data['mask'] = mask
         self.model.perform_fit()
 
-        self.line = p_main.line(x='xlinspace',
-                                y='model',
-                                source=self.model.evaluation,
-                                line_width=3,
-                                color='crimson')
-
-        if band_model:
+        if enable_regions:
             region_editor = RegionEditor(band_model)
             fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
 
-        if central_plot:
-            self.component = row(col, controls,
-                                 css_classes=["tab-content"],
-                                 spacing=10)
+        col_order = [col, controls] if central_plot else [controls, col]
+        self.component = row(*col_order, css_classes=["tab-content"],
+                             spacing=10)
+
+    def build_figures(self, domain=None, controller_div=None,
+                      plot_residuals=True, plot_ratios=True):
+        """
+        Construct the figures containing the various plots needed for this
+        Visualizer.
+
+        Parameters
+        ----------
+        domain : 2-tuple/None
+            the domain over which the model is defined
+        controller_div : Div
+            Div object accessible by Controller for updating help text
+        plot_ratios : bool
+            make a ratios plot?
+        plot_residuals : bool
+            make a residuals plot?
+
+        Returns
+        -------
+        fig_column : list
+            list of bokeh objects with attached listeners
+        """
+
+        p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
+                                      xpoint=self.xpoint, ypoint=self.ypoint,
+                                      xlabel=self.xlabel, ylabel=self.ylabel, model=self.model,
+                                      enable_user_masking=self.enable_user_masking)
+
+        if self.enable_regions:
+            self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
+            connect_figure_extras(p_main, self.model.band_model)
+
+        if self.enable_user_masking:
+            mask_handlers = (self.mask_button_handler,
+                             self.unmask_button_handler)
         else:
-            self.component = row(controls, col,
-                                 css_classes=["tab-content"],
-                                 spacing=10)
+            mask_handlers = None
+
+        Controller(p_main, None, self.model.band_model, controller_div,
+                   mask_handlers=mask_handlers, domain=domain)
+
+        info_panel = InfoPanel()
+        self.model.add_listener(info_panel.model_change_handler)
+
+        # self.add_custom_cursor_behavior(p_main)
+        fig_column = [p_main, info_panel.component]
+        if p_supp is not None:
+            fig_column.append(p_supp)
+
+        return fig_column
 
     def reset_dialog_handler(self, result):
         """
@@ -864,11 +751,11 @@ class Fit1DPanel:
         """ Update fitting regions """
         self.model.regions = self.model.band_model.build_regions()
 
-    def model_change_handler(self, fit):
+    def model_change_handler(self, model):
         """
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
-        self.model.evaluation.data['model'] = self.model.evaluate(self.model.evaluation.data['xlinspace'])
+        model.evaluation.data['model'] = model.evaluate(model.evaluation.data['xlinspace'])
 
     def mask_button_handler(self, x, y, mult):
         """
@@ -888,7 +775,7 @@ class Fit1DPanel:
             self._point_mask_handler(x, y, mult, 'mask')
         else:
             self.model.data.selected.update(indices=[])
-            mask = self.model.data.data['mask'].copy()
+            mask = self.model.mask.copy()
             for i in indices:
                 mask[i] = USER_MASK_NAME
             self.model.data.data['mask'] = mask
@@ -908,10 +795,10 @@ class Fit1DPanel:
             This is ignored, but the button passes it
         """
         indices = self.model.data.selected.indices
-        x_data = self.model.x
         if not indices:
             self._point_mask_handler(x, y, mult, 'unmask')
         else:
+            x_data = self.model.x
             self.model.data.selected.update(indices=[])
             mask = self.model.mask.copy()
             for i in indices:
@@ -938,14 +825,13 @@ class Fit1DPanel:
         """
         dist = None
         sel = None
-        xarr, yarr = self.model.x, self.model.y
+        xarr = self.model.data.data[self.xpoint]
+        yarr = self.model.data.data[self.ypoint]
         mask = self.model.mask
         if action not in ('mask', 'unmask'):
             action = None
-        for i in range(len(xarr)):
+        for i, (xd, yd) in enumerate(zip(xarr, yarr)):
             if action is None or ((action == 'mask') ^ (mask[i] == USER_MASK_NAME)):
-                xd = xarr[i]
-                yd = yarr[i]
                 if xd is not None and yd is not None:
                     ddist = (x - xd) ** 2 + ((y - yd) * mult) ** 2
                     if dist is None or ddist < dist:
@@ -1337,3 +1223,118 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
         fit1d_params['sigma'] = False
     else:
         fit1d_params['sigma'] = True
+
+
+def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
+                 xline='xlinspace', yline='model',
+                 xlabel=None, ylabel=None, model=None, plot_ratios=True,
+                 plot_residuals=True, enable_user_masking=True):
+    """
+    Fairly generic function to produce bokeh objects for the main scatter/fit
+    plot and the residuals and/or ratios plot. Listeners are not added here.
+
+    Parameters
+    ----------
+    width : int
+        width of the plots
+    height : int
+        height of the main plot (ratios/residuals are half-height)
+    xpoint, ypoint : str
+        column names in model.data containing x and y data for points
+    xline, yline : str
+        column names in model.evaluation containing x and y data for line
+        representing the fit
+    xlabel, ylabel : str
+        label for axes of main plot
+    model : InteractiveModel1D
+        object containing the fit information
+    plot_ratios : bool
+        make a ratios plot?
+    plot_residuals : bool
+        make a residuals plot?
+    enable_user_masking : bool
+        is user masking enabled? If so, additional tools are required
+
+    Returns
+    -------
+    tuple : (Figure, Tabs/Figure/None)
+        the main plotting figure and the ratios/residuals plot
+    """
+    x_range = None
+    y_range = None
+    try:
+        xdata = model.data.data[xpoint]
+        ydata = model.data.data[ypoint]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        x_min, x_max = min(xdata), max(xdata)
+        if x_min != x_max:
+            x_pad = (x_max - x_min) * 0.1
+            x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
+        y_min, y_max = min(ydata), max(ydata)
+        if y_min != y_max:
+            y_pad = (y_max - y_min) * 0.1
+            y_range = Range1d(y_min - y_pad, y_max + y_pad)
+
+    tools = "pan,wheel_zoom,box_zoom,reset"
+    if enable_user_masking:
+        tools += ",lasso_select,box_select,tap"
+
+    p_main = figure(plot_width=width, plot_height=height, min_width=400,
+                    title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
+                    tools=tools,
+                    output_backend="webgl", x_range=x_range, y_range=y_range,
+                    min_border_left=80)
+    p_main.height_policy = 'fixed'
+    p_main.width_policy = 'fit'
+    p_main.scatter(x=xpoint, y=ypoint, source=model.data,
+                   size=5, legend_field='mask',
+                   **model.mask_rendering_kwargs())
+    p_main.line(x=xline, y=yline, source=model.evaluation,
+                line_width=3, color='crimson')
+
+    if plot_residuals:
+        # x_range is linked to the main plot so that zooming tracks between them
+        p_resid = figure(plot_width=width, plot_height=height // 2,
+                         min_width=400,
+                         title='Fit Residuals',
+                         x_axis_label=xlabel, y_axis_label='Delta',
+                         tools="pan,box_zoom,reset",
+                         output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                         min_border_left=80)
+        p_resid.height_policy = 'fixed'
+        p_resid.width_policy = 'fit'
+        p_resid.sizing_mode = 'stretch_width'
+        connect_figure_extras(p_resid, model.band_model)
+        # Initalizing this will cause the residuals to be calculated
+        model.data.data['residuals'] = np.zeros_like(model.x)
+        p_resid.scatter(x=xpoint, y='residuals', source=model.data,
+                        size=5, legend_field='mask', **model.mask_rendering_kwargs())
+    if plot_ratios:
+        p_ratios = figure(plot_width=width, plot_height=height // 2,
+                          min_width=400,
+                          title='Fit Ratios',
+                          x_axis_label=xlabel, y_axis_label='Ratio',
+                          tools="pan,box_zoom,reset",
+                          output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                          min_border_left=80)
+        p_ratios.height_policy = 'fixed'
+        p_ratios.width_policy = 'fit'
+        p_ratios.sizing_mode = 'stretch_width'
+        connect_figure_extras(p_ratios, model.band_model)
+        # Initalizing this will cause the ratios to be calculated
+        model.data.data['ratio'] = np.ones_like(model.x)
+        p_ratios.scatter(x=xpoint, y='ratio', source=model.data,
+                         size=5, legend_field='mask', **model.mask_rendering_kwargs())
+    if plot_residuals and plot_ratios:
+        tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
+        tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
+        tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
+        return p_main, tabs
+    elif plot_residuals:
+        return p_main, p_resid
+    elif plot_ratios:
+        return p_main, p_ratios
+
+    return p_main, None

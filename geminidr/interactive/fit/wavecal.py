@@ -1,164 +1,46 @@
 import numpy as np
 
-from bokeh import models as bm, transform as bt
-from bokeh.io import curdoc
+from bokeh import models as bm
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
 
-from geminidr.interactive import interactive
-from .fit1d import InfoPanel
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
-    RegionEditor
-from gempy.library.astrotools import cartesian_regions_to_slices
-from gempy.library.fitting import fit_1D
 from gempy.library.matching import match_sources
 
-from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d, BAND_MASK_NAME)
-from .. import server
+from .fit1d import (Fit1DPanel, Fit1DVisualizer, fit1d_figure)
 
 
 class WavelengthSolutionPanel(Fit1DPanel):
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
-                 weights=None, other_data=None, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
-                 enable_user_masking=True, enable_regions=True, central_plot=True):
-        """
-        Panel for visualizing a 1-D fit, perhaps in a tab
-
-        Parameters
-        ----------
-        visualizer : :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
-            visualizer to associate with
-        fitting_parameters : dict
-            parameters for this fit
-        domain : list of pixel coordinates
-            Used for new fit_1D fitter
-        x : :class:`~numpy.ndarray`
-            X coordinate values
-        y : :class:`~numpy.ndarray`
-            Y coordinate values
-        xlabel : str
-            label for X axis
-        ylabel : str
-            label for Y axis
-        plot_width : int
-            width of plot area in pixels
-        plot_height : int
-            height of plot area in pixels
-        plot_residuals : bool
-            True if we want the lower plot showing the differential between the data and the fit
-        plot_ratios : bool
-            True if we want the lower plot showing the ratio between the data and the fit
-        enable_user_masking : bool
-            True to enable fine-grained data masking by the user using bokeh selections
-        enable_regions : bool
-            True if we want to allow user-defind regions as a means of masking the data
-        """
-        # Just to get the doc later
-        self.visualizer = visualizer
-
-        info_panel = InfoPanel()
-
-        # Make a listener to update the info panel with the RMS on a fit
-        listeners = [lambda f: info_panel.update(f), ]
-
-        # prep params to clean up sigma related inputs for the interface
-        # i.e. niter min of 1, etc.
-        prep_fit1d_params_for_fit1d(fitting_parameters)
-
-        # Avoids having to check whether this is None all the time
-        band_model = GIRegionModel(domain=domain)
-
-        self.fitting_parameters = fitting_parameters
-        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
-                                        band_model=band_model, listeners=listeners)
+                 weights=None, other_data=None, **kwargs):
+        # No need to compute wavelengths here as the model_change_handler() does it
+        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(other_data["spectrum"]),
+                                             'spectrum': other_data["spectrum"]})
+        super().__init__(visualizer, fitting_parameters, domain, x, y,
+                         weights=weights, **kwargs)
         self.model.other_data = other_data
 
-        # also listen for updates to the masks
-        self.model.add_mask_listener(info_panel.update_mask)
+    def build_figures(self, domain=None, controller_div=None,
+                      plot_residuals=True, plot_ratios=True):
 
-        model = self.model
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, model, self.fitting_parameters)
+        self.xpoint = 'fitted'
+        self.ypoint = 'nonlinear'
+        p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
+                                      xpoint='fitted', ypoint='nonlinear',
+                                      xline='model', yline='nonlinear',
+                                      xlabel=self.xlabel, ylabel=self.ylabel,
+                                      model=self.model, plot_ratios=False,
+                                      enable_user_masking=True)
 
-        # No need to compute wavelengths here as the model_change_handler() does it
-        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(self.model.other_data["spectrum"]),
-                                             'spectrum': self.model.other_data["spectrum"]})
-        self.id_spacer = 0.02 * self.spectrum.data['spectrum'].max()  # gap above line before wavelength string
+        mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
+        Controller(p_main, None, self.model.band_model, controller_div,
+                   mask_handlers=mask_handlers, domain=domain)
 
-        # This updates everything so we use it here to create all the
-        # extra columns we need for this Visualizer
-        # There's unlikely to be any harm to doing this in the parent class
-        self.model_change_handler(self.model.fit)
-
-        controls_ls = list()
-
-        controls_column = self.fitting_parameters_ui.get_bokeh_components()
-
-        reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
-
-        def reset_dialog_handler(result):
-            if result:
-                self.fitting_parameters_ui.reset_ui()
-
-        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
-                                                                  'Reset will change all inputs for this tab back '
-                                                                  'to their original values.  Proceed?',
-                                                                  reset_dialog_handler)
-
-        controller_div = Div(margin=(20, 0, 0, 0),
-                             width=220,
-                             style={
-                                 "color": "gray",
-                                 "padding": "5px",
-                             })
-
-        controls_ls.extend(controls_column)
-
-        controls_ls.append(reset_button)
-        controls_ls.append(controller_div)
-
-        controls = column(*controls_ls, width=220)
-
-        # Now the figures
-        # Because I'm not plotting x against y, I don't want to set the ranges
-        # (or at least, not like this)
-        x_range = None
-        y_range = None
-        try:
-            if self.model.data and 'x' in self.model.data.data and len(self.model.x) >= 2:
-                x_min = min(self.model.x)
-                x_max = max(self.model.x)
-                x_pad = (x_max - x_min) * 0.1
-                x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-            if self.model.data and 'y' in self.model.data.data and len(self.model.x) >= 2:
-                y_min = min(self.model.y)
-                y_max = max(self.model.y)
-                y_pad = (y_max - y_min) * 0.1
-                y_range = Range1d(y_min - y_pad, y_max + y_pad)
-        except:
-            pass  # ok, we don't *need* ranges...
-        x_range = None
-        y_range = None
-        if enable_user_masking:
-            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
-        else:
-            tools = "pan,wheel_zoom,box_zoom,reset"
-        p_main = figure(plot_width=plot_width, plot_height=plot_height,
-                        min_width=400,
-                        title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
-                        tools=tools,
-                        output_backend="webgl", x_range=x_range, y_range=y_range)
-        p_main.height_policy = 'fixed'
-        p_main.width_policy = 'fit'
-
-        # Here's my Wavecal-specific block
-        p_spectrum = figure(plot_width=plot_width, plot_height=plot_height,
+        p_spectrum = figure(plot_width=self.width, plot_height=self.height,
                             min_width=400, title='Spectrum',
-                            x_axis_label=xlabel, y_axis_label="Signal",
-                            tools=tools, output_backend="webgl",
+                            x_axis_label=self.xlabel, y_axis_label="Signal",
+                            tools = "pan,wheel_zoom,box_zoom,reset",
+                            output_backend="webgl",
                             x_range=p_main.x_range, y_range=None,
                             min_border_left=80)
         p_spectrum.height_policy = 'fixed'
@@ -170,7 +52,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         source=self.model.data, angle=0.5 * np.pi,
                         text_color=self.model.mask_rendering_kwargs()['color'],
                         text_baseline='middle')
-        self.spectrum_plot = p_spectrum
+        spectrum_plot = p_spectrum
 
         add_new_line_button = bm.Button(label="Add new line")
         self.line_chooser = row(bm.Div(text="New line wavelength"),
@@ -180,106 +62,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         identify_button.on_click(self.identify_lines)
 
         identify_panel = row(self.line_chooser, identify_button)
-        # Here endeth my Wavecal-specific block
 
-        if enable_regions:
-            band_model = GIRegionModel()
-
-            def update_regions():
-                self.model.model.regions = self.band_model.build_regions()
-            band_model.add_listener(Fit1DRegionListener(self.update_regions))
-
-            connect_figure_extras(p_main, band_model)
-
-        if enable_user_masking:
-            mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler)
-        else:
-            mask_handlers = None
-
-        Controller(p_main, None, band_model, controller_div, mask_handlers=mask_handlers)
-        fig_column = [p_spectrum, identify_panel, p_main, info_panel.component]
-
-        if plot_residuals:
-            # x_range is linked to the main plot so that zooming tracks between them
-            p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                             min_width=400,
-                             title='Fit Residuals',
-                             x_axis_label=xlabel, y_axis_label='Delta',
-                             tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=p_main.x_range, y_range=None,
-                             min_border_left=80)
-            p_resid.height_policy = 'fixed'
-            p_resid.width_policy = 'fit'
-            p_resid.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_resid, band_model)
-            # Initalizing this will cause the residuals to be calculated
-            self.model.data.data['residuals'] = np.zeros_like(self.model.x)
-            p_resid.scatter(x='fitted', y='residuals', source=self.model.data,
-                            size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        if plot_ratios:
-            p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                              min_width=400,
-                              title='Fit Ratios',
-                              x_axis_label=xlabel, y_axis_label='Ratio',
-                              tools="pan,box_zoom,reset",
-                              output_backend="webgl", x_range=p_main.x_range, y_range=None,
-                              min_border_left=80)
-            p_ratios.height_policy = 'fixed'
-            p_ratios.width_policy = 'fit'
-            p_ratios.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_ratios, band_model)
-            # Initalizing this will cause the residuals to be calculated
-            self.model.data.data['ratio'] = np.zeros_like(self.model.x)
-            p_ratios.scatter(x='fitted', y='ratio', source=self.model.data,
-                             size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        if plot_residuals and plot_ratios:
-            tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
-            tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
-            tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
-            fig_column.append(tabs)
-        elif plot_residuals:
-            fig_column.append(p_resid)
-        elif plot_ratios:
-            fig_column.append(p_ratios)
-
-        # Initializing regions here ensures the listeners are notified of the region(s)
-        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
-            region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
-            band_model.load_from_tuples(region_tuples)
-
-        self.scatter = p_main.scatter(x='fitted', y='nonlinear', source=self.model.data,
-                                      size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        self.model.add_listener(self.model_change_handler)
-
-        # TODO refactor? this is dupe from band_model_handler
-        # hacking it in here so I can account for the initial
-        # state of the band model (which used to be always empty)
-        mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
-                for x, m in zip(self.model.x, self.model.mask)]
-        model.data.data['mask'] = mask
-        self.model.perform_fit()
-
-        self.line = p_main.line(x='model',
-                                y='nonlinear',
-                                source=self.model.evaluation,
-                                line_width=3,
-                                color='crimson')
-
-        if band_model:
-            region_editor = RegionEditor(band_model)
-            fig_column.append(region_editor.get_widget())
-        col = column(*fig_column)
-        col.sizing_mode = 'scale_width'
-
-        if central_plot:
-            self.component = row(col, controls,
-                                 css_classes=["tab-content"],
-                                 spacing=10)
-        else:
-            self.component = row(controls, col,
-                                 css_classes=["tab-content"],
-                                 spacing=10)
+        return [spectrum_plot, identify_panel, p_main, p_supp]
 
     @property
     def linear_model(self):
