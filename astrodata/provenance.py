@@ -65,8 +65,8 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
     --------
     none
     """
-    if hasattr(ad, 'PROVENANCE_HISTORY'):
-        for row in ad.PROVENANCE_HISTORY:
+    if hasattr(ad, 'PROVHISTORY'):
+        for row in ad.PROVHISTORY:
             if timestamp_start == row[0] and \
                     timestamp_stop == row[1] and \
                     primitive == row[2] and \
@@ -75,13 +75,13 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
                 return
 
     colsize = len(args)+1
-    if hasattr(ad, 'PROVENANCE_HISTORY'):
-        colsize = max(colsize, max(len(ph[3]) for ph in ad.PROVENANCE_HISTORY) + 1)
+    if hasattr(ad, 'PROVHISTORY'):
+        colsize = max(colsize, max(len(ph[3]) for ph in ad.PROVHISTORY) + 1)
 
-        timestamp_start_arr = [ph[0] for ph in ad.PROVENANCE_HISTORY]
-        timestamp_stop_arr = [ph[1] for ph in ad.PROVENANCE_HISTORY]
-        primitive_arr = [ph[2] for ph in ad.PROVENANCE_HISTORY]
-        args_arr = [ph[3] for ph in ad.PROVENANCE_HISTORY]
+        timestamp_start_arr = [ph[0] for ph in ad.PROVHISTORY]
+        timestamp_stop_arr = [ph[1] for ph in ad.PROVHISTORY]
+        primitive_arr = [ph[2] for ph in ad.PROVHISTORY]
+        args_arr = [ph[3] for ph in ad.PROVHISTORY]
     else:
         timestamp_start_arr = []
         timestamp_stop_arr = []
@@ -97,7 +97,7 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
     ad.append(Table([timestamp_start_arr, timestamp_stop_arr, primitive_arr, args_arr],
                     names=('timestamp_start', 'timestamp_stop',
                            'primitive', 'args'),
-                    dtype=dtype), name="PROVENANCE_HISTORY")
+                    dtype=dtype), name="PROVHISTORY")
 
 
 def clone_provenance(provenance_data, ad):
