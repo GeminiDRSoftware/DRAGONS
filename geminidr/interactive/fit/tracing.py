@@ -6,6 +6,7 @@ from copy import deepcopy
 import numpy as np
 from bokeh import models as bm
 from bokeh.layouts import column, row, Spacer
+from bokeh.models import Div
 from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller
@@ -13,6 +14,7 @@ from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
     connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
 from gempy.library import astrotools as at, tracing
+from gempy.library.fitting import fit_1D
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
                     FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d,
                     BAND_MASK_NAME)
@@ -302,18 +304,18 @@ class TraceAperturesTab(Fit1DPanel):
         return rms_div
 
     @staticmethod
-    def update_info(info_div, f):
+    def update_info(info_div: Div, f: InteractiveModel1D):
         """
         Listener to update the info panel with the RMS of a fit.
 
         Parameters
         ----------
-        info_div : bm.Div
+        info_div : :class:`~bokeh.model.Div`
             Div parameter containing the RMS information.
-        f : ???
-            ???
+        f : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
+            The model that has been updated.  This contains the fit with it's RMS info
         """
-        info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
+        info_div.update(text=f'RMS: <b>{f.fit.rms:.4f}</b>')
 
 
 class TraceAperturesVisualizer(Fit1DVisualizer):

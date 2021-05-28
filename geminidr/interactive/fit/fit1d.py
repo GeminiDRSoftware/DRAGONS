@@ -104,7 +104,7 @@ class InteractiveModel1D(InteractiveModel):
     """
 
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
-                 section=None, listeners=[], band_model=None):
+                 section=None, listeners=None, band_model=None):
         """
         Create base class with given parameters as initial model inputs.
 
@@ -120,6 +120,8 @@ class InteractiveModel1D(InteractiveModel):
         """
         super().__init__()
 
+        if not listeners:
+            listeners = []
         self.band_model = band_model
         if band_model:
             band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
