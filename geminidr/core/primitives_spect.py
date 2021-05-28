@@ -50,7 +50,6 @@ from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
-from ..interactive.fit.fit1d import Fit1DVisualizer
 from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
@@ -58,6 +57,7 @@ matplotlib.rcParams.update({'figure.max_open_warning': 0})
 # ------------------------------------------------------------------------------
 
 
+# noinspection SpellCheckingInspection
 @parameter_override
 class Spect(PrimitivesBASE):
     """
@@ -2441,7 +2441,8 @@ class Spect(PrimitivesBASE):
 
             Returns
             -------
-            ext, sky_mask, sky_weights yielded for each extension in the `ad`
+            :class:`~astrodata.AstroData`, :class:`~numpy.ndarray`, :class:`~numpy.ndarray`
+                extension, sky mask, sky weights yielded for each extension in the `ad`
             """
             for csc_ext in ad:
                 csc_axis = csc_ext.dispersion_axis() - 1  # python sense
@@ -2509,15 +2510,21 @@ class Spect(PrimitivesBASE):
 
             Returns
             -------
-            Yields a list of tupes with the pixel, sky, sky_weights
+            :class:`~numpy.ndarray`, :class:`~numpy.ma.MaskedArray`, :class:`~numpy.ndarray`
+                Yields a list of tupes with the pixel, sky, sky_weights
+
+            See Also
+            --------
+            :meth:`~geminidr.core.primitives_spect.Spect.skyCorrectFromSlit.calc_sky_coords`
             """
+            # pylint: disable=unused-argument
             c = max(0, extras['col'] - 1)
             # TODO alternatively, save these 3 arrays for faster recalc
             # here I am rerunning all the above calculations whenever a col select is made
             for rc_ad in adinputs:
                 for rc_ext, rc_sky_mask, rc_sky_weights in calc_sky_coords(rc_ad):
                     rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
-                    yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c] if rc_sky_weights else None
+                    yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c] if rc_sky_weights is not None else None
 
         if interactive:
             # build config for interactive
@@ -2548,8 +2555,8 @@ class Spect(PrimitivesBASE):
                                                reinit_params=reinit_params,
                                                reinit_extras=reinit_extras,
                                                tab_name_fmt="CCD {}",
-                                               xlabel=f'x',
-                                               ylabel=f'y',
+                                               xlabel='x',
+                                               ylabel='y',
                                                domains=all_shapes,
                                                title="Calculate Sensitivity",
                                                primitive_name="calculateSensitivity",
@@ -2736,6 +2743,7 @@ class Spect(PrimitivesBASE):
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
                         try:
+                            # pylint: disable=repeated-keyword
                             _fit_1d = fit_1D(
                                 in_coords[dispaxis],
                                 domain=[0, ext.shape[dispaxis] - 1],
@@ -2753,6 +2761,7 @@ class Spect(PrimitivesBASE):
                             log.warning(
                                 f"Unable to trace aperture {aperture['number']}")
 
+                            # pylint: disable=repeated-keyword
                             _fit_1d = fit_1D(
                                 np.full_like(spectral_coords, c0),
                                 domain=[0, ext.shape[dispaxis] - 1],
