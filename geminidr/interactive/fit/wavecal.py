@@ -124,8 +124,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         5) Adds new matches to the list
         6) Performs a new fit, triggering a plot update
         """
-        print("IDENTIFY LINES")
-        dw = self.linear_model(self.model).c1
+        linear_model = self.linear_model(self.model)
+        dw = linear_model.c1 / np.diff(linear_model.domain)[0]
         matching_distance = abs(self.model.other_data["fwidth"] * dw)
         all_lines = self.model.other_data["linelist"].wavelengths(
             in_vacuo=self.visualizer.config.in_vacuo, units="nm")
