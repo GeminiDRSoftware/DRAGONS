@@ -37,7 +37,7 @@ def reduceScience(p):
     p.findApertures()
     p.traceApertures()
     p.storeProcessedScience(suffix="_2D")
-    p.extract1DSpectra()
+    p.extractSpectra()
     p.getProcessedStandard()
     p.fluxCalibrate()
     p.storeProcessedScience(suffix="_1D")
@@ -69,7 +69,7 @@ def reduceStandard(p):
     p.findApertures(max_apertures=1)
     p.skyCorrectFromSlit()
     p.traceApertures()
-    p.extract1DSpectra()
+    p.extractSpectra()
     p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
     p.stackFrames()
     p.calculateSensitivity()

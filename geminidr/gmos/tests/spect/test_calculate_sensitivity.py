@@ -264,7 +264,7 @@ def create_inputs_recipe():
         p.skyCorrectFromSlit(order=5, grow=0)
         p.traceApertures(trace_order=2, nsum=10, step=10, max_missed=5,
                          max_shift=0.05)
-        p.extract1DSpectra(grow=10, method="standard", width=None)
+        p.extractSpectra(grow=10, method="standard", width=None)
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()

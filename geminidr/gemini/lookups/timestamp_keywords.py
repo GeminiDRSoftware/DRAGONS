@@ -31,7 +31,7 @@ timestamp_keys = {
     "dilateObjectMask": "DLOBJMSK",
     "distortionCorrect": "TRANSFRM",
     "divide": "DIVIDE",
-    "extract1DSpectra": "EXTRACT",
+    "extractSpectra": "EXTRACT",
     "findAcquisitionSlits": "FINDACQS",
     "findApertures": "FINDAPER",
     "flatCorrect": "FLATCORR",

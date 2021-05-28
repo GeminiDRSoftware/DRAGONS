@@ -198,7 +198,7 @@ def create_inputs():
         p.findApertures(max_apertures=3)
         p.skyCorrectFromSlit()
         p.traceApertures()
-        p.extract1DSpectra()
+        p.extractSpectra()
         p.linearizeSpectra()
 
         [os.remove(s) for s in glob.glob("*_arc.fits")]

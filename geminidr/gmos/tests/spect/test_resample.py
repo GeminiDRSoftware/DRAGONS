@@ -200,7 +200,7 @@ def create_inputs_recipe():
         p.findApertures(max_apertures=1)
         p.skyCorrectFromSlit()
         p.traceApertures()
-        p.extract1DSpectra()
+        p.extractSpectra()
 
         os.chdir("inputs/")
         _ = p.writeOutputs().pop()

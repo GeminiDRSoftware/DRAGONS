@@ -1307,7 +1307,7 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
-    def extract1DSpectra(self, adinputs=None, **params):
+    def extractSpectra(self, adinputs=None, **params):
         """
         Extracts one or more 1D spectra from a 2D spectral image, according to
         the contents of the `.APERTURE` table.

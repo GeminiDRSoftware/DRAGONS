@@ -60,7 +60,7 @@ def test_extract_1d_spectra():
 
     # todo: if input is a single astrodata,
     #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra([ad])[0]
+    ad_out = _p.extractSpectra([ad])[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
@@ -87,7 +87,7 @@ def test_extract_1d_spectra_with_sky_lines():
 
     # todo: if input is a single astrodata,
     #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra([ad])[0]
+    ad_out = _p.extractSpectra([ad])[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)

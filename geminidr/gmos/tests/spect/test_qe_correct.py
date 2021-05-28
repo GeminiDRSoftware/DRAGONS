@@ -178,7 +178,7 @@ def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
         p.findApertures(max_apertures=1)
         p.skyCorrectFromSlit()
         p.traceApertures()
-        p.extract1DSpectra()
+        p.extractSpectra()
         p.linearizeSpectra()
         processed_ad = p.writeOutputs().pop()
 
