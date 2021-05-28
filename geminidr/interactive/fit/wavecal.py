@@ -7,7 +7,8 @@ from bokeh.plotting import figure
 from geminidr.interactive.controls import Controller
 from gempy.library.matching import match_sources
 
-from .fit1d import (Fit1DPanel, Fit1DVisualizer, fit1d_figure)
+from .fit1d import (Fit1DPanel, Fit1DVisualizer, fit1d_figure,
+                    USER_MASK_NAME)
 
 
 class WavelengthSolutionPanel(Fit1DPanel):
@@ -382,4 +383,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
     @property
     def image(self):
-        return [fit.data.data["y"] for fit in self.fits]
+        image = []
+        for model in self.fits:
+            goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
+            image.append(model.y[goodpix])
+        return image
