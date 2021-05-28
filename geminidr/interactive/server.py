@@ -12,7 +12,11 @@ from jinja2 import Environment, FileSystemLoader
 
 from geminidr.interactive import controls
 
-__all__ = ["interactive_fitter", "stop_server"]
+__all__ = ["test_mode", "interactive_fitter", "stop_server"]
+
+# Set to True to tell the interactive code to automatically submit in
+# order to test the interactive paths automatically
+test_mode = True
 
 from bokeh.themes import built_in_themes
 
@@ -146,7 +150,7 @@ def _bkapp(doc):
         if hasattr(_visualizer, "filename_info"):
             doc.template_variables['filename_info'] = _visualizer.filename_info
 
-    _visualizer.visualize(doc)
+    _visualizer.show(doc)
     doc.title = title
 
 
@@ -240,9 +244,13 @@ def start_server():
                     raise
         _bokeh_server.start()
 
-    # to force a browser, add browser="chrome" tp this add_callback
-    ic = interactive_conf()
-    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", browser=ic.browser)
+    if test_mode:
+        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu", "--dump-dom"]}
+        kwargs = {"browser": "chrome"}
+    else:
+        ic = interactive_conf()
+        kwargs = {"browser": ic.browser}
+    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", **kwargs)
     _bokeh_server.io_loop.start()
 
     # The server normally stops when the user hits the Submit button in the
