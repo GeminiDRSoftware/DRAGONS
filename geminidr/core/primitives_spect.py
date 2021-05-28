@@ -31,6 +31,7 @@ from specutils import SpectralRegion
 
 import astrodata
 import geminidr.interactive.server
+from astrodata import AstroData
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -43,7 +44,7 @@ from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list
-from gempy.library.config import RangeField
+from gempy.library.config import RangeField, Config
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
@@ -2424,7 +2425,24 @@ class Spect(PrimitivesBASE):
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
 
-        def calc_sky_coords(ad):
+        def calc_sky_coords(ad: AstroData):
+            """
+            Calculate the sky coordinates for the extensions in the given
+            AstroData object.
+
+            This is useful for both feeding the data inputs calculation
+            for the interactive interface and for the final loop over
+            AstoData objects to do the fit (for both interactive and
+            non-interactive).
+
+            Parameters
+            ----------
+            ad : :class:`~astrodata.AstroData`
+
+            Returns
+            -------
+            ext, sky_mask, sky_weights yielded for each extension in the `ad`
+            """
             for csc_ext in ad:
                 csc_axis = csc_ext.dispersion_axis() - 1  # python sense
 
@@ -2471,7 +2489,28 @@ class Spect(PrimitivesBASE):
 
                 yield csc_ext, csc_sky_mask, csc_sky_weights
 
-        def recalc_fn(conf, extras):
+        def recalc_fn(conf: Config, extras: dict):
+            """
+            Used by the interactive code to generate all the inputs for the tabs
+            per extension.
+
+            This relies on the ``calc_sky_coords`` call to iterate on a set of
+            extensions and their calculated sky_mask and sky_weights.  It then
+            creates the sky masked array and pixel coordinates to return for
+            the interactive code.  This function is suitable for use as the
+            data source for the fit1d interactive code.
+
+            Parameters
+            ----------
+            conf : :class:`~config.Config`
+                unused, but required in the function signature for interactive
+            extras : dict
+                Dictionary of additional values, here the ``col`` is passed as the selected column
+
+            Returns
+            -------
+            Yields a list of tupes with the pixel, sky, sky_weights
+            """
             c = max(0, extras['col'] - 1)
             # TODO alternatively, save these 3 arrays for faster recalc
             # here I am rerunning all the above calculations whenever a col select is made
@@ -2493,12 +2532,15 @@ class Spect(PrimitivesBASE):
             reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 3),
                                                min=1, max=ncols)}
 
+            # Build the set of input shapes and count the total extensions while we are at it
             all_shapes = []
             count = 0
             for ad in adinputs:
                 for ext in ad:
                     count = count+1
                     all_shapes.append((0, ext.shape[0]))  # extracting single line for interactive
+
+            # get the fit parameters
             fit1d_params = fit_1D.translate_params(params)
             visualizer = fit1d.Fit1DVisualizer(recalc_fn,
                                                fitting_parameters=[fit1d_params] * count,
@@ -2518,43 +2560,32 @@ class Spect(PrimitivesBASE):
 
             # Pull out the final parameters to use as inputs doing the real fit
             final_parms = list()
-            fits = visualizer.results()
-            for fit in fits:
+            fit_results = visualizer.results()
+            for fit in fit_results:
                 final_parms.append(fit.extract_params())
-
-            idx = 0  # tracks the index of each ext within the entire set (across all ads) to index in final_parms
-            for ad in adinputs:
-                if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                    log.warning(f"{ad.filename} has not been distortion corrected."
-                                " Sky subtraction is likely to be poor.")
-
-                for ext, sky_mask, sky_weights in calc_sky_coords(ad):
-                    axis = ext.dispersion_axis() - 1  # python sense
-                    sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                    sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx],
-                                       axis=axis, plot=debug_plot).evaluate()
-                    ext.data -= sky_model
-                    idx = idx+1
-
-                # Timestamp and update the filename
-                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                ad.update_filename(suffix=sfx, strip=True)
-
         else:
+            # making fit params into an array even though it all matches
+            # so we can share the same final code with the interactive,
+            # where a user may have tweaked per extension inputs
+            count = 0
             for ad in adinputs:
-                if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                    log.warning(f"{ad.filename} has not been distortion corrected."
-                                " Sky subtraction is likely to be poor.")
-                for ext, sky_mask, sky_weights in calc_sky_coords(ad):
-                    axis = ext.dispersion_axis() - 1  # python sense
-                    sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                    sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
-                                       axis=axis, plot=debug_plot).evaluate()
-                    ext.data -= sky_model
+                count = count + len(ad)
+            final_parms = [fit1d_params] * count
 
-                # Timestamp and update the filename
-                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                ad.update_filename(suffix=sfx, strip=True)
+        for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
+            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                log.warning(f"{ad.filename} has not been distortion corrected."
+                            " Sky subtraction is likely to be poor.")
+            for ext, sky_mask, sky_weights in calc_sky_coords(ad):
+                axis = ext.dispersion_axis() - 1  # python sense
+                sky = np.ma.masked_array(ext.data, mask=sky_mask)
+                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx],
+                                   axis=axis, plot=debug_plot).evaluate()
+                ext.data -= sky_model
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
