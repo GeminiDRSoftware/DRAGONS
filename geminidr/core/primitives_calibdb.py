@@ -6,6 +6,7 @@
 import os
 import re
 from importlib import import_module
+import datetime
 
 from gempy.gemini import gemini_tools as gt
 
@@ -75,6 +76,8 @@ class CalibDB(PrimitivesBASE):
             if not calurl and "sq" in self.mode:
                 log.warning(self._not_found.format(ad.filename))
                 #raise OSError(self._not_found.format(ad.filename))
+            elif calurl:
+                log.stdinfo('Using '+calurl+' for '+ad.filename)
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
@@ -244,6 +247,17 @@ class CalibDB(PrimitivesBASE):
             os.makedirs(os.path.join(storedcals, caltype))
 
         for ad in adinputs:
+            if self.upload and not is_science and 'RELEASE' in ad.phu:
+                # if RELEASE is in the future, reset the RELEASE keyword to
+                # today, otherwise QAP and FIRE, and SCALeS will not be able
+                # to pick them up.  DRAGONS v3.0. We might be able to use
+                # download cookies in v3.1.
+                # todo:  consider removing in 3.1
+                date = datetime.datetime.strptime(ad.phu['RELEASE'], '%Y-%m-%d')
+                now = datetime.datetime.now()
+                if date > now:
+                    ad.phu['RELEASE'] = now.strftime('%Y-%m-%d')
+
             if not ad.tags.issuperset(required_tags):
                 log.warning("File {} is not recognized as a {}. Not storing as"
                             " {}.".format(ad.filename, caltype,
