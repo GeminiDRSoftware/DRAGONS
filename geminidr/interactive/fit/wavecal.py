@@ -66,33 +66,33 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         return [spectrum_plot, identify_panel, p_main, p_supp]
 
-    @property
-    def linear_model(self):
+    @staticmethod
+    def linear_model(model):
         """Return only the linear part of a model. It doesn't work for
         splines, which is why it's not in the InteractiveModel1D class"""
-        model = self.model.fit._models
+        model = model.fit._models
         return model.__class__(degree=1, c0=model.c0, c1=model.c1,
                                domain=model.domain)
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
-    def model_change_handler(self, fit):
+    def model_change_handler(self, model):
         """
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
-        super().model_change_handler(fit)
-        x, y = self.model.x, self.model.y
-        linear_model = self.linear_model
+        super().model_change_handler(model)
+        x, y = model.x, model.y
+        linear_model = self.linear_model(model)
 
-        self.model.data.data['fitted'] = self.model.evaluate(x)
+        self.model.data.data['fitted'] = model.evaluate(x)
         self.model.data.data['nonlinear'] = y - linear_model(x)
         self.model.data.data['heights'] = [self.spectrum.data['spectrum'][int(xx + 0.5)] + 0.02 * self.spectrum.data['spectrum'].max() for xx in x]
         self.model.data.data['lines'] = [str(np.round(yy, decimals=6)) for yy in y]
 
-        self.model.evaluation.data['nonlinear'] = self.model.evaluation.data['model'] - linear_model(self.model.evaluation.data['xlinspace'])
+        self.model.evaluation.data['nonlinear'] = model.evaluation.data['model'] - linear_model(model.evaluation.data['xlinspace'])
 
-        domain = self.model.domain
-        self.spectrum.data['wavelengths'] = self.model.evaluate(
+        domain = model.domain
+        self.spectrum.data['wavelengths'] = model.evaluate(
             np.arange(domain[0], domain[1]+1))
 
     def add_identified_line(self, peak, wavelength):
