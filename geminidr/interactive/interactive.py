@@ -237,15 +237,15 @@ class PrimitiveVisualizer(ABC):
         widgets = []
         if params.reinit_params:
             for key in params.reinit_params:
-                field = params.field_map[key]
+                field = params.fields[key]
                 if field.default or field.default == 0:
                     if field.dtype == int:
                         step = 1
                     else:
                         step = 0.1
                     widget = build_text_slider(
-                        params.titles[key], field.default, step, field.min, field.max, obj=params.values, attr=key,
-                        slider_width=slider_width, allow_none=field.optional, throttled=True,
+                        params.titles[key], params.values[key], step, field.min, field.max, obj=params.values,
+                        attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
                         handler=self.slider_handler_factory(key, reinit_live=reinit_live))
 
                     self.widgets[key] = widget.children[0]
@@ -1381,34 +1381,31 @@ class UIParameters:
         :titles_overrides: dict
             Dictionary of overrides for labeling the fields in the UI
         """
-        self.fields = list()
-        self.field_map = dict()
+        self.fields = dict()
+        self.values = dict()
         self.reinit_params = reinit_params
         self.titles = dict()
-        self.values = dict()
 
         if config:
             for fname, field in config._fields.items():
-                self.fields.append(field)
-                self.field_map[fname] = field
+                self.fields[fname] = field
+                self.values[fname] = getattr(config, fname)
         if extras:
             for fname, field in extras.items():
-                self.fields.append(field)
-                self.field_map[fname] = field
+                self.fields[fname] = field
+                self.values[fname] = field.default
 
         # Parse the titles once and be done, grab initial values
-        for fname, field in self.field_map.items():
+        for fname, field in self.fields.items():
             if title_overrides and fname in title_overrides:
                 title = title_overrides[fname]
             else:
                 title = field.doc.split('\n')[0]
             self.titles[fname] = title
-            self.values[fname] = field.default
 
     def update_values(self, **kwargs):
         for k, v in kwargs.items():
-            field = self.field_map[k]
-            field.value = v
+            self.values[k] = v
 
 
 def do_later(fn):

@@ -2594,7 +2594,7 @@ class Spect(PrimitivesBASE):
                                              reinit_params=["max_missed", "max_shift", "nsum", "step"],
                                              title_overrides=title_overrides)
                     aperture_models = interactive_trace_apertures(
-                        ext, _config, fit1d_params, ui_params=ui_params)
+                        ext, fit1d_params, ui_params=ui_params)
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     aperture_models = []

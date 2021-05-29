@@ -435,9 +435,9 @@ class FittingParametersUI:
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        if 'function' in vis.ui_params.field_map:
-            fn = vis.ui_params.field_map['function'].default
-            fn_allowed = [k for k in vis.ui_params.field_map['function'].allowed.keys()]
+        if 'function' in vis.ui_params.fields:
+            fn = fitting_parameters['function']
+            fn_allowed = [k for k in vis.ui_params.fields['function'].allowed.keys()]
 
             # Dropdown for selecting fit_1D function
             self.function = Select(title="Fitting Function:", value=fn,
@@ -464,9 +464,9 @@ class FittingParametersUI:
                 'sigma_lower': 'lsigma'
             }
             pkey = key
-            if pkey not in ui_params.field_map and key in alt_keys:
+            if pkey not in ui_params.fields and key in alt_keys:
                 pkey = alt_keys[key]
-            field = ui_params.field_map[pkey]
+            field = ui_params.fields[pkey]
             if isinstance(field.default, int):
                 step = 1
             else:

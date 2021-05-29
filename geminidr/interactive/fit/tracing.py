@@ -416,6 +416,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.fits.append(tui.model)
 
         self.add_callback_to_sliders()
+        self._reinit_params = {k: v for k, v in ui_params.values.items()}
 
     def add_callback_to_sliders(self):
         """
@@ -474,13 +475,14 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                             "current parameter. Rolling back " \
                                             "to previous working configuration."
 
-                    self.reset_tracing_panel(param=self.last_changed)
+                    self.reset_tracing_panel()  # param=self.last_changed)
 
                     ui_params = self._ui_params
 
                     data = data_source(ui_params)
                 else:
                     # Store successful pars
+                    self._reinit_params = {k: v for k, v in self.ui_params.values.items()}
                     self._ui_params = deepcopy(self.ui_params)
 
                 return data
@@ -540,7 +542,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             Extra parameters for re-tracing.
         """
         # No panel required if we are not re-creating data
-
         reinit_widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False,
                                                            slider_width=128)
         if not reinit_widgets:
@@ -611,43 +612,21 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         param : string
             Parameter name
         """
-        for key, val in self.reinit_extras.items():
-
-            if param is None:
-                reset_value = val.default
-            elif key == param:
-                reset_value = self._reinit_extras[key]
-            else:
-                continue
-
-            old = self.widgets[key].value
-
-            # Update Slider Value
-            self.widgets[key].update(value=reset_value)
-
-            # Update Text Field via callback function
-            for callback in self.widgets[key]._callbacks['value_throttled']:
-                callback(attrib='value_throttled', old=old, new=reset_value)
-
         for fname in self.ui_params.reinit_params:
-            field = self.ui_params.field_map[fname]
-
-            if field is None:
-                reset_value = field.default
-            elif fname == param:
-                reset_value = self._reinit_params[key]
+            if param is None or fname == param:
+                reset_value = self._reinit_params[fname]
             else:
                 continue
 
-            old = self.widgets[key].value
+            old = self.widgets[fname].value
 
             # Update Slider Value
-            self.widgets[key].update(value=reset_value)
+            self.widgets[fname].update(value=reset_value)
 
             # Update Text Field via callback function
-            for callback in self.widgets[key]._callbacks['value']:
+            for callback in self.widgets[fname]._callbacks['value']:
                 callback('value', old=old, new=reset_value)
-            for callback in self.widgets[key]._callbacks['value_throttled']:
+            for callback in self.widgets[fname]._callbacks['value_throttled']:
                 callback(attrib='value_throttled', old=old, new=reset_value)
 
     def register_last_changed(self, key):
@@ -714,7 +693,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         doc.add_root(all_content)
 
 
-def interactive_trace_apertures(ext, config, fit1d_params, ui_params: UIParameters):
+def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
     """
     Run traceApertures() interactively.
 
