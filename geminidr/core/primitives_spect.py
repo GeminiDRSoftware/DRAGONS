@@ -22,6 +22,7 @@ from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
+from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table, vstack
 from gwcs import coordinate_frames as cf
@@ -1051,8 +1052,11 @@ class Spect(PrimitivesBASE):
                 new_pipeline = ext.wcs.pipeline[:idx-1]
                 prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
 
-                if hasattr(m_distcorr, 'left') and all(
-                   isinstance(m, models.Shift) for m in m_distcorr.left):
+                if hasattr(m_distcorr, 'left') and (
+                    isinstance(m_distcorr.left, CompoundModel) and
+                    m_distcorr.left.n_outputs == 2 and
+                    all(isinstance(m, models.Shift) for m in m_distcorr.left)
+                ):
                     m_dummy = m_distcorr.left | models.Identity(2)
                 else:
                     m_dummy = models.Identity(2)
