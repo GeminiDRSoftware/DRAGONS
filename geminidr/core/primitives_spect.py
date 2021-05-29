@@ -2590,9 +2590,8 @@ class Spect(PrimitivesBASE):
                         'nsum':       'Lines to sum',
                         'step':       'Tracing step',
                     }
-                    ui_params = UIParameters(_config, params=["max_missed", "max_shift", "nsum", "step",
-                                                              "order", "niter", "hsigma", "lsigma", "grow"],
-                                             hidden_params=["order", "niter", "hsigma", "lsigma", "grow"],
+                    ui_params = UIParameters(_config,
+                                             reinit_params=["max_missed", "max_shift", "nsum", "step"],
                                              title_overrides=title_overrides)
                     aperture_models = interactive_trace_apertures(
                         ext, _config, fit1d_params, ui_params=ui_params)

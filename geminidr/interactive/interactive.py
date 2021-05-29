@@ -49,7 +49,6 @@ class PrimitiveVisualizer(ABC):
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
 
-        self.config = None
         self.exited = False
         self.title = title
         self.filename_info = filename_info if filename_info else ''
@@ -236,24 +235,30 @@ class PrimitiveVisualizer(ABC):
         list : Returns a list of widgets to display in the UI.
         """
         widgets = []
-        for param in params.visible_params():
-            if param.value or param.value == 0:
-                widget = build_text_slider(
-                    param.title, param.value, param.step, param.start, param.end, obj=params.values, attr=param.name,
-                    slider_width=slider_width, allow_none=param.allow_none, throttled=True,
-                    handler=self.slider_handler_factory(param.name, reinit_live=reinit_live))
+        if params.reinit_params:
+            for key in params.reinit_params:
+                field = params.field_map[key]
+                if field.default or field.default == 0:
+                    if field.dtype == int:
+                        step = 1
+                    else:
+                        step = 0.1
+                    widget = build_text_slider(
+                        params.titles[key], field.default, step, field.min, field.max, obj=params.values, attr=key,
+                        slider_width=slider_width, allow_none=field.optional, throttled=True,
+                        handler=self.slider_handler_factory(key, reinit_live=reinit_live))
 
-                self.widgets[param.name] = widget.children[0]
-            elif param.allowed:
-                # ChoiceField => drop-down menu
-                widget = Dropdown(label=param.title, menu=list(param.allowed.keys()))
-                self.widgets[param.name] = widget
-            else:
-                # Anything else
-                widget = TextInput(title=param.title)
-                self.widgets[param.name] = widget
+                    self.widgets[key] = widget.children[0]
+                elif field.allowed:
+                    # ChoiceField => drop-down menu
+                    widget = Dropdown(label=field.title, menu=list(field.allowed.keys()))
+                    self.widgets[key] = widget
+                else:
+                    # Anything else
+                    widget = TextInput(title=field.title)
+                    self.widgets[key] = widget
 
-            widgets.append(widget)
+                widgets.append(widget)
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):
@@ -1409,7 +1414,7 @@ class UIParameters:
     """
     Holder class for the set of UI-adjustable parameters
     """
-    def __init__(self, config: Config = None, params: list = None, hidden_params: list = None,
+    def __init__(self, config: Config = None, extras: dict = None, reinit_params: list = None,
                  title_overrides: dict = None):
         """
         Create a UIParameters set of parameters for the UI.
@@ -1423,86 +1428,55 @@ class UIParameters:
         ----------
         :config: :class:`~gempy.library.config.Config`
             DRAGONS primitive configuration
-        :params: list
-            List of names of configuration fields to extract
-        :hidden_params: list
-            List of names of configuration fields to not show in the reinit panel
+        :extras: dict
+            Dictionary of names to new Fields to track
+        :reinit_params: list
+            List of names of configuration fields to show in the reinit panel
+        :titles_overrides: dict
+            Dictionary of overrides for labeling the fields in the UI
         """
-        self.params = list()
-        self.param_map = dict()
+        self.fields = list()
+        self.field_map = dict()
+        self.reinit_params = reinit_params
+        self.titles = dict()
         self.values = dict()
-        self.hidden_params = hidden_params
 
         if config:
-            for pname, value in config.items():
-                if params is not None and pname not in params:
-                    continue
-                field = config._fields[pname]
-                # Do some inspection of the config to determine what sort of widget we want
-                if title_overrides and pname in title_overrides:
-                    title = title_overrides[pname]
-                else:
-                    title = field.doc.split('\n')[0]
-                start = None
-                end = None
-                step = None
-                allowed = None
-                if hasattr(field, 'min'):
-                    start, end = field.min, field.max
-                    if isinstance(value, float):
-                        step = 0.1 if start <= 0 else start
-                        if start and end and ((end-start)<(step*100.0)):
-                            step = float(end-start)/100.0
-                        step = float(step)
-                    else:
-                        step = 1 if start <= 0 else start
-                if hasattr(field, 'allowed'):
-                    allowed = field.allowed
-                hidden = False
-                if hidden_params and pname in hidden_params:
-                    hidden = True
-                param = UIParameter(title=title, name=pname, value=value, start=start, end=end, step=step,
-                                    allow_none=field.optional, allowed=allowed, hidden=hidden)
-                self.add_param(param)
+            for fname, field in config._fields.items():
+                self.fields.append(field)
+                self.field_map[fname] = field
+        if extras:
+            for fname, field in extras.items():
+                self.fields.append(field)
+                self.field_map[fname] = field
 
-    def add_param(self, param):
-        """
-        Add a parameter to the set of parameters
+        # Parse the titles once and be done, grab initial values
+        for fname, field in self.field_map.items():
+            if title_overrides and fname in title_overrides:
+                title = title_overrides[fname]
+            else:
+                title = field.doc.split('\n')[0]
+            self.titles[fname] = title
+            self.values[fname] = field.default
 
-        Parameters
-        ----------
-        param : :class:`~geminidr.interactive.interactive.UIParameter`
-            Parameter definition to add
+    def reinit_fields(self):
         """
-        self.params.append(param)
-        self.param_map[param.name] = param
-        self.values[param.name] = param.value
-
-    def visible_params(self):
-        """
-        Get the list of visible UI parameters.
+        Get the list of renitialization UI parameters.
 
         This is useful when building the UI for the visualizer.
-        It will only return parameters that are intended for the user
-        to modify.  In the case of Fit1DVisualizer, we also are
-        hiding the fitting parameters so they can be tuned per-tab.
+        It will only return parameters that are driving the input
+        data.
 
         :return: list
-            List of :class:`~geminidr.interactive.interactive.UIParameter` that are visible
+            List of :class:`~config.Field` that are visible
         """
-        for param in self.params:
-            if not param.hidden:
-                yield param
+        for fname in self.reinit_params:
+            yield self.field_map[fname]
 
-    def has_param(self, key):
-        if key in self.values:
-            return True
-        return False
-
-    def get_value(self, key):
-        if key not in self.param_map:
-            raise ValueError(f'Key {key} not recognized in UI Parameters list of {self.param_map.keys()}')
-        return self.param_map[key].value
+    def update_values(self, **kwargs):
+        for k, v in kwargs.items():
+            field = self.field_map[k]
+            field.value = v
 
 
 def do_later(fn):

@@ -696,11 +696,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                # Create a 'row' parameter to add to the UI so the user can select the row they
-                # want to fit.
-                reinit_params = ["row", ]
-                reinit_extras = {"row": RangeField("Row of data", int, int(nrows/2), min=1, max=nrows)}
-
                 # This function is used by the interactive fitter to generate the x,y,weights to use
                 # for each fit.  We only want to fit a single row of data interactively, so that we can
                 # be responsive in the UI.  The 'row' extra parameter defined above will create a
@@ -724,14 +719,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     filename_info = ad.filename
                 else:
                     filename_info = ''
-                # params = ['row']
-                # params.extend(UIParameters.FIT1D_PARAMS)
-                uiparams = UIParameters(config, params=['row', *UIParameters.FIT1D_PARAMS],
-                                        hidden_params=UIParameters.FIT1D_PARAMS)
-                uiparams.add_param(UIParameter(title='Row', name='row', value=int(nrows/2), start=1, end=nrows))
+
+                # Create a 'row' parameter to add to the UI so the user can select the row they
+                # want to fit.
+                reinit_params = ["row", ]
+                extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
+                uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
-                                                   reinit_params=reinit_params,
-                                                   reinit_extras=reinit_extras,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x (pixels)', ylabel='counts',
                                                    domains=all_domains,

@@ -435,9 +435,9 @@ class FittingParametersUI:
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        if vis.ui_params.has_param('function'):
-            fn = vis.ui_params.get_value('function')
-            fn_allowed = [k for k in vis.ui_params.param_map['function'].allowed.keys()]
+        if 'function' in vis.ui_params.field_map:
+            fn = vis.ui_params.field_map['function'].default
+            fn_allowed = [k for k in vis.ui_params.field_map['function'].allowed.keys()]
 
             # Dropdown for selecting fit_1D function
             self.function = Select(title="Fitting Function:", value=fn,
@@ -464,12 +464,29 @@ class FittingParametersUI:
                 'sigma_lower': 'lsigma'
             }
             pkey = key
-            if pkey not in ui_params.param_map and key in alt_keys:
+            if pkey not in ui_params.field_map and key in alt_keys:
                 pkey = alt_keys[key]
-            parm = ui_params.param_map[pkey]
+            field = ui_params.field_map[pkey]
+            if isinstance(field.default, int):
+                step = 1
+            else:
+                step = 0.1
+            if hasattr(field, 'min'):
+                min = field.min
+            else:
+                min = None
+            if min and step > min > 0:
+                step = min
+            if hasattr(field, 'max'):
+                max = field.max
+            else:
+                max = None
+            if key == 'niter':
+                # override this, min should be 1 as it is only used when sigma is checked
+                min = 1
             return interactive.build_text_slider(
                 title=title, value=fitting_parameters[key],
-                step=parm.step, min_value=parm.start, max_value=parm.end,
+                step=step, min_value=min, max_value=max,
                 obj=fitting_parameters, attr=key, handler=fit.perform_fit, throttled=True,
                 slider_width=128)
 
@@ -1040,7 +1057,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     """
 
     def __init__(self, data_source, fitting_parameters,
-                 reinit_params=None, reinit_extras=None,
                  modal_message=None,
                  modal_button_label=None,
                  tab_name_fmt='{}',
@@ -1102,10 +1118,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Make the panel with widgets to control the creation of (x, y) arrays
 
-        if reinit_params is not None or reinit_extras is not None:
-            # Create left panel
-            # reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
-            reinit_widgets = self.make_widgets_from_parameters(ui_params, reinit_live=modal_message is None)
+        # Create left panel
+        reinit_widgets = self.make_widgets_from_parameters(ui_params, reinit_live=modal_message is None)
+        if reinit_widgets:
             # This should really go in the parent class, like submit_button
             if modal_message:
                 if len(reinit_widgets) > 1:
@@ -1149,10 +1164,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 all_weights = None
         else:
             self.reconstruct_points_fn = None
-            if reinit_params:
-                raise ValueError("Saw reinit_params but data_source is not a callable")
-            if reinit_extras:
-                raise ValueError("Saw reinit_extras but data_source is not a callable")
             allx = data_source[0]
             ally = data_source[1]
             if len(data_source) >= 3:
@@ -1169,8 +1180,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             if allx.size != ally.size:
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
-
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
 
@@ -1266,7 +1275,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
-            self.ui_params.values.update(**config_update)
+            self.ui_params.update_values(**config_update)
 
         self.do_later(fn)
 

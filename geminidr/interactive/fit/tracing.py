@@ -476,12 +476,12 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
                     self.reset_tracing_panel(param=self.last_changed)
 
-                    ui_params.values[self.last_changed] = self._ui_params[self.last_changed]
+                    ui_params = self._ui_params
 
                     data = data_source(ui_params)
                 else:
                     # Store successful pars
-                    self._ui_params = deepcopy(self.ui_params.values)
+                    self._ui_params = deepcopy(self.ui_params)
 
                 return data
 
@@ -629,14 +629,12 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             for callback in self.widgets[key]._callbacks['value_throttled']:
                 callback(attrib='value_throttled', old=old, new=reset_value)
 
-        for key, val in self.ui_params.param_map.items():
+        for fname in self.ui_params.reinit_params:
+            field = self.ui_params.field_map[fname]
 
-            if key in self.ui_params.hidden_params:
-                continue
-
-            if param is None:
-                reset_value = val.default
-            elif key == param:
+            if field is None:
+                reset_value = field.default
+            elif fname == param:
                 reset_value = self._reinit_params[key]
             else:
                 continue
@@ -825,12 +823,12 @@ def trace_apertures_data_provider(ext, ui_params):
             cwidth=5,
             initial=[loc],
             initial_tolerance=None,
-            max_missed=ui_params.get_value('max_missed'),
-            max_shift=ui_params.get_value('max_shift'),
-            nsum=ui_params.get_value('nsum'),
+            max_missed=ui_params.values['max_missed'],
+            max_shift=ui_params.values['max_shift'],
+            nsum=ui_params.values['nsum'],
             rwidth=None,
             start=start,
-            step=ui_params.get_value('step'),
+            step=ui_params.values['step'],
         )
 
         in_coords = np.ma.masked_array(in_coords)
