@@ -1356,12 +1356,6 @@ class TabsTurboInjector:
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
 
 
-class UIParameterType(Enum):
-    TEXTSLIDER = 1
-    DROPDOWN = 2
-    TEXTINPUT = 3
-
-
 class UIParameters:
     """
     Holder class for the set of UI-adjustable parameters
