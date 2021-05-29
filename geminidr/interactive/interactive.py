@@ -1362,55 +1362,7 @@ class UIParameterType(Enum):
     TEXTINPUT = 3
 
 
-class UIParameter:
-    """
-    Class to hold informatino about a single UI parameter.
-
-    Parameters
-    ----------
-    title : str
-        Title to use on the UI for this parameter
-    name : str
-        Name of the field, such as the key in the configuration
-    value : str, int, float
-        Initial value
-    start : int, flat
-        Lowest allowable value
-    end : int, float
-        Largest allowable value
-    step : int, float
-        Step size when adjusting a slider
-    allow_none: bool
-        Allow empty text to represent `None` for numeric inputs
-    allowed: list
-        List of allowable values for a dropdown
-    hidden: bool
-        If True, indicates this input should be hidden from the main reinit UI
-    """
-    def __init__(self, title: str = None, name: str = None, value: [str, int, float] = None,
-                 start: [int, float] = None, end: [int, float] = None,
-                 step: [int, float] = None, allow_none: bool = False, allowed: list = None,
-                 hidden: bool = False):
-        self.title = title
-        self.name = name
-        self.value = value
-        self.default = value
-        self.start = start
-        self.end = end
-        self.step = step
-        self.allow_none = allow_none
-        self.allowed = allowed
-        self.hidden = hidden
-        self.type = UIParameterType.TEXTINPUT
-        if min is not None:
-            self.type = UIParameterType.TEXTSLIDER
-        if allowed:
-            self.type = UIParameterType.DROPDOWN
-
-
 class UIParameters:
-    FIT1D_PARAMS = ['function', 'order', 'lsigma', 'hsigma', 'niter', 'grow']
-
     """
     Holder class for the set of UI-adjustable parameters
     """
@@ -1458,20 +1410,6 @@ class UIParameters:
                 title = field.doc.split('\n')[0]
             self.titles[fname] = title
             self.values[fname] = field.default
-
-    def reinit_fields(self):
-        """
-        Get the list of renitialization UI parameters.
-
-        This is useful when building the UI for the visualizer.
-        It will only return parameters that are driving the input
-        data.
-
-        :return: list
-            List of :class:`~config.Field` that are visible
-        """
-        for fname in self.reinit_params:
-            yield self.field_map[fname]
 
     def update_values(self, **kwargs):
         for k, v in kwargs.items():

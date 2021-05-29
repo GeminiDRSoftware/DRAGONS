@@ -43,7 +43,7 @@ from . import parameters_gmos_longslit
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
 from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
-from ..interactive.interactive import UIParameters, UIParameter
+from ..interactive.interactive import UIParameters
 
 
 @parameter_override
