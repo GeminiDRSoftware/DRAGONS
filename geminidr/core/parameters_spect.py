@@ -96,7 +96,7 @@ class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
 
-class extract1DSpectraConfig(config.Config):
+class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
     method = config.ChoiceField("Extraction method", str,
                                 allowed={"standard": "no weighting",
@@ -130,7 +130,7 @@ def check_section(value):
                                  "greater than start pixel number")
     return True
 
-class findSourceAperturesConfig(config.Config):
+class findAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
     max_apertures = config.RangeField("Maximum number of sources to find",
                                       int, None, min=1, optional=True)

@@ -31,13 +31,13 @@ def reduceScience(p):
     p.QECorrect()
     p.distortionCorrect()
     p.measureIQ(display=True)
-    p.findSourceApertures()
+    p.findApertures()
     p.skyCorrectFromSlit()
     p.measureIQ(display=True)
 
     # side stream to generate 1D spectra from individual frame, pre-stack
     p.traceApertures(outstream='prestack')
-    p.extract1DSpectra(stream='prestack')
+    p.extractSpectra(stream='prestack')
     p.fluxCalibrate(stream='prestack')
     p.plotSpectraForQA(stream='prestack')
     # The GUI polls for new data every 3 seconds.  The next steps can be
@@ -51,10 +51,10 @@ def reduceScience(p):
     p.adjustWCSToReference()
     p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.stackFrames()
-    p.findSourceApertures()
+    p.findApertures()
     p.measureIQ(display=True)
     p.traceApertures()
-    p.extract1DSpectra()
+    p.extractSpectra()
     p.fluxCalibrate()
     p.plotSpectraForQA()
 
@@ -82,11 +82,11 @@ def reduceStandard(p):
     p.flatCorrect()
     p.QECorrect()
     p.distortionCorrect()
-    p.findSourceApertures(max_apertures=1)
+    p.findApertures(max_apertures=1)
     p.skyCorrectFromSlit()
     p.measureIQ(display=True)
     p.traceApertures()
-    p.extract1DSpectra()
+    p.extractSpectra()
     p.plotSpectraForQA()
     # The GUI polls for new data every 3 seconds.  The next steps can be
     # quicker than that leading to the second plotSpectra to hijack this one.

@@ -58,7 +58,7 @@ def test_find_apertures_with_fake_data(seeing):
         ext.variance = np.sqrt(ext.data)
 
     p = GMOSSpect([ad])
-    _ad = p.findSourceApertures()[0]
+    _ad = p.findApertures()[0]
 
     print(_ad.info)
 
@@ -73,7 +73,7 @@ def test_find_apertures_using_standard_star(ad_and_center):
     """
     ad, expected_center = ad_and_center
     p = GMOSSpect([ad])
-    _ad = p.findSourceApertures(max_apertures=1).pop()
+    _ad = p.findApertures(max_apertures=1).pop()
 
     assert hasattr(ad[0], 'APERTURE')
     assert len(ad[0].APERTURE) == 1

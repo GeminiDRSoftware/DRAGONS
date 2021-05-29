@@ -269,10 +269,10 @@ def create_inputs_recipe():
         p.flatCorrect(flat=flat_master)
         p.QECorrect(arc=arc_master)
         p.distortionCorrect(arc=arc_master)
-        p.findSourceApertures(max_apertures=1)
+        p.findApertures(max_apertures=1)
         p.skyCorrectFromSlit()
         p.traceApertures()
-        p.extract1DSpectra()
+        p.extractSpectra()
         p.calculateSensitivity()
 
         os.chdir("inputs/")

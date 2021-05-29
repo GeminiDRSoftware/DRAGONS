@@ -6,21 +6,38 @@
 Release Notes
 *************
 
-V2.1.1
+V3.0.0
 ======
-This is a bug fix and compatibility releases. For a list of changes relative to v2.1.0, see :ref:`changes`.
+This new release includes several new features, new support, and several bug
+fixes.  See the :ref:`changes` for details.
 
-This release offers support
-for the science reduction of all current Gemini facility imagers: GMOS, NIRI,
-GSAOI, and Flamingos-2.  GNIRS keyhole image reduction is also supported in a
-limited way.
+This major update of DRAGONS has two big changes over V2:
 
-This software can be used to reduce Gemini imaging data instead of the
-Gemini IRAF package.
+* New "quicklook" reduction for GMOS longslit data
+* Python 3 compatibilty only.  Python 2 is no longer supported.
 
-This release does not include support for spectroscopy data.
+With this release, DRAGONS offers support for:
+
+Science Quality reduction
+   * GMOS imager
+   * NIRI imager
+   * GSAOI imager
+   * F2 imager
+
+Quicklook Quality reduction
+   * GMOS longslit spectrograph
+
+
+For imaging, this software should be used instead of the Gemini IRAF package.
+
+**For GMOS longslit spectroscopy, use this package only for quicklook
+purposes.**  Please continue to use Gemini IRAF for science quality reductions.
+We are working on a science quality package for GMOS longslit but it is not
+ready yet.  We believe that releasing what we have for quicklook inspection
+would nevertheless be useful to our users.
 
 Installation instructions can be found in the Recipe System User Manual at:
 
-  `<https://dragons-recipe-system-users-manual.readthedocs.io/en/v2.1.1/install.html>`_
+  `<https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.0/install.html>`_
+
 

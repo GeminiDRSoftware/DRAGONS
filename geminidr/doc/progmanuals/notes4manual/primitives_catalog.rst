@@ -157,7 +157,7 @@ Public methods::
 Public methods::
 
   determineWavelengthSolution (Not Yet Implemented)
-  extract1DSpectra            (Not Yet Implemented)
+  extractSpectra            (Not Yet Implemented)
   makeFlat                    (Not Yet Implemented)
   rejectCosmicRays            (Not Yet Implemented)
   resampleToLinearCoords      (Not Yet Implemented)
