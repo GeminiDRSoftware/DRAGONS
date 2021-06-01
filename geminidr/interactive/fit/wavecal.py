@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import interp1d
 
 from bokeh import models as bm
 from bokeh.layouts import row, column
@@ -6,6 +7,7 @@ from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller, Handler
 from gempy.library.matching import match_sources
+from gempy.library.tracing import pinpoint_peaks
 
 from .fit1d import (Fit1DPanel, Fit1DVisualizer, fit1d_figure,
                     USER_MASK_NAME)
@@ -53,11 +55,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         source=self.model.data, angle=0.5 * np.pi,
                         text_color=self.model.mask_rendering_kwargs()['color'],
                         text_baseline='middle')
-        spectrum_plot = p_spectrum
+        self.p_spectrum = p_spectrum
         delete_line_handler = Handler('d', "Delete arc line", self.delete_line)
+        identify_line_handler = Handler('i', "Identify arc line", self.add_line)
         Controller(p_spectrum, None, self.model.band_model, controller_div,
-                   mask_handlers=None, handlers=[delete_line_handler],
-                   domain=domain)
+                   mask_handlers=None, domain=domain,
+                   handlers=[delete_line_handler, identify_line_handler])
 
         add_new_line_button = bm.Button(label="Add new line")
         self.line_chooser = row(bm.Div(text="New line wavelength"),
@@ -68,7 +71,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         identify_panel = row(self.line_chooser, identify_button)
 
-        return [spectrum_plot, identify_panel, p_main, p_supp]
+        return [p_spectrum, identify_panel, p_main, p_supp]
 
     @staticmethod
     def linear_model(model):
@@ -101,7 +104,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def add_identified_line(self, peak, wavelength):
         """
-        Add a new line to the ColumnDataSource and performs a new fit
+        Add a new line to the ColumnDataSource and performs a new fit.
+        *** THIS SHOULD CHECK THAT THE LINE WAVELENGTHS ARE MONOTONIC***
 
         Parameters
         ----------
@@ -117,6 +121,36 @@ class WavelengthSolutionPanel(Fit1DPanel):
                    }
         self.model.data.stream(new_data)
         self.model.perform_fit()
+
+    def add_line(self, key, x, y):
+        """
+        Identifies a peak near the cursor location and allows the user to
+        provide a wavelength.
+        """
+        x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
+        fwidth = self.model.other_data["fwidth"]
+        pixel = interp1d(self.spectrum.data["wavelengths"],
+                         range(len(self.spectrum.data["wavelengths"])))(x)
+        new_peaks = np.setdiff1d(self.model.other_data["peaks"],
+                                 self.model.x, assume_unique=True)
+        index = np.argmin(abs(new_peaks - pixel))
+
+        # If we've clicked "close" to a real peak (based on viewport size),
+        # then select that
+        if abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1):
+            peak = new_peaks[index]
+        else:
+            try:
+                # TODO: This finds all tiny bumps; should be more conservative
+                peak = pinpoint_peaks(self.spectrum.data["spectrum"], None,
+                                      [pixel])[0]
+            except IndexError:
+                peak = None
+        if peak is None:
+            return
+        est_wave = self.model.evaluate(peak)
+        if not (x1 < est_wave < x2):
+            return
 
     def delete_line(self, key, x, y):
         """
