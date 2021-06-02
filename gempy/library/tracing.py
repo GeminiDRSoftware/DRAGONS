@@ -439,6 +439,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     # For really broad peaks we can do a median filter to remove spikes
     if max_width > 10:
         data = at.boxcar(data, size=2)
+        mask = at.boxcar(mask, size=2, operation=np.logical_or)
 
     wavelet_transformed_data = cwt_ricker(data, widths)
 
