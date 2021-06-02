@@ -762,7 +762,9 @@ class FitsProvider(DataProvider):
             op_table = operand.table()
             ltab, rtab = set(self._tables), set(op_table)
             for tab in (rtab - ltab):
-                self._tables[tab] = op_table[tab]
+                # Fix for release/3.0.x - revert to _tables in master with the Simon refactor
+                self.append(op_table[tab], name=tab, add_to=None)
+                # self._tables[tab] = op_table[tab]
         else:
             for n in indices:
                 self._set_nddata(n, operator(self._nddata[n], operand))
