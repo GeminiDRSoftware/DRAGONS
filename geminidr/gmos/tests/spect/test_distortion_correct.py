@@ -15,6 +15,7 @@ from copy import deepcopy
 import astrodata
 import geminidr
 
+from astrodata.testing import compare_models
 from geminidr.gmos import primitives_gmos_longslit
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
@@ -140,6 +141,19 @@ def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory
         data = np.ma.masked_invalid(ext.data)
         ref_data = np.ma.masked_invalid(ext_ref.data)
         np.testing.assert_allclose(data, ref_data, atol=1)
+        # Compare output WCS as well as pixel values (by evaluating it at the
+        # ends of the ranges, since there are multiple ways of constructing an
+        # equivalent WCS, eg. depending on the order of various Shift models):
+        for f in ext_ref.wcs.available_frames:
+            assert repr(getattr(ext_ref.wcs, f)) == repr(getattr(ext.wcs, f))
+        corner1, corner2 = (0, 0), tuple(v-1 for v in ext_ref.shape[::-1])
+        world1, world2 = ext_ref.wcs(*corner1), ext_ref.wcs(*corner2)
+        np.testing.assert_allclose(ext.wcs(*corner1), world1, rtol=1e-6)
+        np.testing.assert_allclose(ext.wcs(*corner2), world2, rtol=1e-6)
+        np.testing.assert_allclose(ext.wcs.invert(*world1),
+                                   corner1, atol=1e-3)
+        np.testing.assert_allclose(ext.wcs.invert(*world2),
+                                   corner2, atol=1e-3)
 
 
 @pytest.mark.gmosls
