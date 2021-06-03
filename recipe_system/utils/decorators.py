@@ -328,7 +328,7 @@ def parameter_override(fn):
                 provenance_inputs = _get_provenance_inputs(adinputs)
                 fnargs = dict(config.items())
                 stringified_args = json.dumps({k: v for k, v in fnargs.items()
-                                               if not k.startswith('debug_')})
+                                               if not k.startswith('debug_') and not isinstance(AstroData, v)})
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
                 _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
