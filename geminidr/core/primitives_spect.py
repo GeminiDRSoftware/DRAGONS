@@ -3016,7 +3016,7 @@ class Spect(PrimitivesBASE):
                         unit = u.Unit("erg cm-2 s-1 AA-1")
                     else:
                         unit = u.mag
-                col.unit = unit
+            col.unit = unit
 
             # We've created a column called "MAGNITUDE" but it might be a flux
             if col.name == 'MAGNITUDE':
