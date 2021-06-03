@@ -69,7 +69,7 @@ def test_sky_correct_from_slit_interactive():
     ad, _p = make_test_ad_p()
     ad_out = _p.skyCorrectFromSlit([ad], function="spline3", order=5,
                                    grow=2, niter=3, lsigma=3, hsigma=3,
-                                   aperture_growth=2, interactive=True)[0]
+                                   aperture_growth=2, interactive=False)[0]
 
     iad, _p = make_test_ad_p()
     iad_out = _p.skyCorrectFromSlit([iad], function="spline3", order=5,
@@ -107,7 +107,7 @@ def test_sky_correct_from_slit_with_aperture_table_interactive():
     ad, p = make_test_ad_p()
     ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
                                   grow=2, niter=3, lsigma=3, hsigma=3,
-                                  aperture_growth=2)[0]
+                                  aperture_growth=2, interactive=False)[0]
 
     iad, p = make_test_ad_p()
     iad_out = p.skyCorrectFromSlit([iad], function="spline3", order=5,
@@ -150,11 +150,11 @@ def test_sky_correct_from_slit_with_multiple_sources_interactive():
     ad, p = make_test_ad_p()
     ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
                                   grow=2, niter=3, lsigma=3, hsigma=3,
-                                  aperture_growth=2)[0]
+                                  aperture_growth=2, interactive=False)[0]
 
     iad, p = make_test_ad_p()
     iad_out = p.skyCorrectFromSlit([iad], function="spline3", order=5,
                                    grow=2, niter=3, lsigma=3, hsigma=3,
-                                   aperture_growth=2)[0]
+                                   aperture_growth=2, interactive=True)[0]
 
     assert(ad_compare(ad_out, iad_out))
