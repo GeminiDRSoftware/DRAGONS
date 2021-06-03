@@ -329,7 +329,8 @@ def parameter_override(fn):
                 fnargs = dict(config.items())
                 stringified_args = json.dumps({k: v for k, v in fnargs.items()
                                                if not k.startswith('debug_')},
-                                              default=lambda v: '<not serializable>')
+                                              default=lambda v: v.filename if hasattr(v, 'filename')
+                                                                else '<not serializable>')
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
                 _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
