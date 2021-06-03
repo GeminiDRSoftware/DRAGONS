@@ -566,12 +566,14 @@ class FittingParametersUI:
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
         for key in ("order", "sigma_upper", "sigma_lower", "niter", "grow"):
             try:
-                slider = self.getattr(f"{key}_slider")
+                slider = getattr(self, f"{key}_slider")  # self.getattr(f"{key}_slider")
             except AttributeError:
                 pass
             else:
                 slider.children[0].value = self.fitting_parameters[key]
                 slider.children[1].value = self.fitting_parameters[key]
+        if self.function:
+            self.function.value = self.fitting_parameters["function"]
         self.sigma_button.active = [0] if self.saved_sigma_clip else []
         self.fit.perform_fit()
 
@@ -1247,10 +1249,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             layout_ls.append(row(self.reinit_panel, col))
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
         doc.add_root(self.layout)
-
-        # Simulate a click of the accept button
-        self.do_later(lambda: self.submit_button_handler(None))
-
 
     def reconstruct_points(self):
         """

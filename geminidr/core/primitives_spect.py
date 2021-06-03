@@ -2558,11 +2558,12 @@ class Spect(PrimitivesBASE):
                                                xlabel='x',
                                                ylabel='y',
                                                domains=all_shapes,
-                                               title="Calculate Sensitivity",
-                                               primitive_name="calculateSensitivity",
+                                               title="Sky Correct From Slit",
+                                               primitive_name="skyCorrectFromSlit",
                                                filename_info='filename_info',
                                                help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
-                                               plot_ratios=False)
+                                               plot_ratios=False,
+                                               enable_user_masking=False)
             geminidr.interactive.server.interactive_fitter(visualizer)
 
             # Pull out the final parameters to use as inputs doing the real fit

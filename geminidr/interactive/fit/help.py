@@ -271,21 +271,19 @@ TRACE_APERTURES = """
 SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
 <h2>Help</h2>
 <p>
-<b>TODO Update</b>
-    Calculates the overall sensitivity of the observation system
-    (instrument, telescope, detector, etc) for each wavelength using
-    spectrophotometric data. It is obtained using the ratio
-    between the observed data and the reference look-up data.</p>
-<p>
-    For that, it looks for reference data using the stripped and lower
-    case name of the observed object inside geminidr.gemini.lookups,
-    geminidr.core.lookups and inside the instrument lookup module.
+        Extracts one or more 1D spectra from a 2D spectral image, according to
+        the contents of the `.APERTURE` table.
 </p>
 <p>
-    The reference data is fit using a Spline in order to match the input
-    data sampling.
+        If the <pre>skyCorrectFromSlit()</pre> primitive has not been performed, then a
+        1D sky spectrum is constructed from a nearby region of the image, and
+        subtracted from the source spectrum.
 </p>
-<h3>Profile parameters</h3>
+<p>
+        Each 1D spectrum is stored as a separate extension in a new AstroData
+        object with the wcs copied from the parent.
+</p>
+<h3>Sky Correct parameters</h3>
 <p>Those parameters applies to the computation of the 1D profile.</p>
 <dl>
 <dt>Order</dt>
@@ -315,4 +313,4 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
     continue to the end of the data.
 </dd>
 </dl>
-""" + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+""" + PLOT_TOOLS_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT

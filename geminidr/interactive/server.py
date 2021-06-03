@@ -16,7 +16,7 @@ __all__ = ["test_mode", "interactive_fitter", "stop_server"]
 
 # Set to True to tell the interactive code to automatically submit in
 # order to test the interactive paths automatically
-test_mode = True
+test_mode = False
 
 from bokeh.themes import built_in_themes
 
