@@ -47,12 +47,12 @@ Here is a copy of the table for quick reference.
 
 Setting up
 ==========
-First, navigate to the ``playground`` directory in the unpacked data package.
+First, navigate to your work directory in the unpacked data package.
 
 The first steps are to import libraries, set up the calibration manager,
 and set the logger.
 
-Importing Libraries
+Importing libraries
 -------------------
 
 
@@ -62,13 +62,10 @@ Importing Libraries
     import glob
 
     import astrodata
+    import gemini_instruments
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system import cal_service
     from gempy.adlibrary import dataselect
-
-Importing ``print_function`` is for compatibility with the Python 2.7 print
-statement.  If you are working with Python 3, it is not needed, but importing
-it will not break anything.
 
 The ``dataselect`` module will be used to create file lists for the
 darks, the flats and the science observations. The ``cal_service`` package
@@ -90,7 +87,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 Set up the Local Calibration Manager
 ------------------------------------
-DRAGONS comes with a local calibration manager and a local light weight database
+DRAGONS comes with a local calibration manager and a local, light weight database
 that uses the same calibration association rules as the Gemini Observatory
 Archive.  This allows the ``Reduce`` instance to make requests for matching
 **processed** calibrations when needed to reduce a dataset.
@@ -130,14 +127,10 @@ check the "|caldb|" documentation in the Recipe System User Manual.
 
 Create file lists
 =================
-.. |astrouser_link| raw:: html
-
-   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
-
 The next step is to create input file lists.  The module ``dataselect`` helps
 with that.  It uses Astrodata tags and |descriptors| to select the files and
 store the filenames to a Python list that can then be fed to the ``Reduce``
-class. (See the |astrouser_link| for information about Astrodata and for a list
+class. (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
 The first list we create is a list of all the files in the ``playdata``

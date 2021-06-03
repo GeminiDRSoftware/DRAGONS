@@ -439,6 +439,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     # For really broad peaks we can do a median filter to remove spikes
     if max_width > 10:
         data = at.boxcar(data, size=2)
+        mask = at.boxcar(mask, size=2, operation=np.logical_or)
 
     wavelet_transformed_data = cwt_ricker(data, widths)
 
@@ -697,7 +698,11 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
         diff = np.diff(y)
         sigma1 = sigma_clipped_stats(diff)[2] / np.sqrt(2)
         # 0.1 is a fudge factor that seems to work well
-        sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
+        #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
+        # Average from 2 pixels either side; 0.05 corresponds to 0.1 before
+        # since this is the change in a 4-pixel span, instead of 2 pixels
+        diff2 = np.r_[diff[:2], y[4:] - y[:-4], diff[-2:]]
+        sigma2 = 0.05 * diff2
         w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
     else:
         w = divide0(1.0, np.sqrt(variance))
