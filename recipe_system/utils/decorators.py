@@ -43,6 +43,7 @@ E.g.,::
 """
 import gc
 import inspect
+import json
 import traceback
 from datetime import datetime
 
@@ -326,7 +327,8 @@ def parameter_override(fn):
             try:
                 provenance_inputs = _get_provenance_inputs(adinputs)
                 fnargs = dict(config.items())
-                stringified_args = "%s" % fnargs
+                stringified_args = json.dumps({k: v for k, v in fnargs.items()
+                                               if not k.startswith('debug_')})
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
                 _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
