@@ -73,16 +73,13 @@ def test_add_get_provenance_history(ad):
 
     add_provenance_history(ad, timestamp_start, timestamp_end, primitive, args)
     assert len(ad.PROVHISTORY) == 1
-    assert tuple(ad.PROVHISTORY[0]) == (timestamp_start, timestamp_end,
-                                               primitive, args)
+    assert tuple(ad.PROVHISTORY[0]) == (primitive, args, timestamp_start, timestamp_end)
 
     add_provenance_history(ad, timestamp_start, timestamp_end,
                            'another primitive', args)
     assert len(ad.PROVHISTORY) == 2
-    assert tuple(ad.PROVHISTORY[0]) == (timestamp_start, timestamp_end,
-                                               primitive, args)
-    assert tuple(ad.PROVHISTORY[1]) == (timestamp_start, timestamp_end,
-                                               'another primitive', args)
+    assert tuple(ad.PROVHISTORY[0]) == (primitive, args, timestamp_start, timestamp_end)
+    assert tuple(ad.PROVHISTORY[1]) == ('another primitive', args, timestamp_start, timestamp_end)
 
 
 def test_add_dupe_provenance_history(ad):
@@ -127,5 +124,4 @@ def test_clone_provenance_history(ad, ad2):
     clone_provenance_history(ad.PROVHISTORY, ad2)
 
     assert len(ad2.PROVHISTORY) == 1
-    assert tuple(ad2.PROVHISTORY[0]) == (timestamp_start, timestamp_end,
-                                                primitive, args)
+    assert tuple(ad2.PROVHISTORY[0]) == (primitive, args, timestamp_start, timestamp_end)
