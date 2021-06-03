@@ -159,8 +159,8 @@ def clone_provenance_history(provenance_history_data, ad):
     """
     primitive_col_idx, args_col_idx, timestamp_start_col_idx, timestamp_stop_col_idx = \
         find_provenance_history_column_indices(ad)
-    phd = [(prov_hist[primitive_col_idx], prov_hist[args_col_idx],
-            prov_hist[timestamp_start_col_idx], prov_hist[timestamp_stop_col_idx]) \
+    phd = [(prov_hist[timestamp_start_col_idx], prov_hist[timestamp_stop_col_idx],
+            prov_hist[primitive_col_idx], prov_hist[args_col_idx])
            for prov_hist in provenance_history_data]
     for ph in phd:
         add_provenance_history(ad, ph[0], ph[1], ph[2], ph[3])
