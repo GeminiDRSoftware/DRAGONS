@@ -14,6 +14,7 @@ from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
+from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
@@ -26,6 +27,7 @@ renderer = hv.renderer('bokeh')
 __all__ = ["interactive_find_source_apertures", ]
 
 log = logutils.get_logger(__name__)
+
 
 DETAILED_HELP = """
 
@@ -488,15 +490,6 @@ class AperturePlotView:
         fig = self.fig
         source = self.model.source
 
-        self.label = LabelSet(source=source, x="end", y=380,
-                              y_offset=2, y_units="screen", text="id")
-        fig.add_layout(self.label)
-
-        self.whisker = Whisker(source=source, base=380, lower="start",
-                               upper="end", dimension='width',
-                               base_units="screen", line_color="purple")
-        fig.add_layout(self.whisker)
-
         self.location = Span(location=source.data['location'][0],
                              dimension='height', line_color='green',
                              line_dash='dashed', line_width=1)
@@ -516,9 +509,7 @@ class AperturePlotView:
         # TODO removing causes problems, because bokeh, sigh
         # TODO could create a list of disabled labels/boxes to reuse instead
         # of making new ones (if we have one to recycle)
-        self.label.visible = False
         self.location.visible = False
-        self.whisker.visible = False
 
 
 class SelectedApertureLineView:
@@ -754,6 +745,16 @@ class ApertureView:
         self.fig.x_range.on_change('end', lambda attr, old, new:
                                    self.update_viewport(end=new))
 
+        self.annotations_source = ColumnDataSource(data=dict(id=[], start=[], end=[]))
+        self.labels = LabelSet(x='end', y=380, y_units='screen', text='id',
+                               y_offset=2, source=self.annotations_source, render_mode='canvas')
+        self.fig.add_layout(self.labels)
+
+        self.whisker = Whisker(source=self.annotations_source, base=380, lower="start",
+                               upper="end", dimension='width',
+                               base_units="screen", line_color="purple")
+        self.fig.add_layout(self.whisker)
+
     def update_viewport(self, start=None, end=None):
         """Handle a change in the view to enable/disable aperture lines."""
         if not self._pending_update_viewport:
@@ -771,10 +772,17 @@ class ApertureView:
         """Handle an updated or added aperture."""
         plot = self.widgets[aperture_id]
         plot.update()
+        for i in range(len(self.annotations_source.data['id'])):
+            if self.annotations_source.data['id'][i] == aperture_id:
+                self.annotations_source.patch({'end': [(i, plot.model.source.data['end'][0])],
+                                               'start': [(i, plot.model.source.data['start'][0])]})
 
     def add_aperture(self, aperture_id, model):
         plot = AperturePlotView(self.fig, model)
         self.widgets[aperture_id] = plot
+        self.annotations_source.stream({'id': [model.source.data['id'][0], ],
+                                        'start': [model.source.data['start'][0], ],
+                                        'end': [model.source.data['end'][0], ]})
 
     def delete_aperture(self, aperture_id):
         """Remove an aperture by ID."""
@@ -782,17 +790,33 @@ class ApertureView:
             plot = self.widgets[aperture_id]
             plot.delete()
             del self.widgets[aperture_id]
+            newdata = {'id': [], 'start': [], 'end': []}
+            for i in range(len(self.annotations_source.data['id'])):
+                if self.annotations_source.data['id'][i] != aperture_id:
+                    newdata['id'].append(self.annotations_source.data['id'][i])
+                    newdata['start'].append(self.annotations_source.data['start'][i])
+                    newdata['end'].append(self.annotations_source.data['end'][i])
+            self.annotations_source.data = newdata
 
     def renumber_apertures(self):
         new_widgets = {}
+        newlabeldata = {'id': [], 'start': [], 'end': []}
         for plot in self.widgets.values():
             aperture_id = plot.model.source.data['id'][0]
             new_widgets[aperture_id] = plot
+            newlabeldata['id'].append(aperture_id)
+            newlabeldata['start'].append(plot.model.source.data['start'])
+            newlabeldata['end'].append(plot.model.source.data['end'])
+        self.annotations_source.data = newlabeldata
         self.widgets.clear()
         self.widgets.update(new_widgets)
 
     def update_view(self):
         self._reload_holoviews()
+        ymax = np.nanmax(self.model.profile)
+        if ymax:
+            self.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
+            self.fig.y_range.reset_end = self.fig.y_range.end
 
     def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
         if hasattr(self, 'fig'):
@@ -874,13 +898,20 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         def _use_snr_handler(new):
             model.use_snr = 0 in new
 
+        reset_button = Button(label="Reset", button_type='warning',
+                              default_size=200)
+
         def _reset_handler(result):
             if result:
-                model.reset()
-                for widget in (maxaper, minsky, use_snr,
-                               threshold, percentile, sizing):
-                    widget.reset()
-                self.model.recalc_apertures()
+                reset_button.disabled = True
+                def fn():
+                    model.reset()
+                    for widget in (maxaper, minsky, use_snr,
+                                   threshold, percentile, sizing):
+                        widget.reset()
+                    self.model.recalc_apertures()
+                    reset_button.disabled = False
+                self.do_later(fn)
 
         find_button = Button(label="Find apertures", button_type='primary',
                              default_size=200)
@@ -911,9 +942,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
 
-        reset_button = Button(label="Reset", button_type='danger',
-                              default_size=200)
-
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
                                    'back to their original values.  Proceed?',
@@ -923,7 +951,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                    'All apertures will be recomputed and '
                                    'changes will be lost. Proceed?',
                                    _find_handler)
+
         self.make_modal(find_button, 'Recalculating Apertures...')
+        self.make_modal(reset_button, 'Recalculating Apertures...')
 
         return column(
             Div(text="Parameters to compute the profile:",
@@ -951,12 +981,14 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().visualize(doc)
 
+        bokeh_data_color = interactive_conf().bokeh_data_color
+
         params = self.parameters_view()
 
         ymax = 100  # we will update this when we have a profile
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
         aperture_view.fig.step(x='x', y='y', source=self.model.profile_source,
-                               color="black", mode="center")
+                               color=bokeh_data_color, mode="center")
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
         # making button configurable so we can add it conditionally for notebooks in future
@@ -977,19 +1009,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         ])
 
         self.model.recalc_apertures()
-        # now we have a height for the figure
-        aperture_view.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
-        # toolbar = row(
-        #     children=[
-        #         Div(text=f'<b>Filename:</b> {self.filename_info or ""}<br/>'),
-        #         Spacer(sizing_mode='scale_width'),
-        #         self.submit_button,
-        #         Spacer(sizing_mode='scale_width'),
-        #     ],
-        # )
         self.submit_button.align = 'end'
         self.submit_button.height = 35
         self.submit_button.height_policy = "fixed"
@@ -1001,8 +1023,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                       column(self.get_filename_div(), self.submit_button),
                       Spacer(width=10),
                       align="end", css_classes=['top-row'])
-        # toolbar = row(Spacer(width=250), self.submit_button, self.get_filename_div(),
-        #               sizing_mode="scale_width")
 
         layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'

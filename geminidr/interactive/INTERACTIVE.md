@@ -302,7 +302,7 @@ Note that this code path is outside the bokeh event loop, so if you
 need to change the UI in response to a key press, you will want to use the
 `do_later` function provided in `PrimitiveVisualizer`
 
-## Controller/Tasks
+## Controller/Tasks/Handlers
 
 The key passing is currently used for working with selection bands and apertures.  
 The bands interface is built into the Fit1DVisualizer, but may be useful in building 
@@ -366,6 +366,33 @@ There is also a helper class called `RegionEditor`.  If you create an instance o
 this, it will make a text input that is linked to the `GIRegionModel`.  Just call
 `get_widget()` on the `RegionEditor` after you make it to get a widget you can add
 to a bokeh layout.
+
+### Handlers
+
+You can also define custom key handlers for the controller.  These allow you to
+map a key press over the figure to a function, along with some help text you
+want shown in the small help text in `controller_div`.  The function in your
+`Handler` should have a signature like `fn(key, x, y)`.
+
+```python
+def fn(key, x, y):
+    print(f"{key}: ({x}, {y})")
+h = Handler('q', 'Do something', fn)
+Controller(figure, None, None, controller_div, handlers=[h,])
+```
+
+
+
+## TabsTurboInjector
+
+The `Tabs` in `bokeh` do a poor job of managing the DOM.  If you have many tabs
+with content, it can drastically impair the performance.  As a workaround, you
+can initialize your tabs using the provided `TabsTurboInjector` in the `interactive`
+module.  First, you instantiate one of these helpers passing an empty bokeh `Tabs`
+to it to be managed.  Then, instead of adding child tab `Panel`s to your `Tabs`, 
+you call the injector's helper method to add the child with a passed title.
+
+A side effect of the injector is that, on tab changes, you'll get a momentary blank tab.
 
 ## Modules
 

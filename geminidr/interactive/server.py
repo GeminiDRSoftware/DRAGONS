@@ -14,6 +14,12 @@ from geminidr.interactive import controls
 
 __all__ = ["interactive_fitter", "stop_server"]
 
+from bokeh.themes import built_in_themes
+
+from geminidr.interactive.interactive_config import interactive_conf
+
+from recipe_system.config import globalConf
+
 _bokeh_server = None
 _visualizer = None
 
@@ -116,7 +122,13 @@ def _bkapp(doc):
     -------
     none
     """
+    ic = interactive_conf()
+    bokeh_theme = ic.bokeh_theme
+    bokeh_template_css = ic.bokeh_template_css
+
     template = "index.html"
+    if bokeh_theme in built_in_themes:
+        doc.theme = built_in_themes[bokeh_theme]
     if _visualizer.template:
         template = _visualizer.template
     with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
@@ -127,6 +139,7 @@ def _bkapp(doc):
         template = f.read()
         t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
+        doc.template_variables['css_template'] = bokeh_template_css
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
         doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
 
@@ -194,6 +207,20 @@ def start_server():
         port = 5006
         while port < 5701 and _bokeh_server is None:
             try:
+                # NOTE:
+                # Tornado generates a WebSocketClosedError when the user
+                # is on Safari.  This seems to be a regression as Safari
+                # has had this problem before with bokeh and web scokets.
+                # Chrome and FireFox work fine.
+                #
+                # To get Safari to behave, I have added the
+                # keep_alive_milliseconds=0 argument below.  This
+                # disables the keep alive heartbeat that causes the
+                # above error.  If you remove that argument, bokeh
+                # will re-enable the heartbeat but Safari won't work
+                # in interactive mode any more.  See below for a way
+                # to make interactive use "chrome" (or "firefox")
+                # regardless of the selected browser if desired.
                 _bokeh_server = Server(
                     {
                         '/': _bkapp,
@@ -203,6 +230,7 @@ def start_server():
                         '/help': _helpapp,
                         '/shutdown': _shutdown,
                     },
+                    keep_alive_milliseconds=0,
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],
                     port=port)
@@ -212,7 +240,9 @@ def start_server():
                     raise
         _bokeh_server.start()
 
-    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
+    # to force a browser, add browser="chrome" tp this add_callback
+    ic = interactive_conf()
+    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", browser=ic.browser)
     _bokeh_server.io_loop.start()
 
     # The server normally stops when the user hits the Submit button in the

@@ -140,7 +140,7 @@ class fit_1D:
                  grow=False, regions=None, plot=False):
 
         # Save the fitting parameter values:
-        self.points = None if points is None else np.array(points)
+        self.points = None if points is None else np.asarray(points)
         self.function = function
         self.domain = domain
         self.order = order
@@ -164,7 +164,7 @@ class fit_1D:
         if not regions or isinstance(regions, str):
             self._slices = (at.cartesian_regions_to_slices(regions)
                             if points is None else
-                            at.parse_user_regions(regions, dtype=points.dtype))
+                            at.parse_user_regions(regions, dtype=self.points.dtype))
         else:
             self._slices = None
             try:
@@ -457,9 +457,9 @@ class fit_1D:
             stack_shape = self._stack_shape
         else:
             tmpshape = list(self._tmpshape)
-            tmpshape[tmpaxis] = points.size
+            tmpshape[tmpaxis] = np.asarray(points).size
             stack_shape = list(self._stack_shape)
-            stack_shape[tmpaxis] = points.size
+            stack_shape[tmpaxis] = tmpshape[tmpaxis]
 
         # Create an output array of the same shape & type as the fitted input
         # image (except for any change of sample "points" along the fitted
@@ -557,11 +557,12 @@ class fit_1D:
         if niter is None:
             niter = 100
 
-        new_params = {"grow": params.get("grow", 0),
-                      "niter": niter,
+        new_params = {"niter": niter,
                       "order": params["order"],
                       "function": params["function"],
                       "sigma_lower": lsigma,
                       "sigma_upper": hsigma,
                       "regions": params.get("regions")}
+        if "grow" in params:
+            new_params["grow"] = params["grow"]
         return new_params

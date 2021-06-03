@@ -3,15 +3,21 @@ from abc import ABC, abstractmethod
 from copy import copy
 from functools import cmp_to_key
 
+from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
                           NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
+from bokeh import models as bm
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
-from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_regions
 from gempy.library.config import FieldValidationError
+
+
+# Singleton instance, there is only ever one of these
+_visualizer = None
 
 
 class PrimitiveVisualizer(ABC):
@@ -39,6 +45,9 @@ class PrimitiveVisualizer(ABC):
         template : str
             Optional path to an html template to render against, if customization is desired
         """
+        global _visualizer
+        _visualizer = self
+
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
 
@@ -69,7 +78,7 @@ class PrimitiveVisualizer(ABC):
         # Remove this line if we stick with that
         # self.submit_button.on_click(self.submit_button_handler)
         callback = CustomJS(code="""
-            $.ajax('/shutdown').done(function() 
+            $.ajax('/shutdown').done(function()
                 {
                     window.close();
                 });
@@ -232,7 +241,7 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        extras = [] if extras is None else extras
+        extras = {} if extras is None else extras
         params = [] if params is None else params
         widgets = []
         if self.config is None:
@@ -253,10 +262,11 @@ class PrimitiveVisualizer(ABC):
                 if end is None:
                     end = 50
                 step = start
+                allow_none = field.optional
 
-                widget = build_text_slider(doc, value, step, start, end,
-                                           obj=self.config, attr=pname,
-                                           slider_width=slider_width)
+                widget = build_text_slider(
+                    doc, value, step, start, end, obj=self.config, attr=pname,
+                    slider_width=slider_width, allow_none=allow_none)
 
                 self.widgets[pname] = widget.children[0]
             elif hasattr(field, 'allowed'):
@@ -283,14 +293,14 @@ class PrimitiveVisualizer(ABC):
                 if end is None:
                     end = 50
                 step = start
+                allow_none = field.optional
 
                 widget = build_text_slider(
-                    doc, field.default, step, start, end,
-                    obj=self.extras, attr=pname,
-                    handler=self.slider_handler_factory(
+                    doc, field.default, step, start, end, obj=self.extras,
+                    attr=pname, handler=self.slider_handler_factory(
                         pname, reinit_live=reinit_live),
-                    throttled=True,
-                    slider_width=slider_width)
+                    throttled=True, slider_width=slider_width,
+                    allow_none=allow_none)
 
                 self.widgets[pname] = widget.children[0]
                 self.extras[pname] = field.default
@@ -332,7 +342,7 @@ class PrimitiveVisualizer(ABC):
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256, config=None):
+                      slider_width=256, config=None, allow_none=False):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -356,6 +366,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Function to call after setting the attribute
     throttled : bool
         Set to `True` to limit handler calls to when the slider is released (default False)
+    allow_none : bool
+        Set to `True` to allow an empty text entry to specify a `None` value
 
     Returns
     -------
@@ -409,28 +421,30 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                debugger;
-                if (inp.value > %s) {
+                if (%s inp.value > %s) {
                     alert('Maximum is %s');
                     inp.value = %s;
                 }
-            """ % (max_value, max_value, max_value)))
+            """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
     if min_value is not None:
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                debugger;
-                if (inp.value < %s) {
+                if (%s inp.value < %s) {
                     alert('Minimum is %s');
                     inp.value = %s;
                 }
-            """ % (min_value, min_value, min_value)))
+            """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
 
     component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
         if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
+            return True
+        if val is None and not allow_none:
+            return False
+        if val is None and allow_none:
             return True
         try:
             if is_float:
@@ -445,9 +459,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Update the slider with the new value from the text input
         if not _input_check(new):
             if _input_check(old):
-                text_input.value = str(old)
+                text_input.value = old
             return
-        if old != new:
+        if new is not None and old != new:
             if is_float:
                 ival = float(new)
             else:
@@ -462,6 +476,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                 slider.start = min(ival, start)
             if slider.start <= ival <= slider.end:
                 slider.value = ival
+            slider.show_value = True
+        elif new is None:
+            slider.show_value = False
 
     def update_text_input(attrib, old, new):
         # Update the text input
@@ -480,7 +497,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
-                text_input.value = str(old)
+                text_input.value = old
                 text_input.on_change("value", handle_value)
             else:
                 update_slider(attrib, old, new)
@@ -742,7 +759,7 @@ def build_range_slider(title, location, start, end, step, min_value, max_value, 
     return component
 
 
-def connect_figure_extras(fig, aperture_model, region_model):
+def connect_figure_extras(fig, region_model):
     """
     Connect a figure to an aperture and region model for rendering.
 
@@ -764,10 +781,6 @@ def connect_figure_extras(fig, aperture_model, region_model):
     # If we have regions or apertures to show, show them
     if region_model:
         regions = GIRegionView(fig, region_model)
-    # This no longer works as we now require holoviews
-    # TODO remove from args to method
-    # if aperture_model:
-    #     aperture_view = GIApertureView(aperture_model, fig)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
     # apertures and regions will not update properly after the figure is visible.
@@ -821,7 +834,7 @@ class GIRegionModel:
     """
     Model for tracking a set of regions.
     """
-    def __init__(self):
+    def __init__(self, domain=None):
         # Right now, the region model is effectively stateless, other
         # than maintaining the set of registered listeners.  That is
         # because the regions are not used for anything, so there is
@@ -831,6 +844,12 @@ class GIRegionModel:
         self.region_id = 1
         self.listeners = list()
         self.regions = dict()
+        if domain:
+            self.min_x = domain[0]
+            self.max_x = domain[1]
+        else:
+            self.min_x = None
+            self.max_x = None
 
     def add_listener(self, listener):
         """
@@ -860,12 +879,28 @@ class GIRegionModel:
 
     def load_from_tuples(self, tuples):
         self.clear_regions()
-        # region_ids = list(self.regions.keys())
-        # for region_id in region_ids:
-        #     self.delete_region(region_id)
         self.region_id = 1
+
+        def constrain_min(val, min):
+            if val is None:
+                return min
+            if min is None:
+                return val
+            return max(val, min)
+        def constrain_max(val, max):
+            if val is None:
+                return max
+            if max is None:
+                return val
+            return min(val, max)
         for tup in tuples:
-            self.adjust_region(self.region_id, tup.start, tup.stop)
+            start = tup.start
+            stop = tup.stop
+            start = constrain_min(start, self.min_x)
+            stop = constrain_min(stop, self.min_x)
+            start = constrain_max(start, self.max_x)
+            stop = constrain_max(stop, self.max_x)
+            self.adjust_region(self.region_id, start, stop)
             self.region_id = self.region_id + 1
         self.finish_regions()
 
@@ -1203,7 +1238,8 @@ class RegionEditor(GIRegionListener):
 
         self.error_message = Div(text="<b> <span style='color:red'> "
                                       "  Please use comma separated : delimited "
-                                      "  values (i.e. 101:500,511:900,951:)"
+                                      "  values (i.e. 101:500,511:900,951:). "
+                                      " Negative values are not allowed."
                                       "</span></b>")
 
         self.error_message.visible = False
@@ -1276,7 +1312,12 @@ class RegionEditor(GIRegionListener):
                 self.region_model.finish_regions()
 
             if current != region_text:
-                if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
+                unparseable = False
+                try:
+                    parse_user_regions(region_text)
+                except ValueError:
+                    unparseable = True
+                if not unparseable and re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
                     self.region_model.load_from_string(region_text)
                     self.text_input.value = self.region_model.build_regions()
                     self.error_message.visible = False
@@ -1291,3 +1332,99 @@ class RegionEditor(GIRegionListener):
 
     def get_widget(self):
         return self.widget
+
+
+class TabsTurboInjector:
+    """
+    This helper class wraps a bokeh Tabs widget
+    and improves performance by dynamically
+    adding and removing children from the DOM
+    as their tabs are un/selected.
+
+    There is a moment when the new tab is visually
+    blank before the contents pop in, but I think
+    the tradeoff is worth it if you're finding your
+    tabs unresponsive at scale.
+    """
+    def __init__(self, tabs: bm.layouts.Tabs):
+        """
+        Create a tabs turbo helper for the given bokeh Tabs.
+
+        :param tabs: :class:`~bokeh.model.layout.Tabs`
+            bokeh Tabs to manage
+        """
+        if tabs.tabs:
+            raise ValueError("TabsTurboInjector expects an empty Tabs object")
+
+        self.tabs = tabs
+        self.tab_children = list()
+        self.tab_dummy_children = list()
+
+        for i, tab in enumerate(tabs.tabs):
+            self.tabs.append(tab)
+            self.tab_children.append(tab.child)
+            self.tab_dummy_children.append(row())
+
+            if i != tabs.active:
+                tab.child = self.tab_dummy_children[i]
+
+        tabs.on_change('active', self.tabs_callback)
+
+    def add_tab(self, child: Instance(bm.layouts.LayoutDOM), title: str):
+        """
+        Add the given bokeh widget as a tab with the given title.
+
+        This child widget will be tracked by the Turbo helper.  When the tab
+        becomes active, the child will be placed into the tab.  When the
+        tab is inactive, it will be cleared to improve performance.
+
+        :param child: :class:~bokeh.core.properties.Instance(bokeh.models.layouts.LayoutDOM)
+            Widget to add as a panel's contents
+        :param title: str
+            Title for the new tab
+        """
+        tab_dummy = row(Div(),)
+        tab_child = child
+
+        self.tab_children.append(child)
+        self.tab_dummy_children.append(tab_dummy)
+
+        if self.tabs.tabs:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_dummy,), title=title))
+        else:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_child,), title=title))
+
+    def tabs_callback(self, attr, old, new):
+        """
+        This callback will be used when the tab selection changes.  It will clear the DOM
+        of the contents of the inactive tab and add back the new tab to the DOM.
+
+        :param attr: str
+            unused, will be ``active``
+        :param old: int
+            The old selection
+        :param new: int
+            The new selection
+        """
+        if old != new:
+            self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
+            self.tabs.tabs[new].child.children[0] = self.tab_children[new]
+
+
+def do_later(fn):
+    """
+    Helper method to queue work to be done on the bokeh UI thread.
+
+    When actiona happen as a result of a key press, for instance, this comes in
+    on a different thread than bokeh UI is operating on.  Performing any UI
+    impacting changes on this other thread can cause issues.  Instead, wrap
+    the desired changes in a function and pass it in here to be run on the UI
+    thread.
+
+    This works by referencing the active singleton Visualizer, so that
+    code doesn't have to all track the visualizer.
+
+    :param fn:
+    :return:
+    """
+    _visualizer.do_later(fn)

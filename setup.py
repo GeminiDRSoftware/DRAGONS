@@ -40,7 +40,7 @@ SCRIPTS += [
     for name in ('dataselect', 'fwhm_histogram', 'gmosn_fix_headers',
                  'gmoss_fix_HAM_BPMs.py', 'gmoss_fix_headers.py',
                  'pipeline2iraf', 'profile_all_obj', 'psf_plot', 'showrecipes',
-                 'showd', 'showpars', 'swapper', 'typewalk', 'zp_histogram')
+                 'showd', 'showpars', 'typewalk', 'zp_histogram')
 ]
 
 # EXTENSIONS
@@ -100,7 +100,7 @@ setup(name='dragons',
       extras_require={
           'all': ['ginga', 'imexam'],
           'docs': ['sphinx', 'sphinx_rtd_theme'],
-          'test': ['pytest', 'coverage', 'objgraph'],
+          'test': ['pytest', 'pytest_dragons>=1.0.0', 'coverage', 'objgraph'],
       },
       project_urls={
           'Issue Tracker': 'https://github.com/GeminiDRSoftware/DRAGONS',
@@ -108,5 +108,4 @@ setup(name='dragons',
       },
       # keywords=['astronomy', 'astrophysics', 'science', 'gemini'],
       python_requires='>=3.7',
-      entry_points={"pytest11": ["pytest_dragons = pytest_dragons.plugin"]},
       )

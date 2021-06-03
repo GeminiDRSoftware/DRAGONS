@@ -1,11 +1,12 @@
 import re
 import math
 
-from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
+from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
+                       returns_list, Section)
 from ..gemini import AstroDataGemini
 from .lookup import array_properties, nominal_zeropoints
 
-from ..common import section_to_tuple, build_group_id
+from ..common import build_group_id
 from .. import gmu
 
 
@@ -126,8 +127,9 @@ class AstroDataF2(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-        value_filter = (str if pretty else section_to_tuple)
-        # TODO: discover reason why this is hardcoded, rather than from keyword
+        value_filter = (str if pretty else Section.from_string)
+        # Hardcoded since this is what will always be returned by the
+        # descriptor as @returns_list can handle the self.is_single logic
         return value_filter('[1:2048,1:2048]')
 
     # TODO: sort out the unit-handling here

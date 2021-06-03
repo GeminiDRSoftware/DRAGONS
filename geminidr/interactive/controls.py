@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 
 from bokeh.events import PointEvent, SelectionGeometry, Tap
 
-__all__ = ["controller", "Controller"]
+__all__ = ["controller", "Controller", "Handler"]
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -48,7 +48,8 @@ class Controller(object):
     :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True):
+    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True,
+                 domain=None, handlers=None):
         """
         Create a controller to manage the given aperture and region models on
         the given GIFigure.
@@ -66,6 +67,13 @@ class Controller(object):
         mask_handlers : None or tuple of {2,3} functions
             The first two functions handle mask/unmask commands, the third (optional)
             function handles 'P' point mask requests.
+        showing_residuals : bool
+            Indicates if there is a residual plot or not, so we can modify the
+            shown help text accordingly.
+        domain : tuple of 2 numbers, or None
+            The domain of the data being handled, used for region editing to constrain the values
+        handlers : list of `~geminidr.interactive.controls.Handler`
+            List of handlers for key presses that are always active, not tied to a task
         """
 
         # set the class for the help_text div so we can have a common style
@@ -74,38 +82,40 @@ class Controller(object):
         self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
 
-        self.helpmaskingtext = (
-            "<b>Masking</b> <br/> "
-            "To mark or unmark one point at a time, select \"Tap\" on the toolbar on "
-            "the right side of the plot.  To mark/unmark a group of point, activate "
-            "\"Box Select\" on the toolbar.<br/>"
-            "<b>M</b> - Mask selected/closest<br/>"
-            "<b>U</b> - Unmask selected/closest<br/>") if mask_handlers else ''
-
-        self.helpmaskingtext += "<br/>" if mask_handlers else ''
-
+        self.helpmaskingtext = ''
         self.helpintrotext = "While the mouse is over the upper plot, " \
                              "choose from the following commands:<br/><br/>\n" if showing_residuals \
             else "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
-
         self.helptooltext = ''
         self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
+
+        self.handlers = dict()
         if mask_handlers:
-            if len(mask_handlers) < 2:
+            if len(mask_handlers) != 2:
                 raise ValueError("Must pass tuple (mask_fn, unmask_fn) to mask_handlers argument of Controller")
-            self.mask_handler = mask_handlers[0]
-            self.unmask_handler = mask_handlers[1]
-            self.pointmask_handler = mask_handlers[2] if len(mask_handlers) > 2 else None
-        else:
-            self.mask_handler = None
-            self.unmask_handler = None
-            self.pointmask_handler = None
+            self.register_handler(Handler('m', 'Mask selected/closest',
+                                          lambda key, x, y:
+                                          mask_handlers[0](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
+                                                                  /float(self.fig.inner_width)) /
+                                                           ((self.fig.y_range.end - self.fig.y_range.start)/
+                                                            float(self.fig.inner_height)))))
+            self.register_handler(Handler('u', 'Unmask selected/closest',
+                                          lambda key, x, y:
+                                          mask_handlers[1](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
+                                                                  /float(self.fig.inner_width)) /
+                                                           ((self.fig.y_range.end - self.fig.y_range.start)
+                                                            /float(self.fig.inner_height)))))
+        if handlers:
+            for handler in handlers:
+                self.register_handler(handler)
+        self.update_helpmaskingtext()
+
         self.tasks = dict()
         if aperture_model:
             self.tasks['a'] = ApertureTask(aperture_model, help_text, fig)
         if region_model:
-            self.tasks['r'] = RegionTask(region_model, help_text)
+            self.tasks['r'] = RegionTask(region_model, help_text, domain=domain)
         self.task = None
         self.x = None
         self.y = None
@@ -115,8 +125,46 @@ class Controller(object):
             fig.on_event('mousemove', self.on_mouse_move)
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
-        self.set_help_text(None)
         self.fig = fig
+        self.set_help_text(None)
+
+    def register_handler(self, handler):
+        """
+        Add the passed handler to the controller's list of known handlers
+        for always on key commands.  This is also the mechanism that
+        handles mask/unmask events.
+
+        Only one handler can be registered for each key.  Please
+        be careful not to register a handler for a key needed by one
+        of the tasks.
+
+        :param handler: :class:`~geminidr.interactive.controls.Handler`
+            Handler to add to the controller
+        """
+        if handler.key in self.handlers.keys():
+            raise ValueError(f'Key {handler.key} already registered')
+        self.handlers[handler.key] = handler
+
+    def update_helpmaskingtext(self):
+        """
+        Update the help preamble text for keys that are
+        always available, starting with the masking.
+        """
+        if 'm' in self.handlers.keys():
+            self.helpmaskingtext = (
+                "<b>Masking</b> <br/> "
+                "To mark or unmark one point at a time, select \"Tap\" on the toolbar on "
+                "the right side of the plot.  To mark/unmark a group of point, activate "
+                "\"Box Select\" on the toolbar.<br/>"
+                "<b>M</b> - Mask selected/closest<br/>"
+                "<b>U</b> - Unmask selected/closest<br/></br>")
+
+        if self.handlers.keys() - ['m', 'u']:
+            self.helpmaskingtext += '<b>Other Commands</b><br/>'
+            for k, v in self.handlers.items():
+                if k not in ['u', 'm']:
+                    self.helpmaskingtext += f"<b>{k.upper()}</b> - {v.description}<br/>"
+            self.helpmaskingtext += '<br/>'
 
     def set_help_text(self, text=None):
         """
@@ -152,7 +200,8 @@ class Controller(object):
             # we now have an associated document, need to do this inside that context
             self.helptext.document.add_next_tick_callback(lambda: self.helptext.update(text=ht))
         else:
-            self.helptext.text = ht
+            # no document, we can update directly
+            self.helptext.update(text=ht)
 
     def on_mouse_enter(self, event):
         """
@@ -235,19 +284,8 @@ class Controller(object):
 
         """
         def _ui_loop_handle_key(_key):
-
-            if _key == 'm' or _key == 'M':
-                if self.mask_handler:
-                    # mult is used to convert the y distance to be in x-equivalent-pixel terms
-                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
-                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
-                    self.mask_handler(self.x, self.y, mult)
-
-            elif _key == 'u' or _key == 'U':
-                if self.unmask_handler:
-                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
-                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
-                    self.unmask_handler(self.x, self.y, mult)
+            if _key in self.handlers.keys():
+                self.handlers[_key].handle(_key, self.x, self.y)
 
             elif self.task:
                 if self.task.handle_key(_key):
@@ -261,9 +299,9 @@ class Controller(object):
                 self.set_help_text(self.task.helptext())
                 self.task.start(self.x, self.y)
 
-        if self.helptext.document:
+        if self.fig.document:
             # we now have an associated document, need to do this inside that context
-            self.helptext.document.add_next_tick_callback(
+            self.fig.document.add_next_tick_callback(
                 lambda: _ui_loop_handle_key(_key=key))
 
     def handle_mouse(self, x, y):
@@ -289,7 +327,10 @@ class Controller(object):
         global _pending_handle_mouse
         if not _pending_handle_mouse:
             _pending_handle_mouse = True
-            self.helptext.document.add_timeout_callback(self.handle_mouse_callback, 100)
+            if self.fig.document is not None:
+                self.fig.document.add_timeout_callback(self.handle_mouse_callback, 100)
+            else:
+                self.handle_mouse_callback()
 
     def handle_mouse_callback(self):
         global _pending_handle_mouse
@@ -307,7 +348,10 @@ class Task(ABC):
 
     A task may be connected to a top-level Controller by a key command.
     Once a task is active, the controller will send mouse and key events
-    to it.
+    to it.  Tasks may share key presses with eachother as only one is
+    active at a time.  Tasks are also convenient for holding state.
+    For simple single-key actions that you want to always have active,
+    see `~geminidr.interactive.controls.Handler`
     """
     @abstractmethod
     def handle_key(self, key):
@@ -520,7 +564,7 @@ class RegionTask(Task):
     """
     Task for operating on the regions.
     """
-    def __init__(self, region_model, helptext):
+    def __init__(self, region_model, helptext, domain=None):
         """
         Create a region task for the given :class:`GIRegionModel`
 
@@ -535,6 +579,12 @@ class RegionTask(Task):
         self.helptext_area = helptext
         self.last_x = None
         self.last_y = None
+        if domain:
+            self.min_x = domain[0]
+            self.max_x = domain[1]
+        else:
+            self.min_x = None
+            self.max_x = None
 
     def start(self, x, y):
         """
@@ -549,6 +599,10 @@ class RegionTask(Task):
 
         """
         self.last_x = x
+        if self.min_x is not None and x is not None:
+            self.last_x = max(self.last_x, self.min_x)
+        if self.max_x is not None and x is not None:
+            self.last_x = min(self.last_x, self.max_x)
         self.last_y = y
 
     def start_region(self):
@@ -653,9 +707,13 @@ class RegionTask(Task):
         """
         self.last_x = x
         self.last_y = y
+        if self.min_x is not None:
+            self.last_x = max(self.last_x, self.min_x)
+        if self.max_x is not None:
+            self.last_x = min(self.last_x, self.max_x)
         # we are in region mode
         if self.region_id is not None:
-            start = x
+            start = self.last_x
             end = self.region_edge
             self.region_model.adjust_region(self.region_id, start, end)
         return False
@@ -697,3 +755,30 @@ class RegionTask(Task):
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete/cancel the current/nearest region
                   """
+
+
+class Handler:
+    """
+    A Handler is a top-level key handler for the controller.
+
+    Handlers are always active and only handle a single key.
+    The Handler function will be called with the key to
+    allow for a single function to be used in multiple
+    Handlers without ambiguity.
+
+    Parameters
+    ----------
+    key : str
+        Key this handler listens for
+    description : str
+        Description of handler effect for the help text
+    fn : callable
+        Function to call with the key
+    """
+    def __init__(self, key, description, fn):
+        self.key = key.lower()
+        self.description = description
+        self.fn = fn
+
+    def handle(self, key, x, y):
+        self.fn(key, x, y)

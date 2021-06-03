@@ -7,10 +7,8 @@ The astroTools module contains astronomy specific utility functions
 import os
 import re
 import numpy as np
-from collections import namedtuple
 from astropy import units as u
 
-Section = namedtuple('Section', 'x1 x2 y1 y2')
 
 def array_from_list(list_of_quantities, unit=None):
     """
@@ -103,19 +101,6 @@ def divide0(numerator, denominator):
 
         return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
-
-def section_str_to_tuple(section, log=None):
-    warn = log.warning if log else print
-    if section is not None:
-        try:
-            x1, x2, y1, y2 = [int(v) for v in section.strip('[]').
-                replace(',', ':').split(':')]
-        except (AttributeError, ValueError):
-            warn("Cannot parse section. Using full frame for statistics")
-            section = None
-        else:
-            section = Section(x1-1, x2, y1-1, y2)
-    return section
 
 
 def cartesian_regions_to_slices(regions):
@@ -290,6 +275,29 @@ def get_spline3_extrema(spline):
                 else:
                     maxima.append(x)
     return np.array(minima), np.array(maxima)
+
+
+def transpose_if_needed(*args, transpose=False, section=slice(None)):
+    """
+    This function takes a list of arrays and returns them (or a section of them),
+    either untouched, or transposed, according to the parameter.
+
+    Parameters
+    ----------
+    args : sequence of arrays
+        The input arrays.
+    transpose : bool
+        If True, return transposed versions.
+    section : slice object
+        Section of output data to return.
+
+    Returns
+    -------
+    list of arrays
+        The input arrays, or their transposed versions.
+    """
+    return list(None if arg is None
+                else arg.T[section] if transpose else arg[section] for arg in args)
 
 
 def rotate_2d(degs):

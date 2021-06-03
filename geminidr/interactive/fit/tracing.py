@@ -4,8 +4,6 @@ Interactive function and helper functions used to trace apertures.
 from copy import deepcopy
 
 import numpy as np
-from astropy import table
-from bokeh import events
 from bokeh import models as bm
 from bokeh.layouts import column, row, Spacer
 from bokeh.plotting import figure
@@ -13,79 +11,17 @@ from bokeh.plotting import figure
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
-    connect_figure_extras, GIRegionModel, RegionEditor)
-from gempy.library import astromodels, astrotools as at, tracing
-from gempy.library.config import RangeField
+    connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
+from gempy.library import astrotools as at, tracing
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D)
+                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d,
+                    BAND_MASK_NAME)
+
 from .. import server
 
 __all__ = ["interactive_trace_apertures", ]
 
-
-# noinspection PyUnusedLocal,PyMissingConstructor
-class FittingParametersForTracedDataUI(FittingParametersUI):
-    """
-    Represents the panel with the adjustable parameters for fitting the
-    trace.
-    """
-
-    def build_column(self):
-        """
-        Override the standard column order.
-        """
-        column_title = bm.Div(
-            text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
-            min_width=100,
-            max_width=202,
-            sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
-            width_policy='max',
-        )
-
-        rejection_title = bm.Div(
-            text="Rejection Parameters",
-            min_width=100,
-            max_width=202,
-            sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
-            width_policy='max',
-        )
-
-        column_list = [column_title, self.order_slider, rejection_title,
-                       self.niter_slider, self.sigma_button,
-                       self.sigma_lower_slider, self.sigma_upper_slider,
-                       self.grow_slider]
-
-        return column_list
-
-    def sigma_button_handler(self, attr, old, new):
-        """
-        Handle the sigma clipping being turned on or off.
-
-        This will also trigger a fit since the result may
-        change.
-
-        Parameters
-        ----------
-        attr : Any
-            unused
-        old : str
-            old value of the toggle button
-        new : str
-            new value of the toggle button
-        """
-        self.fit.sigma_clip = bool(new)
-
-        if self.fit.sigma_clip:
-            self.fitting_parameters["sigma_upper"] = \
-                self.sigma_upper_slider.children[0].value
-            self.fitting_parameters["sigma_lower"] = \
-                self.sigma_lower_slider.children[0].value
-        else:
-            self.fitting_parameters["sigma_upper"] = None
-            self.fitting_parameters["sigma_lower"] = None
-        self.fit.perform_fit()
+from ..interactive_config import interactive_conf
 
 
 # noinspection PyMissingConstructor
@@ -129,13 +65,19 @@ class TraceAperturesTab(Fit1DPanel):
 
         listeners = [lambda f: self.update_info(self.rms_div, f), ]
 
+        # prep params to clean up sigma related inputs for the interface
+        # i.e. niter min of 1, etc.
+        prep_fit1d_params_for_fit1d(fitting_parameters)
+
         self.fitting_parameters = fitting_parameters
 
-        self.fit = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
-                                      listeners=listeners)
+        self.band_model = GIRegionModel(domain=domain)
 
-        self.fitting_parameters_ui = FittingParametersForTracedDataUI(
-            visualizer, self.fit, self.fitting_parameters)
+        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
+                                        listeners=listeners, band_model=self.band_model)
+
+        self.fitting_parameters_ui = FittingParametersUI(
+            visualizer, self.model, self.fitting_parameters)
 
         self.pars_column, self.controller_help = self.create_pars_column(
             fit_pars_ui=self.fitting_parameters_ui.get_bokeh_components(),
@@ -143,10 +85,12 @@ class TraceAperturesTab(Fit1DPanel):
 
         self.plots_column, self.controller = self.create_plots_column(
             plot_height=plot_height, plot_title=plot_title,
-            plot_width=plot_width, xlabel=xlabel, ylabel=ylabel)
+            plot_width=plot_width, xlabel=xlabel, ylabel=ylabel, domain=domain)
 
         self.component = row(self.plots_column, self.pars_column,
                              css_classes=["tab-content"], spacing=5)
+
+        self.line = None
 
     def create_pars_column(self, fit_pars_ui, rms_div, column_width=220):
         """
@@ -155,7 +99,7 @@ class TraceAperturesTab(Fit1DPanel):
         """
         # Create the reset button, add its functionality and add it to the layout
         reset_button = bm.Button(align='start',
-                                 button_type='danger',
+                                 button_type='warning',
                                  height=35,
                                  label="Reset",
                                  width=202)
@@ -190,28 +134,31 @@ class TraceAperturesTab(Fit1DPanel):
         return controls_col, controller_help
 
     def create_plots_column(self, plot_width, plot_height, plot_title, xlabel,
-                            ylabel, enable_regions=True):
+                            ylabel, enable_regions=True, domain=None):
         """
         Creates the central plot area with the main plot, the residuals and
         a text field where the user can select regions.
         """
+        ic = interactive_conf()
+        bokeh_line_color = ic.bokeh_line_color
+
         # Now the figures
         x_range = None
         y_range = None
 
-        if self.fit.data:
+        if self.model.data:
 
-            if 'x' in self.fit.data.data:
-                if len(self.fit.data.data['x']) >= 2:
-                    x_min = min(self.fit.data.data['x'])
-                    x_max = max(self.fit.data.data['x'])
+            if 'x' in self.model.data.data:
+                if len(self.model.data.data['x']) >= 2:
+                    x_min = min(self.model.data.data['x'])
+                    x_max = max(self.model.data.data['x'])
                     x_pad = (x_max - x_min) * 0.1
                     x_range = bm.Range1d(x_min - x_pad, x_max + x_pad * 2)
 
-            if 'y' in self.fit.data.data:
-                if len(self.fit.data.data['y']) >= 2:
-                    y_min = min(self.fit.data.data['y'])
-                    y_max = max(self.fit.data.data['y'])
+            if 'y' in self.model.data.data:
+                if len(self.model.data.data['y']) >= 2:
+                    y_min = min(self.model.data.data['y'])
+                    y_max = max(self.model.data.data['y'])
                     y_pad = (y_max - y_min) * 0.1
                     y_range = bm.Range1d(y_min - y_pad, y_max + y_pad)
 
@@ -231,7 +178,6 @@ class TraceAperturesTab(Fit1DPanel):
                         x_range=x_range,
                         y_axis_label=ylabel,
                         y_range=y_range)
-
         p_main.height_policy = 'fit'
         p_main.margin = (15, 0, 0, 15)
         p_main.width_policy = 'fit'
@@ -239,20 +185,14 @@ class TraceAperturesTab(Fit1DPanel):
         # Enable region selection ----------------------------------------------
         if enable_regions:
 
-            self.band_model = GIRegionModel()
-
             def update_regions():
-                self.fit.model.regions = self.band_model.build_regions()
+                self.model.regions = self.band_model.build_regions()
 
             # Handles Bands Regions
             self.band_model.add_listener(
                 Fit1DRegionListener(update_regions))
 
-            # Handles Bands Masks
-            self.band_model.add_listener(
-                Fit1DRegionListener(self.band_model_handler))
-
-            connect_figure_extras(p_main, None, self.band_model)
+            connect_figure_extras(p_main, self.band_model)
 
             mask_handlers = (self.mask_button_handler,
                              self.unmask_button_handler)
@@ -263,7 +203,8 @@ class TraceAperturesTab(Fit1DPanel):
 
         _controller = Controller(p_main, None, self.band_model,
                                  self.controller_help,
-                                 mask_handlers=mask_handlers)
+                                 mask_handlers=mask_handlers,
+                                 domain=domain)
 
         self.add_custom_cursor_behavior(p_main)
 
@@ -279,42 +220,40 @@ class TraceAperturesTab(Fit1DPanel):
                          x_range=p_main.x_range,
                          y_axis_label='Delta',
                          y_range=None)
-
         p_resid.height_policy = 'fixed'
         p_resid.margin = (0, 0, 0, 15)
         p_resid.width_policy = 'fit'
 
-        connect_figure_extras(p_resid, None, self.band_model)
+        connect_figure_extras(p_resid, self.band_model)
 
         # Initializing this will cause the residuals to be calculated
-        self.fit.data.data['residuals'] = np.zeros_like(self.fit.x)
+        self.model.data.data['residuals'] = np.zeros_like(self.model.x)
 
-        p_resid.scatter(x='x', y='residuals', source=self.fit.data,
-                        size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
+        p_resid.scatter(x='x', y='residuals', source=self.model.data,
+                        size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if "regions" in self.fitting_parameters and self.fitting_parameters["regions"] is not None:
             region_tuples = at.cartesian_regions_to_slices(self.fitting_parameters["regions"])
             self.band_model.load_from_tuples(region_tuples)
 
-        self.scatter = p_main.scatter(x='x', y='y', source=self.fit.data,
-                                      size=5, legend_field='mask', **self.fit.mask_rendering_kwargs())
-        self.fit.add_listener(self.model_change_handler)
+        self.scatter = p_main.scatter(x='x', y='y', source=self.model.data,
+                                      size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
+        self.model.add_listener(self.model_change_handler)
 
         # TODO refactor? this is dupe from band_model_handler
-        #   hacking it in here so I can account for the initial
-        #   state of the band model (which used to be always empty)
-        x_data = self.fit.data.data['x']
+        # hacking it in here so I can account for the initial
+        # state of the band model (which used to be always empty)
+        x_data = self.model.data.data['x']
+        mask = self.model.data.data['mask'].copy()
         for i in np.arange(len(x_data)):
-            if not self.band_model or self.band_model.contains(x_data[i]):
-                self.fit.band_mask[i] = 0
-            else:
-                self.fit.band_mask[i] = 1
+            if self.band_model and not self.band_model.contains(x_data[i]) and mask[i] == 'good':
+                mask[i] = BAND_MASK_NAME
+        self.model.data.data['mask'] = mask
 
-        self.fit.perform_fit()
-        self.line = p_main.line(x='xlinspace', y='model',
-                                source=self.fit.evaluation, line_width=3,
-                                color='crimson')
+        self.model.perform_fit()
+        self.line = p_main.line(x='xlinspace', y='model', source=self.model.evaluation, line_width=3,
+                                color=bokeh_line_color)
 
         fig_column = [p_main, p_resid]
 
@@ -337,39 +276,6 @@ class TraceAperturesTab(Fit1DPanel):
                      width_policy='fit')
 
         return col, _controller
-
-    @staticmethod
-    def add_custom_cursor_behavior(p):
-        """
-        Customize cursor behavior depending on which tool is active.
-        """
-        pan_start = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var active = [...mainPlot.getElementsByClassName('bk-active')];
-
-            console.log(active);
-            
-            if ( active.some(e => e.title == "Pan") ) { 
-                Bokeh.cursor = 'move'; }
-        '''
-
-        pan_end = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-            
-            Bokeh.cursor = 'default';
-            elm.style.cursor = Bokeh.cursor;
-        '''
-
-        mouse_move = """
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-            elm.style.cursor = Bokeh.cursor;
-        """
-
-        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
-        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
-        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
     def create_rms_div(self):
         """
@@ -395,13 +301,6 @@ class TraceAperturesTab(Fit1DPanel):
 
         return rms_div
 
-    def reset_dialog_handler(self, result):
-        """
-        Reset fit parameter values.
-        """
-        if result:
-            self.fitting_parameters_ui.reset_ui()
-
     @staticmethod
     def update_info(info_div, f):
         """
@@ -415,10 +314,6 @@ class TraceAperturesTab(Fit1DPanel):
             ???
         """
         info_div.update(text=f'RMS: <b>{f.rms:.4f}</b>')
-
-    def update_regions(self):
-        """ Update fitting regions """
-        self.fit.model.regions = self.band_model.build_regions()
 
 
 class TraceAperturesVisualizer(Fit1DVisualizer):
@@ -443,13 +338,16 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         self.layout = None
         self.last_changed = None
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
+        self.reinit_extras = {} if reinit_extras is None else reinit_extras
+        self.reinit_params = [] if reinit_params is None else reinit_params
         self.widgets = {}
         self.error_alert = self.create_error_alert()
 
         # Save parameters in case we want to reset them
         self._reinit_extras = {} if reinit_extras is None \
             else {key: val.default for key, val in self.reinit_extras.items()}
+        self._reinit_params = {} if reinit_params is None \
+            else {key: val for key, val in config.items() if key in reinit_params}
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
@@ -501,17 +399,18 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
         if self.nfits > 1:
+            # more than one tab, turbo it
+            self.turbo = TabsTurboInjector(self.tabs)
+
             if domains is None:
                 domains = [None] * len(fitting_parameters)
             if all_weights is None:
                 all_weights = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights), start=1):
-                # tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, index=i, **kwargs)
-                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, weights, **kwargs)
-                tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
-                self.tabs.tabs.append(tab)
-                self.fits.append(tui.fit)
+                tui = TraceAperturesTab(self, fitting_parms, domain, x, y, idx=i, weights=weights, **kwargs)
+                self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
+                self.fits.append(tui.model)
         else:
 
             # ToDo: Review if there is a better way of handling this.
@@ -520,10 +419,11 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
             # ToDo: the domains variable contains a list. I changed it to
             #  domains[0] and the code worked.
-            tui = TraceAperturesTab(self, fitting_parameters[0], domains[0], allx[0], ally[0], all_weights[0], **kwargs)
+            tui = TraceAperturesTab(self, fitting_parameters[0], domains[0], allx[0], ally[0], 0,
+                                    all_weights[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
-            self.fits.append(tui.fit)
+            self.fits.append(tui.model)
 
         self.add_callback_to_sliders()
 
@@ -586,12 +486,22 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                                             "to previous working configuration."
 
                     self.reset_tracing_panel(param=self.last_changed)
-                    _extras[self.last_changed] = \
-                        self._reinit_extras[self.last_changed]
+
+                    if self.last_changed in self._reinit_extras.keys():
+                        _extras[self.last_changed] = \
+                            self._reinit_extras[self.last_changed]
+
+                    elif self.last_changed in self._reinit_params.keys():
+                        setattr(_config, self.last_changed,
+                                self._reinit_params[self.last_changed])
+
                     data = data_source(_config, _extras)
                 else:
                     # Store successful pars
                     self._reinit_extras = deepcopy(_extras)
+                    self._reinit_params = {
+                        key: val for key, val in _config.items()
+                        if key in reinit_params}
 
                 return data
 
@@ -653,7 +563,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             the background.
         reinit_params : list
             Parameters for re-tracing.
-        reinit_extras : list
+        reinit_extras : dict
             Extra parameters for re-tracing.
         """
         # No panel required if we are not re-creating data
@@ -675,6 +585,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                 height=35,
                 label=modal_button_label,
                 width=202)
+            self.modal_widget = self.reinit_button
 
             def trace_apertures_handler(result):
                 if result:
@@ -690,7 +601,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Reset tracing parameter
             reset_tracing_button = bm.Button(
                 align='start',
-                button_type='danger',
+                button_type='warning',
                 height=35,
                 id='reset-tracing-pars',
                 label="Reset",
@@ -718,6 +629,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         return reinit_panel
 
+    # noinspection PyProtectedMember
     def reset_tracing_panel(self, param=None):
         """
         Reset all the parameters in the Tracing Panel (leftmost column).
@@ -745,6 +657,27 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             # Update Text Field via callback function
             for callback in self.widgets[key]._callbacks['value_throttled']:
                 callback(attrib='value_throttled', old=old, new=reset_value)
+
+        for key, val in self.config.items():
+
+            if key not in self.reinit_params:
+                continue
+
+            if param is None:
+                reset_value = self.config._fields[key].default
+            elif key == param:
+                reset_value = self._reinit_params[key]
+            else:
+                continue
+
+            old = self.widgets[key].value
+
+            # Update Slider Value
+            self.widgets[key].update(value=reset_value)
+
+            # Update Text Field via callback function
+            for callback in self.widgets[key]._callbacks['value']:
+                callback('value', old=old, new=reset_value)
 
     def register_last_changed(self, key):
         """
@@ -807,11 +740,6 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
                              spacing=15,
                              sizing_mode="stretch_both")
 
-        # doc.template_variables["primitive_long_help"] = (help.DEFAULT_HELP
-        #                                                  + DETAILED_HELP
-        #                                                  + help.PLOT_TOOLS_HELP_SUBTEXT
-        #                                                  + help.REGION_EDITING_HELP_SUBTEXT)
-
         doc.add_root(all_content)
 
 
@@ -823,26 +751,32 @@ def interactive_trace_apertures(ext, config, fit1d_params):
     ----------
     ext : AstroData
         Single extension extracted from an AstroData object.
-    config : dict
-        Dictionary containing the parameters from traceApertures().
+    config : :class:`geminidr.code.spect.traceAperturesConfig`
+        Configuration object containing the parameters from traceApertures().
     fit1d_params : dict
         Dictionary containing initial parameters for fitting a model.
 
     Returns
     -------
-    Table : new aperture table.
+    list of models describing the aperture curvature
     """
     ap_table = ext.APERTURE
-    fit_par_list = [fit1d_params] * len(ap_table)
-    domain_list = [[ap['domain_start'], ap['domain_end']] for ap in ap_table]
+    fit_par_list = list()
+    for i in range(len(ap_table)):
+        fit_par_list.append({x: y for x, y in fit1d_params.items()})
+
+    domain_list = [[ap_table.meta["header"][kw]
+                    for kw in ("DOMAIN_START", "DOMAIN_END")]
+                   for ap in ap_table]
 
     # Create parameters to add to the UI
-    reinit_extras = {
-        "max_missed": RangeField("Max Missed", int, 5, min=0),
-        "max_shift": RangeField("Max Shifted", float, 0.05, min=0.001, max=0.1),
-        "nsum": RangeField("Lines to sum", int, 10, min=1),
-        "step": RangeField("Tracing step", int, 10, min=1),
-    }
+    reinit_params = ["max_missed", "max_shift", "nsum", "step"]
+
+    # Update doc for a more compact version
+    config._fields["max_missed"].doc = "Max Missed"
+    config._fields["max_shift"].doc = "Max Shifted"
+    config._fields["nsum"].doc = "Lines to sum"
+    config._fields["step"].doc = "Tracing step"
 
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
@@ -852,7 +786,18 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         ylabel = "x / columns [px]"
 
     def data_provider(conf, extra):
-        return trace_apertures_data_provider(ext, conf, extra)
+        """
+        Callback function used to recreate the data for fitting.
+
+        Parameters
+        ----------
+        conf : :class:`geminidr.core.parameters_spect.traceAperturesConfig`
+            Standard configuration object.
+        extra : dict
+            Dictionary containing parameters not defined in the configuration
+            object. Not used in this case.
+        """
+        return trace_apertures_data_provider(ext, conf)
 
     # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
@@ -866,7 +811,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
                    + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
                    + help.REGION_EDITING_HELP_SUBTEXT),
         primitive_name="traceApertures",
-        reinit_extras=reinit_extras,
+        reinit_params=reinit_params,
         tab_name_fmt="Aperture {}",
         title="Interactive Trace Apertures",
         xlabel=xlabel,
@@ -875,31 +820,11 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
     server.interactive_fitter(visualizer)
     models = visualizer.results()
-
-    all_aperture_tables = []
-    dispaxis = 2 - ext.dispersion_axis()  # python sense
-
-    for final_model, ap in zip(models, ap_table):
-        location = ap['c0']
-        this_aptable = astromodels.model_to_table(final_model.model)
-
-        # Recalculate aperture limits after rectification
-        apcoords = final_model.evaluate(np.arange(ext.shape[dispaxis]))
-
-        this_aptable["aper_lower"] = (
-                ap["aper_lower"] + (location - apcoords.min()))
-
-        this_aptable["aper_upper"] = (
-                ap["aper_upper"] - (apcoords.max() - location))
-
-        all_aperture_tables.append(this_aptable)
-
-    new_aptable = table.vstack(all_aperture_tables, metadata_conflicts="silent")
-    return new_aptable
+    return [m.model for m in models]
 
 
 # noinspection PyUnusedLocal
-def trace_apertures_data_provider(ext, conf, extra):
+def trace_apertures_data_provider(ext, conf):
     """
     Function used by the interactive fitter to generate the a list with
     pairs of [x, y] data containing the knots used for tracing.
@@ -908,11 +833,8 @@ def trace_apertures_data_provider(ext, conf, extra):
     ----------
     ext : AstroData
         Single extension of data containing an .APERTURE table.
-    conf : dict
+    conf : :class:`geminidr.gmos.spect.traceAperturesConfig`
         Dictionary containing default traceApertures() parameters.
-    extra : dict
-        Dictionary containing extra parameters used to re-create the input data
-        for fitting interactively.
 
     Returns
     -------
@@ -923,10 +845,13 @@ def trace_apertures_data_provider(ext, conf, extra):
     all_tracing_knots = []
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
+    # Convert configuration object into dictionary for easy access to its values
+    conf_as_dict = {key: val for key, val in conf.items()}
+
     for i, loc in enumerate(ext.APERTURE['c0'].data):
         c0 = int(loc + 0.5)
         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-        start = np.argmax(at.boxcar(spectrum, size=3))
+        start = np.argmax(at.boxcar(spectrum, size=20))
 
         # The coordinates are always returned as (x-coords, y-coords)
         ref_coords, in_coords = tracing.trace_lines(
@@ -935,12 +860,12 @@ def trace_apertures_data_provider(ext, conf, extra):
             cwidth=5,
             initial=[loc],
             initial_tolerance=None,
-            max_missed=extra['max_missed'],
-            max_shift=extra['max_shift'],
-            nsum=extra['nsum'],
+            max_missed=conf_as_dict['max_missed'],
+            max_shift=conf_as_dict['max_shift'],
+            nsum=conf_as_dict['nsum'],
             rwidth=None,
             start=start,
-            step=extra['step'],
+            step=conf_as_dict['step'],
         )
 
         in_coords = np.ma.masked_array(in_coords)
