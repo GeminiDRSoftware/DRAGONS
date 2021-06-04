@@ -532,7 +532,7 @@ class Spect(PrimitivesBASE):
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
                     data, _, _, _ = _average_along_slit(ext, center=None, nsum=nsum)
-                    fwidth = tracing.estimate_peak_width(data)
+                    fwidth = tracing.estimate_peak_width(data - boxcar(data, size=30))
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 if initial_peaks is None:
@@ -1089,7 +1089,8 @@ class Spect(PrimitivesBASE):
                             "{:.3f} nm/pixel".format(c0, dw0))
 
                 if fwidth is None:
-                    fwidth = tracing.estimate_peak_width(data, mask=mask)
+                    fwidth = tracing.estimate_peak_width(
+                        data - boxcar(data, size=30), mask=mask)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 # Don't read linelist if it's the one we already have
