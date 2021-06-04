@@ -424,11 +424,12 @@ def estimate_peak_width(data, mask=None):
         goodpix = ~mask.astype(bool)
     widths = []
     niters = 0
+    contsub_data = data - at.boxcar(data, size=30)
     while len(widths) < 10 and niters < 100:
-        index = np.argmax(data * goodpix)
+        index = np.argmax(contsub_data * goodpix)
         with warnings.catch_warnings():  # width=0 warnings
             warnings.simplefilter("ignore")
-            width = signal.peak_widths(data, [index], 0.5)[0][0]
+            width = signal.peak_widths(contsub_data, [index], 0.5)[0][0]
         # Block 2 * FWHM
         hi = int(index + width + 1.5)
         lo = int(index - width)
