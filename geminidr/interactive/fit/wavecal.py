@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
+from bisect import bisect
 
 from bokeh import models as bm
 from bokeh.layouts import row, column
@@ -7,10 +8,32 @@ from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller, Handler
 from gempy.library.matching import match_sources
-from gempy.library.tracing import pinpoint_peaks
+from gempy.library.tracing import cwt_ricker, pinpoint_peaks
 
-from .fit1d import (Fit1DPanel, Fit1DVisualizer, fit1d_figure,
-                    USER_MASK_NAME)
+from .fit1d import (Fit1DPanel, Fit1DVisualizer, InfoPanel,
+                    fit1d_figure, USER_MASK_NAME)
+
+
+def wavestr(line):
+    """Convert a line wavelength to a string, rounding the internal
+    representation of the floating-point value"""
+    return str(np.round(line, decimals=6))
+
+
+def beep():
+    """Make a beep noise"""
+    print("\a", end="")
+
+
+def disable_when_identifying(fn):
+    """A decorator that prevents methods from being executed when the
+    WavelengthSolutionPanel is currently identifying an arc line"""
+    def gn(self, *args, **kwargs):
+        if self.currently_identifying:
+            beep()
+            return
+        fn(self, *args, **kwargs)
+    return gn
 
 
 class WavelengthSolutionPanel(Fit1DPanel):
@@ -19,6 +42,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # No need to compute wavelengths here as the model_change_handler() does it
         self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(other_data["spectrum"]),
                                              'spectrum': other_data["spectrum"]})
+        self.currently_identifying = False
         super().__init__(visualizer, fitting_parameters, domain, x, y,
                          weights=weights, **kwargs)
         self.model.other_data = other_data
@@ -56,22 +80,46 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         text_color=self.model.mask_rendering_kwargs()['color'],
                         text_baseline='middle')
         self.p_spectrum = p_spectrum
-        delete_line_handler = Handler('d', "Delete arc line", self.delete_line)
-        identify_line_handler = Handler('i', "Identify arc line", self.add_line)
+        delete_line_handler = Handler('d', "Delete arc line",
+                                      self.delete_line)
+        identify_line_handler = Handler('i', "Identify arc line",
+                                        self.identify_line)
         Controller(p_spectrum, None, self.model.band_model, controller_div,
                    mask_handlers=None, domain=domain,
                    handlers=[delete_line_handler, identify_line_handler])
 
-        add_new_line_button = bm.Button(label="Add new line")
-        self.line_chooser = row(bm.Div(text="New line wavelength"),
-                                add_new_line_button)
-
-        identify_button = bm.Button(label="Identify lines")
+        identify_button = bm.Button(label="Identify lines", width=200,
+                                    button_type="primary", width_policy="fixed")
         identify_button.on_click(self.identify_lines)
 
-        identify_panel = row(self.line_chooser, identify_button)
+        self.new_line_prompt = bm.Div(text="Line", style={"font-size": "16px",
+                                                          "text-align": "right;"},
+                                      width=200, min_width=200,
+                                      width_policy="max")
+        self.new_line_dropdown = bm.Select(options=[], width=100,
+                                           width_policy="fixed")
+        self.new_line_textbox = bm.NumericInput(width=100, mode='float',
+                                                width_policy="fixed")
+        self.new_line_dropdown.on_change("value", self.set_new_line_textbox_value)
+        new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fixed",
+                                       button_type="success")
+        new_line_ok_button.on_click(self.add_new_line)
+        new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fixed",
+                                           button_type="danger")
+        new_line_cancel_button.on_click(self.cancel_new_line)
+        self.new_line_div = row(self.new_line_prompt, self.new_line_dropdown,
+                                self.new_line_textbox,
+                                new_line_ok_button, new_line_cancel_button,
+                                sizing_mode="stretch_both")
 
-        return [p_spectrum, identify_panel, p_main, p_supp]
+        identify_panel = row(identify_button, self.new_line_div)
+        self.new_line_div.visible = False
+
+        info_panel = InfoPanel()
+        self.model.add_listener(info_panel.model_change_handler)
+
+        return [p_spectrum, identify_panel, info_panel.component,
+                p_main, p_supp]
 
     @staticmethod
     def linear_model(model):
@@ -93,16 +141,40 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.model.data.data['fitted'] = model.evaluate(x)
         self.model.data.data['nonlinear'] = y - linear_model(x)
-        self.model.data.data['heights'] = [self.spectrum.data['spectrum'][int(xx + 0.5)] + 0.02 * self.spectrum.data['spectrum'].max() for xx in x]
-        self.model.data.data['lines'] = [str(np.round(yy, decimals=6)) for yy in y]
+        self.model.data.data['heights'] = [
+            self.spectrum.data['spectrum'][int(xx + 0.5)] +
+            0.02 * self.spectrum.data['spectrum'].max() for xx in x]
+        self.model.data.data['lines'] = [wavestr(yy) for yy in y]
 
-        self.model.evaluation.data['nonlinear'] = model.evaluation.data['model'] - linear_model(model.evaluation.data['xlinspace'])
+        self.model.evaluation.data['nonlinear'] = (
+                model.evaluation.data['model'] -
+                linear_model(model.evaluation.data['xlinspace']))
 
         domain = model.domain
         self.spectrum.data['wavelengths'] = model.evaluate(
             np.arange(domain[0], domain[1]+1))
 
-    def add_identified_line(self, peak, wavelength):
+        # If we recalculated the model while in the middle of identifying a
+        # peak, keep the peak location but update the line choices
+        if self.currently_identifying:
+            peak = self.currently_identifying
+            self.currently_identifying = False
+            self.identify_line('i', 0, 0, peak=peak)
+
+    def add_new_line(self, *args):
+        """Handler for the 'OK' button in the line identifier"""
+        if self.currently_identifying:
+            peak = self.currently_identifying
+            self.currently_identifying = False
+            self.add_line_to_data(peak, float(self.new_line_textbox.value))
+        self.cancel_new_line(*args)
+
+    def cancel_new_line(self, *args):
+        """Handler for the 'Cancel' button in the line identifier"""
+        self.new_line_div.visible = False
+
+
+    def add_line_to_data(self, peak, wavelength):
         """
         Add a new line to the ColumnDataSource and performs a new fit.
         *** THIS SHOULD CHECK THAT THE LINE WAVELENGTHS ARE MONOTONIC***
@@ -110,48 +182,75 @@ class WavelengthSolutionPanel(Fit1DPanel):
         Parameters
         ----------
         peak : float
-            pixel locations of peak
+            pixel location of peak
         wavelength : float
-            wavelengths
+            wavelength in nm
         """
+        print(f"Adding {wavelength} nm at pixel {peak}")
         new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
                     'fitted': [0], 'nonlinear': [0], 'heights': [0],
                     'residuals': [0],
-                    'lines': [str(np.round(wavelength, decimals=6))],
+                    'lines': [wavestr(wavelength)],
                    }
         self.model.data.stream(new_data)
         self.model.perform_fit()
 
-    def add_line(self, key, x, y):
+    @disable_when_identifying
+    def identify_line(self, key, x, y, peak=None):
         """
         Identifies a peak near the cursor location and allows the user to
         provide a wavelength.
         """
-        x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
-        fwidth = self.model.other_data["fwidth"]
-        pixel = interp1d(self.spectrum.data["wavelengths"],
-                         range(len(self.spectrum.data["wavelengths"])))(x)
-        new_peaks = np.setdiff1d(self.model.other_data["peaks"],
-                                 self.model.x, assume_unique=True)
-        index = np.argmin(abs(new_peaks - pixel))
-
-        # If we've clicked "close" to a real peak (based on viewport size),
-        # then select that
-        if abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1):
-            peak = new_peaks[index]
-        else:
-            try:
-                # TODO: This finds all tiny bumps; should be more conservative
-                peak = pinpoint_peaks(self.spectrum.data["spectrum"], None,
-                                      [pixel])[0]
-            except IndexError:
-                peak = None
         if peak is None:
-            return
-        est_wave = self.model.evaluate(peak)
-        if not (x1 < est_wave < x2):
-            return
+            x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
+            fwidth = self.model.other_data["fwidth"]
+            pixel = interp1d(self.spectrum.data["wavelengths"],
+                             range(len(self.spectrum.data["wavelengths"])))(x)
+            new_peaks = np.setdiff1d(self.model.other_data["peaks"],
+                                     self.model.x, assume_unique=True)
+            index = np.argmin(abs(new_peaks - pixel))
 
+            # If we've clicked "close" to a real peak (based on viewport size),
+            # then select that
+            if abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1):
+                peak = new_peaks[index]
+            else:
+                # TODO: Check this behaves sensibly, and doesn't find
+                # all tiny bumps
+                pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
+                                           [0.42466 * fwidth])
+                eps = np.finfo(np.float32).eps  # Minimum representative data
+                pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
+                try:
+                    peak = pinpoint_peaks(pinpoint_data, None, [pixel])[0]
+                except IndexError:  # no peak
+                    return
+            est_wave = self.model.evaluate(peak)[0]
+            if not (x1 < est_wave < x2):  # peak outside viewport
+                return
+        else:
+            est_wave = self.model.evaluate(peak)[0]  # evaluate always returns array
+
+        # Find all unidentified arc lines that this could be, maintaining
+        # monotonicity
+        all_lines = self.model.other_data["linelist"].wavelengths(
+            in_vacuo=self.visualizer.config.in_vacuo, units="nm")
+        id_lines = sorted(self.model.y)  # identified lines
+        index = bisect(id_lines, est_wave)
+        lower_limit = 0 if index == 0 else id_lines[index-1]
+        upper_limit = np.inf if index == len(id_lines) else id_lines[index]
+        possible_lines = [line for line in all_lines
+                          if lower_limit < line < upper_limit]
+        selectable_lines = sorted(sorted(possible_lines,
+                                         key=lambda x: abs(x - est_wave))[:5])
+        select_index = np.argmin(abs(np.asarray(selectable_lines) - est_wave))
+        self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
+        self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
+        self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
+        self.new_line_div.visible = True
+        self.currently_identifying = peak
+
+    @disable_when_identifying
     def delete_line(self, key, x, y):
         """
         Delete (not mask) from the fit the line nearest the cursor. This
@@ -201,12 +300,16 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 good_data['nonlinear'].append(0)
                 good_data['heights'].append(0)
                 good_data['residuals'].append(0)
-                good_data['lines'].append(str(np.round(unmatched_lines[m], decimals=6)))
+                good_data['lines'].append(wavestr(unmatched_lines[m]))
                 print("NEW LINE", peak, unmatched_lines[m])
 
         self.model.data.data = good_data
         self.model.perform_fit()
 
+    def set_new_line_textbox_value(self, attrib, old, new):
+        """Update the value of the textbox related to the new line ID"""
+        if new != old:
+            self.new_line_textbox.value = float(new)
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
