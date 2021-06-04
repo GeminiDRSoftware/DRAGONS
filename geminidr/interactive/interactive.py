@@ -263,10 +263,12 @@ class PrimitiveVisualizer(ABC):
                     end = 50
                 step = start
                 allow_none = field.optional
+                is_float = field.dtype is not int
 
                 widget = build_text_slider(
                     doc, value, step, start, end, obj=self.config, attr=pname,
-                    slider_width=slider_width, allow_none=allow_none)
+                    slider_width=slider_width, allow_none=allow_none,
+                    is_float=is_float)
 
                 self.widgets[pname] = widget.children[0]
             elif hasattr(field, 'allowed'):
@@ -274,7 +276,8 @@ class PrimitiveVisualizer(ABC):
                 widget = Dropdown(label=doc, menu=list(self.config.allowed.keys()))
             else:
                 # Anything else
-                widget = TextInput(label=doc)
+                print("FIELD", pname)
+                widget = TextInput(title=doc)
 
             widgets.append(widget)
             # Complex multi-widgets will already have been added
@@ -294,19 +297,20 @@ class PrimitiveVisualizer(ABC):
                     end = 50
                 step = start
                 allow_none = field.optional
+                is_float = field.dtype is not int
 
                 widget = build_text_slider(
                     doc, field.default, step, start, end, obj=self.extras,
                     attr=pname, handler=self.slider_handler_factory(
                         pname, reinit_live=reinit_live),
                     throttled=True, slider_width=slider_width,
-                    allow_none=allow_none)
+                    allow_none=allow_none, is_float=is_float)
 
                 self.widgets[pname] = widget.children[0]
                 self.extras[pname] = field.default
             else:
                 # Anything else
-                widget = TextInput(label=doc)
+                widget = TextInput(title=doc)
                 self.extras[pname] = ''
 
             widgets.append(widget)
@@ -342,7 +346,8 @@ class PrimitiveVisualizer(ABC):
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256, config=None, allow_none=False):
+                      slider_width=256, config=None, allow_none=False,
+                      is_float=None):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -368,6 +373,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Set to `True` to limit handler calls to when the slider is released (default False)
     allow_none : bool
         Set to `True` to allow an empty text entry to specify a `None` value
+    is_float : bool
+        nature of parameter (None => try to figure it out)
 
     Returns
     -------
@@ -385,13 +392,20 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             if hasattr(field, 'max'):
                 max_value = field.max
 
-    start = min(value, min_value) if min_value is not None else min(value, 0)
-    end = max(value, max_value) if max_value is not None else max(10, value*2)
+    if value is None:
+        start = min_value if min_value is not None else 0
+        end = max_value if max_value is not None else 10
+        slider_value = start
+    else:
+        start = min(value, min_value) if min_value is not None else min(value, 0)
+        end = max(value, max_value) if max_value is not None else max(10, value*2)
+        slider_value = value
 
     # trying to convince int-based sliders to behave
-    is_float = not isinstance(value, int) or \
-               (min_value is not None and not isinstance(min_value, int)) or \
-               (max_value is not None and not isinstance(max_value, int))
+    if is_float is None:
+        is_float = ((value is not None and not isinstance(value, int)) or
+                    (min_value is not None and not isinstance(min_value, int)) or
+                    (max_value is not None and not isinstance(max_value, int)))
     if step is None:
         if is_float:
             step = 0.1
@@ -400,10 +414,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
-        slider = Slider(start=start, end=end, value=value, step=step,
+        slider = Slider(start=start, end=end, value=slider_value, step=step,
                         title=title, format=fmt)
     else:
-        slider = Slider(start=start, end=end, value=value, step=step,
+        slider = Slider(start=start, end=end, value=slider_value, step=step,
                         title=title)
 
     slider.width = slider_width
