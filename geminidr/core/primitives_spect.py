@@ -1099,10 +1099,8 @@ class Spect(PrimitivesBASE):
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points,
                     all_fp_init, config=config,
-                    reinit_params=[#"center",
-                                   "nsum", "min_snr", "min_sep",
-                                   #"fwidth", "central_wavelength", "dispersion"
-                                   ],
+                    reinit_params=["center", "nsum", "min_snr", "min_sep",
+                                   "fwidth", "central_wavelength", "dispersion"],
                     modal_message="Hang on, this stuff is tricky",
                     tab_name_fmt="Slit {}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",

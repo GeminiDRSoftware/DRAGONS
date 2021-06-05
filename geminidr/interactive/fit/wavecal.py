@@ -113,7 +113,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                 sizing_mode="stretch_both")
 
         identify_panel = row(identify_button, self.new_line_div)
-        self.new_line_div.visible = False
+        #self.new_line_div.visible = False
 
         info_panel = InfoPanel()
         self.model.add_listener(info_panel.model_change_handler)
@@ -164,15 +164,22 @@ class WavelengthSolutionPanel(Fit1DPanel):
     def add_new_line(self, *args):
         """Handler for the 'OK' button in the line identifier"""
         if self.currently_identifying:
+            try:
+                wavelength = float(self.new_line_textbox.value)
+            except TypeError:
+                beep()
+                return
             peak = self.currently_identifying
             self.currently_identifying = False
-            self.add_line_to_data(peak, float(self.new_line_textbox.value))
+            self.add_line_to_data(peak, wavelength)
         self.cancel_new_line(*args)
 
     def cancel_new_line(self, *args):
         """Handler for the 'Cancel' button in the line identifier"""
-        self.new_line_div.visible = False
-
+        self.currently_identifying = False
+        self.new_line_prompt.text = ""
+        self.new_line_dropdown.options = []
+        #self.new_line_div.visible = False
 
     def add_line_to_data(self, peak, wavelength):
         """
@@ -187,8 +194,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
             wavelength in nm
         """
         print(f"Adding {wavelength} nm at pixel {peak}")
+        # Dummy values should be close to true values to avoid plot resizing
         new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
-                    'fitted': [0], 'nonlinear': [0], 'heights': [0],
+                    'fitted': [wavelength], 'nonlinear': [0], 'heights': [0],
                     'residuals': [0],
                     'lines': [wavestr(wavelength)],
                    }
@@ -214,6 +222,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             # then select that
             if abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1):
                 peak = new_peaks[index]
+                print(f"Retrieved peak from list at {peak}")
             else:
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
@@ -223,7 +232,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
                 try:
                     peak = pinpoint_peaks(pinpoint_data, None, [pixel])[0]
+                    print(f"Found peak at pixel {peak}")
                 except IndexError:  # no peak
+                    print("Couldn't find a peak")
                     return
             est_wave = self.model.evaluate(peak)[0]
             if not (x1 < est_wave < x2):  # peak outside viewport
@@ -241,12 +252,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
         upper_limit = np.inf if index == len(id_lines) else id_lines[index]
         possible_lines = [line for line in all_lines
                           if lower_limit < line < upper_limit]
-        selectable_lines = sorted(sorted(possible_lines,
-                                         key=lambda x: abs(x - est_wave))[:5])
-        select_index = np.argmin(abs(np.asarray(selectable_lines) - est_wave))
+        if possible_lines:
+            selectable_lines = sorted(sorted(possible_lines,
+                                             key=lambda x: abs(x - est_wave))[:5])
+            select_index = np.argmin(abs(np.asarray(selectable_lines) - est_wave))
+            self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
+            self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
+            self.new_line_dropdown.disabled = False
+        else:
+            self.new_line_dropdown.options = []
+            self.new_line_dropdown.disabled = True
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
-        self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
-        self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
         self.new_line_div.visible = True
         self.currently_identifying = peak
 
@@ -296,7 +312,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 good_data['x'].append(peak)
                 good_data['y'].append(unmatched_lines[m])
                 good_data['mask'].append('good')
-                good_data['fitted'].append(0)
+                good_data['fitted'].append(unmatched_lines[m])
                 good_data['nonlinear'].append(0)
                 good_data['heights'].append(0)
                 good_data['residuals'].append(0)
@@ -504,6 +520,9 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
+            for k, v in self.widgets.items():
+                if isinstance(v, bm.Slider) and not v.show_value:
+                    config_update[k] = None
             for extra in self.reinit_extras:
                 del config_update[extra]
             for k, v in config_update.items():
