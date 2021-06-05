@@ -47,6 +47,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
                          weights=weights, **kwargs)
         self.model.other_data = other_data
 
+    def _set_line_controls_enabled(self, enabled):
+        for c in self.new_line_div.children:
+            c.disabled = not enabled
+
     def build_figures(self, domain=None, controller_div=None,
                       plot_residuals=True, plot_ratios=True):
 
@@ -92,10 +96,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                     button_type="primary", width_policy="fixed")
         identify_button.on_click(self.identify_lines)
 
-        self.new_line_prompt = bm.Div(text="Line", style={"font-size": "16px",
-                                                          "text-align": "right;"},
-                                      width=200, min_width=200,
-                                      width_policy="max")
+        self.new_line_prompt = bm.Div(text="Line", style={"font-size": "16px",},
+                                      width_policy="min")
         self.new_line_dropdown = bm.Select(options=[], width=100,
                                            width_policy="fixed")
         self.new_line_textbox = bm.NumericInput(width=100, mode='float',
@@ -107,13 +109,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
         new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fixed",
                                            button_type="danger")
         new_line_cancel_button.on_click(self.cancel_new_line)
-        self.new_line_div = row(self.new_line_prompt, self.new_line_dropdown,
+        self.new_line_div = row(bm.Spacer(sizing_mode="stretch_width"),
+                                self.new_line_prompt, self.new_line_dropdown,
                                 self.new_line_textbox,
                                 new_line_ok_button, new_line_cancel_button,
                                 sizing_mode="stretch_both")
 
         identify_panel = row(identify_button, self.new_line_div)
-        self.new_line_div.visible = False
+        self._set_line_controls_enabled(False)
 
         info_panel = InfoPanel()
         self.model.add_listener(info_panel.model_change_handler)
@@ -171,7 +174,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def cancel_new_line(self, *args):
         """Handler for the 'Cancel' button in the line identifier"""
-        self.new_line_div.visible = False
+        self._set_line_controls_enabled(False)
 
 
     def add_line_to_data(self, peak, wavelength):
@@ -247,7 +250,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
         self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
         self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
-        self.new_line_div.visible = True
+        self._set_line_controls_enabled(True)
         self.currently_identifying = peak
 
     @disable_when_identifying
