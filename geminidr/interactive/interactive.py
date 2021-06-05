@@ -395,11 +395,11 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     if value is None:
         start = min_value if min_value is not None else 0
         end = max_value if max_value is not None else 10
-        slider_value = start
+        slider_kwargs = {"value": start, "show_value": False}
     else:
         start = min(value, min_value) if min_value is not None else min(value, 0)
         end = max(value, max_value) if max_value is not None else max(10, value*2)
-        slider_value = value
+        slider_kwargs = {"value": value, "show_value": True}
 
     # trying to convince int-based sliders to behave
     if is_float is None:
@@ -414,11 +414,11 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
-        slider = Slider(start=start, end=end, value=slider_value, step=step,
-                        title=title, format=fmt)
+        slider = Slider(start=start, end=end, step=step, title=title,
+                        format=fmt, **slider_kwargs)
     else:
-        slider = Slider(start=start, end=end, value=slider_value, step=step,
-                        title=title)
+        slider = Slider(start=start, end=end, step=step, title=title,
+                        **slider_kwargs)
 
     slider.width = slider_width
 
