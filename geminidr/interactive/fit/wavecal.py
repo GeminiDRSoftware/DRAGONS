@@ -45,11 +45,19 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.currently_identifying = False
         super().__init__(visualizer, fitting_parameters, domain, x, y,
                          weights=weights, **kwargs)
+        # This has to go on the model (and not this Panel instance) since the
+        # models are returned by the Visualizer, not the Panel instances
         self.model.other_data = other_data
+        self.new_line_marker = bm.ColumnDataSource(
+            {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})
+        self.p_spectrum.line("x", "y", source=self.new_line_marker,
+                             color="red", name="new_line_marker",
+                             line_width=3, visible=False)
 
     def _set_line_controls_enabled(self, enabled):
         for c in self.new_line_div.children:
             c.disabled = not enabled
+        self.identify_button.disabled = enabled
 
     def build_figures(self, domain=None, controller_div=None,
                       plot_residuals=True, plot_ratios=True):
@@ -92,9 +100,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                    mask_handlers=None, domain=domain,
                    handlers=[delete_line_handler, identify_line_handler])
 
-        identify_button = bm.Button(label="Identify lines", width=200,
-                                    button_type="primary", width_policy="fixed")
-        identify_button.on_click(self.identify_lines)
+        self.identify_button = bm.Button(label="Identify lines", width=200,
+                                         button_type="primary", width_policy="fixed")
+        self.identify_button.on_click(self.identify_lines)
 
         self.new_line_prompt = bm.Div(text="Line", style={"font-size": "16px",},
                                       width_policy="min")
@@ -115,7 +123,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                 new_line_ok_button, new_line_cancel_button,
                                 sizing_mode="stretch_both")
 
-        identify_panel = row(identify_button, self.new_line_div)
+        identify_panel = row(self.identify_button, self.new_line_div)
         self._set_line_controls_enabled(False)
 
         info_panel = InfoPanel()
@@ -132,6 +140,25 @@ class WavelengthSolutionPanel(Fit1DPanel):
         return model.__class__(degree=1, c0=model.c0, c1=model.c1,
                                domain=model.domain)
 
+    def label_height(self, x):
+        """
+        Provide a location for a wavelength label identifying a line
+
+        Parameters
+        ----------
+        x : float
+            pixel location of line
+
+        Returns
+        -------
+        float : an appropriate y value for writing a label
+        """
+        padding = 0.02 * self.spectrum.data['spectrum'].max()
+        try:
+            return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
+        except TypeError:
+            return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
+
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
     def model_change_handler(self, model):
@@ -144,9 +171,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.model.data.data['fitted'] = model.evaluate(x)
         self.model.data.data['nonlinear'] = y - linear_model(x)
-        self.model.data.data['heights'] = [
-            self.spectrum.data['spectrum'][int(xx + 0.5)] +
-            0.02 * self.spectrum.data['spectrum'].max() for xx in x]
+        self.model.data.data['heights'] = self.label_height(x)
         self.model.data.data['lines'] = [wavestr(yy) for yy in y]
 
         self.model.evaluation.data['nonlinear'] = (
@@ -182,9 +207,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.currently_identifying = False
         self.new_line_prompt.text = ""
         self.new_line_dropdown.options = []
-        #self.new_line_div.visible = False
+        self.p_spectrum.select_one({"name": "new_line_marker"}).visible = False
         self._set_line_controls_enabled(False)
-
 
     def add_line_to_data(self, peak, wavelength):
         """
@@ -201,7 +225,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         print(f"Adding {wavelength} nm at pixel {peak}")
         # Dummy values should be close to true values to avoid plot resizing
         new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
-                    'fitted': [wavelength], 'nonlinear': [0], 'heights': [0],
+                    'fitted': [wavelength], 'nonlinear': [0],
+                    'heights': [self.label_height(peak)],
                     'residuals': [0],
                     'lines': [wavestr(wavelength)],
                    }
@@ -269,6 +294,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.new_line_dropdown.disabled = True
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
         self._set_line_controls_enabled(True)
+        lheight = 0.05 * (self.p_spectrum.y_range.end -
+                          self.p_spectrum.y_range.start)
+        self.new_line_marker.data = {"x": [est_wave] * 2,
+                                     "y": [self.label_height(peak),
+                                           self.label_height(peak) + lheight]}
+        self.p_spectrum.select_one({"name": "new_line_marker"}).visible = True
         self.currently_identifying = peak
 
     @disable_when_identifying
@@ -319,7 +350,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 good_data['mask'].append('good')
                 good_data['fitted'].append(unmatched_lines[m])
                 good_data['nonlinear'].append(0)
-                good_data['heights'].append(0)
+                good_data['heights'].append(self.label_height(peak))
                 good_data['residuals'].append(0)
                 good_data['lines'].append(wavestr(unmatched_lines[m]))
                 print("NEW LINE", peak, unmatched_lines[m])
