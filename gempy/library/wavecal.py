@@ -455,7 +455,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
         data[mask > 0] = 0.
 
     if config.fwidth is None:
-        fwidth = tracing.estimate_peak_width(data, mask=mask)
+        fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30)
         log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config.fwidth
