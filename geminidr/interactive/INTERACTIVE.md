@@ -191,6 +191,15 @@ The only standard method is `visualize`.  You should provide a method/fields for
 primitive to access the results of your custom fit.  In the case of the `Fit1DVisualizer1`,
 this call is `results()`
 
+### show_user_message
+
+There is a helper method called `show_user_message` that will pop up a message dialog 
+for the user.  As an example:
+
+```python
+self.vis.show_user_message(f"Sigma slider changed to {val}")
+```
+
 ### make_modal
 
 There is a helper method called `make_modal` that will pop up a message in the webpage
