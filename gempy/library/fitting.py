@@ -303,6 +303,7 @@ class fit_1D:
                 points[user_reg], image_to_fit[user_reg],
                 weights=None if weights is None else weights[user_reg]
             )
+            self.fit_info = fitter.fit_info
 
             # Incorporate mask for fitted columns into the full-sized mask:
             if image.ndim > 1 and n_models < image.shape[1]:
@@ -314,9 +315,9 @@ class fit_1D:
                 mask[user_reg] = fitted_mask
 
         else:
-            max_order = len(points) - self.model_args["k"]
-            if self.order is not None and self.order > max_order:
-                self.order = max_order
+            #max_order = len(points) - self.model_args["k"]
+            #if self.order is not None and self.order > max_order:
+            #    self.order = max_order
 
             # If there are no weights, produce a None for every row:
             weights = iter(lambda: None, True) if weights is None else weights
@@ -349,6 +350,7 @@ class fit_1D:
                 # improves performance by ~1% for a single fit & evaluation:
                 mask[n][user_reg] = single_model.mask
                 single_model.data = None
+            self.fit_info = single_model.fit_info
 
         # Save the set of fitted models in the flattened co-ordinate system,
         # to allow later (re-)evaluation at arbitrary points:

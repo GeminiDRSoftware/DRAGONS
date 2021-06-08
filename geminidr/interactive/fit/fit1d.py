@@ -133,12 +133,7 @@ class InteractiveModel1D(InteractiveModel):
 
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
-        if isinstance(self.domain, int):
-            xlinspace = np.linspace(0, self.domain, 500)
-        elif len(self.domain) == 1:
-            xlinspace = np.linspace(0, *self.domain, 500)
-        else:
-            xlinspace = np.linspace(*self.domain, 500)
+        xlinspace = np.linspace(*self.domain, 500)
         weights = self.populate_bokeh_objects(x, y, weights=weights, mask=mask)
         self.weights = weights
 
@@ -348,23 +343,26 @@ class InteractiveModel1D(InteractiveModel):
 
         goodpix = np.array([m != USER_MASK_NAME for m in self.data.data['mask']])
 
-        if self.sigma_clip:
-            fitparms = {x: y for x, y in self.fitting_parameters.items()
-                        if x not in ['sigma']}
-        else:
-            fitparms = {x: y for x, y in self.fitting_parameters.items()
-                        if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
+        if goodpix.size > 0:
+            if self.sigma_clip:
+                fitparms = {x: y for x, y in self.fitting_parameters.items()
+                            if x not in ['sigma']}
+            else:
+                fitparms = {x: y for x, y in self.fitting_parameters.items()
+                            if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
 
-        self.fit = fit_1D(self.y[goodpix], points=self.x[goodpix],
-                          domain=self.domain,
-                          weights=None if self.weights is None else self.weights[goodpix],
-                          **fitparms)
+            new_fit = fit_1D(self.y[goodpix], points=self.x[goodpix],
+                             domain=self.domain,
+                             weights=None if self.weights is None else self.weights[goodpix],
+                             **fitparms)
+            if self.fit is None or new_fit.fit_info["rank"] > fitparms["order"]:
+                self.fit = new_fit
+                self.update_mask()
 
-        self.update_mask()
-        if 'residuals' in self.data.data:
-            self.data.data['residuals'] = self.y - self.evaluate(self.x)
-        if 'ratio' in self.data.data:
-            self.data.data['ratio'] = self.y / self.evaluate(self.x)
+            if 'residuals' in self.data.data:
+                self.data.data['residuals'] = self.y - self.evaluate(self.x)
+            if 'ratio' in self.data.data:
+                self.data.data['ratio'] = self.y / self.evaluate(self.x)
 
         self.notify_listeners()
 

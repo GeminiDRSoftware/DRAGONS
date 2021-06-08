@@ -42,22 +42,30 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # No need to compute wavelengths here as the model_change_handler() does it
         self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(other_data["spectrum"]),
                                              'spectrum': other_data["spectrum"]})
+        # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
+
         super().__init__(visualizer, fitting_parameters, domain, x, y,
                          weights=weights, **kwargs)
+
         # This has to go on the model (and not this Panel instance) since the
         # models are returned by the Visualizer, not the Panel instances
         self.model.other_data = other_data
+
         self.new_line_marker = bm.ColumnDataSource(
             {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})
         self.p_spectrum.line("x", "y", source=self.new_line_marker,
                              color="red", name="new_line_marker",
                              line_width=3, visible=False)
+        self.set_currently_identifying(False)
 
-    def _set_line_controls_enabled(self, enabled):
+    def set_currently_identifying(self, peak):
+        status = bool(peak)
+        self.p_spectrum.select_one({"name": "new_line_marker"}).visible = status
         for c in self.new_line_div.children:
-            c.disabled = not enabled
-        self.identify_button.disabled = enabled
+            c.disabled = not status
+        self.identify_button.disabled = status
+        self.currently_identifying = peak
 
     def build_figures(self, domain=None, controller_div=None,
                       plot_residuals=True, plot_ratios=True):
@@ -124,7 +132,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                 sizing_mode="stretch_both")
 
         identify_panel = row(self.identify_button, self.new_line_div)
-        self._set_line_controls_enabled(False)
 
         info_panel = InfoPanel()
         self.model.add_listener(info_panel.model_change_handler)
@@ -198,22 +205,21 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 beep()
                 return
             peak = self.currently_identifying
-            self.currently_identifying = False
-            self.add_line_to_data(peak, wavelength)
-        self.cancel_new_line(*args)
+            try:
+                self.add_line_to_data(peak, wavelength)
+            except ValueError:
+                return
+            self.cancel_new_line(*args)
 
     def cancel_new_line(self, *args):
         """Handler for the 'Cancel' button in the line identifier"""
-        self.currently_identifying = False
         self.new_line_prompt.text = ""
         self.new_line_dropdown.options = []
-        self.p_spectrum.select_one({"name": "new_line_marker"}).visible = False
-        self._set_line_controls_enabled(False)
+        self.set_currently_identifying(False)
 
     def add_line_to_data(self, peak, wavelength):
         """
         Add a new line to the ColumnDataSource and performs a new fit.
-        *** THIS SHOULD CHECK THAT THE LINE WAVELENGTHS ARE MONOTONIC***
 
         Parameters
         ----------
@@ -223,6 +229,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
             wavelength in nm
         """
         print(f"Adding {wavelength} nm at pixel {peak}")
+        if self.model.x.size > 1:
+            lower_limit, upper_limit = get_closest(self.model.x, peak)
+            if not np.isinf(lower_limit):
+                lower_limit = self.model.y[list(self.model.x).index(lower_limit)]
+            if not np.isinf(upper_limit):
+                upper_limit = self.model.y[list(self.model.x).index(upper_limit)]
+            lower_limit, upper_limit = sorted([lower_limit, upper_limit])
+            if not (lower_limit < wavelength < upper_limit):
+                raise ValueError("Invalid value!")
         # Dummy values should be close to true values to avoid plot resizing
         new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
                     'fitted': [wavelength], 'nonlinear': [0],
@@ -276,10 +291,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # monotonicity
         all_lines = self.model.other_data["linelist"].wavelengths(
             in_vacuo=self.visualizer.config.in_vacuo, units="nm")
-        id_lines = sorted(self.model.y)  # identified lines
-        index = bisect(id_lines, est_wave)
-        lower_limit = 0 if index == 0 else id_lines[index-1]
-        upper_limit = np.inf if index == len(id_lines) else id_lines[index]
+        lower_limit, upper_limit = get_closest(self.model.y, est_wave)
         possible_lines = [line for line in all_lines
                           if lower_limit < line < upper_limit]
         if possible_lines:
@@ -293,14 +305,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.new_line_dropdown.options = []
             self.new_line_dropdown.disabled = True
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
-        self._set_line_controls_enabled(True)
         lheight = 0.05 * (self.p_spectrum.y_range.end -
                           self.p_spectrum.y_range.start)
         self.new_line_marker.data = {"x": [est_wave] * 2,
                                      "y": [self.label_height(peak),
                                            self.label_height(peak) + lheight]}
-        self.p_spectrum.select_one({"name": "new_line_marker"}).visible = True
-        self.currently_identifying = peak
+        self.set_currently_identifying(peak)
 
     @disable_when_identifying
     def delete_line(self, key, x, y):
@@ -595,3 +605,26 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
             image.append(model.y[goodpix])
         return image
+
+
+def get_closest(arr, value):
+    """
+    Return the array values closest to the request value, or +/-inf if
+    the request value is beyond the range of the array
+
+    Parameters
+    ----------
+    arr : sequence
+        array of values
+    value : numeric
+
+    Returns
+    -------
+    2-tuple: largest value in array less than value (or -inf) and
+             smallest value in array larger than value (or +inf)
+    """
+    arr_sorted = sorted(arr)
+    index = bisect(arr_sorted, value)
+    lower_limit = -np.inf if index == 0 else arr_sorted[index - 1]
+    upper_limit = np.inf if index == len(arr_sorted) else arr_sorted[index]
+    return lower_limit, upper_limit

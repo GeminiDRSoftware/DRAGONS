@@ -312,7 +312,7 @@ class UnivariateSplineWithOutlierRemoval:
             orig_mask[:] = False
         if order is not None:
             if downscale_order:
-             order = int(order * (~orig_mask).sum() / orig_mask.size + 0.5)
+                order = int(order * (~orig_mask).sum() / orig_mask.size + 0.5)
             if order > (~orig_mask).sum() - k:
                 order = max((~orig_mask).sum() - k, 0)
                 log.warning("Underconstrained fit. Reducing number of spline "
@@ -352,10 +352,12 @@ class UnivariateSplineWithOutlierRemoval:
 
             last_mask = full_mask
             avg_y = np.average(y, weights=wts)
+            rank = 0
             if order is None or order > 0:
                 tck = splrep(xunique[sort_indices], y[sort_indices],
                              w=wts[sort_indices], **spline_kwargs)
                 spline = BSpline(*tck)
+                rank = tck[0].size - (2 * tck[2] + 1)  # actual order used
                 # Ensure we get a real-valued fit
                 if np.isnan(tck[1]).any():
                     spline = lambda xx: avg_y
@@ -413,6 +415,7 @@ class UnivariateSplineWithOutlierRemoval:
         # Attach the mask and model (may be useful)
         spline.mask = full_mask
         spline.data = spline_y
+        spline.fit_info = {"rank": rank + 1}  # for consistency with astropy.fitting
         return spline
 
 
