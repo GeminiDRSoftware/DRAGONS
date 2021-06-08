@@ -2552,10 +2552,35 @@ class Spect(PrimitivesBASE):
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
 
+                # Get Apertures
+                fitting_parameters = list()
+                for ext in ad:
+                    fitparms = fit1d_params.copy()
+                    aprtrs = ext.APERTURE
+                    aperture_list = list()
+                    for aprtr in aprtrs:
+                        center = aprtr["c0"]
+                        aper_lower = aprtr["aper_lower"]
+                        aper_upper = aprtr["aper_upper"]
+                        aper_lower = round(aper_lower + center)
+                        aper_upper = round(aper_upper + center)
+                        aperture_list.append((aper_lower, aper_upper))
+                    if aperture_list:
+                        # invert the apertures to select the non-aperture spaces
+                        aperture_list.sort()
+                        region_list = list()
+                        start = ""
+                        for ap in aperture_list:
+                            region_list.append(f"{start}:{ap[0]}")
+                            start = ap[1]
+                        region_list.append(f"{start}:")
+                        fitparms["regions"] = ",".join(region_list)
+                    fitting_parameters.append(fitparms)
+
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
                 visualizer = fit1d.Fit1DVisualizer(lambda conf, extras: recalc_fn(ad, conf, extras),
-                                                   fitting_parameters=[fit1d_params] * count,
+                                                   fitting_parameters=fitting_parameters,
                                                    config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,

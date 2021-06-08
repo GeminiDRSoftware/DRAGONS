@@ -921,9 +921,9 @@ class GIRegionModel:
             start = tup.start
             stop = tup.stop
             start = constrain_min(start, self.min_x)
-            stop = constrain_min(stop, self.min_x)
-            start = constrain_max(start, self.max_x)
             stop = constrain_max(stop, self.max_x)
+            start = constrain_max(start, self.max_x)
+            stop = constrain_min(stop, self.min_x)
             self.adjust_region(self.region_id, start, stop)
             self.region_id = self.region_id + 1
         self.finish_regions()
