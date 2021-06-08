@@ -387,8 +387,8 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     if center is None:
         center = 0.5 * (npix - 1)
 
-    extract_slice = slice(max(0, int(center - 0.5 * nsum + 1)),
-                          min(npix, int(center + 0.5 * nsum + 1)))
+    extract_slice = slice(max(0, int(center - 0.5 * nsum)),
+                          min(npix, int(center + 0.5 * nsum)))
     data, mask, variance = at.transpose_if_needed(
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
