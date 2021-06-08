@@ -2549,6 +2549,9 @@ class Spect(PrimitivesBASE):
                     count = count+1
                     all_shapes.append((0, ext.shape[0]))  # extracting single line for interactive
 
+                # Get filename to display in visualizer
+                filename_info = getattr(ad, 'filename', '')
+
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
                 visualizer = fit1d.Fit1DVisualizer(lambda conf, extras: recalc_fn(ad, conf, extras),
@@ -2556,13 +2559,13 @@ class Spect(PrimitivesBASE):
                                                    config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
-                                                   tab_name_fmt="CCD {}",
-                                                   xlabel='x',
-                                                   ylabel='y',
+                                                   tab_name_fmt="Slit {}",
+                                                   xlabel='Column',
+                                                   ylabel='Signal',
                                                    domains=all_shapes,
                                                    title="Sky Correct From Slit",
                                                    primitive_name="skyCorrectFromSlit",
-                                                   filename_info='filename_info',
+                                                   filename_info=filename_info,
                                                    help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
                                                    plot_ratios=False,
                                                    enable_user_masking=False)
