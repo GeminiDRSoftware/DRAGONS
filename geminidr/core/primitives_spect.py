@@ -2490,7 +2490,7 @@ class Spect(PrimitivesBASE):
 
                 yield csc_ext, csc_sky_mask, csc_sky_weights
 
-        def recalc_fn(conf: Config, extras: dict):
+        def recalc_fn(ad: AstroData, conf: Config, extras: dict):
             """
             Used by the interactive code to generate all the inputs for the tabs
             per extension.
@@ -2505,6 +2505,8 @@ class Spect(PrimitivesBASE):
             ----------
             conf : :class:`~config.Config`
                 unused, but required in the function signature for interactive
+            ad : :class:`~astrodata.core.AstroData`
+                AstroData instance to work on
             extras : dict
                 Dictionary of additional values, here the ``col`` is passed as the selected column
 
@@ -2521,11 +2523,11 @@ class Spect(PrimitivesBASE):
             c = max(0, extras['col'] - 1)
             # TODO alternatively, save these 3 arrays for faster recalc
             # here I am rerunning all the above calculations whenever a col select is made
-            for rc_ad in adinputs:
-                for rc_ext, rc_sky_mask, rc_sky_weights in calc_sky_coords(rc_ad):
-                    rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
-                    yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c] if rc_sky_weights is not None else None
+            for rc_ext, rc_sky_mask, rc_sky_weights in calc_sky_coords(ad):
+                rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
+                yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c] if rc_sky_weights is not None else None
 
+        final_parms = list()
         if interactive:
             # build config for interactive
             config = self.params[self.myself()]
@@ -2540,56 +2542,57 @@ class Spect(PrimitivesBASE):
                                                min=1, max=ncols)}
 
             # Build the set of input shapes and count the total extensions while we are at it
-            all_shapes = []
-            count = 0
             for ad in adinputs:
+                all_shapes = []
+                count = 0
                 for ext in ad:
                     count = count+1
                     all_shapes.append((0, ext.shape[0]))  # extracting single line for interactive
 
-            # get the fit parameters
-            fit1d_params = fit_1D.translate_params(params)
-            visualizer = fit1d.Fit1DVisualizer(recalc_fn,
-                                               fitting_parameters=[fit1d_params] * count,
-                                               config=config,
-                                               reinit_params=reinit_params,
-                                               reinit_extras=reinit_extras,
-                                               tab_name_fmt="CCD {}",
-                                               xlabel='x',
-                                               ylabel='y',
-                                               domains=all_shapes,
-                                               title="Sky Correct From Slit",
-                                               primitive_name="skyCorrectFromSlit",
-                                               filename_info='filename_info',
-                                               help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
-                                               plot_ratios=False,
-                                               enable_user_masking=False)
-            geminidr.interactive.server.interactive_fitter(visualizer)
+                # get the fit parameters
+                fit1d_params = fit_1D.translate_params(params)
+                visualizer = fit1d.Fit1DVisualizer(lambda conf, extras: recalc_fn(ad, conf, extras),
+                                                   fitting_parameters=[fit1d_params] * count,
+                                                   config=config,
+                                                   reinit_params=reinit_params,
+                                                   reinit_extras=reinit_extras,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x',
+                                                   ylabel='y',
+                                                   domains=all_shapes,
+                                                   title="Sky Correct From Slit",
+                                                   primitive_name="skyCorrectFromSlit",
+                                                   filename_info='filename_info',
+                                                   help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
+                                                   plot_ratios=False,
+                                                   enable_user_masking=False)
+                geminidr.interactive.server.interactive_fitter(visualizer)
 
-            # Pull out the final parameters to use as inputs doing the real fit
-            final_parms = list()
-            fit_results = visualizer.results()
-            for fit in fit_results:
-                final_parms.append(fit.extract_params())
+                # Pull out the final parameters to use as inputs doing the real fit
+                fit_results = visualizer.results()
+                final_parms_exts = list()
+                for fit in fit_results:
+                    final_parms_exts.append(fit.extract_params())
+                final_parms.append(final_parms_exts)
         else:
             # making fit params into an array even though it all matches
             # so we can share the same final code with the interactive,
             # where a user may have tweaked per extension inputs
-            count = 0
             for ad in adinputs:
-                count = count + len(ad)
-            final_parms = [fit1d_params] * count
+                final_parms.append([fit1d_params] * len(ad))
 
         for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
                 log.warning(f"{ad.filename} has not been distortion corrected."
                             " Sky subtraction is likely to be poor.")
+            eidx = 0
             for ext, sky_mask, sky_weights in calc_sky_coords(ad):
                 axis = ext.dispersion_axis() - 1  # python sense
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx],
+                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
                                    axis=axis, plot=debug_plot).evaluate()
                 ext.data -= sky_model
+                eidx = eidx + 1
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
