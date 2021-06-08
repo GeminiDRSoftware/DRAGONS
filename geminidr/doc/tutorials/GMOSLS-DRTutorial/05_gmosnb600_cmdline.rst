@@ -1,12 +1,12 @@
-.. multisource_cmdline.rst
+.. 05_gmosnb600_cmdline.rst
 
 .. include:: DRAGONSlinks.txt
 
-.. _multisource_cmdline:
+.. _gmosnb600_cmdline:
 
-********************************************************************
-Example 1-A: Multi-source Longslit - Using the "reduce" command line
-********************************************************************
+*******************************************************************************
+Example 2-A: Custom reduction for GMOS-N B600 - Using the "reduce" command line
+*******************************************************************************
 In this example we will reduce a GMOS longslit observation of multiple stars
 using the "|reduce|" command that is operated directly from the unix shell.
 Just open a terminal and load the DRAGONS conda environment to get started.
@@ -21,7 +21,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`datamultisource`.
+    :ref:`datagmosnb600`.
 
 Here is a copy of the table for quick reference.
 
@@ -323,7 +323,7 @@ manager, they will be picked up automatically.
     caldb add *_standard.fits
 
 We currently do not have tools to inspect the spectra or the calculated
-sensitivity function.  In appendix, we show a way to plot them using
+sensitivity function.  In the Tips and Tricks chapter, we show a way to plot them using
 matplotlib.
 
 KL?????
@@ -331,7 +331,8 @@ KL?????
 
 Science Observations
 ====================
-The science target is a white dwarfs but there are other stars in the slit too.
+The science target is a well-separated binary white dwarfs but there are
+other stars in the slit too.
 DRAGONS will extract everything it can find an aperture for.  The sequence
 has four images that were dithered spatially and along the dispersion axis.
 DRAGONS will register the four images in both direction, align and stack them
@@ -375,6 +376,5 @@ like.
 
 _graphics/???
 
-To learn how to plot a 1-D spectrum with matplotlib, see Appendix ???KL???.
+To learn how to plot a 1-D spectrum with matplotlib, see Tips and Tricks ???KL???.
 
-The location
