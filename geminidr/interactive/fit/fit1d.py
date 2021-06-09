@@ -1327,7 +1327,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                         else:
                             extra_mask = None
                         fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None,
-                                                                 extra_maks=extra_mask)
+                                                                 extra_mask=extra_mask)
                         fit.perform_fit()
 
                 if self.modal_widget:

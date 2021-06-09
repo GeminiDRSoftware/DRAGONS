@@ -2508,7 +2508,7 @@ class Spect(PrimitivesBASE):
                 else:
                     yield csc_ext, csc_sky_mask, csc_sky_weights
 
-        def recalc_fn(ad: AstroData, conf: Config, extras: dict):
+        def recalc_fn(ad: AstroData, ui_parms: UIParameters):
             """
             Used by the interactive code to generate all the inputs for the tabs
             per extension.
@@ -2523,10 +2523,8 @@ class Spect(PrimitivesBASE):
             ----------
             ad : :class:`~astrodata.core.AstroData`
                 AstroData instance to work on
-            conf : :class:`~config.Config`
-                unused, but required in the function signature for interactive
-            extras : dict
-                Dictionary of additional values, here the ``col`` is passed as the selected column
+            ui_parms : :class:`~geminidr.interactive.interactive.UIParameters`
+                configuration for the primitive, including extra controls
 
             Returns
             -------
@@ -2538,8 +2536,8 @@ class Spect(PrimitivesBASE):
             :meth:`~geminidr.core.primitives_spect.Spect.skyCorrectFromSlit.calc_sky_coords`
             """
             # pylint: disable=unused-argument
-            c = max(0, extras['col'] - 1)
-            apgrow = conf.aperture_growth
+            c = max(0, ui_parms.values['col'] - 1)
+            apgrow = ui_parms.values['aperture_growth']
             # TODO alternatively, save these 3 arrays for faster recalc
             # here I am rerunning all the above calculations whenever a col select is made
             for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in \
@@ -2575,11 +2573,9 @@ class Spect(PrimitivesBASE):
 
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
-                visualizer = fit1d.Fit1DVisualizer(lambda conf, extras: recalc_fn(ad, conf, extras),
+                ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
+                visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
                                                    fitting_parameters=[fit1d_params]*count,
-                                                   config=config,
-                                                   reinit_params=reinit_params,
-                                                   reinit_extras=reinit_extras,
                                                    tab_name_fmt="Slit {}",
                                                    xlabel='Row',
                                                    ylabel='Signal',
@@ -2589,7 +2585,8 @@ class Spect(PrimitivesBASE):
                                                    filename_info=filename_info,
                                                    help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
                                                    plot_ratios=False,
-                                                   enable_user_masking=False)
+                                                   enable_user_masking=False,
+                                                   ui_params=ui_params)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # Pull out the final parameters to use as inputs doing the real fit
