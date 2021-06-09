@@ -290,6 +290,8 @@ class PrimitiveVisualizer(ABC):
 
                 widget = build_text_slider(
                     doc, value, step, start, end, obj=self.config, attr=pname,
+                    handler=self.slider_handler_factory(
+                        pname, reinit_live=reinit_live), throttled=True,
                     slider_width=slider_width, allow_none=allow_none)
 
                 self.widgets[pname] = widget.children[0]

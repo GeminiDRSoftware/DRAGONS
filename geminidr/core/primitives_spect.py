@@ -2425,7 +2425,7 @@ class Spect(PrimitivesBASE):
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
 
-        def calc_sky_coords(ad: AstroData, interactive_mode):
+        def calc_sky_coords(ad: AstroData, apgrow, interactive_mode):
             """
             Calculate the sky coordinates for the extensions in the given
             AstroData object.
@@ -2439,6 +2439,8 @@ class Spect(PrimitivesBASE):
             ----------
             ad : :class:`~astrodata.AstroData`
                 AstroData to generate coordinates for
+            apgrow : float
+                Aperture avoidance distance (pixels)
             interactive_mode : bool
                 If True, collates aperture data mask separately to be used by UI
 
@@ -2535,9 +2537,11 @@ class Spect(PrimitivesBASE):
             """
             # pylint: disable=unused-argument
             c = max(0, extras['col'] - 1)
+            apgrow = conf.aperture_growth
             # TODO alternatively, save these 3 arrays for faster recalc
             # here I am rerunning all the above calculations whenever a col select is made
-            for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in calc_sky_coords(ad, interactive_mode=True):
+            for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in \
+                    calc_sky_coords(ad, apgrow=apgrow, interactive_mode=True):
                 rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
                 yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c], rc_aper_mask[:, c] \
                     if rc_sky_weights is not None else None
@@ -2552,7 +2556,7 @@ class Spect(PrimitivesBASE):
             # want to fit.
             # We pass a default column at the 1/3 mark, since dead center is flat
             ncols = adinputs[0].shape[0][0]
-            reinit_params = ["col", ]
+            reinit_params = ["col", "aperture_growth"]
             reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 3),
                                                min=1, max=ncols)}
 
@@ -2575,7 +2579,7 @@ class Spect(PrimitivesBASE):
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
                                                    tab_name_fmt="Slit {}",
-                                                   xlabel='Column',
+                                                   xlabel='Row',
                                                    ylabel='Signal',
                                                    domains=all_shapes,
                                                    title="Sky Correct From Slit",
