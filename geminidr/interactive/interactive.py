@@ -249,8 +249,8 @@ class PrimitiveVisualizer(ABC):
         else:
             self.message_holder.text = message
 
-    def make_widgets_from_config(self, params, extras, reinit_live,
-                                 slider_width=256):
+    def make_widgets_from_parameters(self, params, reinit_live: bool = True,
+                                     slider_width: int = 256):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
