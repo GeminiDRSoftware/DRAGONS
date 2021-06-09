@@ -494,6 +494,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         else:
             # left panel with just the function selector (Chebyshev, etc.)
             self.reinit_panel = None  # column()
+        self.widgets["in_vacuo"].disabled = True
 
         # Grab input coordinates or calculate if we were given a callable
         # TODO revisit the raging debate on `callable` for Python 3
