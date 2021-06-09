@@ -43,6 +43,7 @@ from . import parameters_gmos_longslit
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
 from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
+from ..interactive.interactive import UIParameters
 
 
 @parameter_override
@@ -695,18 +696,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                # Create a 'row' parameter to add to the UI so the user can select the row they
-                # want to fit.
-                reinit_params = ["row", ]
-                reinit_extras = {"row": RangeField("Row of data", int, int(nrows/2), min=1, max=nrows)}
-
                 # This function is used by the interactive fitter to generate the x,y,weights to use
                 # for each fit.  We only want to fit a single row of data interactively, so that we can
                 # be responsive in the UI.  The 'row' extra parameter defined above will create a
                 # slider for the user and we will have access to the selected value in the 'extras'
                 # dictionary passed in here.
-                def reconstruct_points(conf, extras):
-                    r = max(0, extras['row'] - 1)
+                def reconstruct_points(ui_params=None):
+                    r = max(0, ui_params.values['row'] - 1)
                     all_coords = []
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
                         masked_data = np.ma.masked_array(rpext.data[r],
@@ -723,10 +719,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     filename_info = ad.filename
                 else:
                     filename_info = ''
+
+                # Create a 'row' parameter to add to the UI so the user can select the row they
+                # want to fit.
+                reinit_params = ["row", ]
+                extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
+                uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
-                                                   config=config,
-                                                   reinit_params=reinit_params,
-                                                   reinit_extras=reinit_extras,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x (pixels)', ylabel='counts',
                                                    domains=all_domains,
@@ -737,7 +736,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True,
-                                                   modal_message="Recalculating")
+                                                   modal_message="Recalculating",
+                                                   ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 log.stdinfo('Interactive Parameters retrieved, performing flat normalization...')
 

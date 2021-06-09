@@ -191,6 +191,15 @@ The only standard method is `visualize`.  You should provide a method/fields for
 primitive to access the results of your custom fit.  In the case of the `Fit1DVisualizer1`,
 this call is `results()`
 
+### show_user_message
+
+There is a helper method called `show_user_message` that will pop up a message dialog 
+for the user.  As an example:
+
+```python
+self.vis.show_user_message(f"Sigma slider changed to {val}")
+```
+
 ### make_modal
 
 There is a helper method called `make_modal` that will pop up a message in the webpage
@@ -241,20 +250,28 @@ self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
                                                           reset_dialog_handler)
 ```
 
-### make_widgets_from_config
+### make_widgets_from_parameters
 
-The `PrimitiveVisualizer` has a `make_widgets_from_config` helper method.  For the 
-passed list of parameter names, this will build a panel of widgets to update the 
-corresponding config values.  This provides a quick and easy way to make a UI for 
-the config inputs to a primitive.  For this to work, the PrimitiveVisualizer must 
-be told about the config when it is constructed.  This is done with a few lines of 
+The `PrimitiveVisualizer` has a `make_widgets_from_parameters` helper method.  For the 
+passed parameters, defined in a `UIParameters`, this will build a panel of widgets 
+to update the corresponding parameters.  This provides a quick and easy way to make 
+a UI for the inputs to a primitive.  For this to work, the `PrimitiveVisualizer` must 
+be told about the parameters when it is constructed.  This is done with a few lines of 
 code in the primitive like so:
 
 ```python
 config = self.params[self.myself()]
 config.update(**params)
+ui_params = UIParams(config)
 # pass this config to the visualizer constructor
 ```
+
+The `UIParams` can also take a few extra arguments to fine tune it's behavior.  
+`params` is a list of all the parameters you want captured from the `Config`.
+`hidden_params` are the parameters to not automatically add in the 
+`make_widgets_from_parameters`, if you want to place them elsewhere.  You can add
+`title_overrides` to give a dictionary mapping of parameters to text to use in
+the UI instead of inferring them from the `Config`. 
 
 ## Tornado Handlers
 
