@@ -35,10 +35,10 @@ we will work in the subdirectory named ``gmosls_tutorial/playground``.
 Datasets descriptions
 =====================
 
-.. _datamultisource:
+.. _datagmosnb600:
 
-Dataset for Example 1: Multi-source Longslit
---------------------------------------------
+Dataset for Example 2: Custom reduction for GMOS-N B600
+-------------------------------------------------------
 
 This is a GMOS longslit observation.  The primary target is a point source,
 a white dwarf, and there happens to be another star in the slit.  We will use

@@ -28,14 +28,24 @@ document comes with a downloadable data package that contains all the data
 you need to run the examples presented.  Instructions on where to get that
 package and how to set things up are given in :ref:`datasetup`.
 
-The GMOS longslit tutorial series for now contains only one scientific example,
-the reduction of an observation with multiple sources in the field.  This can
-be done in two different ways:
+The GMOS longslit tutorial series for now contains two scientific examples,
+the reduction of an observation with multiple sources in the field and a
+similar case but with some customization to deal with a feature in the GMOS-N
+B600 grating.
 
-* From the terminal using the command line. (:ref:`Example 1-A <multisource_cmdline>`)
-* From Python using the DRAGONS classes and functions. (:ref:`Example 1-B <multisource_api>`)
+The reductions can be done in two different ways:
 
-We plan to add additional examples in the future.
+* From the terminal using the command line.
+* From Python using the DRAGONS classes and functions.
 
-See the `DRAGONS Installation Instructions <https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/release-3.0.0/install.html` to
+For each example, we show how to run the same reduction using both methods.
+
+* Multi-source extraction
+    * :ref:`multisrc_cmdline`
+    * :ref:`multisrc_api`
+* Custom reduction for GMOS-N B600
+    * :ref:`gmosnb600_cmdline`
+    * :ref:`gmosnb600_api`
+
+See the `DRAGONS Installation Instructions <https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/release-3.0.0/install.html>`_ to
 install the software if you have not already.

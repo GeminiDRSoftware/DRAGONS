@@ -2155,7 +2155,10 @@ class Spect(PrimitivesBASE):
 
         # Check that all ad objects are either 1D or 2D
         ndim = {len(ext.shape) for ad in adinputs for ext in ad}
-        if len(ndim) != 1:
+        if len(ndim) == 0:
+            log.warning('Input list empty. Doing nothing.')
+            return adinputs
+        elif len(ndim) != 1:
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()
 

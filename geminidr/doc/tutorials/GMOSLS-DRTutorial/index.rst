@@ -17,10 +17,12 @@ Welcome to Tutorial Series - GMOS Longslit Data Reduction with DRAGONS
 
    01_overview
    02_datasets
-   03_multisource_cmdline
-   04_multisource_api
-   05_tips_and_tricks
-   06_issues_and_limitations
+   03_multisrc_cmdline
+   04_multisrc_api
+   05_gmosnb600_cmdline
+   06_gmosnb600_api
+   07_tips_and_tricks
+   08_issues_and_limitations
 
 
 Indices and tables
