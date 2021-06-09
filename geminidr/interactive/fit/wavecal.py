@@ -237,7 +237,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 upper_limit = self.model.y[list(self.model.x).index(upper_limit)]
             lower_limit, upper_limit = sorted([lower_limit, upper_limit])
             if not (lower_limit < wavelength < upper_limit):
-                raise ValueError("Invalid value!")
+                self.visualizer.show_user_message(
+                    f"The value {wavelength} nm does not preserve a monotonic"
+                     "sequence of identified line wavelengths")
+                raise ValueError
         # Dummy values should be close to true values to avoid plot resizing
         new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
                     'fitted': [wavelength], 'nonlinear': [0],
