@@ -405,14 +405,14 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         fits: list of InteractiveModel instances, one per (x,y) array
     """
 
-    def __init__(self, data_source, fitting_parameters, config,
-                 reinit_params=None, reinit_extras=None,
+    def __init__(self, data_source, fitting_parameters,
                  modal_message=None,
                  modal_button_label=None,
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
+                 ui_params=None,
                  **kwargs):
         """
         Parameters
@@ -424,7 +424,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             and returns [[x, y], [x, y].. or [[x, y, weights], [x, y, weights], ...
         fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters` or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             Description of parameters to use for `fit_1d`
-        config : Config instance describing primitive parameters and limitations
         reinit_params : list of str
             list of parameter names in config related to reinitializing fit arrays.  These cause the `data_source`
             function to be run to get the updated coordinates/weights.  Should not be passed if `data_source` is
@@ -450,10 +449,12 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             Title for UI (Interactive <Title>)
         help_text : str
             HTML help text for popup help, or None to use the default
+        ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+            Parameter set for user input
         """
         super(Fit1DVisualizer, self).__init__(
-            config=config, title=title, primitive_name=primitive_name,
-            filename_info=filename_info, template=template, help_text=help_text)
+            title=title, primitive_name=primitive_name, filename_info=filename_info,
+            template=template, help_text=help_text, ui_params=ui_params)
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
@@ -462,20 +463,30 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         # their properties if the default setup isn't great
         self.widgets = {}
 
+        # If we have a widget driving the modal dialog via it's enable/disable state,
+        # store it in this so the recalc knows to re-enable the widget
+        self.modal_widget = None
+
         # Make the panel with widgets to control the creation of (x, y) arrays
 
-        if reinit_params is not None or reinit_extras is not None:
-            # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
-
+        # Create left panel
+        reinit_widgets = self.make_widgets_from_parameters(ui_params, reinit_live=modal_message is None)
+        if reinit_widgets:
             # This should really go in the parent class, like submit_button
             if modal_message:
-                self.reinit_button = bm.Button(
-                    label=modal_button_label if modal_button_label else "Reconstruct points")
-                self.reinit_button.on_click(self.reconstruct_points)
-                self.make_modal(self.reinit_button, modal_message)
-                reinit_widgets.append(self.reinit_button)
-
+                if len(reinit_widgets) > 1:
+                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label
+                                                   else "Reconstruct points")
+                    self.reinit_button.on_click(self.reconstruct_points)
+                    self.make_modal(self.reinit_button, modal_message)
+                    reinit_widgets.append(self.reinit_button)
+                    self.modal_widget = self.reinit_button
+                elif len(reinit_widgets) == 1:
+                    def kickoff_modal(attr, old, new):
+                        self.reconstruct_points()
+                    reinit_widgets[0].children[1].on_change('value', kickoff_modal)
+                    self.make_modal(reinit_widgets[0], modal_message)
+                    self.modal_widget = reinit_widgets[0]
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
             else:
@@ -488,7 +499,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         # TODO revisit the raging debate on `callable` for Python 3
         if callable(data_source):
             self.reconstruct_points_fn = data_source
-            data = data_source(config, self.extras)
+            data = data_source(ui_params=ui_params)
             # For this, we need to remap from
             # [[x1, y1, weights1], [x2, y2, weights2], ...]
             # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
@@ -502,10 +513,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 other_data.append(dat[3] if len(dat) > 3 else None)
         else:
             self.reconstruct_points_fn = None
-            if reinit_params:
-                raise ValueError("Saw reinit_params but data_source is not a callable")
-            if reinit_extras:
-                raise ValueError("Saw reinit_extras but data_source is not a callable")
             allx = data_source[0]
             ally = data_source[1]
             all_weights = data_source[2] if len(data_source) > 2 else [None]
@@ -520,8 +527,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             if allx.size != ally.size:
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
-
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
 
@@ -566,34 +571,35 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         if hasattr(self, 'reinit_button'):
             self.reinit_button.disabled = True
 
+        rollback_config = self.ui_params.values.copy()
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
-            for k, v in self.widgets.items():
-                if isinstance(v, bm.Slider) and not v.show_value:
-                    config_update[k] = None
-            for extra in self.reinit_extras:
-                del config_update[extra]
-            for k, v in config_update.items():
-                print(f'{k} = {v}')
-            self.config.update(**config_update)
+            self.ui_params.update_values(**config_update)
 
         self.do_later(fn)
 
         if self.reconstruct_points_fn is not None:
             def rfn():
-                all_coords = self.reconstruct_points_fn(self.config, self.extras)
-                for fit, coords in zip(self.fits, all_coords):
-                    if len(coords) > 2:
-                        fit.weights = coords[2]
-                        if len(coords) > 3:
-                            fit.other = coords[3]
-                    else:
-                        fit.weights = None
-                    fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
-                    fit.perform_fit()
-                if hasattr(self, 'reinit_button'):
-                    self.reinit_button.disabled = False
+                all_coords = None
+                try:
+                    all_coords = self.reconstruct_points_fn(ui_params=self.ui_params)
+                except Exception as e:
+                    # something went wrong, let's revert the inputs
+                    # handling immediately to specifically trap the reconstruct_points_fn call
+                    self.ui_params.update_values(**rollback_config)
+                    self.show_user_message("Unable to build data from inputs, reverting")
+                if all_coords is not None:
+                    for fit, coords in zip(self.fits, all_coords):
+                        if len(coords) > 2:
+                            fit.weights = coords[2]
+                        else:
+                            fit.weights = None
+                        fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
+                        fit.perform_fit()
+
+                if self.modal_widget:
+                    self.modal_widget.disabled = False
 
             self.do_later(rfn)
 
