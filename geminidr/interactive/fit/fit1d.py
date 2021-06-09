@@ -298,7 +298,7 @@ class InteractiveModel1D(InteractiveModel):
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
 
-        self.notify_mask_listeners()
+        # self.notify_mask_listeners()
 
         return weights
 
@@ -424,6 +424,8 @@ class InteractiveModel1D(InteractiveModel):
 
         for ll in self.listeners:
             ll(self.fit)
+        for ml in self.mask_listeners:
+            ml(self.data.data['mask'])
 
     def update_mask(self):
         goodpix = np.array([m not in [USER_MASK_NAME, INPUT_MASK_NAME] for m in self.data.data['mask']])
@@ -451,9 +453,9 @@ class FittingParametersUI:
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
-        if 'function' in vis.config._fields:
-            fn = vis.config.function
-            fn_allowed = [k for k in vis.config._fields['function'].allowed.keys()]
+        if 'function' in vis.ui_params.fields:
+            fn = fitting_parameters['function']
+            fn_allowed = [k for k in vis.ui_params.fields['function'].allowed.keys()]
 
             # Dropdown for selecting fit_1D function
             self.function = Select(title="Fitting Function:", value=fn,
@@ -467,34 +469,51 @@ class FittingParametersUI:
         else:
             # If the function is fixed
             self.function = bm.Div(
-            text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
-            min_width=100, max_width=202, sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "5px"},
-            width_policy='max')
+                text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
+                min_width=100, max_width=202, sizing_mode='stretch_width',
+                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                width_policy='max')
 
         self.description = self.build_description()
 
-        self.order_slider = interactive.build_text_slider(
-            "Order", fitting_parameters["order"], None, None, None,
-            fitting_parameters, "order", fit.perform_fit, throttled=True,
-            config=vis.config, slider_width=128)
-        self.sigma_upper_slider = interactive.build_text_slider(
-            "Sigma (Upper)", fitting_parameters["sigma_upper"], None, None,
-            None, fitting_parameters, "sigma_upper", self.sigma_slider_handler,
-            throttled=True, config=vis.config, slider_width=128)
-        self.sigma_lower_slider = interactive.build_text_slider(
-            "Sigma (Lower)", fitting_parameters["sigma_lower"], None, None,
-            None, fitting_parameters, "sigma_lower", self.sigma_slider_handler,
-            throttled=True, config=vis.config, slider_width=128)
-        self.niter_slider = interactive.build_text_slider(
-            "Max iterations", fitting_parameters["niter"], None, 1, None,
-            fitting_parameters, "niter", fit.perform_fit, throttled=True,
-            config=vis.config, slider_width=128)
+        def builder(ui_params, key, title):
+            alt_keys = {
+                'sigma_upper': 'hsigma',
+                'sigma_lower': 'lsigma'
+            }
+            pkey = key
+            if pkey not in ui_params.fields and key in alt_keys:
+                pkey = alt_keys[key]
+            field = ui_params.fields[pkey]
+            if isinstance(field.default, int):
+                step = 1
+            else:
+                step = 0.1
+            if hasattr(field, 'min'):
+                min = field.min
+            else:
+                min = None
+            if min and step > min > 0:
+                step = min
+            if hasattr(field, 'max'):
+                max = field.max
+            else:
+                max = None
+            if key == 'niter':
+                # override this, min should be 1 as it is only used when sigma is checked
+                min = 1
+            return interactive.build_text_slider(
+                title=title, value=fitting_parameters[key],
+                step=step, min_value=min, max_value=max,
+                obj=fitting_parameters, attr=key, handler=fit.perform_fit, throttled=True,
+                slider_width=128)
+
+        self.order_slider = builder(vis.ui_params, 'order', 'Order')
+        self.sigma_upper_slider = builder(vis.ui_params, 'sigma_upper', 'Sigma (Upper)')
+        self.sigma_lower_slider = builder(vis.ui_params, 'sigma_lower', 'Sigma (Lower)')
+        self.niter_slider = builder(vis.ui_params, 'niter', 'Max Iterations')
         if "grow" in fitting_parameters:  # not all have them
-            self.grow_slider = interactive.build_text_slider(
-                "Grow", fitting_parameters["grow"], None, None, None,
-                fitting_parameters, "grow", fit.perform_fit, throttled=True,
-                config=vis.config, slider_width=128)
+            self.grow_slider = builder(vis.ui_params, 'grow', 'Grow')
 
         self.sigma_button = bm.CheckboxGroup(labels=['Sigma clip'], active=[0] if self.fit.sigma_clip else [])
         self.sigma_button.on_change('active', self.sigma_button_handler)
@@ -584,7 +603,7 @@ class FittingParametersUI:
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
         for key in ("order", "sigma_upper", "sigma_lower", "niter", "grow"):
             try:
-                slider = getattr(self, f"{key}_slider")  # self.getattr(f"{key}_slider")
+                slider = getattr(self, f"{key}_slider")
             except AttributeError:
                 pass
             else:
@@ -1049,14 +1068,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fits: list of InteractiveModel instances, one per (x,y) array
     """
 
-    def __init__(self, data_source, fitting_parameters, config,
-                 reinit_params=None, reinit_extras=None,
+    def __init__(self, data_source, fitting_parameters,
                  modal_message=None,
                  modal_button_label=None,
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
+                 ui_params=None,
                  **kwargs):
         """
         Parameters
@@ -1068,7 +1087,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             and returns [[x, y], [x, y].. or [[x, y, weights], [x, y, weights], ...
         fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters` or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             Description of parameters to use for `fit_1d`
-        config : Config instance describing primitive parameters and limitations
         reinit_params : list of str
             list of parameter names in config related to reinitializing fit arrays.  These cause the `data_source`
             function to be run to get the updated coordinates/weights.  Should not be passed if `data_source` is
@@ -1094,9 +1112,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             Title for UI (Interactive <Title>)
         help_text : str
             HTML help text for popup help, or None to use the default
+        ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+            Parameter set for user input
         """
-        super().__init__(config=config, title=title, primitive_name=primitive_name, filename_info=filename_info,
-                         template=template, help_text=help_text)
+        super().__init__(title=title, primitive_name=primitive_name, filename_info=filename_info,
+                         template=template, help_text=help_text, ui_params=ui_params)
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
@@ -1110,25 +1130,24 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         # Make the panel with widgets to control the creation of (x, y) arrays
 
-        if reinit_params is not None or reinit_extras is not None:
-            # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
-
+        # Create left panel
+        reinit_widgets = self.make_widgets_from_parameters(ui_params, reinit_live=modal_message is None)
+        if reinit_widgets:
             # This should really go in the parent class, like submit_button
             if modal_message:
                 if len(reinit_widgets) > 1:
-                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label else "Reconstruct points")
+                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label
+                                                   else "Reconstruct points")
                     self.reinit_button.on_click(self.reconstruct_points)
                     self.make_modal(self.reinit_button, modal_message)
                     reinit_widgets.append(self.reinit_button)
                     self.modal_widget = self.reinit_button
-                else:
+                elif len(reinit_widgets) == 1:
                     def kickoff_modal(attr, old, new):
                         self.reconstruct_points()
                     reinit_widgets[0].children[1].on_change('value', kickoff_modal)
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
-
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
             else:
@@ -1141,7 +1160,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # TODO revisit the raging debate on `callable` for Python 3
         if callable(data_source):
             self.reconstruct_points_fn = data_source
-            data = data_source(config, self.extras)
+            data = data_source(ui_params=ui_params)
             # For this, we need to remap from
             # [[x1, y1, weights1], [x2, y2, weights2], ...]
             # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
@@ -1162,10 +1181,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 all_extra_masks = None
         else:
             self.reconstruct_points_fn = None
-            if reinit_params:
-                raise ValueError("Saw reinit_params but data_source is not a callable")
-            if reinit_extras:
-                raise ValueError("Saw reinit_extras but data_source is not a callable")
             allx = data_source[0]
             ally = data_source[1]
             if len(data_source) >= 3:
@@ -1186,8 +1201,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             if allx.size != ally.size:
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
-
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
 
@@ -1285,32 +1298,38 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.modal_widget:
             self.modal_widget.disabled = True
 
+        rollback_config = self.ui_params.values.copy()
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
-            for extra in self.reinit_extras:
-                del config_update[extra]
-            for k, v in config_update.items():
-                print(f'{k} = {v}')
-            self.config.update(**config_update)
+            self.ui_params.update_values(**config_update)
 
         self.do_later(fn)
 
         if self.reconstruct_points_fn is not None:
             def rfn():
-                all_coords = self.reconstruct_points_fn(self.config, self.extras)
-                for fit, coords in zip(self.fits, all_coords):
-                    if len(coords) > 2:
-                        fit.weights = coords[2]
-                    else:
-                        fit.weights = None
-                    if len(coords) > 3:
-                        extra_mask = coords[3]
-                    else:
-                        extra_mask = None
-                    fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None,
-                                                             extra_mask=extra_mask)
-                    fit.perform_fit()
+                all_coords = None
+                try:
+                    all_coords = self.reconstruct_points_fn(ui_params=self.ui_params)
+                except Exception as e:
+                    # something went wrong, let's revert the inputs
+                    # handling immediately to specifically trap the reconstruct_points_fn call
+                    self.ui_params.update_values(**rollback_config)
+                    self.show_user_message("Unable to build data from inputs, reverting")
+                if all_coords is not None:
+                    for fit, coords in zip(self.fits, all_coords):
+                        if len(coords) > 2:
+                            fit.weights = coords[2]
+                        else:
+                            fit.weights = None
+                        if len(coords) > 3:
+                            extra_mask = coords[3]
+                        else:
+                            extra_mask = None
+                        fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None,
+                                                                 extra_maks=extra_mask)
+                        fit.perform_fit()
+
                 if self.modal_widget:
                     self.modal_widget.disabled = False
 
