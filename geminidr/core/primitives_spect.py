@@ -49,6 +49,7 @@ from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
 from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT
+from ..interactive.interactive import UIParameters
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
@@ -428,9 +429,9 @@ class Spect(PrimitivesBASE):
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
 
+                uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
                                                    fitting_parameters=all_fp_init,
-                                                   config=config,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
@@ -438,7 +439,8 @@ class Spect(PrimitivesBASE):
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
                                                    filename_info=filename_info,
-                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT)
+                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT,
+                                                   ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
@@ -2581,8 +2583,18 @@ class Spect(PrimitivesBASE):
                     # Pass the primitive configuration to the interactive object.
                     _config = self.params[self.myself()]
                     _config.update(**params)
+
+                    title_overrides = {
+                        'max_missed': 'Max Missed',
+                        'max_shift':  'Max Shifted',
+                        'nsum':       'Lines to sum',
+                        'step':       'Tracing step',
+                    }
+                    ui_params = UIParameters(_config,
+                                             reinit_params=["max_missed", "max_shift", "nsum", "step"],
+                                             title_overrides=title_overrides)
                     aperture_models = interactive_trace_apertures(
-                        ext, _config, fit1d_params)
+                        ext, fit1d_params, ui_params=ui_params)
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     aperture_models = []
