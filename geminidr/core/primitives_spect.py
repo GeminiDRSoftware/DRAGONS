@@ -539,7 +539,7 @@ class Spect(PrimitivesBASE):
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
                     # Find peaks; convert width FWHM to sigma
-                    widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
+                    widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                     initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
                                                           variance=variance, min_snr=min_snr)
                     log.stdinfo(f"Found {len(initial_peaks)} peaks")

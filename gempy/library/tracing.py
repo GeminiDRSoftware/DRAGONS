@@ -504,8 +504,12 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        peaks[i] = np.mean(pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2]))
+        new_peaks = pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2])
         del peaks[i+1]
+        if new_peaks:
+            peaks[i] = np.mean(new_peaks)
+        else:  # somehow both peaks vanished
+            del peaks[i]
 
     final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
