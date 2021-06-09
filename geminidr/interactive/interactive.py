@@ -1,6 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from copy import copy
+from enum import Enum
 from functools import cmp_to_key
 
 from bokeh.core.property.instance import Instance
@@ -13,16 +14,15 @@ from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_regions
-from gempy.library.config import FieldValidationError
-
+from gempy.library.config import FieldValidationError, Config
 
 # Singleton instance, there is only ever one of these
 _visualizer = None
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title='', primitive_name='',
-                 filename_info='', template=None, help_text=None):
+    def __init__(self, title='', primitive_name='',
+                 filename_info='', template=None, help_text=None, ui_params=None):
         """
         Initialize a visualizer.
 
@@ -34,8 +34,6 @@ class PrimitiveVisualizer(ABC):
 
         Parameters
         ----------
-        config : `~gempy.library.config.Config`
-            DRAGONS primitive configuration data to work from
         title : str
             Title fo the primitive for display, currently not used
         primitive_name : str
@@ -57,10 +55,7 @@ class PrimitiveVisualizer(ABC):
         self.primitive_name = primitive_name if primitive_name else ''
         self.template = template
         self.extras = dict()
-        if config is None:
-            self.config = None
-        else:
-            self.config = copy(config)
+        self.ui_params = ui_params
 
         self.user_satisfied = False
 
@@ -263,97 +258,45 @@ class PrimitiveVisualizer(ABC):
 
         Parameters
         ----------
-        params : list of str
-            which DRAGONS configuration fields to make a UI for
-        extras : dict
-            Dictionary of additional field definitions for anything not included in the primitive configuration
+        params : :class:`UIParameters`
+            Parameters to make widgets for
         reinit_live : bool
             True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
             Currently only viable for text-slider style inputs
-        slider_width : int (default: 256)
-            Default width for sliders created here.
+        slider_width : int
+            Width of the sliders
 
         Returns
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        extras = {} if extras is None else extras
-        params = [] if params is None else params
         widgets = []
-        if self.config is None:
-            self.log.warn("No config, unable to make widgets")
-            return widgets
-        for pname, value in self.config.items():
-            if pname not in params:
-                continue
-            field = self.config._fields[pname]
-            # Do some inspection of the config to determine what sort of widget we want
-            doc = field.doc.split('\n')[0]
-            if hasattr(field, 'min'):
-                # RangeField => Slider
-                start, end = field.min, field.max
-                # TODO: Be smarter here!
-                if start is None:
-                    start = -20
-                if end is None:
-                    end = 50
-                step = start
-                allow_none = field.optional
-                is_float = field.dtype is not int
+        if params.reinit_params:
+            for key in params.reinit_params:
+                field = params.fields[key]
+                if hasattr(field, 'min'):
+                    is_float = field.dtype is not int
+                    if is_float:
+                        step = 0.1
+                    else:
+                        step = 1
+                    widget = build_text_slider(
+                        params.titles[key], params.values[key], step, field.min, field.max, obj=params.values,
+                        attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
+                        is_float=is_float,
+                        handler=self.slider_handler_factory(key, reinit_live=reinit_live))
 
-                widget = build_text_slider(
-                    doc, value, step, start, end, obj=self.config, attr=pname,
-                    slider_width=slider_width, allow_none=allow_none,
-                    is_float=is_float)
+                    self.widgets[key] = widget.children[0]
+                elif field.allowed:
+                    # ChoiceField => drop-down menu
+                    widget = Dropdown(label=field.title, menu=list(field.allowed.keys()))
+                    self.widgets[key] = widget
+                else:
+                    # Anything else
+                    widget = TextInput(title=field.title)
+                    self.widgets[key] = widget
 
-                self.widgets[pname] = widget.children[0]
-            elif hasattr(field, 'allowed'):
-                # ChoiceField => drop-down menu
-                widget = Dropdown(label=doc, menu=list(self.config.allowed.keys()))
-            else:
-                # Anything else
-                print("FIELD", pname)
-                widget = TextInput(title=doc)
-
-            widgets.append(widget)
-            # Complex multi-widgets will already have been added
-            if pname not in self.widgets:
-                self.widgets[pname] = widget
-
-        for pname, field in extras.items():
-            # Do some inspection of the config to determine what sort of widget we want
-            doc = field.doc.split('\n')[0]
-            if hasattr(field, 'min'):
-                # RangeField => Slider
-                start, end = field.min, field.max
-                # TODO: Be smarter here!
-                if start is None:
-                    start = -20
-                if end is None:
-                    end = 50
-                step = start
-                allow_none = field.optional
-                is_float = field.dtype is not int
-
-                widget = build_text_slider(
-                    doc, field.default, step, start, end, obj=self.extras,
-                    attr=pname, handler=self.slider_handler_factory(
-                        pname, reinit_live=reinit_live),
-                    throttled=True, slider_width=slider_width,
-                    allow_none=allow_none, is_float=is_float)
-
-                self.widgets[pname] = widget.children[0]
-                self.extras[pname] = field.default
-            else:
-                # Anything else
-                widget = TextInput(title=doc)
-                self.extras[pname] = ''
-
-            widgets.append(widget)
-            # Complex multi-widgets will already have been added
-            if pname not in self.widgets:
-                self.widgets[pname] = widget
-
+                widgets.append(widget)
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):
@@ -1459,6 +1402,58 @@ class TabsTurboInjector:
         if old != new:
             self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
+
+
+class UIParameters:
+    """
+    Holder class for the set of UI-adjustable parameters
+    """
+    def __init__(self, config: Config = None, extras: dict = None, reinit_params: list = None,
+                 title_overrides: dict = None):
+        """
+        Create a UIParameters set of parameters for the UI.
+
+        This object holds a collection of parameters.  These are used for the visualizer to
+        provide user interactivity of the inputs.  Although we track a `value` here, note that
+        in some cases the UI may provide multiple tabs with distinct inputs.  In that case,
+        it is up to the visualizer to track changes to these inputs on a per tab basis itself.
+
+        Parameters
+        ----------
+        :config: :class:`~gempy.library.config.Config`
+            DRAGONS primitive configuration
+        :extras: dict
+            Dictionary of names to new Fields to track
+        :reinit_params: list
+            List of names of configuration fields to show in the reinit panel
+        :titles_overrides: dict
+            Dictionary of overrides for labeling the fields in the UI
+        """
+        self.fields = dict()
+        self.values = dict()
+        self.reinit_params = reinit_params
+        self.titles = dict()
+
+        if config:
+            for fname, field in config._fields.items():
+                self.fields[fname] = field
+                self.values[fname] = getattr(config, fname)
+        if extras:
+            for fname, field in extras.items():
+                self.fields[fname] = field
+                self.values[fname] = field.default
+
+        # Parse the titles once and be done, grab initial values
+        for fname, field in self.fields.items():
+            if title_overrides and fname in title_overrides:
+                title = title_overrides[fname]
+            else:
+                title = field.doc.split('\n')[0]
+            self.titles[fname] = title
+
+    def update_values(self, **kwargs):
+        for k, v in kwargs.items():
+            self.values[k] = v
 
 
 def do_later(fn):

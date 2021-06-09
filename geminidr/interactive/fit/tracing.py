@@ -12,7 +12,7 @@ from bokeh.plotting import figure
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit import help
 from geminidr.interactive.interactive import (
-    connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector)
+    connect_figure_extras, GIRegionModel, RegionEditor, TabsTurboInjector, UIParameters)
 from gempy.library import astrotools as at, tracing
 from gempy.library.fitting import fit_1D
 from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
@@ -323,33 +323,25 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
     Custom visualizer for traceApertures().
     """
 
-    def __init__(self, data_source, fitting_parameters, config,
+    def __init__(self, data_source, fitting_parameters,
                  domains=None, filename_info=None, help_text=None,
                  modal_button_label="Trace apertures",
                  modal_message="Tracing apertures...",
-                 primitive_name=None, reinit_extras=None, reinit_params=None,
+                 primitive_name=None,
                  tab_name_fmt='{}', template="fit1d.html", title=None,
-                 xlabel='x', ylabel='y', **kwargs):
+                 xlabel='x', ylabel='y', ui_params=None, **kwargs):
 
-        super(Fit1DVisualizer, self).__init__(config=config,
-                                              filename_info=filename_info,
+        super(Fit1DVisualizer, self).__init__(filename_info=filename_info,
                                               help_text=help_text,
                                               primitive_name=primitive_name,
                                               template=template,
-                                              title=title)
+                                              title=title,
+                                              ui_params=ui_params)
 
         self.layout = None
         self.last_changed = None
-        self.reinit_extras = {} if reinit_extras is None else reinit_extras
-        self.reinit_params = [] if reinit_params is None else reinit_params
         self.widgets = {}
         self.error_alert = self.create_error_alert()
-
-        # Save parameters in case we want to reset them
-        self._reinit_extras = {} if reinit_extras is None \
-            else {key: val.default for key, val in self.reinit_extras.items()}
-        self._reinit_params = {} if reinit_params is None \
-            else {key: val for key, val in config.items() if key in reinit_params}
 
         self.function_name = 'chebyshev'
         self.function = self.create_function_div(
@@ -357,15 +349,13 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
 
         self.reinit_panel = self.create_tracing_panel(
             modal_button_label=modal_button_label,
-            modal_message=modal_message,
-            reinit_extras=reinit_extras,
-            reinit_params=reinit_params)
+            modal_message=modal_message)
 
         # Grab input coordinates or calculate if we were given a callable
         self.reconstruct_points_fn = self.data_source_factory(
-            data_source, reinit_extras=reinit_extras, reinit_params=reinit_params)
+            data_source)
 
-        data = self.reconstruct_points_fn(config, self.extras)
+        data = self.reconstruct_points_fn(self.ui_params)
 
         # For this, we need to remap from
         # [[x1, y1, weights1], [x2, y2, weights2], ...]
@@ -428,6 +418,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             self.fits.append(tui.model)
 
         self.add_callback_to_sliders()
+        self._reinit_params = {k: v for k, v in ui_params.values.items()}
 
     def add_callback_to_sliders(self):
         """
@@ -453,8 +444,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         holder.js_on_change('text', callback)
         return holder
 
-    def data_source_factory(self, data_source, reinit_extras=None,
-                            reinit_params=None):
+    def data_source_factory(self, data_source):
         """
         If our input data_source is an array, wraps it inside a callable
         function which is called later by the `...` method.
@@ -475,47 +465,33 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         """
         # TODO revisit the raging debate on `callable` for Python 3
         if callable(data_source):
-            def _data_source(_config, _extras):
+            def _data_source(ui_params):
                 """
                 Wraps the callable so we can handle the error properly.
                 """
                 try:
-                    data = data_source(_config, _extras)
+                    data = data_source(ui_params)
                 except IndexError:
 
                     self.error_alert.text = "Could not perform tracing with " \
                                             "current parameter. Rolling back " \
                                             "to previous working configuration."
 
-                    self.reset_tracing_panel(param=self.last_changed)
+                    self.reset_tracing_panel()  # param=self.last_changed)
 
-                    if self.last_changed in self._reinit_extras.keys():
-                        _extras[self.last_changed] = \
-                            self._reinit_extras[self.last_changed]
+                    ui_params = self._ui_params
 
-                    elif self.last_changed in self._reinit_params.keys():
-                        setattr(_config, self.last_changed,
-                                self._reinit_params[self.last_changed])
-
-                    data = data_source(_config, _extras)
+                    data = data_source(ui_params)
                 else:
                     # Store successful pars
-                    self._reinit_extras = deepcopy(_extras)
-                    self._reinit_params = {
-                        key: val for key, val in _config.items()
-                        if key in reinit_params}
+                    self._reinit_params = {k: v for k, v in self.ui_params.values.items()}
+                    self._ui_params = deepcopy(self.ui_params)
 
                 return data
 
         else:
-            def _data_source(_config, _extras):
+            def _data_source(ui_params):
                 """Simply passes the input data forward."""
-                if reinit_extras:
-                    raise ValueError("Saw reinit_extras but "
-                                     "data_source is not a callable")
-                if reinit_params:
-                    raise ValueError("Saw reinit_params but "
-                                     "data_source is not a callable")
                 if len(data_source) >= 3:
                     return data_source[0], data_source[1], data_source[2]
                 else:
@@ -549,8 +525,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         return div
 
     def create_tracing_panel(self, modal_button_label="Reconstruct points",
-                             modal_message=None, reinit_params=None,
-                             reinit_extras=None):
+                             modal_message=None):
         """
         Creates the Tracing (leftmost) Panel. This function had some code not
         used by TraceAperturesVisualizer, but this code helps to keep
@@ -569,13 +544,10 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
             Extra parameters for re-tracing.
         """
         # No panel required if we are not re-creating data
-        if reinit_params is None and reinit_extras is None:
-            return
-
-        reinit_widgets = self.make_widgets_from_config(reinit_params,
-                                                       reinit_extras,
-                                                       modal_message is None,
-                                                       slider_width=128)
+        reinit_widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False,
+                                                           slider_width=128)
+        if not reinit_widgets:
+            return None
 
         # This should really go in the parent class, like submit_button
         if modal_message:
@@ -642,44 +614,22 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         param : string
             Parameter name
         """
-        for key, val in self.reinit_extras.items():
-
-            if param is None:
-                reset_value = val.default
-            elif key == param:
-                reset_value = self._reinit_extras[key]
+        for fname in self.ui_params.reinit_params:
+            if param is None or fname == param:
+                reset_value = self._reinit_params[fname]
             else:
                 continue
 
-            old = self.widgets[key].value
+            old = self.widgets[fname].value
 
             # Update Slider Value
-            self.widgets[key].update(value=reset_value)
+            self.widgets[fname].update(value=reset_value)
 
             # Update Text Field via callback function
-            for callback in self.widgets[key]._callbacks['value_throttled']:
-                callback(attrib='value_throttled', old=old, new=reset_value)
-
-        for key, val in self.config.items():
-
-            if key not in self.reinit_params:
-                continue
-
-            if param is None:
-                reset_value = self.config._fields[key].default
-            elif key == param:
-                reset_value = self._reinit_params[key]
-            else:
-                continue
-
-            old = self.widgets[key].value
-
-            # Update Slider Value
-            self.widgets[key].update(value=reset_value)
-
-            # Update Text Field via callback function
-            for callback in self.widgets[key]._callbacks['value']:
+            for callback in self.widgets[fname]._callbacks['value']:
                 callback('value', old=old, new=reset_value)
+            for callback in self.widgets[fname]._callbacks['value_throttled']:
+                callback(attrib='value_throttled', old=old, new=reset_value)
 
     def register_last_changed(self, key):
         """
@@ -745,7 +695,7 @@ class TraceAperturesVisualizer(Fit1DVisualizer):
         doc.add_root(all_content)
 
 
-def interactive_trace_apertures(ext, config, fit1d_params):
+def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
     """
     Run traceApertures() interactively.
 
@@ -771,15 +721,6 @@ def interactive_trace_apertures(ext, config, fit1d_params):
                     for kw in ("DOMAIN_START", "DOMAIN_END")]
                    for ap in ap_table]
 
-    # Create parameters to add to the UI
-    reinit_params = ["max_missed", "max_shift", "nsum", "step"]
-
-    # Update doc for a more compact version
-    config._fields["max_missed"].doc = "Max Missed"
-    config._fields["max_shift"].doc = "Max Shifted"
-    config._fields["nsum"].doc = "Lines to sum"
-    config._fields["step"].doc = "Tracing step"
-
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
         ylabel = "y / rows [px]"
@@ -787,7 +728,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         xlabel = "y / rows [px]"
         ylabel = "x / columns [px]"
 
-    def data_provider(conf, extra):
+    def data_provider(ext, ui_params):  # conf, extra):
         """
         Callback function used to recreate the data for fitting.
 
@@ -798,13 +739,14 @@ def interactive_trace_apertures(ext, config, fit1d_params):
         extra : dict
             Dictionary containing parameters not defined in the configuration
             object. Not used in this case.
+        ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+            UI Parameters to use as inputs
         """
-        return trace_apertures_data_provider(ext, conf)
+        return trace_apertures_data_provider(ext, ui_params)
 
     # noinspection PyTypeChecker
     visualizer = TraceAperturesVisualizer(
-        data_provider,
-        config=config,
+        lambda ui_params: data_provider(ext, ui_params),
         domains=domain_list,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
@@ -813,11 +755,11 @@ def interactive_trace_apertures(ext, config, fit1d_params):
                    + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
                    + help.REGION_EDITING_HELP_SUBTEXT),
         primitive_name="traceApertures",
-        reinit_params=reinit_params,
         tab_name_fmt="Aperture {}",
         title="Interactive Trace Apertures",
         xlabel=xlabel,
         ylabel=ylabel,
+        ui_params=ui_params
     )
 
     server.interactive_fitter(visualizer)
@@ -826,7 +768,7 @@ def interactive_trace_apertures(ext, config, fit1d_params):
 
 
 # noinspection PyUnusedLocal
-def trace_apertures_data_provider(ext, conf):
+def trace_apertures_data_provider(ext, ui_params):
     """
     Function used by the interactive fitter to generate the a list with
     pairs of [x, y] data containing the knots used for tracing.
@@ -835,8 +777,8 @@ def trace_apertures_data_provider(ext, conf):
     ----------
     ext : AstroData
         Single extension of data containing an .APERTURE table.
-    conf : :class:`geminidr.gmos.spect.traceAperturesConfig`
-        Dictionary containing default traceApertures() parameters.
+    ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+        UI parameters to use as inputs to generate the points
 
     Returns
     -------
@@ -848,7 +790,7 @@ def trace_apertures_data_provider(ext, conf):
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
     # Convert configuration object into dictionary for easy access to its values
-    conf_as_dict = {key: val for key, val in conf.items()}
+    # conf_as_dict = {key: val for key, val in conf.items()}
 
     for i, loc in enumerate(ext.APERTURE['c0'].data):
         c0 = int(loc + 0.5)
@@ -862,12 +804,12 @@ def trace_apertures_data_provider(ext, conf):
             cwidth=5,
             initial=[loc],
             initial_tolerance=None,
-            max_missed=conf_as_dict['max_missed'],
-            max_shift=conf_as_dict['max_shift'],
-            nsum=conf_as_dict['nsum'],
+            max_missed=ui_params.values['max_missed'],
+            max_shift=ui_params.values['max_shift'],
+            nsum=ui_params.values['nsum'],
             rwidth=None,
             start=start,
-            step=conf_as_dict['step'],
+            step=ui_params.values['step'],
         )
 
         in_coords = np.ma.masked_array(in_coords)

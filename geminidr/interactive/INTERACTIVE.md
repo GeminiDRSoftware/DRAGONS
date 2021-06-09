@@ -250,20 +250,28 @@ self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
                                                           reset_dialog_handler)
 ```
 
-### make_widgets_from_config
+### make_widgets_from_parameters
 
-The `PrimitiveVisualizer` has a `make_widgets_from_config` helper method.  For the 
-passed list of parameter names, this will build a panel of widgets to update the 
-corresponding config values.  This provides a quick and easy way to make a UI for 
-the config inputs to a primitive.  For this to work, the PrimitiveVisualizer must 
-be told about the config when it is constructed.  This is done with a few lines of 
+The `PrimitiveVisualizer` has a `make_widgets_from_parameters` helper method.  For the 
+passed parameters, defined in a `UIParameters`, this will build a panel of widgets 
+to update the corresponding parameters.  This provides a quick and easy way to make 
+a UI for the inputs to a primitive.  For this to work, the `PrimitiveVisualizer` must 
+be told about the parameters when it is constructed.  This is done with a few lines of 
 code in the primitive like so:
 
 ```python
 config = self.params[self.myself()]
 config.update(**params)
+ui_params = UIParams(config)
 # pass this config to the visualizer constructor
 ```
+
+The `UIParams` can also take a few extra arguments to fine tune it's behavior.  
+`params` is a list of all the parameters you want captured from the `Config`.
+`hidden_params` are the parameters to not automatically add in the 
+`make_widgets_from_parameters`, if you want to place them elsewhere.  You can add
+`title_overrides` to give a dictionary mapping of parameters to text to use in
+the UI instead of inferring them from the `Config`. 
 
 ## Tornado Handlers
 
