@@ -2425,7 +2425,7 @@ class Spect(PrimitivesBASE):
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
 
-        def calc_sky_coords(ad: AstroData):
+        def calc_sky_coords(ad: AstroData, interactive_mode):
             """
             Calculate the sky coordinates for the extensions in the given
             AstroData object.
@@ -2438,6 +2438,9 @@ class Spect(PrimitivesBASE):
             Parameters
             ----------
             ad : :class:`~astrodata.AstroData`
+                AstroData to generate coordinates for
+            interactive_mode : bool
+                If True, collates aperture data mask separately to be used by UI
 
             Returns
             -------
@@ -2454,6 +2457,10 @@ class Spect(PrimitivesBASE):
                                 if csc_ext.mask is None else
                                 csc_ext.mask & DQ.not_signal)
 
+                # for interactive mode, we aggregate an aperture mask separately
+                # for the UI
+                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=DQ.datatype))
+
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
                 try:
@@ -2461,12 +2468,16 @@ class Spect(PrimitivesBASE):
                 except AttributeError:
                     pass
                 else:
-                    row = aptable[0]
-                    trace_model = am.table_to_model(row)
-                    aperture = tracing.Aperture(trace_model,
-                                                aper_lower=row['aper_lower'],
-                                                aper_upper=row['aper_upper'])
-                    csc_sky_mask |= aperture.aperture_mask(csc_ext, grow=apgrow)
+                    for row in aptable:
+                        trace_model = am.table_to_model(row)
+                        aperture = tracing.Aperture(trace_model,
+                                                    aper_lower=row['aper_lower'],
+                                                    aper_upper=row['aper_upper'])
+                        aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
+                        if interactive_mode:
+                            csc_aperture_mask |= aperture_mask
+                        else:
+                            csc_sky_mask |= aperture_mask
 
                 if csc_ext.variance is None:
                     csc_sky_weights = None
@@ -2488,7 +2499,10 @@ class Spect(PrimitivesBASE):
                 else:
                     csc_sky_mask ^= no_data[:, None]
 
-                yield csc_ext, csc_sky_mask, csc_sky_weights
+                if interactive_mode:
+                    yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
+                else:
+                    yield csc_ext, csc_sky_mask, csc_sky_weights
 
         def recalc_fn(ad: AstroData, conf: Config, extras: dict):
             """
@@ -2503,10 +2517,10 @@ class Spect(PrimitivesBASE):
 
             Parameters
             ----------
-            conf : :class:`~config.Config`
-                unused, but required in the function signature for interactive
             ad : :class:`~astrodata.core.AstroData`
                 AstroData instance to work on
+            conf : :class:`~config.Config`
+                unused, but required in the function signature for interactive
             extras : dict
                 Dictionary of additional values, here the ``col`` is passed as the selected column
 
@@ -2523,9 +2537,10 @@ class Spect(PrimitivesBASE):
             c = max(0, extras['col'] - 1)
             # TODO alternatively, save these 3 arrays for faster recalc
             # here I am rerunning all the above calculations whenever a col select is made
-            for rc_ext, rc_sky_mask, rc_sky_weights in calc_sky_coords(ad):
+            for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in calc_sky_coords(ad, interactive_mode=True):
                 rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
-                yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c] if rc_sky_weights is not None else None
+                yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c], rc_aper_mask[:, c] \
+                    if rc_sky_weights is not None else None
 
         final_parms = list()
         if interactive:
@@ -2552,35 +2567,10 @@ class Spect(PrimitivesBASE):
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
 
-                # Get Apertures
-                fitting_parameters = list()
-                for ext in ad:
-                    fitparms = fit1d_params.copy()
-                    aprtrs = ext.APERTURE
-                    aperture_list = list()
-                    for aprtr in aprtrs:
-                        center = aprtr["c0"]
-                        aper_lower = aprtr["aper_lower"]
-                        aper_upper = aprtr["aper_upper"]
-                        aper_lower = round(aper_lower + center)
-                        aper_upper = round(aper_upper + center)
-                        aperture_list.append((aper_lower, aper_upper))
-                    if aperture_list:
-                        # invert the apertures to select the non-aperture spaces
-                        aperture_list.sort()
-                        region_list = list()
-                        start = ""
-                        for ap in aperture_list:
-                            region_list.append(f"{start}:{ap[0]}")
-                            start = ap[1]
-                        region_list.append(f"{start}:")
-                        fitparms["regions"] = ",".join(region_list)
-                    fitting_parameters.append(fitparms)
-
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
                 visualizer = fit1d.Fit1DVisualizer(lambda conf, extras: recalc_fn(ad, conf, extras),
-                                                   fitting_parameters=fitting_parameters,
+                                                   fitting_parameters=[fit1d_params]*count,
                                                    config=config,
                                                    reinit_params=reinit_params,
                                                    reinit_extras=reinit_extras,
