@@ -1275,7 +1275,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.modal_widget:
             self.modal_widget.disabled = True
 
-        rollback_config = {k: v for k, v in self.config.items()}
+        rollback_config = self.ui_params.values.copy()
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
@@ -1291,7 +1291,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 except Exception as e:
                     # something went wrong, let's revert the inputs
                     # handling immediately to specifically trap the reconstruct_points_fn call
-                    self.config.update(**rollback_config)
+                    self.ui_params.update_values(**rollback_config)
                     self.show_user_message("Unable to build data from inputs, reverting")
                 if all_coords is not None:
                     for fit, coords in zip(self.fits, all_coords):
