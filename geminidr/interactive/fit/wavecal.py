@@ -159,7 +159,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                             min_width=400, title='Spectrum',
                             x_axis_label=xlabel, y_axis_label="Signal",
                             tools=tools, output_backend="webgl",
-                            x_range=p_main.x_range, y_range=None)
+                            x_range=p_main.x_range, y_range=None,
+                            min_border_left=80)
         p_spectrum.height_policy = 'fixed'
         p_spectrum.width_policy = 'fit'
         p_spectrum.sizing_mode = 'stretch_width'
@@ -206,7 +207,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                              title='Fit Residuals',
                              x_axis_label=xlabel, y_axis_label='Delta',
                              tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=p_main.x_range, y_range=None)
+                             output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                             min_border_left=80)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             p_resid.sizing_mode = 'stretch_width'
@@ -221,7 +223,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                               title='Fit Ratios',
                               x_axis_label=xlabel, y_axis_label='Ratio',
                               tools="pan,box_zoom,reset",
-                              output_backend="webgl", x_range=p_main.x_range, y_range=None)
+                              output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                              min_border_left=80)
             p_ratios.height_policy = 'fixed'
             p_ratios.width_policy = 'fit'
             p_ratios.sizing_mode = 'stretch_width'

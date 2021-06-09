@@ -419,7 +419,7 @@ class InteractiveModel1D(InteractiveModel):
         for i in range(fit_mask.size):
             if fit_mask[i] and mask[i] == 'good':
                 mask[i] = SIGMA_MASK_NAME
-            elif mask[i] == SIGMA_MASK_NAME:
+            elif not fit_mask[i] and mask[i] == SIGMA_MASK_NAME:
                 mask[i] = 'good'
         self.data.data['mask'] = mask
 
@@ -769,7 +769,8 @@ class Fit1DPanel:
                         min_width=400,
                         title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                         tools=tools,
-                        output_backend="webgl", x_range=x_range, y_range=y_range)
+                        output_backend="webgl", x_range=x_range, y_range=y_range,
+                        min_border_left=80)
         p_main.height_policy = 'fixed'
         p_main.width_policy = 'fit'
 
@@ -796,7 +797,8 @@ class Fit1DPanel:
                              title='Fit Residuals',
                              x_axis_label=xlabel, y_axis_label='Delta',
                              tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=p_main.x_range, y_range=None)
+                             output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                             min_border_left=80)
             p_resid.height_policy = 'fixed'
             p_resid.width_policy = 'fit'
             p_resid.sizing_mode = 'stretch_width'
@@ -811,7 +813,8 @@ class Fit1DPanel:
                               title='Fit Ratios',
                               x_axis_label=xlabel, y_axis_label='Ratio',
                               tools="pan,box_zoom,reset",
-                              output_backend="webgl", x_range=p_main.x_range, y_range=None)
+                              output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                              min_border_left=80)
             p_ratios.height_policy = 'fixed'
             p_ratios.width_policy = 'fit'
             p_ratios.sizing_mode = 'stretch_width'
