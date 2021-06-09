@@ -312,26 +312,27 @@ class UnivariateSplineWithOutlierRemoval:
             orig_mask[:] = False
         if order is not None:
             if downscale_order:
-             order = int(order * (~orig_mask).sum() / orig_mask.size + 0.5)
+                order = int(order * (~orig_mask).sum() / orig_mask.size + 0.5)
             if order > (~orig_mask).sum() - k:
-                order = (~orig_mask).sum() - k
+                order = max((~orig_mask).sum() - k, 0)
                 log.warning("Underconstrained fit. Reducing number of spline "
                             f"pieces to {order}")
 
-            if knot_spacing == "limits":
-                knots = np.linspace(xunique.min(), xunique.max(), order + 1)
-            elif knot_spacing == "points":
-                knots = np.interp(np.linspace(0, xunique.size - 1, order + 1),
-                                  range(xunique.size), xunique[sort_indices])
-            elif knot_spacing == "good":
-                knots = np.interp(
-                    np.linspace(0, xunique[~orig_mask].size - 1, order + 1),
-                    range(xunique[~orig_mask].size), sorted(xunique[~orig_mask]))
-            else:
-                raise ValueError(f"Unrecognized option: knot_spacing='{knot_spacing}'")
-            spline_kwargs["t"] = knots[1:-1]
-            if debug:
-                print("KNOTS", knots)
+            if order > 0:
+                if knot_spacing == "limits":
+                    knots = np.linspace(xunique.min(), xunique.max(), order + 1)
+                elif knot_spacing == "points":
+                    knots = np.interp(np.linspace(0, xunique.size - 1, order + 1),
+                                      range(xunique.size), xunique[sort_indices])
+                elif knot_spacing == "good":
+                    knots = np.interp(
+                        np.linspace(0, xunique[~orig_mask].size - 1, order + 1),
+                        range(xunique[~orig_mask].size), sorted(xunique[~orig_mask]))
+                else:
+                    raise ValueError(f"Unrecognized option: knot_spacing='{knot_spacing}'")
+                spline_kwargs["t"] = knots[1:-1]
+                if debug:
+                    print("KNOTS", knots)
 
         iteration = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
@@ -351,10 +352,12 @@ class UnivariateSplineWithOutlierRemoval:
 
             last_mask = full_mask
             avg_y = np.average(y, weights=wts)
+            rank = 0
             if order is None or order > 0:
                 tck = splrep(xunique[sort_indices], y[sort_indices],
                              w=wts[sort_indices], **spline_kwargs)
                 spline = BSpline(*tck)
+                rank = tck[0].size - (2 * tck[2] + 1)  # actual order used
                 # Ensure we get a real-valued fit
                 if np.isnan(tck[1]).any():
                     spline = lambda xx: avg_y
@@ -403,11 +406,16 @@ class UnivariateSplineWithOutlierRemoval:
         # Create a standard BSpline object
         if not isinstance(spline, BSpline):
             # Create a spline object that's just a constant
-            spline = BSpline(np.r_[(x[0],)*4, (x[-1],)*4],
-                             np.r_[(spline(0),)*4, (0.,)*4], 3)
+            if len(x) > 1:
+                spline = BSpline(np.r_[(x[0],) * 4, (x[-1],) * 4],
+                                 np.r_[(spline(0),) * 4, (0.,) * 4], 3)
+            else:
+                spline = BSpline(np.r_[(x[0],) * 4, (x[0]+1,) * 4],
+                                 np.r_[(spline(0),) * 4, (0.,) * 4], 3)
         # Attach the mask and model (may be useful)
         spline.mask = full_mask
         spline.data = spline_y
+        spline.fit_info = {"rank": rank + 1}  # for consistency with astropy.fitting
         return spline
 
 

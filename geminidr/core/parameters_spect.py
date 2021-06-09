@@ -90,7 +90,8 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
-    dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
+    dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
+                                   min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',

@@ -387,8 +387,8 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     if center is None:
         center = 0.5 * (npix - 1)
 
-    extract_slice = slice(max(0, int(center - 0.5 * nsum + 1)),
-                          min(npix, int(center + 0.5 * nsum + 1)))
+    extract_slice = slice(max(0, int(center - 0.5 * nsum)),
+                          min(npix, int(center + 0.5 * nsum)))
     data, mask, variance = at.transpose_if_needed(
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
@@ -402,7 +402,7 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     return data, mask, variance, extract_slice
 
 
-def estimate_peak_width(data, mask=None):
+def estimate_peak_width(data, mask=None, boxcar_size=None):
     """
     Estimates the FWHM of the spectral features (arc lines) by inspecting
     pixels around the brightest peaks.
@@ -413,6 +413,8 @@ def estimate_peak_width(data, mask=None):
         1D data array
     mask : ndarray/None
         mask to apply to data
+    boxcar_size : float/None
+        subtract a median boxcar from the data first?
 
     Returns
     -------
@@ -424,6 +426,8 @@ def estimate_peak_width(data, mask=None):
         goodpix = ~mask.astype(bool)
     widths = []
     niters = 0
+    if boxcar_size:
+        data = data - at.boxcar(data, size=boxcar_size)
     while len(widths) < 10 and niters < 100:
         index = np.argmax(data * goodpix)
         with warnings.catch_warnings():  # width=0 warnings
@@ -548,8 +552,12 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        peaks[i] = np.mean(pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2]))
+        new_peaks = pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2])
         del peaks[i+1]
+        if new_peaks:
+            peaks[i] = np.mean(new_peaks)
+        else:  # somehow both peaks vanished
+            del peaks[i]
 
     final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)

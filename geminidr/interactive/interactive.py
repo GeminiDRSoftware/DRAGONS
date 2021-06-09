@@ -274,7 +274,7 @@ class PrimitiveVisualizer(ABC):
             self.message_holder.text = message
 
     def make_widgets_from_parameters(self, params, reinit_live: bool = True,
-                                 slider_width: int = 256):
+                                     slider_width: int = 256):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -298,14 +298,16 @@ class PrimitiveVisualizer(ABC):
         if params.reinit_params:
             for key in params.reinit_params:
                 field = params.fields[key]
-                if field.default or field.default == 0:
-                    if hasattr(field, 'min'):
-                        step = 1
-                    else:
+                if hasattr(field, 'min'):
+                    is_float = field.dtype is not int
+                    if is_float:
                         step = 0.1
+                    else:
+                        step = 1
                     widget = build_text_slider(
                         params.titles[key], params.values[key], step, field.min, field.max, obj=params.values,
                         attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
+                        is_float=is_float,
                         handler=self.slider_handler_factory(key, reinit_live=reinit_live))
 
                     self.widgets[key] = widget.children[0]
@@ -347,7 +349,8 @@ class PrimitiveVisualizer(ABC):
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256, config=None, allow_none=False):
+                      slider_width=256, config=None, allow_none=False,
+                      is_float=None):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -373,6 +376,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Set to `True` to limit handler calls to when the slider is released (default False)
     allow_none : bool
         Set to `True` to allow an empty text entry to specify a `None` value
+    is_float : bool
+        nature of parameter (None => try to figure it out)
 
     Returns
     -------
@@ -390,13 +395,20 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             if hasattr(field, 'max'):
                 max_value = field.max
 
-    start = min(value, min_value) if min_value is not None else min(value, 0)
-    end = max(value, max_value) if max_value is not None else max(10, value*2)
+    if value is None:
+        start = min_value if min_value is not None else 0
+        end = max_value if max_value is not None else 10
+        slider_kwargs = {"value": start, "show_value": False}
+    else:
+        start = min(value, min_value) if min_value is not None else min(value, 0)
+        end = max(value, max_value) if max_value is not None else max(10, value*2)
+        slider_kwargs = {"value": value, "show_value": True}
 
     # trying to convince int-based sliders to behave
-    is_float = not isinstance(value, int) or \
-               (min_value is not None and not isinstance(min_value, int)) or \
-               (max_value is not None and not isinstance(max_value, int))
+    if is_float is None:
+        is_float = ((value is not None and not isinstance(value, int)) or
+                    (min_value is not None and not isinstance(min_value, int)) or
+                    (max_value is not None and not isinstance(max_value, int)))
     if step is None:
         if is_float:
             step = 0.1
@@ -405,11 +417,11 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
-        slider = Slider(start=start, end=end, value=value, step=step,
-                        title=title, format=fmt)
+        slider = Slider(start=start, end=end, step=step, title=title,
+                        format=fmt, **slider_kwargs)
     else:
-        slider = Slider(start=start, end=end, value=value, step=step,
-                        title=title)
+        slider = Slider(start=start, end=end, step=step, title=title,
+                        **slider_kwargs)
 
     slider.width = slider_width
 
@@ -1466,6 +1478,13 @@ class UIParameters:
     def update_values(self, **kwargs):
         for k, v in kwargs.items():
             self.values[k] = v
+
+    def __getattr__(self, attr):
+        """Provides the same interface to get parameter values as Config"""
+        try:
+            return self.values[attr]
+        except KeyError:
+            return object.__getattribute__(self, attr)
 
 
 def do_later(fn):

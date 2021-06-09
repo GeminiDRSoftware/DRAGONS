@@ -12,7 +12,7 @@ from gempy.library import tracing
 
 @pytest.mark.parametrize("fwhm", [2, 4, 6, 8, 12])
 def test_estimate_peak_width(fwhm):
-    n_peaks = 20
+    n_peaks = 10
     noise = 0.001
 
     x = np.arange(0, 1000)

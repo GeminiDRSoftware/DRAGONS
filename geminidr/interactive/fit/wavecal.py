@@ -1,164 +1,93 @@
 import numpy as np
+from scipy.interpolate import interp1d
+from bisect import bisect
 
-from bokeh import models as bm, transform as bt
-from bokeh.io import curdoc
+from bokeh import models as bm
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer, Row, Column
 from bokeh.plotting import figure
 
-from geminidr.interactive import interactive
-from .fit1d import InfoPanel
-from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
-    RegionEditor
-from gempy.library.astrotools import cartesian_regions_to_slices
-from gempy.library.fitting import fit_1D
+from geminidr.interactive.controls import Controller, Handler
 from gempy.library.matching import match_sources
+from gempy.library.tracing import cwt_ricker, pinpoint_peaks
 
-from .fit1d import (Fit1DPanel, Fit1DRegionListener, Fit1DVisualizer,
-                    FittingParametersUI, InteractiveModel1D, prep_fit1d_params_for_fit1d, BAND_MASK_NAME)
-from .. import server
+from .fit1d import (Fit1DPanel, Fit1DVisualizer, InfoPanel,
+                    fit1d_figure, USER_MASK_NAME)
+
+
+def wavestr(line):
+    """Convert a line wavelength to a string, rounding the internal
+    representation of the floating-point value"""
+    return str(np.round(line, decimals=6))
+
+
+def beep():
+    """Make a beep noise"""
+    print("\a", end="")
+
+
+def disable_when_identifying(fn):
+    """A decorator that prevents methods from being executed when the
+    WavelengthSolutionPanel is currently identifying an arc line"""
+    def gn(self, *args, **kwargs):
+        if self.currently_identifying:
+            beep()
+            return
+        fn(self, *args, **kwargs)
+    return gn
 
 
 class WavelengthSolutionPanel(Fit1DPanel):
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
-                 weights=None, other_data=None, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
-                 enable_user_masking=True, enable_regions=True, central_plot=True):
-        """
-        Panel for visualizing a 1-D fit, perhaps in a tab
+                 weights=None, other_data=None, **kwargs):
+        # No need to compute wavelengths here as the model_change_handler() does it
+        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(other_data["spectrum"]),
+                                             'spectrum': other_data["spectrum"]})
+        # This line is needed for the initial call to model_change_handler
+        self.currently_identifying = False
 
-        Parameters
-        ----------
-        visualizer : :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
-            visualizer to associate with
-        fitting_parameters : dict
-            parameters for this fit
-        domain : list of pixel coordinates
-            Used for new fit_1D fitter
-        x : :class:`~numpy.ndarray`
-            X coordinate values
-        y : :class:`~numpy.ndarray`
-            Y coordinate values
-        xlabel : str
-            label for X axis
-        ylabel : str
-            label for Y axis
-        plot_width : int
-            width of plot area in pixels
-        plot_height : int
-            height of plot area in pixels
-        plot_residuals : bool
-            True if we want the lower plot showing the differential between the data and the fit
-        plot_ratios : bool
-            True if we want the lower plot showing the ratio between the data and the fit
-        enable_user_masking : bool
-            True to enable fine-grained data masking by the user using bokeh selections
-        enable_regions : bool
-            True if we want to allow user-defind regions as a means of masking the data
-        """
-        # Just to get the doc later
-        self.visualizer = visualizer
+        super().__init__(visualizer, fitting_parameters, domain, x, y,
+                         weights=weights, **kwargs)
 
-        info_panel = InfoPanel()
-
-        # Make a listener to update the info panel with the RMS on a fit
-        listeners = [lambda f: info_panel.update(f), ]
-
-        # prep params to clean up sigma related inputs for the interface
-        # i.e. niter min of 1, etc.
-        prep_fit1d_params_for_fit1d(fitting_parameters)
-
-        # Avoids having to check whether this is None all the time
-        band_model = GIRegionModel(domain=domain)
-
-        self.fitting_parameters = fitting_parameters
-        self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
-                                        band_model=band_model, listeners=listeners)
+        # This has to go on the model (and not this Panel instance) since the
+        # models are returned by the Visualizer, not the Panel instances
         self.model.other_data = other_data
 
-        # also listen for updates to the masks
-        self.model.add_mask_listener(info_panel.update_mask)
+        self.new_line_marker = bm.ColumnDataSource(
+            {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})
+        self.p_spectrum.line("x", "y", source=self.new_line_marker,
+                             color="red", name="new_line_marker",
+                             line_width=3, visible=False)
+        self.set_currently_identifying(False)
 
-        model = self.model
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, model, self.fitting_parameters)
+    def set_currently_identifying(self, peak):
+        status = bool(peak)
+        self.p_spectrum.select_one({"name": "new_line_marker"}).visible = status
+        for c in self.new_line_div.children:
+            c.disabled = not status
+        self.identify_button.disabled = status
+        self.currently_identifying = peak
 
-        # No need to compute wavelengths here as the model_change_handler() does it
-        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(self.model.other_data["spectrum"]),
-                                             'spectrum': self.model.other_data["spectrum"]})
-        self.id_spacer = 0.02 * self.spectrum.data['spectrum'].max()  # gap above line before wavelength string
+    def build_figures(self, domain=None, controller_div=None,
+                      plot_residuals=True, plot_ratios=True):
 
-        # This updates everything so we use it here to create all the
-        # extra columns we need for this Visualizer
-        # There's unlikely to be any harm to doing this in the parent class
-        self.model_change_handler(self.model.fit)
+        self.xpoint = 'fitted'
+        self.ypoint = 'nonlinear'
+        p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
+                                      xpoint='fitted', ypoint='nonlinear',
+                                      xline='model', yline='nonlinear',
+                                      xlabel=self.xlabel, ylabel=self.ylabel,
+                                      model=self.model, plot_ratios=False,
+                                      enable_user_masking=True)
 
-        controls_ls = list()
+        mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
+        Controller(p_main, None, self.model.band_model, controller_div,
+                   mask_handlers=mask_handlers, domain=domain)
 
-        controls_column = self.fitting_parameters_ui.get_bokeh_components()
-
-        reset_button = bm.Button(label="Reset", align='center', button_type='warning', width_policy='min')
-
-        def reset_dialog_handler(result):
-            if result:
-                self.fitting_parameters_ui.reset_ui()
-
-        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
-                                                                  'Reset will change all inputs for this tab back '
-                                                                  'to their original values.  Proceed?',
-                                                                  reset_dialog_handler)
-
-        controller_div = Div(margin=(20, 0, 0, 0),
-                             width=220,
-                             style={
-                                 "color": "gray",
-                                 "padding": "5px",
-                             })
-
-        controls_ls.extend(controls_column)
-
-        controls_ls.append(reset_button)
-        controls_ls.append(controller_div)
-
-        controls = column(*controls_ls, width=220)
-
-        # Now the figures
-        # Because I'm not plotting x against y, I don't want to set the ranges
-        # (or at least, not like this)
-        x_range = None
-        y_range = None
-        try:
-            if self.model.data and 'x' in self.model.data.data and len(self.model.x) >= 2:
-                x_min = min(self.model.x)
-                x_max = max(self.model.x)
-                x_pad = (x_max - x_min) * 0.1
-                x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-            if self.model.data and 'y' in self.model.data.data and len(self.model.x) >= 2:
-                y_min = min(self.model.y)
-                y_max = max(self.model.y)
-                y_pad = (y_max - y_min) * 0.1
-                y_range = Range1d(y_min - y_pad, y_max + y_pad)
-        except:
-            pass  # ok, we don't *need* ranges...
-        x_range = None
-        y_range = None
-        if enable_user_masking:
-            tools = "pan,wheel_zoom,box_zoom,reset,lasso_select,box_select,tap"
-        else:
-            tools = "pan,wheel_zoom,box_zoom,reset"
-        p_main = figure(plot_width=plot_width, plot_height=plot_height,
-                        min_width=400,
-                        title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
-                        tools=tools,
-                        output_backend="webgl", x_range=x_range, y_range=y_range)
-        p_main.height_policy = 'fixed'
-        p_main.width_policy = 'fit'
-
-        # Here's my Wavecal-specific block
-        p_spectrum = figure(plot_width=plot_width, plot_height=plot_height,
+        p_spectrum = figure(plot_width=self.width, plot_height=self.height,
                             min_width=400, title='Spectrum',
-                            x_axis_label=xlabel, y_axis_label="Signal",
-                            tools=tools, output_backend="webgl",
+                            x_axis_label=self.xlabel, y_axis_label="Signal",
+                            tools = "pan,wheel_zoom,box_zoom,reset",
+                            output_backend="webgl",
                             x_range=p_main.x_range, y_range=None,
                             min_border_left=80)
         p_spectrum.height_policy = 'fixed'
@@ -170,163 +99,232 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         source=self.model.data, angle=0.5 * np.pi,
                         text_color=self.model.mask_rendering_kwargs()['color'],
                         text_baseline='middle')
-        self.spectrum_plot = p_spectrum
+        self.p_spectrum = p_spectrum
+        delete_line_handler = Handler('d', "Delete arc line",
+                                      self.delete_line)
+        identify_line_handler = Handler('i', "Identify arc line",
+                                        self.identify_line)
+        Controller(p_spectrum, None, self.model.band_model, controller_div,
+                   mask_handlers=None, domain=domain,
+                   handlers=[delete_line_handler, identify_line_handler])
 
-        add_new_line_button = bm.Button(label="Add new line")
-        self.line_chooser = row(bm.Div(text="New line wavelength"),
-                                add_new_line_button)
+        self.identify_button = bm.Button(label="Identify lines", width=200,
+                                         button_type="primary", width_policy="fixed")
+        self.identify_button.on_click(self.identify_lines)
 
-        identify_button = bm.Button(label="Identify lines")
-        identify_button.on_click(self.identify_lines)
+        self.new_line_prompt = bm.Div(text="Line", style={"font-size": "16px",},
+                                      width_policy="min")
+        self.new_line_dropdown = bm.Select(options=[], width=100,
+                                           width_policy="fixed")
+        self.new_line_textbox = bm.NumericInput(width=100, mode='float',
+                                                width_policy="fixed")
+        self.new_line_dropdown.on_change("value", self.set_new_line_textbox_value)
+        new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fixed",
+                                       button_type="success")
+        new_line_ok_button.on_click(self.add_new_line)
+        new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fixed",
+                                           button_type="danger")
+        new_line_cancel_button.on_click(self.cancel_new_line)
+        self.new_line_div = row(bm.Spacer(sizing_mode="stretch_width"),
+                                self.new_line_prompt, self.new_line_dropdown,
+                                self.new_line_textbox,
+                                new_line_ok_button, new_line_cancel_button,
+                                sizing_mode="stretch_both")
 
-        identify_panel = row(self.line_chooser, identify_button)
-        # Here endeth my Wavecal-specific block
+        identify_panel = row(self.identify_button, self.new_line_div)
 
-        if enable_regions:
-            band_model = GIRegionModel()
+        info_panel = InfoPanel()
+        self.model.add_listener(info_panel.model_change_handler)
 
-            def update_regions():
-                self.model.model.regions = self.band_model.build_regions()
-            band_model.add_listener(Fit1DRegionListener(self.update_regions))
+        return [p_spectrum, identify_panel, info_panel.component,
+                p_main, p_supp]
 
-            connect_figure_extras(p_main, band_model)
-
-        if enable_user_masking:
-            mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler)
-        else:
-            mask_handlers = None
-
-        Controller(p_main, None, band_model, controller_div, mask_handlers=mask_handlers)
-        fig_column = [p_spectrum, identify_panel, p_main, info_panel.component]
-
-        if plot_residuals:
-            # x_range is linked to the main plot so that zooming tracks between them
-            p_resid = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                             min_width=400,
-                             title='Fit Residuals',
-                             x_axis_label=xlabel, y_axis_label='Delta',
-                             tools="pan,box_zoom,reset",
-                             output_backend="webgl", x_range=p_main.x_range, y_range=None,
-                             min_border_left=80)
-            p_resid.height_policy = 'fixed'
-            p_resid.width_policy = 'fit'
-            p_resid.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_resid, band_model)
-            # Initalizing this will cause the residuals to be calculated
-            self.model.data.data['residuals'] = np.zeros_like(self.model.x)
-            p_resid.scatter(x='fitted', y='residuals', source=self.model.data,
-                            size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        if plot_ratios:
-            p_ratios = figure(plot_width=plot_width, plot_height=plot_height // 2,
-                              min_width=400,
-                              title='Fit Ratios',
-                              x_axis_label=xlabel, y_axis_label='Ratio',
-                              tools="pan,box_zoom,reset",
-                              output_backend="webgl", x_range=p_main.x_range, y_range=None,
-                              min_border_left=80)
-            p_ratios.height_policy = 'fixed'
-            p_ratios.width_policy = 'fit'
-            p_ratios.sizing_mode = 'stretch_width'
-            connect_figure_extras(p_ratios, band_model)
-            # Initalizing this will cause the residuals to be calculated
-            self.model.data.data['ratio'] = np.zeros_like(self.model.x)
-            p_ratios.scatter(x='fitted', y='ratio', source=self.model.data,
-                             size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        if plot_residuals and plot_ratios:
-            tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
-            tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
-            tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
-            fig_column.append(tabs)
-        elif plot_residuals:
-            fig_column.append(p_resid)
-        elif plot_ratios:
-            fig_column.append(p_ratios)
-
-        # Initializing regions here ensures the listeners are notified of the region(s)
-        if "regions" in fitting_parameters and fitting_parameters["regions"] is not None:
-            region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
-            band_model.load_from_tuples(region_tuples)
-
-        self.scatter = p_main.scatter(x='fitted', y='nonlinear', source=self.model.data,
-                                      size=5, legend_field='mask', **self.model.mask_rendering_kwargs())
-        self.model.add_listener(self.model_change_handler)
-
-        # TODO refactor? this is dupe from band_model_handler
-        # hacking it in here so I can account for the initial
-        # state of the band model (which used to be always empty)
-        mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
-                for x, m in zip(self.model.x, self.model.mask)]
-        model.data.data['mask'] = mask
-        self.model.perform_fit()
-
-        self.line = p_main.line(x='model',
-                                y='nonlinear',
-                                source=self.model.evaluation,
-                                line_width=3,
-                                color='crimson')
-
-        if band_model:
-            region_editor = RegionEditor(band_model)
-            fig_column.append(region_editor.get_widget())
-        col = column(*fig_column)
-        col.sizing_mode = 'scale_width'
-
-        if central_plot:
-            self.component = row(col, controls,
-                                 css_classes=["tab-content"],
-                                 spacing=10)
-        else:
-            self.component = row(controls, col,
-                                 css_classes=["tab-content"],
-                                 spacing=10)
-
-    @property
-    def linear_model(self):
+    @staticmethod
+    def linear_model(model):
         """Return only the linear part of a model. It doesn't work for
         splines, which is why it's not in the InteractiveModel1D class"""
-        model = self.model.fit._models
+        model = model.fit._models
         return model.__class__(degree=1, c0=model.c0, c1=model.c1,
                                domain=model.domain)
 
+    def label_height(self, x):
+        """
+        Provide a location for a wavelength label identifying a line
+
+        Parameters
+        ----------
+        x : float
+            pixel location of line
+
+        Returns
+        -------
+        float : an appropriate y value for writing a label
+        """
+        padding = 0.02 * self.spectrum.data['spectrum'].max()
+        try:
+            return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
+        except TypeError:
+            return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
+
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
-    def model_change_handler(self, fit):
+    def model_change_handler(self, model):
         """
         If the `~fit` changes, this gets called to evaluate the fit and save the results.
         """
-        super().model_change_handler(fit)
-        x, y = self.model.x, self.model.y
-        linear_model = self.linear_model
+        super().model_change_handler(model)
+        x, y = model.x, model.y
+        linear_model = self.linear_model(model)
 
-        self.model.data.data['fitted'] = self.model.evaluate(x)
+        self.model.data.data['fitted'] = model.evaluate(x)
         self.model.data.data['nonlinear'] = y - linear_model(x)
-        self.model.data.data['heights'] = [self.spectrum.data['spectrum'][int(xx + 0.5)] + 0.02 * self.spectrum.data['spectrum'].max() for xx in x]
-        self.model.data.data['lines'] = [str(np.round(yy, decimals=6)) for yy in y]
+        self.model.data.data['heights'] = self.label_height(x)
+        self.model.data.data['lines'] = [wavestr(yy) for yy in y]
 
-        self.model.evaluation.data['nonlinear'] = self.model.evaluation.data['model'] - linear_model(self.model.evaluation.data['xlinspace'])
+        self.model.evaluation.data['nonlinear'] = (
+                model.evaluation.data['model'] -
+                linear_model(model.evaluation.data['xlinspace']))
 
-        domain = self.model.domain
-        self.spectrum.data['wavelengths'] = self.model.evaluate(
+        domain = model.domain
+        self.spectrum.data['wavelengths'] = model.evaluate(
             np.arange(domain[0], domain[1]+1))
 
-    def add_identified_line(self, peak, wavelength):
+        # If we recalculated the model while in the middle of identifying a
+        # peak, keep the peak location but update the line choices
+        if self.currently_identifying:
+            peak = self.currently_identifying
+            self.currently_identifying = False
+            self.identify_line('i', 0, 0, peak=peak)
+
+    def add_new_line(self, *args):
+        """Handler for the 'OK' button in the line identifier"""
+        if self.currently_identifying:
+            try:
+                wavelength = float(self.new_line_textbox.value)
+            except TypeError:
+                beep()
+                return
+            peak = self.currently_identifying
+            try:
+                self.add_line_to_data(peak, wavelength)
+            except ValueError:
+                return
+            self.cancel_new_line(*args)
+
+    def cancel_new_line(self, *args):
+        """Handler for the 'Cancel' button in the line identifier"""
+        self.new_line_prompt.text = ""
+        self.new_line_dropdown.options = []
+        self.set_currently_identifying(False)
+
+    def add_line_to_data(self, peak, wavelength):
         """
-        Add a new line to the ColumnDataSource and performs a new fit
+        Add a new line to the ColumnDataSource and performs a new fit.
 
         Parameters
         ----------
         peak : float
-            pixel locations of peak
+            pixel location of peak
         wavelength : float
-            wavelengths
+            wavelength in nm
         """
+        print(f"Adding {wavelength} nm at pixel {peak}")
+        if self.model.x.size > 1:
+            lower_limit, upper_limit = get_closest(self.model.x, peak)
+            if not np.isinf(lower_limit):
+                lower_limit = self.model.y[list(self.model.x).index(lower_limit)]
+            if not np.isinf(upper_limit):
+                upper_limit = self.model.y[list(self.model.x).index(upper_limit)]
+            lower_limit, upper_limit = sorted([lower_limit, upper_limit])
+            if not (lower_limit < wavelength < upper_limit):
+                self.visualizer.show_user_message(
+                    f"The value {wavelength} nm does not preserve a monotonic"
+                     "sequence of identified line wavelengths")
+                raise ValueError
+        # Dummy values should be close to true values to avoid plot resizing
         new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
-                    'fitted': [0], 'nonlinear': [0], 'heights': [0],
+                    'fitted': [wavelength], 'nonlinear': [0],
+                    'heights': [self.label_height(peak)],
                     'residuals': [0],
-                    'lines': [str(np.round(wavelength, decimals=6))],
+                    'lines': [wavestr(wavelength)],
                    }
         self.model.data.stream(new_data)
+        self.model.perform_fit()
+
+    @disable_when_identifying
+    def identify_line(self, key, x, y, peak=None):
+        """
+        Identifies a peak near the cursor location and allows the user to
+        provide a wavelength.
+        """
+        if peak is None:
+            x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
+            fwidth = self.model.other_data["fwidth"]
+            pixel = interp1d(self.spectrum.data["wavelengths"],
+                             range(len(self.spectrum.data["wavelengths"])))(x)
+            new_peaks = np.setdiff1d(self.model.other_data["peaks"],
+                                     self.model.x, assume_unique=True)
+            index = np.argmin(abs(new_peaks - pixel))
+
+            # If we've clicked "close" to a real peak (based on viewport size),
+            # then select that
+            if abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1):
+                peak = new_peaks[index]
+                print(f"Retrieved peak from list at {peak}")
+            else:
+                # TODO: Check this behaves sensibly, and doesn't find
+                # all tiny bumps
+                pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
+                                           [0.42466 * fwidth])
+                eps = np.finfo(np.float32).eps  # Minimum representative data
+                pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
+                try:
+                    peak = pinpoint_peaks(pinpoint_data, None, [pixel])[0]
+                    print(f"Found peak at pixel {peak}")
+                except IndexError:  # no peak
+                    print("Couldn't find a peak")
+                    return
+            est_wave = self.model.evaluate(peak)[0]
+            if not (x1 < est_wave < x2):  # peak outside viewport
+                return
+        else:
+            est_wave = self.model.evaluate(peak)[0]  # evaluate always returns array
+
+        # Find all unidentified arc lines that this could be, maintaining
+        # monotonicity
+        all_lines = self.model.other_data["linelist"].wavelengths(
+            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
+        lower_limit, upper_limit = get_closest(self.model.y, est_wave)
+        possible_lines = [line for line in all_lines
+                          if lower_limit < line < upper_limit]
+        if possible_lines:
+            selectable_lines = sorted(sorted(possible_lines,
+                                             key=lambda x: abs(x - est_wave))[:5])
+            select_index = np.argmin(abs(np.asarray(selectable_lines) - est_wave))
+            self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
+            self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
+            self.new_line_dropdown.disabled = False
+        else:
+            self.new_line_dropdown.options = []
+            self.new_line_dropdown.disabled = True
+        self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
+        lheight = 0.05 * (self.p_spectrum.y_range.end -
+                          self.p_spectrum.y_range.start)
+        self.new_line_marker.data = {"x": [est_wave] * 2,
+                                     "y": [self.label_height(peak),
+                                           self.label_height(peak) + lheight]}
+        self.set_currently_identifying(peak)
+
+    @disable_when_identifying
+    def delete_line(self, key, x, y):
+        """
+        Delete (not mask) from the fit the line nearest the cursor. This
+        operates only on the spectrum panel.
+        """
+        index = np.argmin(abs(self.model.data.data['fitted'] - x))
+        new_data = {col: list(values)[:index] + list(values)[index+1:]
+                    for col, values in self.model.data.data.items()}
+        self.model.data.data = new_data
         self.model.perform_fit()
 
     def identify_lines(self):
@@ -339,11 +337,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         5) Adds new matches to the list
         6) Performs a new fit, triggering a plot update
         """
-        print("IDENTIFY LINES")
-        dw = self.linear_model.c1
+        linear_model = self.linear_model(self.model)
+        dw = linear_model.c1 / np.diff(linear_model.domain)[0]
         matching_distance = abs(self.model.other_data["fwidth"] * dw)
         all_lines = self.model.other_data["linelist"].wavelengths(
-            in_vacuo=self.visualizer.config.in_vacuo, units="nm")
+            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
 
         good_data = {}
         for k, v in self.model.data.data.items():
@@ -363,16 +361,20 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 good_data['x'].append(peak)
                 good_data['y'].append(unmatched_lines[m])
                 good_data['mask'].append('good')
-                good_data['fitted'].append(0)
+                good_data['fitted'].append(unmatched_lines[m])
                 good_data['nonlinear'].append(0)
-                good_data['heights'].append(0)
+                good_data['heights'].append(self.label_height(peak))
                 good_data['residuals'].append(0)
-                good_data['lines'].append(str(np.round(unmatched_lines[m], decimals=6)))
+                good_data['lines'].append(wavestr(unmatched_lines[m]))
                 print("NEW LINE", peak, unmatched_lines[m])
 
         self.model.data.data = good_data
         self.model.perform_fit()
 
+    def set_new_line_textbox_value(self, attrib, old, new):
+        """Update the value of the textbox related to the new line ID"""
+        if new != old:
+            self.new_line_textbox.value = float(new)
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
@@ -403,14 +405,14 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         fits: list of InteractiveModel instances, one per (x,y) array
     """
 
-    def __init__(self, data_source, fitting_parameters, config,
-                 reinit_params=None, reinit_extras=None,
+    def __init__(self, data_source, fitting_parameters,
                  modal_message=None,
                  modal_button_label=None,
                  tab_name_fmt='{}',
                  xlabel='x', ylabel='y',
                  domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
+                 ui_params=None,
                  **kwargs):
         """
         Parameters
@@ -422,7 +424,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             and returns [[x, y], [x, y].. or [[x, y, weights], [x, y, weights], ...
         fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters` or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             Description of parameters to use for `fit_1d`
-        config : Config instance describing primitive parameters and limitations
         reinit_params : list of str
             list of parameter names in config related to reinitializing fit arrays.  These cause the `data_source`
             function to be run to get the updated coordinates/weights.  Should not be passed if `data_source` is
@@ -448,10 +449,12 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             Title for UI (Interactive <Title>)
         help_text : str
             HTML help text for popup help, or None to use the default
+        ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+            Parameter set for user input
         """
         super(Fit1DVisualizer, self).__init__(
-            config=config, title=title, primitive_name=primitive_name,
-            filename_info=filename_info, template=template, help_text=help_text)
+            title=title, primitive_name=primitive_name, filename_info=filename_info,
+            template=template, help_text=help_text, ui_params=ui_params)
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
@@ -460,20 +463,30 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         # their properties if the default setup isn't great
         self.widgets = {}
 
+        # If we have a widget driving the modal dialog via it's enable/disable state,
+        # store it in this so the recalc knows to re-enable the widget
+        self.modal_widget = None
+
         # Make the panel with widgets to control the creation of (x, y) arrays
 
-        if reinit_params is not None or reinit_extras is not None:
-            # Create left panel
-            reinit_widgets = self.make_widgets_from_config(reinit_params, reinit_extras, modal_message is None)
-
+        # Create left panel
+        reinit_widgets = self.make_widgets_from_parameters(ui_params, reinit_live=modal_message is None)
+        if reinit_widgets:
             # This should really go in the parent class, like submit_button
             if modal_message:
-                self.reinit_button = bm.Button(
-                    label=modal_button_label if modal_button_label else "Reconstruct points")
-                self.reinit_button.on_click(self.reconstruct_points)
-                self.make_modal(self.reinit_button, modal_message)
-                reinit_widgets.append(self.reinit_button)
-
+                if len(reinit_widgets) > 1:
+                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label
+                                                   else "Reconstruct points")
+                    self.reinit_button.on_click(self.reconstruct_points)
+                    self.make_modal(self.reinit_button, modal_message)
+                    reinit_widgets.append(self.reinit_button)
+                    self.modal_widget = self.reinit_button
+                elif len(reinit_widgets) == 1:
+                    def kickoff_modal(attr, old, new):
+                        self.reconstruct_points()
+                    reinit_widgets[0].children[1].on_change('value', kickoff_modal)
+                    self.make_modal(reinit_widgets[0], modal_message)
+                    self.modal_widget = reinit_widgets[0]
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
             else:
@@ -486,7 +499,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         # TODO revisit the raging debate on `callable` for Python 3
         if callable(data_source):
             self.reconstruct_points_fn = data_source
-            data = data_source(config, self.extras)
+            data = data_source(ui_params=ui_params)
             # For this, we need to remap from
             # [[x1, y1, weights1], [x2, y2, weights2], ...]
             # to allx=[x1,x2..] ally=[y1,y2..] all_weights=[weights1,weights2..]
@@ -500,10 +513,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 other_data.append(dat[3] if len(dat) > 3 else None)
         else:
             self.reconstruct_points_fn = None
-            if reinit_params:
-                raise ValueError("Saw reinit_params but data_source is not a callable")
-            if reinit_extras:
-                raise ValueError("Saw reinit_extras but data_source is not a callable")
             allx = data_source[0]
             ally = data_source[1]
             all_weights = data_source[2] if len(data_source) > 2 else [None]
@@ -518,8 +527,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             if allx.size != ally.size:
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = 1
-
-        self.reinit_extras = [] if reinit_extras is None else reinit_extras
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
 
@@ -564,31 +571,35 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         if hasattr(self, 'reinit_button'):
             self.reinit_button.disabled = True
 
+        rollback_config = self.ui_params.values.copy()
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
-            for extra in self.reinit_extras:
-                del config_update[extra]
-            for k, v in config_update.items():
-                print(f'{k} = {v}')
-            self.config.update(**config_update)
+            self.ui_params.update_values(**config_update)
 
         self.do_later(fn)
 
         if self.reconstruct_points_fn is not None:
             def rfn():
-                all_coords = self.reconstruct_points_fn(self.config, self.extras)
-                for fit, coords in zip(self.fits, all_coords):
-                    if len(coords) > 2:
-                        fit.weights = coords[2]
-                        if len(coords) > 3:
-                            fit.other = coords[3]
-                    else:
-                        fit.weights = None
-                    fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
-                    fit.perform_fit()
-                if hasattr(self, 'reinit_button'):
-                    self.reinit_button.disabled = False
+                all_coords = None
+                try:
+                    all_coords = self.reconstruct_points_fn(ui_params=self.ui_params)
+                except Exception as e:
+                    # something went wrong, let's revert the inputs
+                    # handling immediately to specifically trap the reconstruct_points_fn call
+                    self.ui_params.update_values(**rollback_config)
+                    self.show_user_message("Unable to build data from inputs, reverting")
+                if all_coords is not None:
+                    for fit, coords in zip(self.fits, all_coords):
+                        if len(coords) > 2:
+                            fit.weights = coords[2]
+                        else:
+                            fit.weights = None
+                        fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
+                        fit.perform_fit()
+
+                if self.modal_widget:
+                    self.modal_widget.disabled = False
 
             self.do_later(rfn)
 
@@ -598,4 +609,31 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
     @property
     def image(self):
-        return [fit.data.data["y"] for fit in self.fits]
+        image = []
+        for model in self.fits:
+            goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
+            image.append(model.y[goodpix])
+        return image
+
+
+def get_closest(arr, value):
+    """
+    Return the array values closest to the request value, or +/-inf if
+    the request value is beyond the range of the array
+
+    Parameters
+    ----------
+    arr : sequence
+        array of values
+    value : numeric
+
+    Returns
+    -------
+    2-tuple: largest value in array less than value (or -inf) and
+             smallest value in array larger than value (or +inf)
+    """
+    arr_sorted = sorted(arr)
+    index = bisect(arr_sorted, value)
+    lower_limit = -np.inf if index == 0 else arr_sorted[index - 1]
+    upper_limit = np.inf if index == len(arr_sorted) else arr_sorted[index]
+    return lower_limit, upper_limit
