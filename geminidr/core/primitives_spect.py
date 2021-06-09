@@ -2422,7 +2422,6 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        apgrow = params["aperture_growth"]
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
@@ -2547,7 +2546,7 @@ class Spect(PrimitivesBASE):
                     if rc_sky_weights is not None else None
 
         final_parms = list()
-        apgrow = None # for saving selected aperture_grow values, if interactive
+        apgrow = None  # for saving selected aperture_grow values, if interactive
 
         if interactive:
             apgrow = list()
@@ -2617,7 +2616,7 @@ class Spect(PrimitivesBASE):
                 apg = apgrow[idx]
             else:
                 # get value for aperture growth from config
-                apg = config.aperture_growth
+                apg = params["aperture_growth"]
             for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
                 axis = ext.dispersion_axis() - 1  # python sense
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
