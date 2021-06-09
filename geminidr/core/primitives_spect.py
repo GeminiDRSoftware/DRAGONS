@@ -2427,7 +2427,7 @@ class Spect(PrimitivesBASE):
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
 
-        def calc_sky_coords(ad: AstroData, apgrow, interactive_mode):
+        def calc_sky_coords(ad: AstroData, apgrow, interactive_mode=False):
             """
             Calculate the sky coordinates for the extensions in the given
             AstroData object.
@@ -2547,7 +2547,10 @@ class Spect(PrimitivesBASE):
                     if rc_sky_weights is not None else None
 
         final_parms = list()
+        apgrow = None # for saving selected aperture_grow values, if interactive
+
         if interactive:
+            apgrow = list()
             # build config for interactive
             config = self.params[self.myself()]
             config.update(**params)
@@ -2586,12 +2589,14 @@ class Spect(PrimitivesBASE):
                                                    help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
                                                    plot_ratios=False,
                                                    enable_user_masking=False,
+                                                   recalc_inputs_above=True,
                                                    ui_params=ui_params)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # Pull out the final parameters to use as inputs doing the real fit
                 fit_results = visualizer.results()
                 final_parms_exts = list()
+                apgrow.append(ui_params.values['aperture_growth'])
                 for fit in fit_results:
                     final_parms_exts.append(fit.extract_params())
                 final_parms.append(final_parms_exts)
@@ -2607,7 +2612,13 @@ class Spect(PrimitivesBASE):
                 log.warning(f"{ad.filename} has not been distortion corrected."
                             " Sky subtraction is likely to be poor.")
             eidx = 0
-            for ext, sky_mask, sky_weights in calc_sky_coords(ad):
+            if apgrow:
+                # get value set in the interactive tool
+                apg = apgrow[idx]
+            else:
+                # get value for aperture growth from config
+                apg = config.aperture_growth
+            for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
                 axis = ext.dispersion_axis() - 1  # python sense
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
