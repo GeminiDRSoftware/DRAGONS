@@ -293,7 +293,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # Find all unidentified arc lines that this could be, maintaining
         # monotonicity
         all_lines = self.model.other_data["linelist"].wavelengths(
-            in_vacuo=self.visualizer.config.in_vacuo, units="nm")
+            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
         lower_limit, upper_limit = get_closest(self.model.y, est_wave)
         possible_lines = [line for line in all_lines
                           if lower_limit < line < upper_limit]
@@ -341,7 +341,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         dw = linear_model.c1 / np.diff(linear_model.domain)[0]
         matching_distance = abs(self.model.other_data["fwidth"] * dw)
         all_lines = self.model.other_data["linelist"].wavelengths(
-            in_vacuo=self.visualizer.config.in_vacuo, units="nm")
+            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
 
         good_data = {}
         for k, v in self.model.data.data.items():

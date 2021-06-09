@@ -343,19 +343,19 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
     return model
 
 
-def create_interactive_inputs(ad, config, extras, p=None,
+def create_interactive_inputs(ad, ui_params=None, p=None,
                               linelist=None, bad_bits=0):
     all_fits = []
     for ext in ad:
         data, fit1d, _ = get_automated_fit(
-            ext, config, p=p, linelist=linelist, bad_bits=bad_bits)
+            ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits)
         # peak locations and line wavelengths of matched peaks/lines
         all_fits.append([fit1d.points[~fit1d.mask], fit1d.image[~fit1d.mask],
                          None, data])
     return all_fits
 
 
-def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
+def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     """
     Produces a wavelength fit for a given slice of an AstroData object.
     In non-interactive mode, this is the final result; in interactive mode
@@ -366,7 +366,7 @@ def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
     ----------
     ext : single-slice AstroData
         the extension
-    config
+    ui_params
     p
     linelist
     bad_bits
@@ -383,7 +383,7 @@ def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
     """
 
     input_data = get_all_input_data(
-        ext, p, config, linelist=linelist, bad_bits=bad_bits)
+        ext, p, ui_params, linelist=linelist, bad_bits=bad_bits)
     spectrum = input_data["spectrum"]
     init_models = input_data["init_models"]
     peaks, weights = input_data["peaks"], input_data["weights"]
@@ -393,7 +393,7 @@ def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
     kdsigma = fwidth * abs(dw)
     k = 1 if kdsigma < 3 else 2
     fit1d, acceptable_fit = find_solution(
-        init_models, config, peaks=peaks, peak_weights=weights[config.weighting],
+        init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
         filename=ext.filename)
     return input_data, fit1d, acceptable_fit
@@ -415,7 +415,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     p : PrimitivesBASE object
     bad_bits : int
         bitwise-and the mask with this to produce the mask
-    config : Config object containing parameters
+    config : Config-like object containing parameters
 
     Returns
     -------
@@ -463,7 +463,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config.min_snr, min_sep=config.min_sep,
-        reject_bad=False, nbright=config.toDict().get("nbright", 0))
+        reject_bad=False, nbright=config.values.get("nbright", 0))
 
     # Get the initial wavelength solution
     m_init = initial_wavelength_model(

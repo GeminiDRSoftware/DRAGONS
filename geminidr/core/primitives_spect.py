@@ -1088,6 +1088,9 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             log.info(f"Determining wavelength solution for {ad.filename}")
 
+            uiparams = UIParameters(
+                config, reinit_params=["center", "nsum", "min_snr", "min_sep",
+                                       "fwidth", "central_wavelength", "dispersion"])
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)
@@ -1099,10 +1102,7 @@ class Spect(PrimitivesBASE):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
                 visualizer = WavelengthSolutionVisualizer(
-                    reconstruct_points,
-                    all_fp_init, config=config,
-                    reinit_params=["center", "nsum", "min_snr", "min_sep",
-                                   "fwidth", "central_wavelength", "dispersion"],
+                    reconstruct_points, all_fp_init,
                     modal_message="Hang on, this stuff is tricky",
                     tab_name_fmt="Slit {}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
@@ -1110,7 +1110,8 @@ class Spect(PrimitivesBASE):
                     title="Wavelength Solution",
                     primitive_name=self.myself(),
                     filename_info=ad.filename,
-                    enable_regions=False, plot_ratios=False, plot_height=350)
+                    enable_regions=False, plot_ratios=False, plot_height=350,
+                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
                                              visualizer.image, visualizer.other_data):
@@ -1122,7 +1123,7 @@ class Spect(PrimitivesBASE):
                         log.info(f"Determining solution for extension {ext.id}")
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        ext, config, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                        ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found "
                                     f"for {ext.id}")

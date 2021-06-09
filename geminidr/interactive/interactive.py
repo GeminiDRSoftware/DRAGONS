@@ -1455,6 +1455,13 @@ class UIParameters:
         for k, v in kwargs.items():
             self.values[k] = v
 
+    def __getattr__(self, attr):
+        """Provides the same interface to get parameter values as Config"""
+        try:
+            return self.values[attr]
+        except KeyError:
+            return object.__getattribute__(self, attr)
+
 
 def do_later(fn):
     """
