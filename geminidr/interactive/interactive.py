@@ -7,7 +7,7 @@ from functools import cmp_to_key
 from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
+                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput, PreText)
 from bokeh import models as bm
 
 from geminidr.interactive import server
@@ -160,6 +160,22 @@ class PrimitiveVisualizer(ABC):
         # doc.add_root(self._ok_cancel_dlg.layout)
         # Add an OK/Cancel dialog we can tap into later
 
+        # Add a widget we can use for triggering a message
+        # This is a workaround, since CustomJS calls can only
+        # respond to DOM events.  We'll be able to trigger
+        # a Custom JS callback by modifying this widget
+        self.message_holder = PreText(text='', css_classes=['hidden'])
+        callback = CustomJS(args={}, code='alert(cb_obj.text);')
+        self.message_holder.js_on_change('text', callback)
+
+        # Add the invisible PreText element to drive message dialogs off
+        # of.  We do this with a do_later so that it will hapen after the
+        # subclass implementation does all of it's document setup.  So,
+        # this widget will be added at the end.
+        def add_msg_holder_hack():
+            doc.add_root(row(self.message_holder,))
+        self.do_later(add_msg_holder_hack)
+
     def do_later(self, fn):
         """
         Perform an operation later, on the bokeh event loop.
@@ -213,8 +229,28 @@ class PrimitiveVisualizer(ABC):
         """ % message)
         widget.js_on_change('disabled', callback)
 
+    def show_user_message(self, message):
+        """
+        Make a modal message dialog to display to the user.
+
+        Parameters
+        ----------
+        message : str
+            message to display in the popup modal
+        """
+        # In the constructor, we setup this throwaway widget
+        # so we could listen for changes in it's text field
+        # and display those via an alert.  It's a workaround
+        # so that here we can send messages to the user from
+        # the bokeh server-side python.
+        if self.message_holder.text == message:
+            # need to trigger a change...
+            self.message_holder.text = f"{message} "
+        else:
+            self.message_holder.text = message
+
     def make_widgets_from_parameters(self, params, reinit_live: bool = True,
-                                     slider_width: int = 256):
+                                 slider_width: int = 256):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets

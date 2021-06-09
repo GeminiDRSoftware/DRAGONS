@@ -1275,6 +1275,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.modal_widget:
             self.modal_widget.disabled = True
 
+        rollback_config = {k: v for k, v in self.config.items()}
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
             config_update = {k: v.value for k, v in self.widgets.items()}
@@ -1284,14 +1285,23 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         if self.reconstruct_points_fn is not None:
             def rfn():
-                all_coords = self.reconstruct_points_fn(ui_params=self.ui_params)
-                for fit, coords in zip(self.fits, all_coords):
-                    if len(coords) > 2:
-                        fit.weights = coords[2]
-                    else:
-                        fit.weights = None
-                    fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
-                    fit.perform_fit()
+                all_coords = None
+                try:
+                    all_coords = self.reconstruct_points_fn(ui_params=self.ui_params)
+                except Exception as e:
+                    # something went wrong, let's revert the inputs
+                    # handling immediately to specifically trap the reconstruct_points_fn call
+                    self.config.update(**rollback_config)
+                    self.show_user_message("Unable to build data from inputs, reverting")
+                if all_coords is not None:
+                    for fit, coords in zip(self.fits, all_coords):
+                        if len(coords) > 2:
+                            fit.weights = coords[2]
+                        else:
+                            fit.weights = None
+                        fit.weights = fit.populate_bokeh_objects(coords[0], coords[1], fit.weights, mask=None)
+                        fit.perform_fit()
+
                 if self.modal_widget:
                     self.modal_widget.disabled = False
 
