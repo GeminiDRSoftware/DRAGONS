@@ -1487,7 +1487,7 @@ class UIParameters:
         """Provides the same interface to get parameter values as Config"""
         try:
             return self.values[attr]
-        except KeyError:
+        except:
             return object.__getattribute__(self, attr)
 
 
