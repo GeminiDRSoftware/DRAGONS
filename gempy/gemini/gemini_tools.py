@@ -7,7 +7,6 @@
 import os
 import re
 import numbers
-import itertools
 
 from copy import deepcopy
 from datetime import datetime
@@ -16,10 +15,8 @@ from functools import wraps
 from collections import namedtuple
 
 import numpy as np
-from scipy.special import erf
 
 from astropy.stats import sigma_clip
-from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
 
@@ -30,9 +27,8 @@ from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
 from ..utils import logutils
 
-from datetime import datetime
-
 import astrodata
+from astrodata import Section
 
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
@@ -1529,6 +1525,54 @@ def make_lists(*args, **kwargs):
         else:
             ret_lists.append(_list)
     return ret_lists
+
+
+def map_array_sections(ext):
+    """
+    This function determines the actual pixel locations in a single-slice
+    AstroData object that the array_section corresponds to. Or, in the case
+    of a multi-amp (list) array_section descriptor, the locations for each
+    individual Section.
+
+    Parameters
+    ----------
+    ext : single-slice AstroData object
+        the slice whose sections need to be mapped
+
+    Returns
+    -------
+    Section / list of Sections
+        the region(s) in the data that the array_section() corresponds to
+    """
+    xbin, ybin = ext.detector_x_bin(), ext.detector_y_bin()
+
+    # These return lists, which is correct (it's ad.XXXX_section()
+    # that's wrong; it should return a list containing this list)
+    datasec = ext.data_section()
+    arrsec = ext.array_section(pretty=False)  # pretty required by code
+
+    datsec, new_datsec = map_data_sections_to_trimmed_data(datasec)
+
+    # Descriptor doesn't return correct value so here it is
+    if ext.instrument() == "MAROONX":
+        if "_r_" in ext.filename:
+            arrsec = [Section(0, 2042, 0, 4080), Section(2042, 4083, 0, 4080)]
+        else:
+            arrsec = [Section(0, 2040, 0, 2040), Section(0, 2040, 2040, 4078),
+                      Section(2040, 4078, 0, 2040), Section(2040, 4078, 2040, 4078)]
+
+    arrsec_is_list = isinstance(arrsec, list)
+    sections = []
+    for asec in (arrsec if arrsec_is_list else [arrsec]):
+        sec = Section(asec.x1 // xbin, asec.x2 // xbin,
+                      asec.y1 // ybin, asec.y2 // ybin)
+        for dsec, new_dsec in zip(datsec, new_datsec):
+            if at.section_contains(new_dsec, sec):
+                sections.append(Section(*[a - b + c for a, b, c in
+                                          zip(sec, new_dsec, dsec)]))
+                break
+
+    return sections if arrsec_is_list else sections[0]
 
 
 def map_data_sections_to_trimmed_data(datasec):
