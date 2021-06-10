@@ -2131,8 +2131,9 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                     continue
 
                 # Update logger with the section being kept
+                datasecStr = datasec.asIRAFsection()
                 log.fullinfo(f'For {ad.filename} extension {ext.id}, keeping '
-                             f'the data from the section {datasec.asIRAFsection()}')
+                             f'the data from the section {}')
 
                 # Trim SCI, VAR, DQ to new section
                 ext.reset(ext.nddata[datasec.asslice()])
@@ -2141,11 +2142,13 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 if hasattr(ext, 'OBJMASK'):
                     ext.OBJMASK = ext.OBJMASK[datasec.asslice()]
 
+                # We can't do this unless the data section was contiguous
+                ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
+
             # Update header keys to match new dimensions
             nypix, nxpix = ext.shape
             newDataSecStr = f'[1:{nxpix},1:{nypix}]'
             ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments.get(datasec_kw))
-            ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
             if oversec_kw in ext.hdr:
                 del ext.hdr[oversec_kw]
 
