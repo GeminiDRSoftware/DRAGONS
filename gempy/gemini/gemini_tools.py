@@ -2131,8 +2131,8 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                     continue
 
                 # Update logger with the section being kept
-                log.fullinfo(f'For {ad.filename} extension {ext.id}, '
-                             f'keeping the data from the section {datasecStr}')
+                log.fullinfo(f'For {ad.filename} extension {ext.id}, keeping '
+                             f'the data from the section {datasec.asIRAFSection()}')
 
                 # Trim SCI, VAR, DQ to new section
                 ext.reset(ext.nddata[datasec.asslice()])
