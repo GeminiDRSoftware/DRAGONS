@@ -1563,9 +1563,11 @@ def map_array_sections(ext):
 
     arrsec_is_list = isinstance(arrsec, list)
     sections = []
+    xmin = min(asec.x1 for asec in arrsec) if arrsec_is_list else arrsec.x1
+    ymin = min(asec.y1 for asec in arrsec) if arrsec_is_list else arrsec.y1
     for asec in (arrsec if arrsec_is_list else [arrsec]):
-        sec = Section(asec.x1 // xbin, asec.x2 // xbin,
-                      asec.y1 // ybin, asec.y2 // ybin)
+        sec = Section((asec.x1 - xmin) // xbin, (asec.x2 - xmin) // xbin,
+                      (asec.y1 - ymin) // ybin, (asec.y2 - ymin) // ybin)
         for dsec, new_dsec in zip(datsec, new_datsec):
             if at.section_contains(new_dsec, sec):
                 sections.append(Section(*[a - b + c for a, b, c in
