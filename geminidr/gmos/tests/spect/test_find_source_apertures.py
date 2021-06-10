@@ -23,16 +23,24 @@ test_data = [
     ("S20191005S0051_distortionCorrected.fits", 261),  # GS-2019B-Q-132-35-001 R400 0.73um
 ]
 
+# Parameters for test_find_apertures_with_fake_data(...)
+# ToDo - Explore a bit more the parameter space (e.g., larger seeing)
+seeing_pars = [0.5, 1.0, 1.25]
+position_pars = [500]
+value_pars = [50, 100, 500]
+
 
 @pytest.mark.gmosls
-@pytest.mark.parametrize("seeing", [1.0])  # [0.5, 0.75, 1.0, 1.5, 2.0])
-def test_find_apertures_with_fake_data(seeing):
+@pytest.mark.parametrize("peak_position", position_pars)
+@pytest.mark.parametrize("peak_value", value_pars)
+@pytest.mark.parametrize("seeing", seeing_pars)
+def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrofaker):
     """
     Creates a fake AD object with a gaussian profile in spacial direction with a
     fwhm defined by the seeing variable in arcsec. Then add some noise, and
     test if p.findAperture can find its position.
     """
-    astrofaker = pytest.importorskip("astrofaker")
+    np.random.seed(42)
 
     gmos_fake_noise = 4  # adu
     gmos_plate_scale = 0.0807  # arcsec . px-1
@@ -41,26 +49,24 @@ def test_find_apertures_with_fake_data(seeing):
     ad = astrofaker.create('GMOS-S', mode='SPECT')
     ad.init_default_extensions()
 
-    y0 = np.random.randint(low=100, high=ad[0].shape[0] - 100)
     fwhm = seeing / gmos_plate_scale
     stddev = fwhm / fwhm_to_stddev
 
-    model = Gaussian1D(mean=y0, stddev=stddev, amplitude=50)
+    model = Gaussian1D(mean=peak_position, stddev=stddev, amplitude=peak_value)
     rows, cols = np.mgrid[:ad.shape[0][0], :ad.shape[0][1]]
-    print(rows.shape)
 
     for ext in ad:
         ext.data = model(rows)
         ext.data += np.random.poisson(ext.data)
         ext.data += (np.random.random(size=ext.data.shape) - 0.5) * gmos_fake_noise
-        
         ext.mask = np.zeros_like(ext.data, dtype=np.uint)
-        ext.variance = np.sqrt(ext.data)
 
     p = GMOSSpect([ad])
-    _ad = p.findSourceApertures()[0]
+    _ad = p.findSourceApertures(max_apertures=1)[0]
 
-    print(_ad.info)
+    for _ext in _ad:
+        # ToDo - Could we improve the primitive to have atol=0.50 or less?
+        np.testing.assert_allclose(_ext.APERTURE['c0'], peak_position, atol=0.6)
 
 
 @pytest.mark.gmosls
@@ -121,20 +127,17 @@ def create_inputs_recipe():
     should reflect the one returned by the `path_to_inputs` fixture.
     """
     import os
-
     from astrodata.testing import download_from_archive
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
-    from recipe_system.utils.reduce_utils import normalize_ucals
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/test_find_source_apertures/"
-    path = os.path.join(root_path, module_path)
-    cwd = os.getcwd()
-
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("inputs", exist_ok=True)
+    cwd = os.getcwd()
 
     associated_arcs = {
         "N20180109S0287.fits": "N20180109S0315.fits",  # GN-2017B-FT-20-13-001 B600 0.505um

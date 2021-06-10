@@ -14,8 +14,6 @@ from threading import Thread
 from recipe_system.adcc.servers import http_proxy
 from recipe_system.adcc.servers import eventsManager
 
-from recipe_system.config import globalConf
-from recipe_system.config import STANDARD_REDUCTION_CONF
 from recipe_system.utils.findexe import findexe
 
 # ------------------------------------------------------------------------------
@@ -128,7 +126,7 @@ class ADCC(metaclass=Singleton):
         return
 
     def main(self):
-        globalConf.load(STANDARD_REDUCTION_CONF, env_override=True)
+        #globalConf.load(STANDARD_REDUCTION_CONF, env_override=True)
         self._handle_locks()
         self._write_locks()
         # start webinterface

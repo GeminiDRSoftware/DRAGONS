@@ -18,7 +18,6 @@ from gempy.utils import logutils
 from matplotlib import pyplot as plt
 from recipe_system.reduction.coreReduce import Reduce
 
-astrofaker = pytest.importorskip("astrofaker")
 
 PLOT_PATH = "plots/geminidr/gmos/longslit/test_slit_illum_correct/"
 
@@ -44,16 +43,16 @@ different_roi_datasets = [
 
 
 @pytest.mark.gmosls
-def test_dont_do_slit_illum():
+def test_dont_do_slit_illum(astrofaker):
     in_ad = astrofaker.create("GMOS-S", mode="SPECT")
     p = GMOSLongslit([in_ad])
-    out_ad = p.slitIllumCorrect(do_illum=False)[0]
+    out_ad = p.slitIllumCorrect(do_cal='skip')[0]
     for in_ext, out_ext in zip(in_ad, out_ad):
         assert np.testing.assert_equal(in_ext.data, out_ext.data)
 
 
 @pytest.mark.gmosls
-def test_slit_illum_correct_without_slit_illumination():
+def test_slit_illum_correct_without_slit_illumination(astrofaker):
     in_ad = astrofaker.create("GMOS-S", mode="SPECT")
     p = GMOSLongslit([in_ad])
     with pytest.raises(NotImplementedError):
@@ -61,7 +60,7 @@ def test_slit_illum_correct_without_slit_illumination():
 
 
 @pytest.mark.gmosls
-@pytest.mark.preprocess
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_data", same_roi_datasets, indirect=True)
 def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
     ad, slit_illum_ad = input_data
@@ -101,7 +100,7 @@ def test_slit_illum_correct_same_roi(change_working_dir, input_data, request):
 
 
 @pytest.mark.gmosls
-@pytest.mark.preprocess
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_data", different_roi_datasets, indirect=True)
 def test_slit_illum_correct_different_roi(change_working_dir, input_data, request):
 

@@ -4,6 +4,7 @@ These are GMOS longslit observations.
 Default is "reduceScience".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
+blocked_tags = {'NODANDSHUFFLE'}
 
 
 def reduceScience(p):
@@ -28,15 +29,14 @@ def reduceScience(p):
     p.findSourceApertures()
     p.skyCorrectFromSlit()
     p.adjustWCSToReference()
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
     p.stackFrames()
     p.findSourceApertures()
     p.traceApertures()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_2D")
     p.extract1DSpectra()
     p.fluxCalibrate()
-    p.linearizeSpectra()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_1D")
 
 
 
@@ -63,10 +63,9 @@ def reduceStandard(p):
     p.skyCorrectFromSlit()
     p.traceApertures()
     p.extract1DSpectra()
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
     p.stackFrames()
     p.calculateSensitivity()
-    #p.linearizeSpectra()  # TODO: needed?
     p.storeProcessedStandard()
     p.writeOutputs()
 

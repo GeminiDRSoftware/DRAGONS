@@ -7,12 +7,10 @@ from datetime import datetime
 
 import numpy as np
 
-from astropy.modeling import models, fitting
-from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline
-
 from astrodata.provenance import add_provenance
-from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
+from gempy.library.fitting import fit_1D
 
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -32,13 +30,13 @@ class CCD(PrimitivesBASE):
         super().__init__(adinputs, **kwargs)
         self._param_update(parameters_ccd)
 
-    def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_bias=True):
+    def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_cal=None):
         """
         The biasCorrect primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
         frames. The variance and data quality extension will be updated, if
-        they exist. If no bias is provided, getProcessedBias will be called
-        to ensure a bias exists for every adinput.
+        they exist. If no bias is provided, the calibration database(s) will
+        be queried.
 
         Parameters
         ----------
@@ -46,39 +44,39 @@ class CCD(PrimitivesBASE):
             suffix to be added to output files
         bias: str/list of str
             bias(es) to subtract
-        do_bias: bool
+        do_cal: str
             perform bias subtraction?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if not do_bias:
+        if do_cal == 'skip':
             log.warning("Bias correction has been turned off.")
             return adinputs
 
         if bias is None:
-            self.getProcessedBias(adinputs, refresh=False)
-            bias_list = self._get_cal(adinputs, 'processed_bias')
+            bias_list = self.caldb.get_processed_bias(adinputs)
         else:
-            bias_list = bias
+            bias_list = (bias, None)
 
-        # Provide a bias AD object for every science frame
-        for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):
+        # Provide a bias AD object for every science frame, and an origin
+        for ad, bias, origin in zip(*gt.make_lists(adinputs, *bias_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by biasCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "biasCorrect. Continuing.")
                 continue
 
             if bias is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "bias was specified".format(ad.filename))
                     continue
                 else:
-                    raise OSError('No processed bias listed for {}'.
-                                  format(ad.filename))
+                    log.warning(f"{ad.filename}: no bias was specified. "
+                                "Continuing.")
+                    continue
 
             try:
                 gt.check_inputs_match(ad, bias, check_filter=False,
@@ -89,8 +87,9 @@ class CCD(PrimitivesBASE):
                 gt.check_inputs_match(ad, bias, check_filter=False,
                                       check_units=True)
 
-            log.fullinfo('Subtracting this bias from {}:\n{}'.
-                         format(ad.filename, bias.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: subtracting the bias "
+                         f"{bias.filename}{origin_str}")
             ad.subtract(bias)
 
             # Record bias used, timestamp, and update filename
@@ -139,7 +138,7 @@ class CCD(PrimitivesBASE):
         nbiascontam: int/None
             number of columns adjacent to the illuminated region to reject
         function: str/None
-            function to fit ("poly" | "spline" | "none")
+            function to fit ("chebyshev" | "spline" | "none")
         order: int/None
             order of polynomial fit or number of spline pieces
         bias_type: str
@@ -150,12 +149,13 @@ class CCD(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
-        niterate = params["niterate"]
-        lo_rej = params["low_reject"]
-        hi_rej = params["high_reject"]
-        order = params["order"] or 0  # None is the same as 0
-        func = (params["function"] or 'none').lower()
-        nbiascontam = params.get("nbiascontam", 0)
+        fit1d_params = fit_1D.translate_params(params)
+        # We need some of these parameters for pre-processing
+        function = (fit1d_params.pop("function") or "none").lower()
+        lsigma = params["lsigma"]
+        hsigma = params["hsigma"]
+        order = params["order"]
+        nbiascontam = params["nbiascontam"]
         bias_type = params.get("bias_type")
 
         for ad in adinputs:
@@ -181,7 +181,7 @@ class CCD(PrimitivesBASE):
                         x1 += 1
                         x2 -= nbiascontam
                     pixels = np.arange(y1, y2)
-                    wt = np.sqrt(x2 - x1) / ext.read_noise()
+                    sigma = ext.read_noise() / np.sqrt(x2 - x1)
                 else:
                     if y1 > dsec.y1:  # Bias on top
                         y1 += nbiascontam
@@ -189,64 +189,40 @@ class CCD(PrimitivesBASE):
                     else:  # Bias on bottom
                         y1 += 1
                         y2 -= nbiascontam
-                    pixels = np.arange(x1, x2)  # It's really the column
-                    wt = np.sqrt(y2 - y1) / ext.read_noise()
+                    pixels = np.arange(x1, x2)
+                    sigma = ext.read_noise() / np.sqrt(y2 - y1)
 
                 data = np.mean(ext.data[y1:y2, x1:x2], axis=axis)
-                # Weights are used to determine number of spline pieces
-                # should be the estimate of the mean
                 if ext.is_in_adu():
-                    wt *= ext.gain()
+                    sigma /= ext.gain()
 
-                medboxsize = 2  # really 2n+1 = 5
-                for iter in range(niterate+1):
-                    # The UnivariateSpline will make reduced-chi^2=1 so it will
-                    # fit bad rows. Need to mask these before starting, so use a
-                    # running median. Probably a good starting point for all fits.
-                    if iter == 0 or func == 'none':
-                        medarray = np.full((medboxsize * 2 + 1, pixels.size), np.nan)
-                        for i in range(-medboxsize, medboxsize + 1):
-                            mx1 = max(i, 0)
-                            mx2 = min(pixels.size, pixels.size + i)
-                            medarray[medboxsize + i, mx1:mx2] = data[:mx2 - mx1]
-                        runmed = np.nanmedian(medarray, axis=0)
-                        residuals = data - runmed
-                        sigma = 1.0 / wt  # read noise
+                # The UnivariateSpline will make reduced-chi^2=1 so it will
+                # fit bad rows. Need to mask these before starting, so use a
+                # running median. Probably a good starting point for all fits.
+                runmed = at.boxcar(data, operation=np.median, size=2)
+                residuals = data - runmed
+                mask = np.logical_or(residuals > hsigma * sigma
+                                     if hsigma is not None else False,
+                                     residuals < -lsigma * sigma
+                                     if lsigma is not None else False)
+                if "spline" in function and order is None:
+                    data = np.where(mask, runmed, data)
 
-                    mask = np.logical_or(residuals > hi_rej * sigma
-                                        if hi_rej is not None else False,
-                                        residuals < -lo_rej * sigma
-                                        if lo_rej is not None else False)
-
-                    # Don't clip any pixels if iter==0
-                    if func == 'none' and iter < niterate:
-                        # Replace bad data with running median
-                        data = np.where(mask, runmed, data)
-                    elif func != 'none':
-                        if func == 'spline':
-                            if order:
-                                # Equally-spaced knots (like IRAF)
-                                knots = np.linspace(pixels[0], pixels[-1], order+1)[1:-1]
-                                bias = LSQUnivariateSpline(pixels[~mask], data[~mask], knots)
-                            else:
-                                bias = UnivariateSpline(pixels[~mask], data[~mask],
-                                                        w=[wt]*np.sum(~mask))
-                        else:
-                            bias_init = models.Chebyshev1D(degree=order,
-                                                           c0=np.median(data[~mask]))
-                            fit_f = fitting.LinearLSQFitter()
-                            bias = fit_f(bias_init, pixels[~mask], data[~mask])
-
-                        residuals = data - bias(pixels)
-                        sigma = np.std(residuals[~mask])
+                if function == "none":
+                    bias = data
+                else:
+                    fit1d = fit_1D(np.ma.masked_array(data, mask=mask),
+                                   points=pixels,
+                                   weights=np.full_like(data, 1. / sigma),
+                                   function=function, **fit1d_params)
+                    bias = fit1d.evaluate(np.arange(ext.data.shape[1-axis]))
+                    sigma = fit1d.rms
 
                 # using "-=" won't change from int to float
-                if func != 'none':
-                    data = bias(np.arange(0, ext.data.shape[0]))
                 if axis == 1:
-                    ext.data = ext.data - data[:, np.newaxis].astype(np.float32)
+                    ext.data = ext.data - bias[:, np.newaxis].astype(np.float32)
                 else:
-                    ext.data = ext.data - data.astype(np.float32)
+                    ext.data = ext.data - bias.astype(np.float32)
 
                 ext.hdr.set('OVERSEC', f'[{x1+1}:{x2},{y1+1}:{y2}]',
                             self.keyword_comments['OVERSEC'])
@@ -283,12 +259,6 @@ class CCD(PrimitivesBASE):
 
             ad = gt.trim_to_data_section(ad,
                                     keyword_comments=self.keyword_comments)
-            # HACK! Need to update FITS header because imaging primitives edit it
-            if 'IMAGE' in ad.tags:
-                for ext in ad:
-                    if ext.wcs is not None:
-                        wcs_dict = adwcs.gwcs_to_fits(ext, ad.phu)
-                        ext.hdr.update(wcs_dict)
 
             # Set keyword, timestamp, and update filename
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])

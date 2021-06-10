@@ -9,6 +9,7 @@ Eg. showd N20120212S0012.fits -d camera filter_name
 
 import sys
 import argparse
+from inspect import signature
 
 from importlib import import_module
 
@@ -17,7 +18,7 @@ import gemini_instruments
 
 SHORT_DESCRIPTION = "For each input file, show the value of the specified descriptors."
 
-def get_descriptor_value(ad, descriptors):
+def get_descriptor_value(ad, descriptors, pretty=True):
     """
     Return the descriptor values as a list of DescriptorValue objects.
 
@@ -45,7 +46,12 @@ def get_descriptor_value(ad, descriptors):
     """
     values = []
     for descriptor in descriptors:
-        values.append(getattr(ad, descriptor)())
+        sig = signature(getattr(ad, descriptor))
+        if 'pretty' in sig.parameters:
+            values.append(getattr(ad, descriptor)(pretty=pretty))
+        else:
+            values.append(getattr(ad, descriptor)())
+
     return values
 
 def printtable(results):
@@ -98,6 +104,8 @@ def parse_args(command_line_args):
     parser.add_argument('--descriptors', '-d', type=str, nargs=1,
                         dest='descriptors', action='store', required=True,
                         help='comma-separated list of descriptor values to return')
+    parser.add_argument('--long', default=False, action='store_true',
+                        help='Long format for the descriptor value')
     parser.add_argument('--csv', default=False, action='store_true',
                         help='Format as CSV list.')
     parser.add_argument('--adpkg', type=str, nargs=1,
@@ -137,6 +145,8 @@ def main(argv=None):
     if args.adpkg is not None:
         import_module(args.adpkg)
 
+    pretty = False if args.long else True
+
     # Go through the files and store the descriptors in a list of list.
     hdr = ['filename']
     for descriptor in args.descriptors:
@@ -145,7 +155,7 @@ def main(argv=None):
     results = [hdr]
     for filename in args.inputs:
         ad = astrodata.open(filename)
-        values = get_descriptor_value(ad, args.descriptors)
+        values = get_descriptor_value(ad, args.descriptors, pretty)
         new_entry = [filename]
         new_entry.extend(values)
         results.append(new_entry)

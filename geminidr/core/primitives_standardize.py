@@ -12,7 +12,6 @@ from scipy.ndimage import measurements
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
-from gempy.library.transform import add_longslit_wcs
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -71,7 +70,7 @@ class Standardize(PrimitivesBASE):
                                                    user_bpm_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
-                    'already been processed by addDQ'.format(ad.filename))
+                            'already been processed by addDQ'.format(ad.filename))
                 continue
 
             if static is None:
@@ -80,20 +79,20 @@ class Standardize(PrimitivesBASE):
             else:
                 log.fullinfo("Using {} as static BPM".format(static.filename))
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
-                                        aux_type='bpm', return_dtype=DQ.datatype)
+                                                      aux_type='bpm',
+                                                      return_dtype=DQ.datatype)
 
             if user is None:
                 final_user = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as user BPM".format(user.filename))
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
-                                        aux_type='bpm', return_dtype=DQ.datatype)
+                                                    aux_type='bpm',
+                                                    return_dtype=DQ.datatype)
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
-                extver = ext.hdr['EXTVER']
                 if ext.mask is not None:
-                    log.warning('A mask already exists in extver {}'.
-                                format(extver))
+                    log.warning(f'A mask already exists in extension {ext.id}')
                     continue
 
                 non_linear_level = ext.non_linear_level()
@@ -107,19 +106,19 @@ class Standardize(PrimitivesBASE):
                     ext.mask |= user_ext.data
 
                 if saturation_level:
-                    log.fullinfo('Flagging saturated pixels in {}:{} '
-                                 'above level {:.2f}'.
-                                 format(ad.filename, extver, saturation_level))
+                    log.fullinfo('Flagging saturated pixels in {} extension '
+                                 '{} above level {:.2f}'.format(
+                                     ad.filename, ext.id, saturation_level))
                     ext.mask |= np.where(ext.data >= saturation_level,
                                          DQ.saturated, 0).astype(DQ.datatype)
 
                 if non_linear_level:
                     if saturation_level:
                         if saturation_level > non_linear_level:
-                            log.fullinfo('Flagging non-linear pixels in {}:{} '
-                                         'above level {:.2f}'.
-                                         format(ad.filename, extver,
-                                                non_linear_level))
+                            log.fullinfo('Flagging non-linear pixels in {} '
+                                         'extension {} above level {:.2f}'
+                                         .format(ad.filename, ext.id,
+                                                 non_linear_level))
                             ext.mask |= np.where((ext.data >= non_linear_level) &
                                                  (ext.data < saturation_level),
                                                  DQ.non_linear, 0).astype(DQ.datatype)
@@ -149,18 +148,19 @@ class Standardize(PrimitivesBASE):
                             ext.mask |= hidden_saturation_array
 
                         elif saturation_level < non_linear_level:
-                            log.warning('{}:{} has saturation level less than '
-                                'non-linear level'.format(ad.filename, extver))
+                            log.warning(f'{ad.filename} extension {ext.id} '
+                                        'has saturation level less than '
+                                        'non-linear level')
                         else:
                             log.fullinfo('Saturation and non-linear levels '
                                          'are the same for {}:{}. Only '
-                                         'flagging saturated pixels'.
-                                format(ad.filename, extver))
+                                         'flagging saturated pixels'
+                                         .format(ad.filename, ext.id))
                     else:
                         log.fullinfo('Flagging non-linear pixels in {}:{} '
-                                     'above level {:.2f}'.
-                                     format(ad.filename, extver,
-                                            non_linear_level))
+                                     'above level {:.2f}'
+                                     .format(ad.filename, ext.id,
+                                             non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0).astype(DQ.datatype)
 
@@ -176,7 +176,8 @@ class Standardize(PrimitivesBASE):
 
         # Add the illumination mask if requested
         if params['add_illum_mask']:
-            adinputs = self.addIllumMaskToDQ(adinputs, illum_mask=params["illum_mask"])
+            adinputs = self.addIllumMaskToDQ(
+                adinputs, **self._inherit_params(params, "addIllumMaskToDQ"))
 
         # Timestamp and update filenames
         for ad in adinputs:
@@ -366,36 +367,7 @@ class Standardize(PrimitivesBASE):
     def standardizeStructure(self, adinputs=None, **params):
         return adinputs
 
-    def standardizeWCS(self, adinputs=None, suffix=None, reference_extension=None):
-        """
-        This primitive updates the WCS attribute of each NDAstroData extension
-        in the input AstroData objects. For spectroscopic data, it means
-        replacing an imaging WCS with an approximate spectroscopic WCS.
-        For multi-extension ADs, it means prepending a tiling and/or mosaic
-        transform before the pixel->world transform, and giving all extensions
-        copies of the reference extension's pixel->world transform.
-
-        Parameters
-        ----------
-        suffix: str/None
-            suffix to be added to output files
-        reference_extension: int/None
-            reference extension whose WCS is inherited by others
-        """
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        for ad in adinputs:
-            # TODO: work towards making this "if 'SPECT' in ad.tags"
-            # which is why it's here and not in primitives_gmos_spect
-            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            if {'GMOS', 'SPECT', 'LS'}.issubset(ad.tags):
-                add_longslit_wcs(ad)
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
+    def standardizeWCS(self, adinputs=None, **params):
         return adinputs
 
     def validateData(self, adinputs=None, suffix=None):
@@ -472,16 +444,15 @@ class Standardize(PrimitivesBASE):
             log.warning("It is not recommended to add Poisson noise "
                         "to the variance of a bias frame")
         elif ('GMOS' in tags and
-                      self.timestamp_keys["biasCorrect"] not in ad.phu and
-                      self.timestamp_keys["subtractOverscan"] not in ad.phu):
+              self.timestamp_keys["biasCorrect"] not in ad.phu and
+              self.timestamp_keys["subtractOverscan"] not in ad.phu):
             log.warning("It is not recommended to add Poisson noise to the"
                         " variance of data that still contain a bias level")
 
         for ext in ad:
-            extver = ext.hdr['EXTVER']
             if 'poisson' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Poisson noise already added for "
-                            "{}:{}".format(ad.filename, extver))
+                            f"{ad.filename} extension {ext.id}")
                 continue
             var_array = np.where(ext.data > 0, ext.data, 0).astype(dtype)
             if not ext.is_coadds_summed():
@@ -523,7 +494,7 @@ class Standardize(PrimitivesBASE):
             extver = ext.hdr['EXTVER']
             if 'read' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Read noise already added for "
-                            "{}:{}".format(ad.filename, extver))
+                            f"{ad.filename} extension {ext.id}")
                 continue
             var_array = (gt.array_from_descriptor_value(ext, "read_noise") /
                          (gt.array_from_descriptor_value(ext, "gain")

@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 import astrodata
-from astrodata.fits import AstroDataFitsDeprecationWarning
+from astrodata.utils import AstroDataDeprecationWarning
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 from astrodata.testing import download_from_archive, compare_models
 import astropy
@@ -85,74 +85,64 @@ def GRACES_SPECT():
     return download_from_archive("N20190116G0054i.fits")
 
 
-def test_extver():
+def test_extver(tmp_path):
+    """Test that EXTVER is written sequentially for new extensions,
+    and preserved with slicing.
+    """
+    testfile = tmp_path / 'test.fits'
+
     ad = astrodata.create({})
     for _ in range(10):
         ad.append(np.zeros((4, 5)))
+    ad.write(testfile)
 
-    assert type(ad[0].data) == np.ndarray
-
+    ad = astrodata.open(testfile)
     ext = ad[2]
     assert ext.hdr['EXTNAME'] == 'SCI'
     assert ext.hdr['EXTVER'] == 3
-    assert ad.extver_map()[3] == 2  # map EXTVER to HDU index
 
-    ext = ad.extver(5)
+    ext = ad[4]
     assert ext.hdr['EXTNAME'] == 'SCI'
     assert ext.hdr['EXTVER'] == 5
 
-    ext = ad[:8].extver(5)
+    ext = ad[:8][4]
     assert ext.hdr['EXTNAME'] == 'SCI'
     assert ext.hdr['EXTVER'] == 5
 
-    with pytest.raises(ValueError, match='SCI is not an integer EXTVER'):
-        ad.extver('SCI')
 
-    with pytest.raises(IndexError, match='EXTVER 15 not found'):
-        ad.extver(15)
+def test_extver2(tmp_path):
+    """Test renumbering of EXTVER."""
+    testfile = tmp_path / 'test.fits'
 
-    with pytest.raises(ValueError,
-                       match="Trying to get a mapping out of a single slice"):
-        ext.extver(15)
-
-
-def test_extver_del():
-    ad = astrodata.create({})
-    for _ in range(5):
-        ad.append(np.zeros((4, 5)))
-
-    assert ad.extver_map() == {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
-
-    del ad[2]
-    assert ad.extver_map() == {1: 0, 2: 1, 4: 2, 5: 3}
-
-    ad.append(np.zeros((4, 5)))
-    assert ad.extver_map() == {1: 0, 2: 1, 4: 2, 5: 3, 6: 4}
-
-
-def test_extver_remap(tmpdir):
     ad = astrodata.create(fits.PrimaryHDU())
     data = np.arange(5)
     ad.append(fits.ImageHDU(data=data, header=fits.Header({'EXTVER': 2})))
     ad.append(fits.ImageHDU(data=data + 2, header=fits.Header({'EXTVER': 5})))
     ad.append(fits.ImageHDU(data=data + 5))
     ad.append(fits.ImageHDU(data=data + 7, header=fits.Header({'EXTVER': 3})))
-
-    for i, hdr in enumerate(ad.hdr):
-        assert hdr['EXTVER'] == i + 1
-
-    assert ad.extver_map() == {1: 0, 2: 1, 3: 2, 4: 3}
-
-    testfile = str(tmpdir.join('testfile.fits'))
     ad.write(testfile)
 
     ad = astrodata.open(testfile)
+    assert [hdr['EXTVER'] for hdr in ad.hdr] == [1, 2, 3, 4]
 
-    for i, hdr in enumerate(ad.hdr):
-        assert hdr['EXTVER'] == i + 1
 
-    assert ad.extver_map() == {1: 0, 2: 1, 3: 2, 4: 3}
-    os.remove(testfile)
+def test_extver3(tmp_path, GSAOI_DARK):
+    """Test that original EXTVER are preserved and extensions added
+    from another object are renumbered.
+    """
+    testfile = tmp_path / 'test.fits'
+
+    ad1 = astrodata.open(GSAOI_DARK)
+    ad2 = astrodata.open(GSAOI_DARK)
+
+    del ad1[2]
+    ad1.append(ad2[2])
+    ad1.append(np.zeros(10))
+
+    ad1.write(testfile)
+
+    ad = astrodata.open(testfile)
+    assert [hdr['EXTVER'] for hdr in ad.hdr] == [1, 2, 4, 5, 6]
 
 
 @pytest.mark.dragons_remote_data
@@ -183,6 +173,7 @@ def test_slice(GMOSN_SPECT):
     # single
     metadata = ('SCI', 2)
     ext = ad[1]
+    assert ext.id == 2
     assert ext.is_single is True
     assert ext.is_sliced is True
     assert ext.hdr['EXTNAME'] == metadata[0]
@@ -191,7 +182,7 @@ def test_slice(GMOSN_SPECT):
     assert ext.data[0, 0] == 387
 
     # when astrofaker is imported this will be recognized as AstroFakerGmos
-    # instead of AstroDataFits
+    # instead of AstroData
     match = r"'Astro.*' object has no attribute 'FOO'"
     with pytest.raises(AttributeError, match=match):
         ext.FOO
@@ -206,7 +197,7 @@ def test_slice(GMOSN_SPECT):
     with pytest.raises(AttributeError):
         del ext.BAR
 
-    match = "Can't append objects to a slice without an extension name"
+    match = "Can't append objects to slices, use 'ext.NAME = obj' instead"
     with pytest.raises(TypeError, match=match):
         ext.append(np.zeros(5))
 
@@ -218,6 +209,27 @@ def test_slice(GMOSN_SPECT):
 
     with pytest.raises(TypeError, match="Can't slice a single slice!"):
         ext[1]
+
+
+@pytest.mark.dragons_remote_data
+def test_slice_single_element(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
+    assert ad.is_sliced is False
+
+    metadata = ('SCI', 2)
+
+    ext = ad[1:2]
+    assert ext.is_single is False
+    assert ext.is_sliced is True
+    assert ext.indices == [1]
+    assert isinstance(ext.data, list) and len(ext.data) == 1
+
+    ext = ext[0]
+    assert ext.id == 2
+    assert ext.is_single is True
+    assert ext.is_sliced is True
+    assert ext.hdr['EXTNAME'] == metadata[0]
+    assert ext.hdr['EXTVER'] == metadata[1]
 
 
 @pytest.mark.dragons_remote_data
@@ -236,13 +248,23 @@ def test_slice_multiple(GMOSN_SPECT):
     for ext, md in zip(slc, metadata):
         assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
+    with pytest.raises(ValueError, match="Cannot return id"):
+        slc.id
+
+    assert slc[0].id == 2
+    assert slc[1].id == 3
+
     match = "Can't remove items from a sliced object"
     with pytest.raises(TypeError, match=match):
         del slc[0]
 
-    match = "Can't append objects to non-single slices"
+    match = "Can't append objects to slices, use 'ext.NAME = obj' instead"
     with pytest.raises(TypeError, match=match):
         slc.append(np.zeros(5), name='ARR')
+
+    match = "This attribute can only be assigned to a single-slice object"
+    with pytest.raises(TypeError, match=match):
+        slc.ARR = np.zeros(5)
 
     # iterate over single slice
     metadata = ('SCI', 1)
@@ -334,7 +356,7 @@ def test_phu(NIFS_DARK):
 
 
 @pytest.mark.dragons_remote_data
-def test_paths(path_to_outputs, NIFS_DARK):
+def test_paths(tmpdir, NIFS_DARK):
     ad = astrodata.open(NIFS_DARK)
     assert ad.orig_filename == 'N20160727S0077.fits'
 
@@ -346,7 +368,7 @@ def test_paths(path_to_outputs, NIFS_DARK):
     assert ad.filename == 'newfile.fits'
     assert ad.path == os.path.join(srcdir, 'newfile.fits')
 
-    testfile = os.path.join(path_to_outputs, 'temp.fits')
+    testfile = os.path.join(str(tmpdir), 'temp.fits')
     ad.path = testfile
     assert ad.filename == 'temp.fits'
     assert ad.path == testfile
@@ -355,7 +377,7 @@ def test_paths(path_to_outputs, NIFS_DARK):
     assert os.path.exists(testfile)
     os.remove(testfile)
 
-    testfile = os.path.join(path_to_outputs, 'temp2.fits')
+    testfile = os.path.join(str(tmpdir), 'temp2.fits')
     ad.write(testfile)
     assert os.path.exists(testfile)
 
@@ -392,6 +414,51 @@ def test_from_hdulist(NIFS_DARK):
         assert ad.path == 'N20160727S0077.fits'
 
 
+def test_from_hdulist2():
+    tablehdu = fits.table_to_hdu(Table([[1]]))
+    tablehdu.name = 'REFCAT'
+
+    hdul = fits.HDUList([
+        fits.PrimaryHDU(header=fits.Header({'INSTRUME': 'FISH'})),
+        fits.ImageHDU(data=np.zeros(10), name='SCI', ver=1),
+        fits.ImageHDU(data=np.ones(10), name='VAR', ver=1),
+        fits.ImageHDU(data=np.zeros(10, dtype='uint16'), name='DQ', ver=1),
+        tablehdu,
+        fits.BinTableHDU.from_columns(
+            [fits.Column(array=['a', 'b'], format='A', name='col')], ver=1,
+        ),  # This HDU will be skipped because it has no EXTNAME
+    ])
+
+    with pytest.warns(UserWarning,
+                      match='Skip HDU .* because it has no EXTNAME'):
+        ad = astrodata.open(hdul)
+
+    assert len(ad) == 1
+    assert ad.phu['INSTRUME'] == 'FISH'
+    assert_array_equal(ad[0].data, 0)
+    assert_array_equal(ad[0].variance, 1)
+    assert_array_equal(ad[0].mask, 0)
+    assert len(ad.REFCAT) == 1
+    assert ad.exposed == {'REFCAT'}
+    assert ad[0].exposed == {'REFCAT'}
+
+
+def test_from_hdulist3():
+    hdul = fits.HDUList([
+        fits.PrimaryHDU(),
+        fits.ImageHDU(data=np.zeros(10), name='SCI', ver=1),
+        fits.TableHDU.from_columns(
+            [fits.Column(array=['a', 'b'], format='A', name='col')],
+            name='ASCIITAB',
+        ),
+    ])
+
+    with pytest.warns(UserWarning, match='Discarding ASCIITAB'):
+        ad = astrodata.open(hdul)
+
+    assert len(ad) == 1
+
+
 def test_can_make_and_write_ad_object(tmpdir):
     # Creates data and ad object
     phu = fits.PrimaryHDU()
@@ -401,8 +468,7 @@ def test_can_make_and_write_ad_object(tmpdir):
 
     hdr = fits.Header({'EXTNAME': 'SCI', 'EXTVER': 1, 'FOO': 'BAR'})
     ad.append(hdu, header=hdr)
-    # FIXME: custom header is ignored
-    # assert ad[1].hdr['FOO'] == 'BAR'
+    assert ad[1].hdr['FOO'] == 'BAR'
 
     # Write file and test it exists properly
     testfile = str(tmpdir.join('created_fits_file.fits'))
@@ -411,15 +477,18 @@ def test_can_make_and_write_ad_object(tmpdir):
     # Opens file again and tests data is same as above
     adnew = astrodata.open(testfile)
     assert np.array_equal(adnew[0].data, np.arange(10))
-    os.remove(testfile)
 
 
 def test_can_append_table_and_access_data(capsys, tmpdir):
     tbl = Table([np.zeros(10), np.ones(10)], names=['col1', 'col2'])
     phu = fits.PrimaryHDU()
     ad = astrodata.create(phu)
-    astrodata.add_header_to_table(tbl)
-    ad.append(tbl, name='BOB')
+
+    with pytest.raises(ValueError,
+                       match='Tables should be set directly as attribute'):
+        ad.append(tbl, name='BOB')
+
+    ad.BOB = tbl
     assert ad.exposed == {'BOB'}
 
     assert ad.tables == {'BOB'}
@@ -435,7 +504,6 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     adnew = astrodata.open(testfile)
     assert adnew.exposed == {'BOB'}
     assert len(adnew.BOB) == 10
-    os.remove(testfile)
 
     del ad.BOB
     assert ad.tables == set()
@@ -462,7 +530,7 @@ def test_attributes(GSAOI_DARK):
     assert all(isinstance(nd, NDAstroData) for nd in ad.nddata)
     assert [nd.shape for nd in ad.nddata] == [(2048, 2048)] * 4
 
-    match = 'Trying to assign to a non-sliced AstroData object'
+    match = "Trying to assign to an AstroData object that is not a single slice"
     with pytest.raises(ValueError, match=match):
         ad.data = 1
     with pytest.raises(ValueError, match=match):
@@ -588,7 +656,6 @@ def test_read_empty_file(tmpdir):
     assert len(ad) == 0
     assert ad.object() == 'M42'
     assert ad.instrument() == 'darkimager'
-    os.remove(testfile)
 
 
 def test_read_file(tmpdir):
@@ -599,7 +666,6 @@ def test_read_file(tmpdir):
     assert len(ad) == 0
     assert ad.object() == 'M42'
     assert ad.instrument() == 'darkimager'
-    os.remove(testfile)
 
 
 @pytest.mark.dragons_remote_data
@@ -655,15 +721,15 @@ def test_header_collection(GMOSN_SPECT):
 @pytest.mark.dragons_remote_data
 def test_header_deprecated(GMOSN_SPECT):
     ad = astrodata.open(GMOSN_SPECT)
-    with pytest.warns(AstroDataFitsDeprecationWarning):
-        warnings.simplefilter('always', AstroDataFitsDeprecationWarning)
+    with pytest.warns(AstroDataDeprecationWarning):
+        warnings.simplefilter('always', AstroDataDeprecationWarning)
         header = ad.header
     assert header[0]['ORIGNAME'] == 'N20170529S0168.fits'
     assert header[1]['EXTNAME'] == 'SCI'
     assert header[1]['EXTVER'] == 1
 
-    with pytest.warns(AstroDataFitsDeprecationWarning):
-        warnings.simplefilter('always', AstroDataFitsDeprecationWarning)
+    with pytest.warns(AstroDataDeprecationWarning):
+        warnings.simplefilter('always', AstroDataDeprecationWarning)
         header = ad[0].header
     assert header[0]['ORIGNAME'] == 'N20170529S0168.fits'
 
@@ -679,7 +745,7 @@ def test_read_no_extensions(GRACES_SPECT):
     assert ad[0].hdr['EXTVER'] == 1
 
 
-def test_add_var_and_dq(caplog):
+def test_add_var_and_dq():
     shape = (3, 4)
     fakedata = np.arange(np.prod(shape)).reshape(shape)
 
@@ -699,28 +765,9 @@ def test_add_var_and_dq(caplog):
                        match="'VAR' need to be associated to a 'SCI' one"):
         ad.append(np.ones(shape), name='VAR')
 
-    with pytest.raises(ValueError,
-                       match="Can't append pixel planes to "
-                       "other objects without a name"):
-        ad.append(np.ones(shape), add_to=ad[0].nddata)
-
-    with pytest.raises(ValueError,
-                       match="Can't attach 'SCI' arrays to other objects"):
-        ad.append(np.ones(shape), name='SCI', add_to=ad[0].nddata)
-
-    ad.append(fits.ImageHDU(data=np.ones(shape)),
-              name='VAR',
-              add_to=ad[0].nddata)
-
-    ad.append(np.zeros(shape), name='DQ', add_to=ad[0].nddata, header='fake')
-    assert (caplog.records[0].message ==
-            "The header is ignored for 'DQ' extensions")
-
-    ad.append(np.ones(shape), name='FOO', add_to=ad[0].nddata)
-
-    assert_array_equal(ad[0].nddata.data, fakedata)
-    assert_array_equal(ad[0].nddata.variance, 1)
-    assert_array_equal(ad[0].nddata.mask, 0)
+    with pytest.raises(AttributeError,
+                       match="SCI extensions should be appended with .append"):
+        ad[0].SCI = np.ones(shape)
 
 
 def test_add_table():
@@ -730,40 +777,42 @@ def test_add_table():
     ad = astrodata.create({'OBJECT': 'M42'})
     ad.append(fakedata)
 
-    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.append(tbl)
+    ad.TABLE1 = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1'}
-    ad.append(tbl)
+
+    ad.TABLE2 = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1', 'TABLE2'}
-    ad.append(tbl, name='MYTABLE')
+
+    ad.MYTABLE = Table([['a', 'b', 'c'], [1, 2, 3]])
     assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
 
-    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
-    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad.append(tbl, add_to=ad[0].nddata, header=hdr)
-    ad.append(tbl, add_to=ad[0].nddata)
-    ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
+    ad[0].TABLE3 = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad[0].TABLE4 = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad[0].OTHERTABLE = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
 
     assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
-    assert ad[0].tables == {'TABLE1', 'MYTABLE', 'TABLE2'}
-    assert ad[0].exposed == {'TABLE1', 'TABLE2', 'MYTABLE', 'OTHERTABLE'}
 
-    assert ad[0].nddata.TABLE1.meta['header']['INSTRUME'] == 'darkimager'
-    assert (set(ad[0].nddata.meta['other'].keys()) == {
-        'TABLE2', 'OTHERTABLE', 'TABLE1'
-    })
-    assert_array_equal(ad[0].nddata.TABLE1['col0'], ['aa', 'bb', 'cc'])
-    assert_array_equal(ad[0].nddata.TABLE2['col0'], ['aa', 'bb', 'cc'])
-    assert_array_equal(ad[0].nddata.OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
+    assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
+    assert ad[0].tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
+    assert ad[0].ext_tables == {'OTHERTABLE', 'TABLE3', 'TABLE4'}
+    assert ad[0].exposed == {'MYTABLE', 'OTHERTABLE', 'TABLE1', 'TABLE2',
+                             'TABLE3', 'TABLE4'}
+
+    with pytest.raises(AttributeError):
+        ad.ext_tables
+
+    assert set(ad[0].nddata.meta['other'].keys()) == {'OTHERTABLE',
+                                                      'TABLE3', 'TABLE4'}
+    assert_array_equal(ad[0].TABLE3['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].TABLE4['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
 
 
 @pytest.mark.dragons_remote_data
 def test_copy(GSAOI_DARK, capsys):
     ad = astrodata.open(GSAOI_DARK)
-    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
-    ad.append(tbl)
-    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
-    ad.append(tbl, add_to=ad[0].nddata)
+    ad.TABLE = Table([['a', 'b', 'c'], [1, 2, 3]])
+    ad[0].MYTABLE = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
 
     ad.info()
     captured = capsys.readouterr()
@@ -882,7 +931,7 @@ def test_round_trip_gwcs(tmpdir):
     ad1[0].nddata.wcs = WCS([(det_frame, distrans),
                              (dref_frame, wavtrans),
                              (rss_frame, None)
-                            ])
+                             ])
 
     # Save & re-load the AstroData instance with its new WCS attribute:
     testfile = str(tmpdir.join('round_trip_gwcs.fits'))
@@ -923,8 +972,6 @@ def test_round_trip_gwcs(tmpdir):
     np.testing.assert_allclose(wcs1.invert(w, y), wcs2.invert(w, y),
                                rtol=1e-7, atol=0.)
 
-    os.remove(testfile)
-
 
 @pytest.mark.parametrize('dtype', ['int8', 'uint8', 'int16', 'uint16',
                                    'int32', 'uint32', 'int64', 'uint64'])
@@ -936,7 +983,6 @@ def test_uint_data(dtype, tmp_path):
     ad = astrodata.open(str(testfile))
     assert ad[0].data.dtype == data.dtype
     assert_array_equal(ad[0].data, data)
-    os.remove(testfile)
 
 
 if __name__ == '__main__':

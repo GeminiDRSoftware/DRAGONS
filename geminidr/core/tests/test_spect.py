@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests applied to primitives_spect.py
 
@@ -26,27 +25,23 @@ Notes
     `model_to_dict()` and `dict_to_model()` functions that convert the Model
     instance to a dict create/require this.
 """
-from copy import copy
+
+import os
 
 import numpy as np
-import os
 import pytest
-
-import astrodata
-
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
-from matplotlib import pyplot as plt
-from matplotlib import gridspec
 from scipy import optimize
 
+from gempy.library import astromodels as am
 from geminidr.core import primitives_spect
+from geminidr.niri.primitives_niri_image import NIRIImage
 
-astrofaker = pytest.importorskip("astrofaker")
+# -- Tests --------------------------------------------------------------------
 
 
-# -- Tests ---------------------------------------------------------------------
 def test_extract_1d_spectra():
     # Input Parameters ----------------
     width = 200
@@ -156,12 +151,12 @@ def test_QESpline_optimization():
     boundaries = (data_length, 2 * data_length + gap)
 
     coeffs = np.ones((2,))
-    order = 10
+    order = 8
 
     result = optimize.minimize(
         QESpline, coeffs,
         args=(xpix, masked_data, weights, boundaries, order),
-        tol=1e-7,
+        tol=1e-8,
         method='Nelder-Mead'
     )
 
@@ -172,8 +167,7 @@ def test_sky_correct_from_slit():
     # Input Parameters ----------------
     width = 200
     height = 100
-
-    n_sky_lines = 500
+    n_sky_lines = 50
 
     # Simulate Data -------------------
     np.random.seed(0)
@@ -190,18 +184,19 @@ def test_sky_correct_from_slit():
     ad[0].data += sky(ad[0].data, axis=1)
 
     # Running the test ----------------
-    _p = primitives_spect.Spect([])
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
 
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+    np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
 def test_sky_correct_from_slit_with_aperture_table():
     # Input Parameters ----------------
     width = 200
     height = 100
+    n_sky_lines = 50
 
     # Simulate Data -------------------
     np.random.seed(0)
@@ -211,7 +206,7 @@ def test_sky_correct_from_slit_with_aperture_table():
     source = fake_point_source_spatial_profile(
         height, width, source_model_parameters, fwhm=0.08 * height)
 
-    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+    sky = SkyLines(n_sky_lines, width - 1)
 
     ad = create_zero_filled_fake_astrodata(height, width)
     ad[0].data += source
@@ -219,20 +214,18 @@ def test_sky_correct_from_slit_with_aperture_table():
     ad[0].APERTURE = get_aperture_table(height, width)
 
     # Running the test ----------------
-    _p = primitives_spect.Spect([])
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
 
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
-
-
-# noinspection PyPep8Naming
+    np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
 def test_sky_correct_from_slit_with_multiple_sources():
     width = 200
     height = 100
+    n_sky_lines = 50
     np.random.seed(0)
 
     y0 = height // 2
@@ -240,26 +233,28 @@ def test_sky_correct_from_slit_with_multiple_sources():
     fwhm = 0.05 * height
 
     source = (
-            fake_point_source_spatial_profile(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
-            fake_point_source_spatial_profile(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
+        fake_point_source_spatial_profile(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
+        fake_point_source_spatial_profile(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
     )
 
-    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+    sky = SkyLines(n_sky_lines, width - 1)
 
     ad = create_zero_filled_fake_astrodata(height, width)
 
     ad[0].data += source
     ad[0].data += sky(ad[0].data, axis=1)
     ad[0].APERTURE = get_aperture_table(height, width, center=height // 2)
-    ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, y1, -3, 3])
+    # Ensure a new row is added correctly, regardless of column order
+    new_row = {'number': 2, 'c0': y1, 'aper_lower': -3, 'aper_upper': 3}
+    ad[0].APERTURE.add_row([new_row[c] for c in ad[0].APERTURE.colnames])
 
     # Running the test ----------------
-    _p = primitives_spect.Spect([])
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad], function="spline3", order=5,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
 
-    # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([ad])[0]
-
-    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+    np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
 def test_trace_apertures():
@@ -275,7 +270,7 @@ def test_trace_apertures():
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
-    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters) + 1)[0]
+    ad_out = _p.traceApertures([ad], order=len(trace_model_parameters) + 1)[0]
 
     keys = trace_model_parameters.keys()
 
@@ -285,7 +280,48 @@ def test_trace_apertures():
     np.testing.assert_allclose(desired, actual, atol=0.18)
 
 
-# --- Fixtures and helper functions --------------------------------------------
+@pytest.mark.parametrize('unit', ("", "electron", "W / (m2 nm)"))
+@pytest.mark.parametrize('flux_calibrated', (False, True))
+@pytest.mark.parametrize('user_conserve', (False, True, None))
+def test_flux_conservation_consistency(astrofaker, caplog, unit,
+                                       flux_calibrated, user_conserve):
+    # UNIT, FLUX_CALIBRATED, USER_CONSERVE: CORRECT_OUTCOME, WARN
+    RESULTS = {("electron", False, None): (True, False),
+               ("electron", False, True): (True, False),
+               ("electron", False, False): (False, True),
+               ("electron", True, None): (True, True),
+               ("electron", True, True): (True, True),
+               ("electron", True, False): (False, True),
+               ("", False, None): (True, False),
+               ("", False, True): (True, False),
+               ("", False, False): (False, True),
+               ("", True, None): (False, False),
+               ("", True, True): (True, True),
+               ("", True, False): (False, False),
+               ("W / (m2 nm)", False, None): (False, False),
+               ("W / (m2 nm)", False, True): (True, True),
+               ("W / (m2 nm)", False, False): (False, False),
+               ("W / (m2 nm)", True, None): (False, False),
+               ("W / (m2 nm)", True, True): (True, True),
+               ("W / (m2 nm)", True, False): (False, False)
+               }
+
+    ad = astrofaker.create("NIRI")
+    ad.init_default_extensions()
+    p = NIRIImage([ad])  # doesn't matter but we need a log object
+    ad.hdr["BUNIT"] = unit
+    conserve = primitives_spect.conserve_or_interpolate(ad[0],
+                    user_conserve=user_conserve,
+                    flux_calibrated=flux_calibrated, log=p.log)
+    correct, warn = RESULTS[unit, flux_calibrated, user_conserve]
+    assert conserve == correct
+    warning_given = any("WARNING" in record.message for record in caplog.records)
+    assert warn == warning_given
+
+
+# --- Fixtures and helper functions -------------------------------------------
+
+
 def create_zero_filled_fake_astrodata(height, width):
     """
     Helper function to generate a fake astrodata object filled with zeros.
@@ -302,6 +338,8 @@ def create_zero_filled_fake_astrodata(height, width):
     AstroData
         Single-extension zero filled object.
     """
+    astrofaker = pytest.importorskip("astrofaker")
+
     data = np.zeros((height, width))
 
     hdu = fits.ImageHDU()
@@ -416,33 +454,15 @@ def get_aperture_table(height, width, center=None):
     Returns
     -------
     astropy.table.Table
-        Aperture table containing the parameters needed to build a Chebyshev1D
-        model (number, ndim, degree, domain_start, domain_end, aper_lower,
-        aper_uper, c0, c1, c...)
+        Aperture table containing the parameters defining the aperture
 
     """
     center = height // 2 if center is None else center
-
-    aperture = table.Table(
-        [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [width - 1],  # domain_end
-         [center],  # c0
-         [-3],  # aper_lower
-         [3],  # aper_upper
-         ],
-        names=[
-            'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
-            'c0',
-            'aper_lower',
-            'aper_upper'],
-    )
+    apmodel = models.Chebyshev1D(degree=0, domain=[0, width-1], c0=center)
+    aperture = am.model_to_table(apmodel)
+    aperture['number'] = 1
+    aperture['aper_lower'] = -3
+    aperture['aper_upper'] = 3
 
     return aperture
 

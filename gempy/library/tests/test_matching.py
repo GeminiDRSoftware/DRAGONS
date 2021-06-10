@@ -28,7 +28,6 @@ def chebyshev1d():
     return model
 
 
-@pytest.mark.xfail(reason='review me')
 def test_KDTreeFitter_can_fit_a_chebyshev1d_function(chebyshev1d):
     np.random.seed(SEED)
 
@@ -79,24 +78,11 @@ def test_fit_model(make_catalog):
     in_model = real_model.copy()
     for p in in_model.param_names:
         setattr(in_model, p, 0.0)
+        setattr(getattr(in_model, p), 'bounds', (-20, 20))
     model = matching.fit_model(in_model, incoords, refcoords, brute=True)
     for p in model.param_names:
         assert (abs(getattr(model, p) - getattr(real_model, p)) <
                 2 * SCATTER)
-
-
-def test_align_catalogs(make_catalog):
-    tol = 0.01
-    xshift, yshift = 5.0, 10.0
-    incoords = make_catalog
-    real_model = astromodels.Shift2D(xshift, yshift)
-    transform = Transform([astromodels.Shift2D()])
-    refcoords = transform_coords(incoords, real_model)
-    model = matching.align_catalogs(incoords, refcoords,
-                                    transform, tolerance=tol).asModel()
-    for p in model.param_names:
-        assert (abs(getattr(model, p) - getattr(real_model, p)) <
-                max(SCATTER, tol))
 
 
 def test_match_sources():

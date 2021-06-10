@@ -1,24 +1,12 @@
-# pytest suite
-
 """
 Tests for the astrotools module.
-
-This is a suite of tests to be run with pytest.
-
-To run:
-   1) Set the environment variable GEMPYTHON_TESTDATA to the path that contains
-      the file N20130510S0178_forStack.fits.
-      Eg. /net/chara/data2/pub/ad_testdata/GMOS
-   2) Then run: py.test -v   (must in gemini_python or have it in PYTHONPATH)
 """
 
 import numpy as np
+import pytest
 from gempy.library import astrotools as at
 from astropy import units as u
 
-
-# TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
-# TESTFITS = 'N20130510S0178_forStack.fits'
 
 def test_array_from_list():
     values = (1, 2, 3)
@@ -32,6 +20,7 @@ def test_array_from_list():
 def test_divide0():
     ones = np.array([1, 1, 1])
     zeros = np.array([0, 0, 0])
+    twod = np.arange(12).reshape(4, 3)
 
     # scalar / scalar
     assert at.divide0(1, 0) == 0
@@ -41,6 +30,10 @@ def test_divide0():
     np.testing.assert_array_equal(at.divide0(1, zeros), zeros)
     # array / array
     np.testing.assert_array_equal(at.divide0(ones, zeros), zeros)
+
+    # 2d array / 1d array
+    np.testing.assert_array_equal(at.divide0(twod, ones), twod)
+    np.testing.assert_array_equal(at.divide0(twod, zeros), np.zeros_like(twod))
 
 
 def test_rasextodec():
@@ -83,3 +76,37 @@ def test_clipped_mean():
     results = at.clipped_mean(dist)
     expected_values = (6.1, 3.7)
     assert np.allclose(results, expected_values)
+
+
+def test_parse_user_regions():
+    parse = at.parse_user_regions
+    assert parse("*") == [(None, None)]
+    assert parse("") == [(None, None)]
+    assert parse(None) == [(None, None)]
+    assert parse("1:10,20:50") == [(1, 10), (20, 50)]
+    assert parse("1:10.2,20:50.2", dtype=float) == [(1, 10.2), (20, 50.2)]
+    assert parse("1:10,20:50:2", allow_step=True) == [(1, 10), (20, 50, 2)]
+    with pytest.raises(ValueError):
+        parse("1:10:2")
+    assert parse("50:20") == [(20, 50), ]
+
+
+def test_cartesian_regions_to_slices():
+    cart = at.cartesian_regions_to_slices
+    assert cart('')[0] == slice(None)
+    assert cart('1:10')[0] == slice(0, 10)
+    assert cart('[1:10]')[0] == slice(0, 10)
+    assert cart('1:10:2')[0] == slice(0, 10, 2)
+    assert cart('1-10:2')[0] == slice(0, 10, 2)
+    assert cart('1:10,20:30') == (slice(19, 30), slice(0, 10))
+    assert cart('[:,:10]') == (slice(None, 10), slice(None))
+
+    assert cart('100,*') == (slice(None), slice(99, 100))
+    assert cart('100, *') == (slice(None), slice(99, 100))
+    assert cart(':100,*') == (slice(None), slice(100))
+
+    assert cart('*,12') == (slice(11, 12), slice(None))
+    assert cart('*, 12:') == (slice(11, None), slice(None))
+
+    with pytest.raises(TypeError):
+        cart(12)

@@ -17,11 +17,22 @@ Classes:
     DataGroup: a collection of array-like objects and transforms that will be
                combined into a single output (more precisely, a single output
                per attribute)
-    AstroDataGroup: a subclass of DataGroup for AstroData objects
 
 Functions:
-    create_mosaic_transform: construct an AstroDataGroup instance that will
-                             mosaic the detectors
+    find_reference_extension: returns the index of the slice that is the
+                              reference extension of a multi-extension AstroData
+                              object (i.e., the one whose header will be used
+                              to construct the header of the mosaicked AD)
+    add_mosaic_wcs: attaches gWCS objects to all extensions with a "mosaic"
+                    frame that defines how the AD will be mosaicked into a
+                    single extension
+    add_longslit_wcs: attaches gWCS objects to all extensions with 3 output
+                      axes: RA, DEC, and wavelength
+    resample_from_wcs: creates a new (possibly mosaicked) AstroData object
+                       based on the pixel->pixel transform encoded within the
+                       gWCS object
+    get_output_corners: returns the transformed coordinates of a rectangular
+                        region
 """
 import numpy as np
 import copy
@@ -30,8 +41,6 @@ from functools import reduce
 from astropy.modeling import models, Model
 from astropy.modeling.core import _model_oper, fix_inputs
 from astropy import table, units as u
-from astropy.wcs import WCS
-from astropy.io.fits import Header
 
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -47,6 +56,7 @@ import astrodata
 from astrodata import wcs as adwcs
 
 from .astromodels import Rotate2D, Shift2D, Scale2D
+from ..utils.decorators import insert_descriptor_values
 from ..utils import logutils
 
 log= logutils.get_logger(__name__)
@@ -781,7 +791,7 @@ class GeoMap:
         transformed = (self._transform(*grids)[::-1] if len(shape) > 1
                        else self._transform(grids))
         #self.coords = [coord.astype(np.float32) for coord in transformed]
-        self.coords = transformed
+        self.coords = transformed  # Y then X
 
     def affinity(self):
         """
@@ -824,7 +834,6 @@ class DataGroup:
             self._transforms = copy.deepcopy(transforms)
             self._arrays = arrays
         self.no_data = {}
-        self.output_dict = {}
         self.output_shape = None
         self.origin = None
         self.log = logutils.get_logger(__name__)
@@ -857,8 +866,8 @@ class DataGroup:
         self._arrays.append(array)
         self._transforms.append(copy.deepcopy(transform))
 
-    def calculate_output_shape(self, additional_array_shapes=[],
-                               additional_transforms=[]):
+    def calculate_output_shape(self, additional_array_shapes=None,
+                               additional_transforms=None):
         """
         This method sets the output_shape and origin attributes of the
         DataGroup. output_shape is the shape that fully encompasses all of
@@ -877,8 +886,11 @@ class DataGroup:
         additional_transforms: list
             additional transforms, one for each of additional_array_shapes
         """
-        array_shapes = [arr.shape for arr in self.arrays] + additional_array_shapes
-        transforms = self.transforms + additional_transforms
+        array_shapes = [arr.shape for arr in self.arrays]
+        transforms = self.transforms
+        if additional_array_shapes:
+            array_shapes += additional_array_shapes
+            transforms += additional_transforms
         if len(array_shapes) != len(transforms):
             raise self.UnequalError
         all_corners = []
@@ -887,6 +899,8 @@ class DataGroup:
         for array_shape, transform in zip(array_shapes, transforms):
             corners = np.array(at.get_corners(array_shape)).T[::-1]
             trans_corners = transform(*corners)
+            if len(array_shape) == 1:
+                trans_corners = (trans_corners,)
             all_corners.extend(corner[::-1] for corner in zip(*trans_corners))
         limits = [(int(np.ceil(min(c))), int(np.floor(max(c))) + 1)
                   for c in zip(*all_corners)]
@@ -953,6 +967,7 @@ class DataGroup:
         -------
         dict: {key: array} of arrays containing the transformed attributes
         """
+        self.output_dict = {}
         if parallel:
             processes = []
             process_keys = []
@@ -1010,7 +1025,7 @@ class DataGroup:
                     # derivatives so expand the output pixel grid.
                     if conserve:
 
-                        self.log.warning("Flux conservation has not been fully"
+                        self.log.warning("Flux conservation has not been fully "
                                          "tested for non-affine transforms")
 
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
@@ -1023,14 +1038,17 @@ class DataGroup:
                         for num_axis in range(ndim):
                             coords = jacobian_mapping.coords[num_axis]
                             for denom_axis in range(ndim):
+                                # We're numerically estimating the partial
+                                # derivatives 2*dx/dx', 2*dx/dy', etc., multiplied
+                                # by 1/subsample
                                 diff_coords = coords - np.roll(coords, 2, axis=denom_axis)
                                 slice_ = [slice(1, -1)] * ndim
                                 slice_[denom_axis] = slice(2, None)
                                 # Account for the fact that we are measuring
                                 # differences in the subsampled plane
-                                det_matrices[num_axis, denom_axis] = 2. / (
-                                    diff_coords[tuple(slice_)].flatten() * subsample)
-                        jfactor = 1. / abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
+                                det_matrices[num_axis, denom_axis] = (0.5 * subsample *
+                                    diff_coords[tuple(slice_)].flatten())
+                        jfactor = abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
                         # Delete the extra Shift(1) and put a better jfactor in the list
                         del transform[-1]
                         self.jfactors[-1] = np.mean(jfactor)
@@ -1139,7 +1157,7 @@ class DataGroup:
         trans_corners = transform(*corners)
         if len(input_array.shape) == 1:
             trans_corners = (trans_corners,)
-        self.corners.append(trans_corners)
+        self.corners.append(trans_corners[::-1])  # standard python order
         min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
         max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
         self.log.stdinfo("Array maps to ["+",".join(["{}:{}".format(min_+1, max_)
@@ -1247,396 +1265,6 @@ class DataGroup:
                                                       True, False)
 
 #-----------------------------------------------------------------------------
-class AstroDataGroup(DataGroup):
-    """
-    A subclass of DataGroup for transforming AstroData objects. All the arrays
-    are Blocks of AD extensions (single slices are made into 1x1 Blocks).
-
-    The output will be a single-extension AD object, taking the PHU and header
-    from a reference extension in the inputs. Header keywords are updated or
-    deleted as appropriate after the transformation.
-    """
-    array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
-
-    def __init__(self, arrays=None, transforms=None):
-        super().__init__(arrays=arrays, transforms=transforms)
-        # To ensure uniform behaviour, we wish to encase single AD slices
-        # as single-element Block objects
-        self._arrays = [arr if isinstance(arr, Block) else Block(arr)
-                        for arr in self._arrays]
-        self.no_data['mask'] = DQ.no_data
-        self.ref_array = 0
-        self.ref_index = 0
-
-    def append(self, array, transform):
-        """Add a single array/transform pair"""
-        self._arrays.append(array if isinstance(array, Block) else Block(array))
-        self._transforms.append(copy.deepcopy(transform))
-
-    def descriptor(self, desc, index=None, **kwargs):
-        """
-        Return a list of descriptor returns for all the AD slices that make
-        up this object.
-
-        Parameters
-        ----------
-        desc: str
-            name of descriptor
-        index: int/None
-            only evaluate on this array (None=>return for all)
-        kwargs: dict
-            kwargs to pass to descriptor
-
-        Returns
-        -------
-        list: of descriptor return values
-        """
-        slice_ = slice(None, None) if index is None else slice(index, index+1)
-        return [getattr(ext, desc)(**kwargs)
-                for arr in self._arrays[slice_] for ext in arr]
-
-    def set_reference(self, array=None, extver=None):
-        """
-        This method defines the reference extension upon which to base the
-        PHU and header of the output single-extension AD object. The WCS of
-        this extension will be used as the basis of the output's WCS.
-
-        Parameters
-        ----------
-        array: int/None
-            index of the array to search for this EXTVER (None => search all)
-        extver: int/None
-            EXTVER value of the reference extension (None => use centre-bottom-left)
-        """
-        self.ref_array = None
-        if extver is None:
-            det_corners = np.array([(sec.y1, sec.x1)
-                                    for sec in self.descriptor("detector_section", index=array)])
-            if len(det_corners) > 1:
-                centre = np.median(det_corners, axis=0)
-                distances = list(det_corners - centre)
-                self.ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
-            else:
-                self.ref_index = 0
-            if array is None:
-                for i, arr in enumerate(self._arrays):
-                    if self.ref_index < len(arr):
-                        self.ref_array = i
-                        break
-                    self.ref_index -= len(arr)
-            else:
-                self.ref_array = array
-        else:
-            for index, arr in enumerate(self._arrays):
-                if array in (None, index):
-                    try:
-                        self.ref_index = [hdr['EXTVER'] for hdr in arr.hdr].index(extver)
-                    except ValueError:
-                        pass
-                    else:
-                        self.ref_array = index
-        if self.ref_array is None:
-            raise ValueError("Cannot locate EXTVER {}".format(extver))
-
-    def transform(self, attributes=None, order=1, subsample=1, threshold=0.01,
-                  conserve=False, parallel=False, process_objcat=False):
-        """
-        This method
-
-        Parameters
-        ----------
-        attributes: list-like
-            attributes to be transformed (None => all)
-        order: int
-            order of interpolation
-        subsample: int
-            if >1, will transform onto finer pixel grid and block-average down
-        threshold: float
-            for transforming the DQ plane, output pixels larger than this value
-            will be flagged as "bad"
-        conserve: bool
-            conserve flux rather than interpolate?
-        parallel: bool
-            use parallel processing to speed up operation?
-        process_objcat: bool
-            merge input OBJCATs into output AD instance?
-
-        Returns
-        -------
-
-        """
-        if attributes is None:
-            attributes = [attr for attr in self.array_attributes
-                          if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
-        if 'data' not in attributes:
-            self.log.warning("The 'data' attribute is not specified. Adding to list.")
-            attributes += ['data']
-
-        # Create the output AD object
-        ref_ext = self._arrays[self.ref_array][self.ref_index]
-        adout = astrodata.create(ref_ext.phu)
-        adout.orig_filename = ref_ext.orig_filename
-
-        self.log.fullinfo("Processing the following array attributes: "
-                          "{}".format(', '.join(attributes)))
-        super().transform(attributes=attributes, order=order,
-                          subsample=subsample, threshold=threshold,
-                          conserve=conserve, parallel=parallel)
-
-        adout.append(self.output_dict['data'], header=ref_ext.hdr.copy())
-        for key, value in self.output_dict.items():
-            if key != 'data':  # already done this
-                setattr(adout[0], key, value)
-        self._update_headers(adout)
-        self._process_tables(adout, process_objcat=process_objcat)
-
-        # Ensure the ADG object doesn't hog memory
-        self.output_dict = {}
-        return adout
-
-    def _update_headers(self, ad):
-        """
-        This method updates the headers of the output AstroData object, to
-        reflect the work done.
-        """
-        ndim = len(ad[0].shape)
-        if ndim != 2:
-            self.log.warning("The updating of header keywords has only been "
-                             "fully tested for 2D data.")
-        header = ad[0].hdr
-        keywords = {sec: ad._keyword_for('{}_section'.format(sec))
-                                       for sec in ('array', 'data', 'detector')}
-        # Data section probably has meaning even if ndim!=2
-        ad.hdr[keywords['data']] = '['+','.join('1:{}'.format(length)
-                                    for length in ad[0].shape[::-1])+']'
-        # These descriptor returns are unclear in non-2D data
-        if ndim == 2:
-            # If detector_section returned something, set an appropriate value
-            all_detsec = np.array(self.descriptor('detector_section')).T
-            ad.hdr[keywords['detector']] = '['+','.join('{}:{}'.format(min(c1)+1, max(c2))
-                                for c1, c2 in zip(all_detsec[::2], all_detsec[1::2]))+']'
-            # array_section only has meaning now if the inputs were from a
-            # single physical array
-            if len(self._arrays) == 1:
-                all_arrsec = np.array(self.descriptor('array_section')).T
-                ad.hdr[keywords['array']] = '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
-                                    for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
-            else:
-                del ad.hdr[keywords['array']]
-        if 'CCDNAME' in ad[0].hdr:
-            ad.hdr['CCDNAME'] = ad.detector_name()
-
-        # Now sort out the WCS. CRPIXi values have to be added to the coords
-        # of the bottom-left of the Block. We want them in x-first order.
-        # Also the CRPIXi values are 1-indexed, so handle that.
-        transform = self._transforms[self.ref_array]
-        wcs = WCS(header)
-        ref_coords = tuple(corner+crpix-1 for corner, crpix in
-                           zip(self._arrays[self.ref_array].corners[self.ref_index][::-1],
-                               wcs.wcs.crpix))
-        new_ref_coords = transform(*ref_coords)
-        # The origin shift wasn't appended to the Transform, so apply it here
-        if self.origin:
-            new_ref_coords = reduce(Model.__and__, [models.Shift(-offset)
-                        for offset in self.origin[::-1]])(*new_ref_coords)
-        for i, coord in enumerate(new_ref_coords, start=1):
-            ad.hdr['CRPIX{}'.format(i)] = coord+1
-
-        affine_matrix = transform.inverse.affine_matrices(self._arrays[self.ref_array].shape).matrix
-        try:
-            cd_matrix = np.dot(wcs.wcs.cd, affine_matrix[::-1,::-1])
-        except AttributeError:  # No CD matrix
-            pass
-        else:
-            for j in range(ndim):
-                for i in range(ndim):
-                    ad.hdr['CD{}_{}'.format(i+1, j+1)] = cd_matrix[i, j]
-
-        # Finally, delete any keywords that no longer make sense
-        for kw in ('AMPNAME', 'FRMNAME', 'FRAMEID', 'CCDSIZE', 'BIASSEC',
-                   'DATATYP', 'OVERSEC', 'TRIMSEC', 'OVERSCAN', 'OVERRMS'):
-            if kw in header:
-                del ad.hdr[kw]
-
-    def _process_tables(self, ad, process_objcat=False):
-        """
-        This method propagates the REFCAT and/or OBJCAT catalogs with
-        appropriate changes based on the transforms.
-        """
-        # Copy top-level tables. We assume that the inputs only have a single
-        # instance of each table between them, so we take it from the reference
-        # extension (which gets it from its parent AD object).
-        for name in self._arrays[self.ref_array][self.ref_index].tables:
-            setattr(ad, name, getattr(self._arrays[self.ref_array][self.ref_index], name))
-            self.log.fullinfo("Copying {}".format(name))
-
-        # Join OBJCATs. We transform the pixel coordinates and then update the
-        # RA and DEC based on the output image's WCS.
-        if process_objcat:
-            self.log.stdinfo("Processing OBJCAT")
-            wcs = WCS(ad[0].hdr)
-            tables = []
-            for array, transform in zip(self._arrays, self._transforms):
-                try:
-                    objcat = array.OBJCAT
-                except AttributeError:
-                    continue
-                del objcat.meta['header']
-                for ycolumn, xcolumn in zip(*catalog_coordinate_columns['OBJCAT']):
-                    # OBJCAT coordinates are 1-indexed
-                    newx, newy = transform(objcat[xcolumn]-1, objcat[ycolumn]-1)
-                    objcat[xcolumn] = newx + 1
-                    objcat[ycolumn] = newy + 1
-                ra, dec = wcs.all_pix2world(objcat['X_IMAGE'], objcat['Y_IMAGE'], 1)
-                objcat["X_WORLD"] = ra
-                objcat["Y_WORLD"] = dec
-                tables.append(objcat)
-
-            if tables:
-                objcat = table.vstack(tables, metadata_conflicts='silent')
-                objcat['NUMBER'] = np.arange(len(objcat)) + 1
-                ad[0].OBJCAT = objcat
-
-
-    def inverse_transform(self, admos, attributes=None, order=1, subsample=1,
-                          threshold=0.01, conserve=False):
-        """
-        The method performs the inverse transformation, which includes breaking
-        the input file into multiple extensions.
-
-        Parameters
-        ----------
-        admos: AstroData
-            an AD object compatible with the output of self.transform()
-        attributes: list-like
-            attributes to be transformed (None => all)
-        order: int
-            order of interpolation
-        subsample: int
-            if >1, will transform onto finer pixel grid and block-average down
-        threshold: float
-            for transforming the DQ plane, output pixels larger than this value
-            will be flagged as "bad"
-        conserve: bool
-            conserve flux rather than interpolate?
-
-        Returns
-        -------
-        AstroData: a multi-extension AD instance from unmosaicking the input
-        """
-        if len(admos) != 1:
-            raise ValueError("AstroData instance must have only one extension")
-        if admos[0].shape != self.output_shape:
-            raise ValueError("AstroData shape incompatible with transform")
-
-        adout = astrodata.create(admos.phu)
-        adout.orig_filename = admos.orig_filename
-
-        for arr, t in self:
-            # Since the origin shift is the last thing applied before
-            # transforming, it must be the first thing in the inverse
-            t_inverse = t.inverse
-            t_inverse.prepend(reduce(Model.__and__,
-                                     [models.Shift(o) for o in self.origin[::-1]]))
-            adg = self.__class__(admos, [t_inverse])
-            # Transformations are interpolations on the input pixel grid. So
-            # pixels are typically lost around the edges and the footprint is
-            # smaller than the input image's footprint. So we force the shape
-            # of the inverse-transformed image to be that of the input array
-            # and only take the region starting from (0,0) in the output frame
-            adg.origin = (0, 0)
-            adg.output_shape = arr.shape
-            block = adg.transform(attributes=attributes, order=order,
-                                  subsample=subsample, threshold=threshold,
-                                  conserve=conserve)
-
-            # Now we split the block into its constituent extensions
-            for ext, corner in zip(arr, arr.corners):
-                slice_ = tuple(slice(start, start+length)
-                               for start, length in zip(corner, ext.shape))
-                # We need to deepcopy here to protect the header, because of
-                # the way _append_nddata behaves
-                ndd = copy.deepcopy(block[0].nddata[slice_])
-                adout.append(ndd, header=ext.hdr, reset_ver=False)
-
-        return adout
-
-#-----------------------------------------------------------------------------
-def create_mosaic_transform(ad, geotable):
-    """
-    Constructs an AstroDataGroup object that will perform the mosaicking
-    operation on an AstroData instance.
-
-    Parameters
-    ----------
-    ad: AstroData
-        the AD object that will be mosaicked
-    geotable: module
-        the geometry_conf module with the required information
-
-    Returns
-    -------
-    AstroDataGroup: the ADG object that can be transformed to perform
-                    the mosaicking
-    """
-
-
-    # Create the blocks (individual physical detectors)
-    array_info = gt.array_information(ad)
-    blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
-              zip(array_info.extensions, array_info.array_shapes)]
-    offsets = [ad[exts[0]].array_section()
-               for exts in array_info.extensions]
-
-    detname = ad.detector_name()
-    xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-    geometry = geotable.geometry[detname]
-    default_shape = geometry.get('default_shape')
-    adg = AstroDataGroup()
-
-    for block, origin, offset in zip(blocks, array_info.origins, offsets):
-        # Origins are in (x, y) order in LUT
-        block_geom = geometry[origin[::-1]]
-        nx, ny = block_geom.get('shape', default_shape)
-        nx /= xbin
-        ny /= ybin
-        shift = block_geom.get('shift', (0, 0))
-        rot = block_geom.get('rotation', 0.)
-        mag = block_geom.get('magnification', (1, 1))
-        transform = Transform()
-
-        # Shift the Block's coordinates based on its location within
-        # the full array, to ensure any rotation takes place around
-        # the true centre.
-        if offset.x1 != 0 or offset.y1 != 0:
-            transform.append(models.Shift(float(offset.x1) / xbin) &
-                             models.Shift(float(offset.y1) / ybin))
-
-        if rot != 0 or mag != (1, 1):
-            # Shift to centre, do whatever, and then shift back
-            transform.append(models.Shift(-0.5 * (nx - 1)) &
-                             models.Shift(-0.5 * (ny - 1)))
-            if rot != 0:
-                # Cope with non-square pixels by scaling in one
-                # direction to make them square before applying the
-                # rotation, and then reversing that.
-                if xbin != ybin:
-                    transform.append(models.Identity(1) & models.Scale(ybin / xbin))
-                transform.append(models.Rotation2D(rot))
-                if xbin != ybin:
-                    transform.append(models.Identity(1) & models.Scale(xbin / ybin))
-            if mag != (1, 1):
-                transform.append(models.Scale(mag[0]) &
-                                 models.Scale(mag[1]))
-            transform.append(models.Shift(0.5 * (nx - 1)) &
-                             models.Shift(0.5 * (ny - 1)))
-        transform.append(models.Shift(float(shift[0]) / xbin) &
-                         models.Shift(float(shift[1]) / ybin))
-        adg.append(block, transform)
-
-    adg.set_reference()
-    return adg
-
 def find_reference_extension(ad):
     """
     This function determines the reference extension of an AstroData object,
@@ -1774,7 +1402,9 @@ def add_mosaic_wcs(ad, geotable):
 
     return ad
 
-def add_longslit_wcs(ad):
+
+@insert_descriptor_values()
+def add_longslit_wcs(ad, central_wavelength=None):
     """
     Attach a gWCS object to all extensions of an AstroData objects,
     representing the approximate spectroscopic WCS, as returned by
@@ -1782,8 +1412,10 @@ def add_longslit_wcs(ad):
 
     Parameters
     ----------
-    ad: AstroData
+    ad : AstroData
         the AstroData instance requiring a WCS
+    central_wavelength : float / None
+        central wavelength in nm (None => use descriptor)
 
     Returns
     -------
@@ -1791,8 +1423,6 @@ def add_longslit_wcs(ad):
     """
     if 'SPECT' not in ad.tags:
         raise ValueError(f"Image {ad.filename} is not of type SPECT")
-
-    cenwave = ad.central_wavelength(asNanometers=True)
 
     # TODO: This appears to be true for GMOS. Revisit for other multi-extension
     # spectrographs once they arrive and GMOS tests are written
@@ -1804,7 +1434,7 @@ def add_longslit_wcs(ad):
     for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
         wcs = ext.wcs
         if not isinstance(wcs.output_frame, cf.CelestialFrame):
-            raise TypeError(f"Output frame of {ad.filename}:{ext.hdr['EXTVER']}"
+            raise TypeError(f"Output frame of {ad.filename} extension {ext.id}"
                             " is not a CelestialFrame instance")
 
         # Need to change axes_order in CelestialFrame
@@ -1812,8 +1442,8 @@ def add_longslit_wcs(ad):
                   for kw in ('reference_frame', 'unit', 'axes_names',
                              'axis_physical_types')}
         sky_frame = cf.CelestialFrame(axes_order=(1,2), name='sky', **kwargs)
-        spectral_frame = cf.SpectralFrame(name='wavelength', unit=u.nm,
-                                          axes_names='WAVE')
+        spectral_frame = cf.SpectralFrame(name='Wavelength in air', unit=u.nm,
+                                          axes_names='AWAV')
         output_frame = cf.CompositeFrame([spectral_frame, sky_frame], name='world')
 
         transform = ext.wcs.forward_transform
@@ -1826,7 +1456,7 @@ def add_longslit_wcs(ad):
             sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(0)) | transform
         sky_model.name = 'SKY'
         wave_model = (models.Shift(crpix) | models.Scale(dw) |
-                      models.Shift(cenwave))
+                      models.Shift(central_wavelength))
         wave_model.name = 'WAVE'
 
         if dispaxis == 1:
@@ -1885,12 +1515,15 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     -------
     AstroData: single-extension AD with suitable WCS
     """
-    array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
+    array_attributes = ['data', 'mask', 'variance']
+    for k, v in ad.nddata[0].meta['other'].items():
+        if isinstance(v, np.ndarray) and v.shape == ad[0].data.shape:
+            array_attributes.append(k)
     is_single = ad.is_single
 
     # It's not clear how much checking we should do here but at a minimum
     # we should probably confirm that each extension is purely data. It's
-    # up to a primitve to catch this, call trim_to_data_section(), and try again
+    # up to a primitive to catch this, call trim_to_data_section(), and try again
     if is_single:
         addatsec = (0, ad.shape[0]) if len(ad.shape) == 1 else ad.data_section()
         shapes_ok = np.array_equal(np.ravel([(0, length) for length in ad.shape[::-1]]),
@@ -1955,6 +1588,12 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         if key != 'data':  # already done this
             setattr(ad_out[0], key, value)
 
+    # Store this information so the calling primitive can access it
+    ad_out[0].nddata.meta['transform'] = {'origin': dg.origin,
+                                          'corners': dg.corners,
+                                          'jfactors': dg.jfactors,
+                                          'block_corners': [b.corners for b in dg.arrays]}
+
     # Create a new gWCS object describing the remaining transformation.
     # Not all gWCS objects have to have the same steps, so we need to
     # redetermine the frame_index in the reference extensions's WCS.
@@ -1969,19 +1608,16 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     else:
         new_wcs = gWCS(new_pipeline)
         if set(new_origin) != {0}:
-            #new_pipeline = [(cf.Frame2D(name='pixels'), reduce(Model.__and__, [models.Shift(s) for s in new_origin]))] + new_pipeline
-            new_wcs.insert_transform(new_wcs.input_frame,
-                reduce(Model.__and__, [models.Shift(s) for s in new_origin]), after=True)
+            origin_model = reduce(Model.__and__, [models.Shift(s) for s in new_origin])
+            # For if we tile the OBJCATs
+            for transform in dg.transforms:
+                transform.append(origin_model.inverse)
+            new_wcs.insert_transform(new_wcs.input_frame, origin_model,
+                                     after=True)
     ad_out[0].wcs = new_wcs
-
-    # Storing this could be very helpful
-    ad_out.phu['ORIGTRAN'] = str(dg.origin[::-1])
 
     # Update and delete keywords from extension (_update_headers)
     ndim = len(ref_ext.shape)
-    if ndim != 2:
-        log.warning("The updating of header keywords has only been "
-                    "fully tested for 2D data.")
     header = ad_out[0].hdr
     keywords = {sec: ad._keyword_for('{}_section'.format(sec))
                 for sec in ('array', 'data', 'detector')}
@@ -2035,8 +1671,13 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         if kw in header:
             del ad_out.hdr[kw]
 
-    # Now let's worry about the tables. Top-level ones first
-    for table_name in ad.tables:
+    # Now let's worry about the tables. Only transfer top-level ones, since
+    # we may be combining extensions so it's not clear generally how to merge.
+    # If the calling code needs to do some propagation it has to handle that
+    # itself. We have to use the private attribute here since the public one
+    # doesn't distinguish between top-level and extension-level tables if the
+    # AD object is a single slice.
+    for table_name in ad._tables:
         setattr(ad_out, table_name, getattr(ad, table_name).copy())
         log.fullinfo("Copying {}".format(table_name))
 
@@ -2045,7 +1686,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     if 'IMAGE' in ad.tags and process_objcat:
         for table_name, coord_columns in catalog_coordinate_columns.items():
             tables = []
-            for block in blocks:
+            for block, transform in zip(blocks, dg.transforms):
                 # This returns a single Table
                 cat_table = getattr(block, table_name, None)
                 if cat_table is None:
@@ -2063,11 +1704,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                 cat_table["Y_WORLD"][:] = dec
                 tables.append(cat_table)
 
-        if tables:
-            log.stdinfo("Processing {}s".format(table_name))
-            objcat = table.vstack(tables, metadata_conflicts='silent')
-            objcat['NUMBER'] = np.arange(len(objcat)) + 1
-            setattr(ad_out[0], table_name, cat_table)
+            if tables:
+                log.stdinfo("Processing {}s".format(table_name))
+                objcat = table.vstack(tables, metadata_conflicts='silent')
+                objcat['NUMBER'] = np.arange(len(objcat)) + 1
+                setattr(ad_out[0], table_name, objcat)
 
     # We may need to remake the gWCS object. The issue here is with 2D spectra,
     # where the resetting of the dispersion direction is done before the

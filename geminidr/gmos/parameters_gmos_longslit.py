@@ -3,6 +3,7 @@
 from geminidr.core import parameters_standardize
 from gempy.library import config
 from astrodata import AstroData
+from geminidr.core import parameters_generic
 
 
 def flat_order_check(value):
@@ -16,13 +17,19 @@ def flat_order_check(value):
         return len(orders) == 3 and min(orders) > 0
 
 
-class addDQConfig(parameters_standardize.addDQConfig):
+class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
+    shift = config.RangeField("User-defined shift for illumination mask", int, None,
+                              min=-100, max=100, inclusiveMax=True, optional=True)
+    max_shift = config.RangeField("Maximum (unbinned) pixel shift for illumination mask",
+                                  int, 20, min=0, max=100, inclusiveMax=True)
+
+
+class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True   # adds bridges in longslit full frame
 
 
 class makeSlitIllumConfig(config.Config):
-
     bins = config.Field("Total number of bins across the dispersion axis.",
                         int, None, optional=True)
     border = config.Field("Size of the border added to the reconstructed slit illumination image",
@@ -39,21 +46,21 @@ class makeSlitIllumConfig(config.Config):
                            int, 4, optional=True)
 
 
-class normalizeFlatConfig(config.Config):
+class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
-    spectral_order = config.Field("Fitting order in spectral direction",
+    order = config.Field("Fitting order in spectral direction",
                                   (int, str), 20, check=flat_order_check)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0, inclusiveMin=False)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+    interactive = config.Field("Interactive fitting?", bool, False)
+    debug_plot = config.Field("Create diagnosis plots?",
+                              bool, False, optional=True)
+
+    def setDefaults(self):
+        self.niter = 3
 
 
-class slitIllumCorrectConfig(config.Config):
-
-    do_illum = config.Field("Perform Slit Illumination Correction?",
-                            bool, True, optional=True)
+class slitIllumCorrectConfig(parameters_generic.calRequirementConfig):
     slit_illum = config.ListField("Slit Illumination Response",
                                   (str, AstroData), None, optional=True, single=True)
     suffix = config.Field("Filename suffix",

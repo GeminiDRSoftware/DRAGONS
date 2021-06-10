@@ -10,8 +10,8 @@ from copy import deepcopy
 from scipy.ndimage import binary_dilation
 
 from astrodata.provenance import add_provenance
+from astrodata import Section
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.utils.md5 import md5sum
 
@@ -59,7 +59,7 @@ class Image(Preprocess, Register, Resample):
         timestamp_key = self.timestamp_keys[self.myself()]
         fringe = params["fringe"]
         scale = params["scale"]
-        do_fringe = params["do_fringe"]
+        do_cal = params["do_cal"]
 
         # Exit now if nothing needs a correction, to avoid an error when the
         # calibration search fails. If images with different exposure times
@@ -67,18 +67,18 @@ class Image(Preprocess, Register, Resample):
         # search will succeed), so still need to check individual inputs later.
         needs_correction = [self._needs_fringe_correction(ad) for ad in adinputs]
         if any(needs_correction):
-            if do_fringe == False:
+            if do_cal == 'skip':
                 log.warning("Fringe correction has been turned off but is "
                             "recommended.")
                 return adinputs
         else:
-            if not do_fringe:  # False or None
-                if do_fringe is None:
-                    log.stdinfo("No input images require a fringe correction.")
+            if do_cal == 'procmode' or do_cal == 'skip':
+                log.stdinfo("No input images require a fringe correction.")
                 return adinputs
-            else:
-                log.warning("Fringe correction has been turned on but may not "
+            else:  # do_cal == 'force':
+                log.warning("Fringe correction has been forced on but may not "
                             "be required.")
+
 
         if fringe is None:
             # This logic is for QAP
@@ -88,11 +88,11 @@ class Image(Preprocess, Register, Resample):
                 scale = False
                 log.stdinfo("Using fringe frame in 'fringe' stream. "
                             "Setting scale=False")
+                fringe_list = (fringe_list[0], "stream")
             except (KeyError, AssertionError):
-                self.getProcessedFringe(adinputs, refresh=False)
-                fringe_list = self._get_cal(adinputs, "processed_fringe")
+                fringe_list = self.caldb.get_processed_fringe(adinputs)
         else:
-            fringe_list = fringe
+            fringe_list = (fringe, None)
 
         # Usual stuff to ensure that we have an iterable of the correct length
         # for the scale factors regardless of what the input is
@@ -107,17 +107,18 @@ class Image(Preprocess, Register, Resample):
                 factors = iter(scale_factor * len(adinputs))
 
         # Get a fringe AD object for every science frame
-        for ad, fringe, correct in zip(*(gt.make_lists(adinputs, fringe_list, force_ad=True)
-                                      + [needs_correction])):
+        for ad, fringe, origin, correct in zip(*gt.make_lists(
+                adinputs, *fringe_list, needs_correction, force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractFringe".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "fringeCorrect. Continuing.")
                 continue
 
             # Logic to deal with different exposure times where only
             # some inputs might require fringe correction
-            if do_fringe is None and not correct:
+            # KL: for now, I'm not allowing the "force" to do anything when
+            #     the correction is not needed.
+            if (do_cal == 'procmode' or do_cal == 'force') and not correct:
                 log.stdinfo("{} does not require a fringe correction".
                             format(ad.filename))
                 ad.update_filename(suffix=params["suffix"], strip=True)
@@ -126,14 +127,15 @@ class Image(Preprocess, Register, Resample):
             # At this point, we definitely want to do a fringe correction
             # so we'd better have a fringe frame!
             if fringe is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "fringe frame has been specified".
                                 format(ad.filename))
                     continue
                 else:
-                    raise OSError("No processed fringe listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no fringe was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -144,6 +146,9 @@ class Image(Preprocess, Register, Resample):
                 gt.check_inputs_match(ad, fringe)
 
             #
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the fringe frame "
+                         f"{fringe.filename}{origin_str}")
             matched_groups = (ad.group_id() == fringe.group_id())
             if scale or (scale is None and not matched_groups):
                 factor = next(factors)
@@ -366,7 +371,8 @@ class Image(Preprocess, Register, Resample):
                         "different sizes. Turning off.")
             separate_ext = False
 
-        section = at.section_str_to_tuple(section)
+        if section is not None:
+            section = Section.from_string(section)
 
         # I'm not making the assumption that all extensions are the same shape
         # This makes things more complicated, but more general
@@ -374,18 +380,17 @@ class Image(Preprocess, Register, Resample):
         for ad in adinputs:
             all_data = []
             for index, ext in enumerate(ad):
-                extver = ext.hdr['EXTVER']
                 if section is None:
-                    x1, y1 = 0, 0
-                    y2, x2 = ext.data.shape
+                    _slice = None
                 else:
-                    x1, x2, y1, y2 = section
-                data = ext.data[y1:y2, x1:x2]
+                    _slice = section.asslice()
+                data = ext.data[_slice]
                 if data.size:
-                    mask = None if ext.mask is None else ext.mask[y1:y2, x1:x2]
+                    mask = None if ext.mask is None else ext.mask[_slice]
                 else:
-                    log.warning("Section does not intersect with data for {}:{}."
-                                " Using full frame.".format(ad.filename, extver))
+                    log.warning("Section does not intersect with data for "
+                                f"{ad.filename} extension {ext.id}."
+                                " Using full frame.")
                     data = ext.data
                     mask = ext.mask
                 if mask is not None:
@@ -397,12 +402,12 @@ class Image(Preprocess, Register, Resample):
                 if separate_ext or index == len(ad)-1:
                     if separate_ext:
                         value = getattr(np, scaling)(data)
-                        log.fullinfo("{}:{} has {} value of {}".format(ad.filename,
-                                                            extver, scaling, value))
+                        log.fullinfo(f"{ad.filename} extension {ext.id} has "
+                                     f"{scaling} value of {value}")
                     else:
                         value = getattr(np, scaling)(all_data)
-                        log.fullinfo("{} has {} value of {}".format(ad.filename,
-                                                                    scaling, value))
+                        log.fullinfo(f"{ad.filename} has {scaling} value of {value}")
+
                     if np.isnan(targets[index]):
                         targets[index] = value
                     else:

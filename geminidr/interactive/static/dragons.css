@@ -1,0 +1,354 @@
+/* https://codepen.io/KanatSahanov/pen/raGXXa */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+    background-color: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 0px;
+}
+
+/**
+ * This element holds all the Bokeh Generated components
+ */
+div.container {
+    background-color: whitesmoke;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    display: table;
+    height: 100%;
+    margin: auto;
+    width: 100%;
+    }
+
+div.plot_tools_help {
+    float: right;
+}
+
+div.plot_tools_help div {
+    border: 1px solid gray;
+    padding: 4px;
+    margin: 8px;
+    background: white;
+    filter: drop-shadow(2px 2px 2px gray);
+}
+
+div.plot_tools_help div span {
+    margin-left: 4px;
+}
+
+div.scrollable {
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+/**
+ * This element holds the tab area
+ */
+.bk .tab-content {
+  background-color: white;
+  border-left: solid 1px rgb(230, 230, 230);
+  border-right: solid 1px rgb(230, 230, 230);
+  border-bottom: solid 1px rgb(230, 230, 230);
+}
+
+.bk-btn:active {
+    border: none;
+    filter: brightness(90%);
+
+    /* Inner shadow */
+    -webkit-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;
+}
+
+.bk-btn:hover {
+    border: none;
+    filter: saturate(90%);
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.2);
+}
+
+.bk-btn.bk-btn-danger {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-primary {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 15px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-success {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-btn.bk-btn-warning {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 35px;
+    transition: all .2s ease-in-out;
+}
+
+.bk-root {
+    height: 100%;
+    width: 100%;
+}
+
+.bk-root .bk-button-bar {
+  background-color: whitesmoke;
+  border-radius: 0px 5px 5px 0px;
+}
+
+.bk-root .bk-button-bar + .bk-button-bar:before {
+    content: " ";
+    display: inline-block;
+    background-color: #0f0f0f;
+    border-top: solid 1px #0f0f0f;
+    margin: 2px 0px;
+    width: 100%;
+}
+
+/**
+ * Updates the appearance of the Bokeh's toolbar on the right
+ */
+.bk-root .bk-toolbar.bk-right {
+  background-color: white;
+  margin: 5px;
+  height: 100%;
+}
+
+/**
+ * Updates the appearance of the buttons in the Bokeh's toolbar on the right
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button {
+  filter: brightness(125%);
+  margin: 0px;
+  border: 1px 1px 1px 0px solid white;
+  border-radius: 0px 5px 5px 0px;
+  transition: all .25s linear;
+}
+
+/**
+ * These buttons get a bit darker when the user hovers the mouse over them
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button:hover {
+  filter: brightness(90%);
+}
+
+/**
+ * Overrides the "active" state to make it more obvious
+ */
+.bk-root .bk-toolbar.bk-right .bk-toolbar-button.bk-active {
+  background-color: white;
+  filter: brightness(80%);
+}
+
+.content {
+    display: table-row;
+    height: 100%;
+}
+
+.controller_div {
+  color: gray;
+}
+
+.detailed_help {
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px;
+  max-width: 960px;
+}
+
+.detailed_help dt {
+  font-weight: bold;
+}
+
+.hamburger_helper button.bk-btn {
+    background-image: url('hamburger.svg');
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    vertical-align: 5px;
+    padding-left: 20px;
+    appearance: none;
+    border: none;
+    text-align: left;
+}
+
+.help-page {
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    margin: auto;
+}
+
+.modal_overlay {
+    visibility: hidden;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.2));
+    z-index: 2;
+    text-align: center;
+    font-size: 32px;
+    font-family: sans-serif;
+    padding-top: 70px;
+}
+
+.param_section {
+  font-weight: bold;
+}
+
+.region_input_error {
+    border:  solid red 1px;
+}
+
+.submit-info {
+    border: 2px solid black;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.top-row {
+    z-index: 1;
+}
+
+#filename-info {
+    font-size: 16px;
+    width: 256px;
+    float: right;
+    text-alight: right;
+    height: 64px;
+    margin-top: 48px;
+    float: right;
+    font: helvetica;
+    font-style: italic;
+    color: white;
+}
+
+#footer {
+    background-color: steelblue;
+    color: gainsboro;
+    font-size: 14px;
+    font-style: normal;
+    margin: 10px 0px 0px 0px;
+    padding: 5px;
+    position: static;
+    text-align: right;
+    width: inherit;
+}
+
+#footer a {
+    color: gainsboro;
+    transition: all .2s ease-in-out;
+    margin-right: 12px;
+}
+
+#footer a:hover {
+    color: white;
+}
+
+#help-btn {
+    background-color: steelblue;
+    border: 0px solid white;
+    border-radius: 20px;
+    color: gainsboro;
+    font-size: 18px;
+    float: right;
+    position: relative;
+    right: 36px;
+    outline: none;
+    padding: 10px 30px;
+    transition: all .4s ease-in-out;
+    text-decoration: none;
+}
+
+#help-btn:active {
+    border: none;
+    border-bottom: none;
+    color: white;
+    cursor: pointer;
+    filter: brightness(85%);
+    outline: none;
+
+    /* Inner shadow */
+    -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    -moz-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2) inset;
+}
+
+#help-btn:hover {
+    border: 0px solid white;
+    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+    color: white;
+    cursor: pointer;
+    filter: brightness(115%);
+    outline: none;
+}
+
+#main_div {
+    height: 100%;
+    padding: 0px 15px 0px 15px;
+    display: table-cell;
+    overflow-y: auto;
+    }
+
+#plot_div {
+    margin: 8px 8px 30px 8px;
+}
+
+#top {
+    background-color: steelblue;
+    color: white;
+    display: block;
+    height: auto;
+    margin: 0px;
+    width: inherit;
+}
+
+#top .banner {
+    padding: 10px;
+    vertical-align: middle;
+    width: 100%;
+}
+
+#top .banner .primitive-name {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 18px;
+    padding: 10px;
+    vertical-align: middle;
+}
+
+#top .banner .title {
+    color: white;
+    font-size: 36px;
+    vertical-align: middle;
+}
+
+#top .logo {
+    float: left;
+    margin-bottom: -35px;
+    padding: 10px;
+}
+
+#top .logo img {
+    height: 72px;
+}

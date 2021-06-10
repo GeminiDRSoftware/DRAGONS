@@ -27,8 +27,8 @@ associated_calibrations = {
 
 
 @pytest.mark.gmosls
-@pytest.mark.integration
-@pytest.mark.preprocessed
+@pytest.mark.integration_test
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("processed_slit_illum", datasets, indirect=True)
 def test_make_processed_slit_illum(processed_slit_illum, ref_ad_factory):
 
@@ -82,7 +82,7 @@ def processed_slit_illum(change_working_dir, path_to_inputs, request):
         reduce.files.extend([twi_path])
         reduce.mode = 'sq'
         reduce.recipename = 'makeProcessedSlitIllum'
-        reduce.ucals = normalize_ucals(reduce.files, calibration_files)
+        reduce.ucals = normalize_ucals(calibration_files)
         reduce.runr()
 
         _processed_twi_filename = reduce.output_filenames.pop()

@@ -3,11 +3,12 @@
 #
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
+import os
 import numpy as np
 import warnings
 
 from astropy.stats import sigma_clip
-from astropy.table import Column
+from astropy.table import Table, Column
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -33,11 +34,15 @@ class Photometry(PrimitivesBASE):
 
     def addReferenceCatalog(self, adinputs=None, **params):
         """
-        This primitive calls the gemini_catalog_client module to query a
-        catalog server and construct a fits table containing the catalog data
+        This primitive attaches a reference catalog to each AstroData input
+        as a top-level Table called "REFCAT'. The user can supply the name
+        of a file on disk or one of a specific list of catalogs (2mass, gmos,
+        sdss9, or ukidss9) for which a query will be made via the
+        gemini_catalog_client module.
 
-        That module will query either gemini catalog servers or vizier.
-        Currently, sdss9 and 2mass (point source catalogs are supported.
+        If a catalog server is queried, sources within a circular region of
+        the sky will be added. If a file on disk is used as the reference
+        catalog, it is attached in full to each file.
 
         For example, with sdss9, the FITS table has the following columns:
 
@@ -59,31 +64,53 @@ class Photometry(PrimitivesBASE):
         With 2mass, the first 4 columns are the same, but the photometry
         columns reflect the J H and K bands.
 
-        This primitive then adds the fits table catalog to the Astrodata
-        object as 'REFCAT'
-
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
         radius: float
             search radius (in degrees)
-        source: str
-            identifier for server to be used for catalog search
+        source: str/None
+            identifier for server to be used for catalog search or filename
+        format: str/None
+            format of catalog on disk (passed to Table.read())
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         source = params["source"]
         radius = params["radius"]
+        format = params["format"]
+
+        if source is None:
+            log.stdinfo("No source provided for reference catalog.")
+            return adinputs
+
+        if os.path.isfile(source):
+            try:
+                user_refcat = Table.read(source, format=format)
+                log.stdinfo(f"Successfully read reference catalog {source}")
+                # Allow raw SExtractor catalog to be used
+                if not {'RAJ2000', 'DEJ2000'}.issubset(user_refcat.colnames):
+                    if {'X_WORLD', 'Y_WORLD'}.issubset(user_refcat.colnames):
+                        log.stdinfo("Renaming X_WORLD, Y_WORLD to RAJ2000, DEJ2000")
+                        user_refcat.rename_column('X_WORLD', 'RAJ2000')
+                        user_refcat.rename_column('Y_WORLD', 'DEJ2000')
+            except:
+                log.warning(f"File {source} exists but cannot be read - continuing")
+                return adinputs
+        else:
+            user_refcat = None
 
         for ad in adinputs:
             try:
-                ra = ad.wcs_ra()
-                dec = ad.wcs_dec()
-                if type(ra) is not float:
+                try:
+                    ra = float(ad.wcs_ra())
+                except TypeError:
                     raise ValueError("wcs_ra descriptor did not return a float.")
-                if type(dec) is not float:
+                try:
+                    dec = float(ad.wcs_dec())
+                except TypeError:
                     raise ValueError("wcs_dec descriptor did not return a float.")
             except Exception:
                 if "qa" in self.mode:
@@ -93,11 +120,14 @@ class Photometry(PrimitivesBASE):
                 else:
                     raise
 
-            log.fullinfo(f"Querying {source} for reference catalog, "
-                         f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                refcat = get_fits_table(source, ra, dec, radius)
+            if user_refcat:
+                refcat = user_refcat.copy()
+            else:
+                log.fullinfo(f"Querying {source} for reference catalog, "
+                             f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    refcat = get_fits_table(source, ra, dec, radius)
 
             if refcat is None:
                 log.stdinfo("No reference catalog sources found for {}".
@@ -177,9 +207,9 @@ class Photometry(PrimitivesBASE):
             # Get the appropriate SExtractor input files
             dqtype = 'no_dq' if any(ext.mask is None for ext in ad) else 'dq'
             sexpars = {'config': self.sx_dict[dqtype, 'sex'],
-                      'PARAMETERS_NAME': self.sx_dict[dqtype, 'param'],
-                      'FILTER_NAME': self.sx_dict[dqtype, 'conv'],
-                      'STARNNW_NAME': self.sx_dict[dqtype, 'nnw']}
+                       'PARAMETERS_NAME': self.sx_dict[dqtype, 'param'],
+                       'FILTER_NAME': self.sx_dict[dqtype, 'conv'],
+                       'STARNNW_NAME': self.sx_dict[dqtype, 'nnw']}
 
             # In general, we want the passed parameters to have the same names
             # as the SExtractor params (but in lowercase). PHOT_AUTOPARAMS
@@ -190,8 +220,7 @@ class Photometry(PrimitivesBASE):
                 elif value is False:
                     value = 'N'
                 if key == 'phot_min_radius':
-                    sexpars.update({"PHOT_AUTOPARAMS":
-                                    "2.5,{}".format(value)})
+                    sexpars.update({"PHOT_AUTOPARAMS": f"2.5,{value}"})
                 else:
                     sexpars.update({key.upper(): value})
 
@@ -207,8 +236,11 @@ class Photometry(PrimitivesBASE):
                 # If we don't have a seeing estimate, try to get one
                 if seeing_estimate is None:
                     log.debug("Running SExtractor to obtain seeing estimate")
-                    sex_task = SExtractorETI(primitives_class=self, inputs=[ext],
-                            params=sexpars, mask_dq_bits=mask_bits, getmask=True)
+                    sex_task = SExtractorETI(primitives_class=self,
+                                             inputs=[ext],
+                                             params=sexpars,
+                                             mask_dq_bits=mask_bits,
+                                             getmask=True)
                     sex_task.run()
                     # An OBJCAT is *always* attached, even if no sources found
                     seeing_estimate = _estimate_seeing(ext.OBJCAT)
@@ -217,11 +249,13 @@ class Photometry(PrimitivesBASE):
                 # didn't get an estimate), and get a new estimate
                 if seeing_estimate is not None:
                     log.debug("Running SExtractor with seeing estimate "
-                              "{:.3f}".format(seeing_estimate))
-                    sexpars.update({'SEEING_FWHM': '{:.3f}'.
-                                   format(seeing_estimate)})
-                    sex_task = SExtractorETI(primitives_class=self, inputs=[ext],
-                            params=sexpars, mask_dq_bits=mask_bits, getmask=True)
+                              f"{seeing_estimate:.3f}")
+                    sexpars.update({'SEEING_FWHM': f'{seeing_estimate:.3f}'})
+                    sex_task = SExtractorETI(primitives_class=self,
+                                             inputs=[ext],
+                                             params=sexpars,
+                                             mask_dq_bits=mask_bits,
+                                             getmask=True)
                     sex_task.run()
                     # We don't want to replace an actual value with "None"
                     temp_seeing_estimate = _estimate_seeing(ext.OBJCAT)
@@ -236,10 +270,10 @@ class Photometry(PrimitivesBASE):
                 clean_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
-                ad = gt.add_objcat(ad, extver=ext.hdr['EXTVER'], replace=False,
+                ad = gt.add_objcat(ad, index=ext.id - 1, replace=False,
                                    table=objcat, sx_dict=self.sx_dict)
-                log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
-                                            ad.filename, ext.hdr['EXTVER']))
+                log.stdinfo(f"Found {len(ext.OBJCAT)} sources in "
+                            f"{ad.filename}:{ext.id}")
                 # The presence of an OBJCAT demands objects (philosophical)
                 if len(ext.OBJCAT) == 0:
                     del ext.OBJCAT
@@ -479,10 +513,13 @@ def _profile_sources(ad, seeing_estimate=None):
         catmaxflux = objcat["FLUX_MAX"]
         data = ext.data
 
-        if seeing_estimate is None:
-            stamp_size = max(10,int(0.5/ext.pixel_scale()))
+        pixscale = ext.pixel_scale()
+        if pixscale is None:
+            stamp_size = 10
+        elif seeing_estimate is None:
+            stamp_size = max(10, int(0.5 / pixscale))
         else:
-            stamp_size = max(10,int(1.2*seeing_estimate/ext.pixel_scale()))
+            stamp_size = max(10, int(1.2 * seeing_estimate / pixscale))
 
         # Make a default grid to use for distance measurements
         dist = np.mgrid[-stamp_size:stamp_size,-stamp_size:stamp_size]+0.5

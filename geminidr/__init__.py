@@ -5,10 +5,6 @@ classes in the geminidr package.
 This module provides the caches library to primitives, but currently, only
 Bookkeeping uses the cache directly (addToList).
 
-This module now provides the Calibrations class, formerly part of cal_service.
-Calibrations() also uses the caches functions, which are now directly available
-here.
-
 E.g.,
 >>> from geminidr import PrimitivesBASE
 
@@ -37,23 +33,21 @@ from .gemini.lookups import keyword_comments
 from .gemini.lookups import timestamp_keywords
 from .gemini.lookups.source_detection import sextractor_dict
 
-from recipe_system.cal_service import calurl_dict
+from recipe_system.cal_service import init_calibration_databases
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.config import load_config
 
 import atexit
 # ------------------------------ caches ---------------------------------------
 # Formerly in cal_service/caches.py
 #
 # GLOBAL/CONSTANTS (could be exported to config file)
-CALS = "calibrations"
 
 # [caches]
 caches = {
     'reducecache': '.reducecache',
-    'calibrations': CALS
 }
 
-calindfile = os.path.join('.', caches['reducecache'], "calindex.pkl")
 stkindfile = os.path.join('.', caches['reducecache'], "stkindex.pkl")
 
 
@@ -78,45 +72,6 @@ def save_cache(obj, cachefile):
         pickle.dump(obj, fp, protocol=2)
 
 # ------------------------- END caches-----------------------------------------
-
-
-class Calibrations:
-    def __init__(self, calindfile, user_cals={}, *args, **kwargs):
-        self._calindfile = calindfile
-        self._dict = {}
-        self._dict.update(load_cache(self._calindfile))
-        self._usercals = user_cals or {}  # Handle user_cals=None
-
-    def __getitem__(self, key):
-        return self._get_cal(*key)
-
-    def __setitem__(self, key, val):
-        self._add_cal(key, val)
-
-    def __delitem__(self, key):
-        # Cope with malformed keys
-        try:
-            self._dict.pop((key[0].calibration_key(), key[1]), None)
-        except (TypeError, IndexError):
-            pass
-
-    def _add_cal(self, key, val):
-        # Munge the key from (ad, caltype) to (ad.calibration_key, caltype)
-        key = (key[0].calibration_key(), key[1])
-        self._dict.update({key: val})
-        self.cache_to_disk()
-
-    def _get_cal(self, ad, caltype):
-        key = (ad.calibration_key(), caltype)
-        if key in self._usercals:
-            return self._usercals[key]
-        calfile = self._dict.get(key)
-        return calfile
-
-    def cache_to_disk(self):
-        save_cache(self._dict, self._calindfile)
-
-# ------------------------------------------------------------------------------
 
 
 class dormantViewer:
@@ -192,23 +147,33 @@ class PrimitivesBASE:
         A list of astrodata objects.
     mode : str
         Operational Mode, one of 'sq', 'qa', 'ql'.
+    ucals : dict
+        user-defined cals, e.g., {"processed_bias": "mybias.fits"}
+    uparms : dict
+        user-defined parameters, e.g., {"stackFrames:reject_method": "sigclip"}
     upload : list
         A list of products to upload to fitsstore.
         QA metrics uploaded if 'metrics' in upload.  E.g.::
 
             upload = ['metrics', ['calibs', ... ]]
 
+    config_file : str/None
+        name of DRAGONS configuration file (None => default)
     """
     tagset = None
 
-    def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None):
+    def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
+                 config_file=None):
+        # This is a general config file so we should load it now. Some of its
+        # information may be overridden by other parameters passed here.
+        load_config(config_file)
+
         self.streams          = {'main': adinputs}
         self.mode             = mode
         self.params           = {}
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = dict(uparms) if uparms else {}
-        self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
@@ -219,8 +184,10 @@ class PrimitivesBASE:
             for k, v in self.sx_dict.items()
         })
 
+        self.caldb            = init_calibration_databases(
+            getattr(self, "inst_lookups", None), ucals=ucals, upload=upload,
+            procmode=self.mode)
         self.cachedict        = set_caches()
-        self.calibrations     = Calibrations(calindfile, user_cals=ucals)
         self.stacks           = load_cache(stkindfile)
 
         # This lambda will return the name of the current caller.

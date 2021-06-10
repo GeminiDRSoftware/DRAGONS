@@ -66,21 +66,20 @@ class Spek1D(Spectrum1D, NDAstroData):
         # If no wavelength information is included, get it from the input
         if spectral_axis is None and wcs is None:
             if isinstance(spectrum, AstroData):
-                if spectrum.nddata.wcs is not None:
-                    wcs = spectrum.nddata.wcs
+                if spectrum.wcs is not None:
+                    wcs = spectrum.wcs
                 else:
                     spec_unit = u.Unit(spectrum.hdr.get('CUNIT1', 'nm'))
                     try:
-                        wavecal = dict(zip(spectrum.WAVECAL["name"],
-                                           spectrum.WAVECAL["coefficients"]))
-                    except (AttributeError, KeyError):  # make a Model from the FITS WCS info
-                        det2wave = (models.Shift(1-spectrum.hdr['CRPIX1']) |
+                        det2wave = am.table_to_model(spectrum.WAVECAL)
+                    except AttributeError:
+                        # make a Model from the FITS WCS info
+                        det2wave = (models.Shift(1 - spectrum.hdr['CRPIX1']) |
                                     models.Scale(spectrum.hdr['CD1_1']) |
                                     models.Shift(spectrum.hdr['CRVAL1']))
                     else:
-                        det2wave = am.dict_to_chebyshev(wavecal)
                         det2wave.inverse = am.make_inverse_chebyshev1d(det2wave, sampling=1)
-                        spec_unit = u.nm
+                        spec_unit = det2wave.meta["yunit"]
                     detector_frame = cf.CoordinateFrame(1, axes_type='SPATIAL',
                                     axes_order=(0,), unit=u.pix, axes_names='x')
                     spec_frame = cf.SpectralFrame(unit=spec_unit, name='lambda')
@@ -136,16 +135,20 @@ class Spek1D(Spectrum1D, NDAstroData):
         wave_edges = self.wcs.pixel_to_world(pixel_edges)
         return np.diff(wave_edges)
 
-    def signal(self, region):
+    def signal(self, region, interpolate=DQ.good):
         """
         Measure the signal over a defined region of the spectrum. If the
         units of the spectrum are a flux density, then a flux is returned,
         otherwise the corresponding pixel values are simply summed.
+        Optionally, certain mask bits will result in the pixel being ignored
+        (effectively interpolated over).
 
         Parameters
         ----------
         region: :class:`~SpectralRegion`
             the region of the spectrum over which the signal is calculated
+        interpolate: int
+            pixels with these mask bits set will be ignored
 
         Returns
         -------
@@ -176,29 +179,33 @@ class Spek1D(Spectrum1D, NDAstroData):
             if limits[0] == len(self.spectral_axis) - 0.5 or limits[1] == -0.5:
                 continue
 
-            # Construct a "Manhattan skyline"
             ix1 = int(np.floor(limits[0] + 0.5))
             ix2 = int(np.floor(limits[1] + 0.5))
 
             # We need to cope with limits[1]==len(flux)-0.5, i.e.,
             # at the right-hand edge of the spectrum
-            edges = np.repeat(np.arange(ix1, min(ix2, len(self.flux)-1)), 2) + 0.5
-            x = np.insert(edges, 0, limits[0])
-            x = np.append(x, limits[1])
-            if flux_density:
-                x = self.wcs.pixel_to_world(x)
+            edges = np.r_[limits[0],
+                          np.arange(ix1, min(ix2, len(self.flux)-1)) + 0.5,
+                          limits[1]]
+            x = self.wcs.pixel_to_world(edges) if flux_density else edges
+            widths = np.diff(x)
 
-            flux += np.trapz(np.repeat(self.flux[ix1:ix2+1], 2), x)
-            if self.mask is not None:
-                mask |= np.bitwise_or.reduce(self.mask[ix1:ix2+1])
+            if self.mask is None:
+                included_pixels = None
+            else:
+                included_pixels = (self.mask[ix1:ix2+1] & interpolate) == DQ.good
+                mask |= np.bitwise_or.reduce(self.mask[ix1:ix2+1][included_pixels])
+            flux += ((widths * self.flux[ix1:ix2+1])[included_pixels].sum() *
+                     widths.sum() / widths[included_pixels].sum())
+
             if self.variance is not None:
                 # TODO: May need to come back to this in case variance gets units
-                y = np.repeat(self.variance[ix1:ix2+1], 2) * self.unit * self.unit
+                y = self.variance[ix1:ix2+1] * self.unit * self.unit
                 # The variance of each pixel needs to be multiplied by
                 # the wavelength coverage of that (partial pixel)
                 if flux_density:
-                    dlambda = np.diff(x)[::2]
-                    y = y * np.repeat(dlambda, 2)
-                variance += np.trapz(y, x)
+                    y *= widths
+                variance += ((widths * y)[included_pixels].sum() *
+                             widths.sum() / widths[included_pixels].sum())
 
         return flux, mask, variance

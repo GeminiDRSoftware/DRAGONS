@@ -19,8 +19,9 @@ from scipy import ndimage
 import astrodata
 import geminidr
 from astropy.modeling import models
-from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels, transform
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from gempy.library import transform, astromodels as am
+from gempy.testing import assert_have_same_distortion
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
@@ -126,6 +127,7 @@ datasets = [
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_for_determine_distortion_using_models_coefficients(
         ad, change_working_dir, ref_ad_factory, request):
@@ -148,16 +150,13 @@ def test_regression_for_determine_distortion_using_models_coefficients(
     """
     with change_working_dir():
         logutils.config(file_name='log_model_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    for ext, ext_ref in zip(distortion_determined_ad, ref_ad):
-        c = np.ma.masked_invalid(ext.FITCOORD["coefficients"])
-        c_ref = np.ma.masked_invalid(ext_ref.FITCOORD["coefficients"])
-        np.testing.assert_allclose(c, c_ref, atol=2)
+    assert_have_same_distortion(distortion_determined_ad, ref_ad, atol=1)
         
     if request.config.getoption("--do-plots"):
         do_plots(distortion_determined_ad, ref_ad)
@@ -165,8 +164,9 @@ def test_regression_for_determine_distortion_using_models_coefficients(
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_regression_for_determine_distortion_using_fitcoord_table(
+def test_regression_for_determine_distortion_using_wcs(
         ad, change_working_dir, ref_ad_factory):
     """
     Runs the `determineDistortion` primitive on a preprocessed data and compare
@@ -186,24 +186,54 @@ def test_regression_for_determine_distortion_using_fitcoord_table(
     """
     with change_working_dir():
         logutils.config(file_name='log_fitcoord_{:s}.txt'.format(ad.data_label()))
-        p = primitives_gmos_spect.GMOSSpect([ad])
+        p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-
-    table = ad[0].FITCOORD
-    model_dict = dict(zip(table['name'], table['coefficients']))
-    model = astromodels.dict_to_chebyshev(model_dict)
-
-    ref_table = ref_ad[0].FITCOORD
-    ref_model_dict = dict(zip(ref_table['name'], ref_table['coefficients']))
-    ref_model = astromodels.dict_to_chebyshev(ref_model_dict)
+    model = distortion_determined_ad[0].wcs.get_transform(
+        "pixels", "distortion_corrected")[1]
+    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[1]
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
     np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=1)
+
+
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad", datasets, indirect=True)
+def test_fitcoord_table_and_gwcs_match(ad, change_working_dir):
+    """
+    Runs determineDistortion and checks that the model in the gWCS is the same
+    as the model in the FITCOORD table. The FITCOORD table is never used by
+    DRAGONS.
+
+    Parameters
+    ----------
+    ad: pytest.fixture (AstroData)
+        Fixture that reads the filename and loads as an AstroData object.
+    change_working_dir : pytest.fixture
+        Fixture that changes the working directory
+        (see :mod:`astrodata.testing`).
+    """
+    with change_working_dir():
+        logutils.config(file_name='log_match_{:s}.txt'.format(ad.data_label()))
+        p = GMOSLongslit([ad])
+        p.viewer = geminidr.dormantViewer(p, None)
+        p.determineDistortion(**fixed_parameters_for_determine_distortion)
+        distortion_determined_ad = p.writeOutputs().pop()
+
+    model = distortion_determined_ad[0].wcs.get_transform(
+        "pixels", "distortion_corrected")
+
+    fitcoord = distortion_determined_ad[0].FITCOORD
+    fitcoord_model = am.table_to_model(fitcoord[0])
+    fitcoord_inv = am.table_to_model(fitcoord[1])
+
+    np.testing.assert_allclose(model[1].parameters, fitcoord_model.parameters)
+    np.testing.assert_allclose(model.inverse[1].parameters, fitcoord_inv.parameters)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
@@ -269,7 +299,7 @@ def do_plots(ad, ad_ref):
 
         X, Y = np.meshgrid(x, y)
 
-        model = rebuild_distortion_model(ext)
+        model = ext.wcs.get_transform("pixels", "distortion_corrected")[1]
         U = X - model(X, Y)
         V = np.zeros_like(U)
 
@@ -310,11 +340,8 @@ def do_plots(ad, ad_ref):
         shape = ext.shape
         data = generate_fake_data(shape, ext.dispersion_axis() - 1)
 
-        model_out = remap_distortion_model(
-            rebuild_distortion_model(ext), ext.dispersion_axis() - 1)
-
-        model_ref = remap_distortion_model(
-            rebuild_distortion_model(ext_ref), ext_ref.dispersion_axis() - 1)
+        model_out = ext.wcs.get_transform("pixels", "distortion_corrected")
+        model_ref = ext_ref.wcs.get_transform("pixels", "distortion_corrected")
 
         transform_out = transform.Transform(model_out)
         transform_ref = transform.Transform(model_ref)
@@ -386,29 +413,6 @@ def generate_fake_data(shape, dispersion_axis, n_lines=100):
     return data
 
 
-def rebuild_distortion_model(ext):
-    """
-    Helper function to recover the distortion model from the coefficients stored
-    in the `ext.FITCOORD` attribute.
-
-    Parameters
-    ----------
-    ext : astrodata extension
-        Input astrodata extension which contains a `.FITCOORD` with the
-        coefficients that can be used to reconstruct the distortion model.
-
-    Returns
-    -------
-    :class:`~astropy.modeling.models.Model`
-        Model that receives 2D data and return a 1D array.
-    """
-    model = astromodels.dict_to_chebyshev(
-        dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
-    )
-
-    return model
-
-
 def remap_distortion_model(model, dispersion_axis):
     """
     Remaps the distortion model so it can return a 2D array.
@@ -440,7 +444,6 @@ def remap_distortion_model(model, dispersion_axis):
 
     return m
 
-
 # -- Recipe to create pre-processed data ---------------------------------------
 def create_inputs_recipe():
     """
@@ -454,13 +457,13 @@ def create_inputs_recipe():
     """
     import os
     from astrodata.testing import download_from_archive
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}/".format(__file__.strip('.py'))
-    path = os.path.join(root_path, module_path)
-
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
+
     os.makedirs("inputs/", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
@@ -473,7 +476,7 @@ def create_inputs_recipe():
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = primitives_gmos_spect.GMOSSpect([sci_ad])
+        p = GMOSLongslit([sci_ad])
         p.prepare()
         p.addDQ(static_bpm=None)
         p.addVAR(read_noise=True)

@@ -9,19 +9,15 @@ import re
 import math
 import datetime
 import dateutil.parser
-import warnings
 
-from astropy.wcs import WCS
-from astropy.wcs import FITSFixedWarning
-from astropy.wcs._wcs import InconsistentAxisTypesError
+import numpy as np
 
-from astrodata import AstroDataFits
+from astrodata import AstroData
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
-from astrodata import TagSet
+from astrodata import TagSet, Section
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
-from ..common import section_to_tuple
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -111,7 +107,7 @@ gemini_keyword_names = dict(
 )
 
 # ------------------------------------------------------------------------------
-class AstroDataGemini(AstroDataFits):
+class AstroDataGemini(AstroData):
     __keyword_dict = gemini_keyword_names
 
     @staticmethod
@@ -213,6 +209,11 @@ class AstroDataGemini(AstroDataFits):
                                            'NON_SIDEREAL', 'AZEL_TARGET'])
 
     @astro_data_tag
+    def _type_mos_mask(self):
+        if self.phu.get('OBSTYPE', '').upper() == "MASK":
+            return TagSet(['MASK'], blocks=['IMAGE', 'SPECT'])
+
+    @astro_data_tag
     def _status_raw(self):
         if 'GEM-TLM' not in self.phu:
             return TagSet(['RAW'])
@@ -236,7 +237,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_tag
     def _status_processed_cals(self):
         kwords = {'PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
-                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND', 'PROCILLM'}
+                      'GIFLAT', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND', 'PROCILLM'}
 
         if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])
@@ -255,15 +256,15 @@ class AstroDataGemini(AstroDataFits):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = (str if pretty else section_to_tuple)
+            value_filter = (str if pretty else Section.from_string)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
-                try:
-                    sections = '[1:{1},1:{0}]'.format(*self.data.shape)
-                except AttributeError:
+                if self.is_single:
+                    sections = '[1:{1},1:{0}]'.format(*self.shape)
+                else:
                     sections = ['[1:{1},1:{0}]'.format(*ext.shape)
-                                for ext in self.data]
+                                for ext in self]
             else:
                 sections = self.hdr.get(keyword)
             if self.is_single:
@@ -584,7 +585,7 @@ class AstroDataGemini(AstroDataFits):
                                           stripID, pretty)
 
     @astro_data_descriptor
-    def detector_name(self):
+    def detector_name(self, pretty=False):
         """
         Returns the name of the detector
 
@@ -801,9 +802,18 @@ class AstroDataGemini(AstroDataFits):
         if 'PREPARED' not in self.tags:
             return None
 
-        # TODO: We may need to sort out Nones here...
-        kw = self._keyword_for('dispersion_axis')
-        return map(int, self.hdr.get(kw))
+        val = self.hdr.get(self._keyword_for('dispersion_axis'))
+
+        def int_or_none(x):
+            # cast to an int, but preserve None
+            return None if x is None else int(x)
+
+        try:
+            # assume we have a list, but handle scalars below
+            return [int_or_none(x) for x in val]
+        except TypeError:
+            # scalar
+            return int_or_none(val)
 
     @astro_data_descriptor
     def effective_wavelength(self, output_units=None):
@@ -1883,8 +1893,8 @@ class AstroDataGemini(AstroDataFits):
         """
         # Return None if the WCS isn't sky coordinates
         try:
-            return self._get_wcs_coords()[0]
-        except InconsistentAxisTypesError:
+            return self._get_wcs_coords()['lon']
+        except (KeyError, TypeError):
             return None
 
     @astro_data_descriptor
@@ -1900,8 +1910,8 @@ class AstroDataGemini(AstroDataFits):
         """
         # Return None if the WCS isn't sky coordinates
         try:
-            return self._get_wcs_coords()[1]
-        except InconsistentAxisTypesError:
+            return self._get_wcs_coords()['lat']
+        except (KeyError, TypeError):
             return None
 
     @astro_data_descriptor
@@ -1918,42 +1928,30 @@ class AstroDataGemini(AstroDataFits):
 
     def _get_wcs_coords(self):
         """
-        Returns the RA and dec of the middle of the first extension
+        Returns the RA and dec of the location around which the celestial
+        sphere is being projected (CRVALi in a FITS representation)
 
         Returns
         -------
-        tuple
-            (right ascension, declination)
+        dict
+            {'lon': right ascension, 'lat': declination} plus other coords
         """
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=FITSFixedWarning)
-            # header[0] is PHU, header[1] is first extension HDU
-            # If no CTYPE1 in first HDU, try PHU
+        wcs = self.wcs if self.is_single else self[0].wcs
+        if wcs is None:
+            return None
+
+        coords = {name: None for name in wcs.output_frame.axes_names}
+        for m in wcs.forward_transform:
             try:
-                ctypes = (self[0].hdr['CTYPE1'], self[0].hdr['CTYPE2'])
-            except KeyError:
-                try:
-                    ctypes = (self.phu['CTYPE1'], self.phu['CTYPE2'])
-                except KeyError:
-                    return (None, None)
-                else:
-                    wcs = WCS(self.phu)
-            else:
-                wcs = WCS(self[0].hdr)
-
-            if not (ctypes[0].startswith('RA') and ctypes[1].startswith('DEC')):
-                return (None, None)
-
-            x, y = [0.5 * self[0].hdr[naxis]
-                    for naxis in ('NAXIS1', 'NAXIS2')]
-            result = wcs.wcs_pix2world(x,y, 1)
-        ra, dec = float(result[0]), float(result[1])
+                coords['lon'] = m.lon.value
+                coords['lat'] = m.lat.value
+            except AttributeError:
+                pass
 
         # TODO: This isn't in old Gemini descriptors. Should it be?
         #if 'NON_SIDEREAL' in self.tags:
         #    ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
-
-        return (ra, dec)
+        return coords
 
     # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
     def _get_wcs_pixel_scale(self, mean=True):
@@ -1971,26 +1969,24 @@ class AstroDataGemini(AstroDataFits):
         list of floats/float
             List of pixel scales, one per extension
         """
-        try:
-            cd11 = self.hdr['CD1_1']
-            cd12 = self.hdr['CD1_2']
-            cd21 = self.hdr['CD2_1']
-            cd22 = self.hdr['CD2_2']
-        except KeyError:
-            # Make sure we return the right type of object
-            return None if mean else [None] * len(self)
-
         if self.is_single:
-            return 3600 * 0.5 * (math.sqrt(cd11*cd11 + cd12*cd12) +
-                                 math.sqrt(cd21*cd21 + cd22*cd22))
-        else:
-            pixel_scale_list = [3600 * 0.5 * (math.sqrt(a*a + b*b) +
-                                  math.sqrt(c*c + d*d))
-                for a,b,c,d in zip(cd11,cd12,cd21,cd22)]
-            if mean:
-                return sum(pixel_scale_list) / len(pixel_scale_list)
-            else:
-                return pixel_scale_list
+            try:
+                return 3600 * np.sqrt(abs(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix)))
+            except (IndexError, AttributeError):
+                return None
+
+        pixel_scale_list = []
+        for ext in self:
+            try:
+                pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
+            except (IndexError, AttributeError):
+                if not mean:
+                    pixel_scale_list.append(None)
+        if mean:
+            if pixel_scale_list:
+                return np.mean(pixel_scale_list)
+            return None
+        return pixel_scale_list
 
     def _grating(self):
         """

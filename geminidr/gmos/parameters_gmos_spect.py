@@ -3,11 +3,15 @@
 from astrodata import AstroData
 from gempy.library import config
 from geminidr.core import parameters_spect
+from geminidr.core import parameters_generic
 
-class QECorrectConfig(config.Config):
+
+class QECorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_QECorrected", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
                            optional=True, single=True)
+    use_iraf = config.Field("Use IRAF polynomial fits for Hamamatsu CCDs?",
+                            bool, False)
 
 class findAcquisitionSlitsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_acqSlitsAdded", optional=True)

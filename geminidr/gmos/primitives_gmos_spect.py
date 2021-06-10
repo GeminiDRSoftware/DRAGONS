@@ -23,12 +23,13 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups import geometry_conf as geotable
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import transform
+from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override
 
+
 # Put this here for now!
-def qeModel(ext):
+def qeModel(ext, use_iraf=False):
     """
     This function returns a callable object that returns the QE of a CCD
     (relative to CCD2) as a function of wavelength(s) in nm. The QE data is
@@ -36,16 +37,15 @@ def qeModel(ext):
     The value is either a list (interpreted as polynomial coefficients) or a
     dict describing a spline.
 
-    NB. Spline objects defined in the dict return the decimal logarithm of
-    the relative QE, while polynomials simply return the relative QE.
-
     In addition, if the model changes, the value can be a dict keyed by the
     earliest UT date at which each model should be applied.
 
     Parameters
     ----------
-    ext: single-slice AstroData object
+    ext : single-slice AstroData object
         the extension to calculate the QE coefficients for
+    use_iraf : bool
+        use IRAF fits rather than DRAGONS ones?
 
     Returns
     -------
@@ -57,47 +57,57 @@ def qeModel(ext):
         "EEV_9273-16-03": [9.883090E-1, -1.390254E-5,  5.282149E-7, -6.847360E-10],
         "EEV_9273-20-03": [9.699E-1, 1.330E-4, -2.082E-7, 1.206E-10],
         # GMOS-N Hamamatsu CCD1 and 3
-        #"BI13-20-4k-1": {"order": 3,
-        #                 "knots": [358.0, 380.0, 428.0, 468.0, 576.0, 648.0, 798.0, 932.0, 966.0, 994.0, 1010.0, 1028.0, 1044.0, 1076.0],
-        #                 "coeffs": [0.014629039930259876, 0.10133317072093591, 0.2384728514854233, 0.0778544705196136,
-        #                            -0.06232251896695778, -0.0671226704286497, 0.0017962888751030116, 0.02399802448657926,
-        #                            0.06062000896013293, 0.04661836594286457, 0.05694058456700794, 0.020108979328507717,
-        #                            0.00719658389760285, 0.029938578274652766, 0.05265151968369216, 0.04654560999567498]},
-        #"BI13-18-4k-2": {"order": 3,
-        #                 "knots": [358.0, 432.0, 476.0, 520.0, 602.0, 640.0, 678.0, 752.0, 914.0, 1002.0, 1040.0, 1076.0],
-        #                 "coeffs": [0.02206208508099143, 0.2834094598715138, 0.07132646057310524, -0.01980030661665999,
-        #                            -0.05201598712929662, -0.06777120754328926, -0.012413172958416104, -0.015591358664326838,
-        #                            0.03433933272643748, 0.04127142803163095, 0.06235368833554948, -0.008691968589858072,
-        #                            0.06049075935311075, 0.0484080146014316]},
+        "BI13-20-4k-1": {"order": 3,
+                         "knots": [366.5, 413.5, 435.5, 465., 478.5, 507.5, 693., 1062.],
+                         "coeffs": [1.20848283, 1.59132929, 1.58317142, 1.25123198, 1.14410563,
+                                    0.98095206, 0.83416436, 1.03247587, 1.15355675, 1.10176507]},
+        "BI13-18-4k-2": {"order": 3,
+                         "knots": [341.75, 389.5, 414., 447.5, 493., 592., 694.5, 1057.],
+                         "coeffs": [0.90570141, 0.99834392, 1.6311227 , 1.47271364, 1.13843214,
+                                    0.91170917, 0.88454097, 1.06456595, 1.16684561, 1.10476059]},
         # IRAF coefficients
-        "BI13-20-4k-1": [-2.45481760e+03, 3.24130657e+01, -1.87380500e-01,
-                         6.23494400e-04, -1.31713482e-06, 1.83308885e-09,
-                         -1.68145852e-12, 9.80603592e-16, -3.30016761e-19,
-                         4.88466076e-23],
-        "BI13-18-4k-2": [3.48333720e+03, -5.27904605e+01, 3.48210500e-01,
-                         -1.31286828e-03, 3.12154994e-06, -4.85949692e-09,
-                         4.95886638e-12, -3.20198283e-15, 1.18833302e-18,
-                         -1.93303639e-22],
+        ("BI13-20-4k-1", "IRAF"): [-2.45481760e+03, 3.24130657e+01, -1.87380500e-01,
+                                   6.23494400e-04, -1.31713482e-06, 1.83308885e-09,
+                                   -1.68145852e-12, 9.80603592e-16, -3.30016761e-19,
+                                   4.88466076e-23],
+        ("BI13-18-4k-2", "IRAF"): [3.48333720e+03, -5.27904605e+01, 3.48210500e-01,
+                                   -1.31286828e-03, 3.12154994e-06, -4.85949692e-09,
+                                   4.95886638e-12, -3.20198283e-15, 1.18833302e-18,
+                                   -1.93303639e-22],
         # GMOS-S EEV CCD1 and 3
         "EEV_2037-06-03": {"1900-01-01": [2.8197, -8.101e-3, 1.147e-5, -5.270e-9],
                            "2006-08-31": [2.225037, -4.441856E-3, 5.216792E-6, -1.977506E-9]},
         "EEV_8261-07-04": {"1900-01-01": [1.3771, -1.863e-3, 2.559e-6, -1.0289e-9],
                            "2006-08-31": [8.694583E-1, 1.021462E-3, -2.396927E-6, 1.670948E-9]},
         # GMOS-S Hamamatsu CCD1 and 3
-        "BI5-36-4k-2": [-6.00810046e+02,  6.74834788e+00, -3.26251680e-02,
-                        8.87677395e-05, -1.48699188e-07, 1.57120033e-10,
-                        -1.02326999e-13, 3.75794380e-17, -5.96238257e-21],
-        "BI12-34-4k-1": [7.44793105e+02, -1.22941630e+01, 8.83657074e-02,
-                         -3.62949805e-04, 9.40246850e-07, -1.59549327e-09,
-                         1.77557909e-12, -1.25086490e-15, 5.06582071e-19,
-                         -8.99166534e-23]
-     }
+        "BI5-36-4k-2": {"order": 3,
+                        "knots": [374., 409., 451., 523.5, 584.5, 733.5, 922., 1070.75],
+                        "coeffs": [1.04722893, 0.87968707, 0.70533794, 0.67657144, 0.71217743,
+                                   0.82421959, 0.94903734, 1.00847771, 0.98158784, 0.90798127]},
+        "BI12-34-4k-1": {"order": 3,
+                         "knots": [340.25, 377.5, 406., 439., 511.5, 601., 746., 916.5, 1070.],
+                         "coeffs": [0.7433304, 1.07041859, 1.51006315, 1.43997471, 1.03126307,
+                                    0.84984109, 0.8944949, 1.02806209, 1.11960524, 1.12224211,
+                                    0.95279761]},
+        # IRAF coefficients
+        ("BI5-36-4k-2", "IRAF"): [-6.00810046e+02,  6.74834788e+00, -3.26251680e-02,
+                                  8.87677395e-05, -1.48699188e-07, 1.57120033e-10,
+                                  -1.02326999e-13, 3.75794380e-17, -5.96238257e-21],
+        ("BI12-34-4k-1", "IRAF"): [7.44793105e+02, -1.22941630e+01, 8.83657074e-02,
+                                   -3.62949805e-04, 9.40246850e-07, -1.59549327e-09,
+                                   1.77557909e-12, -1.25086490e-15, 5.06582071e-19,
+                                   -8.99166534e-23]
+    }
 
     array_name = ext.array_name().split(',')[0]
+    key = (array_name, "IRAF") if use_iraf else array_name
     try:
-        data = qeData[array_name]
+        data = qeData[key]
     except KeyError:
-        return None
+        try:  # fallback for older CCDs where the IRAF solution isn't labelled
+            data = qeData[array_name]
+        except KeyError:
+            return None
 
     # Deal with date-dependent changes
     if isinstance(data, dict) and 'knots' not in data:
@@ -107,7 +117,7 @@ def qeModel(ext):
                 use_data = data[k]
         data = use_data
 
-    # data is either a dict defining a spline that defines log10(QE)
+    # data is either a dict defining a spline that defines QE
     # or a list of polynomial coefficients that define QE
     if 'knots' in data:
         # Duplicate the knots at either end for the correct format
@@ -117,7 +127,7 @@ def qeModel(ext):
         knots.extend(knots[-1:] * order)
         coeffs = data["coeffs"] + [0] * (order+1)
         spline = UnivariateSpline._from_tck((knots, coeffs, order))
-        return lambda x: 10 ** spline(x)
+        return spline
     else:
         model_params = {'c{}'.format(i): c for i, c in enumerate(data)}
         model = models.Polynomial1D(degree=len(data)-1, **model_params)
@@ -158,19 +168,25 @@ class GMOSSpect(Spect, GMOS):
 
         sfx = params["suffix"]
         arc = params["arc"]
+        use_iraf = params["use_iraf"]
+        do_cal = params["do_cal"]
+
+        if do_cal == 'skip':
+            log.warning("QE correction has been turned off.")
+            return adinputs
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
-            self.getProcessedArc(adinputs, refresh=False)
-            arc_list = self._get_cal(adinputs, 'processed_arc')
+            arc_list = self.caldb.get_processed_arc(adinputs)
         else:
-            arc_list = arc
+            arc_list = (arc, None)
 
-        for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
+        # Provide an arc AD object for every science frame, and an origin
+        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
+                                                  force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by QECorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by QECorrect. "
+                            "Continuing.")
                 continue
 
             if 'e2v' in ad.detector_name(pretty=True):
@@ -191,8 +207,7 @@ class GMOSSpect(Spect, GMOS):
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             if arc is not None and (arc.detector_x_bin() != xbin or
                                     arc.detector_y_bin() != ybin):
-                log.warning("Science frame {} and arc {} have different binnings,"
-                            "so cannot use arc".format(ad.filename, arc.filename))
+                log.warning("Science frame and arc have different binnings.")
                 arc = None
 
             # The plan here is to attach the mosaic gWCS to the science frame,
@@ -208,15 +223,19 @@ class GMOSSpect(Spect, GMOS):
                             "frame. This is unexpected but I'll continue.")
 
             if arc is None:
-                if 'sq' in self.mode:
+                if 'sq' in self.mode or do_cal == 'force':
                     raise OSError(f"No processed arc listed for {ad.filename}")
                 else:
-                    log.warning(f"No arc supplied for {ad.filename}")
+                    log.warning(f"{ad.filename}: no arc was specified. Using "
+                                "wavelength solution in science frame.")
             else:
                 # OK, we definitely want to try to do this, get a wavelength solution
+                origin_str = f" (obtained from {origin})" if origin else ""
+                log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
+                            f"{origin_str}")
                 if self.timestamp_keys['determineWavelengthSolution'] not in arc.phu:
                     msg = f"Arc {arc.filename} (for {ad.filename} has not been wavelength calibrated."
-                    if 'sq' in self.mode:
+                    if 'sq' in self.mode or do_cal == 'force':
                         raise IOError(msg)
                     else:
                         log.warning(msg)
@@ -225,7 +244,7 @@ class GMOSSpect(Spect, GMOS):
                 arc_wcs = deepcopy(arc[0].wcs)
                 if 'distortion_corrected' not in arc_wcs.available_frames:
                     msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
-                    if 'sq' in self.mode:
+                    if 'sq' in self.mode or do_cal == 'force':
                         raise OSError(msg)
                     else:
                         log.warning(msg)
@@ -239,9 +258,8 @@ class GMOSSpect(Spect, GMOS):
                 ad_detsec = ad.detector_section()
                 arc_detsec = arc.detector_section()[0]
                 if (ad_detsec[0].x1, ad_detsec[-1].x2) != (arc_detsec.x1, arc_detsec.x2):
-                    raise ValueError("I don't know how to process the "
-                                     f"offsets between {ad.filename} "
-                                     f"and {arc.filename}")
+                    raise ValueError("Cannot process the offsets between "
+                                     f"{ad.filename} and {arc.filename}")
 
                 yoff1 = arc_detsec.y1 - ad_detsec[0].y1
                 yoff2 = arc_detsec.y2 - ad_detsec[0].y2
@@ -282,20 +300,32 @@ class GMOSSpect(Spect, GMOS):
                 ygrid, xgrid = np.indices(ext.shape)
                 # TODO: want with_units
                 waves = trans(xgrid, ygrid)[0] * u.nm  # Wavelength always axis 0
+
+                # Tapering required to prevent QE correction from blowing up
+                # at the extremes (remember, this is a ratio, not the actual QE)
+                # We use half-Gaussians to taper
+                taper = np.ones_like(ext.data)
+                taper_locut, taper_losig = 350 * u.nm, 25 * u.nm
+                taper_hicut, taper_hisig = 1200 * u.nm, 200 * u.nm
+                taper[waves < taper_locut] = np.exp(-((waves[waves < taper_locut]
+                                                       - taper_locut) / taper_losig) ** 2)
+                taper[waves > taper_hicut] = np.exp(-((waves[waves > taper_hicut]
+                                                       - taper_hicut) / taper_hisig) ** 2)
                 try:
-                    qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value).astype(np.float32)
+                    qe_correction = (qeModel(ext, use_iraf=use_iraf)(
+                        (waves / u.nm).to(u.dimensionless_unscaled).value).astype(
+                        np.float32) - 1) * taper + 1
                 except TypeError:  # qeModel() returns None
-                    msg = "No QE correction found for {}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                    msg = f"No QE correction found for {ad.filename} extension {ext.id}"
                     if 'sq' in self.mode:
                         raise ValueError(msg)
                     else:
                         log.warning(msg)
-                log.stdinfo("Mean relative QE of EXTVER {} is {:.5f}".
-                             format(ext.hdr['EXTVER'], qe_correction.mean()))
+                        continue
+                log.stdinfo(f"Mean relative QE of extension {ext.id} is "
+                            f"{qe_correction.mean():.5f}")
                 if not is_flat:
                     qe_correction = 1. / qe_correction
-                qe_correction[qe_correction < 0] = 0
-                qe_correction[qe_correction > 10] = 0
                 ext.multiply(qe_correction)
 
             for ext, orig_wcs in zip(ad, original_wcs):
@@ -420,11 +450,44 @@ class GMOSSpect(Spect, GMOS):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None):
-        use_second_order = w2 > 1000 and abs(dw) < 0.2
+    def standardizeWCS(self, adinputs=None, suffix=None):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+
+        This is a GMOS-specific primitive due to the systematic offsets for
+        GMOS-S at central wavelengths > 950nm.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+
+        """
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
+            cenwave = ad.central_wavelength(asNanometers=True)
+            if ad.instrument() == "GMOS-S" and cenwave > 950:
+                cenwave += (6.89483617 - 0.00332086 * cenwave) * cenwave - 3555.048
+            else:
+                cenwave = None
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+    def _get_arc_linelist(self, waves=None):
+        use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
         use_second_order = False
-        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
-        wavelengths = np.loadtxt(filename, usecols=[0])
-        return wavelengths, None
+        return wavecal.LineList(filename)

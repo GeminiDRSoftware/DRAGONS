@@ -4,7 +4,9 @@ These are GMOS longslit observations.
 Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
+blocked_tags = {'NODANDSHUFFLE'}
 
+from time import sleep
 
 def reduceScience(p):
     """
@@ -35,15 +37,19 @@ def reduceScience(p):
 
     # side stream to generate 1D spectra from individual frame, pre-stack
     p.traceApertures(outstream='prestack')
-    p.extrac1DSpectra(stream='prestack')
+    p.extract1DSpectra(stream='prestack')
     p.fluxCalibrate(stream='prestack')
     p.plotSpectraForQA(stream='prestack')
+    # The GUI polls for new data every 3 seconds.  The next steps can be
+    # quicker than that leading to the second plotSpectra to hijack this one.
+    # Hijacking issues were highlighted in integration tests.
+    sleep(3)
 
     # continuing with main stream of 2D pre-stack.
     p.addToList(purpose='forStack')
     p.getList(purpose='forStack')
     p.adjustWCSToReference()
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.stackFrames()
     p.findSourceApertures()
     p.measureIQ(display=True)
@@ -82,9 +88,14 @@ def reduceStandard(p):
     p.traceApertures()
     p.extract1DSpectra()
     p.plotSpectraForQA()
+    # The GUI polls for new data every 3 seconds.  The next steps can be
+    # quicker than that leading to the second plotSpectra to hijack this one.
+    # Hijacking issues were highlighted in integration tests.
+    sleep(3)
+
     p.addToList(purpose='forStack')
     p.getList(purpose='forStack')
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.stackFrames()
     p.plotSpectraForQA()
     p.calculateSensitivity()

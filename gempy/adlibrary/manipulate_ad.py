@@ -1,7 +1,7 @@
 import numpy as np
 from gempy.utils import logutils
 
-# ------------------------------------------------------------------------------
+
 def remove_single_length_dimension(adinput):
     """
     If there is only one single length dimension in the pixel data, the
@@ -12,8 +12,8 @@ def remove_single_length_dimension(adinput):
 
     Parameters
     ----------
-    adinput
-        AstroDataFits: input AD object
+    adinput : AstroData
+        input AD object
 
     Returns
     -------
@@ -29,7 +29,7 @@ def remove_single_length_dimension(adinput):
 
             # Determine the position of the single length dimension in the
             # tuple of array dimensions output by ext.data.shape
-            axis = np.where([length==1 for length in ext.data.shape])[0][0]
+            axis = np.where([length == 1 for length in ext.data.shape])[0][0]
 
             # numpy arrays use 0-based indexing and the axes are ordered from
             # slow to fast. So, if the position of the single length dimension
@@ -50,10 +50,8 @@ def remove_single_length_dimension(adinput):
 
             # This should be a log.debug call, but that doesn't appear to work
             # right now, so using log.fullinfo
-            #log.fullinfo("Updated dimensions of {}[{},{}] = {}".format(adinput.filename,
-            #                                                       ext.hdr['EXTNAME'],
-            #                                                       ext.hdr['EXTVER'],
-            #                                                       ext.data.shape))
+            # log.fullinfo(f"Updated dimensions of {adinput.filename} "
+            #              f"extension {ext.id} = {ext.data.shape}")
 
             # Remove the keywords relating to the dimension that has been
             # removed (IRAF seems to add WCSDIM=3, CTYPE3='LINEAR  ', CD3_3=1.,
@@ -69,6 +67,6 @@ def remove_single_length_dimension(adinput):
                     ext.hdr.remove(keyword)
         else:
             log.warning("No dimension of length 1 in extension pixel data."
-                        "No changes will be made to {}. ".format(adinput.filename))
+                        f"No changes will be made to {adinput.filename}.")
 
     return adinput

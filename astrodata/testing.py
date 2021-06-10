@@ -6,9 +6,10 @@ import os
 import shutil
 import urllib
 import xml.etree.ElementTree as et
-from contextlib import contextmanager
 
+import numpy as np
 import pytest
+from astropy.table import Table
 from astropy.utils.data import download_file
 
 URL = 'https://archive.gemini.edu/file/'
@@ -57,9 +58,9 @@ def assert_most_close(actual, desired, max_miss, rtol=1e-7, atol=0,
 
         if n_miss > max_miss:
             error_message = (
-                "%g mismatching elements are more than the " % n_miss +
-                "expected %g." % max_miss +
-                '\n'.join(e.args[0].split('\n')[3:]))
+                    "%g mismatching elements are more than the " % n_miss +
+                    "expected %g." % max_miss +
+                    '\n'.join(e.args[0].split('\n')[3:]))
 
             raise AssertionError(error_message)
 
@@ -96,9 +97,9 @@ def assert_most_equal(actual, desired, max_miss, verbose=True):
 
         if n_miss > max_miss:
             error_message = (
-                "%g mismatching elements are more than the " % n_miss +
-                "expected %g." % max_miss +
-                '\n'.join(e.args[0].split('\n')[3:]))
+                    "%g mismatching elements are more than the " % n_miss +
+                    "expected %g." % max_miss +
+                    '\n'.join(e.args[0].split('\n')[3:]))
 
             raise AssertionError(error_message)
 
@@ -144,8 +145,8 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
     models involving orthonormal polynomials etc.
     """
 
-    from numpy.testing import assert_allclose
     from astropy.modeling import Model
+    from numpy.testing import assert_allclose
 
     if not (isinstance(model1, Model) and isinstance(model2, Model)):
         raise TypeError('Inputs must be Model instances')
@@ -203,51 +204,6 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
                        check_inverse=False)
 
 
-@pytest.fixture(scope='module')
-def change_working_dir(path_to_outputs):
-    """
-    Factory that returns the output path as a context manager object, allowing
-    easy access to the path to where the processed data should be stored.
-
-    Parameters
-    ----------
-    path_to_outputs : pytest.fixture
-        Fixture containing the root path to the output files.
-
-    Returns
-    -------
-    contextmanager
-        Enable easy change to temporary folder when reducing data.
-    """
-    path = os.path.join(path_to_outputs, "outputs")
-    os.makedirs(path, exist_ok=True)
-
-    @contextmanager
-    def _change_working_dir(sub_path=""):
-        """
-        Changed the current working directory temporarily easily using the 
-        `with` statement.
-         
-        Parameters
-        ----------
-        sub_path : str 
-            Sub-path inside the directory where we are working.
-        """
-        oldpwd = os.getcwd()
-        os.chdir(path)
-        
-        if sub_path:
-            os.makedirs(sub_path, exist_ok=True)
-            os.chdir(sub_path)
-                        
-        try:
-            yield
-        finally:
-            os.chdir(oldpwd)
-
-    return _change_working_dir
-
-
 def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'):
     """Download file from the archive and store it in the local cache.
 
@@ -294,143 +250,27 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
 
 def get_associated_calibrations(filename, nbias=5):
     """
-    Queries Gemini Observatory Archive for associated calibrations to reduce the
-    data that will be used for testing.
+    Queries Gemini Observatory Archive for associated calibrations to reduce
+    the data that will be used for testing.
+
     Parameters
     ----------
     filename : str
         Input file name
     """
-    pd = pytest.importorskip("pandas", minversion='1.0.0')
-    url = "https://archive.gemini.edu/calmgr/{}".format(filename)
-
+    url = f"https://archive.gemini.edu/calmgr/{filename}"
     tree = et.parse(urllib.request.urlopen(url))
     root = tree.getroot()
     prefix = root.tag[:root.tag.rfind('}') + 1]
 
-    def iter_nodes(node):
+    rows = []
+    for node in tree.iter(prefix + 'calibration'):
         cal_type = node.find(prefix + 'caltype').text
         cal_filename = node.find(prefix + 'filename').text
-        return cal_filename, cal_type
+        if not ('processed_' in cal_filename or 'specphot' in cal_filename):
+            rows.append((cal_filename, cal_type))
 
-    cals = pd.DataFrame(
-        [iter_nodes(node) for node in tree.iter(prefix + 'calibration')],
-        columns=['filename', 'caltype'])
-
-    cals = cals.sort_values(by='filename')
-    cals = cals[~cals.caltype.str.contains('processed_')]
-    cals = cals[~cals.caltype.str.contains('specphot')]
-    cals = cals.drop(cals[cals.caltype.str.contains('bias')][nbias:].index)
-
-    return cals
-
-
-@pytest.fixture(scope='module')
-def path_to_inputs(request, env_var='DRAGONS_TEST'):
-    """
-    PyTest fixture that returns the path to where the input files for a given
-    test module live.
-
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-
-    env_var : str
-        Environment variable that contains the root path to the input data.
-
-    Returns
-    -------
-    str:
-        Path to the input files.
-    """
-    path_to_test_data = os.getenv(env_var)
-
-    if path_to_test_data is None:
-        pytest.skip('Environment variable not set: $DRAGONS_TEST')
-
-    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
-
-    module_path = request.module.__name__.split('.') + ["inputs"]
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path_to_test_data, *module_path)
-
-    if not os.path.exists(path):
-        raise FileNotFoundError(
-            " Could not find path to input data:\n    {:s}".format(path))
-
-    if not os.access(path, os.R_OK):
-        pytest.fail('\n  Path to input test data exists but is not accessible: '
-                    '\n    {:s}'.format(path))
-
-    return path
-
-
-@pytest.fixture(scope='module')
-def path_to_refs(request, env_var='DRAGONS_TEST'):
-    """
-    PyTest fixture that returns the path to where the reference files for a
-    given test module live.
-
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-
-    env_var : str
-        Environment variable that contains the root path to the input data.
-
-    Returns
-    -------
-    str:
-        Path to the reference files.
-    """
-    path_to_test_data = os.getenv(env_var)
-
-    if path_to_test_data is None:
-        pytest.skip('Environment variable not set: $DRAGONS_TEST')
-
-    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
-
-    module_path = request.module.__name__.split('.') + ["refs"]
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(path_to_test_data, *module_path)
-
-    if not os.path.exists(path):
-        pytest.fail('\n Path to reference test data does not exist: '
-                    '\n   {:s}'.format(path))
-
-    if not os.access(path, os.R_OK):
-        pytest.fail('\n Path to reference test data exists but is not accessible: '
-                    '\n    {:s}'.format(path))
-
-    return path
-
-
-@pytest.fixture(scope='module')
-def path_to_outputs(request, tmp_path_factory):
-    """
-    PyTest fixture that creates a temporary folder to save tests outputs. You can
-    set the base directory by passing the ``--basetemp=mydir/`` argument to the
-    PyTest call (See [Pytest - Temporary Directories and Files][1]).
-
-    [1]: https://docs.pytest.org/en/stable/tmpdir.html#temporary-directories-and-files
-
-    Returns
-    -------
-    str
-        Path to the output data.
-
-    Raises
-    ------
-    IOError
-        If output path does not exits.
-    """
-    path = tmp_path_factory.mktemp(basename="dragons-test-", numbered=True)
-
-    module_path = request.module.__name__.split('.')
-    module_path = [item for item in module_path if item not in "tests"]
-    path = os.path.join(str(path), *module_path)
-    os.makedirs(path, exist_ok=True)
-
-    return path
+    tbl = Table(rows=rows, names=['filename', 'caltype'])
+    tbl.sort('filename')
+    tbl.remove_rows(np.where(tbl['caltype'] == 'bias')[0][nbias:])
+    return tbl

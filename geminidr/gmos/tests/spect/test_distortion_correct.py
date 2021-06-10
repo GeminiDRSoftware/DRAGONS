@@ -118,6 +118,7 @@ fixed_test_parameters_for_determine_distortion = {
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory):
     """
@@ -248,11 +249,10 @@ def create_inputs_recipe():
     """
     import os
     from astrodata.testing import download_from_archive
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}".format(__file__.split('.')[0])
-    path = os.path.join(root_path, module_path)
-
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("inputs/", exist_ok=True)

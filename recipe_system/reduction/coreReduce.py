@@ -23,7 +23,7 @@ import gemini_instruments
 
 from gempy.utils import logutils
 
-from astrodata.core import AstroDataError
+from astrodata import AstroDataError
 
 from recipe_system import __version__
 
@@ -98,7 +98,7 @@ class Reduce:
          will upload QA metrics to fitsstore and processing calibration
          files.
 
-    recipename: <str>
+    recipename: <str> or callable
         The name of the recipe that will be run. If None, the 'default'
         recipe is used, as specified in the appropriate recipe library.
 
@@ -119,8 +119,9 @@ class Reduce:
         self.drpkg = args.drpkg
         self.files = args.files
         self.suffix = args.suffix
-        self.ucals = normalize_ucals(args.files, args.user_cal)
+        self.ucals = normalize_ucals(args.user_cal)
         self.uparms = set_btypes(args.userparam)
+        self.config_file = args.config
         self._upload = args.upload
         self._output_filenames = None
         self.recipename = args.recipename if args.recipename else '_default'
@@ -184,6 +185,11 @@ class Reduce:
         except RecipeNotFound:
             log.warning("No recipe can be found in {} recipe libs.".format(instpkg))
             log.warning("Searching primitives ...")
+            # If it's not a primitive, we'll crash later on, so assume it's a
+            # primitive and update uparms to prepend the name to any parameters
+            # without the primitive named explicitly
+            self.uparms = [((k if ':' in k else f"{self.recipename}:{k}"), v)
+                           for k, v in self.uparms]
         rm = None
 
         # PrimitiveMapper now returns the primitive class, not an instance.
@@ -195,7 +201,7 @@ class Reduce:
             raise
 
         p = pclass(adinputs, mode=self.mode, ucals=self.ucals, uparms=self.uparms,
-                   upload=self.upload)
+                   upload=self.upload, config_file=self.config_file)
 
         # Clean references to avoid keeping adinputs objects in memory one
         # there are no more needed.

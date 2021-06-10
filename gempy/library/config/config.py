@@ -19,12 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
-oldStringType = str  # Need to keep hold of original str type
-from builtins import str
-from builtins import object
-from past.builtins import long
-from past.builtins import basestring
-from past.builtins import unicode
 from collections import OrderedDict
 
 import os
@@ -67,14 +61,22 @@ def _autocast(x, dtype):
     If appropriate perform type casting of value x to type dtype,
     otherwise return the original value x
     """
-    if isinstance(x, int) and (dtype == float or (isinstance(dtype, tuple)
-                               and float in dtype and int not in dtype)):
-        return float(x)
-    if isinstance(x, long) and (dtype == int or (isinstance(dtype, tuple)
-                                                 and int in dtype)):
-        return int(x)
-    if isinstance(x, str) or isinstance(x, oldStringType):
-        for type in (int, float, bool, oldStringType):
+    if (dtype == float or (isinstance(dtype, tuple)
+                           and float in dtype and int not in dtype)):
+        try:
+            if x == float(x):
+                x = float(x)
+        except ValueError:
+            pass
+    if (dtype == int or (isinstance(dtype, tuple)
+                         and int in dtype)):
+        try:
+            if x == int(x):
+                x = int(x)
+        except ValueError:
+            pass
+    if isinstance(x, str):
+        for type in (int, float, bool):
             if dtype == type or (isinstance(dtype, tuple) and type in dtype):
                 try:
                     return type(x)
@@ -175,8 +177,7 @@ class Field(object):
     """
     # Must be able to support str and future str as we can not guarantee that
     # code will pass in a future str type on Python 2
-    supportedTypes = set((str, unicode, basestring, oldStringType, bool, float, int, complex,
-                          tuple, AstroData))
+    supportedTypes = set((str, bool, float, int, complex, tuple, AstroData))
     _counter = itertools.count()
 
     def __init__(self, doc, dtype, default=None, check=None, optional=False):
@@ -198,12 +199,6 @@ class Field(object):
                 raise ValueError("Unsupported Field dtype in %s" % repr(dtype))
         elif dtype not in self.supportedTypes:
             raise ValueError("Unsupported Field dtype %s" % _typeStr(dtype))
-
-        # Use standard string type if we are given a future str
-        if dtype == str:
-            dtype = oldStringType
-        elif isinstance(dtype, tuple):
-            dtype = tuple(oldStringType if dt==str else dt for dt in dtype)
 
         source = getStackFrame()
         self._setup(doc=doc, dtype=dtype, default=default, check=check, optional=optional, source=source)

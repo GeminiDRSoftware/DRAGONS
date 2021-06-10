@@ -5,12 +5,8 @@ from gempy.library import config
 class addReferenceCatalogConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_refcatAdded", optional=True)
     radius = config.RangeField("Search radius (degrees)", float, 0.067, min=0.)
-    source = config.ChoiceField("Name of catalog to search", str,
-                                allowed = {"gmos": "Gemini optical catalog",
-                                           "2mass": "2MASS Infrared catalog",
-                                           "sdss9": "SDSS DR9 optical catalog",
-                                           "ukidss9": "UKIDSS DR9 infrared catalog"},
-                                default = "gmos", optional=False)
+    source = config.Field("Name of catalog to search", str, "gmos", optional=True)
+    format = config.Field("Format of catalog (if user-supplied)", str, None, optional=True)
 
 class detectSourcesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sourcesDetected", optional=True)

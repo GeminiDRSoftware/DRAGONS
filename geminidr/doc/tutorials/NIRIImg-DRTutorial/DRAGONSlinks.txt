@@ -6,14 +6,14 @@
 
     <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect" target="_blank">dataselect</a>
 
+
 .. |descriptors| raw:: html
 
-    <a href="https://astrodata-user-manual.readthedocs.io/en/latest/appendices/appendix_descriptors.html" target="_blank">descriptors</a>
+    <a href="https://astrodata.readthedocs.io/en/latest/appendix_descriptors.html" target="_blank">descriptors</a>
 
 .. |descriptor| raw:: html
 
-    <a href="https://astrodata-user-manual.readthedocs.io/en/latest/appendices/appendix_descriptors.html" target="_blank">descriptors</a>
-
+    <a href="https://astrodata.readthedocs.io/en/latest/appendix_descriptors.html" target="_blank">descriptor</a>
 
 .. |reduce| raw:: html
 

@@ -5,32 +5,13 @@
 # ------------------------------------------------------------------------------
 import os
 import re
-from importlib import import_module
 
 from gempy.gemini import gemini_tools as gt
-
-from recipe_system.cal_service.calrequestlib import get_cal_requests
-from recipe_system.cal_service.calrequestlib import process_cal_requests
-from recipe_system.cal_service.transport_request import upload_calibration
 
 from geminidr import PrimitivesBASE
 from . import parameters_calibdb
 
 from recipe_system.utils.decorators import parameter_override
-
-# ------------------------------------------------------------------------------
-REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
-                     'processed_bias': ['PROCESSED', 'BIAS'],
-                     'processed_dark': ['PROCESSED', 'DARK'],
-                     'processed_flat': ['PROCESSED', 'FLAT'],
-                     'processed_fringe': ['PROCESSED', 'FRINGE'],
-                     'bpm': ['BPM'],
-                     'sq': [],
-                     'ql': [],
-                     'qa': [],
-                     'processed_standard': ['PROCESSED', 'STANDARD'],
-                     'processed_slitillum': ['PROCESSED', 'SLITILLUM']}
-
 
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -45,195 +26,95 @@ class CalibDB(PrimitivesBASE):
         self._param_update(parameters_calibdb)
         self._not_found = "Calibration not found for {}"
 
-    def _get_cal(self, adinput, caltype):
-        caloutputs = []
-        adinputs = adinput if isinstance(adinput, list) else [adinput]
-        for ad in adinputs:
-            key = (ad, caltype)
-            calib = self.calibrations[key]
-            if not calib:
-                caloutputs.append(None)
-            # If the file isn't on disk, delete it from the dict
-            # Now have to cope with calfile being a list of files
+    def _assert_calibrations(self, adinputs, cals):
+        log = self.log
+        for ad, (calfile, origin) in zip(adinputs, cals.items()):
+            if calfile:
+                log.stdinfo(f"{ad.filename}: received calibration {calfile} "
+                            f"from {origin}")
             else:
-                if isinstance(calib, list):
-                    cal_found = all(os.path.isfile(calfile) for calfile in calib)
-                else:
-                    cal_found = os.path.isfile(calib)
-                if cal_found:
-                    caloutputs.append(calib)
-                else:
-                    del self.calibrations[key]
-                    self.calibrations.cache_to_disk()
-                    caloutputs.append(None)
-        return caloutputs if isinstance(adinput, list) else caloutputs[0]
-
-    def _assert_calibrations(self, adinputs, caltype):
-        for ad in adinputs:
-            calurl = self._get_cal(ad, caltype)  # from cache
-            if not calurl and "qa" not in self.mode:
-                raise OSError(self._not_found.format(ad.filename))
+                log.warning(f"{ad.filename}: NO CALIBRATION RECEIVED")
         return adinputs
 
-    def addCalibration(self, adinputs=None, **params):
-        caltype = params["caltype"]
-        calfile = params["calfile"]
-        for ad in adinputs:
-            self.calibrations[ad, caltype] = calfile
-        return adinputs
-
-    def getCalibration(self, adinputs=None, caltype=None, refresh=True,
-                       howmany=None):
+    def setCalibration(self, adinputs=None, **params):
         """
-        Uses the calibration manager to population the Calibrations dict for
-        all frames, updating any existing entries
+        Manually assigns a calibration to one or more frames. This is expected
+        to only affect the UserDB, since other databases do not have a way to
+        override the calibration association rules in isolation.
 
         Parameters
         ----------
-        adinputs: <list>
+        adinputs : <list>
             List of ADs of files for which calibrations are needed
 
-        caltype: <str>
+        caltype : <str>
             type of calibration required (e.g., "processed_bias")
 
-        refresh: <bool>
-            if False, only seek calibrations for ADs without them; otherwise
-            request calibrations for all ADs. Default is True.
-
-        howmany: <int> or <None>
-            Maximum number of calibrations to return per AD (None means return
-            the filename of one, rather than a list of filenames)
-
+        calfile : <str>
+            filename of calibration
         """
-        log = self.log
-        ad_rq = adinputs if refresh else [ad for ad in adinputs
-                                          if not self._get_cal(ad, caltype)]
-        cal_requests = get_cal_requests(ad_rq, caltype)
-        calibration_records = process_cal_requests(cal_requests, howmany=howmany)
-        for ad, calfile in calibration_records.items():
-            self.calibrations[ad, caltype] = calfile
+        self.caldb.set_calibrations(adinputs, **params)
         return adinputs
 
-    def getProcessedArc(self, adinputs=None, **params):
-        caltype = "processed_arc"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)
+    def getProcessedArc(self, adinputs=None):
+        # if we are working in 'sq' mode, must retrieve 'sq' calibrations.
+        # for self.mode ql and qa, just get the best matched processed
+        # calibration whether it is of ql or sq quality.
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_arc(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
-    def getProcessedBias(self, adinputs=None, **params):
-        caltype = "processed_bias"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)
+    def getProcessedBias(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_bias(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
-    def getProcessedDark(self, adinputs=None, **params):
-        caltype = "processed_dark"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)
+    def getProcessedDark(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_dark(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
-    def getProcessedFlat(self, adinputs=None, **params):
-        caltype = "processed_flat"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)
+    def getProcessedFlat(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_flat(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
-    def getProcessedFringe(self, adinputs=None, **params):
-        caltype = "processed_fringe"
-        log = self.log
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)
+    def getProcessedFringe(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_fringe(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
-    def getProcessedStandard(self, adinputs=None, **params):
-        caltype = "processed_standard"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)
+    def getProcessedStandard(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_standard(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
-    def getProcessedSlitIllum(self, adinputs=None, **params):
-        caltype = "processed_slitillum"
-        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)
+    def getProcessedSlitIllum(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_slitillum(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
     def getMDF(self, adinputs=None):
-        caltype = "mask"
-        log = self.log
-        inst_lookups = self.inst_lookups
-        try:
-            masks = import_module('.maskdb', inst_lookups)
-            mdf_dict = getattr(masks, 'mdf_dict')
-        except (ImportError, AttributeError):
-            mdf_dict = None
-
-        rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
-        for ad in rqs_actual:
-            mask_name = ad.focal_plane_mask()
-            key = '{}_{}'.format(ad.instrument(), mask_name)
-            if mdf_dict is not None:
-                try:
-                    filename = mdf_dict[key]
-
-                    # Escape route to allow certain focal plane masks to
-                    # not require MDFs
-                    if filename is None:
-                        continue
-                    mdf = os.path.join(os.path.dirname(masks.__file__),
-                                       'MDF', filename)
-                except KeyError:
-                    log.warning("MDF not found in {}".format(inst_lookups))
-                else:
-                    self.calibrations[ad, caltype] = mdf
-                    continue
-            log.stdinfo("Requesting MDF from calibration server...")
-            mdf_requests = get_cal_requests([ad], caltype)
-            mdf_records = process_cal_requests(mdf_requests)
-            for ad, calfile in mdf_records.items():
-                self.calibrations[ad, caltype] = calfile
-
+        cals = self.caldb.get_calibrations(adinputs, caltype="mask")
+        self._assert_calibrations(adinputs, cals)
         return adinputs
 
     # =========================== STORE PRIMITIVES =================================
-    def storeCalibration(self, adinputs=None, **params):
+    def storeCalibration(self, adinputs=None, caltype=None):
         """
-        Will write calibrations in calibrations/<cal_type>/
+        Farm some calibration ADs out to the calibration database(s) to process.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        storedcals = self.cachedict["calibrations"]
-        caltype = params["caltype"]
-        required_tags = REQUIRED_TAG_DICT[caltype]
-
-        # If we are one of the 'science' types, then we store it as science.
-        # This changes the log messages to refer to the files as science
-        # and ultimately routes to the upload_file web api instead of
-        # upload_processed_cal
-        is_science = caltype in ['sq', 'ql', 'qa']
-
-        # Create storage directory if it doesn't exist
-        if not os.path.exists(os.path.join(storedcals, caltype)):
-            os.makedirs(os.path.join(storedcals, caltype))
-
         for ad in adinputs:
-            if not ad.tags.issuperset(required_tags):
-                log.warning("File {} is not recognized as a {}. Not storing as"
-                            " {}.".format(ad.filename, caltype,
-                            "science" if is_science else "a calibration"))
-                continue
-            fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
-            ad.write(fname, overwrite=True)
-            log.stdinfo("{} stored as {}".format("Science" if is_science else "Calibration", fname))
-            if self.upload and ((is_science and 'science' in self.upload) or \
-                                (not is_science and 'calibs' in self.upload)):
-                try:
-                    upload_calibration(fname, is_science=is_science)
-                except:
-                    log.warning("Unable to upload file to {} system"
-                                .format("science" if is_science else "calibration"))
-                else:
-                    msg = "File {} uploaded to fitsstore."
-                    log.stdinfo(msg.format(os.path.basename(ad.filename)))
+            self.caldb.store_calibration(ad, caltype=caltype)
         return adinputs
 
     def _markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
@@ -243,11 +124,19 @@ class CalibDB(PrimitivesBASE):
         prior to storing AD objects as calibrations
         """
         for ad in adinputs:
+            # if user mode: not uploading and sq, don't add mode.
+            if self.mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
+                proc_suffix = f""
+            else:
+                proc_suffix = f"_{self.mode}"
+
             if suffix:
-                ad.update_filename(suffix=suffix, strip=True)
+                proc_suffix += suffix
+            ad.update_filename(suffix=proc_suffix, strip=True)
             if update_datalab:
                 _update_datalab(ad, suffix, self.keyword_comments)
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
+            ad.phu.set('PROCMODE', self.mode)
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, suffix=None, force=False):
@@ -319,32 +208,26 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedScience(self, adinputs=None):
+    def storeProcessedScience(self, adinputs=None, suffix=None):
+        for ad in adinputs:
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCSCI")
+            ad.update_filename(suffix=suffix, strip=True)
+            ad.phu.set('PROCMODE', self.mode)
+            ad.write(overwrite=True)
+
         if self.mode not in ['sq', 'ql', 'qa']:
-            self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
-        elif self.mode != 'qa' and self.upload and 'science' in self.upload:
-            # save filenames so we can restore them after
-            filenames = [ad.filename for ad in adinputs]
+            self.log.warning(f'Mode {self.mode} not recognized in '
+                             'storeScience, not storing anything')
+            return adinputs
 
+        # This logic will be handled by the CalDB objects, but check here to
+        # avoid changing and resetting filenames
+        if self.mode != 'qa' and self.upload and 'science' in self.upload:
             for ad in adinputs:
-                ad.phu.set('PROCSCI', self.mode)
-                ad.update_filename(suffix="_%s" % self.mode)
-                ad.write(overwrite=True)
-
-                try:
-                    upload_calibration(ad.filename, is_science=True)
-                except:
-                    self.log.warning("Unable to upload file to science system")
-                else:
-                    msg = "File {} uploaded to fitsstore."
-                    self.log.stdinfo(msg.format(os.path.basename(ad.filename)))
-
-            # restore filenames, we don't want the _sq or _ql on the local filesystem copy
-            for filename, ad in zip(filenames, adinputs):
-                oldfilename = ad.filename
-                ad.filename = filename
-                if oldfilename != filename:
-                    os.unlink(oldfilename)
+                old_filename = ad.filename
+                ad.update_filename(suffix=f"_{self.mode}"+suffix, strip=True)
+                self.caldb.store_calibration(ad, caltype="processed_science")
+                ad.filename = old_filename
 
         return adinputs
 
@@ -399,7 +282,15 @@ class CalibDB(PrimitivesBASE):
 def _update_datalab(ad, suffix, keyword_comments_lut):
     # Update the DATALAB. It should end with 'suffix'.  DATALAB will
     # likely already have '_stack' suffix that needs to be replaced.
+
+    # replace the _ with a - to match fitsstore datalabel standard
+    # or add the - if "suffix" doesn't have a leading _
+    if suffix[0] == '_':
+        extension = suffix.replace('_', '-', 1).upper()
+    else:
+        extension = '-'+suffix.upper()
+
     datalab = ad.data_label()
-    new_datalab = re.sub(r'_[a-zA-Z]+$', '', datalab) + suffix
+    new_datalab = re.sub(r'-[a-zA-Z]+$', '', datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return

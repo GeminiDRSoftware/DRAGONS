@@ -12,7 +12,7 @@ from gempy.library import tracing
 
 @pytest.mark.parametrize("fwhm", [2, 4, 6, 8, 12])
 def test_estimate_peak_width(fwhm):
-    n_peaks = 20
+    n_peaks = 10
     noise = 0.001
 
     x = np.arange(0, 1000)
@@ -67,8 +67,8 @@ def test_get_limits():
 
     limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='peak')[0]
     for l in limits:
-        assert abs(l - CENT) - (SIG * np.sqrt(2 * np.log(100))) < 0.05 * SIG
+        assert abs(l - CENT) - (SIG * np.sqrt(2 * np.log(100))) < 0.1 * SIG
 
     limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='integral')[0]
     for l in limits:
-        assert abs(l - CENT) - (SIG * 2.576) < 0.05 * SIG
+        assert abs(l - CENT) - (SIG * 2.576) < 0.1 * SIG

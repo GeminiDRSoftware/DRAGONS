@@ -1,16 +1,2 @@
-# astropy>=4.1rc1
--e git+https://github.com/astropy/astropy.git#egg=astropy
-astroquery
-cython
-future
-ginga
-gwcs>=0.14
-imexam
-matplotlib
-numpy
-photutils
-python-dateutil
-pytest
-scipy
-specutils
-sqlalchemy
+# this is only for RTD because it uses setup.py install instead of pip
+Cython

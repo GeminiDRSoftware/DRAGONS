@@ -41,9 +41,9 @@ class AstroDataGnirs(AstroDataGemini):
             return TagSet(['IMAGE'])
 
     @astro_data_tag
-    def _type_mask(self):
+    def _type_thruslit(self):
         if 'Acq' not in self.phu.get('SLIT', ''):
-            return TagSet(['MASK'], if_present=['ACQUISITION'])
+            return TagSet(['THRUSLIT'], if_present=['IMAGE'])
 
     @astro_data_tag
     def _type_spect(self):
@@ -52,7 +52,7 @@ class AstroDataGnirs(AstroDataGemini):
             slit = self.phu.get('SLIT', '').lower()
             grat = self.phu.get('GRATING', '')
             prism = self.phu.get('PRISM', '')
-            if slit == 'IFU':
+            if slit == 'ifu':
                 tags.add('IFU')
             elif ('arcsec' in slit or 'pin' in slit) and 'mm' in grat:
                 if 'MIR' in prism:
@@ -431,6 +431,8 @@ class AstroDataGnirs(AstroDataGemini):
         # if it's messed up
 
         wcs_ra = self.wcs_ra()
+        if wcs_ra is None:
+            return self.phu.get('RA', None)
         try:
             tgt_ra = self.target_ra(offset=True, icrs=True)
         except:  # Return WCS value if we can't get our sanity check
@@ -469,6 +471,8 @@ class AstroDataGnirs(AstroDataGemini):
         # if it's messed up
 
         wcs_dec = self.wcs_dec()
+        if wcs_dec is None:
+            return self.phu.get('DEC', None)
         try:
             tgt_dec = self.target_dec(offset=True, icrs=True)
         except:  # Return WCS value if we can't get our sanity check

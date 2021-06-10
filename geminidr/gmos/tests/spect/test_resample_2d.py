@@ -40,14 +40,18 @@ def test_correlation(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
 
-    ad = p.stackFrames()[0]
+    p.findSourceApertures(max_apertures=1)
+    np.testing.assert_allclose([ad[0].APERTURE['c0']
+                                for ad in p.streams['main']], 260.6, atol=0.25)
+
+    ad = p.stackFrames(reject_method="sigclip")[0]
     assert ad[0].shape == (512, 3869)
 
     caplog.clear()
     ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    #assert caplog.records[3].message == 'Found sources at rows: 260.8'
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.25)
+    #assert caplog.records[3].message == 'Found sources at rows: 260.6'
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (3869,)
@@ -66,13 +70,17 @@ def test_correlation_and_trim(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15, trim_data=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
 
-    ad = p.stackFrames()[0]
+    p.findSourceApertures(max_apertures=1)
+    np.testing.assert_allclose([ad[0].APERTURE['c0']
+                                for ad in p.streams['main']], 260.6, atol=0.25)
+
+    ad = p.stackFrames(reject_method="sigclip")[0]
     assert ad[0].shape == (512, 3139)
 
     caplog.clear()
     ad = p.findSourceApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.8, atol=0.25)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
 
     ad = p.extract1DSpectra()[0]
     assert ad[0].shape == (3139,)
@@ -124,7 +132,7 @@ def test_header_offset(adinputs2, caplog):
     adout = p.adjustWCSToReference(method='offsets')
 
     for rec in caplog.records:
-        assert not rec.message.startswith('WARNING - Offset from correlation')
+        assert not rec.message.startswith('WARNING')
 
     assert np.isclose(adout[0].phu['SLITOFF'], 0)
     assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
@@ -134,6 +142,7 @@ def test_header_offset(adinputs2, caplog):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.skip("Improved primitive doesn't fail any more")
 def test_header_offset_fallback(adinputs2, caplog):
     """For this dataset the correlation method fails, and give an offset very
     different from the header one. So we check that the fallback to the header
@@ -143,7 +152,7 @@ def test_header_offset_fallback(adinputs2, caplog):
     adout = p.adjustWCSToReference()
 
     # WARNING when offset is too large
-    assert caplog.records[3].message.startswith('WARNING - Offset for')
+    assert caplog.records[3].message.startswith('WARNING - No cross')
 
     assert np.isclose(adout[0].phu['SLITOFF'], 0)
     assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
@@ -198,10 +207,8 @@ def create_inputs_recipe():
     """
     import os
     from astrodata.testing import download_from_archive
-    from recipe_system.reduction.coreReduce import Reduce
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from gempy.utils import logutils
-
-    from astrodata.testing import get_associated_calibrations
 
     associated_calibrations = {
         "S20190808S0048.fits": 'S20190808S0167.fits',
@@ -213,9 +220,8 @@ def create_inputs_recipe():
         "N20180106S0029.fits": 'N20180115S0264.fits',
     }
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}".format(__file__.split('.')[0])
-    path = os.path.join(root_path, module_path)
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     os.makedirs("./inputs", exist_ok=True)

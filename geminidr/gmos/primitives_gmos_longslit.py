@@ -7,20 +7,23 @@
 from copy import copy, deepcopy
 from importlib import import_module
 
+from gempy.library.config import RangeField
+
 import astrodata
+import geminidr
 import numpy as np
+from scipy.signal import correlate
 
 from astrodata.provenance import add_provenance
 from astropy import visualization as vis
 from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip
 
-from geminidr.core.primitives_spect import _transpose_if_needed
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
+from gempy.library.fitting import fit_1D
 from gempy.library import astromodels, transform
+from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
 from gwcs.wcs import WCS as gWCS
@@ -28,6 +31,7 @@ from gwcs.wcs import WCS as gWCS
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
 
@@ -37,6 +41,11 @@ from . import parameters_gmos_longslit
 
 
 # ------------------------------------------------------------------------------
+from ..interactive.fit import fit1d
+from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
+from ..interactive.interactive import UIParameters
+
+
 @parameter_override
 class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
     """
@@ -50,20 +59,44 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
 
-    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
+                         shift=None, max_shift=20):
         """
-        Adds an illumination mask to each AD object
+        Adds an illumination mask to each AD object. This is only done for
+        full-frame (not Central Spectrum) GMOS spectra, and is calculated by
+        making a model illumination patter from the attached MDF and cross-
+        correlating it with the spatial profile of the data.
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
-        illum_mask: str/None
+        illum_mask : str/None
             name of illumination mask mask (None -> use default)
+        shift : int/None
+            user-defined shift to apply to illumination mask
+        max_shift : int
+            maximum shift (in unbinned pixels) allowable for the cross-
+            correlation
         """
+        offset_dict = {("GMOS-N", "Hamamatsu-N"): 1.5,
+                       ("GMOS-N", "e2vDD"): -0.2,
+                       ("GMOS-N", "EEV"): 0.7,
+                       ("GMOS-S", "Hamamatsu-S"): 5.5,
+                       ("GMOS-S", "EEV"): 3.8}
+        edges = 50  # try to eliminate issues at the very edges
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        # Do this now for memory management reasons. We'll be creating large
+        # arrays temporarily and don't want the permanent mask arrays to
+        # fragment the free memory.
+        for ad in adinputs:
+            for ext in ad:
+                if ext.mask is None:
+                    ext.mask = np.zeros_like(ext.data).astype(DQ.datatype)
 
         for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
             if ad.phu.get(timestamp_key):
@@ -72,6 +105,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             format(ad.filename))
                 continue
 
+            ybin = ad.detector_y_bin()
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
                              for detsec in ad_detsec)
@@ -88,35 +122,85 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         # Ensure we're only adding the unilluminated bit
                         iext = np.where(illum_ext.data > 0, DQ.unilluminated,
                                         0).astype(DQ.datatype)
-                        ext.mask = iext if ext.mask is None else ext.mask | iext
+                        ext.mask |= iext
             elif not no_bridges:   # i.e. there are bridges.
+                try:
+                    mdf = ad.MDF
+                except AttributeError:
+                    log.warning(f"MDF not found for {ad.filename} - cannot "
+                                "add illumination mask.")
+                    continue
+
                 # Default operation for GMOS full-frame LS
-                # The 95% cut should ensure that we're sampling something
-                # bright (even for an arc)
-                # The max is intended to handle R150 data, where many of
-                # the extensions are unilluminated
+                # Sadly, we cannot do this reliably without concatenating the
+                # arrays and using a big chunk of memory.
+                row_medians = np.percentile(np.concatenate(
+                    [ext.data for ext in ad], axis=1),
+                    95, axis=1)
+                row_medians -= at.boxcar(row_medians, size=50 // ybin)
 
-                row_medians = np.max(np.array([np.percentile(ext.data, 95, axis=1)
-                                                      for ext in ad]), axis=0)
-                rows = np.arange(len(row_medians))
-                m_init = models.Polynomial1D(degree=3)
-                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                           outlier_func=sigma_clip,
-                                                           sigma_upper=1, sigma_lower=3)
-                m_final, _ = fit_it(m_init, rows, row_medians)
-                model_fit = m_final(rows)
-                # Find points which are significantly below the smooth illumination fit
-                # First ensure we don't worry about single rows
-                row_mask = at.boxcar(model_fit - row_medians > 0.1 * model_fit,
-                                     operation=np.logical_and, size=1)
-                row_mask = at.boxcar(row_mask, operation=np.logical_or, size=3)
-                for ext in ad:
-                    ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
+                # Construct a model of the slit illumination from the MDF
+                # coefficients are from G-IRAF except c0, approx. from data
+                model = np.zeros_like(row_medians, dtype=int)
+                for ypos, ysize in mdf['slitpos_my', 'slitsize_my']:
+                    y = ypos + np.array([-0.5, 0.5]) * ysize
+                    c0 = offset_dict[ad.instrument(), ad.detector_name(pretty=True)]
+                    if ad.instrument() == "GMOS-S":
+                        c1, c2, c3 = (0.99911, -1.7465e-5, 3.0494e-7)
+                    else:
+                        c1, c2, c3 = (0.99591859227, 5.3042211333437e-8,
+                                      1.7447902551997e-7)
+                    yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
+                            1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
+                    model[yccd[0]:yccd[1]+1] = 1
+                    log.stdinfo("Expected slit location from pixels "
+                                 f"{yccd[0]+1} to {yccd[1]+1}")
 
-                if has_48rows:
-                    actual_rows = 48 // ad.detector_y_bin()
+                if shift is None:
+                    mshift = max_shift // ybin + 2
+                    mshift2 = mshift + edges
+                    # model[] indexing avoids reduction in signal as slit
+                    # is shifted off the top of the image
+                    cntr = model.size - edges - mshift2 - 1
+                    xcorr = correlate(row_medians[edges:-edges], model[mshift2:-mshift2],
+                                      mode='full')[cntr - mshift:cntr + mshift]
+                    # This line avoids numerical errors in the spline fit
+                    xcorr -= np.median(xcorr)
+                    # This calculates the offsets of each point from the
+                    # straight line between its neighbours
+                    std = (xcorr[1:-1] - 0.5 *
+                           (xcorr + np.roll(xcorr, 2))[2:]).std()
+                    xspline = fit_1D(xcorr, function="spline3", order=None,
+                                     weights=np.full(len(xcorr), 1. / std)).evaluate()
+                    yshift = xspline.argmax() - mshift
+                    maxima = xspline[1:-1][np.logical_and(np.diff(xspline[:-1]) > 0,
+                                                          np.diff(xspline[1:]) < 0)]
+                    significant_maxima = (maxima > xspline.max() - 3 * std).sum()
+                    if significant_maxima > 1 or abs(yshift // ybin) > max_shift:
+                        log.warning(f"{ad.filename}: cross-correlation peak is"
+                                    " untrustworthy so not adding illumination "
+                                    "mask. Please re-run with a specified shift.")
+                        yshift = None
+                else:
+                    yshift = shift
+
+                if yshift is not None:
+                    log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
+                    row_mask = np.ones_like(model, dtype=int)
+                    if yshift < 0:
+                        row_mask[:yshift] = 1 - model[-yshift:]
+                    elif yshift > 0:
+                        row_mask[yshift:] = 1 - model[:-yshift]
+                    else:
+                        row_mask[:] = 1 - model
                     for ext in ad:
-                        ext.mask[:actual_rows] |= DQ.unilluminated
+                        ext.mask |= (row_mask * DQ.unilluminated).astype(
+                            DQ.datatype)[:, np.newaxis]
+
+            if has_48rows:
+                actual_rows = 48 // ybin
+                for ext in ad:
+                    ext.mask[:actual_rows] |= DQ.unilluminated
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -215,7 +299,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             dispaxis = 2 - mosaicked_ad[0].dispersion_axis()  # python sense
             should_transpose = dispaxis == 1
 
-            data, mask, variance = _transpose_if_needed(
+            data, mask, variance = at.transpose_if_needed(
                 mosaicked_ad[0].data, mosaicked_ad[0].mask,
                 mosaicked_ad[0].variance, transpose=should_transpose)
 
@@ -287,7 +371,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
             del cols_fit, cols_val, rows_fit, rows_val
 
-            _data, _mask, _variance = _transpose_if_needed(
+            _data, _mask, _variance = at.transpose_if_needed(
                 slit_response_data, slit_response_mask, slit_response_var,
                 transpose=dispaxis == 1)
 
@@ -415,7 +499,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # The [::-1] is needed to put the fist extension in the bottom
                 for i, ext in enumerate(slit_response_ad[::-1]):
 
-                    ext_data, ext_mask, ext_variance = _transpose_if_needed(
+                    ext_data, ext_mask, ext_variance = at.transpose_if_needed(
                         ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
 
                     ext_data = np.ma.masked_array(ext_data, mask=ext_mask)
@@ -519,10 +603,29 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
         Parameters
         ----------
-        suffix: str
+        suffix : str/None
             suffix to be added to output files
-        spectral_order: int/str
-            order of fit in spectral direction
+        center : int/None
+            central row/column for 1D extraction (None => use middle)
+        nsum : int
+            number of rows/columns around center to combine
+        function : str
+            type of function to fit (splineN or polynomial types)
+        order : int/str
+            Order of the spline fit to be performed
+            (can be 3 ints, separated by commas)
+        lsigma : float/None
+            lower rejection limit in standard deviations
+        hsigma : float/None
+            upper rejection limit in standard deviations
+        niter : int
+            maximum number of rejection iterations
+        grow : float/False
+            growth radius for rejected pixels
+        threshold : float
+            threshold (relative to peak) for flagging unilluminated pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -531,16 +634,20 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         # For flexibility, the code is going to pass whatever validated
         # parameters it gets (apart from suffix and spectral_order) to
         # the spline fitter
-        spline_kwargs = params.copy()
-        suffix = spline_kwargs.pop("suffix")
-        spectral_order = spline_kwargs.pop("spectral_order")
-        threshold = spline_kwargs.pop("threshold")
+        suffix = params["suffix"]
+        threshold = params["threshold"]
+        spectral_order = params["order"]
+        all_fp_init = [fit_1D.translate_params(params)] * 3
+        interactive_reduce = params["interactive"]
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
             orders = [int(x) for x in spectral_order]
         except TypeError:
             orders = [spectral_order] * 3
+        # capture the per extension order into the fit parameters
+        for order, fp_init in zip(orders, all_fp_init):
+            fp_init["order"] = order
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
@@ -548,9 +655,11 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
             ad_fitted = astrodata.create(ad.phu)
-            for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
-                # If the entire row is unilluminated, we want to fit
-                # the pixels but still keep the edges masked
+            all_fp_init = []
+
+            # If the entire row is unilluminated, we want to fit
+            # the pixels but still keep the edges masked
+            for ext in ad_tiled:
                 try:
                     ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
                 except TypeError:  # ext.mask is None
@@ -559,17 +668,104 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     if is_hamamatsu:
                         ext.mask[:, :21 // xbin] = 1
                         ext.mask[:, -21 // xbin:] = 1
-                fitted_data = np.empty_like(ext.data)
-                pixels = np.arange(ext.shape[1])
 
-                for i, row in enumerate(ext.nddata):
-                    masked_data = np.ma.masked_array(row.data, mask=row.mask)
-                    weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                    order=order, w=weights, **spline_kwargs)
-                    fitted_data[i] = spline(pixels)
-                # Copy header so we have the _section() descriptors
-                ad_fitted.append(fitted_data, header=ext.hdr)
+                all_fp_init.append(fit_1D.translate_params(params))
+
+            # Parameter validation should ensure we get an int or a list of 3 ints
+            try:
+                orders = [int(x) for x in spectral_order]
+            except TypeError:
+                orders = [spectral_order] * 3
+            # capture the per extension order into the fit parameters
+            for order, fp_init in zip(orders, all_fp_init):
+                fp_init["order"] = order
+
+            # Interactive or not
+            if interactive_reduce:
+                # all_X arrays are used to track appropriate inputs for each of the N extensions
+                all_pixels = []
+                all_domains = []
+                nrows = ad_tiled[0].shape[0]
+                for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
+                    pixels = np.arange(ext.shape[1])
+
+                    all_pixels.append(pixels)
+                    dispaxis = 2 - ext.dispersion_axis()
+                    all_domains.append([0, ext.shape[dispaxis] - 1])
+
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                # This function is used by the interactive fitter to generate the x,y,weights to use
+                # for each fit.  We only want to fit a single row of data interactively, so that we can
+                # be responsive in the UI.  The 'row' extra parameter defined above will create a
+                # slider for the user and we will have access to the selected value in the 'extras'
+                # dictionary passed in here.
+                def reconstruct_points(ui_params=None):
+                    r = max(0, ui_params.values['row'] - 1)
+                    all_coords = []
+                    for rppixels, rpext in zip(all_pixels, ad_tiled):
+                        masked_data = np.ma.masked_array(rpext.data[r],
+                                                         mask=None if rpext.mask is None else rpext.mask[r])
+                        if rpext.variance is None:
+                            weights = None
+                        else:
+                            weights = np.sqrt(at.divide0(1., rpext.variance[r]))
+                        all_coords.append([rppixels, masked_data, weights])
+                    return all_coords
+                if ad.orig_filename:
+                    filename_info = ad.orig_filename
+                elif ad.filename:
+                    filename_info = ad.filename
+                else:
+                    filename_info = ''
+
+                # Create a 'row' parameter to add to the UI so the user can select the row they
+                # want to fit.
+                reinit_params = ["row", ]
+                extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
+                uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
+                visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x (pixels)', ylabel='counts',
+                                                   domains=all_domains,
+                                                   title="Normalize Flat",
+                                                   primitive_name="normalizeFlat",
+                                                   filename_info=filename_info,
+                                                   enable_user_masking=False,
+                                                   enable_regions=True,
+                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                   recalc_inputs_above=True,
+                                                   modal_message="Recalculating",
+                                                   ui_params=uiparams)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                log.stdinfo('Interactive Parameters retrieved, performing flat normalization...')
+
+                # The fit models were done on a single row, so we need to
+                # get the parameters that were used in the final fit for
+                # each one, and then rerun it on the full data for that
+                # extension.
+                all_m_final = visualizer.results()
+                for m_final, ext in zip(all_m_final, ad_tiled):
+                    masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
+                    weights = np.sqrt(at.divide0(1., ext.variance))
+
+                    fit1d_params = m_final.extract_params()
+                    fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
+                                         axis=1).evaluate()
+
+                    # Copy header so we have the _section() descriptors
+                    ad_fitted.append(fitted_data, header=ext.hdr)
+            else:
+                for ext, indices, fit1d_params in zip(ad_tiled, array_info.extensions, all_fp_init):
+                    masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
+                    weights = np.sqrt(at.divide0(1., ext.variance))
+
+                    fitted_data = fit_1D(masked_data, weights=weights, **fit1d_params,
+                                         axis=1).evaluate()
+
+                    # Copy header so we have the _section() descriptors
+                    ad_fitted.append(fitted_data, header=ext.hdr)
 
             # Find the largest spline value for each row across all extensions
             # and mask pixels below the requested fraction of the peak
@@ -582,7 +778,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             for ext_fitted in ad_fitted:
                 ext_fitted.mask = np.where(
                     (ext_fitted.data.T / row_max).T < threshold,
-                    DQ.unilluminated, DQ.good)
+                    DQ.unilluminated, DQ.good).astype(DQ.datatype)
 
             for ext_fitted, indices in zip(ad_fitted, array_info.extensions):
                 tiled_arrsec = ext_fitted.array_section()
@@ -605,7 +801,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         return adinputs
 
     def slitIllumCorrect(self, adinputs=None, slit_illum=None,
-                               do_illum=True, suffix="_illumCorrected"):
+                               do_cal=None, suffix="_illumCorrected"):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding slit illumination image. If the inputs contain
@@ -618,15 +814,15 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             Data to be corrected.
         slit_illum : str or AstroData
             Slit illumination path or AstroData object.
-        do_illum: bool, optional
-            Perform slit illumination correction? (Default: True)
+        do_cal: str
+            Perform slit illumination correction? (Default: 'procmode')
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         qecorr_key = self.timestamp_keys['QECorrect']
 
-        if not do_illum:
+        if do_cal == 'skip':
             log.warning("Slit Illumination correction has been turned off.")
             return adinputs
 
@@ -646,7 +842,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 continue
 
             if slit_illum_ad is None:
-                if self.mode in ['sq']:
+                if self.mode in ['sq'] or do_cal == 'force':
                     raise OSError(
                         "No processed slit illumination listed for {}".format(
                             ad.filename))
@@ -733,8 +929,7 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
                          "Found {:d}".format(len(mos_ad[0].shape)))
 
     # Get original relative shift
-    origin_shift_x, origin_shift_y = \
-        [int(s) for s in mos_ad.phu["origtran"][1:-1].split(',')]
+    origin_shift_y, origin_shift_x = mos_ad[0].nddata.meta['transform']['origin']
 
     # Create shift transformation
     shift_x = models.Shift(origin_shift_x - border_size)

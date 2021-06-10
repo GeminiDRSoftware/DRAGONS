@@ -21,9 +21,9 @@ from astrodata import NDAstroData
 from .astrotools import divide0
 from geminidr.gemini.lookups import DQ_definitions as DQ
 try:
-    from . import cyclip
+    from . import cython_utils
 except ImportError:  # pragma: no cover
-    raise ImportError("Run 'cythonize -i cyclip.pyx' in gempy/library")
+    raise ImportError("Run 'cythonize -i cython_utils.pyx' in gempy/library")
 
 # A lightweight NDData-like object
 NDD = namedtuple("NDD", "data mask variance")
@@ -87,9 +87,7 @@ def stack_nddata(fn):
             instance, data=data, mask=mask, variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
-        ret_value = NDAstroData(out_data, mask=out_mask)
-        if out_var is not None:
-            ret_value.variance = out_var
+        ret_value = NDAstroData(out_data, mask=out_mask, variance=out_var)
         if rejmap is not None:
             ret_value.meta['other'] = {'REJMAP': NDAstroData(rejmap)}
         return ret_value
@@ -314,11 +312,11 @@ class NDStacker:
                                  stage='immediately after rejection')
 
         # when mask is None rejector return a bool mask.
-        # convert dtype and set mask values to 36768
+        # convert dtype and set mask values to 32768
         rejmap = None
         if rejmask is not None:
             if rejmask.dtype.kind == 'b':
-                rejmask = rejmask.astype(DQ.datatype) * 36768
+                rejmask = rejmask.astype(DQ.datatype) * 32768
 
             # Unset the 32768 bit *only* if it's set in all input pixels
             rejmask &= ~(np.bitwise_and.reduce(rejmask, axis=0) & 32768)
@@ -561,8 +559,8 @@ class NDStacker:
             has_var = False
         else:
             has_var = True
-        if max_iters is None:
-            max_iters = 0
+        if max_iters is None:  # iterate to convergence
+            max_iters = 100
         # We send each array as a 1D view, with all the input pixels together,
         # So if we have 10 input images, the first 10 pixels in this 1D array
         # will be the (0,0) pixels from each image, and so on...
@@ -570,7 +568,7 @@ class NDStacker:
         num_img = shape[0]
         # Force int in case arrays are 1D
         data_size = int(np.multiply.reduce(data.shape[1:]))
-        data, mask, variance = cyclip.iterclip(
+        data, mask, variance = cython_utils.iterclip(
             data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
             variance.ravel().astype(np.float32),
             has_var=has_var, num_img=num_img, data_size=data_size,

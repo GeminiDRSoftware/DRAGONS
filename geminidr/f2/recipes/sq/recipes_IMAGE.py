@@ -7,7 +7,7 @@ recipe_tags = {'F2', 'IMAGE'}
 
 def reduce(p):
     """
-    This recipe process NIRI data up to and including alignment and stacking.
+    This recipe process F2 data up to and including alignment and stacking.
     A single stacked output image is produced.
     It will attempt to do dark and flat correction if a processed calibration
     is available.  Sky subtraction is done when possible.  QA metrics are

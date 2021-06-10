@@ -6,12 +6,12 @@ from astropy.table import Table
 
 import astrodata
 from astrodata import (astro_data_tag, astro_data_descriptor, TagSet,
-                       AstroDataFits, factory, returns_list)
+                       AstroData, factory, returns_list)
 
 SHAPE = (4, 5)
 
 
-class AstroDataMyInstrument(AstroDataFits):
+class AstroDataMyInstrument(AstroData):
     __keyword_dict = dict(
         array_name='AMPNAME',
         array_section='CCDSECT'
@@ -73,6 +73,10 @@ def setup_module():
     factory.addClass(AstroDataMyInstrument)
 
 
+def teardown_module():
+    factory._registry.remove(AstroDataMyInstrument)
+
+
 @pytest.fixture(scope='function')
 def testfile(tmpdir):
     hdr = fits.Header({
@@ -87,8 +91,7 @@ def testfile(tmpdir):
     hdu2 = fits.ImageHDU(data=np.ones(SHAPE) + 1)
     ad = astrodata.create(phu, [hdu, hdu2])
     tbl = Table([np.zeros(10), np.ones(10)], names=['col1', 'col2'])
-    astrodata.add_header_to_table(tbl)
-    ad.append(tbl, name='MYCAT')
+    ad.MYCAT = tbl
     filename = str(tmpdir.join('fakebias.fits'))
     ad.write(filename)
     yield filename
@@ -130,7 +133,7 @@ def test_info(testfile, capsys):
     out = captured.out.splitlines()
     assert out[0].endswith('fakebias.fits')
     assert out[1:] == [
-        'Tags: DARK MYINSTRUMENT ',
+        'Tags: DARK MYINSTRUMENT',
         '',
         'Pixels Extensions',
         'Index  Content                  Type              Dimensions     Format',
@@ -147,7 +150,7 @@ def test_info(testfile, capsys):
     out = captured.out.splitlines()
     assert out[0].endswith('fakebias.fits')
     assert out[1:] == [
-        'Tags: DARK MYINSTRUMENT ',
+        'Tags: DARK MYINSTRUMENT',
         '',
         'Pixels Extensions',
         'Index  Content                  Type              Dimensions     Format',

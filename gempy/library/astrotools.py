@@ -7,10 +7,8 @@ The astroTools module contains astronomy specific utility functions
 import os
 import re
 import numpy as np
-from collections import namedtuple
 from astropy import units as u
 
-Section = namedtuple('Section', 'x1 x2 y1 y2')
 
 def array_from_list(list_of_quantities, unit=None):
     """
@@ -32,7 +30,7 @@ def array_from_list(list_of_quantities, unit=None):
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
 
-def boxcar(data, operation=np.median, size=1):
+def boxcar(data, operation=np.ma.median, size=1):
     """
     "Smooth" a 1D array by applying a boxcar filter along it. Any operation
     can be performed, as long as it can take a sequence and return a single
@@ -81,18 +79,28 @@ def divide0(numerator, denominator):
         is_int = np.issubdtype(denominator.dtype, np.integer)
     except AttributeError:
         # denominator is a scalar
-        try:
-            is_int = np.issubdtype(numerator.dtype, np.integer)
-        except AttributeError:
-            # numerator is also a scalar
-            return 0 if denominator == 0 else numerator / denominator
+        if denominator == 0:
+            try:
+                return np.zeros(numerator.shape)
+            except AttributeError:
+                # numerator is also a scalar
+                return 0
         else:
-            dtype = np.float32 if is_int else numerator.dtype
-            return np.divide(numerator, denominator, out=np.zeros(numerator.shape, dtype=dtype), where=denominator!=0)
+            return numerator / denominator
     else:
         dtype = np.float32 if is_int else denominator.dtype
-        return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype), where=denominator!=0)
+        try:
+            out_shape = numerator.shape
+        except:
+            out_shape = denominator.shape
+        else:
+            # both are arrays so the final shape will be the one with the
+            # higher dimensionality (if they're broadcastable)
+            if len(out_shape) < len(denominator.shape):
+                out_shape = denominator.shape
 
+        return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
+                         where=abs(denominator) > np.finfo(dtype).tiny)
 
 def section_contains(section1, section2):
     """
@@ -182,19 +190,24 @@ def section_str_to_tuple(section, log=None):
     warn = log.warning if log else print
     if section is not None:
         try:
-            x1, x2, y1, y2 = [int(v) for v in section.strip('[]').
-                replace(',', ':').split(':')]
-        except (AttributeError, ValueError):
-            warn("Cannot parse section. Using full frame for statistics")
-            section = None
+            out_shape = numerator.shape
+        except:
+            out_shape = denominator.shape
         else:
-            section = Section(x1-1, x2, y1-1, y2)
-    return section
+            # both are arrays so the final shape will be the one with the
+            # higher dimensionality (if they're broadcastable)
+            if len(out_shape) < len(denominator.shape):
+                out_shape = denominator.shape
+
+        return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
+                         where=abs(denominator) > np.finfo(dtype).tiny)
+
 
 def cartesian_regions_to_slices(regions):
     """
     Convert a sample region(s) string, consisting of a comma-separated list
     of (colon-or-hyphen-separated) pixel ranges into Python slice objects.
+
     These ranges may describe either multiple 1D regions or a single higher-
     dimensional region (with one range per axis), a distinction which is not
     important here. The ranges are specified in 1-indexed Cartesian pixel
@@ -218,44 +231,98 @@ def cartesian_regions_to_slices(regions):
     ranges = regions.strip('[]').split(',')
 
     slices = []
-    for _range in ranges[::-1]:           # reverse Cartesian order for Python
+    ranges = parse_user_regions(regions, allow_step=True)
 
-        err = False if _range else True   # no empty string
-
-        if _range == '*':                 # allow '*' for all pix, like IRAF
-            slices.append(slice(None, None))
-            continue
-
-        limits = _range.replace('-', ':', 1).split(':')
+    for limits in ranges[::-1]:           # reverse Cartesian order for Python
         nlim = len(limits)
-
-        if err:
-            pass
-        elif nlim > 3:
-            err = True                    # can have at most start:stop:step
-        elif nlim == 1:
-            try:
-                lim = int(limits[0])-origin
-            except ValueError:
-                err = True                # no non-numeric values
-            else:
-                sliceobj = slice(lim, lim+1, None)
+        if nlim == 1:
+            lim = int(limits[0])-origin
+            sliceobj = slice(lim, lim+1)
         else:
-            try:
-                # Adjust only the lower limit for 1-based indexing since Python
-                # ranges are exclusive:
-                sliceobj = slice(*(int(lim)-adj if lim else None \
-                                   for lim, adj in zip(limits, (origin, 0, 0))))
-            except ValueError:
-                err = True                # no non-numeric values
-
-        if err:
-            raise ValueError('Failed to parse sample regions \'{}\''
-                             .format(regions))
-
+            # Adjust only the lower limit for 1-based indexing since Python
+            # ranges are exclusive:
+            sliceobj = slice(*(int(lim)-adj if lim else None
+                               for lim, adj in zip(limits, (origin, 0, 0))))
         slices.append(sliceobj)
 
     return tuple(slices)
+
+
+def parse_user_regions(regions, dtype=int, allow_step=False):
+    """
+    Parse a string containing a list of sections into a list of tuples
+    containing the same information
+
+    Parameters
+    ----------
+    regions : str
+        comma-separated list of regions of form start:stop:step
+    dtype : dtype
+        string values will be coerced into this dtype, raising an error if
+        this is not possible
+    allow_step : bool
+        allow a step value in the ranges?
+
+    Returns
+    -------
+    list of slice-like tuples with 2 or 3 values per tuple
+    """
+    if not regions:
+        return [(None, None)]
+    elif not isinstance(regions, str):
+        raise TypeError(f"regions must be a string or None, not '{regions}'")
+
+    if isinstance(dtype, np.dtype):
+        dtype = getattr(np, dtype.name)
+
+    ranges = []
+    for range_ in regions.strip("[]").split(","):
+        range_ = range_.strip()
+        if range_ == "*":
+            ranges.append((None, None))
+            continue
+        try:
+            values = [dtype(x) if x else None
+                      for x in range_.replace("-", ":", 1).split(":")]
+            assert len(values) in (1, 2, 2+allow_step)
+            if len(values) > 1 and values[0] is not None and values[1] is not None and values[0] > values[1]:
+                values[0], values[1] = values[1], values[0]
+        except (ValueError, AssertionError):
+            raise ValueError(f"Failed to parse sample regions '{regions}'")
+        ranges.append(tuple(values))
+    return ranges
+
+def create_mask_from_regions(points, regions=None):
+    """
+    Produce a boolean mask given an array of x-values and a list of unmasked
+    regions. The regions can be specified either as slice objects (interpreted
+    as pixel indices in the standard python sense) or (start, end) tuples with
+    inclusive boundaries.
+
+    Parameters
+    ----------
+    points : `numpy.ndarray`
+        Input array
+    regions : list, optional
+        valid regions, either (start, end) or slice objects
+
+    Returns
+    -------
+    mask : boolean `numpy.ndarray`
+    """
+    mask = np.ones_like(points, dtype=bool)
+    if regions:
+        for region in regions:
+            if isinstance(region, slice):
+                mask[region] = False
+            else:
+                x1 = min(points) if region[0] is None else region[0]
+                x2 = max(points) if region[1] is None else region[1]
+                if x1 > x2:
+                    x1, x2 = x2, x1
+                mask[np.logical_and(points >= x1, points <= x2)] = False
+    return mask
+
 
 def get_corners(shape):
     """
@@ -282,6 +349,66 @@ def get_corners(shape):
             corners.append(newcorner)
 
     return corners
+
+
+def get_spline3_extrema(spline):
+    """
+    Find the locations of the minima and maxima of a cubic spline.
+
+    Parameters
+    ----------
+    spline: a callable spline object
+
+    Returns
+    -------
+    minima, maxima: 1D arrays
+    """
+    derivative = spline.derivative()
+    try:
+        knots = derivative.get_knots()
+    except AttributeError:  # for BSplines
+        knots = derivative.k
+
+    minima, maxima = [], []
+    # We take each pair of knots and map to interval [-1,1]
+    for xm, xp in zip(knots[:-1], knots[1:]):
+        ym, y0, yp = derivative([xm, 0.5*(xm+xp), xp])
+        # a*x^2 + b*x + c
+        a = 0.5 * (ym+yp) - y0
+        b = 0.5 * (yp-ym)
+        c = y0
+        for root in np.roots([a, b, c]):
+            if np.isreal(root) and abs(root) <= 1:
+                x = 0.5 * (root * (xp-xm) + (xp+xm))  # unmapped from [-1, 1]
+                if 2*a*root + b > 0:
+                    minima.append(x)
+                else:
+                    maxima.append(x)
+    return np.array(minima), np.array(maxima)
+
+
+def transpose_if_needed(*args, transpose=False, section=slice(None)):
+    """
+    This function takes a list of arrays and returns them (or a section of them),
+    either untouched, or transposed, according to the parameter.
+
+    Parameters
+    ----------
+    args : sequence of arrays
+        The input arrays.
+    transpose : bool
+        If True, return transposed versions.
+    section : slice object
+        Section of output data to return.
+
+    Returns
+    -------
+    list of arrays
+        The input arrays, or their transposed versions.
+    """
+    return list(None if arg is None
+                else arg.T[section] if transpose else arg[section] for arg in args)
+
 
 def rotate_2d(degs):
     """
@@ -325,6 +452,50 @@ def clipped_mean(data):
             break
 
     return mean, sigma
+
+def rasextodec(string):
+    """
+    Convert hh:mm:ss.sss to decimal degrees
+    """
+    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
+    if match_ra:
+        hours = float(match_ra.group(1))
+        minutes = float(match_ra.group(2))
+        secs = float(match_ra.group(3))
+
+        minutes += (secs/60.0)
+        hours += (minutes/60.0)
+
+        degrees = hours * 15.0
+    else:
+        raise ValueError('Invalid RA string')
+
+    return degrees
+
+def degsextodec(string):
+    """
+    Convert [-]dd:mm:ss.sss to decimal degrees
+    """
+    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
+    if match_dec:
+        sign = match_dec.group(1)
+        if sign == '-':
+            sign = -1.0
+        else:
+            sign = +1.0
+
+        degs = float(match_dec.group(2))
+        minutes = float(match_dec.group(3))
+        secs = float(match_dec.group(4))
+
+        minutes += (secs/60.0)
+        degs += (minutes/60.0)
+
+        degs *= sign
+    else:
+        raise ValueError('Invalid Dec string')
+
+    return degs
 
 
 # The following functions and classes were borrowed from STSCI's spectools

@@ -1,39 +1,38 @@
-import numpy as np
+import functools
 import re
+from collections import namedtuple
 
-from gwcs import coordinate_frames as cf
-from gwcs import utils as gwutils
+import numpy as np
 from astropy import coordinates as coord
 from astropy import units as u
-from astropy.modeling import core, models, projections
 from astropy.io import fits
-
+from astropy.modeling import core, models, projections
+from gwcs import coordinate_frames as cf
+from gwcs import utils as gwutils
+from gwcs.utils import sky_pairs, specsystems
 from gwcs.wcs import WCS as gWCS
 
-import functools
-from collections import namedtuple
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
-from gwcs.utils import sky_pairs, specsystems
+FrameMapping = namedtuple("FrameMapping", "cls description")
+
+# Type of CoordinateFrame to construct for a FITS keyword and
+# readable name so user knows what's going on
+frame_mapping = {'WAVE': FrameMapping(cf.SpectralFrame, "Wavelength in vacuo"),
+                 'AWAV': FrameMapping(cf.SpectralFrame, "Wavelength in air")}
 
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
 #-----------------------------------------------------------------------------
+
 
 def fitswcs_to_gwcs(hdr):
     """
     Create and return a gWCS object from a FITS header. If it can't
     construct one, it should quietly return None.
     """
-    # Type of CoordinateFrame to construct for a FITS keyword
-    frame_mapping = {'WAVE': cf.SpectralFrame}
     # coordinate names for CelestialFrame
     coordinate_outputs = {'alpha_C', 'delta_C'}
-    naxes = hdr['NAXIS']
-    axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
-    in_frame = cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
-                                  axes_order=tuple(range(naxes)), name="pixels",
-                                  axes_names=axes_names, unit=[u.pix] * naxes)
 
     # transform = gw.make_fitswcs_transform(hdr)
     try:
@@ -41,38 +40,56 @@ def fitswcs_to_gwcs(hdr):
     except Exception as e:
         return None
     outputs = transform.outputs
+    wcs_info = read_wcs_from_header(hdr)
+
+    naxes = transform.n_inputs
+    axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
+    in_frame = cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
+                                  axes_order=tuple(range(naxes)), name="pixels",
+                                  axes_names=axes_names, unit=[u.pix] * naxes)
 
     out_frames = []
     for i, output in enumerate(outputs):
-        unit_name = hdr.get(f'CUNIT{i+1}')
+        unit_name = wcs_info["CUNIT"][i]
         try:
             unit = u.Unit(unit_name)
         except TypeError:
             unit = None
         try:
-            frame = frame_mapping[output[:4].upper()](axes_order=(i,), unit=unit,
-                                          axes_names=(output,), name=output)
+            frame_type = output[:4].upper()
+            frame_info = frame_mapping[frame_type]
         except KeyError:
             if output in coordinate_outputs:
                 continue
-            frame = cf.CoordinateFrame(naxes=1, axes_type=None,
+            frame = cf.CoordinateFrame(naxes=1, axes_type=("SPATIAL",),
                                        axes_order=(i,), unit=unit,
                                        axes_names=(output,), name=output)
+        else:
+            frame = frame_info.cls(axes_order=(i,), unit=unit,
+                                   axes_names=(frame_type,),
+                                   name=frame_info.description)
+
         out_frames.append(frame)
 
     if coordinate_outputs.issubset(outputs):
-        frame_name = hdr.get('RADESYS') or hdr.get('RADECSYS')  # FK5, etc.
+        frame_name = wcs_info["RADESYS"]  # FK5, etc.
+        axes_names = None
         try:
             ref_frame = getattr(coord, frame_name)()
             # TODO? Work out how to stuff EQUINOX and OBS-TIME into the frame
         except (AttributeError, TypeError):
-            ref_frame = None
+            # TODO: Replace quick fix as gWCS doesn't recognize GAPPT
+            if frame_name == "GAPPT":
+                ref_frame = coord.FK5()
+            else:
+                ref_frame = None
+                axes_names = ('lon', 'lat')
         axes_order = (outputs.index('alpha_C'), outputs.index('delta_C'))
 
         # Call it 'world' if there are no other axes, otherwise 'sky'
         name = 'SKY' if len(outputs) > 2 else 'world'
         cel_frame = cf.CelestialFrame(reference_frame=ref_frame, name=name,
-                                      axes_order=axes_order)
+                                      axes_names=axes_names, axes_order=axes_order)
         out_frames.append(cel_frame)
 
     out_frame = (out_frames[0] if len(out_frames) == 1
@@ -95,14 +112,16 @@ def gwcs_to_fits(ndd, hdr=None):
 
     Parameters
     ----------
-    ndd: NDData
+    ndd : `astropy.nddata.NDData`
         The NDData whose wcs attribute we want converted
-    hdr: fits.Header
+    hdr : `astropy.io.fits.Header`
         A Header object that may contain some useful keywords
 
     Returns
     -------
-    dict: values to insert into the FITS header to express this WCS
+    dict
+        values to insert into the FITS header to express this WCS
+
     """
     if hdr is None:
         hdr = {}
@@ -166,7 +185,7 @@ def gwcs_to_fits(ndd, hdr=None):
             continue
         if axis_type == "SPECTRAL":
             wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
-            wcs_dict[f'CTYPE{i}'] = 'WAVE'
+            wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = 0
 
@@ -238,14 +257,16 @@ def calculate_affine_matrices(func, shape):
 
     Parameters
     ----------
-    func: callable
+    func : callable
         function that maps input->output coordinates
-    shape: sequence
+    shape : sequence
         shape to use for fiducial points
 
     Returns
     -------
-        AffineMatrices(array, array): affine matrix and offset
+    AffineMatrices(array, array)
+        affine matrix and offset
+
     """
     indim = len(shape)
     try:
@@ -276,7 +297,7 @@ def read_wcs_from_header(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header
+    header : `astropy.io.fits.Header`
         FITS Header with WCS information.
 
     Returns
@@ -298,9 +319,10 @@ def read_wcs_from_header(header):
         wcs_info['WCSAXES'] = len(keys)
     wcsaxes = wcs_info['WCSAXES']
     # if not present call get_csystem
-    wcs_info['RADESYS'] = header.get('RADESYS', 'ICRS')
+    wcs_info['RADESYS'] = header.get('RADESYS', header.get('RADECSYS', 'FK5'))
     wcs_info['VAFACTOR'] = header.get('VAFACTOR', 1)
-    wcs_info['NAXIS'] = header.get('NAXIS', max(int(k[5:]) for k in header['CRPIX*'].keys()))
+    # NAXIS=0 if we're reading from a PHU
+    wcs_info['NAXIS'] = header.get('NAXIS') or max(int(k[5:]) for k in header['CRPIX*'].keys())
     # date keyword?
     # wcs_info['DATEOBS'] = header.get('DATE-OBS', 'DATEOBS')
     wcs_info['EQUINOX'] = header.get("EQUINOX", None)
@@ -341,12 +363,12 @@ def get_axes(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header (or dict) with basic WCS information.
 
     Returns
     -------
-    sky_inmap, spectral_inmap, unknown : lists
+    sky_inmap, spectral_inmap, unknown : list
         indices in the output representing sky and spectral coordinates.
 
     """
@@ -407,12 +429,12 @@ def _get_contributing_axes(wcs_info, world_axes):
     ----------
     wcs_info : dict
         dict of WCS information
-    world_axes : int/iterable of ints
+    world_axes : int or iterable of int
         axes in the world coordinate system
 
     Returns
     -------
-    axes: list
+    axes : list
         axes whose pixel coordinates affect the output axis/axes
     """
     cd = wcs_info['CD']
@@ -430,7 +452,7 @@ def make_fitswcs_transform(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header (or dict) with basic WCS information
 
     """
@@ -477,7 +499,7 @@ def fitswcs_image(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header or dict with basic FITS WCS keywords.
 
     """
@@ -515,7 +537,9 @@ def fitswcs_image(header):
         cd[sky_axes[1], -1] = cd[sky_axes[0], pixel_axes[0]]
         sky_cd = cd[np.ix_(sky_axes, pixel_axes + [-1])]
         affine = models.AffineTransformation2D(matrix=sky_cd, name='cd_matrix')
-        rotation = models.fix_inputs(affine, {'y': 0})
+        # TODO: replace when PR#10362 is in astropy
+        #rotation = models.fix_inputs(affine, {'y': 0})
+        rotation = models.Mapping((0, 0)) | models.Identity(1) & models.Const1D(0) | affine
         rotation.inverse = affine.inverse | models.Mapping((0,), n_inputs=2)
     else:
         sky_cd = cd[np.ix_(sky_axes, pixel_axes)]
@@ -540,10 +564,14 @@ def fitswcs_linear(header):
 
     Parameters
     ----------
-    header : astropy.io.fits.Header or dict
+    header : `astropy.io.fits.Header` or dict
         FITS Header or dict with basic FITS WCS keywords.
 
     """
+    # We *always* want the wavelength solution model to be called "WAVE"
+    # even if the CTYPE keyword is "AWAV"
+    model_name_mapping = {"AWAV": "WAVE"}
+
     if isinstance(header, fits.Header):
         wcs_info = read_wcs_from_header(header)
     elif isinstance(header, dict):
@@ -568,7 +596,8 @@ def fitswcs_linear(header):
                                             name='crpix' + str(pixel_axis + 1)) |
                             models.Scale(cd[ax, pixel_axis]) |
                             models.Shift(crval[ax]))
-            linear_model.name = wcs_info['CTYPE'][ax][:4].upper()
+            ctype = wcs_info['CTYPE'][ax][:4].upper()
+            linear_model.name = model_name_mapping.get(ctype, ctype)
             linear_model.outputs = (wcs_info['CTYPE'][ax],)
             linear_model.meta.update({'input_axes': pixel_axes,
                                       'output_axes': [ax]})

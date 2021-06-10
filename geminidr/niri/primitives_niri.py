@@ -24,8 +24,8 @@ class NIRI(Gemini, NearIR):
     tagset = {"GEMINI", "NIRI"}
 
     def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.niri.lookups'
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_niri)
 
     def nonlinearityCorrect(self, adinputs=None, suffix=None):
@@ -72,8 +72,8 @@ class NIRI(Gemini, NearIR):
             for ext, coeffs in zip(ad, ad.nonlinearity_coeffs()):
                 if coeffs is None:
                     log.warning("No nonlinearity coefficients found for "
-                                "{}:{} - no correction applied".
-                                format(ad.filename, ext.hdr['EXTVER']))
+                                f"{ad.filename} extension {ext.id} - "
+                                "no correction applied")
                     continue
 
                 raw_mean_value = np.mean(ext.data) / coadds

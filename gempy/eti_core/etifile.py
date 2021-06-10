@@ -1,7 +1,8 @@
-import os
+import shutil
 import tempfile
 from ..utils import logutils
 log = logutils.get_logger(__name__)
+
 
 class ETIFile:
     """The base class for all External Class Interface file objects.
@@ -9,6 +10,7 @@ class ETIFile:
     inputs = None
     params = None
     name = None
+
     def __init__(self, name=None, inputs=None, params=None):
         """
         :param rc: Used to store reduction information
@@ -18,13 +20,14 @@ class ETIFile:
         self.inputs = inputs
         self.params = params
         self.name = name
-        self.directory = os.path.abspath(tempfile.gettempdir())
+        self.directory = tempfile.mkdtemp(prefix='dragons.')
 
     def prepare(self):
-        print("ETIFile prepare()")
+        log.debug("ETIFile prepare()")
 
     def recover(self):
-        print("ETIFile recover()")
+        log.debug("ETIFile recover()")
 
     def clean(self):
-        print("ETIFile clean()")
+        log.debug("ETIFile clean()")
+        shutil.rmtree(self.directory)

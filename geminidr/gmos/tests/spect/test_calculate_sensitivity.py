@@ -121,6 +121,7 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 def test_regression_on_calculate_sensitivity(ad, change_working_dir, ref_ad_factory):
 
@@ -187,6 +188,8 @@ def create_inputs_recipe():
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
 
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
+
     associated_calibrations = {
         "N20180109S0287.fits": {
             'bias': ["N20180103S0563.fits",
@@ -199,9 +202,8 @@ def create_inputs_recipe():
         }
     }
 
-    root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/spect/{}/".format(__file__.split(".")[0])
-    path = os.path.join(root_path, module_path)
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
     os.chdir(path)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
@@ -231,7 +233,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_flat_{}.txt'.format(data_label))
         flat_reduce = Reduce()
         flat_reduce.files.extend(flat_path)
-        flat_reduce.ucals = normalize_ucals(flat_reduce.files, calibration_files)
+        flat_reduce.ucals = normalize_ucals(calibration_files)
         flat_reduce.runr()
         flat_master = flat_reduce.output_filenames.pop()
         calibration_files.append('processed_flat:{}'.format(flat_master))
@@ -241,7 +243,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
         arc_reduce = Reduce()
         arc_reduce.files.extend(arc_path)
-        arc_reduce.ucals = normalize_ucals(arc_reduce.files, calibration_files)
+        arc_reduce.ucals = normalize_ucals(calibration_files)
         arc_reduce.runr()
         arc_master = arc_reduce.output_filenames.pop()
         del arc_reduce
@@ -254,7 +256,7 @@ def create_inputs_recipe():
         p.addVAR(read_noise=True, poisson_noise=False)
         p.overscanCorrect(function="spline", high_reject=3., low_reject=3.,
                           nbiascontam=0, niterate=2, order=None)
-        p.biasCorrect(bias=bias_master, do_bias=True)
+        p.biasCorrect(bias=bias_master, do_bias='procmode')
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
         p.flatCorrect(flat=flat_master)
@@ -262,7 +264,7 @@ def create_inputs_recipe():
         p.distortionCorrect(arc=arc_master, order=3, subsample=1)
         p.findSourceApertures(max_apertures=1, threshold=0.01, min_sky_region=20)
         p.skyCorrectFromSlit(order=5, grow=0)
-        p.traceApertures(trace_order=2, nsum=10, step=10, max_missed=5,
+        p.traceApertures(order=2, nsum=10, step=10, max_missed=5,
                          max_shift=0.05)
         p.extract1DSpectra(grow=10, method="standard", width=None)
 

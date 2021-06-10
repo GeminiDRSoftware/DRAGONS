@@ -3,64 +3,22 @@
 #
 #                                                                    cal_service
 # ------------------------------------------------------------------------------
-from os.path import basename
-from os.path import expanduser
-from os.path import exists
+from os import path
+import warnings
+from importlib import import_module
 
-from ..config import globalConf
-from ..config import STANDARD_REDUCTION_CONF
-from ..config import DEFAULT_DIRECTORY
+from ..config import globalConf, load_config
 
-from . import transport_request
-
-try:
-    from . import localmanager
-    localmanager_available = True
-except ImportError as e:
-    localmanager_available = False
-    import_error = str(e)
+from .userdb import UserDB
+from .localdb import LocalDB
+from .remotedb import RemoteDB
 
 # ------------------------------------------------------------------------------
 # BEGIN Setting up the calibs section for config files
 CONFIG_SECTION = 'calibs'
 
-globalConf.update_translation({
-    (CONFIG_SECTION, 'standalone'): bool
-})
-
-globalConf.update_exports({
-    CONFIG_SECTION: ('standalone', 'database_dir')
-})
 # END Setting up the calibs section for config files
 # ------------------------------------------------------------------------------
-def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
-    """
-    Load the configuration from the specified path to file (or files), and
-    initialize it with some defaults.
-
-    Parameters
-    ----------
-    conf_path: <str>, Path of configuration file. Default is
-                      STANDARD_REDUCTION_CONF -> '~/.geminidr/rsys.cfg'
-
-    Return
-    ------
-    <ConfigObject>
-
-    """
-    globalConf.load(conf_path,
-            defaults = {
-                CONFIG_SECTION: {
-                    'standalone': False,
-                    'database_dir': expanduser(DEFAULT_DIRECTORY)
-                    }
-                })
-
-    return get_calconf()
-
-
-def update_calconf(items):
-    globalConf.update(CONFIG_SECTION, items)
 
 
 def get_calconf():
@@ -68,294 +26,166 @@ def get_calconf():
         return globalConf[CONFIG_SECTION]
     except KeyError:
         # This will happen if CONFIG_SECTION has not been defined in any
-        # config file, and no defaults have been set (shouldn't happen if
-        # the user has called 'load_calconf' before.
+        # config file (shouldn't happen if the user has called load_config()
         pass
 
 
-def is_local():
-    try:
-        if get_calconf().standalone:
-            if not localmanager_available:
-                raise RuntimeError(
-                    "Local calibs manager has been chosen, but there "
-                    "are missing dependencies: {}".format(import_error))
-            return True
-
-    except AttributeError:
-        # This may happen if there's no calibration config section or, in
-        # case there is one, if either calconf.standalone or calconf.database_dir
-        # are not defined
-        pass
-
-    return False
-
-
-def handle_returns_factory():
-    return (
-        localmanager.handle_returns
-        if is_local() else
-        transport_request.handle_returns
-    )
-
-
-def cal_search_factory():
+def get_db_path_from_config():
     """
-    This function returns the proper calibration search function, depending on
-    the user settings.
-
-    Defaults to `prsproxyutil.calibration_search` if there is missing calibs
-    setup, or if the `[calibs]`.`standalone` option is turned off.
-
-    Returns
-    -------
-    calibration_search: <func>
-        The appropriate (local or fitsstore) search function indicated by
-        a given configuration.
-
-    """
-
-    return (
-        localmanager.LocalManager(get_calconf().database_dir).calibration_search
-        if is_local() else
-        transport_request.calibration_search
-    )
-
-
-def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
-    """
-    Update the calibration service global configuration stored in
-    :data:`recipe_system.config.globalConf` by changing the path to the
-    configuration file and to the data base directory.
+    Read the path of the local database specified in the config file. An
+    error will be raised if there is no such database, or more than one.
+    This function is used by the "caldb" script and the set_local_database()
+    function here.
 
     Parameters
     ----------
-    local_db_dir: <str>
-        Name of the directory where the database will be stored.
+    config: str
+        name of the configuration file
 
-    config_file: <str>
-        Name of the configuration file that will be loaded.
-
-    """
-    globalConf.load(expanduser(config_file))
-
-    if localmanager_available:
-        if local_db_dir is None:
-            local_db_dir = globalConf['calibs'].database_dir
-
-        globalConf.update(
-            CONFIG_SECTION, dict(
-                database_dir=expanduser(local_db_dir),
-                config_file=expanduser(config_file)
-            )
-        )
-
-    globalConf.export_section(CONFIG_SECTION)
-
-
-class CalibrationService:
-    """
-    The CalibrationService class provides a limited API on the LocalManager
-    class. The CalibrationService is meant for public use, as opposed to the
-    lower level LocalManager class, and provides limited access to let
-    users/callers easy configuration and use of the local calibration database.
-
-    Methods
+    Returns
     -------
-
-    config(db_dir=None, verbose=True, config_file=STANDARD_REDUCTION_CONF)
-        configure a session with the database via the rsys.conf file.
-
-    init(wipe=True)
-        initialize a calibration database.
-
-    add_cal(path)
-        Add a calibration file to the database.
-
-    remove_cal(path)
-        Delete a calibration from the database.
-
-    list_files()
-        List files in the database. Returns a generator object.
-
-    E.g.,
-
-    >>> from recipe_system.cal_service import CalibrationService
-    >>> caldb = CalibrationService()
-    >>> caldb.config()
-    Using configuration file: ~/.geminidr/rsys.cfg
-
-    The active database directory is:  ~/.geminidr
-    The database file to be used: ~/.geminidr/cal_manager.db
-    The 'standalone' flag is active; local calibrations will be used.
-
-    >>> caldb.add_cal('calibrations/processed_bias/S20141013S0163_bias.fits')
-    >>> for f in caldb.list_files():
-            f
-    FileData(name='N20120212S0073_flat.fits', path='NIRI/calibrations/processed_flat')
-    FileData(name='N20131214S0097_dark.fits', path='NIRI')
-    FileData(name='N20150419S0224_flat.fits', path='GMOS_N_TWILIGHT_FLATS')
-    FileData(name='S20141013S0020_stackd_flat.fits', path='gband_demo')
-    FileData(name='S20141013S0163_bias.fits', path='gband_demo')
-    FileData(name='S20141013S0163_flats_bias.fits', path='../gband_demo')
-    FileData(name='S20141103S0123_image_bias.fits', path='../gband_demo')
-
-    >>> caldb.remove_cal('N20120212S0073_flat.fits')
-    >>> for f in caldb.list_files():
-            f
-    FileData(name='N20131214S0097_dark.fits', path='NIRI')
-    FileData(name='N20150419S0224_flat.fits', path='GMOS_N_TWILIGHT_FLATS')
-    FileData(name='S20141013S0020_stackd_flat.fits', path='gband_demo')
-    FileData(name='S20141013S0163_bias.fits', path='gband_demo')
-    FileData(name='S20141013S0163_flats_bias.fits', path='../gband_demo')
-    FileData(name='S20141103S0123_image_bias.fits', path='../gband_demo')
-
+    db_path : str
+        the path to the local database file
     """
-    def __init__(self):
-        self.conf = None
-        self._mgr = None
+    if not globalConf.sections():
+        raise OSError("Cannot read config file.")
+    databases = parse_databases()
+    db_path = None
+    for db in databases:
+        if db[0] == LocalDB:
+            if db_path is None:
+                db_path = db[1]
+            else:
+                raise ValueError("Multiple local database files are listed "
+                                 "in the config file.")
+    if db_path is None:
+        raise ValueError("No local database file is listed in the config file.")
+    return db_path
 
-    def config(self, db_dir=None, verbose=False,
-               config_file=STANDARD_REDUCTION_CONF):
-        """
-        Configure the Calibration Service and database.
 
-        Parameters
-        ----------
-        db_dir: <str>
-            Path to the local calibration database. If the database has not been
-            initialized, call this method and then init() the database. If not
-            passed (None), the path specified in a user's rsys.conf file is used.
+def init_calibration_databases(inst_lookups=None, procmode=None,
+                               ucals=None, upload=None):
+    """
+    Initialize the calibration databases for a PrimitivesBASE object.
 
-        verbose: <bool>
-            Configuration information will be displayed to stdout.
-            Default is True.
+    Parameters
+    ----------
+    inst_lookups : str
+        local of the instrument lookups package (for the MDF lookup table)
+    ucals : dict
+        user calibrations
+    upload : list
+        things to upload (we're concerned about "calibs" and "science")
 
-        config_file: str
-            Path to the configuration file.
+    Returns
+    -------
+    A UserDB object, possibly linked to additional CalDB objects
+    """
+    # Read the mdf_dict file and create an actual dict with the complete
+    # paths to each of the MDF files
+    try:
+        masks = import_module('.maskdb', inst_lookups)
+        mdf_dict = getattr(masks, 'mdf_dict')
+    except (ImportError, TypeError, AttributeError):
+        mdf_dict = None
+    else:
+        for k, v in mdf_dict.items():
+            mdf_dict[k] = path.join(path.dirname(masks.__file__),
+                                    'MDF', v)
+    caldb = UserDB(name="manual calibrations", mdf_dict=mdf_dict,
+                   user_cals=ucals)
 
-        """
-        set_calservice(local_db_dir=db_dir, config_file=config_file)
-        conf = get_calconf()
+    upload_calibs = upload is not None and "calibs" in upload
+    upload_science = upload is not None and "science" in upload
+    for cls, db, kwargs in parse_databases():
+        kwargs["procmode"] = procmode
+        if cls == RemoteDB:
+            # Actually storing to a remote DB requires that "store" is set in
+            # the config *and* the appropriate type is in upload
+            kwargs["store_science"] = kwargs["store_cal"] and upload_science
+            kwargs["store_cal"] &= upload_calibs
+        elif cls == LocalDB:
+            kwargs["force_init"] = True
+        database = cls(db, name=db, **kwargs)
+        caldb.add_database(database)
+    return caldb
 
-        if not conf.standalone:
-            print("CalibrationService is not configured as standalone.")
 
-        else:
-            print("CalibrationService is configured as standalone.")
-            print("The configured local database will be used.")
-            self._mgr = localmanager.LocalManager(expanduser(conf.database_dir))
+def parse_databases(default_dbname="cal_manager.db"):
+    """
+    Parse the databases listed in the global config file. This returns a list
+    provided information on how to build the cascase of databases, but does
+    not instantiate any CalDB objects, so it can be used by the caldb script
+    efficiently.
 
-        if verbose:
-            self._config_info(conf)
+    Parameters
+    ----------
+    default_dbname : str
+        default name of database file (if only a directory is listed in the
+        config file)
 
-        return
+    Returns
+    -------
+    list of tuples (class, database name, kwargs)
+    """
+    db_list = []
+    calconf = get_calconf()
+    if not calconf:
+        return db_list
+    upload_cookie = calconf.get("upload_cookie")
+    # Allow old-format file to be read
+    try:
+        databases = calconf["databases"]
+    except KeyError:
+        databases = calconf.get("database_dir")
+        if not databases:
+            return db_list
+        with warnings.catch_warnings():
+            warnings.simplefilter("always", DeprecationWarning)
+            warnings.warn("Use 'databases' instead of 'database_dir' in "
+                          "config file.",
+                          DeprecationWarning
+                          )
+    for line in databases.splitlines():
+        if not line:  # handle blank lines
+            continue
+        db, *flags = line.split()
+        # "get" is default if there are no flags, but if any flags are
+        # specified, then "get" must be there explicitly
+        kwargs = {"get_cal": not bool(flags),
+                  "store_cal": False}
+        for flag in flags:
+            kwarg = f"{flag}_cal"
+            if kwarg in kwargs:
+                kwargs[kwarg] = True
+            else:
+                raise ValueError("{}: Unknown flag {!r}".format(db, flag))
 
-    def config_info(self):
-        try:
-            self._config_info(get_calconf())
-        except AttributeError as err:
-            print("No configuration information available.")
-            print("You must configure the CalibrationService with config()")
-            return
+        expanded_db = path.expanduser(db)
+        if path.isdir(expanded_db):
+            db = path.join(db, default_dbname)
+            cls = LocalDB
+        elif path.isfile(expanded_db):
+            cls = LocalDB
+        elif "/" in expanded_db and "//" not in expanded_db:
+            cls = LocalDB
+        else:  # does not check
+            cls = RemoteDB
+            kwargs["upload_cookie"] = upload_cookie
+        db_list.append((cls, db, kwargs))
+    return db_list
 
-    def init(self, wipe=True):
-        """
-        Initialize a calibration database. Callers will usually only want to do
-        this once. But if called again, will wipe the old database.
 
-        Parameters
-        ----------
-        wipe: <bool>, optional
-            If the database exists and this parameter is `True` (default
-            value), the file will be removed and recreated before
-            initializing.
+def set_local_database():
+    """
+    User helper function to define a local calibration database based on
+    the "dragonsrc" config file.
 
-        Raises
-        ------
-        IOError
-            If the file exists and there a system error when trying to
-            remove it (eg. lack of permissions).
-
-        LocalManagerError
-            If the file exists and `wipe` was `False`
-
-        """
-        return self._mgr.init_database(wipe=wipe)
-
-    def add_cal(self, path):
-        """
-        Registers a calibration file specified by 'apath' into the database
-
-        Parameters
-        ----------
-        path: <str>
-            Path to the file. It can be either absolute or relative.
-
-        """
-        return self._mgr.ingest_file(path)
-
-    def remove_cal(self, path):
-        """
-        Removes a calibration file from the database. Note that only the filename
-        is relevant. All duplicate copies in the database will be removed.
-
-        Parameters
-        ----------
-        path: <str>
-            Path to the file. It can be either absolute or relative
-
-        """
-        return self._mgr.remove_file(basename(path))
-
-    def list_files(self):
-        """
-        List all files in the local calibration database.
-
-        Parameters
-        ----------
-        <void>
-
-        Returns
-        -------
-        LocalManager.list_files: <generator>.
-            (See class docstring for example of how to use this generator.)
-
-        Raises
-        ------
-        LocalManagerError
-            Raised when unable to read database.
-
-        """
-        return self._mgr.list_files()
-
-    def _config_info(self, conf):
-        path = self._mgr._db_path
-
-        is_active = (
-            "The 'standalone' flag is \033[1mactive\033[0m; local calibrations"
-            "will be used."
-        )
-
-        inactive = (
-            "The 'standalone' flag is not active; remote calibrations will be"
-            " downloaded."
-        )
-
-        print()
-        print("Using configuration file: \033[1m{}\033[0m".format(conf.config_file))
-        print("Active database directory:  \033[1m{}\033[0m".format(conf.database_dir))
-        print("Database file: \033[1m{}\033[0m".format(path))
-        print()
-        print("configuration standalone: {}".format(conf.standalone))
-
-        if conf.standalone:
-            print(is_active)
-        else:
-            print(inactive)
-
-        if not exists(path):
-            print("   NB: The database does not exist. Please initialize it.")
-            print("   (see init() below.)")
-        print()
-        return
+    Returns
+    -------
+    A LocalDB object
+    """
+    load_config()
+    db_path = get_db_path_from_config()
+    db = LocalDB(db_path, log=None)
+    return db

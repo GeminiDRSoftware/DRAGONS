@@ -7,7 +7,6 @@ import numpy as np
 from copy import deepcopy
 from scipy import ndimage, optimize
 from scipy.interpolate import UnivariateSpline
-from astropy.wcs import WCS
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.nddops import NDStacker
@@ -104,12 +103,11 @@ class GMOSImage(GMOS, Image, Photometry):
             gs_index = -1
             for index in ampsorder:
                 ext = ad[index]
-                wcs = WCS(ext.hdr)
-                x, y = wcs.all_world2pix([[oira, oidec]], 0)[0]
+                x, y = ext.wcs.backward_transform(oira, oidec)
                 if x < datasec_list[index].x2 + 0.5:
                     gs_index = index
-                    log.fullinfo('Guide star location found at ({:.2f},{:.2f})'
-                                 ' on EXTVER {}'.format(x, y, ext.hdr['EXTVER']))
+                    log.fullinfo(f'Guide star location found at '
+                                 f'({x:.2f},{y:.2f}) on extension {ext.id}')
                     break
             if gs_index == -1:
                 log.warning('Could not find OI probe location on any extensions.')

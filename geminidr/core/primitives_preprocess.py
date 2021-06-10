@@ -3,31 +3,32 @@
 #
 #                                                       primitives_preprocess.py
 # ------------------------------------------------------------------------------
-import math
 import datetime
-import numpy as np
+import math
+from collections import defaultdict
 from copy import deepcopy
-from scipy.ndimage import binary_dilation, filters
-from astropy.table import Table
-from astropy.convolution import convolve
+from functools import partial
 
 import astrodata
-import gemini_instruments
+import gemini_instruments  # noqa
+import matplotlib.pyplot as plt
+import numpy as np
+from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
-
-from gempy.gemini import gemini_tools as gt
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
+from astropy.table import Table
 from geminidr import PrimitivesBASE
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.gemini import gemini_tools as gt
+from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library.filtering import ring_median_filter
+from recipe_system.utils.decorators import parameter_override
 from recipe_system.utils.md5 import md5sum
+from scipy.interpolate import interp1d
+from scipy.ndimage import binary_dilation
+
 from . import parameters_preprocess
 
-from recipe_system.utils.decorators import parameter_override
 
-#import os, psutil
-#def memusage(proc):
-#    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
-# ------------------------------------------------------------------------------
 @parameter_override
 class Preprocess(PrimitivesBASE):
     """
@@ -72,9 +73,8 @@ class Preprocess(PrimitivesBASE):
                         # the 1-bit
                         ext.mask |= ext.OBJMASK
                 else:
-                    log.warning('No object mask present for {}:{}; cannot '
-                                'apply object mask'.format(ad.filename,
-                                                           ext.hdr['EXTVER']))
+                    log.warning(f'No object mask present for {ad.filename} '
+                                f'extension {ext.id}; cannot apply object mask')
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
@@ -104,10 +104,10 @@ class Preprocess(PrimitivesBASE):
             # and the pixel data in each variance extension by the gain squared
             log.status("Converting {} from ADU to electrons by multiplying by "
                        "the gain".format(ad.filename))
-            for ext in ad:
+           for ext in ad:
                 if not ext.is_in_adu():
-                    log.warning(f"  EXTVER {ext.hdr['EXTVER']} is already in "
-                                "electrons. Continuing.")
+                    log.warning(f"  {ext.id} is already in electrons. "
+                                "Continuing.")
                     continue
                 ext.multiply(gt.array_from_descriptor_value(ext, "gain"))
 
@@ -149,72 +149,40 @@ class Preprocess(PrimitivesBASE):
         inner_radius = params["inner"]
         outer_radius = params["outer"]
         max_iters = params["max_iters"]
-        footprint = None
 
-        flag_list = [int(math.pow(2,i)) for i,digit in
-                enumerate(str(bin(replace_flags))[2:][::-1]) if digit=='1']
-        log.stdinfo("The flags {} will be applied".format(flag_list))
+        flag_list = [int(math.pow(2, i))
+                     for i, digit in enumerate(bin(replace_flags)[2:][::-1])
+                     if digit == '1']
+        log.stdinfo(f"The flags {flag_list} will be applied")
 
         for ad in adinputs:
             for ext in ad:
                 if ext.mask is None:
-                    log.warning("No DQ plane exists for {}:{}, so the correction "
-                                "cannot be applied".format(ad.filename,
-                                                           ext.hdr['EXTVER']))
+                    log.warning(f"No DQ plane exists for {ad.filename} "
+                                f"extension {ext.id}, so the correction "
+                                "cannot be applied")
                     continue
-
-                # We need to know the dimensionality of the data to create the
-                # footprint but, if we've done it once we can avoid creating
-                # it again if the dimensionality of this extension is the same
-                if inner_radius is not None and outer_radius is not None:
-                    ndim = len(ext.shape)
-                    if footprint is None or footprint.ndim != ndim:
-                        size = int(outer_radius)
-                        mgrid = np.array(np.meshgrid(*([np.arange(-size, size+1)] * ndim)))
-                        mgrid *= mgrid
-                        footprint = np.sqrt(np.sum(mgrid, axis=0))
-                        footprint = np.where(np.logical_and(footprint>=inner_radius,
-                                                            footprint<=outer_radius), 1, 0)
 
                 try:
                     rep_value = float(replace_value)
-                    log.fullinfo("Replacing bad pixels in {}:{} with the "
-                                 "user value {}".format(ad.filename,
-                                                        ext.hdr['EXTVER'], rep_value))
-                except ValueError:  # already validated so must be "mean" or "median"
-                    if footprint is not None:
-                        mask = (ext.mask & replace_flags) > 0
-                        filtered_data = ext.data
-                        iter = 0
-                        while (iter < max_iters and np.any(mask)):
-                            iter += 1
-                            if replace_value == "median":
-                                median_data = filters.median_filter(filtered_data, footprint=footprint)
-                                filtered_data = np.where(mask, median_data, filtered_data)
-                                # If we're median filtering, we can update the mask...
-                                # if more than half the input pixels were bad, the
-                                # output is still bad.
-                                if iter < max_iters:
-                                    mask = filters.median_filter(mask, footprint=footprint)
-                            else:
-                                # "Mean" filtering is just convolution. The astropy
-                                # version handles the mask.
-                                median_data = convolve(filtered_data, footprint,
-                                                       mask=mask, boundary="extend")
-                                filtered_data = np.where(mask, median_data, filtered_data)
-                                # Output pixels are only bad if *all* the pixels in
-                                # the kernel were bad.
-                                if iter < max_iters:
-                                    mask = np.where(convolve(mask, footprint,
-                                                    boundary="extend")>0.9999, True, False)
-                        ext.data = filtered_data
+                    log.fullinfo(f"Replacing bad pixels in {ad.filename}"
+                                 f"extension {ext.id} with the "
+                                 f"user value {rep_value}")
+                except ValueError:
+                    # If replace_value is a string. It was already validated
+                    # so must be "mean" or "median"
+                    if inner_radius is not None and outer_radius is not None:
+                        ring_median_filter(ext, inner_radius, outer_radius,
+                                           max_iters=max_iters, inplace=True,
+                                           replace_flags=replace_flags,
+                                           replace_func=replace_value)
                         continue
                     else:
                         oper = getattr(np, replace_value)
                         rep_value = oper(ext.data[ext.mask & replace_flags == 0])
-                        log.fullinfo("Replacing bad pixels in {}:{} with the {} "
-                                     "of the good data".format(ad.filename,
-                                                ext.hdr['EXTVER'], replace_value))
+                        log.fullinfo(f"Replacing bad pixels in {ad.filename} "
+                                     f"extension {ext.id} with the "
+                                     f"{replace_value} of the good data")
 
                 # kernel-based replacement avoids this line
                 ext.data[(ext.mask & replace_flags) != 0] = rep_value
@@ -274,6 +242,7 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
+        has_skytable = [False] * len(adinputs)
         if not adinputs or not ad_skies:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
@@ -284,7 +253,7 @@ class Preprocess(PrimitivesBASE):
             sky_times = dict(zip(ad_skies,
                                  [ad.ut_datetime() for ad in ad_skies]))
 
-            for ad in adinputs:
+            for i, ad in enumerate(adinputs):
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
                 if params["use_all"]:
@@ -331,11 +300,36 @@ class Preprocess(PrimitivesBASE):
                     for sky in sky_list:
                         log.stdinfo("  {}".format(sky.filename))
                     ad.SKYTABLE = sky_table
+                    has_skytable[i] = True
                 else:
                     log.warning("No sky frames available for {}".format(ad.filename))
 
         # Need to update sky stream in case it came from the "sky" parameter
         self.streams['sky'] = ad_skies
+
+        # if none of frames have sky tables, just pass them all through
+        # if only some frames did not have sky corrected, move them out of main and
+        # to the "no_skytable" stream.
+        if not any(has_skytable):  # "all false", none have been sky corrected
+            log.warning(
+                'Sky frames could not be associated to any input frames.'
+                'Sky subtraction will not be possible.')
+        elif not all(
+                has_skytable):  # "some false", some frames were NOT sky corrected
+            log.stdinfo('')  # for readablity
+            false_idx = [idx for idx, trueval in enumerate(has_skytable) if
+                         not trueval]
+            for idx in reversed(false_idx):
+                ad = adinputs[idx]
+                log.warning(f'{ad.filename} does not have any associated skies'
+                            ' and cannot be sky-subtracted, moving to '
+                            '"no_skies" stream')
+                if "no_skies" in self.streams:
+                    self.streams["no_skies"].append(ad)
+                else:
+                    self.streams["no_skies"] = [ad]
+                del adinputs[idx]
+
         return adinputs
 
     def correctBackgroundToReference(self, adinputs=None, suffix=None,
@@ -382,15 +376,15 @@ class Preprocess(PrimitivesBASE):
                     for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
                         if bg is None:
                             log.warning("Could not get background level from "
-                                        "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
+                                        f"{ad.filename} extension {ext.id}")
                             continue
 
                         # Add the appropriate value to this extension
-                        log.fullinfo("Background level is {:.0f} for {}:{}".
-                                     format(bg, ad.filename, ext.hdr['EXTVER']))
+                        log.fullinfo(f"Background level is {bg:.0f} for "
+                                     f"{ad.filename} extension {ext.id}")
                         difference = np.float32(ref - bg)
-                        log.fullinfo("Adding {:.0f} to match reference background "
-                                     "level {:.0f}".format(difference, ref))
+                        log.fullinfo(f"Adding {difference:.0f} to match "
+                                     f"reference background level {ref:.0f}")
                         ext.add(difference)
                         ext.hdr.set('SKYLEVEL', ref,
                                     self.keyword_comments["SKYLEVEL"])
@@ -416,13 +410,13 @@ class Preprocess(PrimitivesBASE):
 
         return adinputs
 
-    def darkCorrect(self, adinputs=None, suffix=None, dark=None, do_dark=True):
+    def darkCorrect(self, adinputs=None, suffix=None, dark=None, do_cal=None):
         """
         This primitive will subtract each SCI extension of the inputs by those
         of the corresponding dark. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the subtraction on the
-        data. If no dark is provided, getProcessedDark will be called to
-        ensure a dark exists for every adinput.
+        data. If no dark is provided, the calibration database(s) will be
+        queried.
 
         Parameters
         ----------
@@ -437,33 +431,32 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if not do_dark:
+        if do_cal == 'skip':
             log.warning("Dark correction has been turned off.")
             return adinputs
 
         if dark is None:
-            self.getProcessedDark(adinputs, refresh=False)
-            dark_list = self._get_cal(adinputs, 'processed_dark')
+            dark_list = self.caldb.get_processed_dark(adinputs)
         else:
-            dark_list = dark
+            dark_list = (dark, None)
 
-        # Provide a dark AD object for every science frame
-        for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
-                                           force_ad=True)):
+        # Provide a dark AD object for every science frame, and an origin
+        for ad, dark, origin in zip(*gt.make_lists(adinputs, *dark_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by darkCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "darkCorrect. Continuing.")
                 continue
 
             if dark is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "dark was specified".format(ad.filename))
                     continue
                 else:
-                    raise OSError("No processed dark listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no dark was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching binning, shapes & units
             # TODO: Check exposure time?
@@ -478,9 +471,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, dark, check_filter=False,
                                       check_units=True)
 
-            log.fullinfo("Subtracting the dark ({}) from the input "
-                         "AstroData object {}".
-                         format(dark.filename, ad.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.fullinfo(f"{ad.filename}: subtracting the dark "
+                         f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename
@@ -535,13 +528,208 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_flat=True):
+
+    def fixPixels(self, adinputs=None, **params):
+        """
+        This primitive replaces bad pixels by linear interpolation along
+        lines or columns using the nearest good pixels, similar to IRAF's
+        fixpix.
+
+        Regions must be specified either as a string, separated by semi-colons,
+        with the ``regions`` parameter, or with a file (``regions_file``), one
+        region per line.
+
+        Regions strings must be a comma-separated list of colon-separated
+        pixel coordinates or ranges, one per axis, in 1-indexed Cartesian
+        pixel co-ordinates, inclusive of the upper limit. Axes are specified
+        in Fortran order (reverse of the Python order). The extension can
+        be specified at the beginning of the string, separated from the
+        coordinates by a slash. If extension is not specified, the region
+        will be fixed for all extensions.
+
+        Examples::
+
+            450, 521 => single pixel, line 521, column 450
+            430:437, 513:533 => lines 513 to 533, columns 430 to 437
+            10:, 100 => line 100, columns 10 to the end
+            *, 100 => line 100
+            2/429:,100 => for extension 2 only
+
+        By default, interpolation is performed across the narrowest dimension
+        spanning bad pixels with interpolation along image lines if the two
+        dimensions are equal (in the 2D case). 3D is also supported with the
+        same behavior. For single pixels it is possible to use a local median
+        filter instead.
+
+        Parameters
+        ----------
+        adinputs : list of `~astrodata.AstroData`
+            List of input files.
+        suffix : str
+            suffix to be added to output files.
+        regions : str
+            List of pixels or regions to fix (see description above).
+        regions_file : str
+            Path to a file containing the regions to fix. If both regions_file
+            and regions are supplied, both will be used and regions_file will
+            be used first.
+        axis : int  [None or 1 - 3]
+            Axis over which the interpolation is done, 1 is along the x-axis,
+            2 is along the y-axis, 3 is the z-axis.  If None (default), the
+            axis is determined from the narrowest dimension of each region.
+        use_local_median : bool
+            Use a local median filter for single pixels?
+        debug : bool
+            Display regions?
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        axis = params['axis']
+        debug = params['debug']
+        regions_file = params['regions_file']
+        regions = params['regions']
+        suffix = params['suffix']
+        use_local_median = params['use_local_median']
+
+        if regions is None and regions_file is None:
+            raise ValueError('regions must be specified either as a string '
+                             '(regions) or with a file (regions_file)')
+
+        all_regions = []
+
+        if regions_file is not None:
+            with open(regions_file) as f:
+                all_regions += f.read().strip().splitlines()
+
+        if regions is not None:
+            all_regions += regions.split(';')
+
+        region_slices = defaultdict(list)
+        for region in all_regions:
+            if '/' in region:
+                ext, reg = region.split('/')
+            else:
+                ext, reg = 0, region  # applies to all extensions
+
+            try:
+                slices = cartesian_regions_to_slices(reg.strip())
+            except ValueError:
+                log.warning(f'Failed to parse region: {reg}')
+            else:
+                region_slices[int(ext)].append((region, slices))
+
+        for ad in adinputs:
+            for iext, ext in enumerate(ad, start=1):
+                ndim = ext.data.ndim
+
+                if ext.mask is None:
+                    ext.mask = np.zeros(ext.shape, dtype=DQ.datatype)
+
+                for region, slices in region_slices[0] + region_slices[iext]:
+                    if len(slices) != ndim:
+                        raise ValueError(f'region {region} does not match '
+                                         'array dimension')
+
+                    if ext.data[slices].size == 0:
+                        raise ValueError(f'region {region} out of bound')
+
+                    region_shape = np.array([
+                        (s.stop or ext.shape[i]) - (s.start or 0)
+                        for i, s in enumerate(slices)
+                    ])
+
+                    # Find the axis that will be used for the interpolation
+                    if axis is None:
+                        # If we have two axis with the same size, we should
+                        # use the deeper one. E.g. for images with a square
+                        # region, interpolation is done on lines.
+                        use_axis = np.where(
+                            region_shape == region_shape.min())[0][-1]
+                    else:
+                        if axis not in range(1, ndim + 1):
+                            raise ValueError('axis should specify a dimension '
+                                             f'between 1 and {ndim}')
+                        use_axis = ndim - axis
+
+                    if debug:
+                        log.debug(f'Replacing pixel {region} with a '
+                                  'local median ')
+                        plot_slices = [slice(sl.start - 10, sl.stop + 10)
+                                       for sl in slices]
+                        if len(plot_slices) > 2:
+                            plot_slices = [Ellipsis] + plot_slices[-2:]
+                        origdata = ext.data[plot_slices].copy()
+
+                    if use_local_median and np.prod(region_shape) == 1:
+                        ext.mask[slices] |= 32768
+                        ring_median_filter(ext.nddata, 3, 5, inplace=True,
+                                           replace_flags=32768,
+                                           replace_func='median')
+                        ext.mask[slices] ^= 32768
+                    else:
+                        log.debug(f'Interpolating region {region} on '
+                                  f'axis {ndim - use_axis}')
+                        # Extract the data corresponding to the region
+                        slices_extract = list(slices)
+                        slices_extract[use_axis] = slice(None)
+                        data = ext.data[tuple(slices_extract)]
+
+                        # Reshape to put the interpolation axis first, and
+                        # flatten the other axes
+                        data = np.rollaxis(data, use_axis)
+                        extracted_shape = data.shape
+                        data = data.reshape(ext.shape[use_axis], -1)
+
+                        # Prepare the data to interpolate, removing the values
+                        # from the region
+                        sl = slices[use_axis]
+                        ind = np.arange(ext.shape[use_axis])
+                        ind = np.delete(ind, sl)
+                        data_in = np.delete(data, sl, axis=0)
+
+                        if ind.size == 0:
+                            if axis is None:
+                                raise ValueError(
+                                    'no good data left for the interpolation')
+                            else:
+                                raise ValueError(
+                                    'no good data left for the interpolation '
+                                    'along the chosen axis')
+
+                        # Do the interpolation and replace the values
+                        f = interp1d(ind, data_in, kind='linear', axis=0,
+                                     bounds_error=True)
+                        data[sl, :] = f(np.arange(sl.start, sl.stop))
+
+                        # Reshape the other way, and replace the final values
+                        data = data.reshape(extracted_shape)
+                        data = np.rollaxis(data, 0, use_axis + 1)
+                        ext.data[tuple(slices_extract)] = data
+
+                    # Mark the interpolated pixels as no_data
+                    ext.mask[slices] = DQ.no_data
+
+                    if debug:
+                        fig, (ax1, ax2) = plt.subplots(1, 2)
+                        ax1.imshow(origdata, vmin=0, vmax=100)
+                        ax2.imshow(ext.data[plot_slices], vmin=0, vmax=100)
+                        plt.show()
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the division on the data.
-        If no flatfield is provided, getProcessedFlat will be called
-        to ensure a flat exists for every adinput.
+        If no flatfield is provided, the calibration database(s) will be
+        queried.
 
         If the flatfield has had a QE correction applied, this information is
         copied into the science header to avoid the correction being applied
@@ -561,34 +749,33 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         qecorr_key = self.timestamp_keys['QECorrect']
 
-        if not do_flat:
+        if do_cal == 'skip':
             log.warning("Flat correction has been turned off.")
             return adinputs
 
         if flat is None:
-            self.getProcessedFlat(adinputs, refresh=False)
-            flat_list = self._get_cal(adinputs, 'processed_flat')
+            flat_list = self.caldb.get_processed_flat(adinputs)
         else:
-            flat_list = flat
+            flat_list = (flat, None)
 
-        # Provide a flatfield AD object for every science frame
-        for ad, flat in zip(*gt.make_lists(adinputs, flat_list,
-                                           force_ad=True)):
+        # Provide a bflat AD object for every science frame, and an origin
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                    force_ad=(1,))):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by flatCorrect".
-                            format(ad.filename))
+                log.warning(f"{ad.filename}: already processed by "
+                            "flatCorrect. Continuing.")
                 continue
 
             if flat is None:
-                if 'qa' in self.mode:
+                if 'sq' not in self.mode and do_cal != 'force':
                     log.warning("No changes will be made to {}, since no "
                                 "flatfield has been specified".
                                 format(ad.filename))
                     continue
                 else:
-                    raise OSError("No processed flat listed for {}".
-                                   format(ad.filename))
+                    log.warning(f"{ad.filename}: no flat was specified. "
+                                "Continuing.")
+                    continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -603,8 +790,9 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, flat)
 
             # Do the division
-            log.fullinfo("Dividing the input AstroData object {} by this "
-                         "flat:\n{}".format(ad.filename, flat.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: dividing by the flat "
+                         f"{flat.filename}{origin_str}")
             ad.divide(flat)
 
             # Update the header and filename, copying QECORR keyword from flat
@@ -666,8 +854,8 @@ class Preprocess(PrimitivesBASE):
             log.status("Applying nonlinearity correction to {}".
                        format(ad.filename))
             for ext, coeffs in zip(ad, nonlin_coeffs):
-                log.status("   nonlinearity correction for EXTVER {} is {}".
-                           format(ext.hdr['EXTVER'], coeffs))
+                log.status("   nonlinearity correction for extension {} is {}"
+                           .format(ext.id, coeffs))
                 pixel_data = np.zeros_like(ext.data)
 
                 # Convert back to ADU per exposure if coadds have been summed
@@ -737,16 +925,15 @@ class Preprocess(PrimitivesBASE):
                         scaling = operator(ext.data[ext.mask==0]).astype(np.float32)
                     # Divide the science extension by the median value
                     # VAR is taken care of automatically
-                    log.fullinfo("Normalizing {} EXTVER {} by dividing by {:.2f}".
-                                 format(ad.filename, ext.hdr['EXTVER'], scaling))
+                    log.fullinfo("Normalizing {} extension {} by dividing by {:.2f}"
+                                 .format(ad.filename, ext.id, scaling))
                     ext /= scaling
             else:
                 # Combine pixels from all extensions, using DQ if present
-                scaling = operator(np.concatenate([(ext.data.ravel()
-                        if ext.mask is None else ext.data[ext.mask==0].ravel())
-                                            for ext in ad])).astype(np.float32)
-                log.fullinfo("Normalizing {} by dividing by {:.2f}".
-                            format(ad.filename, scaling))
+                scaling = operator(np.concatenate([
+                    (ext.data.ravel() if ext.mask is None else ext.data[ext.mask==0].ravel())
+                    for ext in ad])).astype(np.float32)
+                log.fullinfo(f"Normalizing {ad.filename} by dividing by {scaling:.2f}")
                 ad /= scaling
 
             # Timestamp and update the filename
@@ -874,25 +1061,29 @@ class Preprocess(PrimitivesBASE):
             return s[:-5] if s.endswith('.fits') else s
 
         missing = []
-        for ad in adinputs:
-            for obj_filename in ref_obj:
+        for obj_filename in ref_obj:
+            for ad in adinputs:
                 if strip_fits(obj_filename) in ad.filename:
                     objects.add(ad)
                     if 'SKYFRAME' in ad.phu and 'OBJFRAME' not in ad.phu:
                         log.warning("{} previously classified as SKY; added "
                                 "OBJECT as requested".format(ad.filename))
                     break
+            else:
                 missing.append(obj_filename)
 
-            for sky_filename in ref_sky:
+        for sky_filename in ref_sky:
+            for ad in adinputs:
                 if strip_fits(sky_filename) in ad.filename:
                     objects.add(ad)
                     if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
                         log.warning("{} previously classified as OBJECT; "
                                 "added SKY as requested".format(ad.filename))
                     break
+            else:
                 missing.append(sky_filename)
 
+        for ad in adinputs:
             # Mark unguided exposures as skies
             if ad.wavefront_sensor() is None:
                 # Old Gemini data are missing the guiding keywords and the
@@ -956,7 +1147,7 @@ class Preprocess(PrimitivesBASE):
                 objects = set(adinputs)
                 skies = set(adinputs)
             else:
-                distsq = [sum([x * x for x in g.group_cen]) for g in groups]
+                distsq = [sum([x * x for x in g.group_center]) for g in groups]
                 if ngroups == 2:
                     log.fullinfo("Treating 1 group as object and 1 as sky, "
                                  "based on target proximity")
@@ -1064,20 +1255,23 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        #print "STARTING", memusage(proc)
+        # import os, psutil
+        # def memusage(proc):
+        #     return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
+        # print "STARTING", memusage(proc)
 
         save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
         offset_sky = params["offset_sky"]
+        suffix = params["suffix"]
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
             params["zero"] = False
 
         # Parameters to be passed to stackSkyFrames
-        stack_params = self._inherit_params(params, 'stackSkyFrames',
-                                            pass_suffix=True)
+        stack_params = self._inherit_params(params, 'stackSkyFrames')
         #stack_params['mask_objects'] = False  # We're doing this en masse
 
         # To avoid a crash in certain methods of operation
@@ -1191,7 +1385,7 @@ class Preprocess(PrimitivesBASE):
                     # Sky-subtraction is in place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
                                      offset_sky=offset_sky, reset_sky=reset_sky,
-                                     save_sky=save_sky)
+                                     save_sky=save_sky, suffix=suffix)
                     skytables[j] = []
                     # This deletes a reference to the AD sky object
                     stacked_skies[j] = None
@@ -1238,6 +1432,8 @@ class Preprocess(PrimitivesBASE):
                         "Setting offset_sky=False.")
             zero = False
 
+        skyfunc = partial(gt.measure_bg_from_image, value_only=True)
+
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):
             if ad.phu.get(timestamp_key):
@@ -1248,35 +1444,30 @@ class Preprocess(PrimitivesBASE):
 
             if ad_sky is not None:
                 # Only call measure_bg_from_image if we need it
-                if reset_sky or scale or zero:
-                    old_bg = gt.measure_bg_from_image(ad, value_only=True)
-                log.stdinfo("Subtracting the image ({}) from the science "
-                            "AstroData object {}".
-                            format(ad_sky.filename, ad.filename))
-                if scale or zero:
-                    sky_bg = gt.measure_bg_from_image(ad_sky, value_only=True)
-                    for ext_sky, final_bg, init_bg in zip(ad_sky, old_bg, sky_bg):
-                        if scale:
-                            ext_sky *= final_bg / init_bg
-                        else:
-                            ext_sky += final_bg - init_bg
-                        log.fullinfo("Applying {} to EXTVER {} from {} to {}".
-                                format(("scaling" if scale else "zeropoint"),
-                                       ext_sky.hdr['EXTVER'], init_bg, final_bg))
-                if save_sky:
-                    #ad_sky.update_filename(suffix='_skyimage', strip=True)
-                    self.writeOutputs([ad_sky])
-                ad.subtract(ad_sky)
                 if reset_sky:
-                    new_bg = gt.measure_bg_from_image(ad, value_only=True)
-                    for ext, new_level, old_level in zip(ad, new_bg, old_bg):
-                        sky_offset = old_level - new_level
-                        log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
-                                            ad.filename, ext.hdr['EXTVER']))
-                        ext.add(sky_offset)
+                    orig_bg = skyfunc(ad)
+                log.stdinfo(f"Subtracting {ad_sky.filename} from "
+                            f"the science frame {ad.filename}")
+                if scale or zero:
+                    factors = [gt.sky_factor(ext, ext_sky, skyfunc, multiplicative=scale)
+                               for ext, ext_sky in zip(ad, ad_sky)]
+                    for ext_sky, factor in zip(ad_sky, factors):
+                        log.fullinfo("Applying {} of {} to extension {}".
+                                format("scaling" if scale else "offset",
+                                       factor, ext_sky.id))
+                else:
+                    ad.subtract(ad_sky)
+                if save_sky:
+                    # ad_sky.update_filename(suffix='_skyimage', strip=True)
+                    self.writeOutputs([ad_sky])
+                if reset_sky:
+                    for ext, bg in zip(ad, orig_bg):
+                        log.stdinfo(f"  Adding {bg} to {ad.filename} "
+                                    f"extension {ext.id}")
+                        ext.add(bg)
             else:
-                log.warning("No changes will be made to {}, since no "
-                            "sky was specified".format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since no sky was specified")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1306,14 +1497,13 @@ class Preprocess(PrimitivesBASE):
 
             bg_list = ad.hdr.get('SKYLEVEL')
             for ext, bg in zip(ad, bg_list):
-                extver = ext.hdr['EXTVER']
                 if bg is None:
-                    log.warning("No changes will be made to {}:{}, since there "
-                                "is no sky background measured".
-                                format(ad.filename, extver))
+                    log.warning(f"No changes will be made to {ad.filename} "
+                                f"extension {ext.id}, since there "
+                                "is no sky background measured")
                 else:
-                    log.fullinfo("Subtracting {:.0f} to remove sky level from "
-                                 "image {}:{}".format(bg, ad.filename, extver))
+                    log.fullinfo(f"Subtracting {bg:.0f} to remove sky level "
+                                 f"from image {ad.filename} extension {ext.id}")
                     ext.subtract(bg)
 
             # Timestamp and update filename
@@ -1360,8 +1550,8 @@ class Preprocess(PrimitivesBASE):
                 # plane to int64
                 unillum = np.where(((ext.data > upper) | (ext.data < lower)) &
                                    ((ext.mask & DQ.bad_pixel) == 0),
-                                   np.int16(DQ.unilluminated), np.int16(0))
-                ext.mask = unillum if ext.mask is None else ext.mask | unillum
+                                   DQ.unilluminated, 0).astype(DQ.datatype)
+                ext.mask |= unillum
                 log.fullinfo("ThresholdFlatfield set bit '64' for values "
                              "outside the range [{:.2f},{:.2f}]".
                              format(lower, upper))

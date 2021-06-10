@@ -3,11 +3,11 @@ import numpy as np
 import re
 from datetime import date
 
-from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
+from astrodata import (astro_data_tag, astro_data_descriptor, returns_list,
+                       TagSet, Section)
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
-from ..common import Section
 from ..gemini import AstroDataGemini
 
 
@@ -124,10 +124,9 @@ class AstroDataGmos(AstroDataGemini):
             return TagSet(['IFU', mapping[mskn]])
 
     @astro_data_tag
-    def _tag_mask(self):
-        spg = self.phu.get
-        if spg('GRATING') == 'MIRROR' and spg('MASKTYP') != 0:
-            return TagSet(['MASK'])
+    def _tag_thruslit(self):
+        if self.phu.get('MASKTYP') != 0:
+            return TagSet(['THRUSLIT'], if_present=['IMAGE'])
 
     @astro_data_tag
     def _tag_image_or_spect(self):

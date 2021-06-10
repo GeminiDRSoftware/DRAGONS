@@ -11,12 +11,11 @@ import urllib.request
 from copy import deepcopy
 from importlib import import_module
 
-from astrodata import wcs as adwcs
-
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy import numdisplay as nd
 from gempy.library import transform
+from gempy.display.numdisplay_tools import make_overlay_mask
 
 from astropy.modeling import models
 from gwcs.coordinate_frames import Frame2D
@@ -86,6 +85,13 @@ class Visualize(PrimitivesBASE):
         overlay_index = 0
         lnd = _localNumDisplay()
 
+        if isinstance(overlays, str):
+            try:
+                overlays = _read_overlays_from_file(overlays)
+            except OSError:
+                log.warning(f"Cannot open overlays file {overlays}")
+                overlays = None
+
         for ad in adinputs:
             # Allows elegant break from nested loops
             if frame > 16:
@@ -141,14 +147,30 @@ class Visualize(PrimitivesBASE):
 
             # Check whether data needs to be tiled before displaying
             # Otherwise, flatten all desired extensions into a single list
-            if tile and len(ad) > 1:
+            num_ext = len(ad)
+            if tile and num_ext > 1:
                 log.fullinfo("Tiling extensions together before displaying")
-
-                # !! This is the replacement call for tileArrays() !!
-                # !! mosaicADdetectors handles both GMOS and GSAOI !!
-                # ad = self.mosaicADdetectors(tile=True)[0]
-
+                # post-transform metadata is arranged in order of blocks, not
+                # slices, so we need to ensure the correct offsets are applied
+                # to each slice
+                array_info = gt.array_information(ad)
                 ad = self.tileArrays([ad], tile_all=True)[0]
+                # Logic here in case num_ext overlays sent to be applied to all ADs
+                if overlays and len(overlays) + overlay_index >= num_ext:
+                    new_overlay = []
+                    trans_data = ad.nddata[0].meta.pop("transform")
+                    for ext_indices, corner, block in zip(array_info.extensions,
+                                                          trans_data["corners"],
+                                                          trans_data["block_corners"]):
+                        xshift = int(round(corner[1][0]))
+                        yshift = int(round(corner[0][0]))
+                        for ext_index, b in zip(ext_indices, block):
+                            dx, dy = xshift + b[1], yshift + b[0]
+                            i = overlay_index + ext_index
+                            if overlays[i]:
+                                new_overlay.extend([(x+dx, y+dy, r) for x, y, r in overlays[i]])
+                    overlays = (overlays[:overlay_index] + (new_overlay,) +
+                                overlays[overlay_index+num_ext:])
 
             # Each extension is an individual display item (if the data have been
             # tiled, then there'll only be one extension per AD, of course)
@@ -201,21 +223,25 @@ class Visualize(PrimitivesBASE):
                     except IndexError:
                         if len(overlays) == 1:
                             overlay = overlays[0]
-                    masks.append(overlay)
-                    mask_colors.append(206)
+                    try:
+                        masks.append(make_overlay_mask(overlay, ext.shape))
+                    except Exception:
+                        pass
+                    else:
+                        mask_colors.append(206)
+                    overlay_index += 1
 
                 # Define the display name
-                if tile and extname=='SCI':
+                if tile and extname == 'SCI':
                     name = ext.filename
                 elif tile:
-                    name = '{}({})'.format(ext.filename, extname)
+                    name = f'{ext.filename}({extname})'
                 else:
-                    name = '{}({},{})'.format(ext.filename, extname,
-                                              ext.hdr['EXTVER'])
+                    name = f'{ext.filename}({extname}, extension {ext.id})'
 
                 try:
                     lnd.display(data, name=name, frame=frame, zscale=zscale,
-                                bpm=None if extname=='DQ' else dqdata,
+                                bpm=None if extname == 'DQ' else dqdata,
                                 quiet=True, masks=masks, mask_colors=mask_colors)
                 except OSError:
                     log.warning("ds9 not found; cannot display input")
@@ -305,7 +331,7 @@ class Visualize(PrimitivesBASE):
             # we can catch that, trim, and try again. Don't catch anything else
             try:
                 ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
-                                                          order=order, process_objcat=False)
+                                                     order=order, process_objcat=False)
             except ValueError as e:
                 if 'data sections' in repr(e):
                     ad = gt.trim_to_data_section(ad, self.keyword_comments)
@@ -313,11 +339,6 @@ class Visualize(PrimitivesBASE):
                                                          order=order, process_objcat=False)
                 else:
                     raise e
-
-            # HACK! Need to update FITS header because imaging primitives edit it
-            if 'IMAGE' in ad_out.tags and ad_out[0].wcs is not None:
-                wcs_dict = adwcs.gwcs_to_fits(ad_out[0], ad_out.phu)
-                ad_out[0].hdr.update(wcs_dict)
 
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
@@ -429,7 +450,7 @@ class Visualize(PrimitivesBASE):
                         #ext.wcs.insert_frame(ext.wcs.input_frame, ext_shift,
                         #                     Frame2D(name="tile"))
                         ext.wcs = gWCS([(ext.wcs.input_frame, ext_shift),
-                                        (Frame2D(name="tile"), ext.wcs.pipeline[0][1])] +
+                                        (Frame2D(name="tile"), ext.wcs.pipeline[0].transform)] +
                                        ext.wcs.pipeline[1:])
                         ext.wcs.insert_transform('tile', ext_shift.inverse, after=True)
 
@@ -472,13 +493,6 @@ class Visualize(PrimitivesBASE):
             if tile_all:
                 ad_out = transform.resample_from_wcs(ad, "tile", attributes=attributes,
                                                      process_objcat=True)
-
-            # HACK! Need to update FITS header because imaging primitives edit it
-            if 'IMAGE' in ad_out.tags:
-                for ext in ad_out:
-                    if ext.wcs is not None:
-                        wcs_dict = adwcs.gwcs_to_fits(ext, ad_out.phu)
-                        ext.hdr.update(wcs_dict)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.orig_filename = ad.filename
@@ -569,12 +583,16 @@ class Visualize(PrimitivesBASE):
                 w_dispersion = np.abs(wavelength[-1] - wavelength[0]) / (data.size - 1)
                 w_units = str(ext.wcs.output_frame.unit[0])
 
-                # Clean up bad data
-                mask = np.logical_not(np.ma.masked_invalid(data).mask)
+                # Create mask for bad data
+                mask = np.ma.masked_array(
+                    np.zeros_like(wavelength),
+                    mask=np.logical_or(
+                        ext.mask > 0, np.ma.masked_invalid(data).mask))
 
-                wavelength = wavelength[mask]
-                data = data[mask].astype(float)
-                stddev = stddev[mask].astype(float)
+                # Retrieve unmasked clump slices
+                _slices = [
+                    [int(s.start), int(s.stop)]
+                    for s in np.ma.clump_unmasked(mask)]
 
                 # Round and convert data/stddev to int to minimize data transfer load
                 wavelength = np.round(wavelength, decimals=3)
@@ -602,6 +620,7 @@ class Visualize(PrimitivesBASE):
                     "id": np.round(center + offset),
                     "intensity": _intensity,
                     "intensity_units": _units,
+                    "slices": _slices,
                     "stddev": _stddev,
                 }
 
@@ -634,6 +653,25 @@ class Visualize(PrimitivesBASE):
 
         return adinputs
 
+
+def _read_overlays_from_file(filename):
+    f = open(filename)
+    overlays = []
+    this_overlay = []
+    for line in f.readlines():
+        items = line.strip().split()
+        if items:
+            try:
+                coords = [float(item_) for item_ in items]
+            except TypeError:
+                pass
+            else:
+                this_overlay.append(coords if len(coords) == 3 else
+                                    [*coords, 0])
+        else:
+            overlays.append(this_overlay)
+            this_overlay = []
+    return overlays + this_overlay
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
@@ -692,7 +730,7 @@ class _localNumDisplay(nd.NumDisplay):
                     z1, z2 = nd.zscale.zscale(pix, contrast=contrast)
 
         self.set(frame=frame, z1=z1, z2=z2,
-                transform=transform, scale=scale, offset=offset)
+                 transform=transform, scale=scale, offset=offset)
 
         # Initialize the display device
         if not self.view._display or self.view.checkDisplay() is False:

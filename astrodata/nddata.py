@@ -8,13 +8,12 @@ import warnings
 from copy import deepcopy
 from functools import reduce
 
-from astropy.nddata import (NDData, NDSlicingMixin, NDArithmeticMixin,
-                            VarianceUncertainty)
-from astropy.io.fits import ImageHDU
-from astropy.modeling import models, Model
-
 import numpy as np
 
+from astropy.io.fits import ImageHDU
+from astropy.modeling import Model, models
+from astropy.nddata import (NDArithmeticMixin, NDData, NDSlicingMixin,
+                            VarianceUncertainty)
 from astropy.wcs import WCS
 from gwcs.wcs import WCS as gWCS
 
@@ -158,7 +157,13 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
-                 meta=None, unit=None, copy=False, window=None):
+                 meta=None, unit=None, copy=False, window=None, variance=None):
+
+        if variance is not None:
+            if uncertainty is not None:
+                raise ValueError()
+            uncertainty = ADVarianceUncertainty(variance)
+
         super().__init__(FakeArray(data) if is_lazy(data) else data,
                          None if is_lazy(uncertainty) else uncertainty,
                          mask, wcs, meta, unit, copy)
@@ -169,20 +174,22 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
             self.uncertainty = uncertainty
 
     def __deepcopy__(self, memo):
-        new = self.__class__(self._data if is_lazy(self._data) else deepcopy(self.data, memo),
-                             self._uncertainty if is_lazy(self._uncertainty) else None,
-                             self._mask if is_lazy(self._mask) else deepcopy(self.mask, memo),
-                             deepcopy(self.wcs, memo), None, self.unit)
+        new = self.__class__(
+            self._data if is_lazy(self._data) else deepcopy(self.data, memo),
+            self._uncertainty if is_lazy(self._uncertainty) else None,
+            self._mask if is_lazy(self._mask) else deepcopy(self.mask, memo),
+            deepcopy(self.wcs, memo), None, self.unit
+        )
         new.meta = deepcopy(self.meta, memo)
         # Needed to avoid recursion because of uncertainty's weakref to self
         if not is_lazy(self._uncertainty):
             new.variance = deepcopy(self.variance)
         return new
 
-    def _arithmetic(self, operation, operand,
-                    propagate_uncertainties=True, handle_mask=np.bitwise_or,
-                    handle_meta=None, uncertainty_correlation=0,
-                    compare_wcs='first_found', **kwds):
+    def _arithmetic(self, operation, operand, propagate_uncertainties=True,
+                    handle_mask=np.bitwise_or, handle_meta=None,
+                    uncertainty_correlation=0, compare_wcs='first_found',
+                    **kwds):
         """
         Override the NDData method so that "bitwise_or" becomes the default
         operation to combine masks, rather than "logical_or"
@@ -258,13 +265,14 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     @property
     def window(self):
         """
-        Interface to access a section of the data, using lazy access whenever possible.
+        Interface to access a section of the data, using lazy access whenever
+        possible.
 
         Returns
         --------
-        An instance of ``NDWindowing``, which provides ``__getitem__``, to allow the use
-        of square brackets when specifying the window. Ultimately, an
-        ``NDWindowingAstrodata`` instance is returned
+        An instance of ``NDWindowing``, which provides ``__getitem__``,
+        to allow the use of square brackets when specifying the window.
+        Ultimately, an ``NDWindowingAstrodata`` instance is returned.
 
         Examples
         ---------

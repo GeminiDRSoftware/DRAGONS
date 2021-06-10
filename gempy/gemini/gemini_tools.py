@@ -8,13 +8,15 @@ import os
 import re
 import numbers
 import itertools
-import numpy as np
 
 from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
-
 from functools import wraps
+from collections import namedtuple
+
+import numpy as np
+from scipy.special import erf
 
 from astropy.stats import sigma_clip
 from astropy.wcs import WCS
@@ -28,16 +30,16 @@ from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
 from ..utils import logutils
 
+from datetime import datetime
+
 import astrodata
 
-from collections import namedtuple
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
 
-
 @models.custom_model
-def CumGauss1D(x, mean=0.0, stddev=1.0):
-    return 0.5*(1.0+erf((x-mean) / (1.414213562*stddev)))
+def Ogive(x, mean=0.0, stddev=1.0, lowfrac=1.0):
+    return 0.5 / lowfrac * (1.0 + erf((x - mean) / (1.414213562 * stddev)))
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -53,23 +55,23 @@ def handle_single_adinput(fn):
     return wrapper
 # ------------------------------------------------------------------------------
 @handle_single_adinput
-def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
+def add_objcat(adinput=None, index=0, replace=False, table=None, sx_dict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
 
     Parameters
     ----------
-    adinput: AstroData
+    adinput : AstroData
         AD object(s) to add table to
 
-    extver: int
-        Extension number for the table (should match the science extension)
+    index : int
+        Extension index for the table
 
-    replace: bool
+    replace : bool
         replace (overwrite) with new OBJCAT? If False, the new table must
         have the same length as the existing OBJCAT
 
-    table: Table
+    table : Table
         new OBJCAT Table or new columns. For a new table, X_IMAGE, Y_IMAGE,
         X_WORLD, and Y_WORLD are required columns
     """
@@ -86,11 +88,11 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
     # Parse sextractor parameters for the list of expected columns
     expected_columns = parse_sextractor_param(sx_dict['dq', 'param'])
     # Append a few more that don't come from directly from sextractor
-    expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR",
-                             "PROFILE_FWHM","PROFILE_EE50"])
+    expected_columns.extend(["REF_NUMBER", "REF_MAG", "REF_MAG_ERR",
+                             "PROFILE_FWHM", "PROFILE_EE50"])
 
     for ad in adinput:
-        ext = ad.extver(extver)
+        ext = ad[index]
         # Check if OBJCAT already exists and just update if desired
         objcat = getattr(ext, 'OBJCAT', None)
         if objcat and not replace:
@@ -112,9 +114,16 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
                 else:
                     default = [-999] * nrows
                     dtype = np.float32
+                    if 'MAG' in name:
+                        unit = 'mag'
+                    elif 'PROFILE' in name:
+                        unit = 'pix'
+                    else:
+                        unit = None
                 # Use input table column if given, otherwise the placeholder
-                new_objcat.add_column(table[name] if name in table.columns else
-                                Column(data=default, name=name, dtype=dtype))
+                new_objcat.add_column(
+                    table[name] if name in table.columns else
+                    Column(data=default, name=name, dtype=dtype, unit=unit))
 
             # Replace old version or append new table to AD object
             if objcat:
@@ -228,16 +237,16 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
 
         # Now check each extension
         for ext1, ext2 in zip(ad1, ad2):
-            log.fullinfo('Checking EXTVER {}'.format(ext1.hdr['EXTVER']))
+            log.fullinfo(f'Checking extension {ext1.id}')
 
             # Check shape/size
-            if check_shape and ext1.data.shape != ext2.data.shape :
+            if check_shape and ext1.data.shape != ext2.data.shape:
                 log.error('Extensions have different shapes')
                 raise ValueError('Extensions have different shape')
 
             # Check binning
             if (ext1.detector_x_bin() != ext2.detector_x_bin() or
-                        ext1.detector_y_bin() != ext2.detector_y_bin()):
+                    ext1.detector_y_bin() != ext2.detector_y_bin()):
                 log.error('Extensions have different binning')
                 raise ValueError('Extensions have different binning')
 
@@ -645,13 +654,14 @@ def clip_auxiliary_data_old(adinput=None, aux=None, aux_type=None,
                         pass
 
                 # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
+                new_aux.append(ext_to_clip[0].nddata)
 
             if not found:
                 raise OSError(
-                  "No auxiliary data in {} matches the detector section "
-                  "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                       ad.filename, ext.hdr['EXTVER']))
+                    f"No auxiliary data in {this_aux.filename} matches the "
+                    f"detector section {detsec} in {ad.filename} extension "
+                    f"{ext.id}"
+                )
 
         if clipped_this_ad:
             log.stdinfo("Clipping {} to match science data.".
@@ -820,13 +830,14 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                         pass
 
                 # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
+                new_aux.append(ext_to_clip[0].nddata)
 
             if not found:
                 raise OSError(
-                    "No auxiliary data in {} matches the detector section "
-                    "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                              ad.filename, ext.EXTVER))
+                    f"No auxiliary data in {this_aux.filename} matches the "
+                    f"detector section {detsec} in {ad.filename} extension "
+                    f"{ext.id}"
+                )
 
         log.stdinfo("Clipping {} to match science data.".
                     format(os.path.basename(this_aux.filename)))
@@ -869,14 +880,16 @@ def clip_sources(ad):
 
     is_ao = ad.is_ao()
     sn_limit = 25 if is_ao else 50
+    single = ad.is_single
+    ad_iterable = [ad] if single else ad
 
     # Produce warning but return what is expected
-    if not any([hasattr(ext, 'OBJCAT') for ext in ad]):
+    if not any([hasattr(ext, 'OBJCAT') for ext in ad_iterable]):
         log.warning("No OBJCATs found on input. Has detectSources() been run?")
-        return [Table()] * len(ad)
+        return Table() if single else [Table()] * len(ad)
 
     good_sources = []
-    for ext in ad:
+    for ext in ad_iterable:
         try:
             objcat = ext.OBJCAT
         except AttributeError:
@@ -927,7 +940,7 @@ def clip_sources(ad):
 
         good_sources.append(table)
 
-    return good_sources
+    return good_sources[0] if single else good_sources
 
 @handle_single_adinput
 def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
@@ -1153,7 +1166,10 @@ def fit_continuum(ad):
     tags = ad.tags
     acq_star_positions = ad.phu.get("ACQSLITS")
 
-    for ext in ad:
+    single = ad.is_single
+    ad_iterable = [ad] if single else ad
+
+    for ext in ad_iterable:
         fwhm_list = []
         x_list, y_list = [], []
         weight_list = []
@@ -1205,11 +1221,10 @@ def fit_continuum(ad):
                 # No acquisition slits, maybe we've already found apertures?
                 aptable = ext.APERTURE
                 for row in aptable:
-                    model_dict = dict(zip(aptable.colnames, row))
-                    trace_model = astromodels.dict_to_chebyshev(model_dict)
+                    trace_model = astromodels.table_to_model(row)
                     aperture = tracing.Aperture(trace_model,
-                                                aper_lower=model_dict['aper_lower'],
-                                                aper_upper=model_dict['aper_upper'])
+                                                aper_lower=row['aper_lower'],
+                                                aper_upper=row['aper_upper'])
                     spatial_slices.append(aperture)
             except AttributeError:
                 # No apertures, so defer source-finding until we iterate
@@ -1309,6 +1324,8 @@ def fit_continuum(ad):
                     if (m_final.amplitude_0 > 0.5*(maxflux-m_final.amplitude_2) and
                         pixels.min()+1 < m_final.mean_0 < pixels.max()-1):
                         fwhm = abs(2 * np.sqrt(2*np.log(2)) * m_final.stddev_0)
+                        if fwhm < 1.5:
+                            continue
                         fwhm_list.append(fwhm)
                         if dispaxis == 0:
                             x_list.append(m_final.mean_0.value)
@@ -1335,10 +1352,11 @@ def fit_continuum(ad):
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~sigma_clip(table['fwhm_arcsec']).mask]
-
+            table = table[~sigma_clip(table['fwhm_arcsec'], sigma=2,
+                                      maxiters=2).mask]
         good_sources.append(table)
-    return good_sources
+
+    return good_sources[0] if single else good_sources
 
 
 def array_from_descriptor_value(ext, descriptor):
@@ -1463,8 +1481,9 @@ def make_lists(*args, **kwargs):
     ----------
     args: lists of str/AD (or single str/AD)
         key_list and auxiliary things to be matched to each AD
-    kwargs["force_ad"]: bool
-        coerce strings into AD objects?
+    kwargs["force_ad"]: bool/tuple
+        coerce strings into AD objects? If True, coerce all objects, if a
+        tuple/list, then convert only objects in that list (0-indexed)
 
     Returns
     -------
@@ -1488,21 +1507,28 @@ def make_lists(*args, **kwargs):
             if len(ret_value[i]) == 1:
                 ret_value[i] *= len_list
 
-    if force_ad:
-        # We only want to open as many AD objects as there are unique entries,
-        # so collapse all items in lists to a set and multiple keys with the
-        # same value will be assigned references to the same open AD object
-        ad_map_dict = {}
-        for x in set(itertools.chain(*ret_value)):
-            try:
-                ad_map_dict.update({x: x if isinstance(x, astrodata.AstroData)
-                                        or x is None else astrodata.open(x)})
-            except:
-                ad_map_dict.update({x: None})
-                log.warning(f"Cannot open file {x}")
-        ret_value = [[ad_map_dict[x] for x in List] for List in ret_value]
+    if not force_ad:
+        return ret_value
 
-    return ret_value
+    # We only want to open as many AD objects as there are unique entries,
+    # so collapse all items in lists to a set and multiple keys with the
+    # same value will be assigned references to the same open AD object
+    ad_map_dict = {}
+    ret_lists = []
+    for i, _list in enumerate(ret_value):
+        if force_ad is True or i in force_ad:
+            for x in set(_list):
+                if x not in ad_map_dict:
+                    try:
+                        ad_map_dict.update({x: astrodata.open(x)
+                                            if isinstance(x, str) else x})
+                    except OSError:
+                        ad_map_dict.update({x: None})
+                        log.warning(f"Cannot open file {x}")
+            ret_lists.append([ad_map_dict[x] for x in _list])
+        else:
+            ret_lists.append(_list)
+    return ret_lists
 
 
 def map_data_sections_to_trimmed_data(datasec):
@@ -1622,6 +1648,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         such things
     """
     # Handle NDData objects (or anything with .data and .mask attributes
+    maxiter = 10
     try:
         single = ad.is_single
     except AttributeError:
@@ -1645,25 +1672,34 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
                     else getattr(ext, 'OBJMASK', None)
             bg_data = ext.data.ravel()
 
-        if flags is None:
-            bg_data = bg_data[::sampling]
-        else:
-            bg_data = bg_data[flags.ravel()==0][::sampling]
+        if flags is not None:
+            bg_data = bg_data[flags.ravel() == 0][::sampling]
 
         if len(bg_data) > 0:
             if gaussfit:
-                # An ogive fit is more robust than a histogram fit
-                bg_data = np.sort(bg_data)
-                bg = np.median(bg_data)
-                bg_std = 0.5*(np.percentile(bg_data, 84.13) -
-                              np.percentile(bg_data, 15.87))
-                g_init = CumGauss1D(bg, bg_std)
-                fit_g = fitting.LevMarLSQFitter()
-                g = fit_g(g_init, bg_data, np.linspace(0.,1.,len(bg_data)+1)[1:])
-                bg, bg_std = g.mean.value, abs(g.stddev.value)
+                frac = 0.55
+                datamax = np.percentile(bg_data, frac * 100)
+                bg, bg_std = np.median(bg_data), np.std(bg_data)
+                bg_data = np.sort(bg_data[bg_data < datamax])[::sampling]
+                niter = 0
+                while True:
+                    oldbg, oldbg_std = bg, bg_std
+                    g_init = Ogive(bg, bg_std, frac)
+                    g_init.lowfrac.bounds = (0.001, 0.999)
+                    fit_g = fitting.LevMarLSQFitter()
+                    g = fit_g(g_init, bg_data, np.linspace(0., 1., bg_data.size + 1)[1:])
+                    bg, bg_std = g.mean.value, abs(g.stddev.value)
+                    if abs(bg - oldbg) < 0.001 * bg_std or niter > maxiter:
+                        break
+                    # Remove brightest pixels if we're sampling too much
+                    # to the bright side of the peak
+                    if g.lowfrac.value > 0.9:
+                        bg_data = bg_data[:int(0.9 * bg_data.size)]
+                    bg_data = bg_data[bg_data < bg + bg_std * 0.5]
+                    niter += 1
             else:
                 # Sigma-clipping will screw up the stats of course!
-                bg_data = sigma_clip(bg_data, sigma=2.0, maxiters=2)
+                bg_data = sigma_clip(bg_data[::sampling], sigma=2.0, maxiters=2)
                 bg_data = bg_data.data[~bg_data.mask]
                 bg = np.median(bg_data)
                 bg_std = np.std(bg_data)
@@ -1839,6 +1875,8 @@ def parse_sextractor_param(param_file):
         columns.append(name)
     return columns
 
+
+# FIXME: unused ?
 def read_database(ad, database_name=None, input_name=None, output_name=None):
     """
     Reads IRAF wavelength calibration files from a database and attaches
@@ -1872,20 +1910,64 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         output_name = ad.filename
 
     basename = os.path.basename(input_name)
-    basename,filetype = os.path.splitext(basename)
+    basename, filetype = os.path.splitext(basename)
     out_basename = os.path.basename(output_name)
-    out_basename,filetype = os.path.splitext(out_basename)
+    out_basename, filetype = os.path.splitext(out_basename)
 
     for ext in ad:
-        extver = ext.hdr['EXTVER']
-        record_name = '{}_{:0.3d}'.format(basename, extver)
-        db = at.SpectralDatabase(database_name,record_name)
-        out_record_name = '{}_{:0.3d}'.format(out_basename, extver)
+        record_name = '{}_{:0.3d}'.format(basename, ext.id)
+        db = at.SpectralDatabase(database_name, record_name)
+        out_record_name = '{}_{:0.3d}'.format(out_basename, ext.id)
         table = db.as_binary_table(record_name=out_record_name)
 
         ext.WAVECAL = table
     return ad
 
+
+def sky_factor(nd1, nd2, skyfunc, multiplicative=False, threshold=0.001):
+    """
+    This function determines the corrective factor (either additive or
+    multiplicative) to apply to a sky frame so that, when subtracted from a
+    science frame, the resulting background level is zero. The science
+    NDAstroData object is modified, the sky NDAstroData object is returned
+    to its original state. A multiplicative correction requires an iterative
+    method, which converges once the changes are less than a given fraction
+    of the original sky frame.
+
+    Parameters
+    ----------
+    nd1 : NDAstroData
+        the "science" frame
+    nd2 : NDAstroData
+        the "sky" frame
+    skyfunc : callable
+        function to determine sky level
+    multiplicative : bool
+        compute multiplicative rather than additive factor?
+    threshold : float
+        accuracy of sky subtraction relative to original sky level
+
+    Returns
+    -------
+    float : factor to apply to "sky" to match "science"
+    """
+    factor = 0
+    if multiplicative:
+        current_sky = 1
+        ndcopy = deepcopy(nd1)
+        while abs(current_sky) > threshold:
+            f = skyfunc(ndcopy) / skyfunc(nd2)
+            ndcopy.subtract(nd2.multiply(f))
+            current_sky *= f
+            factor += current_sky
+        nd1.subtract(nd2.multiply(factor / current_sky))
+        nd2.divide(factor)  # reset to original value
+    else:
+        factor = skyfunc(nd1.subtract(nd2))
+        nd1.subtract(factor)
+    return factor
+
+# FIXME: unused ?
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
@@ -1903,10 +1985,9 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
         SExtractor dictionary
     """
     for ext in adoutput:
-        outextver = ext.hdr['EXTVER']
-        output_wcs = WCS(ext.hdr)
+        output_wcs = ext.wcs
         indices = [i for i in range(len(ext_mapping))
-                   if ext_mapping[i] == outextver]
+                   if ext_mapping[i] == ext.id]
         inp_objcats = [adinput[i].OBJCAT for i in indices if
                        hasattr(adinput[i], 'OBJCAT')]
 
@@ -1916,16 +1997,17 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             # Get new pixel coords for objects from RA/Dec and the output WCS
             ra = out_objcat["X_WORLD"]
             dec = out_objcat["Y_WORLD"]
-            newx, newy = output_wcs.all_world2pix(ra, dec, 1)
-            out_objcat["X_IMAGE"] = newx
-            out_objcat["Y_IMAGE"] = newy
+            newx, newy = output_wcs(ra, dec)
+            out_objcat["X_IMAGE"] = newx + 1
+            out_objcat["Y_IMAGE"] = newy + 1
 
             # Remove the NUMBER column so add_objcat renumbers
             out_objcat.remove_column('NUMBER')
 
-            adoutput = add_objcat(adinput=adoutput, extver=outextver,
-                            replace=True, table=out_objcat, sx_dict=sx_dict)
+            adoutput = add_objcat(adinput=adoutput, index=ext.id - 1,
+                                  replace=True, table=out_objcat, sx_dict=sx_dict)
     return adoutput
+
 
 @handle_single_adinput
 def trim_to_data_section(adinput=None, keyword_comments=None):
@@ -2056,10 +2138,10 @@ def write_database(ad, database_name=None, input_name=None):
         input_name = ad.filename
 
     basename = os.path.basename(input_name)
-    basename,filetype = os.path.splitext(basename)
+    basename, filetype = os.path.splitext(basename)
 
     for ext in ad:
-        record_name = '{}_{:0.3d}'.format(basename, ext.EXTVER)
+        record_name = '{}_{:0.3d}'.format(basename, ext.id)
         db = at.SpectralDatabase(binary_table=ext.WAVECAL,
                                  record_name=record_name)
         db.write_to_disk(database_name=database_name)
@@ -2085,11 +2167,13 @@ class ExposureGroup:
     # pass around nddata instances rather than lists or dictionaries but
     # that's not even well defined within AstroPy yet.
 
-    def __init__(self, adinput, pkg=None, frac_FOV=1.0):
+    def __init__(self, adinputs, pkg=None, frac_FOV=1.0):
         """
-        :param adinputs: an exposure list from which to initialize the group
+        Parameters
+        ----------
+        adinputs: AstroData/list of AD objects
+            exposure list from which to initialize the group
             (currently may not be empty)
-        :type adinputs: list of AstroData instances
 
         :param pkg: Package name of the
 
@@ -2099,46 +2183,52 @@ class ExposureGroup:
             positions right at the edge of the field).
         :type frac_FOV: float
         """
-        if not isinstance(adinput, list):
-            adinput = [adinput]
+        if not isinstance(adinputs, list):
+            adinputs = [adinputs]
         # Make sure the field scaling is valid:
         if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
-            raise OSError('frac_FOV must be >= 0.')
+            raise ValueError('frac_FOV must be >= 0.')
 
         # Initialize members:
         self.members = {}
-        self.package = pkg
         self._frac_FOV = frac_FOV
-        self.group_cen = (0., 0.)
-        self.add_members(adinput)
+        self.group_center = (0., 0.)
+        self.add_members(adinputs)
+        try:
+            FOV = import_module('{}.FOV'.format(pkg))
+            self._pointing_in_field = FOV.pointing_in_field
+        except (ImportError, AttributeError):
+            raise NameError("FOV.pointing_in_field() function not found in {}".
+                            format(pkg))
 
-        # Use the first list element as a reference for getting the
-        # instrument properties:
-        ref_ad = adinput[0]
-
-        # Here we used to define self._pointing_in_field, pointing to the
-        # instrument-specific back-end function, but that's been moved to a
-        # separate function in this module since it may be generally useful.
-
-    def pointing_in_field(self, position):
+    def pointing_in_field(self, ad, fast=True):
         """
-        Determine whether or not a point falls within the same field of view
-        as the centre of the existing group (using the function of the same
-        name).
+        Determine whether or not a new pointing falls within this group.
+        The check can be done against either the group center, or against
+        all members of the group.
 
-        :param position: An AstroData instance to compare with the centroid
-          of the set of existing group members.
-        :type position: tuple, list, AstroData
+        Parameters
+        ----------
+        ad: AstroData instance
+            the AD object to be tested
+        fast: bool
+            check against the field center only? (or else, check for overlap
+            with all group members)
 
-        :returns: Whether or not the input point is within the field of view
+        Returns
+        -------
+        bool: whether or not the input point is within the field of view
             (adjusted by the frac_FOV specified when creating the group).
-        :rtype: boolean
         """
-
-        # Check co-ordinates WRT the group centre & field of view as
-        # appropriate for the instrument:
-        return pointing_in_field(position, self.package, self.group_cen,
-                                 frac_FOV=self._frac_FOV)
+        if fast:
+            return self._pointing_in_field(ad, self.group_center,
+                                           frac_FOV=self._frac_FOV)
+        else:
+            for offset in self.members.values():
+                if self._pointing_in_field(ad, offset,
+                                           frac_FOV=self._frac_FOV):
+                    return True
+        return False
 
     def __len__(self):
         return len(self.members)
@@ -2151,8 +2241,7 @@ class ExposureGroup:
             # A Python dictionary equality seems to take care of comparing
             # groups nicely, irrespective of ordering:
             return self.members == other.members
-        else:
-            return False
+        return False
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -2166,7 +2255,7 @@ class ExposureGroup:
         """
         return list(self.members.keys())
 
-    def add_members(self, adinput):
+    def add_members(self, adinputs):
         """
         Add one or more new points to the group.
 
@@ -2174,220 +2263,94 @@ class ExposureGroup:
             membership.
         :type adinputs: AstroData, list of AstroData instances
         """
-        if not isinstance(adinput, list):
-            adinput = [adinput]
+        if not isinstance(adinputs, list):
+            adinputs = [adinputs]
         # How many points were there previously and will there be now?
         ngroups = self.__len__()
-        ntot = ngroups + len(adinput)
+        ntot = ngroups + len(adinputs)
 
-        # This will be replaced by a descriptor that looks up the RA/Dec
-        # of the field centre:
-        addict = get_offset_dict(adinput)
-
-        # Complain sensibly if we didn't get valid co-ordinates:
-        for ad in addict:
-            for coord in addict[ad]:
-                if not isinstance(coord, numbers.Number):
-                    raise OSError('non-numeric co-ordinate %s ' \
-                        % coord + 'from %s' % ad)
+        # Create dict for new members and complain if coords are invalid
+        new_dict = {ad: (ad.detector_x_offset(), ad.detector_y_offset())
+                    for ad in adinputs}
+        for ad, offsets in new_dict.items():
+            if not all(isinstance(offset, numbers.Number) for offset in offsets):
+                    raise ValueError("non-numeric coordinate {} from {}"
+                                     "".format(offsets, ad.filename))
 
         # Add the new points to the group list:
-        self.members.update(addict)
+        self.members.update(new_dict)
 
-        # Update the group centroid to account for the new points:
-        new_vals = list(addict.values())
+        # Update the group centroid to account for the new points
+        new_vals = list(new_dict.values())
         newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_cen = [(cval * ngroups + nval) / ntot \
-          for cval, nval in zip(self.group_cen, newsum)]
+        self.group_center = [(cval * ngroups + nval) / ntot
+                             for cval, nval in zip(self.group_center, newsum)]
 
-def group_exposures(adinput, pkg=None, frac_FOV=1.0):
 
+def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     """
     Sort a list of AstroData instances into dither groups around common
-    nod positions, according to their WCS offsets.
+    nod positions, according to their pointing offsets.
 
-    :param adinputs: A list of exposures to sort into groups.
-    :type adinputs: list of AstroData instances
+    In principle divisive clustering algorithms have the best chance of
+    robust separation because of their top-down view of the problem.
+    However, an agglomerative algorithm is probably more practical to
+    implement here in the first instance, given that we can try to
+    constrain the problem using the known field size and remembering the
+    one-at-a-time case where the full list isn't available up front.
 
-    :param pkg: package containing instrument lookups. Passed through
-                to ExposureGroup() call.
-    :type pkg: <str>
+    The FOV gives us a pretty good idea what's close enough to the base
+    position to be considered on-source, but it may not be enough on its
+    own to provide a threshold for intermediate nod distances for F2 given
+    IQ problems towards the edges of the field. OTOH intermediate offsets
+    are generally difficult to achieve anyway due to guide probe limits
+    when the instrumental FOV is comparable to that of the telescope.
 
-    :param frac_FOV: proportion by which to scale the area in which
-        points are considered to be within the same field, for tweaking
-        the results in borderline cases (eg. to avoid co-adding target
-        positions right at the edge of the field).
-    :type frac_FOV: float
+    Parameters
+    ----------
+    adinputs: list of AD instances
+        Exposures to sort into groups
 
-    :returns: One group of exposures per identified nod position.
-    :rtype: tuple of ExposureGroup instances
+    pkg: str
+        Name of the module containing the instrument FOV lookup.
+        Passed through to ExposureGroup() call.
+
+    frac_FOV: float
+        proportion by which to scale the area in which points are considered
+        to be within the same field, for tweaking the results in borderline
+        cases (eg. to avoid co-adding target positions right at the edge of
+        the field). frac_FOV=1.0 means *any* overlap is OK.
+
+    Returns
+    -------
+    tuple: of ExposureGroup instances, one per distinct pointing position
     """
-
-    # In principle divisive clustering algorithms have the best chance of
-    # robust separation because of their top-down view of the problem.
-    # However, an agglomerative algorithm is probably more practical to
-    # implement here in the first instance, given that we can try to
-    # constrain the problem using the known field size and remembering the
-    # one-at-a-time case where the full list isn't available up front.
-
-    # The FOV gives us a pretty good idea what's close enough to the base
-    # position to be considered on-source, but it may not be enough on its
-    # own to provide a threshold for intermediate nod distances for F2 given
-    # IQ problems towards the edges of the field. OTOH intermediate offsets
-    # are generally difficult to achieve anyway due to guide probe limits
-    # when the instrumental FOV is comparable to that of the telescope.
-
     groups = []
 
-    for ad in adinput:
-
+    for ad in adinputs:
         # Should this pointing be associated with an existing group?
+        # Check against field centers first.
         found = False
         for group in groups:
-            if group.pointing_in_field(ad):
+            if group.pointing_in_field(ad, fast=True):
                 group.add_members(ad)
                 found = True
                 break
 
-        # If unassociated, start a new group:
+        # If we haven't found a match, do a more rigorous (slower) check
+        # against all members of each group
         if not found:
-            groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
-            # if debug: print 'New group', groups[-1]
+            for group in groups:
+                if group.pointing_in_field(ad, fast=False):
+                    group.add_members(ad)
+                    found = True
+                    break
+            if not found:
+                groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
 
     # Here this simple algorithm could be made more robust for borderline
     # spacing (a bit smaller than the field size) by merging clusters that
     # have members within than the threshold after initial agglomeration.
     # This is an odd use case that's hard to classify automatically anyway
     # but the grouping info. might be more useful later, when stacking.
-
-    # if debug: print 'Groups are', groups
-
     return tuple(groups)
-
-def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
-
-    """
-    Determine whether two telescope pointings fall within each other's
-    instrumental field of view, such that point(s) at the centre(s) of one
-    exposure's aperture(s) will still fall within the same aperture(s) of
-    the other exposure or reference position.
-
-    For direct imaging, this is the same question as "is point 1 within the
-    field at pointing 2?" but for multi-object spectroscopy neither position
-    at which the telescope pointing is defined will actually illuminate the
-    detector unless it happens to coincide with a target aperture.
-
-    This function has no knowledge of actual target position(s) within the
-    field, providing accurate results for centred target(s) with the default
-    frac_FOV=1.0. This should only be of concern in borderline cases where
-    exposures are offset by approximately the width of the field.
-
-    :param pos: Exposure defining the position & instrumental field of view
-      to check.
-    :type pos: AstroData instance
-
-    :param refpos: Reference position/exposure (currently assumed to be
-      Gemini p/q co-ordinates, but we intend to change that to RA/Dec).
-    :type refpos: AstroData instance or tuple of floats
-
-    :param frac_FOV: Proportion by which to scale the field size in order to
-      adjust whether borderline points are considered within its boundaries.
-    :type frac_FOV: float
-
-    :param frac_slit: If defined, the maximum deviation from the slit centre
-      that's still considered to be within the field, as a fraction of the
-      slit's half-width. If None, the value of frac_FOV is used instead. For
-      direct images this parameter is ignored.
-    :type frac_slit: float
-
-    :returns: Whether or not the pointing falls within the field (after
-      adjusting for frac_FOV & frac_slit).
-    :rtype: boolean
-
-    """
-    log = logutils.get_logger(__name__)
-
-    # This function needs an AstroData instance rather than just 2
-    # co-ordinate tuples and a PA in order to look up the instrument for
-    # which the field of view is defined and so that the back-end function
-    # can distinguish between focal plane masks and access instrument-
-    # specific MDF tables for MOS.
-
-    # Use the first argument for looking up the instrument, since that's
-    # the one that's always an AstroData instance because the reference point
-    # doesn't always correspond to a single exposure.
-    inst = pos.instrument().lower()
-
-    # To keep the back-end functions simple, always pass them a dictionary
-    # for the reference position (at least for now). All these checks add ~4%
-    # in overhead for imaging.
-    try:
-        pointing = (refpos.phu['POFFSET'], refpos.phu['QOFFSET'])
-    except AttributeError:
-        if not isinstance(refpos, (list, tuple)) or \
-           not all(isinstance(x, numbers.Number) for x in refpos):
-            raise OSError('Parameter refpos should be a '
-                'co-ordinate tuple or AstroData instance')
-        # Currently the comparison is always 2D since we're explicitly
-        # looking up POFFSET & QOFFSET:
-        if len(refpos) != 2:
-            raise OSError('Points to group must have the '
-                    'same number of co-ords')
-        pointing = refpos
-
-    # Use a single scaling for slit length & width if latter unspecified:
-    if frac_slit is None:
-        frac_slit = frac_FOV
-
-    # These values are cached in order to avoid the multiple-second overhead of
-    # reading and evaling a look-up table when there are repeated queries for
-    # the same instrument. Instead of private global variables we could use a
-    # function-like class here, but that would make the API rather convoluted
-    # in this simple case.
-    global _FOV_lookup, _FOV_pointing_in_field
-
-    try:
-        FOV = import_module('{}.FOV'.format(package))
-        _FOV_pointing_in_field = FOV.pointing_in_field
-    except (ImportError, AttributeError):
-        raise NameError("FOV.pointing_in_field() function not found in {}".
-                        format(package))
-
-    # Execute it & return the results:
-    return _FOV_pointing_in_field(pos, pointing, frac_FOV=frac_FOV,
-                                  frac_slit=frac_slit)
-
-# Since the following function will go away after redefining RA & Dec
-# descriptors appropriately, I've put it here instead of in
-# gemini_metadata_utils to avoid creating an import that's circular WRT
-# existing imports and might later hang around causing trouble.
-@handle_single_adinput
-def get_offset_dict(adinput=None):
-    """
-    (To be deprecated)
-
-    The get_offset_dict() function extracts a dictionary of co-ordinate offset
-    tuples from a list of Gemini datasets, one per input AstroData instance.
-    What's currently Gemini-specific is that POFFSET & QOFFSET header keywords
-    are used; this could be abstracted via a descriptor once we decide how to
-    do so generically (accounting for the need to know slit axes sometimes).
-
-    :param adinputs: the AstroData objects
-    :type adinput: list of AstroData
-
-    :rtype: dictionary
-    :return: a dictionary whose keys are the AstroData instances and whose
-        values are tuples of (POFFSET, QOFFSET).
-    """
-    offsets = {}
-
-    # Loop over AstroData instances:
-    for ad in adinput:
-        # Get the offsets from the primary header:
-        poff = ad.phu['POFFSET']
-        qoff = ad.phu['QOFFSET']
-        # name = ad.filename
-        name = ad  # store a direct reference
-        offsets[name] = (poff, qoff)
-
-    return offsets

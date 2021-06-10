@@ -32,7 +32,11 @@ class RecipeMapper(Mapper):
 
     """
     def get_applicable_recipe(self):
-        recipefn = find_user_recipe(self.recipename)
+        if callable(self.recipename):
+            recipefn = self.recipename
+        else:
+            recipefn = find_user_recipe(self.recipename)
+
         if recipefn is None:
             tag_match, recipefn = self._retrieve_recipe()
 
@@ -60,10 +64,12 @@ class RecipeMapper(Mapper):
                 break
             if hasattr(rlib, 'recipe_tags'):
                 if self.tags.issuperset(rlib.recipe_tags):
-                    isect = rlib.recipe_tags
-                    l1 = len(isect)
-                    l2 = len(matched_set[0])
-                    matched_set = (isect, rlib) if l1 > l2 else matched_set
+                    blocked_tags = getattr(rlib, 'blocked_tags', {})
+                    if not self.tags.intersection(blocked_tags):
+                        isect = rlib.recipe_tags
+                        l1 = len(isect)
+                        l2 = len(matched_set[0])
+                        matched_set = (isect, rlib) if l1 > l2 else matched_set
                 else:
                     continue
             else:

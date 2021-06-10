@@ -3,6 +3,8 @@
 from gempy.library import config
 from . import parameters_stack
 from astrodata import AstroData
+from geminidr.core import parameters_generic
+
 
 def replace_valueCheck(value):
     """validate applyDQPlane.replace_value"""
@@ -43,20 +45,33 @@ class correctBackgroundToReferenceConfig(config.Config):
     separate_ext = config.Field("Treat each extension separately?", bool, True)
     remove_background = config.Field("Remove background level?", bool, False)
 
-class darkCorrectConfig(config.Config):
+class darkCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_darkCorrected", optional=True)
     dark = config.ListField("Dark frame", (str, AstroData), None, optional=True, single=True)
-    do_dark = config.Field("Perform dark subtraction?", bool, True)
 
 class dilateObjectMaskConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_objmaskDilated", optional=True)
     dilation = config.RangeField("Dilation radius (pixels)", float, 1., min=0)
     repeat = config.Field("Allow dilation of already-dilated image?", bool, False)
 
-class flatCorrectConfig(config.Config):
+class fixPixelsConfig(config.Config):
+    suffix = config.Field("Filename suffix", dtype=str,
+                          default="_pixelsFixed", optional=True)
+    regions = config.Field('Regions to fix, e.g. "450,521; 430:437,513:533"',
+                           dtype=str, optional=True)
+    regions_file = config.Field("Path to a file containing the regions to fix",
+                                dtype=str, optional=True)
+    axis = config.Field("Interpolation axis. 1 is x-axis, 2 is y-axis, 3 is z-axis. If left undefined, use the narrowest region dimension.",
+                        dtype=int, optional=True)
+    use_local_median = config.Field("Use a local median filter for single pixels?",
+                                    dtype=bool, default=False, optional=True)
+    debug = config.Field("Display regions?", dtype=bool, default=False)
+
+
+class flatCorrectConfig(parameters_generic.calRequirementConfig):
+
     suffix = config.Field("Filename suffix", str, "_flatCorrected", optional=True)
     flat = config.ListField("Flatfield frame", (str, AstroData), None, optional=True, single=True)
-    do_flat = config.Field("Perform flatfield correction?", bool, True)
 
 class nonlinearityCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_nonlinearityCorrected", optional=True)

@@ -35,7 +35,7 @@ def get_master_arc(path_to_inputs, change_working_dir):
         cals = testing.get_associated_calibrations(
             ad.filename.split('_')[0] + '.fits')
 
-        arc_filename = cals[cals.caltype == 'arc'].filename.values[0]
+        arc_filename = cals[cals['caltype'] == 'arc']['filename'][0]
         arc_filename = arc_filename.split('.fits')[0] + '_arc.fits'
 
         if pre_process:
@@ -140,7 +140,7 @@ def reduce_flat(change_working_dir):
             reduce = Reduce()
             reduce.files.extend(flat_fnames)
             reduce.mode = 'ql'
-            reduce.ucals = normalize_ucals(reduce.files, calibration_files)
+            reduce.ucals = normalize_ucals(calibration_files)
             reduce.runr()
 
             master_flat = reduce.output_filenames.pop()
@@ -167,6 +167,7 @@ def ref_ad_factory(path_to_refs):
     """
 
     def _reference_ad(filename):
+        print(f"Loading reference file: {filename}")
         path = os.path.join(path_to_refs, filename)
         return astrodata.open(path)
 
