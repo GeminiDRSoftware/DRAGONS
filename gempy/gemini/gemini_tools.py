@@ -464,9 +464,9 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                             new_aux.append(nd)
 
             if len(new_aux) < num_ext:
-                raise OSError("No auxiliary data in {} matches the detector "
-                              "section {} in {}:{}".format(this_aux.filename,
-                                detsec, ad.filename, ext.hdr['EXTVER']))
+                raise OSError(f"No auxiliary data in {this_aux.filename} "
+                              f"matches the detector section {detsec} in "
+                              f"{ad.filename} extension {ext.id}")
 
         # Coerce the return datatype if required
         if return_dtype:
@@ -1392,7 +1392,7 @@ def array_from_descriptor_value(ext, descriptor):
 
     desc_value = getattr(ext, descriptor)()
     arrsec = ext.array_section()
-    extid = f"{ext.filename}:{ext.hdr['EXTVER']}"
+    extid = f"{ext.filename}:{ext.id}"
 
     # Can return a single value if that's all the descriptor gives us, or if
     # array_section() doesn't tell us how to divide the pixel plane
@@ -2101,18 +2101,18 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 old_ext = deepcopy(ext)[0]
                 # Trim SCI, VAR, DQ to new section, aligned at bottom-left.
                 # This slicing will update the gWCS properly too.
-                ext.reset(ext.nddata[y1:y1+nypix,x1:x1+nxpix])
+                ext.reset(ext.nddata[y1:y1+nypix, x1:x1+nxpix])
                 has_objmask = hasattr(old_ext, 'OBJMASK')
                 if has_objmask:
-                    ext.OBJMASK = old_ext.OBJMASK[y1:y1+nypix,x1:x1+nxpix]
+                    ext.OBJMASK = old_ext.OBJMASK[y1:y1+nypix, x1:x1+nxpix]
 
                 for i, (oldsec, newsec) in enumerate(zip(sections, new_sections), start=1):
-                    datasecStr = '[{}:{},{}:{}]'.format(oldsec['x1']+1, oldsec['x2'],
-                                                        oldsec['y1']+1, oldsec['y2'])
-                    log.fullinfo('For {}:{}, keeping the data from the section {}'.
-                                 format(ad.filename, ext.hdr['EXTVER'], datasecStr))
-                    newslice = (slice(newsec['y1'], newsec['y2']), slice(newsec['x1'], newsec['x2']))
-                    oldslice = (slice(oldsec['y1'], oldsec['y2']), slice(oldsec['x1'], oldsec['x2']))
+                    oldsec, newsec = Section(*oldsec), Section(*newsec)
+                    datasecStr = oldsec.asIRAFsection()
+                    log.fullinfo(f'For {ad.filename} extension {ext.id}, '
+                                 f'keeping the data from the section {datasecStr}')
+                    newslice = newsec.asslice()
+                    oldslice = oldsec.asslice()
                     ext.nddata.set_section(newslice, old_ext.nddata[oldslice])
                     if has_objmask:
                         ext.OBJMASK[newslice] = old_ext.OBJMASK[oldslice]
@@ -2125,42 +2125,27 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 y1, y2 = datasec.y1, datasec.y2
                 sci_shape = ext.data.shape
                 if x1 == 0 and y1 == 0 and sci_shape == (y2, x2):
-                    log.fullinfo('No changes will be made to {}[*,{}], since '
-                                 'the data section matches the data shape'.format(
-                                 ad.filename,ext.hdr['EXTVER']))
+                    log.fullinfo(f'No changes will be made to {ad.filename} '
+                                 f'extension {ext.id}, since the data section '
+                                 f'matches the data shape')
                     continue
 
                 # Update logger with the section being kept
-                datasecStr = ext.data_section(pretty=True)
-                log.fullinfo('For {}:{}, keeping the data from the section {}'.
-                             format(ad.filename, ext.hdr['EXTVER'], datasecStr))
+                log.fullinfo(f'For {ad.filename} extension {ext.id}, '
+                             f'keeping the data from the section {datasecStr}')
 
                 # Trim SCI, VAR, DQ to new section
-                ext.reset(ext.nddata[y1:y2,x1:x2])
+                ext.reset(ext.nddata[datasec.asslice()])
                 # And OBJMASK (if it exists)
                 # TODO: should check more generally for any image extensions
                 if hasattr(ext, 'OBJMASK'):
-                    ext.OBJMASK = ext.OBJMASK[y1:y2,x1:x2]
-                ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
-
-            # TODO: Delete after gWCS imaging is merged
-            # Update WCS reference pixel coordinate
-            try:
-                crpix1 = ext.hdr['CRPIX1'] - x1
-                crpix2 = ext.hdr['CRPIX2'] - y1
-            except:
-                log.warning("Could not access WCS keywords; using dummy "
-                            "CRPIX1 and CRPIX2")
-                crpix1 = 1
-                crpix2 = 1
-            ext.hdr.set('CRPIX1', crpix1, comment=keyword_comments["CRPIX1"])
-            ext.hdr.set('CRPIX2', crpix2, comment=keyword_comments["CRPIX2"])
+                    ext.OBJMASK = ext.OBJMASK[datasec.asslice()]
 
             # Update header keys to match new dimensions
             nypix, nxpix = ext.shape
             newDataSecStr = f'[1:{nxpix},1:{nypix}]'
             ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments.get(datasec_kw))
-
+            ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
             if oversec_kw in ext.hdr:
                 del ext.hdr[oversec_kw]
 
