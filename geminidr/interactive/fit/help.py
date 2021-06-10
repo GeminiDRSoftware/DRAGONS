@@ -266,3 +266,51 @@ TRACE_APERTURES = """
 
     </dl>
     """
+
+
+SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
+<h2>Help</h2>
+<p>
+        Extracts one or more 1D spectra from a 2D spectral image, according to
+        the contents of the `.APERTURE` table.
+</p>
+<p>
+        If the <pre>skyCorrectFromSlit()</pre> primitive has not been performed, then a
+        1D sky spectrum is constructed from a nearby region of the image, and
+        subtracted from the source spectrum.
+</p>
+<p>
+        Each 1D spectrum is stored as a separate extension in a new AstroData
+        object with the wcs copied from the parent.
+</p>
+<h3>Sky Correct parameters</h3>
+<p>Those parameters applies to the computation of the 1D profile.</p>
+<dl>
+<dt>Order</dt>
+<dd>
+    Percentile to determine signal for each spatial pixel. Uses when
+    collapsing along the dispersion direction to obtain a slit profile.
+    If None, the mean is used instead.
+</dd>
+<dt>Sigma Clip, Upper, Lower</dt>
+<dd>
+    Enables sigma rejection with individually settable upper and lower
+    sigma bounds.
+</dd>
+<dt>Max Iterations</dt>
+<dd>
+    Maximum number of rejection iterations
+</dd>
+<dt>Grow</dt>
+<dd>
+    Radius to reject pixels adjacent to masked pixels of spline fit
+</dd>
+<dt>Regions</dt>
+<dd>
+    Comma-separated list of colon-separated pixel coordinate pairs
+    indicating the region(s) over which the input data should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data.
+</dd>
+</dl>
+""" + PLOT_TOOLS_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT

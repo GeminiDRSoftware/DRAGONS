@@ -31,6 +31,7 @@ from specutils import SpectralRegion
 
 import astrodata
 import geminidr.interactive.server
+from astrodata import AstroData
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -43,12 +44,13 @@ from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list
+from gempy.library.config import RangeField, Config
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_spect
-from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
 from ..interactive.interactive import UIParameters
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
@@ -56,6 +58,7 @@ matplotlib.rcParams.update({'figure.max_open_warning': 0})
 # ------------------------------------------------------------------------------
 
 
+# noinspection SpellCheckingInspection
 @parameter_override
 class Spect(PrimitivesBASE):
     """
@@ -2401,6 +2404,8 @@ class Spect(PrimitivesBASE):
             Masking growth radius (in pixels) for each aperture
         debug_plot : bool
             Show diagnostic plots?
+        interactive : bool
+            Show interactive interface?
 
         Returns
         -------
@@ -2417,29 +2422,52 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        apgrow = params["aperture_growth"]
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
+        interactive = params["interactive"]
 
-        for ad in adinputs:
-            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning(f"{ad.filename} has not been distortion corrected."
-                            " Sky subtraction is likely to be poor.")
+        def calc_sky_coords(ad: AstroData, apgrow, interactive_mode=False):
+            """
+            Calculate the sky coordinates for the extensions in the given
+            AstroData object.
 
-            for ext in ad:
-                axis = ext.dispersion_axis() - 1  # python sense
+            This is useful for both feeding the data inputs calculation
+            for the interactive interface and for the final loop over
+            AstoData objects to do the fit (for both interactive and
+            non-interactive).
+
+            Parameters
+            ----------
+            ad : :class:`~astrodata.AstroData`
+                AstroData to generate coordinates for
+            apgrow : float
+                Aperture avoidance distance (pixels)
+            interactive_mode : bool
+                If True, collates aperture data mask separately to be used by UI
+
+            Returns
+            -------
+            :class:`~astrodata.AstroData`, :class:`~numpy.ndarray`, :class:`~numpy.ndarray`
+                extension, sky mask, sky weights yielded for each extension in the `ad`
+            """
+            for csc_ext in ad:
+                csc_axis = csc_ext.dispersion_axis() - 1  # python sense
 
                 # We want to mask pixels in apertures in addition to the mask.
                 # Should we also leave DQ.cosmic_ray (because sky lines can get
                 # flagged as CRs) and/or DQ.overlap unmasked here?
-                sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
-                            if ext.mask is None else
-                            ext.mask & DQ.not_signal)
+                csc_sky_mask = (np.zeros_like(csc_ext.data, dtype=DQ.datatype)
+                                if csc_ext.mask is None else
+                                csc_ext.mask & DQ.not_signal)
+
+                # for interactive mode, we aggregate an aperture mask separately
+                # for the UI
+                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=DQ.datatype))
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
                 try:
-                    aptable = ext.APERTURE
+                    aptable = csc_ext.APERTURE
                 except AttributeError:
                     pass
                 else:
@@ -2448,41 +2476,154 @@ class Spect(PrimitivesBASE):
                         aperture = tracing.Aperture(trace_model,
                                                     aper_lower=row['aper_lower'],
                                                     aper_upper=row['aper_upper'])
-                        sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
+                        aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
+                        if interactive_mode:
+                            csc_aperture_mask |= aperture_mask
+                        else:
+                            csc_sky_mask |= aperture_mask
 
-                if debug_plot:
-                    from astropy.visualization import simple_norm
-                    fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
-                                                   sharey=True)
-                    ax1.imshow(ext.data, cmap='gray',
-                               norm=simple_norm(ext.data, max_percent=99))
-                    ax2.imshow(sky_mask, cmap='gray', vmax=4)
-                    plt.show()
-
-                if ext.variance is None:
-                    sky_weights = None
+                if csc_ext.variance is None:
+                    csc_sky_weights = None
                 else:
-                    sky_weights = np.sqrt(at.divide0(1., ext.variance))
+                    csc_sky_weights = np.sqrt(at.divide0(1., csc_ext.variance))
                     # Handle columns were all the weights are zero
-                    zeros = np.sum(sky_weights, axis=axis) == 0
-                    if axis == 0:
-                        sky_weights[:, zeros] = 1
+                    zeros = np.sum(csc_sky_weights, axis=csc_axis) == 0
+                    if csc_axis == 0:
+                        csc_sky_weights[:, zeros] = 1
                     else:
-                        sky_weights[zeros] = 1
+                        csc_sky_weights[zeros] = 1
 
                 # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
                 # chip gaps) to avoid a zillion warnings about insufficient
                 # unmasked points.
-                no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
-                if axis == 0:
-                    sky_mask ^= no_data
+                no_data = np.bitwise_and.reduce(csc_sky_mask, axis=csc_axis) & DQ.no_data
+                if csc_axis == 0:
+                    csc_sky_mask ^= no_data
                 else:
-                    sky_mask ^= no_data[:, None]
+                    csc_sky_mask ^= no_data[:, None]
 
+                if interactive_mode:
+                    yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
+                else:
+                    yield csc_ext, csc_sky_mask, csc_sky_weights
+
+        def recalc_fn(ad: AstroData, ui_parms: UIParameters):
+            """
+            Used by the interactive code to generate all the inputs for the tabs
+            per extension.
+
+            This relies on the ``calc_sky_coords`` call to iterate on a set of
+            extensions and their calculated sky_mask and sky_weights.  It then
+            creates the sky masked array and pixel coordinates to return for
+            the interactive code.  This function is suitable for use as the
+            data source for the fit1d interactive code.
+
+            Parameters
+            ----------
+            ad : :class:`~astrodata.core.AstroData`
+                AstroData instance to work on
+            ui_parms : :class:`~geminidr.interactive.interactive.UIParameters`
+                configuration for the primitive, including extra controls
+
+            Returns
+            -------
+            :class:`~numpy.ndarray`, :class:`~numpy.ma.MaskedArray`, :class:`~numpy.ndarray`
+                Yields a list of tupes with the pixel, sky, sky_weights
+
+            See Also
+            --------
+            :meth:`~geminidr.core.primitives_spect.Spect.skyCorrectFromSlit.calc_sky_coords`
+            """
+            # pylint: disable=unused-argument
+            c = max(0, ui_parms.values['col'] - 1)
+            apgrow = ui_parms.values['aperture_growth']
+            # TODO alternatively, save these 3 arrays for faster recalc
+            # here I am rerunning all the above calculations whenever a col select is made
+            for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in \
+                    calc_sky_coords(ad, apgrow=apgrow, interactive_mode=True):
+                rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
+                yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c], rc_aper_mask[:, c] \
+                    if rc_sky_weights is not None else None
+
+        final_parms = list()
+        apgrow = None  # for saving selected aperture_grow values, if interactive
+
+        if interactive:
+            apgrow = list()
+            # build config for interactive
+            config = self.params[self.myself()]
+            config.update(**params)
+
+            # Create a 'col' parameter to add to the UI so the user can select the column they
+            # want to fit.
+            # We pass a default column at the 1/3 mark, since dead center is flat
+            ncols = adinputs[0].shape[0][0]
+            reinit_params = ["col", "aperture_growth"]
+            reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 3),
+                                               min=1, max=ncols)}
+
+            # Build the set of input shapes and count the total extensions while we are at it
+            for ad in adinputs:
+                all_shapes = []
+                count = 0
+                for ext in ad:
+                    count = count+1
+                    all_shapes.append((0, ext.shape[0]))  # extracting single line for interactive
+
+                # Get filename to display in visualizer
+                filename_info = getattr(ad, 'filename', '')
+
+                # get the fit parameters
+                fit1d_params = fit_1D.translate_params(params)
+                ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
+                visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
+                                                   fitting_parameters=[fit1d_params]*count,
+                                                   tab_name_fmt="Slit {}",
+                                                   xlabel='Row',
+                                                   ylabel='Signal',
+                                                   domains=all_shapes,
+                                                   title="Sky Correct From Slit",
+                                                   primitive_name="skyCorrectFromSlit",
+                                                   filename_info=filename_info,
+                                                   help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
+                                                   plot_ratios=False,
+                                                   enable_user_masking=False,
+                                                   recalc_inputs_above=True,
+                                                   ui_params=ui_params)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+
+                # Pull out the final parameters to use as inputs doing the real fit
+                fit_results = visualizer.results()
+                final_parms_exts = list()
+                apgrow.append(ui_params.values['aperture_growth'])
+                for fit in fit_results:
+                    final_parms_exts.append(fit.extract_params())
+                final_parms.append(final_parms_exts)
+        else:
+            # making fit params into an array even though it all matches
+            # so we can share the same final code with the interactive,
+            # where a user may have tweaked per extension inputs
+            for ad in adinputs:
+                final_parms.append([fit1d_params] * len(ad))
+
+        for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
+            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                log.warning(f"{ad.filename} has not been distortion corrected."
+                            " Sky subtraction is likely to be poor.")
+            eidx = 0
+            if apgrow:
+                # get value set in the interactive tool
+                apg = apgrow[idx]
+            else:
+                # get value for aperture growth from config
+                apg = params["aperture_growth"]
+            for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
+                axis = ext.dispersion_axis() - 1  # python sense
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
+                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
                                    axis=axis, plot=debug_plot).evaluate()
                 ext.data -= sky_model
+                eidx = eidx + 1
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2647,6 +2788,7 @@ class Spect(PrimitivesBASE):
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
                         try:
+                            # pylint: disable=repeated-keyword
                             _fit_1d = fit_1D(
                                 in_coords[dispaxis],
                                 domain=[0, ext.shape[dispaxis] - 1],
@@ -2664,6 +2806,7 @@ class Spect(PrimitivesBASE):
                             log.warning(
                                 f"Unable to trace aperture {aperture['number']}")
 
+                            # pylint: disable=repeated-keyword
                             _fit_1d = fit_1D(
                                 np.full_like(spectral_coords, c0),
                                 domain=[0, ext.shape[dispaxis] - 1],

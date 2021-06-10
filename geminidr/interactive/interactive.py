@@ -138,6 +138,7 @@ class PrimitiveVisualizer(ABC):
                   )
         return div
 
+    @abstractmethod
     def visualize(self, doc):
         """
         Perform the visualization.
@@ -154,11 +155,34 @@ class PrimitiveVisualizer(ABC):
         doc : :class:`~bokeh.document.document.Document`
             Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
         """
+        # This is now called via show() to make the code cleaner
+        # with respect to some before/after boilerplate.  It also
+        # reduces the chances someone will forget to super() call this
+
+    def show(self, doc):
+        """
+        Show the interactive fitter.
+
+        This is called via bkapp by the bokeh server and happens
+        when the bokeh server is spun up to interact with the user.
+
+        This method also detects if it is running in 'test' mode
+        and will build the UI and automatically submit it with the
+        input parameters.
+
+        Parameters
+        ----------
+        doc : :class:`~bokeh.document.document.Document`
+            Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
+        """
         self.doc = doc
         doc.on_session_destroyed(self.submit_button_handler)
 
-        # doc.add_root(self._ok_cancel_dlg.layout)
-        # Add an OK/Cancel dialog we can tap into later
+        self.visualize(doc)
+
+        if server.test_mode:
+            # Simulate a click of the accept button
+            self.do_later(lambda: self.submit_button_handler(None))
 
         # Add a widget we can use for triggering a message
         # This is a workaround, since CustomJS calls can only
@@ -198,7 +222,7 @@ class PrimitiveVisualizer(ABC):
             # no doc, probably ok to just execute
             fn()
         else:
-            self.doc.add_next_tick_callback(lambda: fn())
+            self.doc.add_next_tick_callback(fn)
 
     def make_modal(self, widget, message):
         """
@@ -894,9 +918,9 @@ class GIRegionModel:
             start = tup.start
             stop = tup.stop
             start = constrain_min(start, self.min_x)
-            stop = constrain_min(stop, self.min_x)
-            start = constrain_max(start, self.max_x)
             stop = constrain_max(stop, self.max_x)
+            start = constrain_max(start, self.max_x)
+            stop = constrain_min(stop, self.min_x)
             self.adjust_region(self.region_id, start, stop)
             self.region_id = self.region_id + 1
         self.finish_regions()
