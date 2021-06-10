@@ -104,7 +104,7 @@ class Preprocess(PrimitivesBASE):
             # and the pixel data in each variance extension by the gain squared
             log.status("Converting {} from ADU to electrons by multiplying by "
                        "the gain".format(ad.filename))
-           for ext in ad:
+            for ext in ad:
                 if not ext.is_in_adu():
                     log.warning(f"  {ext.id} is already in electrons. "
                                 "Continuing.")
@@ -116,6 +116,7 @@ class Preprocess(PrimitivesBASE):
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix,  strip=True)
+
         return adinputs
 
     def applyDQPlane(self, adinputs=None, **params):
