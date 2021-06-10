@@ -64,6 +64,8 @@ class TraceAperturesTab(Fit1DPanel):
         self.visualizer = visualizer
         self.index = idx
         self.rms_div = self.create_rms_div()
+        self.xpoint = 'x'
+        self.ypoint = 'y'
 
         listeners = [lambda f: self.update_info(self.rms_div, f), ]
 
