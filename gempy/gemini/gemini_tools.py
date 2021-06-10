@@ -395,7 +395,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # If this is a perfect match, just do it and carry on
                 if auxext.shape == ext_shape:
-                    new_aux.append(auxext.nddata, reset_ver=True)
+                    new_aux.append(auxext.nddata)
                     continue
 
                 aux_arrsec = auxext.array_section()
@@ -438,7 +438,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                     x2, y2 = x1 + ext_shape[1], y1 + ext_shape[0]
                     if at.section_contains((0, auxext.shape[1], 0, auxext.shape[0]),
                                            (x1, x2, y1, y2)):
-                        new_aux.append(auxext.nddata[y1:y2, x1:x2], reset_ver=True)
+                        new_aux.append(auxext.nddata[y1:y2, x1:x2])
                         clipped_this_ad = True
                         continue
 
@@ -465,7 +465,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                                       format(in_vertices[0]+1, in_vertices[1], in_vertices[2]+1, in_vertices[3],
                                              out_vertices[0]+1, out_vertices[1], out_vertices[2]+1, out_vertices[3]))
                             nd.set_section(output_section, auxext.nddata[input_section])
-                            new_aux.append(nd, reset_ver=True)
+                            new_aux.append(nd)
 
             if len(new_aux) < num_ext:
                 raise OSError("No auxiliary data in {} matches the detector "
