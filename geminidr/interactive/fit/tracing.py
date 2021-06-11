@@ -747,7 +747,23 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
         return trace_apertures_data_provider(ext, ui_params)
 
     # noinspection PyTypeChecker
-    visualizer = TraceAperturesVisualizer(
+    # visualizer = TraceAperturesVisualizer(
+    #     lambda ui_params: data_provider(ext, ui_params),
+    #     domains=domain_list,
+    #     filename_info=ext.filename,
+    #     fitting_parameters=fit_par_list,
+    #     help_text=(help.DEFAULT_HELP
+    #                + help.TRACE_APERTURES
+    #                + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
+    #                + help.REGION_EDITING_HELP_SUBTEXT),
+    #     primitive_name="traceApertures",
+    #     tab_name_fmt="Aperture {}",
+    #     title="Interactive Trace Apertures",
+    #     xlabel=xlabel,
+    #     ylabel=ylabel,
+    #     ui_params=ui_params
+    # )
+    visualizer = Fit1DVisualizer(
         lambda ui_params: data_provider(ext, ui_params),
         domains=domain_list,
         filename_info=ext.filename,
@@ -761,7 +777,10 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
         title="Interactive Trace Apertures",
         xlabel=xlabel,
         ylabel=ylabel,
-        ui_params=ui_params
+        modal_button_label="Trace apertures",
+        modal_message="Tracing apertures...",
+        ui_params=ui_params,
+        turbo_tabs=True,
     )
 
     server.interactive_fitter(visualizer)
