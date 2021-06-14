@@ -38,10 +38,10 @@ def disable_when_identifying(fn):
 
 class WavelengthSolutionPanel(Fit1DPanel):
     def __init__(self, visualizer, fitting_parameters, domain, x, y,
-                 weights=None, other_data=None, **kwargs):
+                 weights=None, meta=None, **kwargs):
         # No need to compute wavelengths here as the model_change_handler() does it
-        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(other_data["spectrum"]),
-                                             'spectrum': other_data["spectrum"]})
+        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
+                                             'spectrum': meta["spectrum"]})
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
@@ -50,7 +50,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # This has to go on the model (and not this Panel instance) since the
         # models are returned by the Visualizer, not the Panel instances
-        self.model.other_data = other_data
+        self.model.meta = meta
 
         self.new_line_marker = bm.ColumnDataSource(
             {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})
@@ -259,10 +259,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         if peak is None:
             x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
-            fwidth = self.model.other_data["fwidth"]
+            fwidth = self.model.meta["fwidth"]
             pixel = interp1d(self.spectrum.data["wavelengths"],
                              range(len(self.spectrum.data["wavelengths"])))(x)
-            new_peaks = np.setdiff1d(self.model.other_data["peaks"],
+            new_peaks = np.setdiff1d(self.model.meta["peaks"],
                                      self.model.x, assume_unique=True)
             index = np.argmin(abs(new_peaks - pixel))
 
@@ -292,7 +292,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Find all unidentified arc lines that this could be, maintaining
         # monotonicity
-        all_lines = self.model.other_data["linelist"].wavelengths(
+        all_lines = self.model.meta["linelist"].wavelengths(
             in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
         lower_limit, upper_limit = get_closest(self.model.y, est_wave)
         possible_lines = [line for line in all_lines
@@ -339,8 +339,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         linear_model = self.linear_model(self.model)
         dw = linear_model.c1 / np.diff(linear_model.domain)[0]
-        matching_distance = abs(self.model.other_data["fwidth"] * dw)
-        all_lines = self.model.other_data["linelist"].wavelengths(
+        matching_distance = abs(self.model.meta["fwidth"] * dw)
+        all_lines = self.model.meta["linelist"].wavelengths(
             in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
 
         good_data = {}
@@ -351,7 +351,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         matches = match_sources(all_lines, good_data['y'], radius=0.01 * abs(dw))
         unmatched_lines = [l for l, m in zip(all_lines, matches) if m == -1]
 
-        new_peaks = np.setdiff1d(self.model.other_data["peaks"],
+        new_peaks = np.setdiff1d(self.model.meta["peaks"],
                                  good_data['x'], assume_unique=True)
         new_waves = self.model.evaluate(new_peaks)
 
@@ -384,7 +384,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     1) __init__()
         (a) each tab is a WavelengthSolutionPanel, not a Fit1DPanel
         (b) the data_source returns a fourth column, a dict containing
-            additional information, that gets put in an "other_data" attribute
+            additional information, that gets put in an "meta" attribute
             and its "spectrum" element is passed to the InteractiveModel1D
             object in the Panel
 
@@ -458,7 +458,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
-        other_data = []
+        meta = []
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
@@ -511,13 +511,13 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 allx.append(dat[0])
                 ally.append(dat[1])
                 all_weights.append(dat[2] if len(dat) > 2 else None)
-                other_data.append(dat[3] if len(dat) > 3 else None)
+                meta.append(dat[3] if len(dat) > 3 else None)
         else:
             self.reconstruct_points_fn = None
             allx = data_source[0]
             ally = data_source[1]
             all_weights = data_source[2] if len(data_source) > 2 else [None]
-            other_data = data_source[3] if len(data_source) > 3 else [None]
+            meta = data_source[3] if len(data_source) > 3 else [None]
 
         # Some sanity checks now
         if isinstance(fitting_parameters, list):
@@ -539,10 +539,10 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             if domains is None:
                 domains = [None] * len(fitting_parameters)
             for i, (fitting_parms, domain, x, y, weights, other) in \
-                    enumerate(zip(fitting_parameters, domains, allx, ally, all_weights, other_data), start=1):
+                    enumerate(zip(fitting_parameters, domains, allx, ally, all_weights, meta), start=1):
                 tui = WavelengthSolutionPanel(
                     self, fitting_parms, domain, x, y, weights,
-                    other_data=other_data, **kwargs)
+                    meta=meta, **kwargs)
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
                 self.tabs.tabs.append(tab)
                 self.fits.append(tui.model)
@@ -551,7 +551,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             #  domains[0] and the code worked.
             tui = WavelengthSolutionPanel(
                 self, fitting_parameters[0], domains[0], allx[0], ally[0],
-                all_weights[0], other_data=other_data[0], **kwargs)
+                all_weights[0], meta=meta[0], **kwargs)
             tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(1))
             self.tabs.tabs.append(tab)
             self.fits.append(tui.model)
@@ -605,8 +605,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             self.do_later(rfn)
 
     @property
-    def other_data(self):
-        return [fit.other_data for fit in self.fits]
+    def meta(self):
+        return [fit.meta for fit in self.fits]
 
     @property
     def image(self):

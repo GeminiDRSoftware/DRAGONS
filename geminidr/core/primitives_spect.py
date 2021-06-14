@@ -1118,7 +1118,7 @@ class Spect(PrimitivesBASE):
                     ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
-                                             visualizer.image, visualizer.other_data):
+                                             visualizer.image, visualizer.meta):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
