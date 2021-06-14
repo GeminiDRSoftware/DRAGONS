@@ -67,6 +67,7 @@ class PrimitiveVisualizer(ABC):
                                     label="Accept",
                                     name="submit_btn",
                                     width_policy='min',
+                                    height=202,
                                     )
 
         # This now happens indirectly via the /shutdown ajax js callback

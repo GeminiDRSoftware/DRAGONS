@@ -11,7 +11,7 @@ from bokeh import events
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller, Handler
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
-    RegionEditor, do_later
+    RegionEditor, do_later, TabsTurboInjector
 from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
@@ -567,7 +567,8 @@ class FittingParametersUI:
             else:
                 slider.children[0].value = self.fitting_parameters[key]
                 slider.children[1].value = self.fitting_parameters[key]
-        if self.function:
+        if self.function and hasattr(self.function, 'value'):
+            # if it's a selector and not a div...
             self.function.value = self.fitting_parameters["function"]
         self.sigma_button.active = [0] if self.saved_sigma_clip else []
         self.fit.perform_fit()
@@ -976,7 +977,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  xlabel='x', ylabel='y',
                  domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
-                 ui_params=None,
+                 ui_params=None, turbo_tabs=False,
                  **kwargs):
         """
         Parameters
@@ -1037,12 +1038,33 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             # This should really go in the parent class, like submit_button
             if modal_message:
                 if len(reinit_widgets) > 1:
-                    self.reinit_button = bm.Button(label=modal_button_label if modal_button_label
+                    self.reinit_button = bm.Button(button_type='primary',
+                                                   height=35,
+                                                   width=202,
+                                                   label=modal_button_label if modal_button_label
                                                    else "Reconstruct points")
                     self.reinit_button.on_click(self.reconstruct_points)
                     self.make_modal(self.reinit_button, modal_message)
                     reinit_widgets.append(self.reinit_button)
                     self.modal_widget = self.reinit_button
+
+                    # Reset tracing parameter
+                    reset_reinit_button = bm.Button(
+                        button_type='warning',
+                        height=35,
+                        id='reset-tracing-pars',
+                        label="Reset",
+                        width=202)
+
+                    def reset_dialog_handler(result):
+                        if result:
+                            self.reset_reinit_panel()
+
+                    self.make_ok_cancel_dialog(
+                        btn=reset_reinit_button,
+                        message='Do you want to reset the input parameters?',
+                        callback=reset_dialog_handler)
+                    reinit_widgets.append(reset_reinit_button)
                 elif len(reinit_widgets) == 1:
                     def kickoff_modal(attr, old, new):
                         self.reconstruct_points()
@@ -1105,11 +1127,16 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         kwargs.update({'xlabel': xlabel, 'ylabel': ylabel})
 
-        self.tabs = bm.Tabs(tabs=[], name="tabs")
+        self.tabs = bm.Tabs(css_classes=['tabs'],
+                            height_policy="max",
+                            width_policy="max",
+                            tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
         self.fits = []
 
         if self.nfits > 1:
+            if turbo_tabs:
+                self.turbo = TabsTurboInjector(self.tabs)
             if domains is None:
                 domains = [None] * len(fitting_parameters)
             if all_weights is None:
@@ -1119,8 +1146,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             for i, (fitting_parms, domain, x, y, weights, extra_mask) in \
                     enumerate(zip(fitting_parameters, domains, allx, ally, all_weights, all_extra_masks), start=1):
                 tui = Fit1DPanel(self, fitting_parms, domain, x, y, weights, extra_mask=extra_mask, **kwargs)
-                tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
-                self.tabs.tabs.append(tab)
+                if turbo_tabs:
+                    self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i))
+                else:
+                    tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i))
+                    self.tabs.tabs.append(tab)
                 self.fits.append(tui.model)
         else:
 
@@ -1138,6 +1168,38 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.tabs.tabs.append(tab)
             self.fits.append(tui.model)
 
+        self._reinit_params = {k: v for k, v in ui_params.values.items()}
+
+    # noinspection PyProtectedMember
+    def reset_reinit_panel(self, param=None):
+        """
+        Reset all the parameters in the Tracing Panel (leftmost column).
+        If a param is provided, it resets only this parameter in particular.
+
+        Parameters
+        ----------
+        param : string
+            Parameter name
+        """
+        for fname in self.ui_params.reinit_params:
+            if param is None or fname == param:
+                reset_value = self._reinit_params[fname]
+            else:
+                continue
+
+            old = self.widgets[fname].value
+
+            # Update Slider Value
+            self.widgets[fname].update(value=reset_value)
+
+            # Update Text Field via callback function
+            if 'value' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value']:
+                    callback('value', old=old, new=reset_value)
+            if 'value_throttled' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value_throttled']:
+                    callback(attrib='value_throttled', old=old, new=reset_value)
+
     def visualize(self, doc):
         """
         Start the bokeh document using this visualizer.
@@ -1153,6 +1215,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(self.tabs, )
         col.sizing_mode = 'scale_width'
+        col.width_policy = 'max'
 
         self.submit_button.align = 'end'
         self.submit_button.height = 35
