@@ -609,20 +609,23 @@ class FittingParametersUI:
 
 
 class InfoPanel:
-    def __init__(self):
+    def __init__(self, enable_regions, enable_user_masking):
         self.component = Div(text='')
+        self.enable_regions = enable_regions
+        self.enable_user_masking = enable_user_masking
 
     def model_change_handler(self, model):
-        rms = '<b>RMS:</b> {rms:.4f}<br/>'.format(rms=model.fit.rms)
+        rms = '<div class="info_panel"><div class="info_header">RMS: </div><div class="info_text">{rms:.4f}</div>'\
+            .format(rms=model.fit.rms)
         band_count = model.mask.count(BAND_MASK_NAME)
         user_count = model.mask.count(USER_MASK_NAME)
         fit_count = model.mask.count(SIGMA_MASK_NAME)
         aperture_count = model.mask.count(INPUT_MASK_NAME)
 
-        band = f'<b>Band Masked:</b> {band_count}<br/>' if band_count else ''
-        user = f'<b>User Masked:</b> {user_count}<br/>' if user_count else ''
-        fit = f'<b>Fit Masked:</b> {fit_count}<br/>' if fit_count else ''
-        aperture = f'<b>Aperture Masked:</b> {aperture_count}<br/>' \
+        band = f'<div class="info_header">Band Masked: </div><div class="info_text">{band_count}</div>' if self.enable_regions else ''
+        user = f'<div class="info_header">User Masked: </div><div class="info_text">{user_count}</div>' if self.enable_user_masking else ''
+        fit = f'<div class="info_header">Fit Masked:</div><div class="info_text">{fit_count}</div>'
+        aperture = f'<div class="info_header">Aperture Masked:</div><div class="info_text">{aperture_count}</div></div>' \
             if aperture_count else ''
         self.component.update(text=rms + band + user + fit + aperture)
 
@@ -774,7 +777,7 @@ class Fit1DPanel:
         Controller(p_main, None, self.model.band_model, controller_div,
                    mask_handlers=mask_handlers, domain=domain)
 
-        info_panel = InfoPanel()
+        info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
         self.model.add_listener(info_panel.model_change_handler)
 
         # self.add_custom_cursor_behavior(p_main)
