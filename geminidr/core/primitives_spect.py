@@ -36,6 +36,7 @@ from copy import copy
 
 import astrodata
 from astrodata import NDAstroData
+from astrodata.provenance import add_provenance
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
 from gempy.gemini import gemini_tools as gt
@@ -46,6 +47,7 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.md5 import md5sum
 from . import parameters_spect
 
 import matplotlib
@@ -918,6 +920,8 @@ class Spect(PrimitivesBASE):
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad_out)
+            if arc.path:
+                add_provenance(ad_out, arc.filename, md5sum(arc.path) or "", self.myself())
 
         return adoutputs
 

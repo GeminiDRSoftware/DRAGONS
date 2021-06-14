@@ -43,6 +43,7 @@ E.g.,::
 """
 import gc
 import inspect
+import json
 import traceback
 from datetime import datetime
 
@@ -161,8 +162,8 @@ def _get_provenance_inputs(adinputs):
             provenance = ad.PROVENANCE.copy()
         else:
             provenance = []
-        if hasattr(ad, 'PROVENANCE_HISTORY'):
-            provenance_history = ad.PROVENANCE_HISTORY.copy()
+        if hasattr(ad, 'PROVHISTORY'):
+            provenance_history = ad.PROVHISTORY.copy()
         else:
             provenance_history = []
         retval[ad.data_label()] = \
@@ -255,7 +256,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
                 clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
                 clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
             else:
-                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                if hasattr(ad, 'PROVHISTORY'):
                     clone_hist = False
                 else:
                     clone_hist = True
@@ -326,7 +327,10 @@ def parameter_override(fn):
             try:
                 provenance_inputs = _get_provenance_inputs(adinputs)
                 fnargs = dict(config.items())
-                stringified_args = "%s" % fnargs
+                stringified_args = json.dumps({k: v for k, v in fnargs.items()
+                                               if not k.startswith('debug_')},
+                                              default=lambda v: v.filename if hasattr(v, 'filename')
+                                                                else '<not serializable>')
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
                 _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
