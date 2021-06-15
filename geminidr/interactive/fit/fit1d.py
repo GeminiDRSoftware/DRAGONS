@@ -628,10 +628,9 @@ class InfoPanel:
         extra_counts = dict()
         for em in self.extra_masks:
             extra_counts[em] = model.mask.count(em)
-        # aperture_count = model.mask.count(INPUT_MASK_NAME)
-        total_count = band_count + user_count + fit_count + sum(model.mask.count(em) for em in self.extra_masks)
+        total_count = model.x.size
 
-        total = f'<div class="info_header">Total Masked: </div><div class="info_text">{total_count}</div>'
+        total = f'<div class="info_header">Total Points: </div><div class="info_text">{total_count}</div>'
         band = f'<div class="info_header">Outside Region(s): </div><div class="info_text">{band_count}</div>' if self.enable_regions else ''
         user = f'<div class="info_header">User Masked: </div><div class="info_text">{user_count}</div>' if self.enable_user_masking else ''
         fit = f'<div class="info_header">Sigma Clipped:</div><div class="info_text">{fit_count}</div>'
