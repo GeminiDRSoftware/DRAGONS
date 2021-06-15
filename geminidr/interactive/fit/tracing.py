@@ -807,7 +807,7 @@ def trace_apertures_data_provider(ext, ui_params):
     spectral position of the knots, and y is the spacial position of the
     knots.
     """
-    all_tracing_knots = []
+    data = {"x": [], "y": []}
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
     # Convert configuration object into dictionary for easy access to its values
@@ -833,15 +833,7 @@ def trace_apertures_data_provider(ext, ui_params):
             step=ui_params.values['step'],
         )
 
-        in_coords = np.ma.masked_array(in_coords)
+        data["x"].append(in_coords[1 - dispaxis])
+        data["y"].append(in_coords[dispaxis])
 
-        # ToDo: This should not be required
-        in_coords.mask = np.zeros_like(in_coords)
-
-        spectral_tracing_knots = in_coords[1 - dispaxis]
-        spatial_tracing_knots = in_coords[dispaxis]
-
-        all_tracing_knots.append(
-            [spectral_tracing_knots, spatial_tracing_knots])
-
-    return all_tracing_knots
+    return data

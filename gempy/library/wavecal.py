@@ -345,14 +345,15 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
 
 def create_interactive_inputs(ad, ui_params=None, p=None,
                               linelist=None, bad_bits=0):
-    all_fits = []
+    data = {"x": [], "y": [], "meta": []}
     for ext in ad:
-        data, fit1d, _ = get_automated_fit(
+        input_data, fit1d, _ = get_automated_fit(
             ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits)
         # peak locations and line wavelengths of matched peaks/lines
-        all_fits.append([fit1d.points[~fit1d.mask], fit1d.image[~fit1d.mask],
-                         None, data])
-    return all_fits
+        data["x"].append(fit1d.points[~fit1d.mask])
+        data["y"].append(fit1d.image[~fit1d.mask])
+        data["meta"].append(input_data)
+    return data
 
 
 def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
