@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from operator import concat
 
 import numpy as np
 
@@ -609,10 +610,13 @@ class FittingParametersUI:
 
 
 class InfoPanel:
-    def __init__(self, enable_regions, enable_user_masking):
+    def __init__(self, enable_regions, enable_user_masking, extra_masks=None):
         self.component = Div(text='')
         self.enable_regions = enable_regions
         self.enable_user_masking = enable_user_masking
+        self.extra_masks = extra_masks
+        if self.extra_masks is None:
+            self.extra_masks = list()
 
     def model_change_handler(self, model):
         rms = '<div class="info_panel"><div class="info_header">RMS: </div><div class="info_text">{rms:.4f}</div>'\
@@ -620,14 +624,22 @@ class InfoPanel:
         band_count = model.mask.count(BAND_MASK_NAME)
         user_count = model.mask.count(USER_MASK_NAME)
         fit_count = model.mask.count(SIGMA_MASK_NAME)
-        aperture_count = model.mask.count(INPUT_MASK_NAME)
 
-        band = f'<div class="info_header">Band Masked: </div><div class="info_text">{band_count}</div>' if self.enable_regions else ''
+        extra_counts = dict()
+        for em in self.extra_masks:
+            extra_counts[em] = model.mask.count(em)
+        # aperture_count = model.mask.count(INPUT_MASK_NAME)
+        total_count = band_count + user_count + fit_count + sum(model.mask.count(em) for em in self.extra_masks)
+
+        total = f'<div class="info_header">Total Masked: </div><div class="info_text">{total_count}</div>'
+        band = f'<div class="info_header">Outside Region(s): </div><div class="info_text">{band_count}</div>' if self.enable_regions else ''
         user = f'<div class="info_header">User Masked: </div><div class="info_text">{user_count}</div>' if self.enable_user_masking else ''
-        fit = f'<div class="info_header">Fit Masked:</div><div class="info_text">{fit_count}</div>'
-        aperture = f'<div class="info_header">Aperture Masked:</div><div class="info_text">{aperture_count}</div></div>' \
-            if aperture_count else ''
-        self.component.update(text=rms + band + user + fit + aperture)
+        fit = f'<div class="info_header">Sigma Clipped:</div><div class="info_text">{fit_count}</div>'
+
+        def title_extra_mask(em):
+            return em[0:1].upper() + em[1:].lower()
+        extra_masks = '\n'.join([f'<div class="info_header">{title_extra_mask(em)}:</div><div class="info_text">{extra_counts[em]}</div>' for em in self.extra_masks])
+        self.component.update(text=rms + total + band + user + fit + extra_masks + '</div>')
 
 
 class Fit1DPanel:
