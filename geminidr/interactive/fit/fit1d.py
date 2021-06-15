@@ -986,21 +986,25 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             with each being an array or a list of arrays. There are also
             optional "weights" (array of weights), "*_mask" (additional input masks),
             and "meta" (any additional data)
-        fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters` or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
+        fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
+                or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             Description of parameters to use for `fit_1d`
         reinit_params : list of str
-            list of parameter names in config related to reinitializing fit arrays.  These cause the `data_source`
-            function to be run to get the updated coordinates/weights.  Should not be passed if `data_source` is
-            not a function.
+            list of parameter names in config related to reinitializing fit
+            arrays.  These cause the `data_source` function to be run to get
+            the updated coordinates/weights.  Should not be passed if
+            `data_source` is not a function.
         reinit_extras :
-            Extra parameters to show on the left side that can affect the output of `data_source` but
-            are not part of the primitive configuration.  Should not be passed if `data_source` is not a function.
+            Extra parameters to show on the left side that can affect the
+            output of `data_source` but are not part of the primitive
+            configuration. Only relevant if `data_source` is a function.
         modal_message : str
-            If set, datapoint calculation is expected to be expensive and a 'recalculate' button will be shown
-            below the reinit inputs rather than doing it live.
+            If set, datapoint calculation is expected to be expensive and a
+            'recalculate' button will be shown below the reinit inputs rather
+            than doing it live.
         modal_button_label : str
-            If set and if modal_message was set, this will be used for the label on the recalculate button.  It is
-            not required.
+            If set and if modal_message was set, this will be used for the
+            label on the recalculate button.  It is not required.
         tab_name_fmt : str
             Format string for naming the tabs
         xlabel : str
@@ -1015,6 +1019,15 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             HTML help text for popup help, or None to use the default
         ui_params : :class:`~geminidr.interactive.interactive.UIParams`
             Parameter set for user input
+        turbo_tabs : bool
+            If set, only the data for the tab being displayed will be sent to
+            the browser. This can speed up the general responsiveness when
+            there are many tabs, but introduces a small delay when the user
+            switches between tabs.
+        panel_class : class
+            The class of Panel to use in each tab. This allows specific
+            operability for each primitive since most of the functions that do
+            the work are methods of this class.
         """
         super().__init__(title=title, primitive_name=primitive_name, filename_info=filename_info,
                          template=template, help_text=help_text, ui_params=ui_params)
