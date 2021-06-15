@@ -1093,7 +1093,8 @@ class Spect(PrimitivesBASE):
 
             uiparams = UIParameters(
                 config, reinit_params=["center", "nsum", "min_snr", "min_sep",
-                                       "fwidth", "central_wavelength", "dispersion"])
+                                       "fwidth", "central_wavelength", "dispersion",
+                                       "in_vacuo"])
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)

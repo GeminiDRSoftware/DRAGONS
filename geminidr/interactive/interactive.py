@@ -67,6 +67,7 @@ class PrimitiveVisualizer(ABC):
                                     label="Accept",
                                     name="submit_btn",
                                     width_policy='min',
+                                    height=202,
                                     )
 
         # This now happens indirectly via the /shutdown ajax js callback
@@ -311,9 +312,13 @@ class PrimitiveVisualizer(ABC):
                         handler=self.slider_handler_factory(key, reinit_live=reinit_live))
 
                     self.widgets[key] = widget.children[0]
-                elif field.allowed:
+                elif hasattr(field, 'allowed'):
                     # ChoiceField => drop-down menu
                     widget = Dropdown(label=field.title, menu=list(field.allowed.keys()))
+                    self.widgets[key] = widget
+                elif field.dtype is bool:
+                    widget = bm.CheckboxGroup(labels=[params.titles[key]],
+                                              active=[0] if params.values[key] else [])
                     self.widgets[key] = widget
                 else:
                     # Anything else
@@ -1483,7 +1488,7 @@ class UIParameters:
         """Provides the same interface to get parameter values as Config"""
         try:
             return self.values[attr]
-        except KeyError:
+        except:
             return object.__getattribute__(self, attr)
 
 
