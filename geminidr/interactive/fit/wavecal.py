@@ -3,10 +3,11 @@ from scipy.interpolate import interp1d
 from bisect import bisect
 
 from bokeh import models as bm
-from bokeh.layouts import row, column
+from bokeh.layouts import row
 from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller, Handler
+from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
 from gempy.library.matching import match_sources
 from gempy.library.tracing import cwt_ricker, pinpoint_peaks
 
@@ -73,12 +74,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.xpoint = 'fitted'
         self.ypoint = 'nonlinear'
         p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
-                                      xpoint='fitted', ypoint='nonlinear',
+                                      xpoint=self.xpoint, ypoint=self.ypoint,
                                       xline='model', yline='nonlinear',
                                       xlabel=self.xlabel, ylabel=self.ylabel,
                                       model=self.model, plot_ratios=False,
                                       enable_user_masking=True)
-
         mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
         Controller(p_main, None, self.model.band_model, controller_div,
                    mask_handlers=mask_handlers, domain=domain)
@@ -98,7 +98,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         p_spectrum.text(x='fitted', y='heights', text='lines',
                         source=self.model.data, angle=0.5 * np.pi,
                         text_color=self.model.mask_rendering_kwargs()['color'],
-                        text_baseline='middle')
+                        text_baseline='middle', text_align='right',
+                        text_font_size='10pt')
         self.p_spectrum = p_spectrum
         delete_line_handler = Handler('d', "Delete arc line",
                                       self.delete_line)
@@ -153,14 +154,21 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         Parameters
         ----------
-        x : float
-            pixel location of line
+        x : float/iterable
+            pixel location of line(s)
 
         Returns
         -------
-        float : an appropriate y value for writing a label
+        float/list : appropriate y value(s) for writing a label
         """
-        padding = 0.02 * self.spectrum.data['spectrum'].max()
+        try:
+            height = self.p_spectrum.y_range.end - self.p_spectrum.y_range.start
+        except TypeError:  # range is None, plot being initialized
+            # This is calculated on the basis that bokeh pads by 5% of the
+            # data range on each side
+            height = (44 / 29 * self.spectrum.data['spectrum'].max() -
+                      1.1 * self.spectrum.data['spectrum'].min())
+        padding = 0.25 * height
         try:
             return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
         except TypeError:
@@ -312,7 +320,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                           self.p_spectrum.y_range.start)
         self.new_line_marker.data = {"x": [est_wave] * 2,
                                      "y": [self.label_height(peak),
-                                           self.label_height(peak) + lheight]}
+                                           self.label_height(peak) - lheight]}
         self.set_currently_identifying(peak)
 
     @disable_when_identifying
@@ -382,7 +390,14 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     A Visualizer specific to determineWavelengthSolution
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel)
+        super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
+                         help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT)
+        #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
+        #    labels=["Air", "Vacuum"], active=0)
+        #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
+        self.reinit_panel.children[-3] = bm.Div(
+            text="<b>Calibrating to wavelengths in {}</b>".format(
+                "vacuo" if self.ui_params.in_vacuo else "air"), align="center")
         self.widgets["in_vacuo"].disabled = True
 
     @property
