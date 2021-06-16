@@ -418,9 +418,9 @@ class Spect(PrimitivesBASE):
 
             if interactive:
                 all_domains = [(0, x[0].shape[0]) for x in all_exts]
-                all_waves = np.array([x[1] for x in all_exts])
-                all_zpt = np.array([x[2] for x in all_exts])
-                all_weights = np.array([x[3] for x in all_exts])
+                all_waves = [x[1].value for x in all_exts]
+                all_zpt = [x[2].value for x in all_exts]
+                all_weights = [x[3].value for x in all_exts]
                 all_fp_init = []
                 for i in range(len(all_exts)):
                     all_fp_init.append(fit_1D.translate_params(params))
@@ -433,7 +433,7 @@ class Spect(PrimitivesBASE):
                 filename_info = getattr(ad, 'filename', '')
 
                 uiparams = UIParameters(config)
-                visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
+                visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel=f'Wavelength ({xunits})',
