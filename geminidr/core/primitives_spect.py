@@ -2547,7 +2547,7 @@ class Spect(PrimitivesBASE):
                     data["aperture_mask"].append(rc_aper_mask[:, c])
                     rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
                 else:
-                    data["weights"].append(None if rc_sky_weights is None else rc_sky_weights[:c])
+                    data["weights"].append(None if rc_sky_weights is None else rc_sky_weights[c])
                     data["aperture_mask"].append(rc_aper_mask[c])
                     rc_sky = np.ma.masked_array(rc_ext.data[c], mask=rc_sky_mask[c])
                 data["x"].append(np.arange(rc_sky.size))
