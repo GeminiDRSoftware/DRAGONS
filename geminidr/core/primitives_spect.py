@@ -2506,7 +2506,7 @@ class Spect(PrimitivesBASE):
                     transpose_if_needed(csc_ext.data, csc_sky_mask, csc_sky_weights, transpose=csc_axis != 0)
                 if interactive_mode:
                     csc_aperture_mask = \
-                        transpose_if_needed(csc_aperture_mask, transpose=csc_axis != 0)[0]  # why do I need to explicitly pull it back out of an array?!
+                        transpose_if_needed(csc_aperture_mask, transpose=csc_axis != 0)[0]
                     yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
                 else:
                     yield csc_ext, csc_sky_mask, csc_sky_weights
