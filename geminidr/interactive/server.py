@@ -287,3 +287,4 @@ def interactive_fitter(visualizer):
     set_visualizer(None)
     if not visualizer.user_satisfied:
         raise KeyboardInterrupt()
+    print("done with interactive fit...")

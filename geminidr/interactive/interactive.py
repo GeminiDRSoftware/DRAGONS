@@ -69,10 +69,11 @@ class PrimitiveVisualizer(ABC):
                                     width_policy='min',
                                     height=202,
                                     )
-
-        # This now happens indirectly via the /shutdown ajax js callback
-        # Remove this line if we stick with that
-        # self.submit_button.on_click(self.submit_button_handler)
+        # The submit_button_handler is only needed to flip the user_accepted flag to True before
+        # the bokeh event loop terminates
+        self.submit_button.on_click(self.submit_button_handler)
+        # This window closing will end the session.  That is what
+        # causes the bokeh event look to terminate via session_ended().
         callback = CustomJS(code="""
             $.ajax('/shutdown').done(function()
                 {
@@ -108,8 +109,12 @@ class PrimitiveVisualizer(ABC):
 
     def submit_button_handler(self, stuff):
         """
-        Handle the submit button by stopping the bokeh server, which
-        will resume python execution in the DRAGONS primitive.
+        Handle the submit button by recording the uesr was
+        satisfied.  This clues in the interactive code on exit
+        that the user is happy with the results.  Otherwise,
+        the session ended due to a tab being closed or some
+        other OS issue.  In that case, we will want to error
+        and we will see that user_satisfied is still False.
 
         Parameters
         ----------
@@ -120,9 +125,19 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
+        self.user_satisfied = True
+
+    def session_ended(self, sess_context):
+        """
+        Handle the end of the session by stopping the bokeh server, which
+        will resume python execution in the DRAGONS primitive.
+
+        Returns
+        -------
+        none
+        """
         if not self.exited:
             self.exited = True
-            self.user_satisfied = True
             server.stop_server()
 
     def get_filename_div(self):
@@ -177,7 +192,7 @@ class PrimitiveVisualizer(ABC):
             Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
         """
         self.doc = doc
-        doc.on_session_destroyed(self.submit_button_handler)
+        doc.on_session_destroyed(self.session_ended)
 
         self.visualize(doc)
 
