@@ -43,7 +43,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
-from gempy.library.astrotools import array_from_list
+from gempy.library.astrotools import array_from_list, transpose_if_needed
 from gempy.library.config import RangeField, Config
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
@@ -2502,7 +2502,11 @@ class Spect(PrimitivesBASE):
                 else:
                     csc_sky_mask ^= no_data[:, None]
 
+                csc_ext.data, csc_sky_mask, csc_sky_weights = \
+                    transpose_if_needed(csc_ext.data, csc_sky_mask, csc_sky_weights, transpose=csc_axis != 0)
                 if interactive_mode:
+                    csc_aperture_mask = \
+                        transpose_if_needed(csc_aperture_mask, transpose=csc_axis != 0)[0]  # why do I need to explicitly pull it back out of an array?!
                     yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
                 else:
                     yield csc_ext, csc_sky_mask, csc_sky_weights
@@ -2557,7 +2561,8 @@ class Spect(PrimitivesBASE):
             # Create a 'col' parameter to add to the UI so the user can select the column they
             # want to fit.
             # We pass a default column at the 1/3 mark, since dead center is flat
-            ncols = adinputs[0].shape[0][0]
+            axis = adinputs[0].dispersion_axis()[0] - 1  # python sense
+            ncols = adinputs[0].shape[0][axis]
             reinit_params = ["col", "aperture_growth"]
             reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 3),
                                                min=1, max=ncols)}
@@ -2567,8 +2572,9 @@ class Spect(PrimitivesBASE):
                 all_shapes = []
                 count = 0
                 for ext in ad:
+                    axis = ext.dispersion_axis() - 1  # python sense
                     count = count+1
-                    all_shapes.append((0, ext.shape[0]))  # extracting single line for interactive
+                    all_shapes.append((0, ext.shape[axis]))  # extracting single line for interactive
 
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
@@ -2618,7 +2624,7 @@ class Spect(PrimitivesBASE):
                 # get value for aperture growth from config
                 apg = params["aperture_growth"]
             for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
-                axis = ext.dispersion_axis() - 1  # python sense
+                axis = 0  # Note: transposed already
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
                                    axis=axis, plot=debug_plot).evaluate()
