@@ -1095,6 +1095,9 @@ class Spect(PrimitivesBASE):
                 config, reinit_params=["center", "nsum", "min_snr", "min_sep",
                                        "fwidth", "central_wavelength", "dispersion",
                                        "in_vacuo"])
+            uiparams.fields["center"].max = min(
+                ext.shape[ext.dispersion_axis() - 1] for ext in ad)
+
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)
