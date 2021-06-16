@@ -285,4 +285,5 @@ def interactive_fitter(visualizer):
     set_visualizer(visualizer)
     start_server()
     set_visualizer(None)
-    return visualizer.user_satisfied
+    if not visualizer.user_satisfied:
+        raise KeyboardInterrupt()
