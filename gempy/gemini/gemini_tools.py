@@ -1400,36 +1400,19 @@ def array_from_descriptor_value(ext, descriptor):
         if desc_value is None:
             log.warning(f"  {descriptor} for {extid} = None. Setting to zero")
             desc_value = 0.0
-        else:
+        else:  # "electrons" here because this is only used for gain/read_noise
             log.fullinfo(f"  {descriptor} for {extid} = {desc_value} electrons")
         return desc_value
 
     if len(arrsec) != len(desc_value):
         raise ValueError(f"The number of array sections and {descriptor} "
-                         f"values do not match in {ext.filename}")
+                         f"values do not match in {extid}")
 
-    datasec, new_datasec = map_data_sections_to_trimmed_data(ext.data_section())
-    binning = np.array([ext.detector_y_bin(), ext.detector_x_bin()])
-    arrsec_origin = np.array([min(asec.y1 for asec in arrsec),
-                              min(asec.x1 for asec in arrsec)])
-
+    data_sections = map_array_sections(ext)
     ret_arr = np.full(ext.shape[-2:], np.nan, dtype=np.float32)
 
-    for asec, desc in zip(arrsec, desc_value):
-        # Assuming everything is contiguous, this will be the location in
-        # the reassambled image
-        sec = ((np.array([asec[2:], asec[:2]]).T - arrsec_origin)
-                // binning).T[::-1].flatten()  # x-first
-        for dsec, new_dsec in zip(datasec, new_datasec):
-            if at.section_contains(new_dsec, list(sec)):
-                location = sec - np.array(list(new_dsec)) + np.array(list(dsec))
-                ret_arr[slice(*location[2:]), slice(*location[:2])] = desc
-                log.fullinfo(f"  {descriptor} for {extid} [{location[2]+1}:"
-                             f"{location[3]},{location[0]+1}:{location[1]}]"
-                             f" = {desc}")
-                break
-        else:
-            raise ValueError(f"Could not find a location for {asec}")
+    for datsec, value in zip(data_sections, desc_value):
+        ret_arr[datsec.asslice()] = value
 
     # Pad regions not defined by the array_section() with nearest real value
     indices = distance_transform_edt(np.isnan(ret_arr), return_distances=False,
@@ -1552,14 +1535,6 @@ def map_array_sections(ext):
     arrsec = ext.array_section(pretty=False)  # pretty required by code
 
     datsec, new_datsec = map_data_sections_to_trimmed_data(datasec)
-
-    # Descriptor doesn't return correct value so here it is
-    if ext.instrument() == "MAROONX":
-        if "_r_" in ext.filename:
-            arrsec = [Section(0, 2042, 0, 4080), Section(2042, 4083, 0, 4080)]
-        else:
-            arrsec = [Section(0, 2040, 0, 2040), Section(0, 2040, 2040, 4078),
-                      Section(2040, 4078, 0, 2040), Section(2040, 4078, 2040, 4078)]
 
     arrsec_is_list = isinstance(arrsec, list)
     sections = []
