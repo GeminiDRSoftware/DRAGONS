@@ -80,7 +80,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                       model=self.model, plot_ratios=False,
                                       enable_user_masking=True)
         mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
-        Controller(p_main, None, self.model.band_model, controller_div,
+        Controller(p_main, None, self.model.band_model if self.enable_regions else None, controller_div,
                    mask_handlers=mask_handlers, domain=domain)
 
         p_spectrum = figure(plot_width=self.width, plot_height=self.height,
@@ -105,7 +105,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                       self.delete_line)
         identify_line_handler = Handler('i', "Identify arc line",
                                         self.identify_line)
-        Controller(p_spectrum, None, self.model.band_model, controller_div,
+        Controller(p_spectrum, None, self.model.band_model if self.enable_regions else None, controller_div,
                    mask_handlers=None, domain=domain,
                    handlers=[delete_line_handler, identify_line_handler])
 

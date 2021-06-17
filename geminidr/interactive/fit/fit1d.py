@@ -771,8 +771,10 @@ class Fit1DPanel:
         else:
             mask_handlers = None
 
-        Controller(p_main, None, self.model.band_model, controller_div,
-                   mask_handlers=mask_handlers, domain=domain)
+        Controller(p_main, None, self.model.band_model if self.enable_regions else None, controller_div,
+                   mask_handlers=mask_handlers, domain=domain, helpintrotext=
+                   "While the mouse is over the upper plot, "
+                   "choose from the following commands:")
 
         info_panel = InfoPanel()
         self.model.add_listener(info_panel.model_change_handler)
@@ -882,7 +884,7 @@ class Fit1DPanel:
                         dist = ddist
                         sel = i
         if sel is not None:
-            # we have a clos_maskest point, toggle the user mask
+            # we have a closest point, toggle the user mask
             if mask[sel] == USER_MASK_NAME:
                 mask[sel] = ('good' if self.model.band_model.contains(xarr[sel])
                              else BAND_MASK_NAME)
