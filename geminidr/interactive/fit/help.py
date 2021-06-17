@@ -148,6 +148,23 @@ DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT = """
     a different color.
 </p>
 <p>
+    The extraction and initial identifications are controlled by the parameters
+    on the left, which initially are those provided to the primitive. The first
+    two parameters control the extraction, the next three control the
+    peak-finding algorithm, while the last two provide the initial approximate
+    (linear) wavelength solution. If the text box is empty and no value is
+    shown above the slider, this means that the default is used.
+<p>
+    By default, the spectrum is extracted along the central rows/columns of
+    the image and the feature width is derived from analysis of this
+    spectrum. If the central wavelength and dispersion are left blank, the
+    initial wavelength solution will be derived from the world coordinate
+    system (WCS) of the image. This is derived from keywords in the FITS
+    header. It is unlikely you will need to change any of these parameters
+    from their defaults.
+</p>
+</p>
+<p>
     Incorrect line identifications can be deleted in the top plot by pressing
     the <b>D</b> key close to it. A peak in the spectrum can be assigned a
     reference wavelength (identified) with the <b>I</b> key. This will
@@ -157,8 +174,8 @@ DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT = """
     available in the dropdown menu, with the closest one selected and
     also present in the text box. You may select this, or one of the other
     lines from the menu, or enter a wavelength directly in the text box,
-    and click "OK". You can also decide not to add this line to the fit
-    (perhaps if the wrong peak was highlighted) with the "Cancel" button.
+    and click &quot;OK&quot;. You can also decide not to add this line to the fit
+    (perhaps if the wrong peak was highlighted) with the &quot;Cancel&quot; button.
     Note that the wavelength entered must be a value that maintains a
     monotonic increase or decrease of wavelength with pixel location so,
     for example, if you identify a line between two lines with wavelength
@@ -166,7 +183,7 @@ DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT = """
     wavelengths.
 </p>
 <p>
-    The "Identify lines" button will try to assign wavelengths to peaks
+    The &quot;Identify lines&quot; button will try to assign wavelengths to peaks
     in the spectrum that are not identified. Due to the way the lines are
     identified when constructing the initial fit, this may add new
     line identifications if run immediately after the interactive window
