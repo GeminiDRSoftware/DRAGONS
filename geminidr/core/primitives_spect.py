@@ -1110,7 +1110,7 @@ class Spect(PrimitivesBASE):
                             linelist=linelist, bad_bits=DQ.not_signal)
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
-                    modal_message="Hang on, this stuff is tricky",
+                    modal_message="Re-extracting 1D spectra",
                     tab_name_fmt="Slit {}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
