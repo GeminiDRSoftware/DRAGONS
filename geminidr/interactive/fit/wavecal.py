@@ -100,7 +100,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
                         text_color=self.model.mask_rendering_kwargs()['color'],
                         text_baseline='middle', text_align='right',
                         text_font_size='10pt')
-        self.p_spectrum = p_spectrum
         delete_line_handler = Handler('d', "Delete arc line",
                                       self.delete_line)
         identify_line_handler = Handler('i', "Identify arc line",
@@ -108,6 +107,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         Controller(p_spectrum, None, self.model.band_model if self.enable_regions else None, controller_div,
                    mask_handlers=None, domain=domain,
                    handlers=[delete_line_handler, identify_line_handler])
+        p_spectrum.y_range.on_change("start", lambda attr, old, new:
+                                     self.update_label_heights())
+        p_spectrum.y_range.on_change("end", lambda attr, old, new:
+                                     self.update_label_heights())
+        self.p_spectrum = p_spectrum
 
         self.identify_button = bm.Button(label="Identify lines", width=200,
                                          button_type="primary", width_policy="fixed")
@@ -166,13 +170,18 @@ class WavelengthSolutionPanel(Fit1DPanel):
         except TypeError:  # range is None, plot being initialized
             # This is calculated on the basis that bokeh pads by 5% of the
             # data range on each side
-            height = (44 / 29 * self.spectrum.data['spectrum'].max() -
-                      1.1 * self.spectrum.data['spectrum'].min())
+            #height = (44 / 29 * self.spectrum.data['spectrum'].max() -
+            #          1.1 * self.spectrum.data['spectrum'].min())
+            height = 44 / 29 * self.spectrum.data['spectrum'].max()
         padding = 0.25 * height
         try:
             return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
         except TypeError:
             return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
+
+    def update_label_heights(self):
+        """Simple callback to move the labels if the spectrum panel is resized"""
+        self.model.data.data['heights'] = self.label_height(self.model.x)
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
