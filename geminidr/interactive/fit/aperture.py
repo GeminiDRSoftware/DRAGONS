@@ -16,6 +16,7 @@ from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
+from geminidr.interactive.server import interactive_fitter
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
@@ -1062,6 +1063,5 @@ def interactive_find_source_apertures(ext, **kwargs):
     """
     model = FindSourceAperturesModel(ext, **kwargs)
     fsav = FindSourceAperturesVisualizer(model, filename_info=ext.filename)
-    server.set_visualizer(fsav)
-    server.start_server()
+    interactive_fitter(fsav)
     return fsav.result()

@@ -171,7 +171,7 @@ def _helpapp(doc):
 
 
 def _shutdown(doc):
-    _visualizer.submit_button_handler(None)
+    _visualizer.session_ended(None, True)
 
 
 def set_visualizer(visualizer):
@@ -234,6 +234,7 @@ def start_server():
                         '/help': _helpapp,
                         '/shutdown': _shutdown,
                     },
+                    # unused_session_lifetime=100,  # This didn't help window close detection, but for reference..
                     keep_alive_milliseconds=0,
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],
@@ -285,4 +286,5 @@ def interactive_fitter(visualizer):
     set_visualizer(visualizer)
     start_server()
     set_visualizer(None)
-    return visualizer.user_satisfied
+    if not visualizer.user_satisfied:
+        raise KeyboardInterrupt()
