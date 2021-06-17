@@ -208,7 +208,9 @@ class TraceAperturesTab(Fit1DPanel):
         _controller = Controller(p_main, None, self.band_model,
                                  self.controller_help,
                                  mask_handlers=mask_handlers,
-                                 domain=domain)
+                                 domain=domain,
+                                 helpintrotext="While the mouse is over the upper plot, "
+                                 "choose from the following commands:")
 
         self.add_custom_cursor_behavior(p_main)
 
