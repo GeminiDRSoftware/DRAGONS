@@ -1028,8 +1028,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'
 
-        Controller(aperture_view.fig, self.model, None, helptext,
-                   showing_residuals=False)
+        Controller(aperture_view.fig, self.model, None, helptext)
 
         doc.add_root(layout)
 

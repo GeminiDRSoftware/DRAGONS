@@ -366,6 +366,7 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
         2D spectral image from which trace is to be extracted.
     center : float or None
         Center of averaging region (None => center of axis).
+        python 0-indexed
     nsum : int
         Number of rows/columns to combine
 
@@ -387,8 +388,8 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     if center is None:
         center = 0.5 * (npix - 1)
 
-    extract_slice = slice(max(0, int(center - 0.5 * nsum)),
-                          min(npix, int(center + 0.5 * nsum)))
+    extract_slice = slice(max(0, int(center + 1 - 0.5 * nsum)),
+                          min(npix, int(center + 1 + 0.5 * nsum)))
     data, mask, variance = at.transpose_if_needed(
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
