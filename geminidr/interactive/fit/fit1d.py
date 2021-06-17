@@ -247,7 +247,7 @@ class InteractiveModel1D(InteractiveModel):
 
         # need to setup the mask
         for i in np.arange(len(x)):
-            if self.band_model.contains(x[i]):
+            if self.band_model is None or self.band_model.contains(x[i]):
                 # User mask takes preference
                 if mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
                     mask[i] = 'good'
@@ -686,7 +686,10 @@ class Fit1DPanel:
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
         # Avoids having to check whether this is None all the time
-        band_model = GIRegionModel(domain=domain)
+        if enable_regions:
+            band_model = GIRegionModel(domain=domain)
+        else:
+            band_model = None
         self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
                                         band_model=band_model, extra_masks=extra_masks)
         self.model.add_listener(self.model_change_handler)
@@ -718,7 +721,7 @@ class Fit1DPanel:
         # TODO refactor? this is dupe from band_model_handler
         # hacking it in here so I can account for the initial
         # state of the band model (which used to be always empty)
-        mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
+        mask = [BAND_MASK_NAME if band_model is not None and not band_model.contains(x) and m == 'good' else m
                 for x, m in zip(self.model.x, self.model.mask)]
         self.model.data.data['mask'] = mask
         self.model.perform_fit()
@@ -772,7 +775,9 @@ class Fit1DPanel:
             mask_handlers = None
 
         Controller(p_main, None, self.model.band_model, controller_div,
-                   mask_handlers=mask_handlers, domain=domain)
+                   mask_handlers=mask_handlers, domain=domain, helpintrotext=
+                   "While the mouse is over the upper plot, "
+                   "choose from the following commands:")
 
         info_panel = InfoPanel()
         self.model.add_listener(info_panel.model_change_handler)
@@ -882,9 +887,9 @@ class Fit1DPanel:
                         dist = ddist
                         sel = i
         if sel is not None:
-            # we have a clos_maskest point, toggle the user mask
+            # we have a closest point, toggle the user mask
             if mask[sel] == USER_MASK_NAME:
-                mask[sel] = ('good' if self.model.band_model.contains(xarr[sel])
+                mask[sel] = ('good' if self.model.band_model is None or self.model.band_model.contains(xarr[sel])
                              else BAND_MASK_NAME)
             else:
                 mask[sel] = USER_MASK_NAME
