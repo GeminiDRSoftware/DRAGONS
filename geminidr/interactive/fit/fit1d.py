@@ -635,9 +635,7 @@ class InfoPanel:
         user = f'<div class="info_header">User Masked: </div><div class="info_text">{user_count}</div>' if self.enable_user_masking else ''
         fit = f'<div class="info_header">Sigma Clipped:</div><div class="info_text">{fit_count}</div>'
 
-        def title_extra_mask(em):
-            return em[0:1].upper() + em[1:].lower()
-        extra_masks = '\n'.join([f'<div class="info_header">{title_extra_mask(em)}:</div><div class="info_text">{extra_counts[em]}</div>' for em in self.extra_masks])
+        extra_masks = '\n'.join([f'<div class="info_header">{em.capitalize()}:</div><div class="info_text">{extra_counts[em]}</div>' for em in self.extra_masks])
         self.component.update(text=rms + total + band + user + fit + extra_masks + '</div>')
 
 
@@ -722,7 +720,8 @@ class Fit1DPanel:
 
         fig_column = self.build_figures(domain=domain, controller_div=controller_div,
                                         plot_residuals=plot_residuals,
-                                        plot_ratios=plot_ratios)
+                                        plot_ratios=plot_ratios,
+                                        extra_masks=extra_masks)
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if fitting_parameters.get("regions") is not None:
@@ -748,7 +747,8 @@ class Fit1DPanel:
                              spacing=10)
 
     def build_figures(self, domain=None, controller_div=None,
-                      plot_residuals=True, plot_ratios=True):
+                      plot_residuals=True, plot_ratios=True,
+                      extra_masks=None):
         """
         Construct the figures containing the various plots needed for this
         Visualizer.
@@ -763,6 +763,8 @@ class Fit1DPanel:
             make a ratios plot?
         plot_residuals : bool
             make a residuals plot?
+        extra_masks : dict/list/None
+            names of additional masks to inform the user about
 
         Returns
         -------
@@ -790,7 +792,8 @@ class Fit1DPanel:
                    "While the mouse is over the upper plot, "
                    "choose from the following commands:")
 
-        info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
+        info_panel = InfoPanel(self.enable_regions, self.enable_user_masking,
+                               extra_masks=extra_masks)
         self.model.add_listener(info_panel.model_change_handler)
 
         # self.add_custom_cursor_behavior(p_main)

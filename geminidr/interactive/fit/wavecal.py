@@ -138,7 +138,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         identify_panel = row(self.identify_button, self.new_line_div)
 
-        info_panel = InfoPanel()
+        info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
         self.model.add_listener(info_panel.model_change_handler)
 
         return [p_spectrum, identify_panel, info_panel.component,
