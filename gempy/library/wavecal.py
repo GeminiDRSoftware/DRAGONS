@@ -332,7 +332,7 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
             actual_cenwave = model(0.5 * (npix - 1))
             model |= models.Shift(-actual_cenwave)
             if dispersion:
-                actual_dispersion = np.diff(model([0, npix - 1])) / (npix - 1)
+                actual_dispersion = np.diff(model([0, npix - 1]))[0] / (npix - 1)
                 model |= models.Scale(dispersion / actual_dispersion)
             model |= models.Shift(actual_cenwave if central_wavelength is None
                                   else central_wavelength)
@@ -382,7 +382,6 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     acceptable_fit : bool
         whether this fit is likely to be good
     """
-
     input_data = get_all_input_data(
         ext, p, ui_params, linelist=linelist, bad_bits=bad_bits)
     spectrum = input_data["spectrum"]
@@ -694,7 +693,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
                 fits_to_do.append((p_hi, arc_line, dw))
         dc0 = 5 * abs(dw)
-
     return matches
 
 

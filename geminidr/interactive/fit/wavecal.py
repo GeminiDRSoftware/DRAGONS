@@ -69,7 +69,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.currently_identifying = peak
 
     def build_figures(self, domain=None, controller_div=None,
-                      plot_residuals=True, plot_ratios=True):
+                      plot_residuals=True, plot_ratios=True,
+                      extra_masks=True):
 
         self.xpoint = 'fitted'
         self.ypoint = 'nonlinear'
@@ -182,6 +183,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
     def update_label_heights(self):
         """Simple callback to move the labels if the spectrum panel is resized"""
         self.model.data.data['heights'] = self.label_height(self.model.x)
+        if self.currently_identifying:
+            lheight = 0.05 * (self.p_spectrum.y_range.end -
+                              self.p_spectrum.y_range.start)
+            self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -327,9 +332,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
         lheight = 0.05 * (self.p_spectrum.y_range.end -
                           self.p_spectrum.y_range.start)
+        height = self.spectrum.data["spectrum"][int(peak + 0.5)]
         self.new_line_marker.data = {"x": [est_wave] * 2,
-                                     "y": [self.label_height(peak),
-                                           self.label_height(peak) - lheight]}
+                                     "y": [height, height + lheight]}
         self.set_currently_identifying(peak)
 
     @disable_when_identifying

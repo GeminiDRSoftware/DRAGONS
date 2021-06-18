@@ -10,7 +10,7 @@ from bokeh.plotting import figure
 from bokeh import events
 
 from geminidr.interactive import interactive
-from geminidr.interactive.controls import Controller, Handler
+from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
     RegionEditor, do_later, TabsTurboInjector
 from geminidr.interactive.interactive_config import interactive_conf
@@ -1267,7 +1267,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         rollback_config = self.ui_params.values.copy()
         def fn():
             """Top-level code to update the Config with the values from the widgets"""
-            config_update = {k: v.value for k, v in self.widgets.items()}
+            config_update = {k: (v.value if getattr(v, "show_value", True) else None)
+                if hasattr(v, "value") else bool(v.active) for k, v in self.widgets.items()}
             self.ui_params.update_values(**config_update)
 
         self.do_later(fn)
