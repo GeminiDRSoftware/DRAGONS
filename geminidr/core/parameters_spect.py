@@ -89,7 +89,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
-                                           min=300., max=25000., optional=True)
+                                           min=300., max=5000., optional=True)
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)

@@ -21,3 +21,4 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
 
     def setDefaults(self):
         self.order = 3
+        self._fields["central_wavelength"].max = 1200
