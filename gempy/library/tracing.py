@@ -1119,18 +1119,23 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
                  np.zeros(ext.shape, dtype=bool))
 
     # Mask sky-line regions and find clumps of unmasked pixels
-    mask1d[var_excess > 5 * std] = 1
+    mask1d = (var_excess > 5 * std)
     slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
 
+    sky_mask = np.ones_like(mask1d)
     for reg in slices:
         if (reg.stop - reg.start) >= min_sky_region:
-            full_mask[reg] = False
+            sky_mask[reg] = False
 
     if section:
+        sec_mask = np.ones_like(mask1d)
         for x1, x2 in (s.split(':') for s in section.split(',')):
             reg = slice(None if x1 == '' else int(x1) - 1,
                         None if x2 == '' else int(x2))
-            full_mask[reg] = False
+            sec_mask[reg] = False
+    else:
+        sec_mask = False
+    full_mask |= sky_mask | sec_mask
 
     signal = (ext.data if (ext.variance is None or not use_snr) else
               np.divide(ext.data, np.sqrt(ext.variance),
