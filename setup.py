@@ -216,6 +216,7 @@ RS_SCRIPTS = [os.path.join('recipe_system', 'scripts', 'adcc'),
               os.path.join('recipe_system', 'scripts', 'caldb'),
               os.path.join('recipe_system', 'scripts', 'reduce'),
               os.path.join('recipe_system', 'scripts', 'superclean'),
+              os.path.join('recipe_system', 'scripts', 'provenance'),
               ]
 
 GEMPY_SCRIPTS = [
