@@ -793,7 +793,7 @@ def fit1d_from_kdfit(input_coords, output_coords, model,
     return fit1d
 
 
-def update_wcs_with_solution(ext, fit1d, input_data, config):
+def update_wcs_with_solution(ext, fit1d, matched_lines, input_data, config):
     """
     Attach a WAVECAL table and update the WCS of a single AstroData slice
     based on the result of the wavelength solution model.
@@ -804,6 +804,8 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         the extension to be updated
     fit1d : fit_1D
         the best-fitting model
+    matched_lines : tuple
+        pixel and wavelength coordinates of matched lines
     input_data : dict
         stuff
     config : config
@@ -814,8 +816,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     # Because of the way the fit_1D object is constructed, there
     # should be no masking. But it doesn't hurt to make sure, or
     # be futureproofed in case we change things.
-    incoords = fit1d.points[~fit1d.mask]
-    outcoords = fit1d.image[~fit1d.mask]
+    incoords, outcoords = matched_lines
 
     m_final = fit1d.model
     domain = m_final.domain

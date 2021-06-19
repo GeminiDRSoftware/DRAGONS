@@ -416,12 +416,12 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         return [fit.meta for fit in self.fits]
 
     @property
-    def image(self):
-        image = []
+    def matched_lines(self):
+        ret_value = []
         for model in self.fits:
-            goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
-            image.append(model.y[goodpix])
-        return image
+            goodpix = np.array([m == 'good' for m in model.mask])
+            ret_value.append((model.x[goodpix], model.y[goodpix]))
+        return ret_value
 
 
 def get_closest(arr, value):
