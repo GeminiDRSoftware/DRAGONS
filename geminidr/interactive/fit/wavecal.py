@@ -252,11 +252,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         print(f"Adding {wavelength} nm at pixel {peak}")
         if self.model.x.size > 1:
-            lower_limit, upper_limit = get_closest(self.model.x, peak)
-            if not np.isinf(lower_limit):
-                lower_limit = self.model.y[list(self.model.x).index(lower_limit)]
-            if not np.isinf(upper_limit):
-                upper_limit = self.model.y[list(self.model.x).index(upper_limit)]
+            lower_limit, upper_limit = get_closest(
+                self.model.y, self.model.evaluate(peak)[0])
             lower_limit, upper_limit = sorted([lower_limit, upper_limit])
             if not (lower_limit < wavelength < upper_limit):
                 self.visualizer.show_user_message(
