@@ -439,7 +439,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                     #if at.section_contains((0, auxext.shape[1], 0, auxext.shape[0]),
                     #                       (x1, x2, y1, y2)):
                     #    new_aux.append(auxext.nddata[y1:y2, x1:x2])
-                    cut_sec = Section.from_shape(ext_shape).shift(shifts[0])
+                    cut_sec = Section.from_shape(ext_shape).shift(*shifts[0])
                     if Section.from_shape(auxext.shape).contains(cut_sec):
                         new_aux.append(auxext.nddata[cut_sec.asslice()])
                         clipped_this_ad = True
