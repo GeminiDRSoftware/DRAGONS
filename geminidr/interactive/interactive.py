@@ -69,16 +69,21 @@ class PrimitiveVisualizer(ABC):
                                     width_policy='min',
                                     height=202,
                                     )
-
-        # This now happens indirectly via the /shutdown ajax js callback
-        # Remove this line if we stick with that
+        # The submit_button_handler is only needed to flip the user_accepted flag to True before
+        # the bokeh event loop terminates
         # self.submit_button.on_click(self.submit_button_handler)
+        # This window closing will end the session.  That is what
+        # causes the bokeh event look to terminate via session_ended().
         callback = CustomJS(code="""
             $.ajax('/shutdown').done(function()
                 {
                     window.close();
                 });
         """)
+        # Listen to the disabled state and tweak that inside submit_button_handler
+        # If we add a direct js callback to the click as well as the above python callback,
+        # for some reason it causes a ~15 second delay.  Because bokeh.
+        # self.submit_button.js_on_change('disabled', callback)
         self.submit_button.js_on_click(callback)
         self.doc = None
 
@@ -106,23 +111,26 @@ class PrimitiveVisualizer(ABC):
             """ % (message, callback_name))
         btn.js_on_click(js_confirm_callback)
 
-    def submit_button_handler(self, stuff):
+    def session_ended(self, sess_context, user_satisfied):
         """
-        Handle the submit button by stopping the bokeh server, which
+        Handle the end of the session by stopping the bokeh server, which
         will resume python execution in the DRAGONS primitive.
 
         Parameters
         ----------
-        stuff
+        sess_context : Any
             passed by bokeh, but we do not use it
+
+        user_satisfied : bool
+            True if the user was satisfied (i.e. we are responding to the submit button)
 
         Returns
         -------
         none
         """
+        self.user_satisfied = user_satisfied
         if not self.exited:
             self.exited = True
-            self.user_satisfied = True
             server.stop_server()
 
     def get_filename_div(self):
@@ -177,7 +185,7 @@ class PrimitiveVisualizer(ABC):
             Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
         """
         self.doc = doc
-        doc.on_session_destroyed(self.submit_button_handler)
+        doc.on_session_destroyed(lambda stuff: self.session_ended(stuff, False))
 
         self.visualize(doc)
 

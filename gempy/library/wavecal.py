@@ -332,7 +332,7 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
             actual_cenwave = model(0.5 * (npix - 1))
             model |= models.Shift(-actual_cenwave)
             if dispersion:
-                actual_dispersion = np.diff(model([0, npix - 1])) / (npix - 1)
+                actual_dispersion = np.diff(model([0, npix - 1]))[0] / (npix - 1)
                 model |= models.Scale(dispersion / actual_dispersion)
             model |= models.Shift(actual_cenwave if central_wavelength is None
                                   else central_wavelength)
@@ -345,14 +345,15 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
 
 def create_interactive_inputs(ad, ui_params=None, p=None,
                               linelist=None, bad_bits=0):
-    all_fits = []
+    data = {"x": [], "y": [], "meta": []}
     for ext in ad:
-        data, fit1d, _ = get_automated_fit(
+        input_data, fit1d, _ = get_automated_fit(
             ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits)
         # peak locations and line wavelengths of matched peaks/lines
-        all_fits.append([fit1d.points[~fit1d.mask], fit1d.image[~fit1d.mask],
-                         None, data])
-    return all_fits
+        data["x"].append(fit1d.points[~fit1d.mask])
+        data["y"].append(fit1d.image[~fit1d.mask])
+        data["meta"].append(input_data)
+    return data
 
 
 def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
@@ -381,7 +382,6 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     acceptable_fit : bool
         whether this fit is likely to be good
     """
-
     input_data = get_all_input_data(
         ext, p, ui_params, linelist=linelist, bad_bits=bad_bits)
     spectrum = input_data["spectrum"]
@@ -693,7 +693,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
                 fits_to_do.append((p_hi, arc_line, dw))
         dc0 = 5 * abs(dw)
-
     return matches
 
 
@@ -794,7 +793,7 @@ def fit1d_from_kdfit(input_coords, output_coords, model,
     return fit1d
 
 
-def update_wcs_with_solution(ext, fit1d, input_data, config):
+def update_wcs_with_solution(ext, fit1d, matched_lines, input_data, config):
     """
     Attach a WAVECAL table and update the WCS of a single AstroData slice
     based on the result of the wavelength solution model.
@@ -805,6 +804,8 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         the extension to be updated
     fit1d : fit_1D
         the best-fitting model
+    matched_lines : tuple
+        pixel and wavelength coordinates of matched lines
     input_data : dict
         stuff
     config : config
@@ -815,8 +816,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     # Because of the way the fit_1D object is constructed, there
     # should be no masking. But it doesn't hurt to make sure, or
     # be futureproofed in case we change things.
-    incoords = fit1d.points[~fit1d.mask]
-    outcoords = fit1d.image[~fit1d.mask]
+    incoords, outcoords = matched_lines
 
     m_final = fit1d.model
     domain = m_final.domain

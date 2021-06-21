@@ -418,9 +418,9 @@ class Spect(PrimitivesBASE):
 
             if interactive:
                 all_domains = [(0, x[0].shape[0]) for x in all_exts]
-                all_waves = np.array([x[1] for x in all_exts])
-                all_zpt = np.array([x[2] for x in all_exts])
-                all_weights = np.array([x[3] for x in all_exts])
+                all_waves = [x[1].value for x in all_exts]
+                all_zpt = [x[2].value for x in all_exts]
+                all_weights = [x[3].value for x in all_exts]
                 all_fp_init = []
                 for i in range(len(all_exts)):
                     all_fp_init.append(fit_1D.translate_params(params))
@@ -433,7 +433,7 @@ class Spect(PrimitivesBASE):
                 filename_info = getattr(ad, 'filename', '')
 
                 uiparams = UIParameters(config)
-                visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
+                visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel=f'Wavelength ({xunits})',
@@ -1095,6 +1095,9 @@ class Spect(PrimitivesBASE):
                 config, reinit_params=["center", "nsum", "min_snr", "min_sep",
                                        "fwidth", "central_wavelength", "dispersion",
                                        "in_vacuo"])
+            uiparams.fields["center"].max = min(
+                ext.shape[ext.dispersion_axis() - 1] for ext in ad)
+
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)
@@ -1107,7 +1110,7 @@ class Spect(PrimitivesBASE):
                             linelist=linelist, bad_bits=DQ.not_signal)
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
-                    modal_message="Hang on, this stuff is tricky",
+                    modal_message="Re-extracting 1D spectra",
                     tab_name_fmt="Slit {}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
@@ -1117,10 +1120,11 @@ class Spect(PrimitivesBASE):
                     enable_regions=False, plot_ratios=False, plot_height=350,
                     ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
-                for ext, fit1d, image, other in zip(ad, visualizer.results(),
-                                             visualizer.image, visualizer.other_data):
-                    fit1d.image = image
-                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+                for ext, fit1d, matched_lines, other in zip(
+                        ad, visualizer.results(), visualizer.matched_lines,
+                        visualizer.meta):
+                    wavecal.update_wcs_with_solution(ext, fit1d, matched_lines,
+                                                     other, config)
             else:
                 for ext in ad:
                     if len(ad) > 1:
@@ -2426,7 +2430,7 @@ class Spect(PrimitivesBASE):
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
 
-        def calc_sky_coords(ad: AstroData, apgrow, interactive_mode=False):
+        def calc_sky_coords(ad: AstroData, apgrow=0, interactive_mode=False):
             """
             Calculate the sky coordinates for the extensions in the given
             AstroData object.
@@ -2456,13 +2460,13 @@ class Spect(PrimitivesBASE):
                 # We want to mask pixels in apertures in addition to the mask.
                 # Should we also leave DQ.cosmic_ray (because sky lines can get
                 # flagged as CRs) and/or DQ.overlap unmasked here?
-                csc_sky_mask = (np.zeros_like(csc_ext.data, dtype=DQ.datatype)
+                csc_sky_mask = (np.zeros_like(csc_ext.data, dtype=bool)
                                 if csc_ext.mask is None else
-                                csc_ext.mask & DQ.not_signal)
+                                (csc_ext.mask & DQ.not_signal).astype(bool))
 
                 # for interactive mode, we aggregate an aperture mask separately
                 # for the UI
-                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=DQ.datatype))
+                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=bool))
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
@@ -2477,10 +2481,7 @@ class Spect(PrimitivesBASE):
                                                     aper_lower=row['aper_lower'],
                                                     aper_upper=row['aper_upper'])
                         aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
-                        if interactive_mode:
-                            csc_aperture_mask |= aperture_mask
-                        else:
-                            csc_sky_mask |= aperture_mask
+                        csc_aperture_mask |= aperture_mask
 
                 if csc_ext.variance is None:
                     csc_sky_weights = None
@@ -2496,11 +2497,13 @@ class Spect(PrimitivesBASE):
                 # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
                 # chip gaps) to avoid a zillion warnings about insufficient
                 # unmasked points.
-                no_data = np.bitwise_and.reduce(csc_sky_mask, axis=csc_axis) & DQ.no_data
-                if csc_axis == 0:
-                    csc_sky_mask ^= no_data
-                else:
-                    csc_sky_mask ^= no_data[:, None]
+                if csc_ext.mask is not None:
+                    no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_axis) &
+                               DQ.no_data).astype(bool)
+                    if csc_axis == 0:
+                        csc_sky_mask ^= no_data
+                    else:
+                        csc_sky_mask ^= no_data[:, None]
 
                 csc_ext.data, csc_sky_mask, csc_sky_weights = \
                     transpose_if_needed(csc_ext.data, csc_sky_mask, csc_sky_weights, transpose=csc_axis != 0)
@@ -2509,7 +2512,7 @@ class Spect(PrimitivesBASE):
                         transpose_if_needed(csc_aperture_mask, transpose=csc_axis != 0)[0]
                     yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
                 else:
-                    yield csc_ext, csc_sky_mask, csc_sky_weights
+                    yield csc_ext, csc_sky_mask | csc_aperture_mask, csc_sky_weights
 
         def recalc_fn(ad: AstroData, ui_parms: UIParameters):
             """
@@ -2543,11 +2546,21 @@ class Spect(PrimitivesBASE):
             apgrow = ui_parms.values['aperture_growth']
             # TODO alternatively, save these 3 arrays for faster recalc
             # here I am rerunning all the above calculations whenever a col select is made
+            data = {"x": [], "y": [], "weights": [], "aperture_mask": []}
             for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in \
                     calc_sky_coords(ad, apgrow=apgrow, interactive_mode=True):
-                rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
-                yield np.arange(len(rc_sky)), rc_sky, rc_sky_weights[:, c], rc_aper_mask[:, c] \
-                    if rc_sky_weights is not None else None
+                # TODO: FIX THIS TO PAY ATTENTION TO ORIENTATION!!!!!
+                if rc_ext.dispersion_axis() == 1:
+                    data["weights"].append(None if rc_sky_weights is None else rc_sky_weights[:, c])
+                    data["aperture_mask"].append(rc_aper_mask[:, c])
+                    rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
+                else:
+                    data["weights"].append(None if rc_sky_weights is None else rc_sky_weights[c])
+                    data["aperture_mask"].append(rc_aper_mask[c])
+                    rc_sky = np.ma.masked_array(rc_ext.data[c], mask=rc_sky_mask[c])
+                data["x"].append(np.arange(rc_sky.size))
+                data["y"].append(rc_sky)
+            return data
 
         final_parms = list()
         apgrow = None  # for saving selected aperture_grow values, if interactive
