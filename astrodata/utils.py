@@ -232,6 +232,9 @@ class Section(tuple):
             raise ValueError("Cannot initialize 'Section' object")
         instance = tuple.__new__(cls, tuple(_dict.values()))
         instance._axis_names = tuple(_dict.keys())
+        if not all(np.diff(instance)[::2] > 0):
+            raise ValueError("Not all 'Section' end coordinates exceed the "
+                             "start coordinates")
         return instance
 
     @property
@@ -245,6 +248,9 @@ class Section(tuple):
         if attr in self._axis_names:
             return self.__dict__[attr]
         raise AttributeError(f"No such attribute '{attr}'")
+
+    def __len__(self):
+        return len(self._axis_names)
 
     def __repr__(self):
         return ("Section(" +
@@ -264,6 +270,29 @@ class Section(tuple):
         return tuple(slice(self.__dict__[axis],
                            self.__dict__[axis.replace("1", "2")])
                      for axis in reversed(self._axis_names[::2]))
+
+    def contains(self, section):
+        """Return True if the supplied section is entirely within self"""
+        if self.ndim != section.ndim:
+            raise ValueError("Sections have different dimensionality")
+        return (all(s2 >= s1 for s1, s2 in zip(self[::2], section[::2])) and
+                all(s2 <= s1 for s1, s2 in zip(self[1::2], section[1::2])))
+
+    def overlaps(self, section):
+        """Determine whether the two sections overlap. If so, the Section
+        common to both is returned, otherwise None"""
+        if self.ndim != section.ndim:
+            raise ValueError("Sections have different dimensionality")
+        mins = [max(s1, s2) for s1, s2 in zip(self[::2], section[::2])]
+        maxs = [min(s1, s2) for s1, s2 in zip(self[1::2], section[1::2])]
+        try:
+            return Section(*[v for pair in zip(mins, maxs) for v in pair])
+        except ValueError:
+            return
+
+    @property
+    def ndim(self):
+        return len(self) // 2
 
     @staticmethod
     def from_shape(value):
