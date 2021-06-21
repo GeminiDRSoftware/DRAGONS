@@ -379,14 +379,16 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
         for num_ext, (ext, detsec, datasec, arrsec) in enumerate(zip(ad,
                       sci_detsec, sci_datasec, sci_arraysec), start=1):
             datasec, new_datasec = map_data_sections_to_trimmed_data(datasec)
-            new_datasec = new_datasec.view((int, 4))
+            #new_datasec = new_datasec.view((int, 4))
             ext_shape = ext.shape[-2:]
-            sci_trimmed = np.array_equal(new_datasec, [[0, ext_shape[1], 0, ext_shape[0]]])
+            #sci_trimmed = np.array_equal(new_datasec, [[0, ext_shape[1], 0, ext_shape[0]]])
+            sci_trimmed = new_datasec[0] == Section.from_shape(ext_shape)
             sci_multi_amp = isinstance(arrsec, list)
 
             for auxext in this_aux:
                 aux_detsec = auxext.detector_section()
-                if not at.section_contains(aux_detsec, detsec):
+                #if not at.section_contains(aux_detsec, detsec):
+                if not aux_detsec.contains(detsec):
                     continue
 
                 # If this is a perfect match, just do it and carry on
@@ -396,7 +398,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 aux_arrsec = auxext.array_section()
                 aux_datasec, aux_new_datasec = map_data_sections_to_trimmed_data(auxext.data_section())
-                aux_trimmed = np.array_equal(aux_new_datasec, [[0, auxext.shape[1], 0, auxext.shape[0]]])
+                aux_trimmed = aux_new_datasec[0] == Section.from_shape(auxext.shape)
+                #aux_trimmed = np.array_equal(aux_new_datasec, [[0, auxext.shape[1], 0, auxext.shape[0]]])
                 aux_multi_amp = isinstance(aux_arrsec, list)
 
                 # Either both are multi-amp or neither is. If they both are,
@@ -419,22 +422,26 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 xshift = (x1 - ax1) // xbin
                 yshift = (y1 - ay1) // ybin
-                aux_new_datasec = (aux_new_datasec.view((int, 4)) -
-                                   np.array([xshift, xshift, yshift, yshift]))
+                #aux_new_datasec = (aux_new_datasec.view((int, 4)) -
+                #                   np.array([xshift, xshift, yshift, yshift]))
+                aux_new_datasec = [ands.shift(-xshift, -yshift)
+                                   for ands in aux_new_datasec]
 
                 shifts = [(ads[0]-ds[0]-ands[0]+nds[0], ads[2]-ds[2]-ands[2]+nds[2])
                           for ds, nds in zip(datasec, new_datasec)
                           for ads, ands in zip(aux_datasec, aux_new_datasec)
-                          if at.section_contains(ands, nds)]
+                          if ands.contains(nds)]
 
                 # This means we can cut a single section from the aux data
                 if len(set(shifts)) == 1:
-                    print(shifts)
-                    x1, y1 = shifts[0]
-                    x2, y2 = x1 + ext_shape[1], y1 + ext_shape[0]
-                    if at.section_contains((0, auxext.shape[1], 0, auxext.shape[0]),
-                                           (x1, x2, y1, y2)):
-                        new_aux.append(auxext.nddata[y1:y2, x1:x2])
+                    #x1, y1 = shifts[0]
+                    #x2, y2 = x1 + ext_shape[1], y1 + ext_shape[0]
+                    #if at.section_contains((0, auxext.shape[1], 0, auxext.shape[0]),
+                    #                       (x1, x2, y1, y2)):
+                    #    new_aux.append(auxext.nddata[y1:y2, x1:x2])
+                    cut_sec = Section.from_shape(ext_shape).shift(shifts[0])
+                    if Section.from_shape(auxext.shape).contains(cut_sec):
+                        new_aux.append(auxext.nddata[cut_sec.asslice()])
                         clipped_this_ad = True
                         continue
 
@@ -451,7 +458,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 # Find all overlaps between the "new" data_sections
                 for ds, nds in zip(datasec, new_datasec):
                     for ads, ands in zip(aux_datasec, aux_new_datasec):
-                        overlap = at.section_overlaps(ands, nds)
+                        overlap = ands.overlap(nds)
                         if overlap:
                             in_vertices = [a+b-c for a, b, c in zip(overlap, ads, ands)]
                             input_section = (slice(*in_vertices[2:]), slice(*in_vertices[:2]))
@@ -1544,7 +1551,7 @@ def map_array_sections(ext):
         sec = Section((asec.x1 - xmin) // xbin, (asec.x2 - xmin) // xbin,
                       (asec.y1 - ymin) // ybin, (asec.y2 - ymin) // ybin)
         for dsec, new_dsec in zip(datsec, new_datsec):
-            if at.section_contains(new_dsec, sec):
+            if new_dsec.contains(sec):
                 sections.append(Section(*[a - b + c for a, b, c in
                                           zip(sec, new_dsec, dsec)]))
                 break
@@ -1566,9 +1573,9 @@ def map_data_sections_to_trimmed_data(datasec):
 
     Returns
     -------
-    sections: array
+    sections: list of Sections
         array of data sections in datasec
-    new_sections: array
+    new_sections: list of Sections
         contiguous locations in pixel plane after trimming
     """
     if not isinstance(datasec, list):
@@ -1589,7 +1596,8 @@ def map_data_sections_to_trimmed_data(datasec):
         new_sections[arg]['y1'] = y1 - yshift
         new_sections[arg]['y2'] = sections[arg]['y2'] - yshift
 
-    return sections, new_sections
+    return ([Section(*sec) for sec in sections],
+            [Section(*sec) for sec in new_sections])
 
 
 @handle_single_adinput
@@ -2069,9 +2077,13 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 # which should end up producing a contiguous region
                 sections, new_sections = map_data_sections_to_trimmed_data(datasec)
 
-                x1, y1 = sections['x1'].min(), sections['y1'].min()
-                nxpix = new_sections['x2'].max() - new_sections['x1'].min()
-                nypix = new_sections['y2'].max() - new_sections['y1'].min()
+                #x1, y1 = sections['x1'].min(), sections['y1'].min()
+                #nxpix = new_sections['x2'].max() - new_sections['x1'].min()
+                #nypix = new_sections['y2'].max() - new_sections['y1'].min()
+                x1 = min(s.x1 for s in sections)
+                y1 = min(s.y1 for s in sections)
+                nxpix = max(s.x2 for s in new_sections) - min(s.x1 for s in new_sections)
+                nypix = max(s.y2 for s in new_sections) - min(s.y1 for s in new_sections)
 
                 old_ext = deepcopy(ext)[0]
                 # Trim SCI, VAR, DQ to new section, aligned at bottom-left.
@@ -2082,7 +2094,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                     ext.OBJMASK = old_ext.OBJMASK[y1:y1+nypix, x1:x1+nxpix]
 
                 for i, (oldsec, newsec) in enumerate(zip(sections, new_sections), start=1):
-                    oldsec, newsec = Section(*oldsec), Section(*newsec)
+                    #oldsec, newsec = Section(*oldsec), Section(*newsec)
                     datasecStr = oldsec.asIRAFsection()
                     log.fullinfo(f'For {ad.filename} extension {ext.id}, '
                                  f'keeping the data from the section {datasecStr}')
