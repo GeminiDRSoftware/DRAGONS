@@ -147,22 +147,6 @@ def degsextodec(string):
 
     return degs
 
-def section_str_to_tuple(section, log=None):
-    warn = log.warning if log else print
-    if section is not None:
-        try:
-            out_shape = numerator.shape
-        except:
-            out_shape = denominator.shape
-        else:
-            # both are arrays so the final shape will be the one with the
-            # higher dimensionality (if they're broadcastable)
-            if len(out_shape) < len(denominator.shape):
-                out_shape = denominator.shape
-
-        return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
-                         where=abs(denominator) > np.finfo(dtype).tiny)
-
 
 def cartesian_regions_to_slices(regions):
     """
