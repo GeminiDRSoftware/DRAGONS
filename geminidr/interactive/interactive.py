@@ -81,13 +81,42 @@ class PrimitiveVisualizer(ABC):
                 });
         """)
         # Listen to the disabled state and tweak that inside submit_button_handler
-        # If we add a direct js callback to the click as well as the above python callback,
-        # for some reason it causes a ~15 second delay.  Because bokeh.
-        # self.submit_button.js_on_change('disabled', callback)
-        self.submit_button.js_on_click(callback)
+        # This allows us to execute a python callback to the submit_button on click.  Then,
+        # if we decide to execute the /shutdown via javascript, we can just 'disable' the
+        # submit button to trigger that logic (DOM events are the only way to trigger
+        # JS callbacks in bokeh)
+        self.submit_button.on_click(self.submit_button_handler)
+        self.submit_button.js_on_change('disabled', callback)
+        # self.submit_button.js_on_click(callback)
+
         self.doc = None
+        # callback for the new (buttonless) ok/cancel dialog.
+        # This gets set just before the dialog is triggered
+        self._ok_cancel_callback = None
+        # Text widget for triggering ok/cancel via DOM text change event
+        self.ok_cancel_holder = None
 
     def make_ok_cancel_dialog(self, btn, message, callback):
+        """
+        Make an OK/Cancel dialog that will trigger when the given button `btn` is set disabled
+
+        Note this method is superceded by :meth:`show_ok_cancel` which is not dependant on
+        disabling buttons.  Avoid using this as it will be refactored out at some point.
+
+        Parameters
+        ----------
+        btn : :class:`~Button`
+            bokeh Button to listen for disabled
+        message : str
+            String messasge to show in the ok/cancel dialog
+        callback : function
+            Function to call with True/False for the user selection of OK/Cancel
+        """
+        # This is an older version of ok/cancel that requires a button.  The button is
+        # disabled to activate the dialog.  More recently, we needed ok/cancel without
+        # disabling a button so that is also available.  See `show_ok_cancel`
+        # TODO refactor this out in favor of the other exclusively
+
         # This is a bit hacky, but bokeh makes it very difficult to bridge the python-js gap.
         def _internal_handler(args):
             if callback:
@@ -110,6 +139,32 @@ class PrimitiveVisualizer(ABC):
             }
             """ % (message, callback_name))
         btn.js_on_click(js_confirm_callback)
+
+    def submit_button_handler(self):
+        """
+        Submit button handler.
+
+        This handler checks the sanity of the fit and considers three possibilities.
+
+        1) The fit is good, we proceed ahead as normal
+        2) The fit is bad, we pop up a message dialog for the user and they hit 'OK' to return to the UI
+        3) The fit is poor, we pop up an ok/cancel dialog for the user and continue or return to the UI as directed.
+        """
+        # modify to test, refactor left for Chris
+        fit = "poor"
+        if fit == "good":
+            # Fit is good, we can exit
+            # Trigger the submit callback via disabling the submit button
+            self.submit_button.disabled = True
+        elif fit == "bad":
+            # popup message
+            self.show_user_message("Fit is currently in a failed state, please modify the parameters and try again")
+        elif fit == "poor":
+            def cb(accepted):
+                if accepted:
+                    # Trigger the exit/fit, otherwise we do nothing
+                    self.submit_button.disabled = True
+            self.show_ok_cancel('Fit is poor quality.  Click OK to use it anyway, or Cancel to return to the UI.', cb)
 
     def session_ended(self, sess_context, user_satisfied):
         """
@@ -205,9 +260,80 @@ class PrimitiveVisualizer(ABC):
         # of.  We do this with a do_later so that it will hapen after the
         # subclass implementation does all of it's document setup.  So,
         # this widget will be added at the end.
-        def add_msg_holder_hack():
-            doc.add_root(row(self.message_holder,))
-        self.do_later(add_msg_holder_hack)
+        self.do_later(lambda: doc.add_root(row(self.message_holder,)))
+
+        #################
+        # OK/Cancel Setup
+        #################
+        # This is a workaround for bokeh so we can drive an ok/cancel dialog box
+        # and have the response sent back down via a Tornado web endpoint.  This
+        # is not dependent on being tied to a button like the earlier version.
+        # It does, therefore, need it's own widget which we supply as hidden
+        # and also double as the means for passing the text message to the js
+        def _internal_ok_cancel_handler(args):
+            if args['result'] == [b'confirmed']:
+                result = True
+            else:
+                result = False
+            self.do_later(lambda: self._ok_cancel_callback(result))
+
+        # callback_name is the unique ID that will be passed back in to the /handle_callback endpoint
+        # so it will execute the python method _internal_ok_cancel_handler
+        callback_name = register_callback(_internal_ok_cancel_handler)
+
+        # This JS callback will execute when the ok/cancel exits
+        ok_cancel_callback = CustomJS(code="""
+            cb_obj.name = '';
+            var confirmed = confirm(cb_obj.text);
+            var cbid = '%s';
+            if (confirmed) {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+            } else {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+            }
+            """ % (callback_name,))
+
+        # Add a widget we can use for triggering an ok/cancel
+        # This is a workaround, since CustomJS calls can only
+        # respond to DOM events.  We'll be able to trigger
+        # a Custom JS callback by modifying this widget
+        self.ok_cancel_holder = PreText(text='', css_classes=['hidden'])
+        self.ok_cancel_holder.js_on_change('text', ok_cancel_callback)
+
+        # Add the invisible PreText element to drive message dialogs off
+        # of.  We do this with a do_later so that it will hapen after the
+        # subclass implementation does all of it's document setup.  So,
+        # this widget will be added at the end.
+        self.do_later(lambda: doc.add_root(row(self.ok_cancel_holder,)))
+
+    def show_ok_cancel(self, message, callback):
+        """
+        New OK/Cancel dialog helper method.
+
+        Use this in preference to the :meth:`make_ok_cancel_dialog` method
+        which will be deprecated in future.
+
+        Parameters
+        ----------
+        message : str
+            Text message to show in the ok/cancel dialog
+        callback : function
+            Function to call with a bool of True if the user hit OK, or False for Cancel
+        """
+        # This saves the `callback` in the `_ok_cancel_callback` field.  When
+        # the callback comes back into the bokeh server, that is the function
+        # that will be called with True (OK) or False (Cancel).
+        # We wrap it in a do_later so it will execute on the UI thread.
+        self._ok_cancel_callback = lambda x: self.do_later(lambda: callback(x))
+
+        # modifying the text of this hidden widget will trigger the ok/cancel dialog
+        # which will use the text value as it's message.  Then the dialog will
+        # make an AJAX back in and call the `callback` method.
+        if self.ok_cancel_holder.text == message:
+            # needs to be different to trigger the javascript
+            self.ok_cancel_holder.text = f"{message} "
+        else:
+            self.ok_cancel_holder.text = message
 
     def do_later(self, fn):
         """

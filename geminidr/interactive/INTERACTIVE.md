@@ -229,6 +229,21 @@ def fn():
 self.do_later(fn)
 ```
 
+### show_ok_cancel
+
+There is a helper method called `show_ok_cancel`.  This is an updated way to make the
+bokeh show a standard javascript ok/cancel dialog and route the response, as a boolean,
+to some python code.  The python callback supplied will execute on the UI thread, so
+it can safely access bokeh components.
+
+Here is an example
+
+```python
+def im_a_callback(arg):
+    print(f"Callback made with {arg}")
+self.show_ok_cancel("Click OK or Cancel", im_a_callback)
+```
+
 ### make_ok_cancel_dialog
 
 There is a helper method called `make_ok_cancel_dialog`.  This is called on a bokeh
