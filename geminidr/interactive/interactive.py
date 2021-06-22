@@ -90,11 +90,12 @@ class PrimitiveVisualizer(ABC):
         # self.submit_button.js_on_click(callback)
 
         self.doc = None
+        self._message_holder = None
         # callback for the new (buttonless) ok/cancel dialog.
         # This gets set just before the dialog is triggered
         self._ok_cancel_callback = None
         # Text widget for triggering ok/cancel via DOM text change event
-        self.ok_cancel_holder = None
+        self._ok_cancel_holder = None
 
     def make_ok_cancel_dialog(self, btn, message, callback):
         """
@@ -252,15 +253,15 @@ class PrimitiveVisualizer(ABC):
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
         # a Custom JS callback by modifying this widget
-        self.message_holder = PreText(text='', css_classes=['hidden'])
+        self._message_holder = PreText(text='', css_classes=['hidden'])
         callback = CustomJS(args={}, code='alert(cb_obj.text);')
-        self.message_holder.js_on_change('text', callback)
+        self._message_holder.js_on_change('text', callback)
 
         # Add the invisible PreText element to drive message dialogs off
         # of.  We do this with a do_later so that it will hapen after the
         # subclass implementation does all of it's document setup.  So,
         # this widget will be added at the end.
-        self.do_later(lambda: doc.add_root(row(self.message_holder,)))
+        self.do_later(lambda: doc.add_root(row(self._message_holder, )))
 
         #################
         # OK/Cancel Setup
@@ -297,14 +298,14 @@ class PrimitiveVisualizer(ABC):
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
         # a Custom JS callback by modifying this widget
-        self.ok_cancel_holder = PreText(text='', css_classes=['hidden'])
-        self.ok_cancel_holder.js_on_change('text', ok_cancel_callback)
+        self._ok_cancel_holder = PreText(text='', css_classes=['hidden'])
+        self._ok_cancel_holder.js_on_change('text', ok_cancel_callback)
 
         # Add the invisible PreText element to drive message dialogs off
         # of.  We do this with a do_later so that it will hapen after the
         # subclass implementation does all of it's document setup.  So,
         # this widget will be added at the end.
-        self.do_later(lambda: doc.add_root(row(self.ok_cancel_holder,)))
+        self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
 
     def show_ok_cancel(self, message, callback):
         """
@@ -329,11 +330,11 @@ class PrimitiveVisualizer(ABC):
         # modifying the text of this hidden widget will trigger the ok/cancel dialog
         # which will use the text value as it's message.  Then the dialog will
         # make an AJAX back in and call the `callback` method.
-        if self.ok_cancel_holder.text == message:
+        if self._ok_cancel_holder.text == message:
             # needs to be different to trigger the javascript
-            self.ok_cancel_holder.text = f"{message} "
+            self._ok_cancel_holder.text = f"{message} "
         else:
-            self.ok_cancel_holder.text = message
+            self._ok_cancel_holder.text = message
 
     def do_later(self, fn):
         """
@@ -402,11 +403,11 @@ class PrimitiveVisualizer(ABC):
         # and display those via an alert.  It's a workaround
         # so that here we can send messages to the user from
         # the bokeh server-side python.
-        if self.message_holder.text == message:
+        if self._message_holder.text == message:
             # need to trigger a change...
-            self.message_holder.text = f"{message} "
+            self._message_holder.text = f"{message} "
         else:
-            self.message_holder.text = message
+            self._message_holder.text = message
 
     def make_widgets_from_parameters(self, params, reinit_live: bool = True,
                                      slider_width: int = 256):
