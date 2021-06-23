@@ -12,7 +12,7 @@ from bokeh import events
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
-    RegionEditor, do_later, TabsTurboInjector
+    RegionEditor, do_later, TabsTurboInjector, FitQuality
 from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
@@ -43,6 +43,7 @@ class InteractiveModel(ABC):
 
         self.listeners = []
         self.data = None
+        self.quality = "bad"  # no fit yet
 
     def add_listener(self, listener):
         """
@@ -363,25 +364,36 @@ class InteractiveModel1D(InteractiveModel):
         goodpix = np.array([m not in [USER_MASK_NAME] + INPUT_MASK_NAMES
                             for m in self.data.data['mask']])
 
-        if goodpix.size > 0:
-            if self.sigma_clip:
-                fitparms = {x: y for x, y in self.fitting_parameters.items()
-                            if x not in ['sigma']}
+        if self.sigma_clip:
+            fitparms = {x: y for x, y in self.fitting_parameters.items()
+                        if x not in ['sigma']}
+        else:
+            fitparms = {x: y for x, y in self.fitting_parameters.items()
+                        if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
+
+        self.fit = fit_1D(self.y[goodpix], points=self.x[goodpix],
+                          domain=self.domain,
+                          weights=None if self.weights is None else self.weights[goodpix],
+                          **fitparms)
+        self.update_mask()
+
+        # For splines, "rank" is the number of spline pieces; for Chebyshevs
+        # it's effectively the number of fitted points
+        rank = self.fit.fit_info["rank"]
+        if rank == 0:
+            self.quality = FitQuality.BAD
+        else:
+            if "params" in self.fit.fit_info:  # it's a polynomial
+                rank -= 1
+            if rank < fitparms["order"]:
+                self.quality = FitQuality.POOR
             else:
-                fitparms = {x: y for x, y in self.fitting_parameters.items()
-                            if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
+                self.quality = FitQuality.GOOD
 
-            new_fit = fit_1D(self.y[goodpix], points=self.x[goodpix],
-                             domain=self.domain,
-                             weights=None if self.weights is None else self.weights[goodpix],
-                             **fitparms)
-            if self.fit is None or new_fit.fit_info["rank"] > fitparms["order"]:
-                self.fit = new_fit
-                self.update_mask()
-
-            if 'residuals' in self.data.data:
-                self.data.data['residuals'] = self.y - self.evaluate(self.x)
-            if 'ratio' in self.data.data:
+        if 'residuals' in self.data.data:
+            self.data.data['residuals'] = self.y - self.evaluate(self.x)
+        if 'ratio' in self.data.data:
+            with np.errstate(invalid="ignore", divide="ignore"):
                 self.data.data['ratio'] = self.y / self.evaluate(self.x)
 
         self.notify_listeners()
@@ -619,8 +631,8 @@ class InfoPanel:
             self.extra_masks = list()
 
     def model_change_handler(self, model):
-        rms = '<div class="info_panel"><div class="info_header">RMS: </div><div class="info_text">{rms:.4f}</div>'\
-            .format(rms=model.fit.rms)
+        rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+        rms = f'<div class="info_panel"><div class="info_header">RMS: </div><div class="info_text">{rms_str}</div>'
         band_count = model.mask.count(BAND_MASK_NAME)
         user_count = model.mask.count(USER_MASK_NAME)
         fit_count = model.mask.count(SIGMA_MASK_NAME)
@@ -1141,7 +1153,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                             width_policy="max",
                             tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
-        self.fits = []
 
         if self.nfits == 1:
             turbo_tabs = False

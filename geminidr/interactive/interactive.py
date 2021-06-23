@@ -1,7 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from copy import copy
-from enum import Enum
+from enum import Enum, auto
 from functools import cmp_to_key
 
 from bokeh.core.property.instance import Instance
@@ -18,6 +18,12 @@ from gempy.library.config import FieldValidationError, Config
 
 # Singleton instance, there is only ever one of these
 _visualizer = None
+
+
+class FitQuality(Enum):
+    GOOD = auto()
+    POOR = auto()
+    BAD = auto()
 
 
 class PrimitiveVisualizer(ABC):
@@ -97,6 +103,8 @@ class PrimitiveVisualizer(ABC):
         # Text widget for triggering ok/cancel via DOM text change event
         self._ok_cancel_holder = None
 
+        self.fits = []
+
     def make_ok_cancel_dialog(self, btn, message, callback):
         """
         Make an OK/Cancel dialog that will trigger when the given button `btn` is set disabled
@@ -145,27 +153,32 @@ class PrimitiveVisualizer(ABC):
         """
         Submit button handler.
 
-        This handler checks the sanity of the fit and considers three possibilities.
+        This handler checks the sanity of the fit(s) and considers three possibilities.
 
         1) The fit is good, we proceed ahead as normal
         2) The fit is bad, we pop up a message dialog for the user and they hit 'OK' to return to the UI
         3) The fit is poor, we pop up an ok/cancel dialog for the user and continue or return to the UI as directed.
         """
-        # modify to test, refactor left for Chris
-        fit = "poor"
-        if fit == "good":
-            # Fit is good, we can exit
-            # Trigger the submit callback via disabling the submit button
-            self.submit_button.disabled = True
-        elif fit == "bad":
+        bad_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
+                             if fit.quality == FitQuality.BAD)
+        poor_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
+                              if fit.quality == FitQuality.POOR)
+        if bad_fits:
             # popup message
-            self.show_user_message("Fit is currently in a failed state, please modify the parameters and try again")
-        elif fit == "poor":
+            self.show_user_message(f"Failed fit(s) on {bad_fits}. Please "
+                                   "modify the parameters and try again.")
+        elif poor_fits:
             def cb(accepted):
                 if accepted:
                     # Trigger the exit/fit, otherwise we do nothing
                     self.submit_button.disabled = True
-            self.show_ok_cancel('Fit is poor quality.  Click OK to use it anyway, or Cancel to return to the UI.', cb)
+            self.show_ok_cancel(f"Poor quality fit(s)s on {poor_fits}. Click "
+                                "OK to proceed anyway, or Cancel to return to "
+                                "the fitter.", cb)
+        else:
+            # Fit is good, we can exit
+            # Trigger the submit callback via disabling the submit button
+            self.submit_button.disabled = True
 
     def session_ended(self, sess_context, user_satisfied):
         """

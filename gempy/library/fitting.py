@@ -357,18 +357,19 @@ class fit_1D:
         self._models = fitted_models
 
         # Convert the mask to the ordering & shape of the input array and
-        # save it. Calculate rms.
+        # save it. Calculate rms. Suppress warnings for no data points
         mask = mask.reshape(self._tmpshape)
-        if astropy_model:
-            start = (self.axis + 1) or mask.ndim
-            self.mask = np.rollaxis(mask, 0, start)
-            rms = (np.rollaxis(image.reshape(self._tmpshape), 0, start) -
-                   self.evaluate())[~self.mask].std()
-        else:
-            self.mask = np.rollaxis(mask, -1, self.axis)
-            rms = (np.rollaxis(image.reshape(self._tmpshape), -1, self.axis) -
-                   self.evaluate())[~self.mask].std()
-        self.rms = rms
+        with np.errstate(invalid="ignore", divide="ignore"):
+            if astropy_model:
+                start = (self.axis + 1) or mask.ndim
+                self.mask = np.rollaxis(mask, 0, start)
+                rms = (np.rollaxis(image.reshape(self._tmpshape), 0, start) -
+                       self.evaluate())[~self.mask].std()
+            else:
+                self.mask = np.rollaxis(mask, -1, self.axis)
+                rms = (np.rollaxis(image.reshape(self._tmpshape), -1, self.axis) -
+                       self.evaluate())[~self.mask].std()
+        self.rms = rms if rms is not np.ma.masked else np.nan
 
         # Plot the fit:
         if plot:
