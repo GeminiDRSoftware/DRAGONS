@@ -144,9 +144,8 @@ class InteractiveModel1D(InteractiveModel):
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
 
         xlinspace = np.linspace(*self.domain, 500)
-        weights = self.populate_bokeh_objects(x, y, weights=weights, mask=mask,
-                                              extra_masks=extra_masks)
-        self.weights = weights
+        self.populate_bokeh_objects(x, y, weights=weights, mask=mask,
+                                    extra_masks=extra_masks)
 
         self.sigma_clip = "sigma" in fitting_parameters and fitting_parameters["sigma"]
         self.perform_fit()
@@ -260,7 +259,7 @@ class InteractiveModel1D(InteractiveModel):
                 bokeh_data[extra_column] = np.zeros_like(y)
         self.data.data = bokeh_data
 
-        return weights
+        self.weights = weights
 
     def band_model_handler(self):
         """
