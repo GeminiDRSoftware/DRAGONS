@@ -1120,11 +1120,10 @@ class Spect(PrimitivesBASE):
                     enable_regions=False, plot_ratios=False, plot_height=350,
                     ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
-                for ext, fit1d, matched_lines, other in zip(
-                        ad, visualizer.results(), visualizer.matched_lines,
-                        visualizer.meta):
-                    wavecal.update_wcs_with_solution(ext, fit1d, matched_lines,
-                                                     other, config)
+                for ext, fit1d, image, other in zip(ad, visualizer.results(),
+                                                    visualizer.image, visualizer.meta):
+                    fit1d.image = image
+                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
                 for ext in ad:
                     if len(ad) > 1:

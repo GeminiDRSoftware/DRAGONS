@@ -43,7 +43,8 @@ class InteractiveModel(ABC):
 
         self.listeners = []
         self.data = None
-        self.quality = "bad"  # no fit yet
+        self.quality = FitQuality.BAD  # no fit yet
+        self.allow_poor_fits = True
 
     def add_listener(self, listener):
         """
@@ -360,10 +361,6 @@ class InteractiveModel1D(InteractiveModel):
         """
         # Note that band_mask is now handled by passing a region string to fit_1D
         # but we still use the band_mask for highlighting the affected points
-
-        goodpix = np.array([m not in [USER_MASK_NAME] + INPUT_MASK_NAMES
-                            for m in self.data.data['mask']])
-
         if self.sigma_clip:
             fitparms = {x: y for x, y in self.fitting_parameters.items()
                         if x not in ['sigma']}
@@ -371,36 +368,41 @@ class InteractiveModel1D(InteractiveModel):
             fitparms = {x: y for x, y in self.fitting_parameters.items()
                         if x not in ['sigma_lower', 'sigma_upper', 'niter', 'sigma']}
 
-        self.fit = fit_1D(self.y[goodpix], points=self.x[goodpix],
-                          domain=self.domain,
-                          weights=None if self.weights is None else self.weights[goodpix],
-                          **fitparms)
-        self.update_mask()
+        goodpix = np.array([m not in [USER_MASK_NAME] + INPUT_MASK_NAMES
+                            for m in self.mask])
 
-        # For splines, "rank" is the number of spline pieces; for Chebyshevs
-        # it's effectively the number of fitted points
-        rank = self.fit.fit_info["rank"]
-        if rank == 0:
-            self.quality = FitQuality.BAD
-        else:
-            if "params" in self.fit.fit_info:  # it's a polynomial
-                rank -= 1
-            if rank < fitparms["order"]:
-                self.quality = FitQuality.POOR
-            else:
-                self.quality = FitQuality.GOOD
+        self.quality = FitQuality.BAD
+        if goodpix.sum():
+            new_fit = fit_1D(self.y[goodpix], points=self.x[goodpix],
+                              domain=self.domain,
+                              weights=None if self.weights is None else self.weights[goodpix],
+                              **fitparms)
 
-        if 'residuals' in self.data.data:
-            self.data.data['residuals'] = self.y - self.evaluate(self.x)
-        if 'ratio' in self.data.data:
-            with np.errstate(invalid="ignore", divide="ignore"):
-                self.data.data['ratio'] = self.y / self.evaluate(self.x)
+            # For splines, "rank" is the number of spline pieces; for Chebyshevs
+            # it's effectively the number of fitted points (max order+1)
+            rank = new_fit.fit_info["rank"]
+            if rank> 0:
+                if "params" in new_fit.fit_info:  # it's a polynomial
+                    rank -= 1
+                if rank >= fitparms["order"]:
+                    self.quality = FitQuality.GOOD
+                elif self.allow_poor_fits:
+                    self.quality = FitQuality.POOR  # else stay BAD
+
+        if self.quality != FitQuality.BAD:  # don't update if it's BAD
+            self.fit = new_fit
+            if 'residuals' in self.data.data:
+                self.data.data['residuals'] = self.y - self.evaluate(self.x)
+            if 'ratio' in self.data.data:
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    self.data.data['ratio'] = self.y / self.evaluate(self.x)
+            self.update_mask()
 
         self.notify_listeners()
 
     def update_mask(self):
-        goodpix = np.array([m not in [USER_MASK_NAME] + INPUT_MASK_NAMES for m in self.data.data['mask']])
-        mask = self.data.data['mask'].copy()
+        goodpix = np.array([m not in [USER_MASK_NAME] + INPUT_MASK_NAMES for m in self.mask])
+        mask = self.mask.copy()
         fit_mask = np.zeros_like(self.x, dtype=bool)
         if self.sigma_clip:
             # Now pull in the sigma mask

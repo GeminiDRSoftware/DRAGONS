@@ -52,6 +52,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # This has to go on the model (and not this Panel instance) since the
         # models are returned by the Visualizer, not the Panel instances
         self.model.meta = meta
+        self.model.allow_poor_fits = False
 
         self.new_line_marker = bm.ColumnDataSource(
             {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})
@@ -364,11 +365,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         good_data = {}
         for k, v in self.model.data.data.items():
-            good_data[k] = [vv for vv, mask in zip(v, self.model.data.data['mask'])
+            good_data[k] = [vv for vv, mask in zip(v, self.model.mask)
                             if mask == 'good']
 
-        matches = match_sources(all_lines, good_data['y'], radius=0.01 * abs(dw))
-        unmatched_lines = [l for l, m in zip(all_lines, matches) if m == -1]
+        try:
+            matches = match_sources(all_lines, good_data['y'], radius=0.01 * abs(dw))
+        except ValueError:  # good_data['y'] is empty
+            unmatched_lines = all_lines
+        else:
+            unmatched_lines = [l for l, m in zip(all_lines, matches) if m == -1]
 
         new_peaks = np.setdiff1d(self.model.meta["peaks"],
                                  good_data['x'], assume_unique=True)
@@ -416,12 +421,12 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         return [fit.meta for fit in self.fits]
 
     @property
-    def matched_lines(self):
-        ret_value = []
+    def image(self):
+        image = []
         for model in self.fits:
-            goodpix = np.array([m == 'good' for m in model.mask])
-            ret_value.append((model.x[goodpix], model.y[goodpix]))
-        return ret_value
+            goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
+            image.append(model.y[goodpix])
+        return image
 
 
 def get_closest(arr, value):
