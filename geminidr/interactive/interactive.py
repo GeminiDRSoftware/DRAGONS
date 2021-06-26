@@ -111,7 +111,8 @@ class PrimitiveVisualizer(ABC):
                     window.close();
                 });
         """)
-        self.abort_button.js_on_click(abort_callback)
+        self.abort_button.on_click(self.abort_button_handler)
+        self.abort_button.js_on_change('disabled', abort_callback)
 
         self.doc = None
         self._message_holder = None
@@ -197,6 +198,18 @@ class PrimitiveVisualizer(ABC):
             # Fit is good, we can exit
             # Trigger the submit callback via disabling the submit button
             self.submit_button.disabled = True
+
+    def abort_button_handler(self):
+        """
+        Used by the abort button to provide a last ok/cancel dialog to the
+        user before killing reduce.
+        """
+        def cb(accepted):
+            if accepted:
+                # Trigger the exit/fit, otherwise we do nothing
+                self.abort_button.disabled = True
+
+        self.show_ok_cancel(f"Are you sure you want to abort?  DRAGONS reduce will exit completely.", cb)
 
     def session_ended(self, sess_context, user_satisfied):
         """
