@@ -1013,15 +1013,17 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
-        self.submit_button.align = 'end'
-        self.submit_button.height = 35
-        self.submit_button.height_policy = "fixed"
-        self.submit_button.margin = (0, 5, 5, 5)
-        self.submit_button.width = 212
-        self.submit_button.width_policy = "fixed"
+
+        for btn in (self.submit_button, self.abort_button):
+            btn.align = 'end'
+            btn.height = 35
+            btn.height_policy = "fixed"
+            btn.margin = (0, 5, 5, 5)
+            btn.width = 212
+            btn.width_policy = "fixed"
 
         toolbar = row(Spacer(width=250),
-                      column(self.get_filename_div(), self.submit_button),
+                      column(self.get_filename_div(), row(self.abort_button, self.submit_button)),
                       Spacer(width=10),
                       align="end", css_classes=['top-row'])
 

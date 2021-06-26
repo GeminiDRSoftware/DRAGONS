@@ -1231,22 +1231,23 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col.sizing_mode = 'scale_width'
         col.width_policy = 'max'
 
-        self.submit_button.align = 'end'
-        self.submit_button.height = 35
-        self.submit_button.height_policy = "fixed"
-        self.submit_button.margin = (0, 5, -30, 5)
-        self.submit_button.width = 212
-        self.submit_button.width_policy = "fixed"
+        for btn in (self.submit_button, self.abort_button):
+            btn.align = 'end'
+            btn.height = 35
+            btn.height_policy = "fixed"
+            btn.margin = (0, 5, -30, 5)
+            btn.width = 212
+            btn.width_policy = "fixed"
 
         layout_ls = list()
         if self.filename_info:
             self.submit_button.align = 'end'
             layout_ls.append(row(Spacer(width=250),
-                                 column(self.get_filename_div(), self.submit_button),
+                                 column(self.get_filename_div(), row(self.abort_button, self.submit_button)),
                                  Spacer(width=10),
                                  align="end", css_classes=['top-row']))
         else:
-            layout_ls.append(self.submit_button,
+            layout_ls.append(row(self.abort_button, self.submit_button),
                              align="end", css_classes=['top-row'])
 
         if self.reinit_panel is None:

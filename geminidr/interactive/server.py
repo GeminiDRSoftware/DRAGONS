@@ -171,7 +171,12 @@ def _helpapp(doc):
 
 
 def _shutdown(doc):
-    _visualizer.session_ended(None, True)
+    user_satisfied = True
+    if 'user_satisfied' in doc.session_context.request.arguments:
+        user_satisfied = doc.session_context.request.arguments['user_satisfied'][0].decode('utf-8')
+        if user_satisfied is not None and user_satisfied.lower() in ('0', 'n', 'f', 'no', 'false'):
+            user_satisfied = False
+    _visualizer.session_ended(None, user_satisfied)
 
 
 def set_visualizer(visualizer):

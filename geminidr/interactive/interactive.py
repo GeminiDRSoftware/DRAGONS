@@ -75,6 +75,15 @@ class PrimitiveVisualizer(ABC):
                                     width_policy='min',
                                     height=202,
                                     )
+        self.abort_button = Button(align='center',
+                                   button_type='warning',
+                                   css_classes=["submit_btn"],
+                                   id="_warning_btn",
+                                   label="Abort",
+                                   name="abort_btn",
+                                   width_policy='min',
+                                   height=202,
+                                   )
         # The submit_button_handler is only needed to flip the user_accepted flag to True before
         # the bokeh event loop terminates
         # self.submit_button.on_click(self.submit_button_handler)
@@ -86,6 +95,7 @@ class PrimitiveVisualizer(ABC):
                     window.close();
                 });
         """)
+
         # Listen to the disabled state and tweak that inside submit_button_handler
         # This allows us to execute a python callback to the submit_button on click.  Then,
         # if we decide to execute the /shutdown via javascript, we can just 'disable' the
@@ -94,6 +104,14 @@ class PrimitiveVisualizer(ABC):
         self.submit_button.on_click(self.submit_button_handler)
         self.submit_button.js_on_change('disabled', callback)
         # self.submit_button.js_on_click(callback)
+
+        abort_callback = CustomJS(code="""
+            $.ajax('/shutdown?user_satisfied=false').done(function()
+                {
+                    window.close();
+                });
+        """)
+        self.abort_button.js_on_click(abort_callback)
 
         self.doc = None
         self._message_holder = None
