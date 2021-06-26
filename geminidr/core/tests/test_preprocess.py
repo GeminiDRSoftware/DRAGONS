@@ -1,16 +1,13 @@
-# import os
-# from copy import deepcopy
-
 import os
 
 import astrodata
 import gemini_instruments
 import numpy as np
 import pytest
+from astropy.io import fits
 from astrodata.testing import download_from_archive
 from geminidr.core.primitives_preprocess import Preprocess
 from geminidr.gemini.lookups import DQ_definitions as DQ
-# from geminidr.gmos.primitives_gmos_image import GMOSImage
 from geminidr.niri.primitives_niri_image import NIRIImage
 from gempy.library.astrotools import cartesian_regions_to_slices
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
@@ -309,6 +306,33 @@ def test_fixpixels_multiple_ext(niriprim2):
     assert_almost_equal(ad[1].data[sy, sx].max(), 60.333, decimal=2)
 
 
+def test_adu_to_electrons(astrofaker, caplog, tmp_path):
+    caplog.set_level('INFO')
+    ad = astrofaker.create("NIRI", "IMAGE")
+    ad.init_default_extensions()
+    ad[0].data[:] = 1
+    p = NIRIImage([ad])
+
+    ad = p.ADUToElectrons()[0]
+    assert ad[0].unit == 'electron'
+    assert_array_almost_equal(ad[0].data, ad[0].gain())
+    assert caplog.messages[2] == ('Converting N20010101S0001.fits from ADU to '
+                                  'electrons by multiplying by the gain')
+    caplog.clear()
+
+    ad = p.ADUToElectrons()[0]
+    assert ad[0].unit == 'electron'
+    assert_array_almost_equal(ad[0].data, ad[0].gain())
+    assert ('No changes will be made to N20010101S0001_ADUToElectrons.fits, '
+            'since it has already been processed') in caplog.messages[2]
+
+    testfile = tmp_path / 'test.fits'
+    ad.write(testfile)
+    assert fits.getval(testfile, 'BUNIT', extname='SCI') == 'electron'
+    ad = astrodata.open(testfile)
+    assert ad[0].unit == 'electron'
+
+
 # TODO @bquint: clean up these tests
 
 # @pytest.fixture
@@ -355,16 +379,6 @@ def test_fixpixels_multiple_ext(niriprim2):
 #     for ext, ext_orig in zip(ad, ad_orig):
 #         assert all(ext.mask[ext.OBJMASK == 0] == ext_orig.mask[ext.OBJMASK == 0])
 #         assert all(ext.mask[ext.OBJMASK == 1] == ext_orig.mask[ext.OBJMASK == 1] | 1)
-
-
-# @pytest.mark.xfail(reason="Test needs revision", run=False)
-# def test_adu_to_electrons(astrofaker):
-#     ad = astrofaker.create("NIRI", "IMAGE")
-#     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
-#     p = NIRIImage([ad])
-#     ad = p.ADUToElectrons()[0]
-#     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-#                                        'N20070819S0104_ADUToElectrons.fits'))
 
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)

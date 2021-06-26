@@ -321,6 +321,15 @@ class AstroData:
         """
         return self._nddata[0] if self.is_single else self._nddata
 
+    @nddata.setter
+    @assign_only_single_slice
+    def nddata(self, new_nddata):
+        self.data = new_nddata.data
+        self.unit = new_nddata.unit
+        self.uncertainty = new_nddata.uncertainty
+        self.mask = new_nddata.mask
+        self.wcs = new_nddata.wcs
+
     def table(self):
         # FIXME: do we need this in addition to .tables ?
         return self._tables.copy()
@@ -443,6 +452,20 @@ class AstroData:
     @assign_only_single_slice
     def wcs(self, value):
         self.nddata.wcs = value
+
+    @property
+    @returns_list
+    def unit(self):
+        """
+        A list of `astropy.units.Unit` objects (or a single object if this
+        is a single slice) attached to the science data, for each extension.
+        """
+        return [nd.unit for nd in self._nddata]
+
+    @unit.setter
+    @assign_only_single_slice
+    def unit(self, value):
+        self.nddata.unit = value
 
     def __iter__(self):
         if self.is_single:
@@ -849,7 +872,8 @@ class AstroData:
 
         return nd
 
-    def _append_array(self, data, name=None, header=None, add_to=None):
+    def _append_array(self, data, name=None, header=None, add_to=None,
+                      unit=None):
         if name in {'DQ', 'VAR'}:
             raise ValueError(f"'{name}' need to be associated to a "
                              f"'{DEFAULT_EXTENSION}' one")
@@ -866,21 +890,22 @@ class AstroData:
             hdu = fits.ImageHDU(data, header=header)
             hdu.header['EXTNAME'] = hname
             ret = self._append_imagehdu(hdu, name=hname, header=None,
-                                        add_to=None)
+                                        add_to=None, unit=unit)
         else:
             ret = add_to.meta['other'][name] = data
 
         return ret
 
-    def _append_imagehdu(self, hdu, name, header, add_to):
+    def _append_imagehdu(self, hdu, name, header, add_to, unit):
         if name in {'DQ', 'VAR'} or add_to is not None:
-            return self._append_array(hdu.data, name=name, add_to=add_to)
+            return self._append_array(hdu.data, name=name, add_to=add_to,
+                                      unit=unit)
         else:
             nd = self._process_pixel_plane(hdu, name=name, top_level=True,
                                            custom_header=header)
-            return self._append_nddata(nd, name, add_to=None)
+            return self._append_nddata(nd, name, add_to=None, unit=unit)
 
-    def _append_raw_nddata(self, raw_nddata, name, header, add_to):
+    def _append_raw_nddata(self, raw_nddata, name, header, add_to, unit):
         # We want to make sure that the instance we add is whatever we specify
         # as NDDataObject, instead of the random one that the user may pass
         top_level = add_to is None
@@ -889,9 +914,10 @@ class AstroData:
         processed_nddata = self._process_pixel_plane(raw_nddata,
                                                      top_level=top_level,
                                                      custom_header=header)
-        return self._append_nddata(processed_nddata, name=name, add_to=add_to)
+        return self._append_nddata(processed_nddata, name=name, add_to=add_to,
+                                   unit=unit)
 
-    def _append_nddata(self, new_nddata, name, add_to):
+    def _append_nddata(self, new_nddata, name, add_to, unit):
         # NOTE: This method is only used by others that have constructed NDData
         # according to our internal format. We don't accept new headers at this
         # point, and that's why it's missing from the signature.  'name' is
@@ -899,6 +925,9 @@ class AstroData:
         if add_to is not None:
             raise TypeError("You can only append NDData derived instances "
                             "at the top level")
+
+        if new_nddata.unit is None:
+            new_nddata.unit = unit
 
         hd = new_nddata.meta['header']
         hname = hd.get('EXTNAME', DEFAULT_EXTENSION)
@@ -910,7 +939,7 @@ class AstroData:
 
         return new_nddata
 
-    def _append_table(self, new_table, name, header, add_to):
+    def _append_table(self, new_table, name, header, add_to, unit):
         tb = _process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME')
 
@@ -942,7 +971,7 @@ class AstroData:
             add_to.meta['other'][hname] = tb
         return tb
 
-    def _append_astrodata(self, ad, name, header, add_to):
+    def _append_astrodata(self, ad, name, header, add_to, unit):
         if not ad.is_single:
             raise ValueError("Cannot append AstroData instances that are "
                              "not single slices")
@@ -954,9 +983,10 @@ class AstroData:
         if header is not None:
             new_nddata.meta['header'] = deepcopy(header)
 
-        return self._append_nddata(new_nddata, name=None, add_to=None)
+        return self._append_nddata(new_nddata, name=None, add_to=None,
+                                   unit=unit)
 
-    def _append(self, ext, name=None, header=None, add_to=None):
+    def _append(self, ext, name=None, header=None, add_to=None, unit='adu'):
         """
         Internal method to dispatch to the type specific methods. This is
         called either by ``.append`` to append on top-level objects only or
@@ -972,12 +1002,14 @@ class AstroData:
 
         for bases, method in dispatcher:
             if isinstance(ext, bases):
-                return method(ext, name=name, header=header, add_to=add_to)
+                return method(ext, name=name, header=header, add_to=add_to,
+                              unit=unit)
 
         # Assume that this is an array for a pixel plane
-        return self._append_array(ext, name=name, header=header, add_to=add_to)
+        return self._append_array(ext, name=name, header=header, add_to=add_to,
+                                  unit=unit)
 
-    def append(self, ext, name=None, header=None):
+    def append(self, ext, name=None, header=None, unit='adu'):
         """
         Adds a new top-level extension.
 
@@ -998,6 +1030,8 @@ class AstroData:
             It can consist in a combination of numbers and letters, with the
             restriction that the letters have to be all capital, and the first
             character cannot be a number ("[A-Z][A-Z0-9]*").
+        header : `astropy.io.fits.Header`
+            FITS Header to be associated with the NDData or Table object.
 
         Returns
         --------
@@ -1032,7 +1066,7 @@ class AstroData:
                           UserWarning)
             name = name.upper()
 
-        return self._append(ext, name=name, header=header)
+        return self._append(ext, name=name, header=header, unit=unit)
 
     @classmethod
     def read(cls, source, extname_parser=None):

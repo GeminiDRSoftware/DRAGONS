@@ -67,7 +67,6 @@ def test_flux_calibration_with_fake_data():
         return wavelength, flux
 
     def _create_fake_data(object_name):
-        from astropy.table import Table
         astrofaker = pytest.importorskip('astrofaker')
 
         wavelength, flux = _get_spectrophotometric_data(object_name)
@@ -89,6 +88,7 @@ def test_flux_calibration_with_fake_data():
         _ad = astrofaker.create('GMOS-S')
         _ad.add_extension(hdu, pixel_scale=1.0)
 
+        _ad[0].unit = "electron"
         _ad[0].data = _ad[0].data.ravel()
         _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
@@ -102,7 +102,6 @@ def test_flux_calibration_with_fake_data():
         _ad[0].hdr.set('NAXIS', 1)
         _ad[0].phu.set('OBJECT', object_name)
         _ad[0].phu.set('EXPTIME', 1.)
-        _ad[0].hdr.set('BUNIT', "electron")
 
         assert _ad.object() == object_name
         assert _ad.exposure_time() == 1
@@ -120,7 +119,6 @@ def test_flux_calibration_with_fake_data():
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.regression
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_on_flux_calibration(ad, ref_ad_factory, change_working_dir):
     """

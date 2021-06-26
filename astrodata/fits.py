@@ -30,6 +30,14 @@ DEFAULT_EXTENSION = 'SCI'
 NO_DEFAULT = object()
 LOGGER = logging.getLogger(__name__)
 
+known_invalid_fits_unit_strings = {
+    'ELECTRONS/S': u.electron/u.s,
+    'ELECTRONS': u.electron,
+    'ELECTRON': u.electron,
+    'electrons': u.electron,
+    'electron': u.electron,
+}
+
 
 class FitsHeaderCollection:
     """Group access to a list of FITS Header-like objects.
@@ -391,7 +399,7 @@ def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
     return HDUList(sorted(new_list, key=fits_ext_comp_key))
 
 
-def read_fits(cls, source, extname_parser=None):
+def read_fits(cls, source, extname_parser=None, default_unit='adu'):
     """
     Takes either a string (with the path to a file) or an HDUList as input, and
     tries to return a populated AstroData (or descendant) instance.
@@ -488,12 +496,24 @@ def read_fits(cls, source, extname_parser=None):
                 not isinstance(parts['uncertainty'], FitsLazyLoadable)):
             parts['uncertainty'] = ADVarianceUncertainty(parts['uncertainty'])
 
+        bunit = header.get('BUNIT')
+        if bunit:
+            if bunit in known_invalid_fits_unit_strings:
+                bunit = known_invalid_fits_unit_strings[bunit]
+            try:
+                unit = u.Unit(bunit, format='fits')
+            except ValueError:
+                unit = u.Unit(default_unit)
+        else:
+            unit = u.Unit(default_unit)
+
         # Create the NDData object
         nd = NDDataObject(
             data=parts['data'],
             uncertainty=parts['uncertainty'],
             mask=parts['mask'],
             meta={'header': header},
+            unit=unit,
         )
 
         if parts['wcs'] is not None:
@@ -581,9 +601,17 @@ def ad_to_hdulist(ad):
                 if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
                     wcs = None  # There's no need to create a WCS extension
 
-        hdul.append(new_imagehdu(ext.data, header, 'SCI'))
+        data_hdu = new_imagehdu(ext.data, header, 'SCI')
+
+        if ext.unit is not None and ext.unit is not u.dimensionless_unscaled:
+            data_hdu.header['BUNIT'] = (ext.unit.to_string(),
+                                        "Physical units of the array values")
+
+        hdul.append(data_hdu)
+
         if ext.uncertainty is not None:
             hdul.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
+
         if ext.mask is not None:
             hdul.append(new_imagehdu(ext.mask, header, 'DQ'))
 

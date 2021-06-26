@@ -41,15 +41,9 @@ class Spek1D(Spectrum1D, NDAstroData):
             raise TypeError("Input spectrum must be a single AstroData slice")
 
         # Unit handling
-        try:  # for NDData-like
-            flux_unit = spectrum.unit
-        except AttributeError:
-            try:  # for AstroData
-                flux_unit = u.Unit(spectrum.hdr.get('BUNIT'))
-            except (TypeError, ValueError):  # unknown/missing
-                flux_unit = None
-        if flux_unit is None:
-            flux_unit = u.dimensionless_unscaled
+        if spectrum.unit is None:
+            spectrum.unit = u.dimensionless_unscaled
+
         try:
             kwargs['mask'] = spectrum.mask
         except AttributeError:
@@ -61,7 +55,7 @@ class Spek1D(Spectrum1D, NDAstroData):
         # If spectrum was a Quantity, it already has units so we'd better
         # not multiply them in again!
         if not isinstance(flux, u.Quantity):
-            flux *= flux_unit
+            flux *= spectrum.unit
 
         # If no wavelength information is included, get it from the input
         if spectral_axis is None and wcs is None:

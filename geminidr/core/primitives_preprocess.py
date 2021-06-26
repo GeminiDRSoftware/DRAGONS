@@ -9,11 +9,11 @@ from collections import defaultdict
 from copy import deepcopy
 from functools import partial
 
+import astropy.units as u
 import astrodata
 import gemini_instruments  # noqa
 import matplotlib.pyplot as plt
 import numpy as np
-from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
 from astropy.table import Table
 from geminidr import PrimitivesBASE
@@ -107,11 +107,10 @@ class Preprocess(PrimitivesBASE):
                        "the gain".format(ad.filename))
             for ext, gain in zip(ad, gain_list):
                 log.stdinfo(f"  gain for extension {ext.id} = {gain}")
-                ext.multiply(gain)
+                ext.multiply(gain * u.electron / u.adu)
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
-            ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix,  strip=True)
         return adinputs
