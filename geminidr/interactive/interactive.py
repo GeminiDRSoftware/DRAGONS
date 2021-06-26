@@ -17,7 +17,12 @@ from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_reg
 from gempy.library.config import FieldValidationError, Config
 
 # Singleton instance, there is only ever one of these
+from gempy.utils import logutils
+
 _visualizer = None
+
+
+_log = logutils.get_logger(__name__)
 
 
 class FitQuality(Enum):
@@ -207,6 +212,7 @@ class PrimitiveVisualizer(ABC):
         def cb(accepted):
             if accepted:
                 # Trigger the exit/fit, otherwise we do nothing
+                _log.warn("Aborting reduction on user request")
                 self.abort_button.disabled = True
 
         self.show_ok_cancel(f"Are you sure you want to abort?  DRAGONS reduce will exit completely.", cb)

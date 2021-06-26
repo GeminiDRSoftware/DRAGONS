@@ -1,10 +1,13 @@
+import os
 import uuid
+from logging import ERROR
 
 from astrodata import version
 
 import pathlib
 
 import tornado
+import bokeh
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
@@ -230,6 +233,13 @@ def start_server():
                 # in interactive mode any more.  See below for a way
                 # to make interactive use "chrome" (or "firefox")
                 # regardless of the selected browser if desired.
+                def dummy_logger(*args, **kwargs):
+                    """
+                    Empty logger method to convince Tornado to not log.  This is so the reduce.log
+                    isn't filled with HTTP response codes and URLs
+                    """
+                    pass
+
                 _bokeh_server = Server(
                     {
                         '/': _bkapp,
@@ -243,6 +253,7 @@ def start_server():
                     keep_alive_milliseconds=0,
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],
+                    log_function=dummy_logger,
                     port=port)
             except OSError:
                 port = port+1
