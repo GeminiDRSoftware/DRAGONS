@@ -122,7 +122,7 @@ class Visualize(PrimitivesBASE):
                                  "performed")
                 else:
                     try:
-                        bias_level = get_bias_level(ad)
+                        bias_level = get_bias_level(ad, estimate=False)
                     except NotImplementedError:
                         # For non-GMOS instruments
                         bias_level = None

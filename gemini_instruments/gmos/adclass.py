@@ -1016,7 +1016,7 @@ class AstroDataGmos(AstroDataGemini):
         in_adu = self.is_in_adu()
 
         # Get estimated bias levels from LUT
-        bias_levels = get_bias_level(self, estimate=True)
+        bias_levels = get_bias_level(self, estimate=False)
         if bias_levels is None:
             bias_levels = 0.0 if self.is_single else [0.0] * len(self)
         else:
