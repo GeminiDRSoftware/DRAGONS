@@ -387,6 +387,9 @@ def get_axes(header):
         else:
             unknown.append(ind)
 
+    if len(sky_inmap) == 1:
+        unknown.append(sky_inmap.pop())
+
     if sky_inmap:
         _is_skysys_consistent(ctype, sky_inmap)
 
