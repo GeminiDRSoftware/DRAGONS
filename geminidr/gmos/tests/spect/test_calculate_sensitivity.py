@@ -43,14 +43,12 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
         astrofaker = pytest.importorskip('astrofaker')
 
         hdu = fits.ImageHDU()
-        hdu.header['CCDSUM'] = "1 1"
-        hdu.data = np.zeros((1000, 1))
+        hdu.data = np.ones((1000,), dtype=np.float32)
 
-        _ad = astrofaker.create('GMOS-S')
+        _ad = astrofaker.create('GMOS-S', mode='LS')
         _ad.add_extension(hdu, pixel_scale=1.0)
 
-        _ad[0].data = _ad[0].data.ravel() + 1.
-        _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
+        _ad[0].mask = np.zeros_like(_ad[0].data, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
 
         _ad[0].phu.set('OBJECT', "DUMMY")
