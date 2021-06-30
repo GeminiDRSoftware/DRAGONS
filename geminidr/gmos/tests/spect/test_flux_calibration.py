@@ -52,7 +52,7 @@ def test_flux_calibration_with_fake_data():
         file_path = _get_spectrophotometric_file_path(object_name)
         table = primitives_gmos_spect.Spect([])._get_spectrophotometry(file_path)
 
-        std_wavelength = table['WAVELENGTH'].data
+        std_wavelength = table['WAVELENGTH_AIR'].data
         std_flux = table['FLUX'].data
 
         if std_wavelength[0] // 1000 > 1:  # Converts from \AA to nm
@@ -67,7 +67,6 @@ def test_flux_calibration_with_fake_data():
         return wavelength, flux
 
     def _create_fake_data(object_name):
-        from astropy.table import Table
         astrofaker = pytest.importorskip('astrofaker')
 
         wavelength, flux = _get_spectrophotometric_data(object_name)
@@ -84,18 +83,17 @@ def test_flux_calibration_with_fake_data():
 
         hdu = fits.ImageHDU()
         hdu.header['CCDSUM'] = "1 1"
-        hdu.data = flux[np.newaxis, :]  # astrofaker needs 2D data
+        hdu.data = flux
 
-        _ad = astrofaker.create('GMOS-S')
+        _ad = astrofaker.create('GMOS-S', 'LS')
         _ad.add_extension(hdu, pixel_scale=1.0)
 
-        _ad[0].data = _ad[0].data.ravel()
         _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
         in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
                                       axes_order=(0,), unit=u.pix,
                                       axes_names=('x',), name='pixels')
-        out_frame = cf.SpectralFrame(unit=u.nm, name='world')
+        out_frame = cf.SpectralFrame(unit=u.nm, name='world', axes_names=('AWAV',))
         _ad[0].wcs = gWCS([(in_frame, wave_model),
                            (out_frame, None)])
 
