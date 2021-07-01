@@ -353,7 +353,7 @@ class Spect(PrimitivesBASE):
                                 " Ignoring.")
                     break
 
-                extid = f"{ext.filename}:{ext.id}"
+                extid = f"{ext.filename} EXTVER {ext.hdr['EXTVER']}"
                 if "AWAV" in ext.wcs.output_frame.axes_names:
                     wavecol_name = "WAVELENGTH_AIR"
                     log.debug(f"{extid} is calibrated to air wavelengths")
