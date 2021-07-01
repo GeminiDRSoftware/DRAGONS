@@ -99,11 +99,13 @@ def test_find_apertures():
     _p.findApertures()
 
 
-def test_get_spectrophotometry(path_to_outputs):
+@pytest.mark.parametrize('in_vacuo', (False, True, None))
+def test_get_spectrophotometry(path_to_outputs, in_vacuo):
+
+    wavelengths = np.arange(350., 750., 10)
 
     def create_fake_table():
 
-        wavelengths = np.arange(350., 750., 10)
         flux = np.ones(wavelengths.size)
         bandpass = np.ones(wavelengths.size) * 5.
 
@@ -117,16 +119,24 @@ def test_get_spectrophotometry(path_to_outputs):
         return _table.name
 
     _p = primitives_spect.Spect([])
-    fake_table = _p._get_spectrophotometry(create_fake_table())
+    fake_table = _p._get_spectrophotometry(create_fake_table(),
+                                           in_vacuo=in_vacuo)
     np.testing.assert_allclose(fake_table['FLUX'], 1)
 
-    assert 'WAVELENGTH' in fake_table.columns
+    assert 'WAVELENGTH_AIR' in fake_table.columns
+    assert 'WAVELENGTH_VACUUM' in fake_table.columns
     assert 'FLUX' in fake_table.columns
     assert 'WIDTH' in fake_table.columns
 
-    assert hasattr(fake_table['WAVELENGTH'], 'quantity')
+    assert hasattr(fake_table['WAVELENGTH_AIR'], 'quantity')
+    assert hasattr(fake_table['WAVELENGTH_VACUUM'], 'quantity')
     assert hasattr(fake_table['FLUX'], 'quantity')
     assert hasattr(fake_table['WIDTH'], 'quantity')
+
+    if in_vacuo:
+        np.testing.assert_allclose(fake_table['WAVELENGTH_VACUUM'], wavelengths)
+    else:  # False or None
+        np.testing.assert_allclose(fake_table['WAVELENGTH_AIR'], wavelengths)
 
 
 def test_QESpline_optimization():

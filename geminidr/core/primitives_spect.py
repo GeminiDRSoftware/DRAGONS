@@ -267,6 +267,7 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         datafile = params["filename"]
+        in_vacuo = params["in_vacuo"]
         order = params["order"]
         bandpass = params["bandpass"]
         airmass0 = params["debug_airmass0"]
@@ -288,7 +289,8 @@ class Spect(PrimitivesBASE):
                         continue
                     full_path = os.path.join(path, 'spectrophotometric_standards', filename)
                     try:
-                        spec_table = self._get_spectrophotometry(full_path)
+                        spec_table = self._get_spectrophotometry(
+                            full_path, in_vacuo=in_vacuo)
                     except (FileNotFoundError, InconsistentTableError):
                         pass
                     else:
@@ -300,7 +302,8 @@ class Spect(PrimitivesBASE):
                     continue
             else:
                 try:
-                    spec_table = self._get_spectrophotometry(datafile)
+                    spec_table = self._get_spectrophotometry(
+                        datafile, in_vacuo=in_vacuo)
                 except FileNotFoundError:
                     log.warning(f"Cannot find spectrophotometric data table {datafile}."
                                 f"Unable to determine sensitivity for {ad.filename}")
@@ -350,11 +353,22 @@ class Spect(PrimitivesBASE):
                                 " Ignoring.")
                     break
 
+                extid = f"{ext.filename} EXTVER {ext.hdr['EXTVER']}"
+                if "AWAV" in ext.wcs.output_frame.axes_names:
+                    wavecol_name = "WAVELENGTH_AIR"
+                    log.debug(f"{extid} is calibrated to air wavelengths")
+                elif "WAVE" in ext.wcs.output_frame.axes_names:
+                    wavecol_name = "WAVELENGTH_VACUUM"
+                    log.debug(f"{extid} is calibrated to vacuum wavelengths")
+                else:
+                    raise ValueError("Cannot interpret wavelength scale "
+                                     f"for {extid}")
+
                 spectrum = Spek1D(ext) / (exptime * u.s)
                 wave, zpt, zpt_err = [], [], []
 
                 # Compute values in counts / (exptime * flux_density * bandpass)
-                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                for w0, dw, fluxdens in zip(spec_table[wavecol_name].quantity,
                                             spec_table['WIDTH'].quantity,
                                             spec_table['FLUX'].quantity):
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
@@ -2830,7 +2844,7 @@ class Spect(PrimitivesBASE):
         return self._read_and_convert_linelist(filename, w2=w2,
                                                in_vacuo=in_vacuo)
 
-    def _get_spectrophotometry(self, filename):
+    def _get_spectrophotometry(self, filename, in_vacuo=False):
         """
         Reads a file containing spectrophotometric data for a standard star
         and returns these data as a Table(), with unit information. We
@@ -2847,12 +2861,14 @@ class Spect(PrimitivesBASE):
         ----------
         filename: str
             name of file containing spectrophotometric data
+        in_vacuo: bool/None
+            are the wavelengths in the spectrophotometry file in vacuo?
 
         Returns
         -------
         Table:
-            the spectrophotometric data, with columns 'WAVELENGTH',
-            'WIDTH', and 'FLUX'
+            the spectrophotometric data, with columns 'WAVELENGTH_AIR',
+            'WAVELENGTH_VACUUM', 'WIDTH', and 'FLUX'
 
         Raises
         ------
@@ -2918,6 +2934,18 @@ class Spect(PrimitivesBASE):
                     pass
                 else:
                     col.name = 'FLUX'
+
+        wavecol = spec_table["WAVELENGTH"].quantity
+        if in_vacuo is None:
+            in_vacuo = min(wavecol) < 300 * u.nm
+
+        if in_vacuo:
+            spec_table["WAVELENGTH_VACUUM"] = spec_table["WAVELENGTH"]
+            spec_table["WAVELENGTH_AIR"] = vac_to_air(wavecol)
+        else:
+            spec_table["WAVELENGTH_AIR"] = spec_table["WAVELENGTH"]
+            spec_table["WAVELENGTH_VACUUM"] = air_to_vac(wavecol)
+        del spec_table["WAVELENGTH"]
 
         # If we don't have a flux column, create one
         if not 'FLUX' in spec_table.colnames:
