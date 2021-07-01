@@ -329,11 +329,15 @@ manager, they will be picked up automatically.
     reduce @std.lis --ql
     caldb add *_standard.fits
 
-We currently do not have tools to inspect the spectra or the calculated
-sensitivity function.  In the Tips and Tricks chapter, we show a way to plot
-them using matplotlib: :ref:`plot_1d`.
+To inspect the spectrum::
 
-KL?????   Tips and tricks to plot sensfunc
+    splot S20170826S0160_ql_standard.fits 1
+
+To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
+script, see Tips and Tricks :ref:`plot_1d`.
+
+The sensitivity function is stored within the processed standard spectrum.  To
+learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
 
 
 Science Observations
@@ -351,7 +355,9 @@ extracting the 1-D spectrum.
 
 This is what one raw image looks like.
 
-_graphics/rawscience.png
+.. image:: _graphics/rawscience.png
+   :width: 600
+   :alt: raw science image
 
 With the master bias, the master flat, the processed arcs (one for each of the
 grating position, aka central wavelength), and the processed standard in the
@@ -362,11 +368,11 @@ spectrum, one only needs to do as follow.
 
     reduce @sci.lis --ql
 
-This produces a 2-D spectrum (``N20180526S1024_2D.fits``) which has been
-biased, flat fielded, QE-corrected, wavelength-calibrated, corrected for
-distortion, sky subtracted, and stacked.  It also produces the 1-D spectra
-extracted from that 2-D spectrum (``N20180526S1024_1D.fits``).  Each 1-D
-spectrum flux calibrated with the sensitivity function from the
+This produces a 2-D spectrum (``S20171022S0087_2D.fits``) which has been
+bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
+distortion, sky-subtracted, and stacked.  It also produces the 1-D spectrum
+(``S20171022S0087_1D.fits``) extracted from that 2-D spectrum.  The 1-D
+spectrum is flux calibrated with the sensitivity function from the
 spectrophotometric standard. The 1-D spectra are stored as 1-D FITS images in
 extensions of the output Multi-Extension FITS file.
 
@@ -374,16 +380,47 @@ This is what the 2-D spectrum looks like.
 
 ::
 
-    reduce -r display N20180526S1024_2D.fits
+    reduce -r display S20171022S0087_2D.fits
 
-_graphics/???
+.. image:: _graphics/2Dspectrum.png
+   :width: 600
+   :alt: 2D stacked spectrum
 
-The aperture found are list in the log for the ``findApertures`` just before
+The apertures found are list in the log for the ``findApertures`` just before
 the call to ``traceApertures``.  Information about the apertures are also
-available in the header of each extracted spectrum.
-And this is what the 1-D flux-calibrated spectrum of the primary target looks
-like.
+available in the header of each extracted spectrum: ``XTRACTED``, ``XTRACTLO``,
+``XTRACTHI``, for aperture center, lower limit, and upper limit, respectively.
 
-_graphics/???
 
-To learn how to plot a 1-D spectrum with matplotlib, see Tips and Tricks ???KL???.
+This is what the 1-D flux-calibrated spectrum of our sole target looks like.
+
+::
+
+    splot S20171022S0087_1D.fits 1
+
+.. image:: _graphics/1Dspectrum.png
+   :width: 600
+   :alt: 1D spectrum
+
+To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
+script, see Tips and Tricks :ref:`plot_1d`.
+
+If you need an ascii representation of the spectum, you can use the primitive
+``write1DSpectra`` to extra the values from the FITS file.
+
+::
+
+    reduce -r write1DSpectra S20171022S0087_1D.fits
+
+The primitive outputs in the various formats offered by ``astropy.Table``.  To
+see the list, use |showpars|.
+
+::
+
+    showpars S20171022S0087_1D.fits write1DSpectra
+
+To use a different format, set the ``format`` parameters.
+
+::
+
+    reduce -r write1DSpectra -p format=ascii.ecsv extension='ecsv' S20171022S0087_1D.fits
