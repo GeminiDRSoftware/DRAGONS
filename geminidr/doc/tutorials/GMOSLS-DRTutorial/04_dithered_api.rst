@@ -547,3 +547,34 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
 To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
 script, see Tips and Tricks :ref:`plot_1d`.
+
+If you need an ascii representation of the spectum, you can use the primitive
+``write1DSpectra`` to extra the values from the FITS file.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 98
+
+    writeascii = Reduce()
+    writeascii.files = ['S20171022S0087_1D.fits']
+    writeascii.recipename = 'write1DSpectra'
+    writeascii.runr()
+
+The primitive outputs in the various formats offered by ``astropy.Table``.  To
+see the list, use |showpars| **from the command line**.
+
+::
+
+    showpars S20171022S0087_1D.fits write1DSpectra
+
+To use a different format, set the ``format`` parameters.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 102
+
+    writeascii = Reduce()
+    writeascii.files = ['S20171022S0087_1D.fits']
+    writeascii.recipename = 'write1DSpectra'
+    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
+    writeascii.runr()
