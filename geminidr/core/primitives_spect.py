@@ -1216,6 +1216,7 @@ class Spect(PrimitivesBASE):
                             else:
                                 fig.set_size_inches(17, 11)
                                 plt.savefig(ad.filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
+                                plt.close()  # KL, necessary otherwise it pops up in the next unrelated plt.show
                             plt.ion()
 
                         all_fits.append(m)
