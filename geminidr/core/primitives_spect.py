@@ -1104,7 +1104,7 @@ class Spect(PrimitivesBASE):
         config.update(**params)
 
         for ad in adinputs:
-            log.info(f"Determining wavelength solution for {ad.filename}")
+            log.stdinfo(f"Determining wavelength solution for {ad.filename}")
 
             uiparams = UIParameters(
                 config, reinit_params=["center", "nsum", "min_snr", "min_sep",
@@ -1142,7 +1142,7 @@ class Spect(PrimitivesBASE):
             else:
                 for ext in ad:
                     if len(ad) > 1:
-                        log.info(f"Determining solution for extension {ext.id}")
+                        log.stdinfo(f"Determining solution for extension {ext.id}")
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
                         ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
