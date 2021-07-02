@@ -746,7 +746,9 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
-                    ref_weights=new_ref_weights, matches=matches, popsize=30, mutation=1.0)
+                    ref_weights=new_ref_weights, matches=matches, popsize=30,
+                    mutation=(0.5,1.0), workers=-1, updating='deferred',
+                    polish=False)
     m_this.linear = True
     return m_this
 
