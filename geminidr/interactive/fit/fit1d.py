@@ -1201,10 +1201,20 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             else:
                 continue
 
-            old = self.widgets[fname].value
+            # Handle CheckboxGroup widgets
+            if hasattr(self.widgets[fname], "value"):
+                attr = "value"
+            else:
+                attr = "active"
+                reset_value = [0] if reset_value else []
+            old = getattr(self.widgets[fname], attr)
 
-            # Update Slider Value
-            self.widgets[fname].update(value=reset_value)
+            # Update widget value
+            if reset_value is None:
+                kwargs = {attr: self.widgets[fname].start, "show_value": False}
+            else:
+                kwargs = {attr: reset_value}
+            self.widgets[fname].update(**kwargs)
 
             # Update Text Field via callback function
             if 'value' in self.widgets[fname]._callbacks:
