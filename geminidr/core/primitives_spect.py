@@ -2589,9 +2589,9 @@ class Spect(PrimitivesBASE):
             # want to fit.
             # We pass a default column at the 1/3 mark, since dead center is flat
             axis = adinputs[0].dispersion_axis()[0] - 1  # python sense
-            ncols = adinputs[0].shape[0][axis]
+            ncols = adinputs[0].shape[0][1 if axis == 0 else 0]
             reinit_params = ["col", "aperture_growth"]
-            reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 3),
+            reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 2),
                                                min=1, max=ncols)}
 
             # Build the set of input shapes and count the total extensions while we are at it
