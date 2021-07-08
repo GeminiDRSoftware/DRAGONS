@@ -243,6 +243,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """Handler for the 'Cancel' button in the line identifier"""
         self.new_line_prompt.text = ""
         self.new_line_dropdown.options = []
+        self.new_line_textbox.value = None
         self.set_currently_identifying(False)
 
     def add_line_to_data(self, peak, wavelength):
