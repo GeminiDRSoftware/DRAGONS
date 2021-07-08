@@ -3,7 +3,7 @@ from scipy.interpolate import interp1d
 from bisect import bisect
 
 from bokeh import models as bm
-from bokeh.layouts import row
+from bokeh.layouts import row, column
 from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller, Handler
@@ -116,27 +116,32 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.p_spectrum = p_spectrum
 
         self.identify_button = bm.Button(label="Identify lines", width=200,
-                                         button_type="primary", width_policy="fixed")
+                                         button_type="primary", width_policy="fit",
+                                         height_policy="max")
         self.identify_button.on_click(self.identify_lines)
 
-        self.new_line_prompt = bm.Div(text="Line", style={"font-size": "16px",},
-                                      width_policy="min")
+        self.new_line_prompt = bm.Div(text="", style={"font-size": "16px",},
+                                      width_policy="max")
         self.new_line_dropdown = bm.Select(options=[], width=100,
                                            width_policy="fixed")
         self.new_line_textbox = bm.NumericInput(width=100, mode='float',
                                                 width_policy="fixed")
         self.new_line_dropdown.on_change("value", self.set_new_line_textbox_value)
-        new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fixed",
+        new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fit",
                                        button_type="success")
         new_line_ok_button.on_click(self.add_new_line)
-        new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fixed",
+        new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fit",
                                            button_type="danger")
         new_line_cancel_button.on_click(self.cancel_new_line)
-        self.new_line_div = row(bm.Spacer(sizing_mode="stretch_width"),
-                                self.new_line_prompt, self.new_line_dropdown,
-                                self.new_line_textbox,
-                                new_line_ok_button, new_line_cancel_button,
-                                sizing_mode="stretch_both")
+        #self.new_line_div = row(bm.Spacer(sizing_mode="stretch_width"),
+        #                        self.new_line_prompt, self.new_line_dropdown,
+        #                        self.new_line_textbox,
+        #                        new_line_ok_button, new_line_cancel_button,
+        #                        sizing_mode="stretch_both")
+        self.new_line_div = row(column(row(self.new_line_prompt, self.new_line_dropdown,
+                                self.new_line_textbox),
+                                row(bm.Spacer(sizing_mode="stretch_width"), new_line_ok_button, new_line_cancel_button),
+                                width_policy="max"))
 
         identify_panel = row(self.identify_button, self.new_line_div)
 
