@@ -295,7 +295,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
                 pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
-                                           [0.42466 * fwidth])
+                                           [0.42466 * fwidth])[0]
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
                 try:
