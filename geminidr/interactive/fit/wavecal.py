@@ -67,8 +67,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
     def set_currently_identifying(self, peak):
         status = bool(peak)
         self.p_spectrum.select_one({"name": "new_line_marker"}).visible = status
-        for c in self.new_line_div.children:
-            c.disabled = not status
+
+        def recursively_set_status(parent, disabled):
+            for c in parent.children:
+                if hasattr(c, "children"):
+                    recursively_set_status(c, disabled)
+                else:
+                    c.disabled = disabled
+
+        recursively_set_status(self.new_line_div, not status)
         self.identify_button.disabled = status
         self.currently_identifying = peak
 
