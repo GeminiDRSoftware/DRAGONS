@@ -113,7 +113,8 @@ class Register(PrimitivesBASE):
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
         scale = params["scale"]
-        use_wcs = True
+        use_wcs = not params["debug_ignore_wcs"]
+        t_init = None if use_wcs else models.Identity(2)
 
         # Use first image in list as reference
         adref = adinputs[0]
@@ -177,7 +178,7 @@ class Register(PrimitivesBASE):
                 ad, adref, search_radius=firstpasspix, match_radius=matchpix,
                 min_sources=min_sources, cull_sources=cull_sources,
                 use_wcs=use_wcs, rotate=rotate, scale=scale,
-                return_matches=True)
+                return_matches=True, transform=t_init)
 
             n_corr = len(obj_list[0])
             if (n_corr < min_sources + rotate + scale) and (rotate or scale):
@@ -187,7 +188,7 @@ class Register(PrimitivesBASE):
                     ad, adref, search_radius=firstpasspix,
                     match_radius=matchpix, cull_sources=cull_sources,
                     use_wcs=use_wcs, rotate=False, scale=False,
-                    return_matches=True)
+                    return_matches=True, transform=t_init)
                 n_corr = len(obj_list[0])
 
             log.fullinfo("Number of correlated sources: {}".format(n_corr))
@@ -206,6 +207,10 @@ class Register(PrimitivesBASE):
                     _create_wcs_from_offsets(ad, adref)
                 continue
 
+            # If we're not using the WCS, then we want the adjusted AD to
+            # have a WCS that is the transform followed by the reference WCS
+            if not use_wcs:
+                ad[0].wcs = deepcopy(adref[0].wcs)
             try:
                 ad[0].wcs.insert_transform(ad[0].wcs.input_frame, transform, after=True)
             except AttributeError:  # no WCS

@@ -20,6 +20,7 @@ class adjustWCSToReferenceConfig(config.Config):
     cull_sources = config.Field("Use only point sources for alignment?", bool, False)
     rotate = config.Field("Allow adjustment to rotation?", bool, False)
     scale = config.Field("Allow adjustment to magnification?", bool, False)
+    debug_ignore_wcs = config.Field("Ignore WCS information when aligning?", bool, False)
 
 class determineAstrometricSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_astrometryCorrected", optional=True)
