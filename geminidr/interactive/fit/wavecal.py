@@ -106,9 +106,13 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                       self.delete_line)
         identify_line_handler = Handler('i', "Identify arc line",
                                         self.identify_line)
-        Controller(p_spectrum, None, self.model.band_model if self.enable_regions else None, controller_div,
+        c = Controller(p_spectrum, None, self.model.band_model if self.enable_regions else None, controller_div,
                    mask_handlers=None, domain=domain,
                    handlers=[delete_line_handler, identify_line_handler])
+        c.helpmaskingtext += ("After selecting a line to identify, select its "
+                              "wavelength (in nm) from the drop-down menu or "
+                              "enter a value in the text box, then click 'OK'.")
+        c.set_help_text()
         p_spectrum.y_range.on_change("start", lambda attr, old, new:
                                      self.update_label_heights())
         p_spectrum.y_range.on_change("end", lambda attr, old, new:
