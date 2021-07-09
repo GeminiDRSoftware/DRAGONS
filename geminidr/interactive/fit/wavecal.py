@@ -1,7 +1,6 @@
 import uuid
 
 import numpy as np
-from bokeh.events import Event, DocumentEvent
 from bokeh.models import CustomJS
 from scipy.interpolate import interp1d
 from bisect import bisect
