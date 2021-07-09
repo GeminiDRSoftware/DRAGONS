@@ -908,7 +908,7 @@ def match_sources(incoords, refcoords, radius=2.0):
 
 def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
                           min_sources=1, search_radius=10, match_radius=2,
-                          rotate=False, scale=False, full_wcs=False,
+                          rotate=False, scale=False, use_wcs=False,
                           brute=True, return_matches=False):
     """
     This function takes two images (an input image, and a reference image) and
@@ -942,7 +942,7 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         add a rotation to the alignment transform?
     scale: bool
         add a magnification to the alignment transform?
-    full_wcs: bool
+    use_wcs: bool
         use the two images' WCSs to reproject the reference image's coordinates
         onto the input image's pixel plane, rather than just align the OBJCAT
         coordinates?
@@ -997,11 +997,11 @@ def align_images_from_wcs(adinput, adref, cull_sources=False, transform=None,
         t = adref[0].wcs.forward_transform | adinput[0].wcs.backward_transform
     except AttributeError:  # for cases with no defined WCS
         t = None
-        if full_wcs:
-            log.warning("Cannot determine WCS information: setting full_wcs=False")
-            full_wcs = False
+        if use_wcs:
+            log.warning("Cannot determine WCS information: setting use_wcs=False")
+            use_wcs = False
 
-    if full_wcs:
+    if use_wcs:
         refcoords = t(*refcoords)
     elif transform is None and t is not None:
         transform = t.inverse

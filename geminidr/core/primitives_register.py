@@ -113,6 +113,7 @@ class Register(PrimitivesBASE):
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
         scale = params["scale"]
+        use_wcs = True
 
         # Use first image in list as reference
         adref = adinputs[0]
@@ -122,14 +123,17 @@ class Register(PrimitivesBASE):
             adref[0].wcs = gWCS([(cf.Frame2D(name="pixels"), models.Identity(len(adref[0].shape))),
                                   (cf.Frame2D(name="world"), None)])
 
-        if (not hasattr(adref[0], 'OBJCAT') or len(adref[0].OBJCAT)
-                                        < min_sources) and method == 'sources':
-            log.warning("Too few objects found in reference image. "
-                        "{}.".format(warnings[fallback]))
-            if fallback is None:
-                return adinputs
-            else:
+        if method == "sources":
+            if not hasattr(adref[0], 'OBJCAT'):
+                log.warning("Reference image has no OBJCAT.")
                 method = fallback
+            elif len(adref[0].OBJCAT) < min_sources:
+                log.warning("Too few objects found in reference image. "
+                            f"{warnings[fallback]}")
+                method = fallback
+
+        if method is None:
+            return adinputs
 
         for ad in adinputs[1:]:
             if method == "offsets":
@@ -172,7 +176,7 @@ class Register(PrimitivesBASE):
             obj_list, transform = align_images_from_wcs(
                 ad, adref, search_radius=firstpasspix, match_radius=matchpix,
                 min_sources=min_sources, cull_sources=cull_sources,
-                full_wcs=True, rotate=rotate, scale=scale,
+                use_wcs=use_wcs, rotate=rotate, scale=scale,
                 return_matches=True)
 
             n_corr = len(obj_list[0])
@@ -182,7 +186,7 @@ class Register(PrimitivesBASE):
                 obj_list, transform = align_images_from_wcs(
                     ad, adref, search_radius=firstpasspix,
                     match_radius=matchpix, cull_sources=cull_sources,
-                    full_wcs=True, rotate=False, scale=False,
+                    use_wcs=use_wcs, rotate=False, scale=False,
                     return_matches=True)
                 n_corr = len(obj_list[0])
 
