@@ -1,4 +1,8 @@
+import uuid
+
 import numpy as np
+from bokeh.events import Event, DocumentEvent
+from bokeh.models import CustomJS
 from scipy.interpolate import interp1d
 from bisect import bisect
 
@@ -123,8 +127,24 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                       width_policy="min")
         self.new_line_dropdown = bm.Select(options=[], width=100,
                                            width_policy="fixed")
+
+        # Make a unique ID for our callback to find the HTML input widget
+        # Note that even with the cb_obj reference, it's easier to find the real input widget this way
+        focus_id = str(uuid.uuid4())
         self.new_line_textbox = bm.NumericInput(width=100, mode='float',
-                                                width_policy="fixed")
+                                                width_policy="fixed", name=focus_id)
+
+        # JS side listener to perform the focus.  We have to do it async via setTimeout
+        # because bokeh triggers the disabled change before the html widget is ready for focus
+        cb = CustomJS(code="""
+                        if (cb_obj.disabled == false) {
+                          setTimeout(function() {
+                            document.getElementsByName('%s')[0].focus();
+                          });
+                        }
+                      """ % focus_id)
+        self.new_line_textbox.js_on_change('disabled', cb)
+
         self.new_line_dropdown.on_change("value", self.set_new_line_textbox_value)
         new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fixed",
                                        button_type="success")
