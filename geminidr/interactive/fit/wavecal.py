@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 from bisect import bisect
 
 from bokeh import models as bm
-from bokeh.layouts import row
+from bokeh.layouts import row, column
 from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller, Handler
@@ -110,9 +110,13 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                       self.delete_line)
         identify_line_handler = Handler('i', "Identify arc line",
                                         self.identify_line)
-        Controller(p_spectrum, None, self.model.band_model if self.enable_regions else None, controller_div,
+        c = Controller(p_spectrum, None, self.model.band_model if self.enable_regions else None, controller_div,
                    mask_handlers=None, domain=domain,
                    handlers=[delete_line_handler, identify_line_handler])
+        c.helpmaskingtext += ("After selecting a line to identify, select its "
+                              "wavelength (in nm) from the drop-down menu or "
+                              "enter a value in the text box, then click 'OK'.")
+        c.set_help_text()
         p_spectrum.y_range.on_change("start", lambda attr, old, new:
                                      self.update_label_heights())
         p_spectrum.y_range.on_change("end", lambda attr, old, new:
@@ -120,11 +124,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.p_spectrum = p_spectrum
 
         self.identify_button = bm.Button(label="Identify lines", width=200,
-                                         button_type="primary", width_policy="fixed")
+                                         button_type="primary", width_policy="fit",
+                                         height_policy="max")
         self.identify_button.on_click(self.identify_lines)
 
-        self.new_line_prompt = bm.Div(text="Line", style={"font-size": "16px",},
-                                      width_policy="min")
+        self.new_line_prompt = bm.Div(text="", style={"font-size": "16px",},
+                                      width_policy="max")
         self.new_line_dropdown = bm.Select(options=[], width=100,
                                            width_policy="fixed")
 
@@ -146,17 +151,22 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_textbox.js_on_change('disabled', cb)
 
         self.new_line_dropdown.on_change("value", self.set_new_line_textbox_value)
-        new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fixed",
+        self.new_line_textbox.on_change("value", self.handle_line_wavelength)
+        new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fit",
                                        button_type="success")
         new_line_ok_button.on_click(self.add_new_line)
-        new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fixed",
+        new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fit",
                                            button_type="danger")
         new_line_cancel_button.on_click(self.cancel_new_line)
-        self.new_line_div = row(bm.Spacer(sizing_mode="stretch_width"),
-                                self.new_line_prompt, self.new_line_dropdown,
-                                self.new_line_textbox,
-                                new_line_ok_button, new_line_cancel_button,
-                                sizing_mode="stretch_both")
+        #self.new_line_div = row(bm.Spacer(sizing_mode="stretch_width"),
+        #                        self.new_line_prompt, self.new_line_dropdown,
+        #                        self.new_line_textbox,
+        #                        new_line_ok_button, new_line_cancel_button,
+        #                        sizing_mode="stretch_both")
+        self.new_line_div = row(column(row(self.new_line_prompt, self.new_line_dropdown,
+                                self.new_line_textbox),
+                                row(bm.Spacer(sizing_mode="stretch_width"), new_line_ok_button, new_line_cancel_button),
+                                width_policy="max"))
 
         identify_panel = row(self.identify_button, self.new_line_div)
 
@@ -248,16 +258,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 beep()
                 return
             peak = self.currently_identifying
+            self.cancel_new_line(*args)
             try:
                 self.add_line_to_data(peak, wavelength)
             except ValueError:
                 return
-            self.cancel_new_line(*args)
 
     def cancel_new_line(self, *args):
         """Handler for the 'Cancel' button in the line identifier"""
         self.new_line_prompt.text = ""
         self.new_line_dropdown.options = []
+        self.new_line_textbox.value = None
         self.set_currently_identifying(False)
 
     def add_line_to_data(self, peak, wavelength):
@@ -315,7 +326,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
                 pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
-                                           [0.42466 * fwidth])
+                                           [0.42466 * fwidth])[0]
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
                 try:
@@ -339,7 +350,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                           if lower_limit < line < upper_limit]
         if possible_lines:
             selectable_lines = sorted(sorted(possible_lines,
-                                             key=lambda x: abs(x - est_wave))[:5])
+                                             key=lambda x: abs(x - est_wave))[:9])
             select_index = np.argmin(abs(np.asarray(selectable_lines) - est_wave))
             self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
             self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
@@ -420,6 +431,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if new != old:
             self.new_line_textbox.value = float(new)
 
+    def handle_line_wavelength(self, attrib, old, new):
+        """
+        Handle user pressing Enter in the new line wavelength textbox.
+        """
+        if new is not None and wavestr(new) not in self.new_line_dropdown.options:
+            self.add_new_line()
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
