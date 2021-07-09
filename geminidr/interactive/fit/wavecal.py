@@ -127,6 +127,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_textbox = bm.NumericInput(width=100, mode='float',
                                                 width_policy="fixed")
         self.new_line_dropdown.on_change("value", self.set_new_line_textbox_value)
+        self.new_line_textbox.on_change("value", self.handle_line_wavelength)
         new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fit",
                                        button_type="success")
         new_line_ok_button.on_click(self.add_new_line)
@@ -233,11 +234,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 beep()
                 return
             peak = self.currently_identifying
+            self.cancel_new_line(*args)
             try:
                 self.add_line_to_data(peak, wavelength)
             except ValueError:
                 return
-            self.cancel_new_line(*args)
 
     def cancel_new_line(self, *args):
         """Handler for the 'Cancel' button in the line identifier"""
@@ -325,7 +326,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                           if lower_limit < line < upper_limit]
         if possible_lines:
             selectable_lines = sorted(sorted(possible_lines,
-                                             key=lambda x: abs(x - est_wave))[:5])
+                                             key=lambda x: abs(x - est_wave))[:9])
             select_index = np.argmin(abs(np.asarray(selectable_lines) - est_wave))
             self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
             self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
@@ -406,6 +407,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if new != old:
             self.new_line_textbox.value = float(new)
 
+    def handle_line_wavelength(self, attrib, old, new):
+        """
+        Handle user pressing Enter in the new line wavelength textbox.
+        """
+        if new is not None and wavestr(new) not in self.new_line_dropdown.options:
+            self.add_new_line()
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
