@@ -160,6 +160,9 @@ class AstroDataGemini(AstroDataFits):
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
                 return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
+        elif self.phu.get('GCALLAMP') == 'No Value' and \
+             self.phu.get('GCALSHUT') == 'CLOSED':
+            return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
 
     @astro_data_tag
     def _type_site(self):
