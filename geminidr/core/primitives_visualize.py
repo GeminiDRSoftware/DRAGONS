@@ -96,7 +96,8 @@ class Visualize(PrimitivesBASE):
             if extname != 'SCI':
                 threshold = None
                 remove_bias = False
-            elif threshold == 'None':
+            elif threshold == 'None' or threshold == 'none':
+                #cannot use .lower above since threshold can be a float
                 threshold = None
             elif threshold == 'auto':
                 mosaicked = ((ad.phu.get(self.timestamp_keys["mosaicDetectors"])

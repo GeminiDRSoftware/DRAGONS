@@ -12,8 +12,8 @@ class displayConfig(config.Config):
     extname = config.Field("EXTNAME to display", str, "SCI")
     frame = config.RangeField("Starting frame for display", int, 1, min=1)
     ignore = config.Field("Turn off display?", bool, False)
-    overlay = config.ListField("Overlays for display", tuple, None, optional=True)
-    threshold = config.Field("Threshold level for indicating saturation",
+    debug_overlay = config.ListField("Overlays for display", tuple, None, optional=True)
+    threshold = config.Field("Threshold level for indicating saturation. 'None' to turn off.",
                              (str, float), "auto", optional=True, check=threshold_check)
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)
     zscale = config.Field("Use zscale algorithm?", bool, True)
