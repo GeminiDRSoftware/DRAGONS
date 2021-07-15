@@ -1245,7 +1245,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             btn.align = 'end'
             btn.height = 35
             btn.height_policy = "fixed"
-            btn.margin = (0, 5, -30, 5)
+            btn.margin = (0, 5, -20, 5)
             btn.width = 212
             btn.width_policy = "fixed"
 

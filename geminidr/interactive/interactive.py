@@ -77,8 +77,6 @@ class PrimitiveVisualizer(ABC):
                                     id="_submit_btn",
                                     label="Accept",
                                     name="submit_btn",
-                                    width_policy='min',
-                                    height=202,
                                     )
         self.abort_button = Button(align='center',
                                    button_type='warning',
@@ -86,8 +84,6 @@ class PrimitiveVisualizer(ABC):
                                    id="_warning_btn",
                                    label="Abort",
                                    name="abort_btn",
-                                   width_policy='min',
-                                   height=202,
                                    )
         # The submit_button_handler is only needed to flip the user_accepted flag to True before
         # the bokeh event loop terminates
