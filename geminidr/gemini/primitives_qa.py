@@ -250,10 +250,10 @@ class QA(PrimitivesBASE):
             if len(ad) > 1:
                 results = report.calculate_metric('all')
 
-            if not separate_ext:
-                report.report(results, all_results=all_results)
-
             if results:
+                if not separate_ext:
+                    report.report(results, all_results=all_results)
+
                 # For QA dictionary
                 qad.update({'band': report.band, 'comment': report.comments,
                             'extinction': results["cloud"],
