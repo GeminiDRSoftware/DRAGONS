@@ -662,7 +662,7 @@ class QA(PrimitivesBASE):
             if display:
                 # If separate_ext is True, we want the tile parameter
                 # for the display primitive to be False
-                self.display([adiq], overlay=iq_overlays if iq_overlays else None,
+                self.display([adiq], debug_overlay=iq_overlays if iq_overlays else None,
                              frame=frame, **display_params)
                 frame += len(adiq)
                 if any(ov is not None for ov in iq_overlays):
