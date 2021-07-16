@@ -16,9 +16,11 @@ inactive state.
 """
 from abc import ABC, abstractmethod
 
-from bokeh.events import PointEvent, SelectionGeometry, Tap
+from bokeh.events import PointEvent, SelectionGeometry, Tap, MouseEnter, MouseLeave
 
 __all__ = ["controller", "Controller", "Handler"]
+
+from bokeh.models import CustomJS
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -74,6 +76,9 @@ class Controller(object):
         helpintrotext : str
             HTML to show at the top of the controller help (gray text block), or None for a default message.
         """
+
+        fig.js_on_event(MouseEnter, CustomJS(code='window.controller_keys_enabled = true;'))
+        fig.js_on_event(MouseLeave, CustomJS(code='window.controller_keys_enabled = false;'))
 
         # set the class for the help_text div so we can have a common style
         help_text.css_classes.append('controller_div')

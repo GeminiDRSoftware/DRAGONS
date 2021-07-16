@@ -82,14 +82,20 @@
     // document.getElementById("plot_div").addEventListener("keydown", function(event){
     // doing whole document.  Or we could figure out how to target a bokeh-generated container div
     // preventDefault causes the key not to pass to any widgets that are in focus, such as a text input
-    document.addEventListener("keydown", function(event){
-        if ((event.key >= 'a' && event.key <= 'z') || event.key === '*' || event.key === '[' || event.key === ']') {
-            var url = '/handle_key?key=' + event.key
-            $.ajax(url)
-            event.preventDefault()
-            return
-        }
-     });
+    window.controller_keys_enabled=false;
+    function setupKeyListener() {
+        document.addEventListener("keydown", function(event){
+            if (window.controller_keys_enabled == true) {
+                if ((event.key >= 'a' && event.key <= 'z') || event.key === '*' || event.key === '[' || event.key === ']') {
+                    var url = '/handle_key?key=' + event.key
+                    $.ajax(url)
+                    event.preventDefault()
+                    return
+                }
+            }
+        });
+     }
+     window.addEventListener('load', setupKeyListener);
      var help_popup = null;
      function openHelpPopup() {
        if (help_popup == null || help_popup.closed) {
