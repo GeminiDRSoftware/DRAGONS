@@ -348,7 +348,7 @@ class PrimitiveVisualizer(ABC):
         self._ok_cancel_holder.js_on_change('text', ok_cancel_callback)
 
         # Add the invisible PreText element to drive message dialogs off
-        # of.  We do this with a do_later so that it will hapen after the
+        # of.  We do this with a do_later so that it will happen after the
         # subclass implementation does all of it's document setup.  So,
         # this widget will be added at the end.
         self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
