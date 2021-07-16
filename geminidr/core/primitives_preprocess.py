@@ -1096,6 +1096,7 @@ class Preprocess(PrimitivesBASE):
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
         offset_sky = params["offset_sky"]
+        suffix = params["suffix"]
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
@@ -1217,7 +1218,7 @@ class Preprocess(PrimitivesBASE):
                     # Sky-subtraction is in place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
                                      offset_sky=offset_sky, reset_sky=reset_sky,
-                                     save_sky=save_sky)
+                                     save_sky=save_sky, suffix=suffix)
                     skytables[j] = []
                     # This deletes a reference to the AD sky object
                     stacked_skies[j] = None
