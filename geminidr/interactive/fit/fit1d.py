@@ -560,7 +560,8 @@ class FittingParametersUI:
 
         Return
         ------
-        bokeh.models.Div : Div component containing the short description.
+        :class:`~bokeh.models.Div`
+            Div component containing the short description.
         """
         return bm.Div(
             text=text,
@@ -1020,16 +1021,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             and "meta" (any additional data)
         fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
                 or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
-            Description of parameters to use for `fit_1d`
-        reinit_params : list of str
-            list of parameter names in config related to reinitializing fit
-            arrays.  These cause the `data_source` function to be run to get
-            the updated coordinates/weights.  Should not be passed if
-            `data_source` is not a function.
-        reinit_extras :
-            Extra parameters to show on the left side that can affect the
-            output of `data_source` but are not part of the primitive
-            configuration. Only relevant if `data_source` is a function.
+            Description of parameters to use for `fit_1d`.  These can be easily generated
+            from teh primitive's parameters with `fit_1D.translate_params(params)`
         modal_message : str
             If set, datapoint calculation is expected to be expensive and a
             'recalculate' button will be shown below the reinit inputs rather
@@ -1047,8 +1040,15 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             List of domains for the inputs
         title : str
             Title for UI (Interactive <Title>)
+        primitive_name : str
+            Name of the primitive this tool is a visualizer for, for displaying in the UI
+        template : str
+            Name of the HTML template to use for the UI
         help_text : str
             HTML help text for popup help, or None to use the default
+        recalc_inputs_above : bool
+            If True, put the inputs for recalculating the data points above the plot horizontally, instead
+            of left of the plot vertically
         ui_params : :class:`~geminidr.interactive.interactive.UIParams`
             Parameter set for user input
         turbo_tabs : bool
@@ -1056,7 +1056,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             the browser. This can speed up the general responsiveness when
             there are many tabs, but introduces a small delay when the user
             switches between tabs.
-        panel_class : class
+        panel_class : Class
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.

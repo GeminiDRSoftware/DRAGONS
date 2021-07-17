@@ -134,10 +134,10 @@ class PrimitiveVisualizer(ABC):
 
         Parameters
         ----------
-        btn : :class:`~Button`
+        btn : :class:`~bokeh.models.Button`
             bokeh Button to listen for disabled
         message : str
-            String messasge to show in the ok/cancel dialog
+            String message to show in the ok/cancel dialog
         callback : function
             Function to call with True/False for the user selection of OK/Cancel
         """

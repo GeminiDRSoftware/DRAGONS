@@ -28,6 +28,17 @@ Controller instances will set this to listen to key presses.  The bokeh server w
 it recieves from the clients.  Everyone else should leave it alone!
 """
 controller = None
+
+
+# This is used to track if we already have a pending
+# action to update the mouse position.  This is used
+# to effect throttling.  When there is a mouse move,
+# an action to respond to the mouse position is triggered
+# in the future and this is set True.  Subsequent mouse
+# moves will see we already have the action pending and
+# do nothing.  Then when the action triggers it takes
+# the current (future) mouse position and sets this back
+# to False.
 _pending_handle_mouse = False
 
 

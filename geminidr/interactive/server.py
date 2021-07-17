@@ -158,6 +158,14 @@ def _bkapp(doc):
 
 
 def _helpapp(doc):
+    """
+    Tornado request handler for showing help for the active visuializer.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        The web page showing the bokeh interface
+    """
     with open(f'{TEMPLATE_PATH}/help.html') as f:
         template = f.read()
 
@@ -174,6 +182,14 @@ def _helpapp(doc):
 
 
 def _shutdown(doc):
+    """
+    Tornado request handler for shutdown requests from the HTML client.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        Document for the webpage the request is coming from (there's only one)
+    """
     user_satisfied = True
     if 'user_satisfied' in doc.session_context.request.arguments:
         user_satisfied = doc.session_context.request.arguments['user_satisfied'][0].decode('utf-8')
@@ -199,6 +215,9 @@ def set_visualizer(visualizer):
 
 
 class DRAGONSStaticHandler(Handler):
+    """
+    Simple Tornado handler to serve static content from the embedded webserver
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._static = '%s/static' % pathlib.Path(__file__).parent.absolute()
