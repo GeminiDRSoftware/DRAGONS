@@ -38,7 +38,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
-from geminidr.interactive.fit.tracing import interactive_trace_apertures
+# from geminidr.interactive.fit.tracing import interactive_trace_apertures
 from geminidr.interactive.fit.wavecal import WavelengthSolutionVisualizer
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
