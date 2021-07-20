@@ -713,9 +713,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                else np.sqrt(at.divide0(1., rpext.variance[r])))
                     return data
 
-                if ad.orig_filename:
-                    filename_info = ad.orig_filename
-                elif ad.filename:
+                if ad.filename:
                     filename_info = ad.filename
                 else:
                     filename_info = ''
