@@ -1034,6 +1034,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         doc.add_root(layout)
 
+    def submit_button_handler(self):
+        """
+        Submit button handler.
+
+        The parent version checks for bad/poor fits, but that's not an issue
+        here, so we just exit by disabling the submit button, which triggers
+        some callbacks.
+        """
+        self.submit_button.disabled = True
+
     def result(self):
         """
         Get the result of the find.
