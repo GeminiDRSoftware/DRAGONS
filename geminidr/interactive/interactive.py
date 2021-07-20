@@ -304,10 +304,15 @@ class PrimitiveVisualizer(ABC):
         self._message_holder.js_on_change('text', callback)
 
         # Add the invisible PreText element to drive message dialogs off
-        # of.  We do this with a do_later so that it will hapen after the
+        # of.  We do this with a do_later so that it will happen after the
         # subclass implementation does all of it's document setup.  So,
         # this widget will be added at the end.
         self.do_later(lambda: doc.add_root(row(self._message_holder, )))
+
+        # and we have to hide it, the css class isn't enough
+        def _hide_message_holder():
+            self._message_holder.visible = False
+        self.do_later(_hide_message_holder)
 
         #################
         # OK/Cancel Setup
