@@ -5,7 +5,7 @@ import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer
+from bokeh.models import Div, Select, Range1d, Spacer, CustomJS
 from bokeh.plotting import figure
 from bokeh import events
 
@@ -706,6 +706,7 @@ class Fit1DPanel:
         self.enable_user_masking = enable_user_masking
         self.xpoint = 'x'
         self.ypoint = 'y'
+        self.p_main = None
 
         # prep params to clean up sigma related inputs for the interface
         # i.e. niter min of 1, etc.
@@ -790,7 +791,6 @@ class Fit1DPanel:
                                       xpoint=self.xpoint, ypoint=self.ypoint,
                                       xlabel=self.xlabel, ylabel=self.ylabel, model=self.model,
                                       enable_user_masking=self.enable_user_masking)
-
         if self.enable_regions:
             self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
             connect_figure_extras(p_main, self.model.band_model)
@@ -815,7 +815,44 @@ class Fit1DPanel:
         if p_supp is not None:
             fig_column.append(p_supp)
 
+        self.p_main = p_main
+
+        # Do a custom padding for the ranges
+        self.reset_view()
+
         return fig_column
+
+    def reset_view(self):
+        """
+        This calculates the x and y ranges for the figure with some custom padding.
+
+        This is used when we initially build the figure, but also as a listener for
+        whenever the data changes.
+        """
+        if not hasattr(self, 'p_main'):
+            # This may be a subclass, p_main is not being stored so nothing to reset
+            return
+
+        x_range = None
+        y_range = None
+        try:
+            xdata = self.model.data.data[self.xpoint]
+            ydata = self.model.data.data[self.ypoint]
+        except (AttributeError, KeyError):
+            pass
+        else:
+            x_min, x_max = min(xdata), max(xdata)
+            if x_min != x_max:
+                x_pad = (x_max - x_min) * 0.1
+                self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
+            y_min, y_max = min(ydata), max(ydata)
+            if y_min != y_max:
+                y_pad = (y_max - y_min) * 0.1
+                self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
+        if x_range is not None:
+            self.p_main.x_range = x_range
+        if y_range is not None:
+            self.p_main.y_range = y_range
 
     def reset_dialog_handler(self, result):
         """
@@ -1022,7 +1059,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
                 or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
             Description of parameters to use for `fit_1d`.  These can be easily generated
-            from teh primitive's parameters with `fit_1D.translate_params(params)`
+            from the primitive's parameters with `fit_1D.translate_params(params)`
         modal_message : str
             If set, datapoint calculation is expected to be expensive and a
             'recalculate' button will be shown below the reinit inputs rather
@@ -1072,6 +1109,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
+
+        # Keep a list of panels for access later
+        self.panels = list()
 
         # If we have a widget driving the modal dialog via it's enable/disable state,
         # store it in this so the recalc knows to re-enable the widget
@@ -1184,6 +1224,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i+1))
                 self.tabs.tabs.append(tab)
             self.fits.append(tui.model)
+            self.panels.append(tui)
 
         self._reinit_params = {k: v for k, v in ui_params.values.items()}
 
@@ -1326,6 +1367,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
                 if self.modal_widget:
                     self.modal_widget.disabled = False
+                for pnl in self.panels:
+                    pnl.reset_view()
 
             self.do_later(rfn)
 
@@ -1415,22 +1458,6 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
     tuple : (Figure, Tabs/Figure/None)
         the main plotting figure and the ratios/residuals plot
     """
-    x_range = None
-    y_range = None
-    try:
-        xdata = model.data.data[xpoint]
-        ydata = model.data.data[ypoint]
-    except (AttributeError, KeyError):
-        pass
-    else:
-        x_min, x_max = min(xdata), max(xdata)
-        if x_min != x_max:
-            x_pad = (x_max - x_min) * 0.1
-            x_range = Range1d(x_min - x_pad, x_max + x_pad * 2)
-        y_min, y_max = min(ydata), max(ydata)
-        if y_min != y_max:
-            y_pad = (y_max - y_min) * 0.1
-            y_range = Range1d(y_min - y_pad, y_max + y_pad)
 
     tools = "pan,wheel_zoom,box_zoom,reset"
     if enable_user_masking:
@@ -1439,7 +1466,7 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
     p_main = figure(plot_width=width, plot_height=height, min_width=400,
                     title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                     tools=tools,
-                    output_backend="webgl", x_range=x_range, y_range=y_range,
+                    output_backend="webgl", x_range=None, y_range=None,
                     min_border_left=80)
     p_main.height_policy = 'fixed'
     p_main.width_policy = 'fit'
