@@ -64,6 +64,7 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
         modal_message="Tracing apertures...",
         ui_params=ui_params,
         turbo_tabs=True,
+        pad_buttons=True
     )
 
     server.interactive_fitter(visualizer)
