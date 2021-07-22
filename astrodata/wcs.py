@@ -21,6 +21,9 @@ FrameMapping = namedtuple("FrameMapping", "cls description")
 frame_mapping = {'WAVE': FrameMapping(cf.SpectralFrame, "Wavelength in vacuo"),
                  'AWAV': FrameMapping(cf.SpectralFrame, "Wavelength in air")}
 
+re_ctype = re.compile("^CTYPE(\d+)$", re.IGNORECASE)
+re_cd = re.compile("^CD(\d+)_\d+$", re.IGNORECASE)
+
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
 #-----------------------------------------------------------------------------
@@ -308,16 +311,16 @@ def read_wcs_from_header(header):
     wcs_info = {}
 
     try:
-        wcs_info['WCSAXES'] = header['WCSAXES']
+        wcsaxes = header['WCSAXES']
     except KeyError:
-        p = re.compile(r'ctype[\d]*', re.IGNORECASE)
-        ctypes = header['CTYPE*']
-        keys = list(ctypes.keys())
-        for key in keys[::-1]:
-            if p.split(key)[-1] != "":
-                keys.remove(key)
-        wcs_info['WCSAXES'] = len(keys)
-    wcsaxes = wcs_info['WCSAXES']
+        wcsaxes = 0
+        for kw in header["CTYPE*"]:
+            if re_ctype.match(kw):
+                wcsaxes = max(wcsaxes, int(re_ctype.match(kw).group(1)))
+        for kw in header["CD*_*"]:
+            if re_cd.match(kw):
+                wcsaxes = max(wcsaxes, int(re_cd.match(kw).group(1)))
+    wcs_info['WCSAXES'] = wcsaxes
     # if not present call get_csystem
     wcs_info['RADESYS'] = header.get('RADESYS', header.get('RADECSYS', 'FK5'))
     wcs_info['VAFACTOR'] = header.get('VAFACTOR', 1)
@@ -335,11 +338,11 @@ def read_wcs_from_header(header):
     crval = []
     cdelt = []
     for i in range(1, wcsaxes + 1):
-        ctype.append(header['CTYPE{0}'.format(i)])
-        cunit.append(header.get('CUNIT{0}'.format(i), None))
-        crpix.append(header.get('CRPIX{0}'.format(i), 0.0))
-        crval.append(header.get('CRVAL{0}'.format(i), 0.0))
-        cdelt.append(header.get('CDELT{0}'.format(i), 1.0))
+        ctype.append(header.get(f'CTYPE{i}', 'LINEAR'))
+        cunit.append(header.get(f'CUNIT{i}', None))
+        crpix.append(header.get(f'CRPIX{i}', 0.0))
+        crval.append(header.get(f'CRVAL{i}', 0.0))
+        cdelt.append(header.get(f'CDELT{i}', 1.0))
 
     has_cd = len(header['CD?_?']) > 0
     cd = np.zeros((wcsaxes, wcsaxes))
@@ -474,6 +477,7 @@ def make_fitswcs_transform(header):
     # The tricky stuff!
     sky_model = fitswcs_image(wcs_info)
     linear_models = fitswcs_linear(wcs_info)
+
     all_models = linear_models
     if sky_model:
         all_models.append(sky_model)
@@ -605,7 +609,7 @@ def fitswcs_linear(header):
             linear_model.meta.update({'input_axes': pixel_axes,
                                       'output_axes': [ax]})
             linear_models.append(linear_model)
-        else:
+        elif len(pixel_axes) > 1:
             raise ValueError(f"Axis {ax} depends on more than one input axis")
 
     return linear_models

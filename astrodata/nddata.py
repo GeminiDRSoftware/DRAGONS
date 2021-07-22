@@ -253,8 +253,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
         slicing_model = reduce(Model.__and__, mods)
         if mapped_axes != list(np.arange(ndim)):
-            mapped_axes = [max(x, 0) for x in mapped_axes]
-            slicing_model = models.Mapping(mapped_axes) | slicing_model
+            slicing_model = models.Mapping(
+                tuple(max(ax, 0) for ax in mapped_axes)) | slicing_model
+            slicing_model.inverse = models.Mapping(
+                tuple(ax for ax in mapped_axes if ax != -1), n_inputs=ndim)
 
         if isinstance(slicing_model, models.Identity) and slicing_model.n_inputs == ndim:
             return self.wcs  # Unchanged!
