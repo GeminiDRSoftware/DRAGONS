@@ -11,13 +11,14 @@ from bokeh import events
 
 from geminidr.interactive import interactive
 from geminidr.interactive.controls import Controller
-from geminidr.interactive.interactive import GIRegionModel, connect_figure_extras, GIRegionListener, \
+from geminidr.interactive.interactive import GIRegionModel, connect_region_model, GIRegionListener, \
     RegionEditor, do_later, TabsTurboInjector, FitQuality
 from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
+# Names to use for masks.  You can change these to change the label that gets displayed in the legend
 SIGMA_MASK_NAME = 'rejected (sigma)'
 USER_MASK_NAME = 'rejected (user)'
 BAND_MASK_NAME = 'excluded'
@@ -34,7 +35,6 @@ class InteractiveModel(ABC):
         (b) the parameters that control the fitting (e.g., sigma-clipping)
         (c) the way the fitting is performed
         (d) the input and output coordinates, mask, and weights
-
     """
 
     def __init__(self):
@@ -83,10 +83,6 @@ class InteractiveModel(ABC):
         Parameters
         ----------
         x
-
-        Returns
-        -------
-
         """
         pass
 
@@ -419,6 +415,23 @@ class InteractiveModel1D(InteractiveModel):
 
 class FittingParametersUI:
     def __init__(self, vis, fit, fitting_parameters):
+        """
+        Class to manage the set of UI controls for the inputs to the fitting model.
+
+        This sets up the controls for sigma rejection, iterations, etc., and manages them.  For
+        instance, unchecking sigma causes the sigma related parameters to be disabled.
+
+        Parameters
+        ----------
+        vis : :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
+            The visualizer related to these inputs
+        fit : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
+            The model information for doing the 1-D fit
+        fitting_parameters : dict
+            The parameters for performing the fit using fit_1D.  These can be generated with
+            :meth:`fit_1D.translate_params(params)` where params are the parameters for the primitive.
+            This will be passed down from the top level :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
+        """
         self.vis = vis
         self.fit = fit
         self.saved_sigma_clip = self.fit.sigma_clip
@@ -495,6 +508,10 @@ class FittingParametersUI:
         self.controls_column = self.build_column()
 
     def enable_disable_sigma_inputs(self):
+        """
+        This updates the state of the sliders depending on whether the sigma
+        clipping checkbox is enabled or not.
+        """
         # enable/disable sliders
         disabled = not self.fit.sigma_clip
         for c in self.niter_slider.children:
@@ -561,7 +578,7 @@ class FittingParametersUI:
         Return
         ------
         :class:`~bokeh.models.Div`
-            Div component containing the short description.
+            :class:`~bokeh.models.Div` component containing the short description.
         """
         return bm.Div(
             text=text,
@@ -573,6 +590,10 @@ class FittingParametersUI:
         )
 
     def reset_ui(self):
+        """
+        Resets all the inputs to their original state.  This can be used by a reset button
+        to undo any changes a user has made to the inputs.
+        """
         self.fitting_parameters = {x: y for x, y in self.fitting_parameters_for_reset.items()}
         for key in ("order", "sigma_upper", "sigma_lower", "niter", "grow"):
             try:
@@ -589,6 +610,14 @@ class FittingParametersUI:
         self.fit.perform_fit()
 
     def get_bokeh_components(self):
+        """
+        Return the bokeh components to be added with all the input widgets.
+
+        Returns
+        -------
+        list : :class:`~bokeh.models.layout.LayoutDOM`
+            List of bokeh components to add to the UI
+        """
         return self.controls_column
 
     def sigma_button_handler(self, attr, old, new):
@@ -625,6 +654,21 @@ class FittingParametersUI:
 
 class InfoPanel:
     def __init__(self, enable_regions, enable_user_masking, extra_masks=None):
+        """
+        Build an informational panel to hold statistics about the fit.
+
+        This shows the user the RMS of the fit to the data.  It also lists masking counts
+        for the various mask types.
+
+        Parameters
+        ----------
+        enable_regions : bool
+            If True, will show region mask counts
+        enable_user_masking : bool
+            If True, will show user mask counts
+        extra_masks : bool
+            If True, will show the extra masks as provided to the visualizer
+        """
         self.component = Div(text='')
         self.enable_regions = enable_regions
         self.enable_user_masking = enable_user_masking
@@ -633,6 +677,14 @@ class InfoPanel:
             self.extra_masks = list()
 
     def model_change_handler(self, model):
+        """
+        Respond to a model change by updating the displayed statistics.
+
+        Parameters
+        ----------
+        model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
+            The model that has changed.
+        """
         rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
         rms = f'<div class="info_panel"><div class="info_header">RMS: </div><div class="info_text">{rms_str}</div>'
         band_count = model.mask.count(BAND_MASK_NAME)
@@ -793,7 +845,7 @@ class Fit1DPanel:
 
         if self.enable_regions:
             self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
-            connect_figure_extras(p_main, self.model.band_model)
+            connect_region_model(p_main, self.model.band_model)
 
         if self.enable_user_masking:
             mask_handlers = (self.mask_button_handler,
@@ -820,6 +872,11 @@ class Fit1DPanel:
     def reset_dialog_handler(self, result):
         """
         Reset fit parameter values.
+
+        Parameters
+        ----------
+        result : bool
+            This is the user response to an ok/cancel confirmation dialog.  If False, we do not reset.
         """
         if result:
             self.fitting_parameters_ui.reset_ui()
@@ -830,7 +887,12 @@ class Fit1DPanel:
 
     def model_change_handler(self, model):
         """
-        If the `~fit` changes, this gets called to evaluate the fit and save the results.
+        If the model changes, this gets called to evaluate the fit and save the results.
+
+        Parameters
+        ----------
+        model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
+            The model that changed.
         """
         model.evaluation.data['model'] = model.evaluate(model.evaluation.data['xlinspace'])
 
@@ -844,8 +906,12 @@ class Fit1DPanel:
 
         Parameters
         ----------
-        stuff : any
-            This is ignored, but the button passes it
+        x : float
+            The pointer x coordinate
+        y : float
+            The pointer y coordinate
+        mult : float
+            The ratio for the X-axis vs Y-axis, so we can calculate "pixel distance"
         """
         indices = self.model.data.selected.indices
         if not indices:
@@ -868,8 +934,12 @@ class Fit1DPanel:
 
         Parameters
         ----------
-        stuff : any
-            This is ignored, but the button passes it
+        x : float
+            The pointer x coordinate
+        y : float
+            The pointer y coordinate
+        mult : float
+            The ratio for the X-axis vs Y-axis, so we can calculate "pixel distance"
         """
         indices = self.model.data.selected.indices
         if not indices:
@@ -899,6 +969,10 @@ class Fit1DPanel:
             X mouse position in pixels inside the canvas.
         y : float
             Y mouse position in pixels inside the canvas.
+        mult : float
+            The ratio of the x axis vs the y axis, for calculating pixel distance
+        action : str
+            The type of masking action being done
         """
         dist = None
         sel = None
@@ -1002,7 +1076,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  I'm only including the widgets in the reinit_panel
         fits: list of InteractiveModel instances, one per (x,y) array
     """
-
     def __init__(self, data_source, fitting_parameters,
                  modal_message=None, modal_button_label=None,
                  tab_name_fmt='{}', xlabel='x', ylabel='y',
@@ -1122,8 +1195,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             # left panel with just the function selector (Chebyshev, etc.)
             self.reinit_panel = None  # column()
 
-        # Grab input coordinates or calculate if we were given a callable
-        # TODO revisit the raging debate on `callable` for Python 3
         if callable(data_source):
             self.reconstruct_points_fn = data_source
             data = data_source(ui_params=ui_params)
@@ -1192,7 +1263,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         Parameters
         ----------
-        param : string
+        param : str
             Parameter name
         """
         for fname in self.ui_params.reinit_params:
@@ -1360,7 +1431,7 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
 
     Parameters
     ----------
-    :fit1d_params: dict
+    fit1d_params : dict
         Dictionary of parameters for the UI and the `fit_1d` fitter, modified in place
     """
     # If niter is 0, set sigma to None and niter to 1
@@ -1458,7 +1529,7 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
         p_resid.height_policy = 'fixed'
         p_resid.width_policy = 'fit'
         p_resid.sizing_mode = 'stretch_width'
-        connect_figure_extras(p_resid, model.band_model)
+        connect_region_model(p_resid, model.band_model)
         # Initalizing this will cause the residuals to be calculated
         model.data.data['residuals'] = np.zeros_like(model.x)
         p_resid.scatter(x=xpoint, y='residuals', source=model.data,
@@ -1474,7 +1545,7 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
         p_ratios.height_policy = 'fixed'
         p_ratios.width_policy = 'fit'
         p_ratios.sizing_mode = 'stretch_width'
-        connect_figure_extras(p_ratios, model.band_model)
+        connect_region_model(p_ratios, model.band_model)
         # Initalizing this will cause the ratios to be calculated
         model.data.data['ratio'] = np.ones_like(model.x)
         p_ratios.scatter(x=xpoint, y='ratio', source=model.data,

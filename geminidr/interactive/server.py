@@ -268,7 +268,6 @@ def start_server():
                         '/help': _helpapp,
                         '/shutdown': _shutdown,
                     },
-                    # unused_session_lifetime=100,  # This didn't help window close detection, but for reference..
                     keep_alive_milliseconds=0,
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],

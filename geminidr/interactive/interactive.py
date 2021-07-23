@@ -1,13 +1,12 @@
 import re
 from abc import ABC, abstractmethod
-from copy import copy
 from enum import Enum, auto
 from functools import cmp_to_key
 
 from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput, PreText)
+                          NumeralTickFormatter, Slider, TextInput, Div, NumericInput, PreText)
 from bokeh import models as bm
 
 from geminidr.interactive import server
@@ -18,6 +17,12 @@ from gempy.library.config import FieldValidationError, Config
 
 # Singleton instance, there is only ever one of these
 from gempy.utils import logutils
+
+
+__all__ = ["FitQuality", "PrimitiveVisualizer", "build_text_slider", "connect_region_model",
+           "GIRegionListener", "GIRegionModel", "RegionEditor", "TabsTurboInjector", "UIParameters",
+           "do_later"]
+
 
 _visualizer = None
 
@@ -729,245 +734,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     return component
 
 
-def build_range_slider(title, location, start, end, step, min_value, max_value, obj=None, location_attr=None,
-                       start_attr=None, end_attr=None, handler=None, throttled=False):
-    """
-    Make a range slider widget to use in the bokeh interface.
-
-    Parameters
-    ----------
-    title : str
-        Title for the slider
-    location : int or float
-        Value for the location
-    start : int or float
-        Value to initially set for start
-    end : int or float
-        Value to initially set for end
-    step : int or float
-        Step size
-    min_value : int or float
-        Minimum slider value, or None defaults to min(start,0)
-    max_value : int or float
-        Maximum slider value, or None defaults to end*2
-    obj : object
-        Instance to modify the attribute of when slider changes
-    start_attr : str
-        Name of attribute in obj to be set with the new start value
-    end_attr : str
-        Name of the attribute on obj to be set with the new end value
-    handler : method
-        Function to call after setting the attribute
-    throttled : bool
-        Set to `True` to limit handler calls to when the slider is released (default False)
-
-    Returns
-    -------
-        :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
-    """
-    # We track of this entry is working on int values or float.  This affects the
-    # behavior and type conversion throughout the rest of the slider logic
-    is_float = True
-    if isinstance(start, int) and isinstance(end, int):
-        is_float = False
-
-    slider_start = min(start, min_value) if min_value else min(start, 0)
-    slider_end = max(end, max_value) if max_value else max(10, end*2)
-    slider = RangeSlider(start=slider_start, end=slider_end, value=(start, end), step=step, title=title)
-    slider.width = 192
-
-    start_text_input = TextInput()
-    start_text_input.width = 64
-    start_text_input.value = str(start)
-    location_text_input = TextInput()
-    location_text_input.width = 64
-    location_text_input.value = str(location)
-    end_text_input = TextInput()
-    end_text_input.width = 64
-    end_text_input.value = str(end)
-    component = row(slider, start_text_input, location_text_input, end_text_input)
-
-    def _input_check(val):
-        """
-        Check the validity of the input value, or reject
-
-        Parameters
-        ----------
-        val : float or int
-
-        Returns
-        -------
-            bool : True of the input is valid, False if not.  This may also be the case if a float is passed
-            where int is expected
-        """
-        if ((not is_float) and isinstance(val[0], int) and isinstance(val[1], int)) \
-                or (is_float and isinstance(val[0], float) and isinstance(val[1], float)):
-            return True
-        try:
-            if is_float:
-                if float(val[0]) > float(val[1]):
-                    return False
-            else:
-                if int(val[0]) > int(val[1]):
-                    return False
-            if (slider.start > float(val[0]) > slider.end) or (slider.start > float(val[1]) > slider.end):
-                # out of view
-                return False
-            return True
-        except ValueError:
-            return False
-
-    def update_slider(attrib, old, new):
-        """
-        This performs an :meth:`~geminidr.interactive.interactive.build_range_slider._input_check`
-        on the new value.  If it passes, it is converted and accepted into the slider.  If it
-        is a bad value, the change is rolled back and we use the `old` value.
-
-        Parameters
-        ----------
-        attrib : ignored
-        old : tuple of int or float
-            old value pair from the range slider
-        new : tuple of int or float or str
-            new value pair from the range slider/text fields.  This may be passes as a tuple of str from the text inputs
-        """
-        # Update the slider with a new (start, end) value
-        if not _input_check(new):
-            if _input_check(old):
-                start_text_input.value = str(old[0])
-                end_text_input.value = str(old[1])
-            return
-        if old != new:
-            if is_float:
-                start_val = float(new[0])
-                end_val = float(new[1])
-            else:
-                start_val = int(new[0])
-                end_val = int(new[1])
-            if start_val > end_val:
-                start_val, end_val = end_val, start_val
-            if end_val > slider.end and not max_value:
-                slider.end = end_val
-            if 0 <= start_val < slider.start and min_value is None:
-                slider.start = start_val
-            if slider.start <= start_val <= end_val <= slider.end:
-                slider.value = (start_val, end_val)
-
-    def update_text_input(attrib, old, new):
-        # Update the text inputs with the new (start, end) value for the slider
-        if new != old:
-            start_text_input.value = str(new[0])
-            end_text_input.value = str(new[1])
-
-    def handle_start_value(attrib, old, new):
-        if new == old:
-            return
-        # called by the start text input.  We pull the end value and delegate to handle_value
-        try:
-            if slider.start <= float(new) <= slider.end:
-                if float(new) > float(location_text_input.value):
-                    location_text_input.value = new
-                handle_value(attrib, (old, location_text_input.value, end_text_input.value),
-                             [new, location_text_input.value, end_text_input.value])
-                return
-        except ValueError as ve:
-            pass
-        start_text_input.value = old
-
-    def handle_location_value(attrib, old, new):
-        if new == old:
-            return
-        # called by the location text input.  We pull the end value and delegate to handle_value
-        try:
-            if slider.start <= float(new) <= slider.end:
-                handle_value(attrib, (slider.value[0], old, slider.value[1]),
-                             [slider.value[0], new, str(slider.value[1])])
-                return
-        except ValueError:
-            pass
-        location_text_input.value = old
-
-    def handle_end_value(attrib, old, new):
-        if new == old:
-            return
-        # called by the end text input.  We pull the start value and delegate to handle_value
-        try:
-            if slider.start <= float(new) <= slider.end:
-                if float(new) < float(location_text_input.value):
-                    location_text_input.value = new
-                handle_value(attrib, (start_text_input.value, location_text_input.value, old),
-                             [start_text_input.value, location_text_input.value, new])
-                return
-        except ValueError:
-            pass
-        end_text_input.value = old
-
-    def handle_value(attrib, old, new):
-        if new == old:
-            return
-        # Handle a change in value.  Since this has a value that is
-        # (start, end) we always end up working on both values.  This
-        # is even though typically the user will only be changing one
-        # or the other.
-        if obj and start_attr and end_attr:
-            if is_float:
-                start_numeric_value = float(new[0])
-                location_numeric_value = float(new[1])
-                end_numeric_value = float(new[2])
-            else:
-                start_numeric_value = int(new[0])
-                location_numeric_value = int(new[1])
-                end_numeric_value = int(new[2])
-            try:
-                if start_numeric_value > end_numeric_value:
-                    start_numeric_value, end_numeric_value = end_numeric_value, start_numeric_value
-                    new[2], new[0] = new[0], new[2]
-                if location_numeric_value > end_numeric_value:
-                    location_numeric_value = end_numeric_value
-                    location_text_input.remove_on_change("value", handle_location_value)
-                    location_text_input.value = str(location_numeric_value)
-                    location_text_input.on_change("value", handle_location_value)
-                if location_numeric_value < start_numeric_value:
-                    location_numeric_value = start_numeric_value
-                    location_text_input.remove_on_change("value", handle_location_value)
-                    location_text_input.value = str(location_numeric_value)
-                    location_text_input.on_change("value", handle_location_value)
-                obj.__setattr__(start_attr, start_numeric_value)
-                obj.__setattr__(location_attr, location_numeric_value)
-                obj.__setattr__(end_attr, end_numeric_value)
-            except FieldValidationError:
-                # reset textbox
-                start_text_input.remove_on_change("value", handle_start_value)
-                start_text_input.value = str(old[0])
-                start_text_input.on_change("value", handle_start_value)
-                end_text_input.remove_on_change("value", handle_end_value)
-                end_text_input.value = str(old[2])
-                end_text_input.on_change("value", handle_end_value)
-                location_text_input.remove_on_change("value", handle_location_value)
-                location_text_input.value = str(old[1])
-                location_text_input.on_change("value", handle_location_value)
-            else:
-                update_slider(attrib, (old[0], old[2]), (new[0], new[2]))
-        if handler:
-            handler()
-
-    if throttled:
-        # Since here the text_input calls handle_value, we don't
-        # have to call it from the slider as it will happen as
-        # a side-effect of update_text_input
-        slider.on_change("value_throttled", update_text_input)
-    else:
-        slider.on_change("value", update_text_input)
-        # since slider is listening to value, this next line will cause the slider
-        # to call the handle_value method and we don't need to do so explicitly
-    start_text_input.on_change("value", handle_start_value)
-    location_text_input.on_change("value", handle_location_value)
-    end_text_input.on_change("value", handle_end_value)
-
-    return component
-
-
-def connect_figure_extras(fig, region_model):
+def connect_region_model(fig, region_model):
     """
     Connect a figure to an aperture and region model for rendering.
 
@@ -981,14 +748,12 @@ def connect_figure_extras(fig, region_model):
     ----------
     fig : :class:`~bokeh.plotting.Figure`
         bokeh Figure to add visualizations too
-    aperture_model : :class:`~geminidr.interactive.interactive.GIApertureModel`
-        Aperture model to add view for
     region_model : :class:`~geminidr.interactive.interactive.GIRegionModel`
         Band model to add view for
     """
     # If we have regions or apertures to show, show them
     if region_model:
-        regions = GIRegionView(fig, region_model)
+        GIRegionView(fig, region_model)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
     # apertures and regions will not update properly after the figure is visible.
@@ -1300,6 +1065,8 @@ class RegionHolder:
 
     We need to know if the start/stop values are a specific value or `None`
     which is open ended left/right.
+
+    Not used outside the `interactive` module.
     """
     def __init__(self, annotation, start, stop):
         self.annotation = annotation
@@ -1310,6 +1077,8 @@ class RegionHolder:
 class GIRegionView(GIRegionListener):
     """
     View for the set of regions to show then in a figure.
+
+    Not used outside the `interactive` module.
     """
     def __init__(self, fig, model):
         """
@@ -1667,11 +1436,21 @@ class UIParameters:
             self.titles[fname] = title
 
     def update_values(self, **kwargs):
+        """
+        Update values in the config from the supplied arguments
+        """
         for k, v in kwargs.items():
             self.values[k] = v
 
     def __getattr__(self, attr):
-        """Provides the same interface to get parameter values as Config"""
+        """
+        Provides the same interface to get parameter values as Config
+
+        Parameters
+        ----------
+        attr : str
+            Name of config parameter to return the value of
+        """
         try:
             return self.values[attr]
         except:
