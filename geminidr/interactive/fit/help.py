@@ -1,4 +1,10 @@
 
+
+__all__ = ["PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT", "PLOT_TOOLS_HELP_SUBTEXT", "REGION_EDITING_HELP_SUBTEXT",
+           "CALCULATE_SENSITIVITY_HELP_TEXT", "DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT",
+           "NORMALIZE_FLAT_HELP_TEXT", "DEFAULT_HELP", "TRACE_APERTURES", "SKY_CORRECT_FROM_SLIT_HELP_TEXT"]
+
+
 def _plot_tool(name, icon):
     return '<img width=16 height=16 src="dragons/static/help/' + icon + '.png"/><span><b>' + name + '</b></span><br/>'
 

@@ -87,9 +87,8 @@ def trace_apertures_data_provider(ext, ui_params):
 
     Returns
     -------
-    list : pairs of (x, y) for each aperture center, where x is the
-    spectral position of the knots, and y is the spacial position of the
-    knots.
+    dict : dictionary of x and y coordinates.  Each is an array with a list of values for each aperture center.
+        The x coordinates have the spectral position of the knots, and y is the spacial position of the knots.
     """
     data = {"x": [], "y": []}
     dispaxis = 2 - ext.dispersion_axis()  # python sense
