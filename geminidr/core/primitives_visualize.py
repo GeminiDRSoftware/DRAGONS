@@ -81,7 +81,7 @@ class Visualize(PrimitivesBASE):
         extname = params['extname']
         tile = params['tile']
         zscale = params['zscale']
-        overlays = params['overlay']
+        overlays = params['debug_overlay']
         frame = params['frame'] if params['frame'] else 1
         overlay_index = 0
         lnd = _localNumDisplay()
