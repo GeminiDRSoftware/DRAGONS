@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+
+import astrodata
+import gemini_instruments
+
+from gempy.adlibrary import plotting
+
+def parse_args(command_line_args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('infile', type=str, nargs=1, help='input file')
+    parser.add_argument('aperture', type=int, nargs=1, help='aperture number')
+    parser.add_argument('--bokeh', default=False, action='store_true',
+                        help='use bokeh and a browser instead of matplotlib')
+    parser.add_argument('--verbose', '-v', default=False, action='store_true',
+                        help='verbose')
+    parser.add_argument('--debug', default=False, action='store_true',
+                        help='debug')
+
+    args = parser.parse_args(command_line_args)
+
+    if args.debug:
+        print(args)
+
+    return args
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    args = parse_args(argv)
+
+    ad = astrodata.open(args.infile[0])
+    if args.bokeh:
+        plotting.splot_bokeh(ad, args.aperture[0])
+    else:
+        plotting.splot_matplotlib(ad, args.aperture[0])
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -114,6 +114,11 @@ class CalibDB(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
+            # todo: If RELEASE for all calibration is still not set to "today"
+            #       when we get to use this version for Ops, add a reset of
+            #       that keyword like we did in release/3.0.x.  Otherwise
+            #       SCALeS and FIRE won't be able to see new calibrations.
+
             self.caldb.store_calibration(ad, caltype=caltype)
         return adinputs
 

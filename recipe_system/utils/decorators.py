@@ -43,6 +43,7 @@ E.g.,::
 """
 import gc
 import inspect
+import json
 import traceback
 from contextlib import suppress
 from copy import copy, deepcopy
@@ -161,8 +162,8 @@ def _get_provenance_inputs(adinputs):
             provenance = ad.PROVENANCE.copy()
         else:
             provenance = []
-        if hasattr(ad, 'PROVENANCE_HISTORY'):
-            provenance_history = ad.PROVENANCE_HISTORY.copy()
+        if hasattr(ad, 'PROVHISTORY'):
+            provenance_history = ad.PROVHISTORY.copy()
         else:
             provenance_history = []
 
@@ -250,10 +251,9 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
                 clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
-                if hasattr(ad, 'PROVENANCE_HISTORY'):
-                    clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
+                clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
             else:
-                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                if hasattr(ad, 'PROVHISTORY'):
                     clone_hist = False
                 else:
                     clone_hist = True
@@ -333,7 +333,10 @@ def parameter_override(fn):
                     provenance_inputs = _get_provenance_inputs(adinputs)
 
                 fnargs = dict(config.items())
-                stringified_args = "%s" % fnargs
+                stringified_args = json.dumps({k: v for k, v in fnargs.items()
+                                               if not k.startswith('debug_')},
+                                              default=lambda v: v.filename if hasattr(v, 'filename')
+                                                                else '<not serializable>')
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
 
                 if toplevel:

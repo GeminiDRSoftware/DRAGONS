@@ -80,7 +80,7 @@ class Visualize(PrimitivesBASE):
         extname = params['extname']
         tile = params['tile']
         zscale = params['zscale']
-        overlays = params['overlay']
+        overlays = params['debug_overlay']
         frame = params['frame'] if params['frame'] else 1
         overlay_index = 0
         lnd = _localNumDisplay()
@@ -102,7 +102,8 @@ class Visualize(PrimitivesBASE):
             if extname != 'SCI':
                 threshold = None
                 remove_bias = False
-            elif threshold == 'None':
+            elif threshold == 'None' or threshold == 'none':
+                #cannot use .lower above since threshold can be a float
                 threshold = None
             elif threshold == 'auto':
                 mosaicked = ((ad.phu.get(self.timestamp_keys["mosaicDetectors"])
@@ -128,7 +129,7 @@ class Visualize(PrimitivesBASE):
                                  "performed")
                 else:
                     try:
-                        bias_level = get_bias_level(ad)
+                        bias_level = get_bias_level(ad, estimate=False)
                     except NotImplementedError:
                         # For non-GMOS instruments
                         bias_level = None

@@ -9,7 +9,7 @@ Example 1-A: Extended source - Using the "reduce" command
 *********************************************************
 In this example we will reduce a NIRI observation of an extended source using
 the "|reduce|" command that is operated directly from the unix shell.  Just
-open a terminal to get started.
+open a terminal and load the DRAGONS conda environment to get started.
 
 This observation is a simple dither on target, a galaxy, with offset to sky.
 
@@ -75,9 +75,6 @@ remove the file on disk.)  (See the "|caldb|" documentation for more details.)
 
 Create file lists
 =================
-.. |astrouser_link| raw:: html
-
-   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
 
 This data set contains science and calibration frames. For some programs, it
 could have different observed targets and different exposure times depending
@@ -89,7 +86,7 @@ have to do it.  DRAGONS provides tools to help you with that.
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
 send the filenames to a text file that can then be fed to "|reduce|".  (See the
-|astrouser_link| for information about Astrodata.)
+|astrodatauser| for information about Astrodata.)
 
 First, navigate to the ``playground`` directory in the unpacked data package.
 

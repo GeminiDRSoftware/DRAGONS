@@ -33,6 +33,7 @@ from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 import astrodata
 import geminidr.interactive.server
 from astrodata import AstroData
+from astrodata.provenance import add_provenance
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -49,6 +50,7 @@ from gempy.library.config import RangeField, Config
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.md5 import md5sum
 
 from . import parameters_spect
 from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
@@ -375,6 +377,7 @@ class Spect(PrimitivesBASE):
                 # Compute values that are counts / (exptime * flux_density * bandpass)
                 for w0, dw, fluxdens in zip(spec_table[wavecol_name].quantity,
                                             spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
                     data, mask, variance = spectrum.signal(
                         region, interpolate=DQ.bad_pixel)
@@ -984,6 +987,8 @@ class Spect(PrimitivesBASE):
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad_out)
+            if arc.path:
+                add_provenance(ad_out, arc.filename, md5sum(arc.path) or "", self.myself())
 
         return adoutputs
 
@@ -1160,7 +1165,7 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
-    def extract1DSpectra(self, adinputs=None, **params):
+    def extractSpectra(self, adinputs=None, **params):
         """
         Extracts one or more 1D spectra from a 2D spectral image, according to
         the contents of the `.APERTURE` table.
@@ -1369,7 +1374,7 @@ class Spect(PrimitivesBASE):
         # Only return extracted spectra
         return ad_extracted
 
-    def findSourceApertures(self, adinputs=None, **params):
+    def findApertures(self, adinputs=None, **params):
         """
         Finds sources in 2D spectral images and store them in an APERTURE table
         for each extension. Each table will, then, be used in later primitives
@@ -2188,7 +2193,10 @@ class Spect(PrimitivesBASE):
 
         # Check that all ad objects are either 1D or 2D
         ndim = {len(ext.shape) for ad in adinputs for ext in ad}
-        if len(ndim) != 1:
+        if len(ndim) == 0:
+            log.warning('Input list empty. Doing nothing.')
+            return adinputs
+        elif len(ndim) != 1:
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()
 
@@ -2434,7 +2442,7 @@ class Spect(PrimitivesBASE):
         --------
         :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
         :meth:`~geminidr.core.primitives_spect.Spect.distortionCorrect`,
-        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`,
+        :meth:`~geminidr.core.primitives_spect.Spect.findApertures`,
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -2707,7 +2715,7 @@ class Spect(PrimitivesBASE):
 
         See Also
         --------
-        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
+        :meth:`~geminidr.core.primitives_spect.Spect.findApertures`
 
         """
 
@@ -3127,6 +3135,7 @@ class Spect(PrimitivesBASE):
 
 
 # -----------------------------------------------------------------------------
+
 def _extract_model_info(ext):
     if len(ext.shape) == 1:
         dispaxis = 0
