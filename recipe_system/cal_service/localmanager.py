@@ -70,8 +70,9 @@ FileData = namedtuple('FileData', 'name path')
 
 
 class LocalManagerError(Exception):
-    def __init__(self, error_type, *args, **kw):
-        super().__init__(*args, **kw)
+    def __init__(self, error_type, message, *args, **kw):
+        super().__init__(message, *args, **kw)
+        self.message = message
         self.error_type = error_type
 
 
