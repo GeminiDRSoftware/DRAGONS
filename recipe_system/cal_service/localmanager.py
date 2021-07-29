@@ -319,10 +319,8 @@ class LocalManager:
 
         try:
             query = self.session.query(File.name, DiskFile.path).join(DiskFile)
-            retval = list()
             for res in query.order_by(File.name):
-                retval.append(FileData(res[0], res[1]))
-            return retval
+                yield FileData(res[0], res[1])
         except OperationalError:
             message = "There was an error when trying to read from the database."
             raise LocalManagerError(ERROR_CANT_READ, message)
