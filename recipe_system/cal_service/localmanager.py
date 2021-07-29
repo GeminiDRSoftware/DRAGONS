@@ -65,6 +65,7 @@ ERROR_CANT_WIPE = 0
 ERROR_CANT_CREATE = 1
 ERROR_CANT_READ = 2
 ERROR_DIDNT_FIND = 3
+ERROR_MISSING_DATABASE_FILE = 4
 
 FileData = namedtuple('FileData', 'name path')
 
@@ -74,6 +75,32 @@ class LocalManagerError(Exception):
         super().__init__(message, *args, **kw)
         self.message = message
         self.error_type = error_type
+
+
+def ensure_db_file(func):
+    """
+    Decorator for functions in :class:`~recipe_system.cal_service.localmanager.LocalManager`
+    that we want to require the database file exist for.  If we don't check, SQLAlchemy
+    will just silently create the DB file.
+
+    Parameters
+    ----------
+    func : function
+        Function to decorate
+
+    Returns
+    -------
+    function : decorator call
+    """
+    def wrapper_ensure_db_file(self, *args, **kwargs):
+        if not os.path.exists(self.path):
+            raise LocalManagerError(ERROR_MISSING_DATABASE_FILE,
+                                    f"Unable to find calibration database file {self.path}")
+        if os.path.isdir(self.path):
+            raise LocalManagerError(ERROR_MISSING_DATABASE_FILE,
+                                    f"Calibration database file {self.path} is a directory.  It should be a file")
+        func(self, *args, **kwargs)
+    return wrapper_ensure_db_file
 
 
 class LocalManager:
@@ -91,22 +118,30 @@ class LocalManager:
         are affected by the change. Then it sets a new database session object
         for this instance.
         """
-
         fsc.storage_root = abspath(dirname(self._db_path))
         fsc.fits_dbname = basename(self._db_path)
         fsc.db_path = self._db_path
         fsc.fits_database = 'sqlite:///' + fsc.db_path
 
-        # The reloading is kludgy, but Fits Storage was not designed to change
-        # databases on the fly, and we're reusing its infrastructure.
-        #
-        # This will have to do for the time being
-        reload(orm)
-        reload(file)
-        reload(preview)
-        reload(diskfile)
-        reload(createtables)
-        reload(dbtools)
+        try:
+            from gemini_obs_db import db_config as dbc
+
+            dbc.storage_root = abspath(dirname(self._db_path))
+            dbc.fits_dbname = basename(self._db_path)
+            dbc.db_path = self._db_path
+            dbc.database_url = 'sqlite:///' + fsc.db_path
+        except:
+            # handle older versions of GeminiCalMgr, which don't have or need dbc settings
+            # The reloading is kludgy, but Fits Storage was not designed to change
+            # databases on the fly, and we're reusing its infrastructure.
+            #
+            # This will have to do for the time being
+            reload(orm)
+            reload(file)
+            reload(preview)
+            reload(diskfile)
+            reload(createtables)
+            reload(dbtools)
 
         self.session = orm.sessionfactory()
 
@@ -146,6 +181,7 @@ class LocalManager:
             message += "Please, check your path and permissions."
             raise LocalManagerError(ERROR_CANT_CREATE, message)
 
+    @ensure_db_file
     def remove_file(self, path):
         """
         Removes a file from the database. Note that only the filename
@@ -159,6 +195,7 @@ class LocalManager:
         """
         dbtools.remove_file(self.session, path)
 
+    @ensure_db_file
     def ingest_file(self, path):
         """Registers a file into the database
 
@@ -203,6 +240,7 @@ class LocalManager:
                 if log:
                     log("Ingested {}/{}".format(root, fname))
 
+    @ensure_db_file
     def calibration_search(self, rq, howmany=1, fullResult=False):
         """
         Performs a search in the database using the requested criteria.
@@ -272,9 +310,9 @@ class LocalManager:
             # Turn from list of tuples into two lists
             return tuple(map(list, list(zip(*ret_value))))
 
-        return (None, "Could not find a proper calibration in the local database")
+        return None, "Could not find a proper calibration in the local database"
 
-
+    @ensure_db_file
     def list_files(self):
         File, DiskFile = file.File, diskfile.DiskFile
 
@@ -285,6 +323,7 @@ class LocalManager:
         except OperationalError:
             message = "There was an error when trying to read from the database."
             raise LocalManagerError(ERROR_CANT_READ, message)
+
 
 def handle_returns(dv):
     return dv
