@@ -93,13 +93,14 @@ def ensure_db_file(func):
     function : decorator call
     """
     def wrapper_ensure_db_file(self, *args, **kwargs):
-        if not os.path.exists(self.path):
-            raise LocalManagerError(ERROR_MISSING_DATABASE_FILE,
-                                    f"Unable to find calibration database file {self.path}")
-        if os.path.isdir(self.path):
-            raise LocalManagerError(ERROR_MISSING_DATABASE_FILE,
-                                    f"Calibration database file {self.path} is a directory.  It should be a file")
-        func(self, *args, **kwargs)
+        if self.path != ":memory:":
+            if not os.path.exists(self.path):
+                raise LocalManagerError(ERROR_MISSING_DATABASE_FILE,
+                                        f"Unable to find calibration database file {self.path}")
+            if os.path.isdir(self.path):
+                raise LocalManagerError(ERROR_MISSING_DATABASE_FILE,
+                                        f"Calibration database file {self.path} is a directory.  It should be a file")
+        return func(self, *args, **kwargs)
     return wrapper_ensure_db_file
 
 
@@ -177,7 +178,7 @@ class LocalManager:
             createtables.create_tables(self.session)
             self.session.commit()
         except OperationalError:
-            message = "There was an error when trying to create the database. "
+            message = f"There was an error when trying to create the database {fsc.db_path}. "
             message += "Please, check your path and permissions."
             raise LocalManagerError(ERROR_CANT_CREATE, message)
 
