@@ -78,7 +78,7 @@ class LocalManagerError(Exception):
 
 def ensure_db_file(func):
     """
-    Decorator for functions in :class:`~recipe_system.cal_service.localmanager.LocalManager
+    Decorator for functions in :class:`~recipe_system.cal_service.localmanager.LocalManager`
     that we want to require the database file exist for.  If we don't check, SQLAlchemy
     will just silently create the DB file.
 
