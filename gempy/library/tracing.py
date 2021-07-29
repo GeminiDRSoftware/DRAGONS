@@ -1097,7 +1097,6 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
 
 def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
-def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
                    sizing_method, threshold, section, use_snr):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
