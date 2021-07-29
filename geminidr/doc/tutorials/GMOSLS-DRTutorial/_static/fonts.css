@@ -1,0 +1,36 @@
+.red {
+  color: red;
+}
+
+.blue {
+  color: blue;
+}
+
+.green {
+  color: green;
+}
+
+.yellow {
+  color: yellow;
+}
+
+.gray {
+  color: gray;
+}
+
+.lightgray {
+  color: lightgray;
+}
+
+.small {
+  font-size: 80%;
+}
+
+.large {
+  font-size: 120%;
+}
+
+.bolditalic {
+  font-weight: bold;
+  font-style: italic;
+}

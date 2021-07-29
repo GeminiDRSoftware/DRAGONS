@@ -485,6 +485,7 @@ class GMOSSpect(Spect, GMOS):
 
     def _get_arc_linelist(self, waves=None):
         use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
+
         use_second_order = False
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)

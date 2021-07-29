@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Regression tests for GMOS LS `extract1DSpectra`. These tests run on real data to
+Regression tests for GMOS LS `extractSpectra`. These tests run on real data to
 ensure that the output is always the same. Further investigation is needed to
 check if these outputs are scientifically relevant.
 
@@ -44,7 +44,7 @@ test_datasets = [
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir):
     """
-    Regression test for the :func:`~geminidr.gmos.GMOSSpect.extract1DSpectra`
+    Regression test for the :func:`~geminidr.gmos.GMOSSpect.extractSpectra`
     primitive.
 
     Parameters
@@ -66,7 +66,7 @@ def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir
 
         p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        p.extract1DSpectra(method="standard", width=None, grow=10)
+        p.extractSpectra(method="standard", width=None, grow=10)
         extracted_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(extracted_ad.filename)
