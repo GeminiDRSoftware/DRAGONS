@@ -107,9 +107,9 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
     args_arr.append(args)
 
     dtype = ("S128", "S%d" % colsize, "S28", "S28")
-    ad.append(Table([primitive_arr, args_arr, timestamp_start_arr, timestamp_stop_arr],
-                    names=('primitive', 'args', 'timestamp_start', 'timestamp_stop'),
-                    dtype=dtype), name="PROVHISTORY")
+    ad.PROVHISTORY = Table([primitive_arr, args_arr, timestamp_start_arr, timestamp_stop_arr],
+                           names=('primitive', 'args', 'timestamp_start', 'timestamp_stop'),
+                           dtype=dtype)
 
 
 def clone_provenance(provenance_data, ad):
