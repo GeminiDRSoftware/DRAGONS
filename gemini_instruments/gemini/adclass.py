@@ -1940,17 +1940,20 @@ class AstroDataGemini(AstroData):
         if wcs is None:
             return None
 
+        ra = dec = None
         coords = {name: None for name in wcs.output_frame.axes_names}
         for m in wcs.forward_transform:
             try:
-                coords['lon'] = m.lon.value
-                coords['lat'] = m.lat.value
+                ra = m.lon.value
+                dec = m.lat.value
             except AttributeError:
                 pass
 
-        # TODO: This isn't in old Gemini descriptors. Should it be?
-        #if 'NON_SIDEREAL' in self.tags:
-        #    ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+        if 'NON_SIDEREAL' in self.tags and ra is not None and dec is not None:
+            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+
+        coords["lon"] = ra
+        coords["lat"] = dec
         return coords
 
     # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
