@@ -78,7 +78,7 @@ class Bookkeeping(PrimitivesBASE):
         decorator then pushes into the stream.
         """
         log = self.log
-        log.fullinfo('Clearing stream {}'.format(params.get('instream', 'main')))
+        log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
         return []
 
     def flushPixels(self, adinputs=None, force=False):
