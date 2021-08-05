@@ -66,7 +66,7 @@ class Bookkeeping(PrimitivesBASE):
         to empty lists.
         """
         log = self.log
-        for stream in self.streams.keys():
+        for stream in self.streams:
             if stream != 'main':
                 log.fullinfo('Clearing stream {}'.format(stream))
                 self.streams[stream] = []
@@ -78,7 +78,7 @@ class Bookkeeping(PrimitivesBASE):
         decorator then pushes into the stream.
         """
         log = self.log
-        log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
+        log.fullinfo('Clearing stream {}'.format(params.get('instream', 'main')))
         return []
 
     def flushPixels(self, adinputs=None, force=False):

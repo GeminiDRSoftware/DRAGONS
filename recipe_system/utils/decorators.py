@@ -308,8 +308,9 @@ def parameter_override(fn):
         params.update(kwargs)
 
         # config doesn't know about streams or adinputs
-        instream = params.get('instream', params.get('stream', 'main'))
-        outstream = params.get('outstream', params.get('stream', 'main'))
+        stream = params.get('stream', 'main')
+        instream = params.get('instream', stream)
+        outstream = params.get('outstream', stream)
         adinputs = params.get('adinputs')
         for k in ('adinputs', 'stream', 'instream', 'outstream'):
             with suppress(KeyError):
@@ -317,6 +318,13 @@ def parameter_override(fn):
         # Can update config now it only has parameters it knows about
         config.update(**params)
         config.validate()
+        fnargs = dict(config.items())
+
+        # We can pass the input and output streams to the primitive if it
+        # can accept them. This assists logging in the Bookkeeping primitives
+        if inspect.getfullargspec(fn).varkw is not None:
+            fnargs.update({'instream': instream, 'outstream': outstream})
+
 
         if len(args) == 0 and adinputs is None:
             # Use appropriate stream input/output
@@ -332,7 +340,6 @@ def parameter_override(fn):
                 if toplevel:
                     provenance_inputs = _get_provenance_inputs(adinputs)
 
-                fnargs = dict(config.items())
                 stringified_args = "%s" % fnargs
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
 
@@ -355,7 +362,7 @@ def parameter_override(fn):
                 if toplevel:
                     provenance_inputs = _get_provenance_inputs(adinputs)
 
-                ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                ret_value = fn(pobj, adinputs=adinputs, **fnargs)
 
                 if toplevel:
                     _capture_provenance(provenance_inputs, ret_value,
