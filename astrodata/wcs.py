@@ -198,10 +198,10 @@ def gwcs_to_fits(ndd, hdr=None):
 
     affine = calculate_affine_matrices(transform, ndd.shape)
     # Convert to x-first order
-    affine_matrix = affine.matrix[::-1, ::-1]
+    affine_matrix = np.flip(affine.matrix)
     # Require an inverse to write out
     if np.linalg.det(affine_matrix) == 0:
-        affine_matrix[-1, -1] = 1.
+        affine_matrix[(-1,) * len(affine.offset)] = 1.
     wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[i, j]
                      for j, _ in enumerate(world_axes)
                      for i, _ in enumerate(world_axes)})
