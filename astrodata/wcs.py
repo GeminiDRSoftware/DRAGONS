@@ -249,7 +249,8 @@ def model_is_affine(model):
                                                 'Shift', 'Ident', 'Mappi',
                                                 'Const')
 
-def calculate_affine_matrices(func, shape):
+
+def calculate_affine_matrices(func, shape, origin=None):
     """
     Compute the matrix and offset necessary of an affine transform that
     represents the supplied function. This is done by computing the
@@ -264,6 +265,9 @@ def calculate_affine_matrices(func, shape):
         function that maps input->output coordinates
     shape : sequence
         shape to use for fiducial points
+    origin : sequence/None
+        if a sequence, then use this as the opposite vertex (it must be
+        the same length as "shape")
 
     Returns
     -------
@@ -276,7 +280,12 @@ def calculate_affine_matrices(func, shape):
         ndim = len(func(*shape))  # handle increase in number of axes
     except TypeError:
         ndim = 1
-    halfsize = [0.5 * length for length in shape] + [1.] * (ndim - indim)
+    if origin is None:
+        halfsize = [0.5 * length for length in shape] + [1.] * (ndim - indim)
+    else:
+        halfsize = [0.5 * (len1 + len2)
+                    for len1, len2 in zip(origin, shape)] + [1.] * (ndim - indim)
+
     points = np.array([halfsize] * (2 * ndim + 1)).T
     points[:, 1:ndim + 1] += np.eye(ndim) * points[:, 0]
     points[:, ndim + 1:] -= np.eye(ndim) * points[:, 0]
