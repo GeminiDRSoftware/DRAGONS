@@ -376,7 +376,14 @@ class CalibDB(PrimitivesBASE):
 
         for ad in adinputs:
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCSCI")
-            ad.update_filename(suffix=suffix, strip=True)
+            if suffix:
+                ad.update_filename(suffix=suffix, strip=True)
+            else:  # None.  Keep the one it has now.  (eg. 'stack' for imaging)
+                if '_' in ad.filename:
+                    suffix = '_'+ad.filename.split('_')[-1].split('.')[0]
+                else:
+                    suffix = ''
+
             ad.phu.set('PROCMODE', self.mode)
 
             if self.mode != 'qa' and self.upload and 'science' in self.upload:
