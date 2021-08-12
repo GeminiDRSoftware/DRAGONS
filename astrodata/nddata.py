@@ -16,6 +16,7 @@ from astropy.nddata import (NDArithmeticMixin, NDData, NDSlicingMixin,
                             VarianceUncertainty)
 from astropy.wcs import WCS
 from gwcs.wcs import WCS as gWCS
+from .wcs import remove_axis_from_frame
 
 INTEGER_TYPES = (int, np.integer)
 
@@ -261,6 +262,11 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         if isinstance(slicing_model, models.Identity) and slicing_model.n_inputs == ndim:
             return self.wcs  # Unchanged!
         new_wcs = deepcopy(self.wcs)
+        input_frame = new_wcs.input_frame
+        for axis, mapped_axis in reversed(list(enumerate(mapped_axes))):
+            if mapped_axis == -1:
+                input_frame = remove_axis_from_frame(input_frame, axis)
+        new_wcs.pipeline[0].frame = input_frame
         new_wcs.insert_transform(new_wcs.input_frame, slicing_model, after=True)
         return new_wcs
 

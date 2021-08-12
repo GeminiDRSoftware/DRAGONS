@@ -11,15 +11,8 @@ from astrodata.testing import download_from_archive
 
 @pytest.fixture(scope='module')
 def F2_IMAGE():
-    """
-    No.    Name      Ver    Type      Cards   Dimensions   Format
-      0  PRIMARY       1 PrimaryHDU     289   ()
-      1                1 ImageHDU       144   (2048, 2048)   float32
-      2                2 ImageHDU       144   (2048, 2048)   float32
-      3                3 ImageHDU       144   (2048, 2048)   float32
-      4                4 ImageHDU       144   (2048, 2048)   float32
-    """
-    return download_from_archive("S20150609S0023.fits")
+    """Any F2 image with CD3_3=1"""
+    return download_from_archive("S20130717S0365.fits")
 
 
 @pytest.mark.parametrize("angle", [0, 20, 67, -35])
@@ -38,7 +31,7 @@ def test_calculate_affine_matrices(angle, scale, xoffset, yoffset):
 
 
 @pytest.mark.dragons_remote_data
-def test_reading_and_writing(F2_IMAGE):
+def test_reading_and_writing_sliced_image(F2_IMAGE):
     ad = astrodata.open(F2_IMAGE)
     result = ad[0].wcs(100, 100, 0)
     ad[0].reset(ad[0].nddata[0])
@@ -49,3 +42,73 @@ def test_reading_and_writing(F2_IMAGE):
     ad2.write("test.fits", overwrite=True)
     ad2 = astrodata.open("test.fits")
     assert_allclose(ad2[0].wcs(100, 100), result)
+
+
+def test_remove_axis_from_model_1():
+    """A simple test that removes one of three &-linked models"""
+    model = models.Shift(0) & models.Shift(1) & models.Shift(2)
+    for axis in (0, 1, 2):
+        new_model, input_axis = adwcs.remove_axis_from_model(model, axis)
+        assert input_axis == axis
+        assert new_model.n_submodels == 2
+        assert new_model.offset_0 + new_model.offset_1 == 3 - axis
+
+
+def test_remove_axis_from_model_2():
+    """A test with |-chained models"""
+    model = ((models.Shift(0) & models.Shift(1) & models.Shift(2)) |
+             (models.Scale(2) & models.Rotation2D(90)))
+    new_model, input_axis = adwcs.remove_axis_from_model(model, 0)
+    assert input_axis == 0
+    assert new_model.n_submodels == 3
+    assert new_model.offset_0 == 1
+    assert new_model.offset_1 == 2
+    assert new_model.angle_2 == 90
+
+
+def test_remove_axis_from_model_3():
+    """A test with a Mapping"""
+    model1 = models.Mapping((1, 2, 0))
+    model2 = models.Shift(0) & models.Shift(1) & models.Shift(2)
+    new_model, input_axis = adwcs.remove_axis_from_model(model1 | model2, 1)
+    assert input_axis == 2
+    assert new_model.n_submodels == 3
+    assert_allclose(new_model(0, 10), (10, 2))
+    new_model, input_axis = adwcs.remove_axis_from_model(model2 | model1, 1)
+    assert input_axis == 2
+    assert new_model.n_submodels == 3
+    assert_allclose(new_model(0, 10), (11, 0))
+
+
+def test_remove_axis_from_model_4():
+    """A test with a Mapping that creates a new axis"""
+    model1 = models.Shift(0) & models.Shift(1) & models.Shift(2)
+    model = models.Mapping((1, 0, 0)) | model1
+    new_model, input_axis = adwcs.remove_axis_from_model(model, 1)
+    assert input_axis is None
+    assert new_model.n_submodels == 2
+    assert_allclose(new_model(0, 10), (10, 2))
+
+    # Check that we can identify and remove the "Identity"-like residual Mapping
+    model = models.Mapping((0, 1, 0)) | model1
+    new_model, input_axis = adwcs.remove_axis_from_model(model, 2)
+    assert input_axis is None
+    assert new_model.n_submodels == 2
+    assert_allclose(new_model(0, 10), (0, 11))
+
+
+def test_remove_axis_from_model_5():
+    """A test with fix_inputs"""
+    model1 = models.Shift(0) & models.Shift(1) & models.Shift(2)
+    model = models.fix_inputs(model1, {1: 6})
+    new_model, input_axis = adwcs.remove_axis_from_model(model, 1)
+    assert input_axis is None
+    assert new_model.n_submodels == 2
+    assert_allclose(new_model(0, 10), (0, 12))
+
+    new_model, input_axis = adwcs.remove_axis_from_model(model, 2)
+    assert input_axis == 2
+    assert new_model.n_submodels == 3
+    assert_allclose(new_model(0), (0, 7))
+
+
