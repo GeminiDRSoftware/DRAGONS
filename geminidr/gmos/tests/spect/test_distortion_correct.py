@@ -286,8 +286,8 @@ def create_inputs_recipe():
         p.prepare()
         p.addDQ(static_bpm=None, user_bpm=None, add_illum_mask=False)
         p.addVAR(read_noise=True, poisson_noise=False)
-        p.overscanCorrect(function="spline", high_reject=3., low_reject=3.,
-                          nbiascontam=0, niterate=2, order=None)
+        p.overscanCorrect(function="spline3", lsigma=3., hsigma=3.,
+                          nbiascontam=0, niter=2, order=None)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
         p.mosaicDetectors()
@@ -296,7 +296,7 @@ def create_inputs_recipe():
 
         os.chdir("inputs")
         processed_ad = p.writeOutputs().pop()
-        os.chdir("../../")
+        os.chdir("../")
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(processed_ad.filename))
 
