@@ -319,22 +319,23 @@ def read_wcs_from_header(header):
     """
     wcs_info = {}
 
+    # NAXIS=0 if we're reading from a PHU
+    naxis = header.get('NAXIS') or max(int(k[5:]) for k in header['CRPIX*'].keys())
+    wcs_info['NAXIS'] = naxis
     try:
         wcsaxes = header['WCSAXES']
     except KeyError:
         wcsaxes = 0
         for kw in header["CTYPE*"]:
             if re_ctype.match(kw):
-                wcsaxes = max(wcsaxes, int(re_ctype.match(kw).group(1)))
+                wcsaxes = max(wcsaxes, int(re_ctype.match(kw).group(1)), naxis)
         for kw in header["CD*_*"]:
             if re_cd.match(kw):
-                wcsaxes = max(wcsaxes, int(re_cd.match(kw).group(1)))
+                wcsaxes = max(wcsaxes, int(re_cd.match(kw).group(1)), naxis)
     wcs_info['WCSAXES'] = wcsaxes
     # if not present call get_csystem
     wcs_info['RADESYS'] = header.get('RADESYS', header.get('RADECSYS', 'FK5'))
     wcs_info['VAFACTOR'] = header.get('VAFACTOR', 1)
-    # NAXIS=0 if we're reading from a PHU
-    wcs_info['NAXIS'] = header.get('NAXIS') or max(int(k[5:]) for k in header['CRPIX*'].keys())
     # date keyword?
     # wcs_info['DATEOBS'] = header.get('DATE-OBS', 'DATEOBS')
     wcs_info['EQUINOX'] = header.get("EQUINOX", None)
@@ -362,6 +363,17 @@ def read_wcs_from_header(header):
             else:
                 cd[i - 1, j - 1] = cdelt[i - 1] * header.get('PC{0}_{1}'.format(i, j),
                                                              1 if i == j else 0)
+
+    # Hack to deal with non-FITS-compliant data where one axis is ignored
+    unspecified_pixel_axes = [axis for axis, unused in
+                              enumerate(np.all(cd == 0, axis=1)) if unused]
+    if unspecified_pixel_axes:
+        unused_world_axes = [axis for axis, unused in
+                             enumerate(np.all(cd == 0, axis=0)) if unused]
+        unused_world_axes += list(range(wcsaxes, wcsaxes+len(unspecified_pixel_axes)))
+        for pixel_axis, world_axis in zip(unspecified_pixel_axes, unused_world_axes):
+            cd[world_axis, pixel_axis] = 1.0
+
     wcs_info['CTYPE'] = ctype
     wcs_info['CUNIT'] = cunit
     wcs_info['CRPIX'] = crpix
