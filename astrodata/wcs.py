@@ -190,7 +190,7 @@ def gwcs_to_fits(ndd, hdr=None):
             wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
             wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
         else:  # Just something
-            wcs_dict[f'CRVAL{i}'] = 0
+            wcs_dict[f'CRVAL{i}'] = wcs_center[i-1]
 
     # Flag if we can't construct a perfect CD matrix
     if not model_is_affine(transform):
@@ -201,9 +201,9 @@ def gwcs_to_fits(ndd, hdr=None):
     affine_matrix = np.flip(affine.matrix)
     # Require an inverse to write out
     if np.linalg.det(affine_matrix) == 0:
-        affine_matrix[(-1,) * len(affine.offset)] = 1.
+        affine_matrix[-1, -1] = 1.
     wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[i, j]
-                     for j, _ in enumerate(world_axes)
+                     for j, _ in enumerate(ndd.shape)
                      for i, _ in enumerate(world_axes)})
     # Don't overwrite CTYPEi keywords we've already created
     wcs_dict.update({f'CTYPE{i}': axis.upper()[:8]
@@ -496,7 +496,7 @@ def make_fitswcs_transform(header):
     input_axes = [ax for m in all_models for ax in m.meta['input_axes']]
     output_axes = [ax for m in all_models for ax in m.meta['output_axes']]
     if input_axes != list(range(len(input_axes))):
-        input_mapping = models.Mapping(input_axes)
+        input_mapping = models.Mapping([max(x, 0) for x in input_axes])
         transforms.append(input_mapping)
 
     transforms.append(functools.reduce(core._model_oper('&'), all_models))
@@ -617,8 +617,14 @@ def fitswcs_linear(header):
             linear_model.outputs = (wcs_info['CTYPE'][ax],)
             linear_model.meta.update({'input_axes': pixel_axes,
                                       'output_axes': [ax]})
-            linear_models.append(linear_model)
         elif len(pixel_axes) > 1:
             raise ValueError(f"Axis {ax} depends on more than one input axis")
+        else:
+            linear_model = models.Const1D(crval[ax])
+            linear_model.inverse = models.Identity(1)
+            linear_model.meta.update({'input_axes': [-1],
+                                      'output_axes': [ax]})
+
+        linear_models.append(linear_model)
 
     return linear_models
