@@ -395,7 +395,7 @@ class UnivariateSplineWithOutlierRemoval:
                     if debug:
                         print('mask after growth=', mask.astype(int))
 
-            if order > (~mask).sum() - k:
+            if order is not None and order > (~mask).sum() - k:
                 log.warning("Too many points rejected - "
                             f"exiting after {iteration} iterations")
                 break
