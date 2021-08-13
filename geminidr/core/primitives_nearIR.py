@@ -209,8 +209,18 @@ class NearIR(PrimitivesBASE):
             a warning)
         """
         if params["remove_first"]:
-            adinputs = self.sortInputs(adinputs, descriptor="ut_datetime")
-            adinputs = self.rejectInputs(adinputs, at_start=1)
+            if len(adinputs):
+                self.log.stdinfo("Removing earliest frame by timestamp.")
+                try:
+                    remove_ad = None
+                    for ad in adinputs:
+                        if remove_ad is None or getattr(ad, "ut_datetime") < remove_ad.ut_datetime:
+                            remove_ad = ad
+                    adinputs = [ad for ad in adinputs if ad != remove_ad]
+                except AttributeError:
+                    self.log.warning("ut_datetime missing in inputs, unable to determine first frame.")
+            else:
+                self.log.stdinfo("No frames, nothing to remove.")
         else:
             self.log.warning("The first frame is not being removed: "
                              "data quality may suffer")
