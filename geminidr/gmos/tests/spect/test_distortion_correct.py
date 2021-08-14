@@ -22,7 +22,7 @@ from recipe_system.testing import ref_ad_factory
 
 # Test parameters --------------------------------------------------------------
 associated_calibrations = {
-    "N20100115S0312.fits": {              # B600:0.500 EEV
+    "N20100115S0312.fits": {              # GN B600:0.500 EEV
         'bias': ["N20100113S0137.fits",
                  "N20100113S0138.fits",
                  "N20100113S0139.fits",
@@ -31,14 +31,21 @@ associated_calibrations = {
         'flat': ["N20100115S0311.fits"],
         'arcs': ["N20100115S0346.fits"],
     },
+    "S20200116S0104.fits": {              # GS R400:0.850 HAM CS
+        'bias': ["S20200116S0425.fits",
+                 "S20200116S0426.fits",
+                 "S20200116S0427.fits",
+                 "S20200116S0428.fits",
+                 "S20200116S0429.fits",],
+        'flat': ["S20200116S0103.fits"],
+        'arcs': ["S20200116S0357.fits"],
+    },
 }
 sci_datasets = [key.replace('.fits', '_QECorrected.fits')
                 for key in associated_calibrations]
-arc_datasets = [cals['arcs'][0].replace('.fits', '_distortionDetermined.fits')
+arc_datasets = [cals['arcs'][0].replace('.fits', '_arc.fits')
                 for cals in associated_calibrations.values()]
 datasets = arc_datasets + sci_datasets
-# files = [fname for caldict in associated_calibrations.values() 
-#          for flist in caldict.values() for fname in flist]
 
 
 fixed_test_parameters_for_determine_distortion = {
