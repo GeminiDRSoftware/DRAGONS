@@ -40,8 +40,8 @@ def test_remove_first_frame():
     ad_in = make_ads([mar, feb, jan])
     ad_out = _p.removeFirstFrame(ad_in)
     assert len(ad_out) == 2
-    assert ad_out[0] == ad_in[1]
-    assert ad_out[1] == ad_in[0]
+    assert ad_out[0] == ad_in[0]
+    assert ad_out[1] == ad_in[1]
 
     # jan in middle
     _p = primitives_nearIR.NearIR([])
@@ -65,8 +65,8 @@ def test_remove_first_frame():
     ad_in = make_ads([feb, jan, jan, mar])
     ad_out = _p.removeFirstFrame(ad_in)
     assert len(ad_out) == 3
-    assert ad_out[0] == ad_in[1]
-    assert ad_out[1] == ad_in[0]
+    assert ad_out[0] == ad_in[0]
+    assert ad_out[1] == ad_in[2]
     assert ad_out[2] == ad_in[3]
 
 
