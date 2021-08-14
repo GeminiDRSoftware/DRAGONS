@@ -28,7 +28,7 @@ re_cd = re.compile("^CD(\d+)_\d+$", re.IGNORECASE)
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
 #-----------------------------------------------------------------------------
-def pixel_frame(naxes):
+def pixel_frame(naxes, name="pixels"):
     """
     Make a CoordinateFrame for pixels
 
@@ -43,7 +43,7 @@ def pixel_frame(naxes):
     """
     axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
     return cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
-                              axes_order=tuple(range(naxes)), name="pixels",
+                              axes_order=tuple(range(naxes)), name=name,
                               axes_names=axes_names, unit=[u.pix] * naxes)
 
 
@@ -678,7 +678,7 @@ def remove_axis_from_frame(frame, axis):
 
     if not isinstance(frame, cf.CompositeFrame):
         if frame.name == "pixels" or frame.unit == (u.pix,) * frame.naxes:
-            return pixel_frame(frame.naxes - 1)
+            return pixel_frame(frame.naxes - 1, name=frame.name)
         else:
             raise TypeError("Frame must be a CompositeFrame or pixel frame")
 
@@ -762,6 +762,7 @@ def remove_axis_from_model(model, axis):
             fixed_inputs = model.right.copy()
             if input_axis in fixed_inputs:
                 fixed_inputs.pop(input_axis)
+                input_axis = None
             if fixed_inputs:
                 if input_axis is not None:
                     fixed_inputs = {(ax if ax < input_axis else ax-1): value
@@ -810,7 +811,7 @@ def remove_unused_world_axis(ext):
     axis = output_axis
     new_pipeline = []
     for step in reversed(ext.wcs.pipeline):
-        frame, transform = step
+        frame, transform = step.frame, step.transform
         if axis < frame.naxes:
             frame = remove_axis_from_frame(frame, axis)
         if transform is not None:

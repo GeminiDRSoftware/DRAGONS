@@ -86,7 +86,7 @@ def test_remove_axis_from_model_4():
     model = models.Mapping((1, 0, 0)) | model1
     new_model, input_axis = adwcs.remove_axis_from_model(model, 1)
     assert input_axis is None
-    assert new_model.n_submodels == 2
+    assert new_model.n_submodels == 3
     assert_allclose(new_model(0, 10), (10, 2))
 
     # Check that we can identify and remove the "Identity"-like residual Mapping
