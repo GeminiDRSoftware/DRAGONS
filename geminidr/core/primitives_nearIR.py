@@ -214,7 +214,7 @@ class NearIR(PrimitivesBASE):
                 try:
                     remove_ad = None
                     for ad in adinputs:
-                        if remove_ad is None or getattr(ad, "ut_datetime")() < getattr(remove_ad, "ut_datetime")():
+                        if remove_ad is None or ad.ut_datetime() < remove_ad.ut_datetime():
                             remove_ad = ad
                     adinputs = [ad for ad in adinputs if ad != remove_ad]
                 except AttributeError:
