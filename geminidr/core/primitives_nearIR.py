@@ -10,13 +10,13 @@ from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from . import parameters_nearIR
+from . import parameters_nearIR, Bookkeeping
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
 @parameter_override
-class NearIR(PrimitivesBASE):
+class NearIR(Bookkeeping):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
@@ -209,8 +209,11 @@ class NearIR(PrimitivesBASE):
             a warning)
         """
         if params["remove_first"]:
-            adinputs = self.sortInputs(adinputs, descriptor="ut_datetime")
-            adinputs = self.rejectInputs(adinputs, at_start=1)
+            if len(adinputs):
+                remove_ad = self.sortInputs(adinputs, descriptor="ut_datetime")[0]
+                adinputs = [ad for ad in adinputs if ad != remove_ad]
+            else:
+                self.log.stdinfo("No frames, nothing to remove.")
         else:
             self.log.warning("The first frame is not being removed: "
                              "data quality may suffer")
