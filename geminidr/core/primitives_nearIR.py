@@ -212,10 +212,7 @@ class NearIR(PrimitivesBASE):
             if len(adinputs):
                 self.log.stdinfo("Removing earliest frame by timestamp.")
                 try:
-                    remove_ad = None
-                    for ad in adinputs:
-                        if remove_ad is None or ad.ut_datetime() < remove_ad.ut_datetime():
-                            remove_ad = ad
+                    remove_ad = self.sortInputs(adinputs, descriptor="ut_datetime")[0]
                     adinputs = [ad for ad in adinputs if ad != remove_ad]
                 except AttributeError:
                     self.log.warning("ut_datetime missing in inputs, unable to determine first frame.")
