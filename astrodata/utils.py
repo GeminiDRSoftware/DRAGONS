@@ -279,11 +279,13 @@ class Section(tuple):
                                     str(self.__dict__[axis.replace("1", "2")])])
                           for axis in self._axis_names[::2]]) + "]")
 
-    def asslice(self):
-        """Return the Section object as a slice/list of slices"""
-        return tuple(slice(self.__dict__[axis],
-                           self.__dict__[axis.replace("1", "2")])
-                     for axis in reversed(self._axis_names[::2]))
+    def asslice(self, add_dims=0):
+        """Return the Section object as a slice/list of slices.
+        Higher dimensionality can be achieved with the add_dims parameter."""
+        return ((slice(None),) * add_dims +
+                tuple(slice(self.__dict__[axis],
+                            self.__dict__[axis.replace("1", "2")])
+                      for axis in reversed(self._axis_names[::2])))
 
     def contains(self, section):
         """Return True if the supplied section is entirely within self"""

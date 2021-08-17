@@ -703,19 +703,17 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # dictionary passed in here.
                 def reconstruct_points(ui_params=None):
                     r = max(0, ui_params.values['row'] - 1)
-                    all_coords = []
+                    data = {"x": [], "y": [], "weights": []}
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
                         masked_data = np.ma.masked_array(rpext.data[r],
                                                          mask=None if rpext.mask is None else rpext.mask[r])
-                        if rpext.variance is None:
-                            weights = None
-                        else:
-                            weights = np.sqrt(at.divide0(1., rpext.variance[r]))
-                        all_coords.append([rppixels, masked_data, weights])
-                    return all_coords
-                if ad.orig_filename:
-                    filename_info = ad.orig_filename
-                elif ad.filename:
+                        data["x"].append(rppixels)
+                        data["y"].append(masked_data)
+                        data["weights"].append(None if rpext.variance is None
+                                               else np.sqrt(at.divide0(1., rpext.variance[r])))
+                    return data
+
+                if ad.filename:
                     filename_info = ad.filename
                 else:
                     filename_info = ''

@@ -242,6 +242,15 @@ class UnivariateSplineWithOutlierRemoval:
 
         log = logutils.get_logger(__name__)
 
+        if x.size == 0:  # bail out now
+            log.warning("No data sent to spline fitter")
+            spline = BSpline(np.r_[(0,) * 4, (1,) * 4],
+                             np.r_[(0.,) * 4, (0.,) * 4], 3)
+            spline.fit_info = {"rank": 0}
+            spline.mask = False
+            spline.data = np.zeros_like(y)
+            return spline
+
         if niter is None:
             niter = 100  # really should converge by this point
 
@@ -307,7 +316,7 @@ class UnivariateSplineWithOutlierRemoval:
         xunique = x
         sort_indices = np.argsort(xunique)
 
-        if (~orig_mask).sum() <= k:
+        if (~orig_mask).sum() <= k + 1:
             log.warning("Too few unmasked points. Unmasking all data.")
             orig_mask[:] = False
         if order is not None:
@@ -415,7 +424,7 @@ class UnivariateSplineWithOutlierRemoval:
         # Attach the mask and model (may be useful)
         spline.mask = full_mask
         spline.data = spline_y
-        spline.fit_info = {"rank": rank + 1}  # for consistency with astropy.fitting
+        spline.fit_info = {"rank": rank}
         return spline
 
 

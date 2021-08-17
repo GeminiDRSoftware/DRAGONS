@@ -47,11 +47,13 @@ class adjustWCSToReferenceConfig(config.Config):
 class calculateSensitivityConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
+    in_vacuo = config.Field("Are spectrophotometric data wavelengths measured "
+                            "in vacuo?", bool, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
     debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
                                   bool, False)
-    regions = config.Field("Sample regions", str, None, optional=True,
+    regions = config.Field("Wavelength sample regions (nm)", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
@@ -89,7 +91,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
-                                           min=300., max=25000., optional=True)
+                                           min=300., max=5000., optional=True)
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
@@ -401,6 +403,7 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     regions = config.Field("Sample regions", str, None, optional=True)
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
+    interactive = config.Field("Run primitive interactively?", bool, False)
 
     def setDefaults(self):
         self.order = 5

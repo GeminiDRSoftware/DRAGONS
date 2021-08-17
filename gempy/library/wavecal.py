@@ -332,7 +332,7 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
             actual_cenwave = model(0.5 * (npix - 1))
             model |= models.Shift(-actual_cenwave)
             if dispersion:
-                actual_dispersion = np.diff(model([0, npix - 1])) / (npix - 1)
+                actual_dispersion = np.diff(model([0, npix - 1]))[0] / (npix - 1)
                 model |= models.Scale(dispersion / actual_dispersion)
             model |= models.Shift(actual_cenwave if central_wavelength is None
                                   else central_wavelength)
@@ -345,14 +345,15 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
 
 def create_interactive_inputs(ad, ui_params=None, p=None,
                               linelist=None, bad_bits=0):
-    all_fits = []
+    data = {"x": [], "y": [], "meta": []}
     for ext in ad:
-        data, fit1d, _ = get_automated_fit(
+        input_data, fit1d, _ = get_automated_fit(
             ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits)
         # peak locations and line wavelengths of matched peaks/lines
-        all_fits.append([fit1d.points[~fit1d.mask], fit1d.image[~fit1d.mask],
-                         None, data])
-    return all_fits
+        data["x"].append(fit1d.points[~fit1d.mask])
+        data["y"].append(fit1d.image[~fit1d.mask])
+        data["meta"].append(input_data)
+    return data
 
 
 def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
@@ -381,7 +382,6 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     acceptable_fit : bool
         whether this fit is likely to be good
     """
-
     input_data = get_all_input_data(
         ext, p, ui_params, linelist=linelist, bad_bits=bad_bits)
     spectrum = input_data["spectrum"]
@@ -472,8 +472,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
 
     waves = m_init([0, 0.5 * (data.size - 1), data.size - 1])
     dw0 = (waves[2] - waves[0]) / (data.size - 1)
-    log.stdinfo("Wavelengths at start, middle, end, and dispersion:"
-                f"\n{waves} {dw0:.4f}")
+    log.stdinfo("Wavelengths at start, middle, end (nm), and dispersion "
+                f"(nm/pixel):\n{waves} {dw0:.4f}")
 
     # Get list of arc lines (probably from a text file dependent on the
     # input spectrum, so a private method of the primitivesClass). If a
@@ -693,7 +693,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
                 fits_to_do.append((p_hi, arc_line, dw))
         dc0 = 5 * abs(dw)
-
     return matches
 
 
@@ -747,7 +746,9 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
-                    ref_weights=new_ref_weights, matches=matches, popsize=30, mutation=1.0)
+                    ref_weights=new_ref_weights, matches=matches, popsize=30,
+                    mutation=(0.5,1.0), workers=-1, updating='deferred',
+                    polish=False)
     m_this.linear = True
     return m_this
 

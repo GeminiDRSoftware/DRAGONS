@@ -47,6 +47,20 @@ div.scrollable {
   overflow-y: scroll;
 }
 
+div.info_header {
+    font-size: 16px;
+    font-weight: bold;
+    float: left;
+    padding-right: 16px;
+}
+
+div.info_text {
+    font-size: 16px;
+    float: left;
+    text-align: right;
+    padding-right: 16px;
+}
+
 /**
  * This element holds the tab area
  */

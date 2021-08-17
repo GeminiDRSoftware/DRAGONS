@@ -16,9 +16,11 @@ inactive state.
 """
 from abc import ABC, abstractmethod
 
-from bokeh.events import PointEvent, SelectionGeometry, Tap
+from bokeh.events import PointEvent, SelectionGeometry, Tap, MouseEnter, MouseLeave
 
 __all__ = ["controller", "Controller", "Handler"]
+
+from bokeh.models import CustomJS
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -26,6 +28,17 @@ Controller instances will set this to listen to key presses.  The bokeh server w
 it recieves from the clients.  Everyone else should leave it alone!
 """
 controller = None
+
+
+# This is used to track if we already have a pending
+# action to update the mouse position.  This is used
+# to effect throttling.  When there is a mouse move,
+# an action to respond to the mouse position is triggered
+# in the future and this is set True.  Subsequent mouse
+# moves will see we already have the action pending and
+# do nothing.  Then when the action triggers it takes
+# the current (future) mouse position and sets this back
+# to False.
 _pending_handle_mouse = False
 
 
@@ -48,8 +61,8 @@ class Controller(object):
     :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True,
-                 domain=None, handlers=None):
+    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None,
+                 domain=None, handlers=None, helpintrotext=None):
         """
         Create a controller to manage the given aperture and region models on
         the given GIFigure.
@@ -67,25 +80,29 @@ class Controller(object):
         mask_handlers : None or tuple of {2,3} functions
             The first two functions handle mask/unmask commands, the third (optional)
             function handles 'P' point mask requests.
-        showing_residuals : bool
-            Indicates if there is a residual plot or not, so we can modify the
-            shown help text accordingly.
         domain : tuple of 2 numbers, or None
             The domain of the data being handled, used for region editing to constrain the values
         handlers : list of `~geminidr.interactive.controls.Handler`
             List of handlers for key presses that are always active, not tied to a task
+        helpintrotext : str
+            HTML to show at the top of the controller help (gray text block), or None for a default message.
         """
+
+        fig.js_on_event(MouseEnter, CustomJS(code='window.controller_keys_enabled = true;'))
+        fig.js_on_event(MouseLeave, CustomJS(code='window.controller_keys_enabled = false;'))
 
         # set the class for the help_text div so we can have a common style
         help_text.css_classes.append('controller_div')
 
-        self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
 
         self.helpmaskingtext = ''
-        self.helpintrotext = "While the mouse is over the upper plot, " \
-                             "choose from the following commands:<br/><br/>\n" if showing_residuals \
-            else "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+
+        if helpintrotext is not None:
+            self.helpintrotext = f"{helpintrotext}<br/><br/>\n"
+        else:
+            self.helpintrotext = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+
         self.helptooltext = ''
         self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
@@ -121,7 +138,7 @@ class Controller(object):
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        if aperture_model or region_model:
+        if aperture_model or region_model or mask_handlers or handlers:
             fig.on_event('mousemove', self.on_mouse_move)
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
@@ -160,7 +177,10 @@ class Controller(object):
                 "<b>U</b> - Unmask selected/closest<br/></br>")
 
         if self.handlers.keys() - ['m', 'u']:
-            self.helpmaskingtext += '<b>Other Commands</b><br/>'
+            if 'm' in self.handlers.keys():
+                self.helpmaskingtext += '<b>Other Commands</b><br/>'
+            else:
+                self.helpmaskingtext += '<b>Commands</b><br/>'
             for k, v in self.handlers.items():
                 if k not in ['u', 'm']:
                     self.helpmaskingtext += f"<b>{k.upper()}</b> - {v.description}<br/>"
@@ -182,7 +202,7 @@ class Controller(object):
         if text is not None:
             ht = self.helpintrotext + self.helpmaskingtext + text
         else:
-            if self.tasks or self.enable_user_masking:
+            if self.tasks or self.handlers or self.enable_user_masking:
                 # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
                 ht = self.helpintrotext + self.helpmaskingtext
                 if len(self.tasks) == 1:
