@@ -3,6 +3,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from astropy.modeling import models
+from gwcs import coordinate_frames as cf
 
 import astrodata
 from astrodata import wcs as adwcs
@@ -44,7 +45,7 @@ def test_reading_and_writing_sliced_image(F2_IMAGE):
     assert_allclose(ad2[0].wcs(100, 100), result)
 
 
-def test_remove_axis_from_model_1():
+def test_remove_axis_from_model():
     """A simple test that removes one of three &-linked models"""
     model = models.Shift(0) & models.Shift(1) & models.Shift(2)
     for axis in (0, 1, 2):
@@ -112,3 +113,19 @@ def test_remove_axis_from_model_5():
     assert_allclose(new_model(0), (0, 7))
 
 
+def test_remove_unused_world_axis(F2_IMAGE):
+    """A test with an intermediate frame"""
+    ad = astrodata.open(F2_IMAGE)
+    result = ad[0].wcs(1000, 1000, 0)
+    new_frame = cf.Frame2D(name="intermediate")
+    new_model = models.Shift(100) & models.Shift(200) & models.Identity(1)
+    ad[0].wcs.insert_frame(ad[0].wcs.input_frame,
+                           new_model, new_frame)
+    ad[0].reset(ad[0].nddata[0])
+    new_result = ad[0].wcs(900, 800)
+    assert_allclose(new_result, result)
+    adwcs.remove_unused_world_axis(ad[0])
+    new_result = ad[0].wcs(900, 800)
+    assert_allclose(new_result, result[:2])
+    for frame in ad[0].wcs.available_frames:
+        assert getattr(ad[0].wcs, frame).naxes == 2

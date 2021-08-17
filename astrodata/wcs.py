@@ -692,7 +692,9 @@ def remove_axis_from_frame(frame, axis):
             new_frames.append(deepcopy(f))
             f._axes_order = tuple(x if x<axis else x-1 for x in f.axes_order)
     if len(new_frames) == 1:
-        return new_frames[0]
+        ret_frame = deepcopy(new_frames[0])
+        ret_frame.name = frame.name
+        return ret_frame
     elif len(new_frames) > 1:
         return cf.CompositeFrame(new_frames, name=frame.name)
     raise ValueError("No frames left!")
