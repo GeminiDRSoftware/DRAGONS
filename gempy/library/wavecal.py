@@ -941,5 +941,6 @@ def save_fit_as_pdf(data, peaks, arc_lines, filename):
                 horizontalalignment='center', rotation=90, fontdict={'size': 8})
     fig.set_size_inches(17, 11)
     plt.savefig(filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
+    plt.close()  # KL: otherwise the plot can pop up in subsequent plt.show()
     plt.ion()
 

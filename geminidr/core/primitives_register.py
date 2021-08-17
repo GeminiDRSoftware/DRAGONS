@@ -137,6 +137,9 @@ class Register(PrimitivesBASE):
 
         adoutputs = [adref]
 
+        if method is None:
+            return adinputs
+
         for ad in adinputs[1:]:
             msg = ""
             if method == "sources":

@@ -90,6 +90,8 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                             "local": "weighted by strength relative to local peaks"},
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
+    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
+                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=5000., optional=True)
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
@@ -114,7 +116,7 @@ class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
 
-class extract1DSpectraConfig(config.Config):
+class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
     method = config.ChoiceField("Extraction method", str,
                                 allowed={"standard": "no weighting",
@@ -148,7 +150,7 @@ def check_section(value):
                                  "greater than start pixel number")
     return True
 
-class findSourceAperturesConfig(config.Config):
+class findAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
     max_apertures = config.RangeField("Maximum number of sources to find",
                                       int, None, min=1, optional=True)
@@ -433,7 +435,6 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     def setDefaults(self):
         del self.function
         self.order = 2
-
 
 
 class write1DSpectraConfig(config.Config):

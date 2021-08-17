@@ -38,3 +38,7 @@
 .. |atfile| raw:: html
 
     <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>
+
+.. |astrodatauser| raw:: html
+
+   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>

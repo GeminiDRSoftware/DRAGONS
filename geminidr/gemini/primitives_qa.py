@@ -406,7 +406,7 @@ class QA(PrimitivesBASE):
                     circles = [(x, y, 16) for x, y in zip(measurement["x"], measurement["y"])]
                     iq_overlays.append(circles)
 
-                self.display([ad], overlay=tuple(iq_overlays) if iq_overlays else None,
+                self.display([ad], debug_overlay=tuple(iq_overlays) if iq_overlays else None,
                              frame=frame, **display_params)
                 frame += 1 if display_params["tile"] else len(ad)
                 if any(ov is not None for ov in iq_overlays):

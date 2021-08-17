@@ -4,6 +4,7 @@ from geminidr.core import parameters_standardize
 from gempy.library import config
 from astrodata import AstroData
 from geminidr.core import parameters_generic
+from geminidr.core import parameters_stack
 
 
 def flat_order_check(value):
@@ -65,3 +66,7 @@ class slitIllumCorrectConfig(parameters_generic.calRequirementConfig):
                                   (str, AstroData), None, optional=True, single=True)
     suffix = config.Field("Filename suffix",
                           str, "_illumCorrected", optional=True)
+
+class stackFramesConfig(parameters_stack.stackFramesConfig):
+    def setDefaults(self):
+        self.reject_method = "varclip"

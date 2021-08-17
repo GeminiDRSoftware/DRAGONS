@@ -155,7 +155,9 @@ class Controller(object):
         be careful not to register a handler for a key needed by one
         of the tasks.
 
-        :param handler: :class:`~geminidr.interactive.controls.Handler`
+        Parameters
+        ----------
+        handler : :class:`~geminidr.interactive.controls.Handler`
             Handler to add to the controller
         """
         if handler.key in self.handlers.keys():
@@ -231,10 +233,6 @@ class Controller(object):
         ----------
         event
             the mouse event from bokeh, unused
-
-        Returns
-        -------
-
         """
         global controller
         controller = self
@@ -280,9 +278,8 @@ class Controller(object):
 
         Parameters
         ----------
-        event : PointEvent
+        event : :class:`~bokeh.events.PointEvent`
             the event from bokeh
-
         """
         self.x = event.x
         self.y = event.y
@@ -301,7 +298,6 @@ class Controller(object):
         ----------
         key : char
             Key that was pressed, such as 'a'
-
         """
         def _ui_loop_handle_key(_key):
             if _key in self.handlers.keys():
@@ -340,7 +336,6 @@ class Controller(object):
             x coordinate in data space
         y : float
             y coordinate in data space
-
         """
         self.x = x
         self.y = y
@@ -431,11 +426,30 @@ class ApertureTask(Task):
         self.helptext_area.text = self.helptext()
 
     def start(self, x, y):
+        """
+        Start defining an aperture from the given coordinate.
+
+        This method starts an aperture definition with the current coordinates.  The x
+        value will define the center of the aperture.  After that, as the mouse is moved,
+        it will define the edge of the aperture with an equally wide edge on the other
+        side.
+
+        Parameters
+        ----------
+        x : float
+            Current x coordinate, used to set the center of the aperture
+        y : float
+            Current y coordinate, not used
+        """
         self.last_x = x
         self.last_y = y
         self.aperture_id = None
 
     def stop(self):
+        """
+        Stop the task, which stops the aperture if we're in the middle
+        of workingon one.
+        """
         self.stop_aperture()
 
     def start_aperture(self, x, y):
@@ -565,9 +579,25 @@ class ApertureTask(Task):
         return False
 
     def description(self):
+        """
+        Get the description for this task, to use in the help Div.
+
+        Returns
+        -------
+        str : help html text for display
+        """
         return "Edit <b>apertures</b> interactively"
 
     def helptext(self):
+        """
+        Get the detailed help of key commands available while this
+        task is active.  This is shown in the help Div when the task
+        is active.
+
+        Returns
+        -------
+        str : help html for available commands when task is active.
+        """
         return """
         <b>A</b> to start the aperture or set the value<br/>
         <b>S</b> to select an existing aperture<br/>
@@ -647,6 +677,10 @@ class RegionTask(Task):
             self.region_model.region_id += 1
 
     def stop(self):
+        """
+        Stop the task.
+        :return:
+        """
         if self.region_id is not None:
             self.stop_region()
 
@@ -749,6 +783,10 @@ class RegionTask(Task):
         return "create a <b>region</b> with edge at cursor"
 
     def update_help(self):
+        """
+        Update the controller help text when a region is active
+        or not.
+        """
         if self.region_id is not None:
             controller.set_help_text("""Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n

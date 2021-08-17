@@ -172,3 +172,4 @@ def ref_ad_factory(path_to_refs):
         return astrodata.open(path)
 
     return _reference_ad
+

@@ -105,7 +105,7 @@ def init_calibration_databases(inst_lookups=None, procmode=None,
             kwargs["store_science"] = kwargs["store_cal"] and upload_science
             kwargs["store_cal"] &= upload_calibs
         elif cls == LocalDB:
-            kwargs["force_init"] = True
+            kwargs["force_init"] = False
         database = cls(db, name=db, **kwargs)
         caldb.add_database(database)
     return caldb

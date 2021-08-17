@@ -64,6 +64,7 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
         modal_message="Tracing apertures...",
         ui_params=ui_params,
         turbo_tabs=True,
+        pad_buttons=True
     )
 
     server.interactive_fitter(visualizer)
@@ -86,9 +87,8 @@ def trace_apertures_data_provider(ext, ui_params):
 
     Returns
     -------
-    list : pairs of (x, y) for each aperture center, where x is the
-    spectral position of the knots, and y is the spacial position of the
-    knots.
+    dict : dictionary of x and y coordinates.  Each is an array with a list of values for each aperture center.
+        The x coordinates have the spectral position of the knots, and y is the spacial position of the knots.
     """
     data = {"x": [], "y": []}
     dispaxis = 2 - ext.dispersion_axis()  # python sense
