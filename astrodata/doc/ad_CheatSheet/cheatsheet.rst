@@ -154,16 +154,16 @@ Delete and add variance and mask planes::
 
 Attach a table to an extension::
 
-    >>> adcopy[3].append(advar[0].OBJCAT, name='BOB')
+    >>> adcopy[3].SMAUG = advar[0].OBJCAT.copy()
 
 Attach a table to the |astrodata_class| object::
 
-    >>> adcopy.append(advar.REFCAT, name='BILL')
+    >>> adcopy.DROGON = advar.REFCAT.copy()
 
 Delete a table::
 
-    >>> del adcopy[3].BOB
-    >>> del adcopy.BILL
+    >>> del adcopy[3].SMAUG
+    >>> del adcopy.DROGON
 
 
 
@@ -453,12 +453,12 @@ A |Table| as an |astrodata_class| object::
 
     >>> astrodata.add_header_to_table(my_astropy_table)
     >>> ad = astrodata.create(phu)
-    >>> ad.append(my_astropy_table, name='BOB')
+    >>> ad.SMAUG = my_astropy_table
 
     From a BinTableHDU:
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
-    >>> ad.append(my_fits_table, name='BOB')
+    >>> ad.SMAUG = my_fits_table
 
     WARNING: This last line will not run like the others as we have not defined
     "my_fits_table".  This is nonetheless how it is done if you had a FITS table.
