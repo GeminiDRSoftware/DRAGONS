@@ -104,7 +104,7 @@ dynamically expose to the user additional attributes, dependent on the
 underlying technology, or even to the instrument, if needed. This is all fine
 and encouraged **as long as everything is well documented**, and the user
 understands that certain parts of the interface may not be available when using
-different observatory's files\ [#soarnote]_, for example.
+different observatory's files, for example.
 
 Registering a Data Provider to be Used with AstroData
 =====================================================
@@ -127,8 +127,3 @@ Future release of this document will address this topic.
 .. [#viewnote] For efficiency reasons, and to keep just one version of the
    data. The method may decide to return a sliced copy instead, but this is
    a design decision.
-
-.. [#soarnote] At the time of writing this manual, SOAR
-   `has extended <https://github.com/soar-telescope/dragons-soar/tree/master>`_
-   DRAGONS for their own use, but they are using the core FITS capabilities as
-   defined by Gemini's implementation.

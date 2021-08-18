@@ -41,5 +41,5 @@ package to work for new environments.
 .. rubric:: Footnotes
 
 .. [#IRAF] http://iraf.net
-.. [#FITS] The `Flexible Image Transport System <http://https://fits.gsfc.nasa.gov/fits_standard.html>`_
+.. [#FITS] The `Flexible Image Transport System <https://fits.gsfc.nasa.gov/fits_standard.html>`_
 .. [#DRAGONS] The `Data Reduction for Astronomy from Gemini Observatory North and South <https://github.com/GeminiDRSoftware/DRAGONS>`_ package

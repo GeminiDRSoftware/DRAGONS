@@ -77,6 +77,6 @@ Recipe System Programmers Manual\ [#rsprogman]_.
    significant, changes to the API.
 
 
-.. [#iraf] `<https://www.gemini.edu/sciops/data-and-results/processing-software/description>`_
+.. [#iraf] `<https://www.gemini.edu/observing/phase-iii>`_
 
-.. [#rsprogman] PIPE-USER-108_RSProgManual
+.. [#rsprogman] `<https://dragons.readthedocs.io/projects/recipe-system-prog-manual/en/release-3.0.x/>`_
