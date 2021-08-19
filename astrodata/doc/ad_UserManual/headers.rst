@@ -216,7 +216,7 @@ World Co-ordinate System attribute
 
 The ``wcs`` of an extension's ``nddata`` attribute (eg. ``ad[0].nddata.wcs``;
 see :ref:`data`) may contain an instance of ``astropy.wcs.WCS`` (a standard
-FITS WCS object) or ``gwcs.WCS`` (a `"Generalized WCS" or gWCS
+FITS WCS object) or ``gwcs.wcs.WCS`` (a `"Generalized WCS" or gWCS
 <https://gwcs.readthedocs.io>`_ object). These both define a transformation
 between array indices and some other co-ordinate system such as "World"
 co-ordinates (see `APE 14

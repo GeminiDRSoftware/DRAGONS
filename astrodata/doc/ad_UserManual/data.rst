@@ -265,7 +265,7 @@ Here is an example how to display pixel data to DS9 with ``imexam``.
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
 
     # Connect to the DS9 window (should already be opened.)
-    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
+    >>> ds9 = imexam.connect(imexam.list_active_ds9())
 
     >>> ds9.view(ad[0].data)
 
@@ -745,35 +745,33 @@ from a given (x,y) position.
 
 
 Now that is nice but it would be nicer if we could plot the x-axis in units
-of Angstroms instead of pixels.  We use ``astropy.wcs`` to convert the pixels
-into wavelengths.  Now a particularity of ``astropy.wcs`` is that it refers
-to the axes in the "natural" way, (x, y, wlen) contrary to Python's (wlen, y, x).
-It truly requires you to pay attention.
+of Angstroms instead of pixels.  We use the AstroData's WCS handler, which is
+based on ``gwcs.wcs.WCS`` to get the necessary information.  A particularity
+of ``gwcs.wcs.WCS`` is that it refers to the axes in the "natural" way,
+(x, y, wlen) contrary to Python's (wlen, y, x). It truly requires you to pay
+attention.
 
 ::
 
-    >>> import numpy as np
-    >>> from astropy import wcs
     >>> import matplotlib.pyplot as plt
 
     >>> adcube = astrodata.open('../playdata/gmosifu_cube.fits')
 
-    >>> # First get the World Coordinate System from the header
-    >>> cube_wcs = wcs.WCS(adcube[0].hdr)
+    # We get the wavelength axis in Angstroms at the position we want to
+    # extract, x=13, y=24.
+    # The wcs call returns a3-element list, the third element ([2]) contains
+    # contains the wavelength values for each pixel along the wavelength axis.
 
-    >>> # Then get an array of the coordinates for that spectrum in
-    >>> # pixel coordinates, at position (14,25)
-    >>> length_wlen_axis = adcube[0].data.shape[0]
-    >>> spectrum_pix_coord = np.array([ [13,24,i] for i in range(length_wlen_axis) ])
+    >>> length_wlen_axis = adcube[0].shape[0]   # (wlen, y, x)
+    >>> wavelengths = adcube[0].wcs(13, 24, range(length_wlen_axis))[2] # (x, y, wlen)
 
-    >>> # Transform pixel coordinates in to Angstroms and keep only
-    >>> # the wavelength axis.
-    >>> wavelengths = cube_wcs.wcs_pix2world(spectrum_pix_coord, 0)[:,2]
+    # We get the intensity along that axis
+    >>> intensity = adcube[0].data[:, 24, 13]   # (wlen, y, x)
 
-    >>> # Finally plot the spectrum at position (7,30)
-    >>> plt.clf()  # just to clear the plot
-    >>> plt.plot(wavelengths, adcube[0].data[:,24,13])
-    >>> plt.show()
+    # We plot
+    plt.clf()
+    plt.plot(wavelengths, intensity)
+    plt.show()
 
 
 Plot Data
