@@ -9,9 +9,9 @@ Introduction
 Overview
 ========
 
-The DRAGONS Recipe System is Gemini Observatory's data processing software
-automation platform. The Recipe System is designed to accommodates both
-stepwise, interactive data processing and automated data reduction pipelines.
+The DRAGONS Recipe System is Gemini Observatory's data processing
+automation platform. The Recipe System is designed to accommodate both
+stepwise, interactive data processing, and automated data reduction pipelines.
 
 The Recipe System inspect the inputs and automatically associates the recipes
 and primitives most appropriate for those inputs.  A primitive is a step in
@@ -64,15 +64,15 @@ Further Information
 
 .. |rsprog_link| raw:: html
 
-   <a href="https://dragons-recipe-system-programmers-manual.readthedocs.io/" target="_blank">Recipe System Programmer Manual</a>
+   <a href="https://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-3.0.x/" target="_blank">Recipe System Programmer Manual</a>
 
 .. |astrouser_link| raw:: html
 
-   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
+   <a href="https://astrodata-user-manual.readthedocs.io/en/release-3.0.x/" target="_blank">Astrodata User Manual</a>
 
 .. |astroprog_link| raw:: html
 
-   <a href="https://astrodata-programmer-manual.readthedocs.io/" target="_blank">Astrodata Programmer Manual</a>
+   <a href="https://astrodata-programmer-manual.readthedocs.io/en/release-3.0.x/" target="_blank">Astrodata Programmer Manual</a>
 
 Details and information on developing for the Recipe System, and about the
 ``astrodata`` package are available in companion manuals. We invite the reader
