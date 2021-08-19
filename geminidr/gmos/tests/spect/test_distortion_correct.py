@@ -232,6 +232,7 @@ def create_inputs_recipe():
         sci_ad = astrodata.open(sci_path)
         arc_ad = astrodata.open(arc_paths[0])
         data_label = sci_ad.data_label()
+        # is_ham = sci_ad.detector_name(pretty=True).startswith('Hamamatsu')
 
         logutils.config(file_name='log_bias_{}.txt'.format(data_label))
         bias_reduce = Reduce()
@@ -254,10 +255,9 @@ def create_inputs_recipe():
 
         p = primitives_gmos_longslit.GMOSLongslit([arc_ad])
         p.prepare()
-        p.addDQ(static_bpm=None, user_bpm=None, add_illum_mask=False)
+        p.addDQ()
         p.addVAR(read_noise=True, poisson_noise=False)
-        p.overscanCorrect(function="spline3", lsigma=3., hsigma=3.,
-                          nbiascontam=0, niter=2, order=None)
+        p.overscanCorrect()
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
         p.mosaicDetectors()
