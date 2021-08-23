@@ -163,6 +163,15 @@ def buildParser(version):
                         help="Load a specific config file, overriding the "
                              "~/.geminidr/rsys.cfg file and the $DRAGONSRC "
                              "environment variable.")
+
+    parser.add_argument("--record", dest='record',
+                        default=None, nargs='*', action=UnitaryArgumentAction,
+                        help="record the reduction process to a json file")
+
+    parser.add_argument("--replay", dest='replay',
+                        default=None, nargs='*', action=UnitaryArgumentAction,
+                        help="replay the reduction process from a json file")
+
     return parser
 
 

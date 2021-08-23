@@ -23,6 +23,7 @@ __all__ = ["FitQuality", "PrimitiveVisualizer", "build_text_slider", "connect_re
            "GIRegionListener", "GIRegionModel", "RegionEditor", "TabsTurboInjector", "UIParameters",
            "do_later"]
 
+from recipe_system.utils.reduce_recorder import record_interactive
 
 _visualizer = None
 
@@ -541,6 +542,26 @@ class PrimitiveVisualizer(ABC):
                 self.reconstruct_points()
 
         return handler
+
+    def record(self):
+        """
+        Record the state of the interactive interface.
+
+        For now, this record is for information purposes.  It may be enhanced in future
+        to allow the intractive interface to be repopulated from a recorded state.
+
+        Subclasses should call down to this and add their own information to the record
+        """
+        record = dict()
+        record["primitive_name"] = self.primitive_name
+        record_interactive(record)
+
+        return record
+
+    def load(self, record):
+        if record["primitive_name"] != self.primitive_name:
+            _log.warning("While loading interactive data, recorded primitive {} did not match expected primitive {}"
+                         .format(record["primitive_name"], self.primitive_name))
 
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
@@ -1186,7 +1207,8 @@ class GIRegionView(GIRegionListener):
         # We have to defer this as the delete may come via the keypress URL
         # But we aren't in the PrimitiveVisualizaer so we reference the
         # document and queue it directly
-        self.fig.document.add_next_tick_callback(lambda: fn())
+        if self.fig.document:
+            self.fig.document.add_next_tick_callback(lambda: fn())
 
     def finish_regions(self):
         pass

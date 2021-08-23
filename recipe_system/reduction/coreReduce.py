@@ -30,8 +30,10 @@ from recipe_system import __version__
 from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
+from recipe_system.utils.reduce_recorder import init_reduce_recorder, reduce_recorder, record_reduction, \
+    load_reduce_record
 
-from recipe_system.utils.reduce_utils import buildParser
+from recipe_system.utils.reduce_utils import buildParser, normalize_args, normalize_upload
 from recipe_system.utils.reduce_utils import normalize_ucals
 from recipe_system.utils.reduce_utils import set_btypes
 from recipe_system.utils.rs_utilities import log_traceback
@@ -110,7 +112,12 @@ class Reduce:
             args = buildParser(__version__).parse_args()
         else:
             args = buildParser(__version__).parse_args([])
-
+        record = args.record
+        if args.replay:
+            recorded_args = load_reduce_record(args.replay[0])
+            args = buildParser(__version__).parse_args(recorded_args)
+            args = normalize_args(args)
+            args.upload = normalize_upload(args.upload)
         # acquire any new astrodata classes.
         if args.adpkg:
             import_module(args.adpkg)
@@ -125,6 +132,8 @@ class Reduce:
         self._upload = args.upload
         self._output_filenames = None
         self.recipename = args.recipename if args.recipename else '_default'
+        if record:
+            init_reduce_recorder(record[0])
 
     @property
     def upload(self):
@@ -247,6 +256,8 @@ class Reduce:
         self._write_final(p.streams['main'])
         self._output_filenames = [ad.filename for ad in p.streams['main']]
         log.stdinfo("\nreduce completed successfully.")
+
+        record_reduction()
 
     # -------------------------------- prive -----------------------------------
     def _check_files(self, ffiles):

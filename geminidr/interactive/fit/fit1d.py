@@ -1035,6 +1035,27 @@ class Fit1DPanel:
 
         self.model.perform_fit()
 
+    def record(self):
+        return {
+            "mask": self.model.data.data['mask'],
+            "params": self.model.fit.extract_params()
+        }
+
+    def load(self, record):
+        self.model.data.data['mask'] = record["mask"]
+        region_tuples = cartesian_regions_to_slices(record["params"]["regions"])
+        self.model.band_model.load_from_tuples(region_tuples)
+        self.fitting_parameters_ui.function.select(record["params"]["function"])
+        self.fitting_parameters_ui.order_slider.children[1].value = record["params"]["order"]
+        self.fitting_parameters_ui.sigma_lower_slider.children[1].value = record["params"]["sigma_lower"]
+        self.fitting_parameters_ui.sigma_upper_slider.children[1].value = record["params"]["sigma_upper"]
+        niter = record["params"]["niter"]
+        if niter == 0:
+            self.fitting_parameters_ui.sigma_button.active = []
+        else:
+            self.fitting_parameters_ui.sigma_button.active = [0]
+            self.fitting_parameters_ui.niter_slider.children[1].value = record["params"]["niter"]
+
     # TODO refactored this down from tracing, but it breaks
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
     @staticmethod
@@ -1455,6 +1476,34 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         list of `~gempy.library.fitting.fit_1D`
         """
         return [fit.fit for fit in self.fits]
+
+    def record(self):
+        """
+        Record the state of the interactive UI.
+
+        This enhances the record from the base class with additional state
+        information specific to the Fit1D Visualizer.  This includes per-tab
+        fitting parameters and the current state of the data mask.
+
+        Returns
+        -------
+            dict : Dictionary representing the state of the inputs
+        """
+        retval = super().record()
+        retval["tabs"] = list()
+        retval["reinit_params"] = self._reinit_params.copy()
+        for tab in self.panels:
+            retval["tabs"].append(tab.record())
+        return retval
+
+    def load(self, record):
+        super().load(record)
+        self._reinit_params = record["reinit_params"].copy()
+        # now apply the reinit params
+        self.reset_reinit_panel()
+        # now restore the tabs
+        for tab, tab_record in zip(self.panels, record["tabs"]):
+            tab.load(tab_record)
 
 
 def prep_fit1d_params_for_fit1d(fit1d_params):

@@ -19,6 +19,8 @@ __all__ = ["test_mode", "interactive_fitter", "stop_server"]
 
 # Set to True to tell the interactive code to automatically submit in
 # order to test the interactive paths automatically
+from recipe_system.utils.reduce_recorder import load_replay_interactive_settings
+
 test_mode = False
 
 from bokeh.themes import built_in_themes
@@ -318,7 +320,12 @@ def interactive_fitter(visualizer):
         The visualizer UI to display
     """
     set_visualizer(visualizer)
+    load_replay_interactive_settings(visualizer)
     start_server()
     set_visualizer(None)
+
     if not visualizer.user_satisfied:
         raise KeyboardInterrupt()
+
+    # return record of the state of the visualizer
+    visualizer.record()

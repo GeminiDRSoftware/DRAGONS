@@ -210,7 +210,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             # data range on each side
             #height = (44 / 29 * self.spectrum.data['spectrum'].max() -
             #          1.1 * self.spectrum.data['spectrum'].min())
-            height = 44 / 29 * self.spectrum.data['spectrum'].max()
+            height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
         padding = 0.25 * height
         try:
             return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
@@ -444,6 +444,16 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if new is not None and wavestr(new) not in self.new_line_dropdown.options:
             self.add_new_line()
 
+    def record(self):
+        retval = super().record()
+        retval['wavecal_data'] = self.model.data.data.clone()
+
+    def load(self, record):
+        super().load(record)
+        self.model.data.data = record['wavecal_data']
+        self.model.perform_fit()
+
+
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
     A Visualizer specific to determineWavelengthSolution
@@ -470,6 +480,23 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
             image.append(model.y[goodpix])
         return image
+
+    def record(self):
+        """
+        Record the state of the interactive UI.
+
+        This enhances the record from the base class with additional state
+        information specific to the Fit1D Visualizer.  This includes per-tab
+        fitting parameters and the current state of the data mask.
+
+        Returns
+        -------
+            dict : Dictionary representing the state of the inputs
+        """
+        return super().record()
+
+    def load(self, record):
+        super().load(record)
 
 
 def get_closest(arr, value):
