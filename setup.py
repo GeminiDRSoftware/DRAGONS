@@ -33,7 +33,7 @@ PACKAGES = find_packages()
 # SCRIPTS
 SCRIPTS = [
     os.path.join('recipe_system', 'scripts', name)
-    for name in ('adcc', 'caldb', 'reduce', 'superclean')
+    for name in ('adcc', 'caldb', 'reduce', 'superclean', 'provenance')
 ]
 SCRIPTS += [
     os.path.join('gempy', 'scripts', name)

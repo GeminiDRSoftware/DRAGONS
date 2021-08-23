@@ -310,14 +310,11 @@ class Preprocess(PrimitivesBASE):
         # if only some frames did not have sky corrected, move them out of main and
         # to the "no_skytable" stream.
         if not any(has_skytable):  # "all false", none have been sky corrected
-            log.warning(
-                'Sky frames could not be associated to any input frames.'
-                'Sky subtraction will not be possible.')
-        elif not all(
-                has_skytable):  # "some false", some frames were NOT sky corrected
+            log.warning('Sky frames could not be associated to any input frames.'
+                        'Sky subtraction will not be possible.')
+        elif not all(has_skytable):  # "some false", some frames were NOT sky corrected
             log.stdinfo('')  # for readablity
-            false_idx = [idx for idx, trueval in enumerate(has_skytable) if
-                         not trueval]
+            false_idx = [idx for idx, trueval in enumerate(has_skytable) if not trueval]
             for idx in reversed(false_idx):
                 ad = adinputs[idx]
                 log.warning(f'{ad.filename} does not have any associated skies'
@@ -1348,14 +1345,15 @@ class Preprocess(PrimitivesBASE):
                 continue
             if stacked_skies[i] == 0:
                 log.stdinfo("Creating sky frame for {}".format(ad.filename))
-                stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
-                                                  skytable], **stack_params)
+                sky_inputs = [sky_dict[sky] for sky in skytable]
+                stacked_sky = self.stackSkyFrames(sky_inputs, **stack_params)
                 #print ad.filename, memusage(proc)
                 if len(stacked_sky) == 1:
                     stacked_sky = stacked_sky[0]
                     # Provide a more intelligent filename
-                    stacked_sky.filename = ad.filename
-                    stacked_sky.update_filename(suffix="_sky", strip=True)
+                    if len(sky_inputs) > 1:
+                        stacked_sky.filename = ad.filename
+                        stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
                     log.warning("Problem with stacking the following sky "
                                 "frames for {}".format(adinputs[i].filename))
@@ -1448,6 +1446,7 @@ class Preprocess(PrimitivesBASE):
                 log.stdinfo(f"Subtracting {ad_sky.filename} from "
                             f"the science frame {ad.filename}")
                 if scale or zero:
+                    # This actually does the sky subtraction as well
                     factors = [gt.sky_factor(ext, ext_sky, skyfunc, multiplicative=scale)
                                for ext, ext_sky in zip(ad, ad_sky)]
                     for ext_sky, factor in zip(ad_sky, factors):

@@ -38,6 +38,7 @@ def reduce(p):
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
+    p.scaleByExposureTime()
     p.stackFrames()
     p.applyDQPlane()
     p.detectSources()

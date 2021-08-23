@@ -366,6 +366,7 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
         2D spectral image from which trace is to be extracted.
     center : float or None
         Center of averaging region (None => center of axis).
+        python 0-indexed
     nsum : int
         Number of rows/columns to combine
 
@@ -387,8 +388,8 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     if center is None:
         center = 0.5 * (npix - 1)
 
-    extract_slice = slice(max(0, int(center - 0.5 * nsum + 1)),
-                          min(npix, int(center + 0.5 * nsum + 1)))
+    extract_slice = slice(max(0, int(center + 1 - 0.5 * nsum)),
+                          min(npix, int(center + 1 + 0.5 * nsum)))
     data, mask, variance = at.transpose_if_needed(
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
@@ -402,7 +403,7 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     return data, mask, variance, extract_slice
 
 
-def estimate_peak_width(data, mask=None):
+def estimate_peak_width(data, mask=None, boxcar_size=None):
     """
     Estimates the FWHM of the spectral features (arc lines) by inspecting
     pixels around the brightest peaks.
@@ -413,6 +414,8 @@ def estimate_peak_width(data, mask=None):
         1D data array
     mask : ndarray/None
         mask to apply to data
+    boxcar_size : float/None
+        subtract a median boxcar from the data first?
 
     Returns
     -------
@@ -424,6 +427,8 @@ def estimate_peak_width(data, mask=None):
         goodpix = ~mask.astype(bool)
     widths = []
     niters = 0
+    if boxcar_size:
+        data = data - at.boxcar(data, size=boxcar_size)
     while len(widths) < 10 and niters < 100:
         index = np.argmax(data * goodpix)
         with warnings.catch_warnings():  # width=0 warnings
@@ -548,8 +553,12 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        peaks[i] = np.mean(pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2]))
+        new_peaks = pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2])
         del peaks[i+1]
+        if new_peaks:
+            peaks[i] = np.mean(new_peaks)
+        else:  # somehow both peaks vanished
+            del peaks[i]
 
     final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
@@ -1110,18 +1119,23 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
                  np.zeros(ext.shape, dtype=bool))
 
     # Mask sky-line regions and find clumps of unmasked pixels
-    mask1d[var_excess > 5 * std] = 1
+    mask1d = (var_excess > 5 * std)
     slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
 
+    sky_mask = np.ones_like(mask1d)
     for reg in slices:
         if (reg.stop - reg.start) >= min_sky_region:
-            full_mask[reg] = False
+            sky_mask[reg] = False
 
     if section:
+        sec_mask = np.ones_like(mask1d)
         for x1, x2 in (s.split(':') for s in section.split(',')):
             reg = slice(None if x1 == '' else int(x1) - 1,
                         None if x2 == '' else int(x2))
-            full_mask[reg] = False
+            sec_mask[reg] = False
+    else:
+        sec_mask = False
+    full_mask |= sky_mask | sec_mask
 
     signal = (ext.data if (ext.variance is None or not use_snr) else
               np.divide(ext.data, np.sqrt(ext.variance),

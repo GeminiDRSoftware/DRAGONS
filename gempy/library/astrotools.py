@@ -52,7 +52,7 @@ def boxcar(data, operation=np.ma.median, size=1):
     try:
         boxarray = np.array([operation(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
-    except ValueError:  # Handle things like np.logical_and
+    except (ValueError, TypeError):  # Handle things like np.logical_and
         boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
     return boxarray

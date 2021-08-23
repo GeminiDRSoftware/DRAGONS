@@ -16,9 +16,11 @@ inactive state.
 """
 from abc import ABC, abstractmethod
 
-from bokeh.events import PointEvent, SelectionGeometry, Tap
+from bokeh.events import PointEvent, SelectionGeometry, Tap, MouseEnter, MouseLeave
 
 __all__ = ["controller", "Controller", "Handler"]
+
+from bokeh.models import CustomJS
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -26,6 +28,17 @@ Controller instances will set this to listen to key presses.  The bokeh server w
 it recieves from the clients.  Everyone else should leave it alone!
 """
 controller = None
+
+
+# This is used to track if we already have a pending
+# action to update the mouse position.  This is used
+# to effect throttling.  When there is a mouse move,
+# an action to respond to the mouse position is triggered
+# in the future and this is set True.  Subsequent mouse
+# moves will see we already have the action pending and
+# do nothing.  Then when the action triggers it takes
+# the current (future) mouse position and sets this back
+# to False.
 _pending_handle_mouse = False
 
 
@@ -48,8 +61,8 @@ class Controller(object):
     :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True,
-                 domain=None, handlers=None):
+    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None,
+                 domain=None, handlers=None, helpintrotext=None):
         """
         Create a controller to manage the given aperture and region models on
         the given GIFigure.
@@ -67,25 +80,29 @@ class Controller(object):
         mask_handlers : None or tuple of {2,3} functions
             The first two functions handle mask/unmask commands, the third (optional)
             function handles 'P' point mask requests.
-        showing_residuals : bool
-            Indicates if there is a residual plot or not, so we can modify the
-            shown help text accordingly.
         domain : tuple of 2 numbers, or None
             The domain of the data being handled, used for region editing to constrain the values
         handlers : list of `~geminidr.interactive.controls.Handler`
             List of handlers for key presses that are always active, not tied to a task
+        helpintrotext : str
+            HTML to show at the top of the controller help (gray text block), or None for a default message.
         """
+
+        fig.js_on_event(MouseEnter, CustomJS(code='window.controller_keys_enabled = true;'))
+        fig.js_on_event(MouseLeave, CustomJS(code='window.controller_keys_enabled = false;'))
 
         # set the class for the help_text div so we can have a common style
         help_text.css_classes.append('controller_div')
 
-        self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
 
         self.helpmaskingtext = ''
-        self.helpintrotext = "While the mouse is over the upper plot, " \
-                             "choose from the following commands:<br/><br/>\n" if showing_residuals \
-            else "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+
+        if helpintrotext is not None:
+            self.helpintrotext = f"{helpintrotext}<br/><br/>\n"
+        else:
+            self.helpintrotext = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+
         self.helptooltext = ''
         self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
@@ -121,7 +138,7 @@ class Controller(object):
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        if aperture_model or region_model:
+        if aperture_model or region_model or mask_handlers or handlers:
             fig.on_event('mousemove', self.on_mouse_move)
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
@@ -138,7 +155,9 @@ class Controller(object):
         be careful not to register a handler for a key needed by one
         of the tasks.
 
-        :param handler: :class:`~geminidr.interactive.controls.Handler`
+        Parameters
+        ----------
+        handler : :class:`~geminidr.interactive.controls.Handler`
             Handler to add to the controller
         """
         if handler.key in self.handlers.keys():
@@ -160,7 +179,10 @@ class Controller(object):
                 "<b>U</b> - Unmask selected/closest<br/></br>")
 
         if self.handlers.keys() - ['m', 'u']:
-            self.helpmaskingtext += '<b>Other Commands</b><br/>'
+            if 'm' in self.handlers.keys():
+                self.helpmaskingtext += '<b>Other Commands</b><br/>'
+            else:
+                self.helpmaskingtext += '<b>Commands</b><br/>'
             for k, v in self.handlers.items():
                 if k not in ['u', 'm']:
                     self.helpmaskingtext += f"<b>{k.upper()}</b> - {v.description}<br/>"
@@ -182,7 +204,7 @@ class Controller(object):
         if text is not None:
             ht = self.helpintrotext + self.helpmaskingtext + text
         else:
-            if self.tasks or self.enable_user_masking:
+            if self.tasks or self.handlers or self.enable_user_masking:
                 # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
                 ht = self.helpintrotext + self.helpmaskingtext
                 if len(self.tasks) == 1:
@@ -211,10 +233,6 @@ class Controller(object):
         ----------
         event
             the mouse event from bokeh, unused
-
-        Returns
-        -------
-
         """
         global controller
         controller = self
@@ -260,9 +278,8 @@ class Controller(object):
 
         Parameters
         ----------
-        event : PointEvent
+        event : :class:`~bokeh.events.PointEvent`
             the event from bokeh
-
         """
         self.x = event.x
         self.y = event.y
@@ -281,7 +298,6 @@ class Controller(object):
         ----------
         key : char
             Key that was pressed, such as 'a'
-
         """
         def _ui_loop_handle_key(_key):
             if _key in self.handlers.keys():
@@ -320,7 +336,6 @@ class Controller(object):
             x coordinate in data space
         y : float
             y coordinate in data space
-
         """
         self.x = x
         self.y = y
@@ -411,11 +426,30 @@ class ApertureTask(Task):
         self.helptext_area.text = self.helptext()
 
     def start(self, x, y):
+        """
+        Start defining an aperture from the given coordinate.
+
+        This method starts an aperture definition with the current coordinates.  The x
+        value will define the center of the aperture.  After that, as the mouse is moved,
+        it will define the edge of the aperture with an equally wide edge on the other
+        side.
+
+        Parameters
+        ----------
+        x : float
+            Current x coordinate, used to set the center of the aperture
+        y : float
+            Current y coordinate, not used
+        """
         self.last_x = x
         self.last_y = y
         self.aperture_id = None
 
     def stop(self):
+        """
+        Stop the task, which stops the aperture if we're in the middle
+        of workingon one.
+        """
         self.stop_aperture()
 
     def start_aperture(self, x, y):
@@ -545,9 +579,25 @@ class ApertureTask(Task):
         return False
 
     def description(self):
+        """
+        Get the description for this task, to use in the help Div.
+
+        Returns
+        -------
+        str : help html text for display
+        """
         return "Edit <b>apertures</b> interactively"
 
     def helptext(self):
+        """
+        Get the detailed help of key commands available while this
+        task is active.  This is shown in the help Div when the task
+        is active.
+
+        Returns
+        -------
+        str : help html for available commands when task is active.
+        """
         return """
         <b>A</b> to start the aperture or set the value<br/>
         <b>S</b> to select an existing aperture<br/>
@@ -627,6 +677,10 @@ class RegionTask(Task):
             self.region_model.region_id += 1
 
     def stop(self):
+        """
+        Stop the task.
+        :return:
+        """
         if self.region_id is not None:
             self.stop_region()
 
@@ -729,6 +783,10 @@ class RegionTask(Task):
         return "create a <b>region</b> with edge at cursor"
 
     def update_help(self):
+        """
+        Update the controller help text when a region is active
+        or not.
+        """
         if self.region_id is not None:
             controller.set_help_text("""Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n

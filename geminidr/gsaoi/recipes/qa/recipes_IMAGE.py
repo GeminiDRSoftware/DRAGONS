@@ -38,6 +38,7 @@ def reduce_nostack(p):
     p.measureIQ(display=True)
     p.determineAstrometricSolution()
     p.measureCC()
+    # p.scaleByExposureTime()  # not really necessary in QA.
     p.writeOutputs()
     return
 

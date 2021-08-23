@@ -332,7 +332,7 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
             actual_cenwave = model(0.5 * (npix - 1))
             model |= models.Shift(-actual_cenwave)
             if dispersion:
-                actual_dispersion = np.diff(model([0, npix - 1])) / (npix - 1)
+                actual_dispersion = np.diff(model([0, npix - 1]))[0] / (npix - 1)
                 model |= models.Scale(dispersion / actual_dispersion)
             model |= models.Shift(actual_cenwave if central_wavelength is None
                                   else central_wavelength)
@@ -343,19 +343,20 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
     return model
 
 
-def create_interactive_inputs(ad, config, extras, p=None,
+def create_interactive_inputs(ad, ui_params=None, p=None,
                               linelist=None, bad_bits=0):
-    all_fits = []
+    data = {"x": [], "y": [], "meta": []}
     for ext in ad:
-        data, fit1d, _ = get_automated_fit(
-            ext, config, p=p, linelist=linelist, bad_bits=bad_bits)
+        input_data, fit1d, _ = get_automated_fit(
+            ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits)
         # peak locations and line wavelengths of matched peaks/lines
-        all_fits.append([fit1d.points[~fit1d.mask], fit1d.image[~fit1d.mask],
-                         None, data])
-    return all_fits
+        data["x"].append(fit1d.points[~fit1d.mask])
+        data["y"].append(fit1d.image[~fit1d.mask])
+        data["meta"].append(input_data)
+    return data
 
 
-def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
+def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     """
     Produces a wavelength fit for a given slice of an AstroData object.
     In non-interactive mode, this is the final result; in interactive mode
@@ -366,7 +367,7 @@ def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
     ----------
     ext : single-slice AstroData
         the extension
-    config
+    ui_params
     p
     linelist
     bad_bits
@@ -381,9 +382,8 @@ def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
     acceptable_fit : bool
         whether this fit is likely to be good
     """
-
     input_data = get_all_input_data(
-        ext, p, config, linelist=linelist, bad_bits=bad_bits)
+        ext, p, ui_params, linelist=linelist, bad_bits=bad_bits)
     spectrum = input_data["spectrum"]
     init_models = input_data["init_models"]
     peaks, weights = input_data["peaks"], input_data["weights"]
@@ -393,7 +393,7 @@ def get_automated_fit(ext, config, p=None, linelist=None, bad_bits=0):
     kdsigma = fwidth * abs(dw)
     k = 1 if kdsigma < 3 else 2
     fit1d, acceptable_fit = find_solution(
-        init_models, config, peaks=peaks, peak_weights=weights[config.weighting],
+        init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
         filename=ext.filename)
     return input_data, fit1d, acceptable_fit
@@ -415,7 +415,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     p : PrimitivesBASE object
     bad_bits : int
         bitwise-and the mask with this to produce the mask
-    config : Config object containing parameters
+    config : Config-like object containing parameters
 
     Returns
     -------
@@ -455,7 +455,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
         data[mask > 0] = 0.
 
     if config.fwidth is None:
-        fwidth = tracing.estimate_peak_width(data, mask=mask)
+        fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30)
         log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config.fwidth
@@ -463,7 +463,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config.min_snr, min_sep=config.min_sep,
-        reject_bad=False, nbright=config.toDict().get("nbright", 0))
+        reject_bad=False, nbright=config.values.get("nbright", 0))
 
     # Get the initial wavelength solution
     m_init = initial_wavelength_model(
@@ -472,8 +472,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
 
     waves = m_init([0, 0.5 * (data.size - 1), data.size - 1])
     dw0 = (waves[2] - waves[0]) / (data.size - 1)
-    log.stdinfo("Wavelengths at start, middle, end, and dispersion:"
-                f"\n{waves} {dw0:.4f}")
+    log.stdinfo("Wavelengths at start, middle, end (nm), and dispersion "
+                f"(nm/pixel):\n{waves} {dw0:.4f}")
 
     # Get list of arc lines (probably from a text file dependent on the
     # input spectrum, so a private method of the primitivesClass). If a
@@ -693,7 +693,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
                 fits_to_do.append((p_hi, arc_line, dw))
         dc0 = 5 * abs(dw)
-
     return matches
 
 
@@ -747,7 +746,9 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
-                    ref_weights=new_ref_weights, matches=matches, popsize=30, mutation=1.0)
+                    ref_weights=new_ref_weights, matches=matches, popsize=30,
+                    mutation=(0.5,1.0), workers=-1, updating='deferred',
+                    polish=False)
     m_this.linear = True
     return m_this
 
@@ -940,5 +941,6 @@ def save_fit_as_pdf(data, peaks, arc_lines, filename):
                 horizontalalignment='center', rotation=90, fontdict={'size': 8})
     fig.set_size_inches(17, 11)
     plt.savefig(filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
+    plt.close()  # KL: otherwise the plot can pop up in subsequent plt.show()
     plt.ion()
 

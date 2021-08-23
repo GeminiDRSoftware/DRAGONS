@@ -53,11 +53,13 @@ class attachWavelengthSolutionConfig(config.Config):
 class calculateSensitivityConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
+    in_vacuo = config.Field("Are spectrophotometric data wavelengths measured "
+                            "in vacuo?", bool, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
     debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
                                   bool, False)
-    regions = config.Field("Sample regions", str, None, optional=True,
+    regions = config.Field("Wavelength sample regions (nm)", str, None, optional=True,
                            check=validate_regions_float)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
@@ -94,9 +96,12 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                             "local": "weighted by strength relative to local peaks"},
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
+    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
+                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
-                                           min=300., max=25000., optional=True)
-    dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
+                                           min=300., max=5000., optional=True)
+    dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
+                                   min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
@@ -115,7 +120,7 @@ class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
 
-class extract1DSpectraConfig(config.Config):
+class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
     method = config.ChoiceField("Extraction method", str,
                                 allowed={"standard": "no weighting",
@@ -149,7 +154,7 @@ def check_section(value):
                                  "greater than start pixel number")
     return True
 
-class findSourceAperturesConfig(config.Config):
+class findAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
     max_apertures = config.RangeField("Maximum number of sources to find",
                                       int, None, min=1, optional=True)
@@ -404,6 +409,7 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     regions = config.Field("Sample regions", str, None, optional=True)
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
+    interactive = config.Field("Run primitive interactively?", bool, False)
 
     def setDefaults(self):
         self.order = 5
@@ -433,7 +439,6 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     def setDefaults(self):
         del self.function
         self.order = 2
-
 
 
 class write1DSpectraConfig(config.Config):

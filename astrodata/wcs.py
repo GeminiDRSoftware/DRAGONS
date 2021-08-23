@@ -386,14 +386,16 @@ def get_axes(header):
     spec_inmap = []
     unknown = []
     skysystems = np.array(list(sky_pairs.values())).flatten()
-    for ax in ctype:
-        ind = ctype.index(ax)
+    for ind, ax in enumerate(ctype):
         if ax in specsystems:
             spec_inmap.append(ind)
         elif ax in skysystems:
             sky_inmap.append(ind)
         else:
             unknown.append(ind)
+
+    if len(sky_inmap) == 1:
+        unknown.append(sky_inmap.pop())
 
     if sky_inmap:
         _is_skysys_consistent(ctype, sky_inmap)
@@ -515,10 +517,11 @@ def fitswcs_image(header):
     # get the part of the PC matrix corresponding to the imaging axes
     sky_axes, spec_axes, unknown = get_axes(wcs_info)
     if not sky_axes:
-        if len(unknown) == 2:
-            sky_axes = unknown
-        else:  # No sky here
-            return
+        return
+        #if len(unknown) == 2:
+        #    sky_axes = unknown
+        #else:  # No sky here
+        #    return
     pixel_axes = _get_contributing_axes(wcs_info, sky_axes)
     if len(pixel_axes) > 2:
         raise ValueError("More than 2 pixel axes contribute to the sky coordinates")
@@ -584,8 +587,8 @@ def fitswcs_linear(header):
     crval = wcs_info['CRVAL']
     # get the part of the CD matrix corresponding to the imaging axes
     sky_axes, spec_axes, unknown = get_axes(wcs_info)
-    if not sky_axes and len(unknown) == 2:
-        unknown = []
+    #if not sky_axes and len(unknown) == 2:
+    #    unknown = []
 
     linear_models = []
     for ax in spec_axes + unknown:

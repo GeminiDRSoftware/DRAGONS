@@ -13,7 +13,7 @@ formats = [("ascii", "dat", "ascii.basic"),
            ("fits", "fits", "fits"),
            ("ascii.csv", "csv", "ascii.csv")]
 
-@pytest.mark.gmosls
+@pytest.mark.gmosls  # stop it running as a unit test
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", input_files, indirect=True)
 @pytest.mark.parametrize("output_format, extension, input_format", formats)

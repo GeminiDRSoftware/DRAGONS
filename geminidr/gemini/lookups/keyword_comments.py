@@ -41,7 +41,6 @@ keyword_comments = {
     "NCOMBINE": "Number of input images",
     "NEXTEND": "Number of extensions",
     "NONLINEA": "Non-linear regime [ADU]",
-    "NSCIEXT": "Number of science extensions",
     "OBJECT": "Object Name",
     "OBSCLASS": "Observe class",
     "OBSID": "Observation ID / Data label",

@@ -16,6 +16,7 @@ from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
+from geminidr.interactive.server import interactive_fitter
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
@@ -1012,25 +1013,36 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
-        self.submit_button.align = 'end'
-        self.submit_button.height = 35
-        self.submit_button.height_policy = "fixed"
-        self.submit_button.margin = (0, 5, 5, 5)
-        self.submit_button.width = 212
-        self.submit_button.width_policy = "fixed"
+
+        for btn in (self.submit_button, self.abort_button):
+            btn.align = 'end'
+            btn.height = 35
+            btn.height_policy = "fixed"
+            btn.margin = (0, 5, 5, 5)
+            btn.width = 212
+            btn.width_policy = "fixed"
 
         toolbar = row(Spacer(width=250),
-                      column(self.get_filename_div(), self.submit_button),
+                      column(self.get_filename_div(), row(self.abort_button, self.submit_button)),
                       Spacer(width=10),
                       align="end", css_classes=['top-row'])
 
         layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'
 
-        Controller(aperture_view.fig, self.model, None, helptext,
-                   showing_residuals=False)
+        Controller(aperture_view.fig, self.model, None, helptext)
 
         doc.add_root(layout)
+
+    def submit_button_handler(self):
+        """
+        Submit button handler.
+
+        The parent version checks for bad/poor fits, but that's not an issue
+        here, so we just exit by disabling the submit button, which triggers
+        some callbacks.
+        """
+        self.submit_button.disabled = True
 
     def result(self):
         """
@@ -1062,6 +1074,5 @@ def interactive_find_source_apertures(ext, **kwargs):
     """
     model = FindSourceAperturesModel(ext, **kwargs)
     fsav = FindSourceAperturesVisualizer(model, filename_info=ext.filename)
-    server.set_visualizer(fsav)
-    server.start_server()
+    interactive_fitter(fsav)
     return fsav.result()

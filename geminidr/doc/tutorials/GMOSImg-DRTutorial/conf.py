@@ -30,7 +30,7 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial<br> GMOS Imaging Data Reduction'
-copyright = '2020, Association of Universities for Research in Astronomy'
+copyright = '2021, Association of Universities for Research in Astronomy'
 author = 'Bruno C. Quint, Kathleen Labrie'
 
 # The short X.Y version
@@ -82,7 +82,7 @@ language = None
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2020'
+today = 'July 2021'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

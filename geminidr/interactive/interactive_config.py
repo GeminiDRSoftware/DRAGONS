@@ -17,11 +17,6 @@ show_add_aperture_button = False
 class InteractiveConfig:
     """
     Singleton configuration data for interactive code.
-
-    This should be created after the core DRAGONS
-    ``globalConf``.  To ensure this happens, I
-    recommend only putting it inside of the methods
-    of the interactive server and interfaces.
     """
     def __new__(cls, *args, **kwds):
         it = cls.__dict__.get("__it__")
@@ -65,6 +60,9 @@ def interactive_conf():
     """
     Get the interactive configuration singleton.
 
-    :return:
+    Returns
+    -------
+    :class:`~geminidr.interactive.interactive_config.InteractiveConfig`
+        Singleton interactive configuration
     """
     return InteractiveConfig()

@@ -21,11 +21,12 @@ def loop_process(in_queue, out_queue):
     while True:
         try:
             cmd = in_queue.get()
-
             try:
                 result = check_output(cmd, stderr=STDOUT)
             except CalledProcessError as e:
                 result = e
+            except Exception as ex:
+                result = ex
             out_queue.put(result)
         except KeyboardInterrupt:
             continue

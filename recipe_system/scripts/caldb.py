@@ -6,15 +6,16 @@
 # caldb.py -- local calibration database management tool
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
+import os
 import sys
 import traceback
 
-from os.path import isdir
+from os.path import isdir, exists, expanduser
 from argparse import ArgumentParser
 from functools import partial
 
 from recipe_system.config import load_config
-from recipe_system.cal_service import get_db_path_from_config, LocalDB
+from recipe_system.cal_service import get_db_path_from_config, LocalDB, RemoteDB, parse_databases
 from recipe_system.cal_service.localmanager import LocalManagerError
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
 from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
@@ -49,7 +50,9 @@ def buildArgumentParser():
     p_remove.add_argument('files', metavar='filenames', nargs='+',
                           help="FITS file names. Paths will be disregarded.")
 
-    for sp in (p_add, p_init, p_list, p_remove):
+    p_config = sub.add_parser('config', help="Show configuration for caldb")
+
+    for sp in (p_add, p_init, p_list, p_remove, p_config):
         sp.add_argument('-c', '--config', dest='config',
                         help="Path to the config file, if not the default "
                              "location, or defined by the environment "
@@ -167,6 +170,60 @@ class Dispatcher:
             else:
                 log(e.message, sys.stderr, bold=True)
             return -1
+
+    def _action_config(self, args):
+        from recipe_system.config import STANDARD_REDUCTION_CONF
+        from recipe_system.config import expand_filenames
+
+        # print(f"in caldb config {self.db.db_file}")
+        isactive = "The calibration dbs are all local, meaning that remote " \
+                   "calibrations will not be downloaded "
+        inactive = "There are remote dbs configured, meaning that remote " \
+                   "calibrations will be downloaded."
+
+        # parse up here, just to keep warnings and errors from cluttering up the config output
+        dbs = parse_databases()
+
+        print('')
+
+        dragonsrc_location = STANDARD_REDUCTION_CONF
+        dragonsrc_override = os.getenv('DRAGONSRC', None)
+        if dragonsrc_override:
+            print(f"\033[1mDRAGONS rc file override from environment: {dragonsrc_override}\033[0m")
+            print('')
+            dragonsrc_location = dragonsrc_override
+        if not exists(expanduser(dragonsrc_location)):
+            print(f"\033[1mDRAGONS will fall back to legacy config, rc file {dragonsrc_location} not found\033[0m")
+            print('')
+
+        filenames = expand_filenames(deprecation_warning=False)
+        print(f"Using configuration files: \033[1m{filenames}\033[0m")
+        print('')
+        for db in dbs:
+            print(db[1])
+            print(f"  Type:  {db[0].__name__}")
+            print(f"  Get:   {db[2]['get_cal']}")
+            print(f"  Store: {db[2]['store_cal']}")
+            print('')
+        print(f"\nDatabase file: \033[1m{self.db.name}\033[0m")
+        if not exists(self.db.name):
+            print("   NB: The database does not exist. Please initialize it.")
+            print("       (Read the help message about 'init' command)")
+        print()
+        local = True
+        localdb = self.db
+        seendbs = list()
+        while localdb is not None:
+            if isinstance(self.db, RemoteDB):
+                local = False
+                localdb = None
+            else:
+                seendbs.append(localdb)
+                localdb = self.db.nextdb if self.db.nextdb not in seendbs else None
+        if local:
+            print(isactive)
+        else:
+            print(inactive)
 
 
 if __name__ == '__main__':
