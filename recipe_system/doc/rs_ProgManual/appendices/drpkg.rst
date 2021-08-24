@@ -106,13 +106,15 @@ example::
 
 From the mappers
 ----------------
-Wehn using the mappers directly, again the attribute to set in either mapper,
+When using the mappers directly, again the attribute to set in either mapper,
 |PrimitiveMapper| or |RecipeMapper|, is ``drpkg``.  For example::
 
     >>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
     >>> from recipe_system.mappers.recipeMapper import RecipeMapper
-    >>> pm = PrimitiveMapper([ad], drpkg='mydrpkg')
-    >>> rm = RecipeMapper([ad], drpkg='mydrpkg')
+    >>> tags = ad.tags
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> pmapper = PrimitiveMapper(tags, instpkg, drpkg='mydrpkg')
+    >>> rmapper = RecipeMapper(tags, instpkg, drpkg='mydrpkg')
 
 
 

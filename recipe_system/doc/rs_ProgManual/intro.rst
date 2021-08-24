@@ -34,7 +34,7 @@ engaged when directly pertinent to the operations of the Recipe System.
 Reference Documents
 ===================
 
-    - `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/>`_
+    - `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x>`_
 
 
 .. _related:
@@ -50,10 +50,19 @@ Further Information
 ===================
 As this document details programmatic use of the mapper classes, readers who wish
 to read up on the Recipe System application, |reduce|, should instead consult the
-DRAGONS document, `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/>`_,
+DRAGONS document, `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/>`_,
 which also describes usage of the |Reduce| class API from a user's point of view
 rather than a programmer's.
 
 Users and developers wishing to see more information about the Astrodata
 package, how to use the programmatic interfaces on such objects should consult the
 documents :ref:`listed above <related>`.
+
+
+
+ >>> ad = astrodata.open(<fitsfile>)
+ |  >>> dtags = set(list(ad.tags)[:])
+ |  >>> instpkg = ad.instrument(generic=True).lower()
+ |  >>> pm = PrimitiveMapper(dtags, instpkg)
+ |  >>> pclass = pm.get_applicable_primitives()
+ |  >>> pclass
