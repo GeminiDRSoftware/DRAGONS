@@ -2078,7 +2078,8 @@ class Spect(PrimitivesBASE):
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
 
-                data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=center, nsum=nsum)
+                data, mask, variance, extract_slice = tracing.average_along_slit(
+                    ext, center=center, nsum=nsum)
                 log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                             format(direction, extract_slice.start + 1, extract_slice.stop))
                 mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
@@ -2086,7 +2087,8 @@ class Spect(PrimitivesBASE):
 
                 masked_data = np.ma.masked_array(data, mask=mask)
                 weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                pixels = np.arange(len(masked_data))
+                center = (extract_slice.start + extract_slice.stop) // 2
+                waves = ext.wcs(range(len(masked_data)), center)[0]
 
                 # We're only going to do CCD-to-CCD normalization if we've
                 # done the mosaicking in this primitive; if not, we assume
@@ -2095,9 +2097,9 @@ class Spect(PrimitivesBASE):
                 if nslices > 1 and mosaicked:
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
-                    result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
+                    result = optimize.minimize(QESpline, coeffs, args=(waves, masked_data,
                                                                        weights, boundaries,
-                                                                       fit1d_params["order"]),
+                                                                       20),
                                                tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning(f"Problem with spline fitting: {result.message}")
@@ -2110,7 +2112,7 @@ class Spect(PrimitivesBASE):
                         weights[slice_] /= coeff
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                fit1d = fit_1D(masked_data, points=None, weights=weights,
+                fit1d = fit_1D(masked_data, points=waves, weights=weights,
                                **fit1d_params)
 
                 if not mosaicked:
@@ -2122,12 +2124,15 @@ class Spect(PrimitivesBASE):
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
-                origin = admos.nddata[0].meta.pop('transform')['origin']
-                origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
+                #origin = admos.nddata[0].meta.pop('transform')['origin']
+                #origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
                 for ext, wcs in zip(ad, orig_wcs):
-                    t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
-                    geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                    flat_data = fit1d.evaluate(geomap.coords[dispaxis])
+                    ypix, xpix = np.mgrid[:ext.shape[0], :ext.shape[1]]
+                    waves = wcs(xpix, ypix)[0]
+                    flat_data = np.array([fit1d.evaluate(w) for w in waves])
+                    #t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
+                    #geomap = transform.GeoMap(t, ext.shape, inverse=True)
+                    #flat_data = fit1d.evaluate(geomap.coords[dispaxis])
                     ext.divide(flat_data)
                     ext.wcs = wcs
 
@@ -3218,7 +3223,7 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
     return this_conserve
 
 
-def QESpline(coeffs, xpix, data, weights, boundaries, order):
+def QESpline(coeffs, waves, data, weights, boundaries, order):
     """
     Fits a cubic spline to data, allowing scaling renormalizations of
     contiguous subsets of the data.
@@ -3227,19 +3232,14 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
     ----------
     coeffs : array_like
         Scaling factors for CCDs 2+.
-
-    xpix : array
-        Pixel numbers (in general, 0..N).
-
+    waves : array
+        Wavelengths
     data : masked_array
         Data to be fit.
-
     weights: array
         Fitting weights (inverse standard deviations).
-
     boundaries: tuple
         The last pixel coordinate on each CCD.
-
     order: int
         Order of spline to fit.
 
@@ -3253,8 +3253,8 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
         scaling[boundary:] = coeff
     scaled_data = scaling * data
     scaled_weights = 1. / scaling if weights is None else (weights / scaling).astype(np.float64)
-    spline = am.UnivariateSplineWithOutlierRemoval(xpix, scaled_data,
-                                                            order=order, w=scaled_weights, niter=1, grow=0)
+    spline = am.UnivariateSplineWithOutlierRemoval(waves, scaled_data,
+                                                   order=order, w=scaled_weights, niter=1, grow=0)
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
                                                        scaled_weights)).sum() / (~spline.mask).sum()
     return result
