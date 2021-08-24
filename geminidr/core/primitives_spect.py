@@ -518,6 +518,8 @@ class Spect(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad)
+            if arc.path:
+                add_provenance(ad, arc.filename, md5sum(arc.path) or "", self.myself())
 
         if fail:
             raise OSError("No suitable arc calibration for one or more "
@@ -1138,8 +1140,6 @@ class Spect(PrimitivesBASE):
                             keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad_out)
-            if arc.path:
-                add_provenance(ad_out, arc.filename, md5sum(arc.path) or "", self.myself())
 
         if fail:
             raise OSError("One or more input(s) missing distortion "
