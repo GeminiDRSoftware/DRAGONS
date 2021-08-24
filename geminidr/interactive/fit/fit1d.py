@@ -894,17 +894,20 @@ class Fit1DPanel:
             pass
         else:
             x_min, x_max = min(xdata), max(xdata)
-            if x_min != x_max:
-                x_pad = (x_max - x_min) * 0.1
-                self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
-            y_min, y_max = min(ydata), max(ydata)
-            if y_min != y_max:
-                y_pad = (y_max - y_min) * 0.1
-                self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
+            if self.p_main:
+                if x_min != x_max:
+                    x_pad = (x_max - x_min) * 0.1
+                    self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
+                y_min, y_max = min(ydata), max(ydata)
+                if y_min != y_max:
+                    y_pad = (y_max - y_min) * 0.1
+                    self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
         if x_range is not None:
-            self.p_main.x_range = x_range
+            if self.p_main:
+                self.p_main.x_range = x_range
         if y_range is not None:
-            self.p_main.y_range = y_range
+            if self.p_main:
+                self.p_main.y_range = y_range
 
     def reset_dialog_handler(self, result):
         """
@@ -1043,9 +1046,11 @@ class Fit1DPanel:
 
     def load(self, record):
         self.model.data.data['mask'] = record["mask"]
-        region_tuples = cartesian_regions_to_slices(record["params"]["regions"])
-        self.model.band_model.load_from_tuples(region_tuples)
-        self.fitting_parameters_ui.function.select(record["params"]["function"])
+        if "regions" in record["params"]:
+            region_tuples = cartesian_regions_to_slices(record["params"]["regions"])
+            self.model.band_model.load_from_tuples(region_tuples)
+        if "function" in record["params"]:
+            self.fitting_parameters_ui.function.select(record["params"]["function"])
         self.fitting_parameters_ui.order_slider.children[1].value = record["params"]["order"]
         self.fitting_parameters_ui.sigma_lower_slider.children[1].value = record["params"]["sigma_lower"]
         self.fitting_parameters_ui.sigma_upper_slider.children[1].value = record["params"]["sigma_upper"]
@@ -1055,6 +1060,7 @@ class Fit1DPanel:
         else:
             self.fitting_parameters_ui.sigma_button.active = [0]
             self.fitting_parameters_ui.niter_slider.children[1].value = record["params"]["niter"]
+        self.model.perform_fit()
 
     # TODO refactored this down from tracing, but it breaks
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
@@ -1319,6 +1325,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.panels.append(tui)
 
         self._reinit_params = {k: v for k, v in ui_params.values.items()}
+        self._record_params = {k: v for k, v in ui_params.values.items()}
 
     # noinspection PyProtectedMember
     def reset_reinit_panel(self, param=None):
@@ -1491,16 +1498,46 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         """
         retval = super().record()
         retval["tabs"] = list()
-        retval["reinit_params"] = self._reinit_params.copy()
+        reinit_params = dict()
+        for fname in self.ui_params.reinit_params:
+            reinit_params[fname] = self.ui_params.values[fname]
+        retval["reinit_params"] = reinit_params  # self._reinit_params.copy()
         for tab in self.panels:
             retval["tabs"].append(tab.record())
         return retval
 
-    def load(self, record):
+    def load(self, record, reconstruct_points=True):
+        """
+        Load the visualizer state from a saved record.
+
+        This method will load this interactive visualizer from values saved
+        by an earlier call to :meth:`record`.
+
+        Parameters
+        ----------
+        record : dict
+            Dictionary capturing the state of this visualizer, as returned by :meth:`record`
+        reconstruct_points : bool
+            If True, call the reconstruct_points after changing the reinit_params.  Defaults to True
+        """
         super().load(record)
-        self._reinit_params = record["reinit_params"].copy()
-        # now apply the reinit params
-        self.reset_reinit_panel()
+
+        # This won't work any more, we only capture the reinit parameters on entry, not on success
+        # should that change?
+        saw_change = False
+        for fname in self.ui_params.reinit_params:
+            oldval = self._reinit_params[fname]
+            newval = record["reinit_params"][fname]
+            if newval != oldval:
+                saw_change = True
+                self._reinit_params[fname] = newval
+        if saw_change:
+            # now apply the reinit params
+            self.reset_reinit_panel()
+            # take points from saved values, incorporates user edits
+            if reconstruct_points:
+                self.reconstruct_points()
+
         # now restore the tabs
         for tab, tab_record in zip(self.panels, record["tabs"]):
             tab.load(tab_record)

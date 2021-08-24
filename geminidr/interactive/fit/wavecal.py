@@ -445,13 +445,24 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.add_new_line()
 
     def record(self):
+        def listify(l):
+            if isinstance(l, list):
+                return l
+            retval = list()
+            retval.extend(l)
+            return retval
         retval = super().record()
-        retval['wavecal_data'] = self.model.data.data.clone()
+        wavecal_data = dict()
+        for k, v in self.model.data.data.items():
+            wavecal_data[k] = listify(v)
+        retval['wavecal_data'] = wavecal_data
+        return retval
 
     def load(self, record):
-        super().load(record)
         self.model.data.data = record['wavecal_data']
-        self.model.perform_fit()
+        # use base class load, but do not reconstruct points - we did that already by loading wavecal_data
+        super().load(record, reconstruct_points=False)
+        # the superclass will redo the fit for us
 
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):

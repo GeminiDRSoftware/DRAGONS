@@ -57,7 +57,7 @@ def load_replay_interactive_settings(visualizer):
         retval = replay_record["interactive"][replay_step]
         replay_step += 1
         visualizer.load(retval)
-    if replay_record and replay_step >= len(replay_record["interactive"]):
+    elif replay_record and replay_step >= len(replay_record["interactive"]):
         log.warning("Request for interactive settings beyond that recorded in the replay file.  This replay "
                     "is probably not compatible with your current DRAGONS install.")
 
