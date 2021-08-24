@@ -1039,12 +1039,34 @@ class Fit1DPanel:
         self.model.perform_fit()
 
     def record(self):
+        """
+        Record the state of this tab into a dictionary.
+
+        This call returns a dictionary representation of the state of this tab interface.
+        This dictionary can be sent back in to the :meth:`load` method to restore the state
+        at a later time.
+
+        Returns
+        -------
+        dict : Dictionary describing the state of the user interface
+        """
         return {
             "mask": self.model.data.data['mask'],
             "params": self.model.fit.extract_params()
         }
 
     def load(self, record):
+        """
+        Load the state of this tab from a dictionary.
+
+        This call loads the state of the interface tab from a previously saved dictionary
+        from :meth:`record`.
+
+        Parameters
+        ----------
+        record : dict
+            Dictionary of saved state from :meth:`record`
+        """
         self.model.data.data['mask'] = record["mask"]
         if "regions" in record["params"]:
             region_tuples = cartesian_regions_to_slices(record["params"]["regions"])
