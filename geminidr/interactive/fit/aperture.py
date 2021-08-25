@@ -878,6 +878,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.model = model
         self.fig = None
         self.help_text = DETAILED_HELP
+        self.inputs = dict()
+
+        # moving this here so widgets are initialized in case
+        # we are reloading state from saved json via --record/--replay
+        self.params = self.parameters_view()
 
     def add_aperture(self):
         """
@@ -956,7 +961,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.make_modal(find_button, 'Recalculating Apertures...')
         self.make_modal(reset_button, 'Recalculating Apertures...')
 
-        return column(
+        retval = column(
             Div(text="Parameters to compute the profile:",
                 css_classes=['param_section']),
             percentile.build(),
@@ -971,6 +976,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             row([reset_button, find_button]),
         )
 
+        # save our input widgets for record/load if needed
+        for widget in (maxaper, minsky, use_snr,
+                       threshold, percentile, sizing, sections):
+            self.inputs[widget.attr] = widget
+
+        # Moving this to here so it happens before any load of saved state
+        self.model.recalc_apertures()
+
+        return retval
+
     def visualize(self, doc):
         """
         Build the visualization in bokeh in the given browser document.
@@ -984,7 +999,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         bokeh_data_color = interactive_conf().bokeh_data_color
 
-        params = self.parameters_view()
+        params = self.params  # self.parameters_view()
 
         ymax = 100  # we will update this when we have a profile
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
@@ -1009,7 +1024,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             row(renumber_button, add_button) if show_add_aperture_button else renumber_button,
         ])
 
-        self.model.recalc_apertures()
+        # moved to constructor, this would overwrite the results of a load()
+        # self.model.recalc_apertures()
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
@@ -1059,6 +1075,57 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         locations, limits = zip(*res)
         return np.array(locations), limits
 
+    def record(self):
+        """
+        Record the state of the interactive UI.
+
+        This enhances the record from the base class with additional state
+        information specific to the Fit1D Visualizer.  This includes per-tab
+        fitting parameters and the current state of the data mask.
+
+        Returns
+        -------
+            dict : Dictionary representing the state of the inputs
+        """
+        retval = super().record()
+        aperture_inputs = dict()
+        for k, v in self.inputs.items():
+            aperture_inputs[k] = getattr(self.model, k)
+        retval["aperture_inputs"] = aperture_inputs
+        apertures = dict()
+        for aperture_id, aperture_model in self.model.aperture_models.items():
+            aperture = dict()
+            aperture['location'] = aperture_model.source.data['location'][0]
+            aperture['start'] = aperture_model.source.data['start'][0]
+            aperture['end'] = aperture_model.source.data['end'][0]
+            apertures[aperture_id] = aperture
+        retval['apertures'] = apertures
+        return retval
+
+    def load(self, record):
+        """
+        Load the state of the interactive UI
+
+        This reads in the saved state of a previous run and applies it
+        to the visualizer.
+
+        Parameters
+        ----------
+        record : dict
+            Dictionary with recorded state of the visualizer
+        """
+        super().load(record)
+        for k, v in record["aperture_inputs"].items():
+            if k != 'section':
+                setattr(self.model, k, v)
+                self.inputs[k].reset()
+        ap_ids = list()
+        ap_ids.extend(self.model.aperture_models.keys())
+        for aperture_id in ap_ids:
+            self.model.delete_aperture(aperture_id)
+        for aperture_id, aperture in record["apertures"].items():
+            self.model.add_aperture(aperture["location"], aperture["start"], aperture["end"])
+
 
 def interactive_find_source_apertures(ext, **kwargs):
     """
@@ -1070,7 +1137,6 @@ def interactive_find_source_apertures(ext, **kwargs):
     also interact directly with the found aperutres as desired.  When the user
     hits the `Submit` button, this method will return the results of the find
     to the caller.
-
     """
     model = FindSourceAperturesModel(ext, **kwargs)
     fsav = FindSourceAperturesVisualizer(model, filename_info=ext.filename)
