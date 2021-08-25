@@ -110,7 +110,9 @@ def ad(request, path_to_inputs):
 # -- Recipe to create pre-processed data ---------------------------------------
 def _add_aperture_table(ad, center):
     """
-    Adds a fake aperture table to the `AstroData` object.
+    Adds a fake aperture table to the `AstroData` object (NB. this is
+    incomplete compared with the real one, which also includes domain & model
+    type information in the header).
 
     Parameters
     ----------
@@ -125,23 +127,16 @@ def _add_aperture_table(ad, center):
 
     aperture = Table(
         [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [width - 1],  # domain_end
          [center],  # c0
-         [-5],  # aper_lower
-         [5],  # aper_upper
+         [-10.],  # aper_lower
+         [10.],  # aper_upper
          ],
         names=[
             'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
             'c0',
             'aper_lower',
-            'aper_upper']
+            'aper_upper'],
+        dtype=(np.int32, np.float64, np.float64, np.float64)
     )
 
     ad[0].APERTURE = aperture
@@ -165,7 +160,7 @@ def create_inputs_recipe():
 
     associated_info = {
         "N20180508S0021_aperturesTraced.fits": {
-            "arc": ["N20180615S0409.fits"], "center": 244},
+            "arc": ["N20180615S0409.fits"], "center": 255},
         "N20180509S0010_aperturesTraced.fits": {
             "arc": ["N20180509S0080.fits"], "center": 259},
         "N20180516S0081_aperturesTraced.fits": {
@@ -221,7 +216,8 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
-        p.distortionCorrect(arc=arc_master)
+        p.attachWavelengthSolution(arc=arc_master)
+        p.distortionCorrect()
 
         temp_ad = p.makeIRAFCompatible()[0]
         temp_ad = _add_aperture_table(temp_ad, aperture_center)
