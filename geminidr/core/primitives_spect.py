@@ -1641,7 +1641,7 @@ class Spect(PrimitivesBASE):
                                               c0=loc)
                     aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
-                    aptable["number"] = i
+                    aptable["number"] = np.int32(i)
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
