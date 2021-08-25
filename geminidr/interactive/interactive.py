@@ -460,11 +460,15 @@ class PrimitiveVisualizer(ABC):
         # and display those via an alert.  It's a workaround
         # so that here we can send messages to the user from
         # the bokeh server-side python.
-        if self._message_holder.text == message:
-            # need to trigger a change...
-            self._message_holder.text = f"{message} "
+        if hasattr(self._message_holder, "text"):
+            if self._message_holder.text == message:
+                # need to trigger a change...
+                self._message_holder.text = f"{message} "
+            else:
+                self._message_holder.text = message
         else:
-            self._message_holder.text = message
+            # If we do not yet have a built UI...
+            _log.info(message)
 
     def make_widgets_from_parameters(self, params, reinit_live: bool = True,
                                      slider_width: int = 256):
@@ -1382,7 +1386,7 @@ class TabsTurboInjector:
         :param title: str
             Title for the new tab
         """
-        tab_dummy = row(Div(),)
+        tab_dummy = row(Div(text=""),)
         tab_child = child
 
         self.tab_children.append(child)
@@ -1406,8 +1410,12 @@ class TabsTurboInjector:
             The new selection
         """
         if old != new:
-            self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
+            # Have to clear the old tab contents with a future callback or bokeh Tabs interface freaks out
+
+            def fn():
+                self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
+            do_later(fn)
 
 
 class UIParameters:

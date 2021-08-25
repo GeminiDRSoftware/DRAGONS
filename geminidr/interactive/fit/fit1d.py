@@ -16,7 +16,10 @@ from geminidr.interactive.interactive import GIRegionModel, connect_region_model
 from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
+from gempy.utils import logutils
 
+
+_log = logutils.get_logger(__name__)
 
 # Names to use for masks.  You can change these to change the label that gets displayed in the legend
 SIGMA_MASK_NAME = 'rejected (sigma)'
