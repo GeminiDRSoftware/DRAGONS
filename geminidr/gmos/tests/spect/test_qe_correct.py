@@ -779,9 +779,9 @@ def create_inputs_recipe(use_branch_name=False):
         p.attachWavelengthSolution(arc=arc_out)
         p.flatCorrect(flat=flat_master)
 
-        os.chdir(input_path)
+        os.chdir("inputs")
         _ = p.writeOutputs().pop()
-        os.chdir(path)
+        os.chdir("../")
 
 
 if __name__ == '__main__':
