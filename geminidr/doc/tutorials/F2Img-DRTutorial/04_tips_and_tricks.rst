@@ -63,3 +63,4 @@ The list of recognized processed calibration is:
 * processed_dark
 * processed_flat
 * processed_fringe
+* processed_standard

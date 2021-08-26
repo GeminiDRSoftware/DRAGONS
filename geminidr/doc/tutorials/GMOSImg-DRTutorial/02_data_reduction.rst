@@ -2,7 +2,7 @@
 
 .. include:: DRAGONSlinks.txt
 
-.. _data quality plane: https://astrodata-user-manual.readthedocs.io/en/latest/data.html#data-quality-plane
+.. _data quality plane: https://astrodata-user-manual.readthedocs.io/en/release-3.0.x/data.html#data-quality-plane
 
 .. _command_line_data_reduction:
 
@@ -23,17 +23,17 @@ learn more about GMOS data reduction.
 DRAGONS installation comes with a set of scripts that are used to
 reduce astronomical data. The most important script is called
 "|reduce|", which is extensively explained in the `Recipe System Users Manual
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
+<https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/index.html>`_.
 It is through that command that a DRAGONS reduction is launched.
 
 For this tutorial, we will be also using other `Supplemental tools
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
+<https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/supptools.html>`_,
 like:
 
-* "|dataselect|"
-* "|showd|"
-* "|typewalk|"
-* "|caldb|"
+* |dataselect|
+* |showd|
+* |typewalk|
+* |caldb|
 
 
 The dataset
@@ -44,7 +44,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`.
+    :ref:`about_data_set`
 
 Here is a copy of the table for quick reference.
 
