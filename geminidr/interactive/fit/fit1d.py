@@ -1053,8 +1053,16 @@ class Fit1DPanel:
         -------
         dict : Dictionary describing the state of the user interface
         """
+        def encode_mask(mask):
+            retval = ""
+            for mask_item in mask:
+                if mask_item == USER_MASK_NAME:
+                    retval = retval + "1"
+                else:
+                    retval = retval + "0"
+            return retval
         return {
-            "mask": self.model.data.data['mask'],
+            "mask": encode_mask(self.model.data.data['mask']),
             "params": self.model.fit.extract_params()
         }
 
@@ -1070,7 +1078,18 @@ class Fit1DPanel:
         record : dict
             Dictionary of saved state from :meth:`record`
         """
-        self.model.data.data['mask'] = record["mask"]
+        def decode_mask(mask):
+            if isinstance(mask, list):
+                return mask
+            else:
+                retval = list()
+                for char in mask:
+                    if char == '1':
+                        retval.append(USER_MASK_NAME)
+                    else:
+                        retval.append('good')
+                return retval
+        self.model.data.data['mask'] = decode_mask(record["mask"])
         if "regions" in record["params"]:
             region_tuples = cartesian_regions_to_slices(record["params"]["regions"])
             self.model.band_model.load_from_tuples(region_tuples)
@@ -1524,8 +1543,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         retval = super().record()
         retval["tabs"] = list()
         reinit_params = dict()
-        for fname in self.ui_params.reinit_params:
-            reinit_params[fname] = self.ui_params.values[fname]
+        if self.ui_params.reinit_params is not None:
+            for fname in self.ui_params.reinit_params:
+                reinit_params[fname] = self.ui_params.values[fname]
         retval["reinit_params"] = reinit_params  # self._reinit_params.copy()
         for tab in self.panels:
             retval["tabs"].append(tab.record())
@@ -1550,12 +1570,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # This won't work any more, we only capture the reinit parameters on entry, not on success
         # should that change?
         saw_change = False
-        for fname in self.ui_params.reinit_params:
-            oldval = self._reinit_params[fname]
-            newval = record["reinit_params"][fname]
-            if newval != oldval:
-                saw_change = True
-                self._reinit_params[fname] = newval
+        if self.ui_params.reinit_params is not None:
+            for fname in self.ui_params.reinit_params:
+                oldval = self._reinit_params[fname]
+                newval = record["reinit_params"][fname]
+                if newval != oldval:
+                    saw_change = True
+                    self._reinit_params[fname] = newval
         if saw_change:
             # now apply the reinit params
             self.reset_reinit_panel()
