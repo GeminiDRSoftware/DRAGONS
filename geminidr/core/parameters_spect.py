@@ -51,6 +51,8 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
                             "in vacuo?", bool, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
+    resampling = config.RangeField("Resampling interval (nm) for spectrophotometric data file",
+                                   float, None, min=0, inclusiveMin=False, optional=True)
     debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
                                   bool, False)
     regions = config.Field("Wavelength sample regions (nm)", str, None, optional=True,

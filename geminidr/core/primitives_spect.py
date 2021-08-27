@@ -46,7 +46,7 @@ from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list, transpose_if_needed
-from gempy.library.config import RangeField, Config
+from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
@@ -288,6 +288,7 @@ class Spect(PrimitivesBASE):
         datafile = params["filename"]
         in_vacuo = params["in_vacuo"]
         bandpass = params["bandpass"]
+        resample_interval = params["resampling"]
         airmass0 = params["debug_airmass0"]
         debug_plot = params["debug_plot"]
         interactive = params["interactive"]
@@ -337,6 +338,9 @@ class Spect(PrimitivesBASE):
             if 'WIDTH' not in spec_table.colnames:
                 log.warning(f"Using default bandpass of {bandpass} nm")
                 spec_table['WIDTH'] = bandpass * u.nm
+
+            if resample_interval:
+                spec_table = resample_spec_table(spec_table, resample_interval)
 
             # Do some checks now to avoid failing on every extension
             if airmass0:
@@ -3258,6 +3262,25 @@ def QESpline(coeffs, waves, data, weights, boundaries, order):
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
                                                        scaled_weights)).sum() / (~spline.mask).sum()
     return result
+
+
+def resample_spec_table(spec_table, resample_interval):
+    # If we need to do this, we probably have ground-based
+    # spectrophotometry, so interpolate in WAVELENGTH_AIR
+    waves = spec_table["WAVELENGTH_AIR"].to(u.nm).value
+    new_waves_air = np.arange(min(waves), max(waves + 0.001),
+                              resample_interval)
+    new_waves_vac = air_to_vac(new_waves_air * u.nm)
+    new_fluxes = np.interp(new_waves_air, waves,
+                           spec_table["FLUX"]) * spec_table["FLUX"].unit
+    width_unit = spec_table["WIDTH"].unit
+    new_width = (resample_interval * u.nm).to(width_unit).value
+    new_widths = np.array([spec_table["WIDTH"][np.argmin(abs(waves-w))]
+                           if np.any(abs(waves-w)<1e-6) else new_width
+                           for w in new_waves_air]) * width_unit
+    t = Table([new_waves_air * u.nm, new_waves_vac, new_fluxes, new_widths],
+              names=["WAVELENGTH_AIR", "WAVELENGTH_VAC", "FLUX", "WIDTH"])
+    return t
 
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
