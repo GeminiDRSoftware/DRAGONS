@@ -12,7 +12,8 @@ reduce_recorder = None
 replay_record = None
 replay_step = 0
 reduce_filename = None
-
+disable_replay = False
+warned_user = False
 
 log = logutils.get_logger(__name__)
 
@@ -54,6 +55,9 @@ def record_interactive(record):
     global reduce_recorder
     if reduce_recorder is not None:
         reduce_recorder["interactive"].append(record)
+    if replay_record is not None and not disable_replay:
+        # We're doing a replay, check if this interactive step was modified
+        validate_replay_step(record)
 
 
 def record_reduction():
@@ -104,6 +108,8 @@ def load_replay_interactive_settings(visualizer):
     visualizer : :class:`~geminidr.interactive.PrimitiveVisualizer`
         visualizer to be initialized
     """
+    if disable_replay:
+        return
     global replay_step
     if replay_record and replay_step < len(replay_record["interactive"]):
         retval = replay_record["interactive"][replay_step]
@@ -113,3 +119,32 @@ def load_replay_interactive_settings(visualizer):
         log.warning("Request for interactive settings beyond that recorded in the replay file.  This replay "
                     "is probably not compatible with your current DRAGONS install.")
 
+
+def validate_replay_step(record):
+    """
+    This call validates the exit state of an interactive step vs what
+    was recorded.
+
+    Check the output state of an interactive step vs what was recorded.
+    If the interactive step has been modified, disable the replay functionality
+    for all remaining steps.
+
+    Parameters
+    ----------
+    record : dict
+        Dictionary describing state of the interactive step, as would be saved when recording the session
+    """
+    global replay_step
+    global disable_replay
+    global warned_user
+    if replay_record and replay_step-1 < len(replay_record["interactive"]):
+        retval = replay_record["interactive"][replay_step-1]
+        if retval != record:
+            if not warned_user:
+                log.warning("Interactive settings differ from recorded values, "
+                            "replay turned off for remainder of reduction")
+                warned_user = True
+            disable_replay = True
+    elif replay_record and replay_step >= len(replay_record["interactive"]):
+        log.warning("Request to validate interactive settings beyond that recorded in the replay file.  This replay "
+                    "is probably not compatible with your current DRAGONS install.")
