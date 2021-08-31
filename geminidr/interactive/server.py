@@ -19,7 +19,7 @@ __all__ = ["test_mode", "interactive_fitter", "stop_server"]
 
 # Set to True to tell the interactive code to automatically submit in
 # order to test the interactive paths automatically
-from recipe_system.utils.reduce_recorder import load_replay_interactive_settings
+from recipe_system.utils.reduce_recorder import load_replay_interactive_settings, record_interactive
 
 test_mode = False
 
@@ -156,6 +156,7 @@ def _bkapp(doc):
             doc.template_variables['filename_info'] = _visualizer.filename_info
 
     _visualizer.show(doc)
+    _visualizer.post_show()
     doc.title = title
 
 
@@ -328,4 +329,5 @@ def interactive_fitter(visualizer):
         raise KeyboardInterrupt()
 
     # return record of the state of the visualizer
-    visualizer.record()
+    record = visualizer.record()
+    record_interactive(record)

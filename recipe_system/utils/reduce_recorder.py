@@ -5,7 +5,7 @@ from gempy.utils import logutils
 from recipe_system import __version__
 
 
-__all__ = ["init_reduce_recorder", "record_interactive", "record_reduction", "load_reduce_record",
+__all__ = ["in_replay", "init_reduce_recorder", "record_interactive", "record_reduction", "load_reduce_record",
            "load_replay_interactive_settings"]
 
 reduce_recorder = None
@@ -16,6 +16,23 @@ disable_replay = False
 warned_user = False
 
 log = logutils.get_logger(__name__)
+
+
+def in_replay():
+    """
+    Check if we are in an active replay.
+
+    This is a utlity call to check if we are currently doing a
+    replay of a recorded session.
+
+    Returns
+    -------
+    bool : True if we are in a replay, False if not (including if the user aborted the replay by modifying some inputs
+        earlier)
+    """
+    if replay_record and not disable_replay:
+        return True
+    return False
 
 
 def init_reduce_recorder(filename):

@@ -23,7 +23,7 @@ __all__ = ["FitQuality", "PrimitiveVisualizer", "build_text_slider", "connect_re
            "GIRegionListener", "GIRegionModel", "RegionEditor", "TabsTurboInjector", "UIParameters",
            "do_later"]
 
-from recipe_system.utils.reduce_recorder import record_interactive
+from recipe_system.utils.reduce_recorder import record_interactive, in_replay
 
 _visualizer = None
 
@@ -66,6 +66,10 @@ class PrimitiveVisualizer(ABC):
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
 
+        # JSON encoded state for the interface.  This will either be populated by
+        # load() if we are doing a replay, or by post_show() once the UI is shown.
+        self.reset_all_state = None
+
         self.exited = False
         self.title = title
         self.filename_info = filename_info if filename_info else ''
@@ -90,6 +94,13 @@ class PrimitiveVisualizer(ABC):
                                    id="_warning_btn",
                                    label="Abort",
                                    name="abort_btn",
+                                   )
+        self.reset_all_button = Button(align='center',
+                                   button_type='warning',
+                                   css_classes=["submit_btn"],
+                                   id="_reset_all_btn",
+                                   label="Reset All",
+                                   name="reset_all_btn",
                                    )
         # The submit_button_handler is only needed to flip the user_accepted flag to True before
         # the bokeh event loop terminates
@@ -120,6 +131,8 @@ class PrimitiveVisualizer(ABC):
         """)
         self.abort_button.on_click(self.abort_button_handler)
         self.abort_button.js_on_change('disabled', abort_callback)
+
+        self.reset_all_button.on_click(self.reset_all_button_handler)
 
         self.doc = None
         self._message_holder = None
@@ -185,26 +198,38 @@ class PrimitiveVisualizer(ABC):
         2) The fit is bad, we pop up a message dialog for the user and they hit 'OK' to return to the UI
         3) The fit is poor, we pop up an ok/cancel dialog for the user and continue or return to the UI as directed.
         """
-        bad_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
-                             if fit.quality == FitQuality.BAD)
-        poor_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
-                              if fit.quality == FitQuality.POOR)
-        if bad_fits:
-            # popup message
-            self.show_user_message(f"Failed fit(s) on {bad_fits}. Please "
-                                   "modify the parameters and try again.")
-        elif poor_fits:
-            def cb(accepted):
-                if accepted:
-                    # Trigger the exit/fit, otherwise we do nothing
+        # actual submit logic lives in this callback.  If we need to show the dialog to the user because
+        # we are in a replay, we'll use this callback after their answer.  If not, we call it directly.
+        def do_submit(accepted=True):
+            if accepted:
+                bad_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
+                                     if fit.quality == FitQuality.BAD)
+                poor_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
+                                      if fit.quality == FitQuality.POOR)
+                if bad_fits:
+                    # popup message
+                    self.show_user_message(f"Failed fit(s) on {bad_fits}. Please "
+                                           "modify the parameters and try again.")
+                elif poor_fits:
+                    def cb(accepted):
+                        if accepted:
+                            # Trigger the exit/fit, otherwise we do nothing
+                            self.submit_button.disabled = True
+                    self.show_ok_cancel(f"Poor quality fit(s)s on {poor_fits}. Click "
+                                        "OK to proceed anyway, or Cancel to return to "
+                                        "the fitter.", cb)
+                else:
+                    # Fit is good, we can exit
+                    # Trigger the submit callback via disabling the submit button
                     self.submit_button.disabled = True
-            self.show_ok_cancel(f"Poor quality fit(s)s on {poor_fits}. Click "
-                                "OK to proceed anyway, or Cancel to return to "
-                                "the fitter.", cb)
+        if in_replay() and self.record() != self.reset_all_state:
+            self.show_ok_cancel("You have made changes.  Submitting this will stop the current replay.  You "
+                                "will be able to continue the reduction as normal.  Click OK to proceed "
+                                "anyway, or Cancel to return to the fitter.  You can use the Reset All button "
+                                "to restore the inputs to the values from the replay.", do_submit)
         else:
-            # Fit is good, we can exit
-            # Trigger the submit callback via disabling the submit button
-            self.submit_button.disabled = True
+            # No need to gatekeep, we aren't running in replay mode
+            do_submit()
 
     def abort_button_handler(self):
         """
@@ -218,6 +243,17 @@ class PrimitiveVisualizer(ABC):
                 self.abort_button.disabled = True
 
         self.show_ok_cancel(f"Are you sure you want to abort?  DRAGONS reduce will exit completely.", cb)
+
+    def reset_all_button_handler(self):
+        """
+        Used by the reset all button to restore the initial state of this interactive
+        tool.
+
+        This button handler resets the UI to the initial state.  This saved state is either the state
+        loaded in for a replay from a saved run, or the state captured from record() during post_show()
+        once the UI was built.
+        """
+        self.load(self.reset_all_state)
 
     def session_ended(self, sess_context, user_satisfied):
         """
@@ -547,6 +583,17 @@ class PrimitiveVisualizer(ABC):
 
         return handler
 
+    def post_show(self):
+        """
+        Actions to take after showing the visualizer.
+
+        This is broken out separately to capture any actions to perform once the UI is
+        displayed.  Putting this here makes it easier for subclasses to customize the
+        show() method and still benefit from this final bookkeeping.
+        """
+        if not self.reset_all_state:
+            self.reset_all_state = self.record()
+
     def record(self):
         """
         Record the state of the interactive interface.
@@ -558,14 +605,17 @@ class PrimitiveVisualizer(ABC):
         """
         record = dict()
         record["primitive_name"] = self.primitive_name
-        record_interactive(record)
 
         return record
 
     def load(self, record):
+        self.reset_all_state = record
         if record["primitive_name"] != self.primitive_name:
             _log.warning("While loading interactive data, recorded primitive {} did not match expected primitive {}"
                          .format(record["primitive_name"], self.primitive_name))
+
+    def reset_all(self):
+        self.load(self.reset_all_state)
 
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
