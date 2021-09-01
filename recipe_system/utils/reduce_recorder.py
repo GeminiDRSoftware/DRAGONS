@@ -120,7 +120,7 @@ def load_reduce_record(filename):
                             .format(__version__, replay_record["version"]))
         return replay_record["args"] if replay_record else []
     else:
-        ad = astrodata.open(f"{filename}.fits")
+        ad = astrodata.open(filename)
         return load_reduce_record_from_ad(ad)
 
 

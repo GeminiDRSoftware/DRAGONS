@@ -117,8 +117,8 @@ class Reduce:
         record = args.record
 
         self.add_replay_suffix = False
-        if args.replay:
-            recorded_args = load_reduce_record(args.replay[0])
+        if len(sys.argv) == 3 and sys.argv[1] == '--replay':
+            recorded_args = load_reduce_record(sys.argv[2])
             args = buildParser(__version__).parse_args(recorded_args)
             args = normalize_args(args)
             args.upload = normalize_upload(args.upload)
