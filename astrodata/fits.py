@@ -599,7 +599,8 @@ def ad_to_hdulist(ad):
             hdul.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
 
         if hasattr(ext, "record"):
-            hdul.append(record_to_asdftablehdu(ext.record, extver=ver))
+            if ext.record is not None:
+                hdul.append(record_to_asdftablehdu(ext.record, extver=ver))
 
         for name, other in ext.meta.get('other', {}).items():
             if isinstance(other, Table):
