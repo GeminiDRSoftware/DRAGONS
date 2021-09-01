@@ -1,7 +1,5 @@
 .. 03_api_reduction.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 
@@ -266,7 +264,7 @@ probably to use ``disco_stu``'s command line interface as follow:
 
 ::
 
-    $ disco `dataselect *_skySubtracted.fits --expr='observation_class=="partnerCal"'`
+    $ disco `dataselect *_skyCorrected.fits --expr='observation_class=="partnerCal"'`
 
 If you really want or need to run ``disco_stu``'s API, see the example later
 in this chapter where we do just that for the science frames.

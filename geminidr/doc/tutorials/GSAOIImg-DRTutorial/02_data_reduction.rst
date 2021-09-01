@@ -1,7 +1,5 @@
 .. 02_data_reduction.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 
@@ -201,7 +199,7 @@ selecting on partner calibrations and showing the object name:
 
 
 If we had more than one object, a list for each standard star is created by
-using the ``object`` |descriptor| as a selection criterium in "|dataselect|":
+using the ``object`` descriptor as a selection criterium in "|dataselect|":
 
 .. code-block:: bash
 
@@ -285,7 +283,7 @@ in this chapter.
 
 ::
 
-    $ disco `dataselect *_skySubtracted.fits --expr='observation_class=="partnerCal"'`
+    $ disco `dataselect *_skyCorrected.fits --expr='observation_class=="partnerCal"'`
 
 
 .. _processing_science_files:
@@ -324,8 +322,8 @@ for retrieval, we can run ``reduce`` on our science data.
 
 This command will generate flat corrected and sky subtracted files but will
 not stack them. You can find which file is which by its suffix
-(``_flatCorrected`` or ``_skySubtracted``).  The on-target files are the ones
-that have been sky subtracted (``_skySubtracted``).  There should be nine of
+(``_flatCorrected`` or ``_skyCorrected``).  The on-target files are the ones
+that have been sky subtracted (``_skyCorrected``).  There should be nine of
 the them.
 
 The frames are not stacked because of the high level of distortion in the
@@ -334,7 +332,7 @@ The tool ``disco_stu`` (next section) must be used to stack GSAOI science
 data.
 
 
-.. figure:: _static/img/S20170505S0095_skySubtracted.png
+.. figure:: _static/img/S20170505S0095_skyCorrected.png
    :align: center
 
    S20170505S0095 - Flat corrected and sky subtracted
@@ -343,6 +341,7 @@ The figure above shows an example of the sky-subtracted frames. The
 masked pixels are represented in white color.
 
 .. _stack_science_files:
+
 Stack Sky-Subtracted Science Images
 ===================================
 The final step is to stack the images. For that, you must be aware that
@@ -362,17 +361,12 @@ files to be stacked.
 
 .. code-block:: bash
 
-   $ disco `dataselect *_skySubtracted.fits --expr 'observation_class=="science"'` --no_skysub -o my_Kshort_stack.fits
+   $ disco `dataselect *_skyCorrected.fits --expr 'observation_class=="science"'` -o my_Kshort_stack.fits
 
 
 By default, ``disco`` will write the output file as ``disco_stack.fits``, the
 ``-o`` flag allows us to override that and choose the name of the output
 stack.
-
-By default, Disco-Stu will estimate the sky level in each array and subtract
-it from the data.  We have an extended source with no "sky" area to speak
-of.  We need to turn this behavior off, hence the ``--no_skysub`` flag added
-to the command.
 
 For absolute distortion correction and astrometry, ``disco_stu`` can use a
 reference catalog provided by the user.  Without a reference catalog, like
