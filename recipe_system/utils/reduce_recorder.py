@@ -1,12 +1,14 @@
 import json
 import sys
 
+import astrodata
+
 from gempy.utils import logutils
 from recipe_system import __version__
 
 
 __all__ = ["in_replay", "init_reduce_recorder", "record_interactive", "record_reduction", "load_reduce_record",
-           "load_replay_interactive_settings"]
+           "load_replay_interactive_settings", "record_reduction_in_ad", "load_reduce_record_from_ad"]
 
 reduce_recorder = None
 replay_record = None
@@ -84,10 +86,17 @@ def record_reduction():
     This call writes all of the information needed for this reduce session,
     including the interactive tools, to a json file.
     """
-    if reduce_recorder is not None:
+    if reduce_recorder is not None and reduce_filename is not None:
         with open(reduce_filename, 'w') as reduce_file:
             output = json.dumps(reduce_recorder, indent=4)
             reduce_file.write(f"{output}")
+
+
+def record_reduction_in_ad(ad):
+    if reduce_recorder is not None:
+        record = json.dumps(reduce_recorder, indent=4)
+        for ext in ad:
+            ext.record = record
 
 
 def load_reduce_record(filename):
@@ -102,9 +111,24 @@ def load_reduce_record(filename):
     filename : str
         Name of the json file to read
     """
-    with open(filename, 'r') as record_file:
-        global replay_record
-        replay_record = json.loads(record_file.read())
+    if filename.endswith('.json'):
+        with open(filename, 'r') as record_file:
+            global replay_record
+            replay_record = json.loads(record_file.read())
+            if replay_record["version"] != __version__:
+                log.warning("This version of DRAGONS ({}) does not match the version for this replay record: {}"
+                            .format(__version__, replay_record["version"]))
+        return replay_record["args"] if replay_record else []
+    else:
+        ad = astrodata.open(f"{filename}.fits")
+        return load_reduce_record_from_ad(ad)
+
+
+def load_reduce_record_from_ad(ad):
+    global replay_record
+    record = ad[0].record
+    if record:
+        replay_record = json.loads(record)
         if replay_record["version"] != __version__:
             log.warning("This version of DRAGONS ({}) does not match the version for this replay record: {}"
                         .format(__version__, replay_record["version"]))

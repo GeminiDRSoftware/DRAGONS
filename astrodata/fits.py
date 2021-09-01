@@ -444,6 +444,7 @@ def read_fits(cls, source, extname_parser=None):
             'uncertainty': None,
             'mask': None,
             'wcs': None,
+            'record': None,
             'other': [],
         }
 
@@ -457,6 +458,8 @@ def read_fits(cls, source, extname_parser=None):
                 parts['uncertainty'] = extra_unit
             elif name == 'WCS':
                 parts['wcs'] = extra_unit
+            elif name == 'RECORD':
+                parts['record'] = extra_unit
             else:
                 parts['other'].append(extra_unit)
 
@@ -505,6 +508,11 @@ def read_fits(cls, source, extname_parser=None):
             if nd.wcs is None:
                 # In case WCS info is in the PHU
                 nd.wcs = fitswcs_to_gwcs(hdulist[0].header)
+
+        if parts['record'] is not None:
+            nd.record = asdftablehdu_to_record(parts['record'])
+        else:
+            nd.record = None
 
         ad.append(nd, name=DEFAULT_EXTENSION)
 
@@ -589,6 +597,9 @@ def ad_to_hdulist(ad):
 
         if isinstance(wcs, gWCS):
             hdul.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
+
+        if ext.record:
+            hdul.append(record_to_asdftablehdu(ext.record, extver=ver))
 
         for name, other in ext.meta.get('other', {}).items():
             if isinstance(other, Table):
@@ -840,3 +851,164 @@ def asdftablehdu_to_wcs(hdu):
         return
 
     return wcs
+
+
+def data_to_asdftablehdu(name, table_name, col_name, data, extver=None):
+    """
+    Serialize a data object as a FITS TableHDU (ASCII) extension.
+
+    The ASCII table is actually a mini ASDF file. The constituent AstroPy
+    models must have associated ASDF "tags" that specify how to serialize them.
+
+    In the event that serialization as pure ASCII fails (this should not
+    happen), a binary table representation will be used as a fallback.
+
+    Parameters
+    ----------
+    name : str
+        Name in the Asdf of the data to be saved.  This is something like 'wcs' or 'record' and should be unique.
+    col_name : str
+        Name of the column to holding the data
+    table_name : str
+        Name of the bintable holding the column with the data
+    data : str
+        Blob of data to save, in some string encoded form
+    """
+
+    # Create a small ASDF file in memory containing the WCS object
+    # representation because there's no public API for generating only the
+    # relevant YAML subsection and an ASDF file handles the "tags" properly.
+    try:
+        dat = {}
+        dat[name] = data
+        af = asdf.AsdfFile(dat)
+    except jsonschema.exceptions.ValidationError:
+        # (The original traceback also gets printed here)
+        raise TypeError("Cannot serialize model(s) for '{}' extension {}"
+                        .format(table_name, extver or ''))
+
+    # ASDF can only dump YAML to a binary file object, so do that and read
+    # the contents back from it for storage in a FITS extension:
+    with BytesIO() as fd:
+        with af:
+            # Generate the YAML, dumping any binary arrays as text:
+            af.write_to(fd, all_array_storage='inline')
+        fd.seek(0)
+        databuf = fd.read()
+
+    # Convert the bytes to readable lines of text for storage (falling back to
+    # saving as binary in the unexpected event that this is not possible):
+    try:
+        databuf = databuf.decode('ascii').splitlines()
+    except UnicodeDecodeError:
+        # This should not happen, but if the ASDF contains binary data in
+        # spite of the 'inline' option above, we have to dump the bytes to
+        # a non-human-readable binary table rather than an ASCII one:
+        LOGGER.warning("Could not convert {} ASDF to ASCII; saving table "
+                       "as binary".format(extver or ''))
+        hduclass = BinTableHDU
+        fmt = 'B'
+        databuf = np.frombuffer(databuf, dtype=np.uint8)
+    else:
+        hduclass = TableHDU
+        fmt = 'A{}'.format(max(len(line) for line in databuf))
+
+    # Construct the FITS table extension:
+    col = Column(name=col_name, format=fmt, array=databuf,
+                 ascii=hduclass is TableHDU)
+    return hduclass.from_columns([col], name=table_name, ver=extver)
+
+
+def asdftablehdu_to_data(hdu, name, col_name):
+    """
+    Recreate a previously stored data object from its serialization in a FITS table extension.
+
+    Returns None (issuing a warning) if the extension cannot be parsed, so
+    the rest of the file can still be read.
+
+    Parameters
+    ----------
+    hdu : :class:`~.BinTableHDU`
+        HDU to extract data from
+    name : str
+        Name data is stored under
+    col_name : str
+        Name of the column to holding the data
+    """
+
+    ver = hdu.header.get('EXTVER', -1)
+
+    if isinstance(hdu, (TableHDU, BinTableHDU)):
+        try:
+            colarr = hdu.data[col_name]
+        except KeyError:
+            LOGGER.warning("Ignoring extension {} with no '{}' table "
+                           "column".format(ver, col_name))
+            return
+
+        # If this table column contains text strings as expected, join the rows
+        # as separate lines of a string buffer and encode the resulting YAML as
+        # bytes that ASDF can parse. If AstroData has produced another format,
+        # it will be a binary dump due to the unexpected presence of non-ASCII
+        # data, in which case we just extract unmodified bytes from the table.
+        if colarr.dtype.kind in ('U', 'S'):
+            sep = os.linesep
+            # Just in case io.fits ever produces 'S' on Py 3 (not the default):
+            # join lines as str & avoid a TypeError with unicode linesep; could
+            # also use astype('U') but it assumes an encoding implicitly.
+            if colarr.dtype.kind == 'S' and not isinstance(sep, bytes):
+                colarr = np.char.decode(np.char.rstrip(colarr),
+                                        encoding='ascii')
+            databuf = sep.join(colarr).encode('ascii')
+        else:
+            databuf = colarr.tobytes()
+
+        # Convert the stored text to a Bytes file object that ASDF can open:
+        with BytesIO(databuf) as fd:
+
+            # Try to extract a 'wcs' entry from the YAML:
+            try:
+                af = asdf.open(fd)
+            except Exception:
+                LOGGER.warning("Ignoring {} extension {}: failed to parse "
+                               "ASDF.\nError was as follows:\n{}"
+                               .format(name, ver, traceback.format_exc()))
+                return
+            else:
+                with af:
+                    try:
+                        record = af.tree[name]
+                    except KeyError:
+                        LOGGER.warning("Ignoring extension {}: missing "
+                                       "'{}' dict entry.".format(ver, name))
+                        return
+
+    else:
+        LOGGER.warning("Ignoring non-FITS-table '{}' extension {}"
+                       .format(name.upper(), ver))
+        return
+
+    return record
+
+
+def record_to_asdftablehdu(record, extver=None):
+    """
+    Serialize a reduce record object as a FITS TableHDU (ASCII) extension.
+
+    The ASCII table is actually a mini ASDF file. The constituent AstroPy
+    models must have associated ASDF "tags" that specify how to serialize them.
+
+    In the event that serialization as pure ASCII fails (this should not
+    happen), a binary table representation will be used as a fallback.
+    """
+    return data_to_asdftablehdu('record', 'RECORD', 'record', record, extver)
+
+
+def asdftablehdu_to_record(hdu):
+    """
+    Recreate a Reduce Record object from its serialization in a FITS table extension.
+
+    Returns None (issuing a warning) if the extension cannot be parsed, so
+    the rest of the file can still be read.
+    """
+    return asdftablehdu_to_data(hdu, 'record', 'record')

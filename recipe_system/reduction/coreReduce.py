@@ -12,6 +12,8 @@ which calls on the mapper classes and passes the received data to them.
 #                                                                  coreReduce.py
 # ------------------------------------------------------------------------------
 import os
+import re
+
 import sys
 import inspect
 #import traceback
@@ -30,8 +32,8 @@ from recipe_system import __version__
 from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
-from recipe_system.utils.reduce_recorder import init_reduce_recorder, reduce_recorder, record_reduction, \
-    load_reduce_record
+from recipe_system.utils.reduce_recorder import init_reduce_recorder, record_reduction, \
+    load_reduce_record, record_reduction_in_ad
 
 from recipe_system.utils.reduce_utils import buildParser, normalize_args, normalize_upload
 from recipe_system.utils.reduce_utils import normalize_ucals
@@ -113,11 +115,15 @@ class Reduce:
         else:
             args = buildParser(__version__).parse_args([])
         record = args.record
+
+        self.add_replay_suffix = False
         if args.replay:
             recorded_args = load_reduce_record(args.replay[0])
             args = buildParser(__version__).parse_args(recorded_args)
             args = normalize_args(args)
             args.upload = normalize_upload(args.upload)
+            self.add_replay_suffix = True
+
         # acquire any new astrodata classes.
         if args.adpkg:
             import_module(args.adpkg)
@@ -132,8 +138,11 @@ class Reduce:
         self._upload = args.upload
         self._output_filenames = None
         self.recipename = args.recipename if args.recipename else '_default'
-        if record:
-            init_reduce_recorder(record[0])
+        if record is not None:
+            record_file = None
+            if record:
+                record_file = record[0]
+            init_reduce_recorder(record_file)
 
     @property
     def upload(self):
@@ -252,6 +261,14 @@ class Reduce:
                 self._write_final(p.streams['main'])
                 self._output_filenames = [ad.filename for ad in p.streams['main']]
                 raise
+
+        for ad in p.streams['main']:
+            record_reduction_in_ad(ad)
+        if self.add_replay_suffix:
+            for ad in p.streams['main']:
+                m = re.search(r'(.*)\.fits', ad.filename)
+                if m:
+                    ad.update_filename(suffix="_replayed", strip=False)
 
         self._write_final(p.streams['main'])
         self._output_filenames = [ad.filename for ad in p.streams['main']]

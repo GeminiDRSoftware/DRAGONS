@@ -169,7 +169,7 @@ def buildParser(version):
                         help="record the reduction process to a json file")
 
     parser.add_argument("--replay", dest='replay',
-                        default=None, nargs='*', action=UnitaryArgumentAction,
+                        default=None, nargs=1, action=UnitaryArgumentAction,
                         help="replay the reduction process from a json file")
 
     return parser
