@@ -15,7 +15,6 @@ from copy import deepcopy
 import astrodata
 import geminidr
 
-from astrodata.testing import compare_models
 from geminidr.gmos import primitives_gmos_longslit
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
