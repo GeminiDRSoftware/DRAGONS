@@ -1,7 +1,5 @@
 .. extended_api.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _extended_api:
 
 *******************************************************
@@ -402,7 +400,7 @@ recommended) needs to be specified by the user.
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
     reduce_std.uparms = [('addDQ:user_bpm', bpm)]
-    reduce_std.uparms.append(('darkCorrect:do_dark', False))
+    reduce_std.uparms.append(('darkCorrect:do_cal', 'skip'))
     reduce_std.runr()
 
 
