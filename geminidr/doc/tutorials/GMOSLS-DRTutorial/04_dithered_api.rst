@@ -55,7 +55,7 @@ First, navigate to your work directory in the unpacked data package.
 
 ::
 
-    cd <path>/gmosls_tutorial/playground/example1
+    cd <path>/gmosls_tutorial/playground
 
 The first steps are to import libraries, set up the calibration manager,
 and set the logger.
@@ -147,7 +147,7 @@ directory.
     :linenos:
     :lineno-start: 15
 
-    all_files = glob.glob('../../playdata/*.fits')
+    all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
@@ -182,26 +182,26 @@ for the descriptor of interest, here ``detector_roi_setting``.
 
 ::
 
-    ../../playdata/S20170825S0347.fits    Central Spectrum
-    ../../playdata/S20170825S0348.fits    Central Spectrum
-    ../../playdata/S20170825S0349.fits    Central Spectrum
-    ../../playdata/S20170825S0350.fits    Central Spectrum
-    ../../playdata/S20170825S0351.fits    Central Spectrum
-    ../../playdata/S20170826S0224.fits    Central Spectrum
-    ../../playdata/S20170826S0225.fits    Central Spectrum
-    ../../playdata/S20170826S0226.fits    Central Spectrum
-    ../../playdata/S20170826S0227.fits    Central Spectrum
-    ../../playdata/S20170826S0228.fits    Central Spectrum
-    ../../playdata/S20171021S0265.fits    Full Frame
-    ../../playdata/S20171021S0266.fits    Full Frame
-    ../../playdata/S20171021S0267.fits    Full Frame
-    ../../playdata/S20171021S0268.fits    Full Frame
-    ../../playdata/S20171021S0269.fits    Full Frame
-    ../../playdata/S20171023S0032.fits    Full Frame
-    ../../playdata/S20171023S0033.fits    Full Frame
-    ../../playdata/S20171023S0034.fits    Full Frame
-    ../../playdata/S20171023S0035.fits    Full Frame
-    ../../playdata/S20171023S0036.fits    Full Frame
+    ../playdata/S20170825S0347.fits    Central Spectrum
+    ../playdata/S20170825S0348.fits    Central Spectrum
+    ../playdata/S20170825S0349.fits    Central Spectrum
+    ../playdata/S20170825S0350.fits    Central Spectrum
+    ../playdata/S20170825S0351.fits    Central Spectrum
+    ../playdata/S20170826S0224.fits    Central Spectrum
+    ../playdata/S20170826S0225.fits    Central Spectrum
+    ../playdata/S20170826S0226.fits    Central Spectrum
+    ../playdata/S20170826S0227.fits    Central Spectrum
+    ../playdata/S20170826S0228.fits    Central Spectrum
+    ../playdata/S20171021S0265.fits    Full Frame
+    ../playdata/S20171021S0266.fits    Full Frame
+    ../playdata/S20171021S0267.fits    Full Frame
+    ../playdata/S20171021S0268.fits    Full Frame
+    ../playdata/S20171021S0269.fits    Full Frame
+    ../playdata/S20171023S0032.fits    Full Frame
+    ../playdata/S20171023S0033.fits    Full Frame
+    ../playdata/S20171023S0034.fits    Full Frame
+    ../playdata/S20171023S0035.fits    Full Frame
+    ../playdata/S20171023S0036.fits    Full Frame
 
 We can clearly see the two groups of biases above.  Let's split them into
 two lists.
@@ -289,10 +289,10 @@ On line 37, remember that the second argument contains the tags to **include**
 
 ::
 
-    ../../playdata/S20171022S0087.fits    J2145+0031
-    ../../playdata/S20171022S0089.fits    J2145+0031
-    ../../playdata/S20171022S0095.fits    J2145+0031
-    ../../playdata/S20171022S0097.fits    J2145+0031
+    ../playdata/S20171022S0087.fits    J2145+0031
+    ../playdata/S20171022S0089.fits    J2145+0031
+    ../playdata/S20171022S0095.fits    J2145+0031
+    ../playdata/S20171022S0097.fits    J2145+0031
 
 In this case we only have one target.  If we had more than one, we would need
 several lists and we could use the ``object`` descriptor in an expression.  We
