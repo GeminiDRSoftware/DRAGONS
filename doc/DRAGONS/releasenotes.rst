@@ -38,6 +38,6 @@ would nevertheless be useful to our users.
 
 Installation instructions can be found in the Recipe System User Manual at:
 
- |RSUser|
+ |RSUserShow|
 
 

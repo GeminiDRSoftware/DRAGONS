@@ -296,4 +296,6 @@ rst_epilog = """
 .. |RSProg| replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-{v}/">Recipe System Programmers Manual</a>`
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/">Recipe System Users Manual</a>`
 
+.. |RSUserShow|  replace:: http://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/
+
 """.format(v = release)
