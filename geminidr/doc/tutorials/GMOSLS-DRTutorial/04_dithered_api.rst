@@ -450,7 +450,7 @@ To inspect the spectrum:
 
     ad = astrodata.open(reduce_std.output_filenames[0])
     plt.ioff()
-    plotting.splot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1)
     plt.ion()
 
 
@@ -535,7 +535,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
     ad = astrodata.open(reduce_science.output_filenames[0])
     plt.ioff()
-    plotting.splot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1)
     plt.ion()
 
 
