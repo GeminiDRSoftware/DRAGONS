@@ -1,7 +1,5 @@
 .. 02_data_reduction.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _command_line_data_reduction:
 
 ****************************

@@ -79,4 +79,4 @@ Recipe System Programmers Manual\ [#rsprogman]_.
 
 .. [#iraf] `<https://www.gemini.edu/observing/phase-iii>`_
 
-.. [#rsprogman] `<https://dragons.readthedocs.io/projects/recipe-system-prog-manual/en/release-3.0.x/>`_
+.. [#rsprogman] |RSProgShow|

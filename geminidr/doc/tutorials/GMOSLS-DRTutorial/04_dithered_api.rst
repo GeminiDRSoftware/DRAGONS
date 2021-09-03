@@ -1,7 +1,5 @@
 .. 04_dithered_api.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _dithered_api:
 
 **********************************************************************

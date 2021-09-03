@@ -1,8 +1,5 @@
 .. 03_api_reduction.rst
 
-.. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
-
-
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 
@@ -132,8 +129,7 @@ configured as follow:
     cal_service.set_calservice()
 
 The calibration service is now ready to use. If you need more details,
-check the
-`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
+check the section on using the |caldb| API in the |RSUser|.
 
 
 .. _create_file_lists:

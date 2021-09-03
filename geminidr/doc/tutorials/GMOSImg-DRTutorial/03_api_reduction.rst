@@ -1,9 +1,5 @@
 .. 03_api_reduction.rst
 
-.. include:: DRAGONSlinks.txt
-
-.. _primitive: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/definitions.html#primitive
-
 
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%

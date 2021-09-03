@@ -1,7 +1,5 @@
 .. keyhole_cmdline.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _keyhole_cmdline:
 
 **********************************************************************

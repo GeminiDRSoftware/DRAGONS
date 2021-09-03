@@ -24,13 +24,11 @@ reduction.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. The most important script is called
-"|reduce|", which is extensively explained in the `Recipe System Users Manual
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/index.html>`_.
+"|reduce|", which is extensively explained in the |RSUser|.
 It is through that command that a DRAGONS reduction is launched.
 
-For this tutorial, we will be also using other `Supplemental tools
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/supptools.html>`_,
-like "|dataselect|", "|showd|", "|typewalk|", and "|caldb|".
+For this tutorial, we will be also using the following supplemental tools:
+"|dataselect|", "|showd|", "|typewalk|", and "|caldb|".
 
 
 The dataset

@@ -1,7 +1,5 @@
 .. 03_dithered_cmdline.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _dithered_cmdline:
 
 *****************************************************************************
