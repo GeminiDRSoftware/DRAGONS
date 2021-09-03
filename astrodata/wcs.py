@@ -225,7 +225,6 @@ def gwcs_to_fits(ndd, hdr=None):
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
-
 def model_is_affine(model):
     """"
     Test a Model for affinity. This is currently done by checking the
@@ -245,6 +244,7 @@ def model_is_affine(model):
         return model.__class__.__name__[:5] in ('Affin', 'Rotat', 'Scale',
                                                 'Shift', 'Ident', 'Mappi',
                                                 'Const')
+
 
 def calculate_affine_matrices(func, shape):
     """
@@ -357,6 +357,7 @@ def read_wcs_from_header(header):
     wcs_info['CD'] = cd
     return wcs_info
 
+
 def get_axes(header):
     """
     Matches input with spectral and sky coordinate axes.
@@ -422,6 +423,7 @@ def _is_skysys_consistent(ctype, sky_inmap):
             sky_inmap.reverse()
             break
 
+
 def _get_contributing_axes(wcs_info, world_axes):
     """
     Returns a tuple indicating which axes in the pixel frame make a
@@ -446,6 +448,7 @@ def _get_contributing_axes(wcs_info, world_axes):
         return sorted(np.nonzero(cd[world_axes, :wcs_info['NAXIS']])[0])
     #return sorted(set(j for j in range(wcs_info['NAXIS'])
     #                    for i in world_axes if cd[i, j] != 0))
+
 
 def make_fitswcs_transform(header):
     """
@@ -492,6 +495,7 @@ def make_fitswcs_transform(header):
         transforms.append(output_mapping)
 
     return functools.reduce(core._model_oper('|'), transforms)
+
 
 def fitswcs_image(header):
     """
@@ -558,6 +562,7 @@ def fitswcs_image(header):
     sky_model.meta.update({'input_axes': pixel_axes,
                            'output_axes': sky_axes})
     return sky_model
+
 
 def fitswcs_linear(header):
     """

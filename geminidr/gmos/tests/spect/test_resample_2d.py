@@ -264,7 +264,8 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
-        p.distortionCorrect(arc=arc)
+        p.attachWavelengthSolution(arc=arc)
+        p.distortionCorrect()
         p.findApertures(max_apertures=1)
         p.skyCorrectFromSlit()
 

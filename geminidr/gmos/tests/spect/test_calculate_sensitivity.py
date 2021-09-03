@@ -252,14 +252,15 @@ def create_inputs_recipe():
         p.prepare()
         p.addDQ(static_bpm=None, user_bpm=None, add_illum_mask=False)
         p.addVAR(read_noise=True, poisson_noise=False)
-        p.overscanCorrect(function="spline", high_reject=3., low_reject=3.,
-                          nbiascontam=0, niterate=2, order=None)
-        p.biasCorrect(bias=bias_master, do_bias='procmode')
+        p.overscanCorrect(function="spline3", lsigma=3., hsigma=3.,
+                          nbiascontam=0, niter=2, order=None)
+        p.biasCorrect(bias=bias_master, do_cal='procmode')
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
+        p.attachWavelengthSolution(arc=arc_master)
         p.flatCorrect(flat=flat_master)
-        p.QECorrect(arc=arc_master)
-        p.distortionCorrect(arc=arc_master, order=3, subsample=1)
+        p.QECorrect()
+        p.distortionCorrect(order=3, subsample=1)
         p.findApertures(max_apertures=1, threshold=0.01, min_sky_region=20)
         p.skyCorrectFromSlit(order=5, grow=0)
         p.traceApertures(order=2, nsum=10, step=10, max_missed=5,
