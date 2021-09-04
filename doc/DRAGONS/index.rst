@@ -35,6 +35,13 @@ DRAGONS Manuals
 * |RSProg|     :small:`(Document ID: PIPE-USER-108_RSProgManual)`
 * |RSUser|     :small:`(Document ID: PIPE-USER-109_RSUserManual)`
 
+
+Workshops
+---------
+To learn more about how to tame the DRAGONS, try the self-study workshops.
+
+* |WSBasicDRAGONS|
+
 =========
 
 Releases
