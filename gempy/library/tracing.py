@@ -520,8 +520,18 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
         good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
     else:
         good_peaks = list(zip(final_peaks, peak_snrs))
+    #print("KLDEBUG: T=", np.array(sorted(good_peaks)).T)
 
-    return np.array(sorted(good_peaks)).T
+    # When no peaks are found the array is an empty list.  When called,
+    # and peaks are found, two items (two lists) are returned and that is
+    # what is expected.  Returning an empty crashes the calling code.
+    # Return a list of two empty lists to prevent the crash and let the calling
+    # routine decide what to do with it.
+
+    T = np.array(sorted(good_peaks)).T
+    if not T.size:
+        T = np.array([[],[]])
+    return T
 
 
 def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
