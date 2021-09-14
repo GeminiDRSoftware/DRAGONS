@@ -34,7 +34,7 @@ engaged when directly pertinent to the operations of the Recipe System.
 Reference Documents
 ===================
 
-    - `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x>`_
+    - |RSUser|
 
 
 .. _related:
@@ -42,15 +42,15 @@ Reference Documents
 Related Documents
 =================
 
-  - |ADUser|_
-  - |ADProg|_
+  - |astrodatauser|
+  - |astrodataprog|
 
 
 Further Information
 ===================
 As this document details programmatic use of the mapper classes, readers who wish
 to read up on the Recipe System application, |reduce|, should instead consult the
-DRAGONS document, `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/>`_,
+DRAGONS document, |RSUser|,
 which also describes usage of the |Reduce| class API from a user's point of view
 rather than a programmer's.
 

@@ -221,4 +221,4 @@ configuration layers are found in the package ``gemini_instruments``.  The
 convention is to name the modules with the tags and descriptor ``adclass.py``.
 This is just a convention.
 
-For more information on the AstroData configuration, see the |ADProg|_.
+For more information on the AstroData configuration, see the |astrodataprog|.

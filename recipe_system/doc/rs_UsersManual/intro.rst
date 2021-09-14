@@ -62,23 +62,11 @@ is needed::
 Further Information
 ===================
 
-.. |rsprog_link| raw:: html
-
-   <a href="https://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-3.0.x/" target="_blank">Recipe System Programmer Manual</a>
-
-.. |astrouser_link| raw:: html
-
-   <a href="https://astrodata-user-manual.readthedocs.io/en/release-3.0.x/" target="_blank">Astrodata User Manual</a>
-
-.. |astroprog_link| raw:: html
-
-   <a href="https://astrodata-programmer-manual.readthedocs.io/en/release-3.0.x/" target="_blank">Astrodata Programmer Manual</a>
-
 Details and information on developing for the Recipe System, and about the
 ``astrodata`` package are available in companion manuals. We invite the reader
 interested in those topics to refer to the topical documentation.
 
-  - |rsprog_link|
-  - |astrouser_link|
-  - |astroprog_link|
+  - |RSProg|
+  - |astrodatauser|
+  - |astrodataprog|
 

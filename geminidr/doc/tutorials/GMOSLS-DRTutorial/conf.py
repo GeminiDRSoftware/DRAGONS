@@ -23,9 +23,9 @@ author = 'Kathleen Labrie'
 
 # The full version, including alpha/beta/rc tags
 version = '3.0'
-release = '3.0.x'
+release = '3.0.0'
 
-today = 'July 2021'
+today = 'October 2021'
 
 # -- General configuration ---------------------------------------------------
 

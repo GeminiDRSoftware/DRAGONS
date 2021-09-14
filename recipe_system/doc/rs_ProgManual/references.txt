@@ -2,12 +2,12 @@
 .. Cross-Reference to the API ..
 
 .. |ADUser| replace:: Astrodata User Manual
-.. _ADUser: https://astrodata-user-manual.readthedocs.io/en/release-3.0.x/
+.. .. _ADUser: https://astrodata-user-manual.readthedocs.io/en/release-3.0.x/
 .. |ADProg| replace:: AstroData Programmer Manual
-.. _ADProg: https://astrodata-programmer-manual.readthedocs.io/en/release-3.0.x/
+.. .. _ADProg: https://astrodata-programmer-manual.readthedocs.io/en/release-3.0.x/
 
 .. |mappers| replace:: :mod:`recipe_system.mappers`
-.. |reduce| replace:: ``reduce``
+.. .. |reduce| replace:: ``reduce``
 
 .. |Mapper| replace:: :class:`~recipe_system.mappers.baseMapper.Mapper`
 .. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
