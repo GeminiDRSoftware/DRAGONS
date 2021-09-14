@@ -1,7 +1,5 @@
 .. 04_tips_and_tricks.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _tips_and_tricks:
 
 ***************
@@ -63,3 +61,4 @@ The list of recognized processed calibration is:
 * processed_dark
 * processed_flat
 * processed_fringe
+* processed_standard

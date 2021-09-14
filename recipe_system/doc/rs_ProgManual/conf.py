@@ -36,15 +36,15 @@ else:
 # -- Project information -----------------------------------------------------
 
 project = "DRAGONS - Recipe System Programmer's Manual"
-copyright = '2020, Association of Universities for Research in Astronomy'
+copyright = '2021, Association of Universities for Research in Astronomy'
 author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-version = '2.1'  # The short X.Y version.
-release = '2.1.1'  # The full version, including alpha/beta/rc tags.
+version = '3.0'  # The short X.Y version.
+release = '3.0.0'  # The full version, including alpha/beta/rc tags.
 
 
 # -- General configuration -----------------------------------------------------
@@ -98,7 +98,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2020'
+today = 'October 2021'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
@@ -408,3 +408,24 @@ def setup(app):
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)
 
+
+rst_epilog = """
+.. role:: raw-html(raw)
+   :format: html
+
+.. |caldb| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/caldb.html" target="_blank">caldb</a>`
+.. |dataselect| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#dataselect" target="_blank">dataselect</a>`
+.. |descriptors| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/release-{v}/appendices/appendix_descriptors.html" target="_blank">descriptors</a>`
+.. |descriptor| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/release-{v}/appendices/appendix_descriptors.html" target="_blank">descriptors</a>`
+.. |reduce| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/reduce.html" target="_blank">reduce</a>`
+.. |showd| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#showd" target"_blank">showd</a>`
+.. |showrecipes| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#showrecipes" target="_blank">showrecipes</a>`
+.. |showpars| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#showpars" target="_blank">showpars</a>`
+.. |typewalk| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#typewalk" target="_blank">typewalk</a>`
+.. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
+.. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/release-{v}/" target="_blank">Astrodata User Manual</a>`
+
+.. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/">Recipe System Users Manual</a>`
+.. |astrodataprog| replace:: :raw-html:`<a href="https://astrodata-programmer-manual.readthedocs.io/en/release-{v}/">Astrodata Programmer Manual</a>`
+
+""".format(v = release)

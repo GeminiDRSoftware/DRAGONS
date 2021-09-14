@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-def splot_matplotlib(ad, aperture):
-    plot_data = _setup_splots(ad, aperture)
+def dgsplot_matplotlib(ad, aperture):
+    plot_data = _setup_dgsplots(ad, aperture)
 
     plt.title(plot_data['title'])
     plt.xlabel(plot_data['xaxis'])
@@ -14,14 +14,14 @@ def splot_matplotlib(ad, aperture):
 
     return
 
-def splot_bokeh(ad, aperture):
-    plot_data = _setup_splots(ad, aperture)
+def dgsplot_bokeh(ad, aperture):
+    plot_data = _setup_dgsplots(ad, aperture)
 
-    # Default is to write this file where the splot executable script is located.
+    # Default is to write this file where the dgsplot executable script is located.
     # This might not be writable by the user.  Setting it manually will write in
     # current directory.
 
-    output_file('splot.html')
+    output_file('dgsplot.html')
 
     p = figure(title=plot_data['title'], x_axis_label=plot_data['xaxis'],
                y_axis_label=plot_data['yaxis'], plot_width=1000, plot_height=600)
@@ -34,7 +34,7 @@ def splot_bokeh(ad, aperture):
 
     return
 
-def _setup_splots(ad, aperture):
+def _setup_dgsplots(ad, aperture):
     setup_plot = {}
     data = ad[aperture-1].data
     setup_plot['data'] = data

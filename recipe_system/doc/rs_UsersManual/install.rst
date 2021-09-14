@@ -105,7 +105,14 @@ Python 3.7.
 
 ::
 
+    $ conda create -n dragons python=3.7 dragons
+
+    Or, to include things like ds9
+
     $ conda create -n dragons python=3.7 dragons stsci
+
+Most users will probably want to install the extra astronomy tools that come
+with the ``stsci`` conda package.
 
 To use this environment, activate it::
 
@@ -118,19 +125,41 @@ command to your ``.bash_profile``, after the "conda init" block.
 .. note::
     As a side note, if you are going to use PyRAF regularly, for example to
     reduce Gemini data not yet supported in DRAGONS, you should be installing
-    Python 2.7 as well in a different environment, along with the ``gemini``,
-    ``iraf-all`` and ``pyraf-all`` conda packages.  PyRAF is very slow under
-    Python 3.
-
-::
+    Python 2.7 **as well** in a different environment, along with the ``gemini``,
+    ``iraf-all`` and ``pyraf-all`` conda packages.  Do not use PyRAF from the
+    Python 3 environment; PyRAF is very slow under Python 3.
 
     $ conda create -n geminiconda python=2.7 iraf-all pyraf-all stsci gemini
 
+    DRAGONS and the Recipe System do not need IRAF, PyRAF.  Only DRAGONS v2
+    is compatible with Python 2.7.   See the Gemini website for information on
+    how to configure IRAF (|geminiiraf_link|)
 
-DRAGONS and the Recipe System to not need IRAF, PyRAF or Python 2.7, though
-DRAGONS v2 is compatible with Python 2.7.   See the Gemini
-website for information on how to configure IRAF
-(|geminiiraf_link|)
+.. _configure::
+
+Configure DRAGONS
+=================
+DRAGONS requires a configuration file located in ``~/.geminidr/``::
+
+    $ cd ~
+    $ mkdir .geminidr
+    $ cd .geminidr
+    $ touch rsys.cfg
+
+Open ``rsys.cfg`` with your favority editor and add these lines::
+
+    [calibs]
+    standalone = True
+    database_dir = ~/.geminidr/
+
+Then configure ``ds9`` buffer configurations::
+
+    $ cd ~
+    $ cp $CONDA_PREFIX/lib/python3.7/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
+    $ vi .bash_profile   # or use your favorite editor
+
+      Add this line to the .bash_profile:
+        export IMTOOLRC=~/.imtoolrc
 
 
 .. _test:

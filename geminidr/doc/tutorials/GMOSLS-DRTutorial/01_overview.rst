@@ -45,5 +45,4 @@ We show how to run the same reduction using both methods.
 
 More examples will be added in the future.
 
-See the `DRAGONS Installation Instructions <https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/release-3.0.0/install.html>`_ to
-install the software if you have not already.
+See the |RSUserInstall| to install the software if you have not already.
