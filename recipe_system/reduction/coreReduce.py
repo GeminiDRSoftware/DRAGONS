@@ -24,6 +24,7 @@ import gemini_instruments
 from gempy.utils import logutils
 
 from astrodata import AstroDataError
+# from astrodata._version import version
 
 from recipe_system import __version__
 
@@ -410,6 +411,9 @@ class Reduce:
             return newname
 
         for ad in outputs:
+            ver = __version__
+            if ver:
+                ad.phu['DRGNSVER'] = ver
             if self.suffix:
                 username = _sname(ad.filename)
                 ad.write(username, overwrite=True)
