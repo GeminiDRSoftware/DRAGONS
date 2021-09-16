@@ -39,7 +39,7 @@ version = '3.1'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-version = '3.1.0-dev'
+release = '3.1.0-dev'
 
 
 # -- General configuration ---------------------------------------------------
