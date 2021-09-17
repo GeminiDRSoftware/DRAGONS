@@ -44,7 +44,7 @@ Let us open a Gemini dataset and see what tags we get::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
     >>> ad.tags
-    {'UNPREPARED', 'IMAGE', 'SIDEREAL', 'NORTH', 'ACQUISITION', 'GEMINI', 'RAW', 'GMOS'}
+    {'RAW', 'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'ACQUISITION'}
 
 The file we loaded is raw, GMOS North data. It is a 2D image and it is an
 acquisition image, not a science observation. The "UNPREPARED" tag indicates
@@ -55,8 +55,8 @@ Let's try another ::
 
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
     >>> ad.tags
-    {'IMAGE', 'SIDEREAL', 'OVERSCAN_TRIMMED', 'NORTH', 'GMOS', 'GEMINI',
-    'PREPARED', 'OVERSCAN_SUBTRACTED'}
+    {'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'OVERSCAN_TRIMMED', 'IMAGE',
+    'OVERSCAN_SUBTRACTED', 'PREPARED'}
 
 This file is a science GMOS North image.  It has been processed by the
 Recipe System.  The overscan level has been subtracted and the section has
@@ -117,8 +117,8 @@ lists ::
     # Qualifying types: RAW
     # Qualifying logic: AND
     # -----------------------
-    /data/workspace/ad_usermanual/playdata/N20170609S0154.fits
-    /data/workspace/ad_usermanual/playdata/new154.fits
+    /Users/klabrie/data/tutorials/ad_usermanual/playdata/N20170609S0154.fits
+    /Users/klabrie/data/tutorials/ad_usermanual/playdata/new154.fits
 
 
 

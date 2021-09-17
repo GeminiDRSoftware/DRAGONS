@@ -1,8 +1,5 @@
 .. 03_api_reduction.rst
 
-.. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
-
-
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 

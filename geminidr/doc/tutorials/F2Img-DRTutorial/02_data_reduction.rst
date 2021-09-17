@@ -1,27 +1,5 @@
 .. 02_data_reduction.rst
 
-.. include:: DRAGONSlinks.txt
-
-
-.. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html
-
-.. _dataselect: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect
-
-.. _descriptors: https://astrodata-user-manual.readthedocs.io/en/latest/appendices/appendix_descriptors.html
-
-.. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html
-
-.. _showd: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showd
-
-.. _show_primitives: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-primitives
-
-.. _show_recipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes
-
-.. _showpars: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars
-
-.. _typewalk: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
-
-
 .. _command_line_data_reduction:
 
 ****************************
@@ -40,18 +18,15 @@ encourage you to look at the :ref:`tips_and_tricks` and
 
 DRAGONS installation comes with a set of useful scripts that are used to
 reduce astronomical data. The most important script is called
-reduce_, which is extensively explained in the `Recipe System Users Manual
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
+|reduce|, which is extensively explained in the |RSUser|.
 It is through that command that a DRAGONS reduction is launched.
 
-For this tutorial, we will be also using other `Supplemental tools
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
-like:
+For this tutorial, we will be also using other support tools like:
 
-* dataselect_
-* showd_
-* typewalk_
-* caldb_
+* |dataselect|
+* |showd|
+* |typewalk|
+* |caldb|
 
 
 The dataset
@@ -62,7 +37,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`.
+    :ref:`about_data_set`
 
 Here is a copy of the table for quick reference.
 
@@ -123,7 +98,7 @@ You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and
 ``caldb remove <filename>`` to remove a file from the database
 (it will **not** remove the file on disk). For more the details, check the
-`Recipe System Local Calibration Manager documentation <caldb_>`_.
+`Recipe System Local Calibration Manager documentation <|caldb|>`_.
 
 
 .. _check_files:
@@ -137,7 +112,7 @@ For this example, all the raw files we need are in the same directory called
 Ensure that you are in the ``playground`` directory and that the ``conda``
 environment that includes DRAGONS has been activated.
 
-Let us call the command tool typewalk_:
+Let us call the command tool |typewalk|:
 
 .. code-block:: bash
 
@@ -176,7 +151,7 @@ The DRAGONS data reduction pipeline does not organize the data for you. You
 have to do it. DRAGONS provides tools to help you with that.
 
 The first step is to create lists that will be used in the data reduction
-process. For that, we use dataselect_. Please, refer to the dataselect_
+process. For that, we use |dataselect|. Please, refer to the |dataselect|
 documentation for details regarding its usage.
 
 
@@ -186,7 +161,7 @@ Two lists for the darks
 Our data set contains two sets of DARK files: some 120-seconds darks
 matching the science data and some 2-second darks to create the bad pixel
 mask (BPM). If you did not know the exposure times of the darks, you
-could send the dataselect_ results to the showd_ command line tool as follow
+could send the |dataselect| results to the |showd| command line tool as follow
 to get the information:
 
 .. code-block:: bash
@@ -210,7 +185,7 @@ to get the information:
 (The list has been shorten for presentation.)
 
 The ``|`` is the Unix "pipe" operator and it is used to pass output from
-dataselect_ to showd_.
+|dataselect| to |showd|.
 
 Let us go ahead and create our two list of darks. The following line creates
 a list of dark files that have exposure time of 120 seconds:
@@ -219,7 +194,7 @@ a list of dark files that have exposure time of 120 seconds:
 
    $ dataselect --tags DARK --expr "exposure_time==120" ../playdata/*.fits -o darks_120s.list
 
-``--expr`` is used to filter the files based on their descriptors_. Here we are
+``--expr`` is used to filter the files based on their |descriptors|. Here we are
 selecting files with exposure time of 120 seconds. You can repeat the same
 command with the other exposure time to get the list of short darks.
 
@@ -263,7 +238,7 @@ selection we can use the ``--xtags``, e.g., ``--xtags CAL``.
 
 Remember that you can use the ``--expr`` option to select targets with different
 names (``object``) or exposure times (``exposure_time``), or use it with any
-of the datasets descriptors_.
+of the datasets |descriptors|.
 
 
 .. _process_dark_files:
@@ -289,11 +264,11 @@ manager using the following command:
 
     $ caldb add S20131120S0115_dark.fits
 
-Now reduce_ will be able to find this processed dark when needed to process
+Now |reduce| will be able to find this processed dark when needed to process
 other observations.
 
 .. note::
-    The master dark will be saved in the same folder where reduce_ was
+    The master dark will be saved in the same folder where |reduce| was
     called *and* inside the ``./calibrations/processed_dark`` folder. The latter
     location is to cache a copy of the file. This applies to all the processed
     calibration.
@@ -311,7 +286,7 @@ Create a Bad Pixel Mask
 
 The Bad Pixel Mask (BPM) can be built using a set of flat images with the
 lamps on and off and a set of short exposure dark files. Here, our shortest dark
-files have 2 second exposure time. Again, we use the reduce_ command to
+files have 2 second exposure time. Again, we use the |reduce| command to
 produce the BPMs.
 
 It is important to note that the recipe library association is done based on
@@ -328,7 +303,7 @@ use Y-band flats.
     $ reduce @flats_Y.list @darks_002s.list -r makeProcessedBPM
 
 
-The ``-r`` tells reduce_ which recipe from the recipe library for F2-FLAT
+The ``-r`` tells |reduce| which recipe from the recipe library for F2-FLAT
 to use. If not specified the system will use the default recipe which is the
 one that produces a master flat, this is not what we want here. The output
 image will be saved in the current working directory with a ``_bpm`` suffix.
@@ -354,7 +329,7 @@ follow:
     $ reduce @flats_Y.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
     $ caldb add S20131129S0320_flat.fits
 
-Here, the ``-p`` flag tells reduce_ to set the input parameter ``user_bpm``
+Here, the ``-p`` flag tells |reduce| to set the input parameter ``user_bpm``
 of the ``addDQ`` primitive to the filename of the BPM we have just created.
 There will be a message "WARNING - No static BPMs defined". This is
 normal. This is because F2 does not have a static BPM that is distributed
@@ -363,8 +338,8 @@ with the package. Your user BPM is the only one that is available.
 
 Reduce the Science Images
 =========================
-Now that we have the master dark and the master flat, we can tell reduce_
-to process our science data. reduce_ will look at the local database
+Now that we have the master dark and the master flat, we can tell |reduce|
+to process our science data. |reduce| will look at the local database
 for calibration files.
 
 .. code-block:: bash

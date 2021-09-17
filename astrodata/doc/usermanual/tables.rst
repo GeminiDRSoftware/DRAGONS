@@ -99,6 +99,7 @@ To append a row, there is the ``add_row()`` method.  The length of the row
 should match the number of columns::
 
     >>> new_row = [0] * len(ad.REFCAT.colnames)
+    >>> new_row[1] = ''   # Cat_Id column is of "str" type.
     >>> ad.REFCAT.add_row(new_row)
 
 Add a column
@@ -116,7 +117,7 @@ in IRAF/PyRAF, we recommend not using 64-bit types.
 
     >>> new_column = [0] * len(ad.REFCAT)
     >>> # Ensure that the type is int32, otherwise it will default to int64
-    >>> # which IRAF 32-bit does not like.
+    >>> # which generally not necessary.  Also, IRAF 32-bit does not like it.
     >>> new_column = np.array(new_column).astype(np.int32)
     >>> ad.REFCAT['my_column'] = new_column
 

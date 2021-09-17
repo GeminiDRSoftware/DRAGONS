@@ -34,10 +34,10 @@ For imaging, this software should be used instead of the Gemini IRAF package.
 purposes.**  Please continue to use Gemini IRAF for science quality reductions.
 We are working on a science quality package for GMOS longslit but it is not
 ready yet.  We believe that releasing what we have for quicklook inspection
-would nevertheless be useful to our users.
+will nevertheless be useful to our users.
 
 Installation instructions can be found in the Recipe System User Manual at:
 
-  `<https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.0/install.html>`_
+ |RSUserShow|
 
 

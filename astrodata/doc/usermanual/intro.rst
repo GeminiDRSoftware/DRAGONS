@@ -56,7 +56,7 @@ Installing Astrodata
 
 The |astrodata| package has a few dependencies, |astropy|, |numpy| and others.
 The best way to get everything you need is to install Anaconda_, and the
-|gemini| stack from the AstroConda channel.
+|dragons| stack from the AstroConda channel.
 
 |astrodata| itself is part of |DRAGONS|. It is available from the
 repository, as tar file, or as a conda package. The bare |astrodata| package
@@ -64,17 +64,14 @@ does not do much by itself, it needs a companion instrument definitions
 package. For Gemini, this is ``gemini_instruments``, also included in
 |DRAGONS|.
 
-Installing Anaconda and stacks from AstroConda
-----------------------------------------------
+Installing Anaconda and the DRAGONS stack
+-----------------------------------------
 This is required whether you are installing |DRAGONS| from the
 repository, the tar file or the conda package.
 
 #. Install Anaconda.
     Go to https://www.anaconda.com/download/ and install the latest 64-bit
-    Anaconda, Python 2.7 or 3.x, it does not matter for the root installation.
-    Since the Python world is moving away from 2.7, choosing 3.x is
-    probably better. The DRAGONS software has been tested
-    under both 2.7 and 3.x.
+    Anaconda.
 
 #. Open a bash session.
     Anaconda requires bash. If you are not familiar with bash, note that the
@@ -88,7 +85,8 @@ repository, the tar file or the conda package.
 
     $ conda init
 
-#. Configure the ``conda`` package manager to look in the AstroConda channel
+#. Set up conda channels.
+    Configure the ``conda`` package manager to look in the AstroConda channel
     hosted by STScI, and in the GEMINI Conda Channel. This is a one-time step.
     It affects current and future Anaconda installations belonging to the same
     user on the same machine.::
@@ -99,53 +97,61 @@ repository, the tar file or the conda package.
 #. Create an environment.
     To keep things clean, Anaconda offers virtual environments.  Each project
     can use its own environment.  For example, if you do not want to modify
-    the software packages needed for previous project, just create a new one
-    for the new project.
+    the software packages needed for previous project, just create a new
+    environment for the new project.
 
     Here we set up an environment where the ``DRAGONS`` dependencies can
     be installed without affecting the rest of the system when not using that
     virtual environement.  The new virtual environment here is named
-    ``geminiconda``.  Note that one could set ``python`` to ``3.6`` instead of
-    ``2.7``.
+    ``dragons``.  The software has been tested with Python 3.7 hence we
+    recommend that you use this specific version of Python with DRAGONS.
     ::
 
-    $ conda create -n geminiconda python=3.6 stsci gemini
+    $ conda create -n dragons python=3.7 dragons stsci
 
 
 #. Activate your new virtual environment.
     ::
 
-    $ conda activate geminiconda
+    $ conda activate dragons
 
 
-Conda installation (recommended)
---------------------------------
+#. Configure DRAGONS.
+    These configurations are not stricktly required when using only |astrodata|.
+    It however likely that if you are using |astrodata| you will be using
+    DRAGONS too at some point.  So let's configure it to have it ready to go.
 
-#. Create an environment.
-    To keep things clean, Anaconda offers virtual environments.  Each project
-    can use its own environment.  For example, if you do not want to modify
-    the software packages needed for previous project, just create a new one
-    for the new project.
+    DRAGONS requires a configuration file located in ``~/.geminidr/``.  The
+    ``rsys.cfg`` file contains basic configuration for DRAGONS local calibration
+    manager used by ``reduce``.
 
-    Here we set up an environment where the ``DRAGONS`` dependencies can
-    be installed without affecting the rest of the system when not using that
-    virtual environement.  The new virtual environment here is named
-    ``geminiconda``.  Note that one could set ``python`` to ``3.6`` instead of
-    ``2.7``.
     ::
 
-    $ conda create -n geminiconda python=3.6 stsci gemini
+        $ cd ~
+        $ mkdir .geminidr
+        $ cd .geminidr
+        $ touch rsys.cfg
+
+    Open ``rsys.cfg`` with your favorite editor and add these lines::
+
+        [calibs]
+        standalone = True
+        database_dir = ~/.geminidr/
+
+    Next time you start a DRAGONS project, set the ``database_dir`` to a path
+    of your liking, this is where the local calibration database will be written.
+
+    Then configure buffers for ``ds9``::
+
+        $ cd ~/
+        $ cp $CONDA_PREFIX/lib/python3.7/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
+        $ vi .bash_profile (or use your favority editor)
+             Add this line to the .bash_profile:
+                export IMTOOLRC=~/.imtoolrc
 
 
-#. Activate your new virtual environment.
-    ::
-
-    $ conda activate geminiconda
-
-
-You are ready to use DRAGONS and AstroData.
-
-----------
+Update an existing DRAGONS installation
+---------------------------------------
 
 To check for newer version::
 
@@ -153,34 +159,9 @@ To check for newer version::
 
     The * will show which version is installed if multiple packages are available.
 
-To update to a newer version::
+To update to the newest version::
 
     $ conda update dragons
-
-
-If ``DRAGONS`` was not installed during the Anaconda and AstroConda stack
-installation, install it::
-
-    $ conda install dragons
-
-Tarball installation
---------------------
-Tarball are available from the releases on the github repository page,
-https://github.com/GeminiDRSoftware/DRAGONS/releases.
-
-It can be installed with::
-
-    python setup.py install [--prefix=<your_choice>]
-
-
-Using the latest software from the repository (expert)
-------------------------------------------------------
-The repository is available on github, on the Gemini Observatory Data
-Reduction Software page, https://github.com/GeminiDRSoftware/DRAGONS.   Either git
-clone or download the content of ``DRAGONS``.
-
-Once you have the source code, remember to set your ``PYTHONPATH`` to include
-the package's location.
 
 
 Smoke test the Astrodata installation
@@ -188,7 +169,7 @@ Smoke test the Astrodata installation
 From the configured bash shell::
 
     $ type python
-    python is hashed (<home_path>/anaconda3/envs/geminiconda/python)
+    python is hashed (<home_path>/anaconda3/envs/dragons/python)
 
     Make sure that python is indeed pointing to the Anaconda environment you
     have just set up.
@@ -201,6 +182,11 @@ From the configured bash shell::
 
     Expected result: Just a python prompt and no error messages.
 
+Source code availability
+------------------------
+The source code is available on Github:
+
+    `<https://github.com/GeminiDRSoftware/DRAGONS>`_
 
 .. _datapkg:
 
@@ -210,7 +196,7 @@ Try it yourself
 **Try it yourself**
 
 Download the data package if you wish to follow along and run the
-examples.  It is available at:
+examples presented in this manual.  It is available at:
 
     `<http://www.gemini.edu/sciops/data/software/datapkgs/ad_usermanual_datapkg-v1.tar>`_
 
