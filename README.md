@@ -49,7 +49,7 @@ reduction of Gemini data.
 # Documentation
 Documentation on DRAGONS v2.1 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/en/stable
+* https://dragons.readthedocs.io/en/release-2.1.x
 
 There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging data with DRAGONS.
