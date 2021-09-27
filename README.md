@@ -11,25 +11,19 @@
 </table>
 
 # Current Status
-**The stable version is v3.0.0.**  
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4025470.svg)](https://doi.org/10.5281/zenodo.4025470) DRAGONS is distributed as a conda package, *dragons*, and it is 
+**The stable version is v2.1.1.**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4025480.svg)](https://doi.org/10.5281/zenodo.4025480) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 3.0.0 is recommend of the reduction of **imaging** data from Gemini's
+Version 2.1.1 is recommend of the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI.
 
-There is no science quality spectroscopy support in this release.  To reduce 
-Gemini spectroscopy data, please continue to use the 
-[Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
-
-There is however support for **quicklook** reduction of GMOS longslit spectroscopic
-data.  The products have not been verified for scientific accuracy.
+There is no spectroscopy support in this release.  To reduce Gemini spectroscopy
+data, please continue to use the [Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
 
 To install:
 
 ```
-$ conda create -n dragons python=3.7 dragons stsci
+$ conda create -n geminiconda python=3.6 gemini stsci
 ```
 
 You might need to add two relevant conda channels if you haven't already:
@@ -40,7 +34,7 @@ $ conda config --add channels http://astroconda.gemini.edu/public
 ```
 
 
-A list of changes since 2.1.1. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v3.0.0/changes.html).
+A list of changes since 2.1.0. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v2.1.1/changes.html).
 
 ---
 # What is DRAGONS
@@ -53,7 +47,7 @@ reduction of Gemini data.
 ---
 
 # Documentation
-Documentation on DRAGONS v3.0 is available on "readthedocs" at:
+Documentation on DRAGONS v2.1 is available on "readthedocs" at:
 
 * https://dragons.readthedocs.io/en/stable
 
