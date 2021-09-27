@@ -45,6 +45,8 @@ author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 #
 version = '3.0'  # The short X.Y version.
 release = '3.0.0'  # The full version, including alpha/beta/rc tags.
+rtdurl = 'v'+release
+#rtdurl = 'release-'+release
 
 
 # -- General configuration -----------------------------------------------------
@@ -428,4 +430,4 @@ rst_epilog = """
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/">Recipe System Users Manual</a>`
 .. |astrodataprog| replace:: :raw-html:`<a href="https://astrodata-programmer-manual.readthedocs.io/en/release-{v}/">Astrodata Programmer Manual</a>`
 
-""".format(v = release)
+""".format(v = rtdurl)

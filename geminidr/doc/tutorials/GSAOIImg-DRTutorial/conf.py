@@ -40,6 +40,8 @@ version = '3.0'
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
 release = '3.0.0'
+rtdurl = 'v'+release
+#rtdurl = 'release-'+release
 
 
 # -- General configuration ---------------------------------------------------
@@ -211,10 +213,10 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/release-3.0.0/', None),
+    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/v3.0.0/', None),
     'astropy': ('http://docs.astropy.org/en/stable/', None),
-    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-3.0.0/', None),
-    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-3.0.0/', None),
+    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0.0/', None),
+    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0.0/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'python': ('https://docs.python.org/3', None),
@@ -238,18 +240,18 @@ rst_epilog = """
 .. role:: raw-html(raw)
    :format: html
 
-.. |caldb| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/caldb.html" target="_blank">caldb</a>`
-.. |dataselect| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#dataselect" target="_blank">dataselect</a>`
-.. |descriptors| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/release-{v}/appendices/appendix_descriptors.html" target="_blank">descriptors</a>`
-.. |descriptor| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/release-{v}/appendices/appendix_descriptors.html" target="_blank">descriptors</a>`
-.. |reduce| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/reduce.html" target="_blank">reduce</a>`
-.. |showd| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#showd" target"_blank">showd</a>`
-.. |showrecipes| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#showrecipes" target="_blank">showrecipes</a>`
-.. |showpars| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#showpars" target="_blank">showpars</a>`
-.. |typewalk| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/supptools.html#typewalk" target="_blank">typewalk</a>`
-.. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
-.. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/release-{v}/" target="_blank">Astrodata User Manual</a>`
+.. |caldb| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/caldb.html" target="_blank">caldb</a>`
+.. |dataselect| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#dataselect" target="_blank">dataselect</a>`
+.. |descriptors| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/{v}/appendices/appendix_descriptors.html" target="_blank">descriptors</a>`
+.. |descriptor| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/{v}/appendices/appendix_descriptors.html" target="_blank">descriptors</a>`
+.. |reduce| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html" target="_blank">reduce</a>`
+.. |showd| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#showd" target"_blank">showd</a>`
+.. |showrecipes| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#showrecipes" target="_blank">showrecipes</a>`
+.. |showpars| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#showpars" target="_blank">showpars</a>`
+.. |typewalk| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#typewalk" target="_blank">typewalk</a>`
+.. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
+.. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/{v}/" target="_blank">Astrodata User Manual</a>`
 
-.. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/release-{v}/">Recipe System Users Manual</a>`
+.. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
 
-""".format(v = release)
+""".format(v = rtdurl)
