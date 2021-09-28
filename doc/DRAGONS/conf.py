@@ -292,6 +292,9 @@ rst_epilog = """
 .. |GSAOIImgTut| replace:: :raw-html:`<a href="http://GSAOIImg-DRTutorial.readthedocs.io/en/{v}">GSAOI Imaging Data Reduction Tutorial</a>`
 .. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Keyhole Imaging Data Reduction Tutorial</a>`
 
+.. |GMOSLSTut| replace:: :raw-html:`<a href="http://GMOSLS-DRTutorial.readthedocs.io/en/{v}">GMOS Longslit Data Reduction Tutorial</a>`
+
+
 .. |ADCheat| replace:: :raw-html:`<a href="http://astrodata-cheat-sheet.readthedocs.io/en/{v}/">AstroData Cheat Sheet</a>`
 .. |ADUser| replace:: :raw-html:`<a href="http://astrodata-user-manual.readthedocs.io/en/{v}/">Astrodata User Manual</a>`
 .. |ADProg| replace:: :raw-html:`<a href="http://astrodata-programmer-manual.readthedocs.io/en/{v}/">Astrodata Programmer Manual</a>`
