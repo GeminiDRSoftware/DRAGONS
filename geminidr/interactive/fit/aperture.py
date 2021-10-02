@@ -746,8 +746,8 @@ class ApertureView:
         self.fig.x_range.on_change('end', lambda attr, old, new:
                                    self.update_viewport(end=new))
 
-        self.annotations_source = ColumnDataSource(data=dict(id=[], start=[], end=[]))
-        self.labels = LabelSet(x='end', y=380, y_units='screen', text='id',
+        self.annotations_source = ColumnDataSource(data=dict(id=[], text=[], start=[], end=[]))
+        self.labels = LabelSet(x='end', y=380, y_units='screen', text='text',
                                y_offset=2, source=self.annotations_source, render_mode='canvas')
         self.fig.add_layout(self.labels)
 
@@ -782,6 +782,7 @@ class ApertureView:
         plot = AperturePlotView(self.fig, model)
         self.widgets[aperture_id] = plot
         self.annotations_source.stream({'id': [model.source.data['id'][0], ],
+                                        'text': [str(model.source.data['id'][0]), ],
                                         'start': [model.source.data['start'][0], ],
                                         'end': [model.source.data['end'][0], ]})
 
@@ -791,21 +792,23 @@ class ApertureView:
             plot = self.widgets[aperture_id]
             plot.delete()
             del self.widgets[aperture_id]
-            newdata = {'id': [], 'start': [], 'end': []}
-            for i in range(len(self.annotations_source.data['id'])):
+            newdata = {'id': [], 'text': [], 'start': [], 'end': []}
+            for i in range(len(self.annotations_source.data['text'])):
                 if self.annotations_source.data['id'][i] != aperture_id:
                     newdata['id'].append(self.annotations_source.data['id'][i])
+                    newdata['text'].append(self.annotations_source.data['text'][i])
                     newdata['start'].append(self.annotations_source.data['start'][i])
                     newdata['end'].append(self.annotations_source.data['end'][i])
             self.annotations_source.data = newdata
 
     def renumber_apertures(self):
         new_widgets = {}
-        newlabeldata = {'id': [], 'start': [], 'end': []}
+        newlabeldata = {'id': [], 'text': [], 'start': [], 'end': []}
         for plot in self.widgets.values():
             aperture_id = plot.model.source.data['id'][0]
             new_widgets[aperture_id] = plot
             newlabeldata['id'].append(aperture_id)
+            newlabeldata['text'].append(str(aperture_id))
             newlabeldata['start'].append(plot.model.source.data['start'])
             newlabeldata['end'].append(plot.model.source.data['end'])
         self.annotations_source.data = newlabeldata
