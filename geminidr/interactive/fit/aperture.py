@@ -876,7 +876,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             fresh sets as needed
         """
         super().__init__(title='Find Source Apertures',
-                         primitive_name='findSourceApertures',
+                         primitive_name='findApertures',
                          filename_info=filename_info)
         self.model = model
         self.fig = None
