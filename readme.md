@@ -13,7 +13,7 @@
 # Current Status
 **The stable version is v3.0.0.**  
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4025470.svg)](https://doi.org/10.5281/zenodo.4025470) DRAGONS is distributed as a conda package, *dragons*, and it is 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5565540.svg)](https://doi.org/10.5281/zenodo.5565540) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
 Version 3.0.0 is recommend of the reduction of **imaging** data from Gemini's
