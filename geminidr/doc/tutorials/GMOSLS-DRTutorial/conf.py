@@ -22,10 +22,11 @@ copyright = '2021, Association of Universities for Research in Astronomy'
 author = 'Kathleen Labrie'
 
 # The full version, including alpha/beta/rc tags
-version = '3.0'
-release = '3.0.0'
-rtdurl = 'v'+release
+version = '3.1'
+release = '3.1.0-dev'
+#rtdurl = 'v'+release
 #rtdurl = 'release-'+release
+rtdurl = 'latest'
 
 today = 'October 2021'
 
