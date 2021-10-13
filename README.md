@@ -14,7 +14,7 @@
 **The stable version is v3.0.0.**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5565540.svg)](https://doi.org/10.5281/zenodo.5565540) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 2.1.1 is recommend of the reduction of **imaging** data from Gemini's
+Version 3.0.0 is recommend of the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI.
 
 There is now basic GMOS longslit support in DRAGONS but it is to be used only
