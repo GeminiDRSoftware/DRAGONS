@@ -40,7 +40,7 @@ warnings.filterwarnings(
     r"and SQLAlchemy must convert from floating point - rounding errors and "
     r"other issues may occur. Please consider storing Decimal numbers as "
     r"strings or integers on this platform for lossless storage\.",
-    SAWarning, r'^sqlalchemy\.sql\.sqltypes$'
+    SAWarning, r'^.*$'
 )
 
 extra_descript = {
