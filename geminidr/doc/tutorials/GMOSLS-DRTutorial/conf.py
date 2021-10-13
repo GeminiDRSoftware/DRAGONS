@@ -23,9 +23,9 @@ author = 'Kathleen Labrie'
 
 # The full version, including alpha/beta/rc tags
 version = '3.0'
-release = '3.0.0'
-rtdurl = 'v'+release
-#rtdurl = 'release-'+release
+release = '3.0.x'
+#rtdurl = 'v'+release
+rtdurl = 'release-'+release
 
 today = 'October 2021'
 
