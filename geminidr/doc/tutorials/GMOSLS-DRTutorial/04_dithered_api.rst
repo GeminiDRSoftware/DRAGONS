@@ -69,6 +69,8 @@ Importing libraries
 
     import glob
 
+    import astrodata
+    import gemni_instruments
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system import cal_service
     from gempy.adlibrary import dataselect
