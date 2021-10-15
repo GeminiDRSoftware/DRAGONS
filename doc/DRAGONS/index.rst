@@ -19,12 +19,17 @@ DRAGONS Documentation
 Tutorials - Reducing data with DRAGONS
 --------------------------------------
 
+**Imaging**
+
 * |GMOSImgTut|
 * |NIRIImgTut|
 * |F2ImgTut|
 * |GSAOIImgTut|
 * |GNIRSImgTut|
 
+**Longslit Spectroscopy**
+
+* |GMOSLSTut|
 
 DRAGONS Manuals
 ---------------
