@@ -383,6 +383,7 @@ class CalibDB(PrimitivesBASE):
                 # Got to do a bit of gymnastic to figure what the current
                 # suffix is.  If orig.filename and filename are equal and have
                 # `_`, I have to assume that the last `_` is a suffix.  (KL)
+                # todo: chart the use cases and clean this up.
                 root, filetype = os.path.splitext(ad.orig_filename)
                 if ad.orig_filename == ad.filename:
                     pre, post = ad.orig_filename.rsplit('_', 1)
@@ -390,7 +391,10 @@ class CalibDB(PrimitivesBASE):
                     suffix = '_' + suffix
                 else:
                     m = re.match('(.*){}(.*)'.format(re.escape(root)), ad.filename)
-                    if m.groups()[1] and m.groups()[1] != filetype:
+                    if m is None:  # some primitive changed the orig name (should not happen). Keep filename's.
+                        fname, suffix = os.path.splitext(ad.filename)[0].rsplit('_',1)
+                        suffix = '_' + suffix
+                    elif m.groups()[1] and m.groups()[1] != filetype:
 
                         suffix, filetype = os.path.splitext(m.groups()[1])
                     else:
