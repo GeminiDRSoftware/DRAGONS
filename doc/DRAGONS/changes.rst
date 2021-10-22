@@ -6,6 +6,19 @@
 Change Logs
 ***********
 
+3.0.1
+=====
+
+Bug Fixes
+---------
+
+**geminidr**
+
+**geminidri.core**
+
+* Fix bug where section start/end comparison was made on string, not numeric, values.
+
+
 3.0.0
 =====
 
