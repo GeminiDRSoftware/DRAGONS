@@ -139,14 +139,14 @@ def check_section(value):
     subsections = value.split(',')
     for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
         try:
-            int(x1)
+            x1 = int(x1)
         except ValueError:
             if i > 0 or x1 != '':
                 return False
             else:
                 x1 = 0
         try:
-            int(x2)
+            x2 = int(x2)
         except ValueError:
             if i < len(subsections) - 1 or x2 != '':
                 return False
