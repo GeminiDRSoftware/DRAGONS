@@ -16,7 +16,7 @@ science quality outputs, yet.
 Bug Fixes
 ---------
 
-** gemnidr **
+**geminidr**
 
 * In imaging mode, the science recipes now include a call to
   ``scaleByExposureTime`` before the stacking step.  It is now possible to stack
@@ -54,6 +54,7 @@ New Features
 ------------
 
 **geminidr**
+
 * Quicklook (``--ql`` mode) reduction support for GMOS longslit data.
 
 **geminidr.core**
