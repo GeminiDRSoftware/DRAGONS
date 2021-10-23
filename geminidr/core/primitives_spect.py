@@ -1572,9 +1572,11 @@ class Spect(PrimitivesBASE):
             indicating the region(s) over which the spectral signal should be
             used. The first and last values can be blank, indicating to
             continue to the end of the data
-        min_sky_pregion : int
+        min_sky_region : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
+        min_snr : float
+            minimum S/N ratio for detecting peaks (passed to find_peaks)
         use_snr : bool
             Convert data to SNR per pixel before collapsing and peak-finding?
         threshold : float (0 - 1)
@@ -1603,6 +1605,7 @@ class Spect(PrimitivesBASE):
         percentile = params["percentile"]
         section = params["section"]
         min_sky_pix = params["min_sky_region"]
+        min_snr = params["min_snr"]
         use_snr = params["use_snr"]
         threshold = params["threshold"]
         sizing_method = params["sizing_method"]
@@ -1677,8 +1680,8 @@ class Spect(PrimitivesBASE):
                 # Send variance=1 since "profile" is already the S/N
                 peaks_and_snrs = tracing.find_peaks(
                     profile, widths, mask=prof_mask & DQ.not_signal,
-                    variance=1.0 if this_use_snr else None, reject_bad=False,
-                    min_snr=3, min_frac=0.2, pinpoint_index=0)
+                    variance=None, reject_bad=False,
+                    min_snr=min_snr, min_frac=0.2, pinpoint_index=0)
 
                 if peaks_and_snrs.size == 0:
                     log.warning("Found no sources")

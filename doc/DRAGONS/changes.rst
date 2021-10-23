@@ -14,9 +14,14 @@ Bug Fixes
 
 **geminidr**
 
-**geminidri.core**
+**geminidr.core**
 
-* Fix bug where section start/end comparison was made on string, not numeric, values.
+* Fix bug where ``section`` start/end comparison was made on string, not
+  numeric, values.
+
+* Expose ``min_snr`` parameter in ``findApertures``, make ``use_snr=False``
+  the default, and estimate noise from pixel-to-pixel variations, regardless
+  of its value.
 
 
 3.0.0
