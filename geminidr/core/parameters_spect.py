@@ -166,8 +166,10 @@ class findAperturesConfig(config.Config):
                            str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 20, min=1)
-    use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
-                           bool, True)
+    min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
+                                float, 3.0, min=0.1)
+    use_snr = config.Field("Use signal-to-noise ratio rather than data in "
+                           "collapsed profile?", bool, False)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,

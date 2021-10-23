@@ -1571,6 +1571,8 @@ class Spect(PrimitivesBASE):
         min_sky_region : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
+        min_snr : float
+            minimum S/N ratio for detecting peaks (passed to find_peaks)
         use_snr : bool
             Convert data to SNR per pixel before collapsing and peak-finding?
         threshold : float (0 - 1)
@@ -1601,7 +1603,7 @@ class Spect(PrimitivesBASE):
 
         aper_params = {key: params[key] for key in (
             'max_apertures', 'min_sky_region', 'percentile',
-            'section', 'sizing_method', 'threshold', 'use_snr')}
+            'section', 'sizing_method', 'threshold', 'min_snr', 'use_snr')}
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:

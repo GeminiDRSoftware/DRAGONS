@@ -1107,7 +1107,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
 
 def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
-                   sizing_method, threshold, section, use_snr):
+                   sizing_method, threshold, section, min_snr, use_snr):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
@@ -1165,22 +1165,20 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
             profile = np.nanmean(masked_data, axis=1)
 
     locations, all_limits = find_apertures_peaks(profile, prof_mask,
-                                                 max_apertures, direction,
-                                                 threshold, sizing_method,
-                                                 use_snr)
+                                                 max_apertures, threshold,
+                                                 sizing_method, min_snr)
 
     return locations, all_limits, profile, prof_mask
 
 
-def find_apertures_peaks(profile, prof_mask, max_apertures, direction,
-                         threshold, sizing_method, use_snr):
+def find_apertures_peaks(profile, prof_mask, max_apertures,
+                         threshold, sizing_method, min_snr):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
     widths = np.arange(3, 20)
-    peaks_and_snrs = find_peaks(profile, widths,
-                                mask=prof_mask & DQ.not_signal,
-                                variance=1.0 if use_snr else None, reject_bad=False,
-                                min_snr=3, min_frac=0.2, pinpoint_index=0)
+    peaks_and_snrs = find_peaks(
+        profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+        reject_bad=False, min_snr=min_snr, min_frac=0.2, pinpoint_index=0)
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")

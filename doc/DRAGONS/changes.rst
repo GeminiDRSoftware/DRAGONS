@@ -14,9 +14,13 @@ Bug Fixes
 
 **geminidr**
 
-**geminidri.core**
+**geminidr.core**
 
-* Fix bug where section start/end comparison was made on string, not numeric, values.
+* Fix bug where ``section`` start/end comparison was made on string, not
+  numeric, values.
+
+* Expose ``min_snr`` parameter in ``findApertures`` and hide ``use_snr``
+  (and set its default to ``False``).
 
 
 3.0.0
