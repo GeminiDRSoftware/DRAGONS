@@ -485,6 +485,11 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     max_width = max(widths)
     window_size = 4 * max_width + 1
 
+    # If no variance is supplied we estimate S/N from pixel-to-pixel variations
+    # (do this before wny smoothing)
+    if variance is None:
+        variance = sigma_clip(np.diff(data[~mask]), masked=False).std() ** 2 / 2
+
     # For really broad peaks we can do a median filter to remove spikes
     if max_width > 10:
         data = at.boxcar(data, size=2)
@@ -510,14 +515,9 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     pinpoint_data = (data if pinpoint_index is None else
                      wavelet_transformed_data[pinpoint_index])
 
-    # If no variance is supplied we estimate S/N from pixel-to-pixel variations
-    if variance is not None:
-        snr = np.divide(pinpoint_data, np.sqrt(variance),
-                        out=np.zeros_like(data, dtype=np.float32),
-                        where=variance > 0)
-    else:
-        sigma = sigma_clip(data[~mask], masked=False).std() / np.sqrt(2)
-        snr = pinpoint_data / sigma
+    snr = np.divide(pinpoint_data, np.sqrt(variance),
+                    out=np.zeros_like(data, dtype=np.float32),
+                    where=variance > 0)
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -1167,8 +1167,6 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     locations, all_limits = find_apertures_peaks(profile, prof_mask,
                                                  max_apertures, threshold,
                                                  sizing_method, min_snr)
-
-    return locations, all_limits, profile, prof_mask
 
 
 def find_apertures_peaks(profile, prof_mask, max_apertures,
