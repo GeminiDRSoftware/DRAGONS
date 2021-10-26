@@ -174,7 +174,8 @@ def create_inputs_recipe():
         p.overscanCorrect()
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        p.distortionCorrect(arc=arc_ad)
+        p.attachWavelengthSolution(arc=arc_ad)
+        p.distortionCorrect()
         p.writeOutputs()
         os.chdir("../")
 

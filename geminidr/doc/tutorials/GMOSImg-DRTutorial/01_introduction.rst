@@ -1,7 +1,5 @@
 .. 01_introduction.rst
 
-.. _DRAGONS: https://dragons.readthedocs.io/
-
 .. _`Gemini Observatory Archive (GOA)`: https://archive.gemini.edu/
 
 .. _GMOS: https://www.gemini.edu/sciops/instruments/gmos/
@@ -13,7 +11,7 @@ Introduction
 ************
 
 This tutorial covers the basics of reducing GMOS_ (Gemini Multi-Object
-Spectrographs) data using DRAGONS_.
+Spectrographs) data using |DRAGONS|.
 
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial.
@@ -28,15 +26,15 @@ reduce the data using DRAGONS' packages from within Python.
 Software Requirements
 =====================
 
-Before you start, make sure you have DRAGONS_ properly installed and configured
+Before you start, make sure you have |DRAGONS| properly installed and configured
 on your machine. You can test that by typing the following commands:
 
 .. code-block:: bash
 
-    $ conda activate geminiconda
+    $ conda activate dragons
     $ python -c "import astrodata"
 
-Where ``geminiconda`` is the name of the conda environment where DRAGONS should
+Where ``dragons`` is the name of the conda environment where DRAGONS should
 be installed. If you have an error message, make sure:
 
     - Conda is properly installed;

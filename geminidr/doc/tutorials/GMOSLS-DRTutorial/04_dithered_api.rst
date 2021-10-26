@@ -1,7 +1,5 @@
 .. 04_dithered_api.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _dithered_api:
 
 **********************************************************************
@@ -57,7 +55,7 @@ First, navigate to your work directory in the unpacked data package.
 
 ::
 
-    cd <path>/gmosls_tutorial/playground/example1
+    cd <path>/gmosls_tutorial/playground
 
 The first steps are to import libraries, set up the calibration manager,
 and set the logger.
@@ -72,7 +70,7 @@ Importing libraries
     import glob
 
     import astrodata
-    import gemini_instruments
+    import gemni_instruments
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system import cal_service
     from gempy.adlibrary import dataselect
@@ -97,25 +95,25 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 Set up the Local Calibration Manager
 ------------------------------------
-DRAGONS comes with a local calibration manager and a local, light weight database
+DRAGONS comes with a local calibration manager
 that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows the ``Reduce`` instance to make requests for matching
+Archive.  This allows the ``Reduce`` instance to make requests to a local
+light-weigth database for matching
 **processed** calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/``, edit the configuration file ``rsys.cfg`` as follow::
+In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
 
     [calibs]
-    standalone = True
-    database_dir = <where_the_data_package_is>/gmosls_tutorial/playground
+    databases = <where_the_data_package_is>/gmosls_tutorial/playground/cal_manager.db
 
 This tells the system where to put the calibration database, the
 database that will keep track of the processed calibration we are going to
 send to it.
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
-    Also, mind the dot in ``.geminidr``.
+    Also, mind the dot in ``.dragons``.
 
 The calibration database is initialized and the calibration service is
 configured like this:
@@ -124,11 +122,8 @@ configured like this:
     :linenos:
     :lineno-start: 10
 
-    caldb = cal_service.CalibrationService()
-    caldb.config()
+    caldb = cal_service.set_local_database()
     caldb.init()
-
-    cal_service.set_calservice()
 
 The calibration service is now ready to use.  If you need more details,
 check the "|caldb|" documentation in the Recipe System User Manual.
@@ -149,7 +144,7 @@ directory.
     :linenos:
     :lineno-start: 15
 
-    all_files = glob.glob('../../playdata/*.fits')
+    all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
@@ -184,26 +179,26 @@ for the descriptor of interest, here ``detector_roi_setting``.
 
 ::
 
-    ../../playdata/S20170825S0347.fits    Central Spectrum
-    ../../playdata/S20170825S0348.fits    Central Spectrum
-    ../../playdata/S20170825S0349.fits    Central Spectrum
-    ../../playdata/S20170825S0350.fits    Central Spectrum
-    ../../playdata/S20170825S0351.fits    Central Spectrum
-    ../../playdata/S20170826S0224.fits    Central Spectrum
-    ../../playdata/S20170826S0225.fits    Central Spectrum
-    ../../playdata/S20170826S0226.fits    Central Spectrum
-    ../../playdata/S20170826S0227.fits    Central Spectrum
-    ../../playdata/S20170826S0228.fits    Central Spectrum
-    ../../playdata/S20171021S0265.fits    Full Frame
-    ../../playdata/S20171021S0266.fits    Full Frame
-    ../../playdata/S20171021S0267.fits    Full Frame
-    ../../playdata/S20171021S0268.fits    Full Frame
-    ../../playdata/S20171021S0269.fits    Full Frame
-    ../../playdata/S20171023S0032.fits    Full Frame
-    ../../playdata/S20171023S0033.fits    Full Frame
-    ../../playdata/S20171023S0034.fits    Full Frame
-    ../../playdata/S20171023S0035.fits    Full Frame
-    ../../playdata/S20171023S0036.fits    Full Frame
+    ../playdata/S20170825S0347.fits    Central Spectrum
+    ../playdata/S20170825S0348.fits    Central Spectrum
+    ../playdata/S20170825S0349.fits    Central Spectrum
+    ../playdata/S20170825S0350.fits    Central Spectrum
+    ../playdata/S20170825S0351.fits    Central Spectrum
+    ../playdata/S20170826S0224.fits    Central Spectrum
+    ../playdata/S20170826S0225.fits    Central Spectrum
+    ../playdata/S20170826S0226.fits    Central Spectrum
+    ../playdata/S20170826S0227.fits    Central Spectrum
+    ../playdata/S20170826S0228.fits    Central Spectrum
+    ../playdata/S20171021S0265.fits    Full Frame
+    ../playdata/S20171021S0266.fits    Full Frame
+    ../playdata/S20171021S0267.fits    Full Frame
+    ../playdata/S20171021S0268.fits    Full Frame
+    ../playdata/S20171021S0269.fits    Full Frame
+    ../playdata/S20171023S0032.fits    Full Frame
+    ../playdata/S20171023S0033.fits    Full Frame
+    ../playdata/S20171023S0034.fits    Full Frame
+    ../playdata/S20171023S0035.fits    Full Frame
+    ../playdata/S20171023S0036.fits    Full Frame
 
 We can clearly see the two groups of biases above.  Let's split them into
 two lists.
@@ -291,10 +286,10 @@ On line 37, remember that the second argument contains the tags to **include**
 
 ::
 
-    ../../playdata/S20171022S0087.fits    J2145+0031
-    ../../playdata/S20171022S0089.fits    J2145+0031
-    ../../playdata/S20171022S0095.fits    J2145+0031
-    ../../playdata/S20171022S0097.fits    J2145+0031
+    ../playdata/S20171022S0087.fits    J2145+0031
+    ../playdata/S20171022S0089.fits    J2145+0031
+    ../playdata/S20171022S0095.fits    J2145+0031
+    ../playdata/S20171022S0097.fits    J2145+0031
 
 In this case we only have one target.  If we had more than one, we would need
 several lists and we could use the ``object`` descriptor in an expression.  We
@@ -452,7 +447,7 @@ To inspect the spectrum:
 
     ad = astrodata.open(reduce_std.output_filenames[0])
     plt.ioff()
-    plotting.splot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1)
     plt.ion()
 
 
@@ -537,7 +532,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
     ad = astrodata.open(reduce_science.output_filenames[0])
     plt.ioff()
-    plotting.splot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1)
     plt.ion()
 
 

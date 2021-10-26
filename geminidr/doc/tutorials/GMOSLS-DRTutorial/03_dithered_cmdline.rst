@@ -1,7 +1,5 @@
 .. 03_dithered_cmdline.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _dithered_cmdline:
 
 *****************************************************************************
@@ -52,32 +50,33 @@ Here is a copy of the table for quick reference.
 
 Set up the Local Calibration Manager
 ====================================
-DRAGONS comes with a local calibration manager and a local light weight database
+DRAGONS comes with a local calibration manager
 that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows "|reduce|" to make requests for matching **processed**
+Archive.  This allows "|reduce|" to make requests to a local light-weight
+database for matching **processed**
 calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow::
 
     [calibs]
-    standalone = True
-    database_dir = <where_the_data_package_is>/gmosls_tutorial/playground
+    databases = <where_the_data_package_is>/gmosls_tutorial/playground/cal_manager.db get
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
 send to it.
 
-.. note:: ``~`` in the path above refers to your home directory.  Also, don't
-    miss the dot in ``.geminidr``.
+.. note:: ``~`` in the path above refers to your home directory.  Also, mind
+   the dot in ``.dragons``.
 
 Then initialize the calibration database::
 
     caldb init
 
-That's it.  It is ready to use.
+That's it.  It is ready to use.  You can check the configuration and confirm the
+setting with ``caldb config``.
 
 You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and
@@ -100,9 +99,9 @@ with that.  It uses Astrodata tags and "|descriptors|" to select the files and
 send the filenames to a text file that can then be fed to "|reduce|".  (See the
 |astrodatauser| for information about Astrodata.)
 
-First, navigate to the ``playground/example1`` directory in the unpacked data package::
+First, navigate to the ``playground`` directory in the unpacked data package::
 
-    cd <path>/gmosls_tutorial/playground/example1
+    cd <path>/gmosls_tutorial/playground
 
 
 
@@ -126,39 +125,39 @@ directory.
 
 ::
 
-    dataselect ../../playdata/*.fits --tags BIAS | showd -d detector_roi_setting
+    dataselect ../playdata/*.fits --tags BIAS | showd -d detector_roi_setting
 
-    ---------------------------------------------------------
-    filename                             detector_roi_setting
-    ---------------------------------------------------------
-    ../../playdata/S20170825S0347.fits       Central Spectrum
-    ../../playdata/S20170825S0348.fits       Central Spectrum
-    ../../playdata/S20170825S0349.fits       Central Spectrum
-    ../../playdata/S20170825S0350.fits       Central Spectrum
-    ../../playdata/S20170825S0351.fits       Central Spectrum
-    ../../playdata/S20170826S0224.fits       Central Spectrum
-    ../../playdata/S20170826S0225.fits       Central Spectrum
-    ../../playdata/S20170826S0226.fits       Central Spectrum
-    ../../playdata/S20170826S0227.fits       Central Spectrum
-    ../../playdata/S20170826S0228.fits       Central Spectrum
-    ../../playdata/S20171021S0265.fits             Full Frame
-    ../../playdata/S20171021S0266.fits             Full Frame
-    ../../playdata/S20171021S0267.fits             Full Frame
-    ../../playdata/S20171021S0268.fits             Full Frame
-    ../../playdata/S20171021S0269.fits             Full Frame
-    ../../playdata/S20171023S0032.fits             Full Frame
-    ../../playdata/S20171023S0033.fits             Full Frame
-    ../../playdata/S20171023S0034.fits             Full Frame
-    ../../playdata/S20171023S0035.fits             Full Frame
-    ../../playdata/S20171023S0036.fits             Full Frame
+    ------------------------------------------------------
+    filename                          detector_roi_setting
+    ------------------------------------------------------
+    ../playdata/S20170825S0347.fits       Central Spectrum
+    ../playdata/S20170825S0348.fits       Central Spectrum
+    ../playdata/S20170825S0349.fits       Central Spectrum
+    ../playdata/S20170825S0350.fits       Central Spectrum
+    ../playdata/S20170825S0351.fits       Central Spectrum
+    ../playdata/S20170826S0224.fits       Central Spectrum
+    ../playdata/S20170826S0225.fits       Central Spectrum
+    ../playdata/S20170826S0226.fits       Central Spectrum
+    ../playdata/S20170826S0227.fits       Central Spectrum
+    ../playdata/S20170826S0228.fits       Central Spectrum
+    ../playdata/S20171021S0265.fits             Full Frame
+    ../playdata/S20171021S0266.fits             Full Frame
+    ../playdata/S20171021S0267.fits             Full Frame
+    ../playdata/S20171021S0268.fits             Full Frame
+    ../playdata/S20171021S0269.fits             Full Frame
+    ../playdata/S20171023S0032.fits             Full Frame
+    ../playdata/S20171023S0033.fits             Full Frame
+    ../playdata/S20171023S0034.fits             Full Frame
+    ../playdata/S20171023S0035.fits             Full Frame
+    ../playdata/S20171023S0036.fits             Full Frame
 
 
 We can see the two groups that differ on their ROI.
 
 ::
 
-    dataselect ../../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
-    dataselect ../../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
+    dataselect ../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
+    dataselect ../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
 
 
 A list for the flats
@@ -175,7 +174,7 @@ them all together.
 
 ::
 
-    dataselect ../../playdata/*.fits --tags FLAT -o flats.lis
+    dataselect ../playdata/*.fits --tags FLAT -o flats.lis
 
 
 A list for the arcs
@@ -189,7 +188,7 @@ you find that you need more accurate sorting.  We do not need it here.
 
 ::
 
-    dataselect ../../playdata/*.fits --tags ARC -o arcs.lis
+    dataselect ../playdata/*.fits --tags ARC -o arcs.lis
 
 
 A list for the spectrophotometric standard star
@@ -200,7 +199,7 @@ normally used at Gemini are in the DRAGONS list of recognized standards.
 
 ::
 
-    dataselect ../../playdata/*.fits --tags STANDARD -o std.lis
+    dataselect ../playdata/*.fits --tags STANDARD -o std.lis
 
 
 A list for the science observation
@@ -214,15 +213,15 @@ inspect what we have we can use |dataselect| and |showd| together.
 
 ::
 
-    dataselect ../../playdata/*.fits --xtags CAL | showd -d object
+    dataselect ../playdata/*.fits --xtags CAL | showd -d object
 
-    -----------------------------------------------
-    filename                                 object
-    -----------------------------------------------
-    ../../playdata/S20171022S0087.fits   J2145+0031
-    ../../playdata/S20171022S0089.fits   J2145+0031
-    ../../playdata/S20171022S0095.fits   J2145+0031
-    ../../playdata/S20171022S0097.fits   J2145+0031
+    --------------------------------------------
+    filename                              object
+    --------------------------------------------
+    ../playdata/S20171022S0087.fits   J2145+0031
+    ../playdata/S20171022S0089.fits   J2145+0031
+    ../playdata/S20171022S0095.fits   J2145+0031
+    ../playdata/S20171022S0097.fits   J2145+0031
 
 Here we only have one object from the same sequence.  We would not need any
 expression, just exclusing calibrations would be sufficient.  But we demonstrate
@@ -230,7 +229,7 @@ here how one would specify the object name for a more surgical selection.
 
 ::
 
-    dataselect ../../playdata/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
+    dataselect ../playdata/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
 
 
 Master Bias
@@ -331,7 +330,7 @@ manager, they will be picked up automatically.
 
 To inspect the spectrum::
 
-    splot S20170826S0160_ql_standard.fits 1
+    dgsplot S20170826S0160_ql_standard.fits 1
 
 To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
 script, see Tips and Tricks :ref:`plot_1d`.
@@ -396,7 +395,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
 ::
 
-    splot S20171022S0087_1D.fits 1
+    dgsplot S20171022S0087_1D.fits 1
 
 .. image:: _graphics/1Dspectrum.png
    :width: 600

@@ -69,13 +69,12 @@ class CCD(PrimitivesBASE):
                 continue
 
             if bias is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    log.warning("No changes will be made to {}, since no "
-                                "bias was specified".format(ad.filename))
-                    continue
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise OSError("No processed bias listed for "
+                                  f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no bias was specified. "
-                                "Continuing.")
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no bias was specified")
                     continue
 
             try:

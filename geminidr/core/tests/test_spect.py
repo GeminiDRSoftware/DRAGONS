@@ -31,9 +31,12 @@ import os
 import numpy as np
 import pytest
 from astropy import table
+from astropy import units as u
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
+
+from specutils.utils.wcs_utils import air_to_vac
 
 from gempy.library import astromodels as am
 from geminidr.core import primitives_spect
@@ -327,6 +330,26 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     assert conserve == correct
     warning_given = any("WARNING" in record.message for record in caplog.records)
     assert warn == warning_given
+
+
+def test_resample_spec_table():
+
+    waves_air = np.arange(3500, 7500.001, 100) * u.AA
+    waves_vac = air_to_vac(waves_air)
+    bandpass = np.full(waves_air.size, 5.) * u.nm
+    flux = np.ones(waves_air.size) * u.Unit("W/(m^2 Hz)")
+    spec_table = table.Table(
+        [waves_air, waves_vac, flux, bandpass],
+        names=['WAVELENGTH_AIR', 'WAVELENGTH_VAC', 'FLUX', 'WIDTH'])
+
+    t = primitives_spect.resample_spec_table(spec_table, 0.1)
+
+    assert len(t) == 4001
+    np.testing.assert_allclose(t['WAVELENGTH_AIR'].quantity,
+                               np.arange(350, 750.001, 0.1) * u.nm)
+    assert all([bw.to(u.nm).value == 0.1 if i % 10 else 5
+               for i, bw in enumerate(t['WIDTH'].quantity)])
+    np.testing.assert_allclose(t['FLUX'].data, 1.0)
 
 
 # --- Fixtures and helper functions -------------------------------------------

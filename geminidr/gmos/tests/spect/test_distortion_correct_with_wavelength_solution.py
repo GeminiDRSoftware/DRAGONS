@@ -40,6 +40,15 @@ associated_calibrations = {
         'flat': ["S20200116S0103.fits"],
         'arcs': ["S20200116S0357.fits"],
     },
+    # "S20190831S0112.fits": {              # GS R400:0.860 HAM FULL
+    #     'bias': ["S20190831S0177.fits",
+    #              "S20190831S0178.fits",
+    #              "S20190831S0179.fits",
+    #              "S20190831S0180.fits",
+    #              "S20190831S0181.fits",],
+    #     'flat': ["S20190831S0113.fits"],
+    #     'arcs': ["S20190831S0146.fits"],
+    # },
 }
 sci_datasets = [key.replace('.fits', '_QECorrected.fits')
                 for key in associated_calibrations]
@@ -65,7 +74,7 @@ fixed_test_parameters_for_determine_distortion = {
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory):
+def test_regression_in_distortion_correct_with_wave_sol(ad, change_working_dir, ref_ad_factory):
     """
     Runs the `distortionCorrect` primitive on a preprocessed data and compare
     its model with the one in the reference file.
@@ -94,16 +103,19 @@ def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory
         world1, world2 = ext_ref.wcs(*corner1), ext_ref.wcs(*corner2)
         np.testing.assert_allclose(ext.wcs(*corner1), world1, rtol=1e-6)
         np.testing.assert_allclose(ext.wcs(*corner2), world2, rtol=1e-6)
-        np.testing.assert_allclose(ext.wcs.invert(*world1),
-                                   corner1, atol=1e-3)
-        np.testing.assert_allclose(ext.wcs.invert(*world2),
-                                   corner2, atol=1e-3)
+        # The inverse is not highly accurate and transforming back & forth can
+        # just exceed even a tolerance of 0.01 pix, but it's best to compare
+        # with the true corner values rather than the same results from the
+        # reference, otherwise it would be too easy to overlook a problem with
+        # the inverse when someone checks the reference file.
+        np.testing.assert_allclose(ext.wcs.invert(*world1), corner1, atol=0.02)
+        np.testing.assert_allclose(ext.wcs.invert(*world2), corner2, atol=0.02)
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_full_frame_distortion_works_on_smaller_region(ad, change_working_dir):
+def test_full_frame_distortion_with_wave_sol_works_on_smaller_region(ad, change_working_dir):
     """
     Takes a full-frame arc and self-distortion-corrects it. It then fakes
     sub-regions of this and corrects those using the full-frame distortion to
@@ -194,7 +206,7 @@ def ad(path_to_inputs, request):
     return ad
 
 
-# -- Recipe to create pre-processed data (no wave cal, just distortion) -------
+# -- Recipe to create pre-processed data, including wave cal ------------------
 def create_inputs_recipe():
     """
     Creates input data for tests using pre-processed standard star and its
@@ -232,7 +244,6 @@ def create_inputs_recipe():
         sci_ad = astrodata.open(sci_path)
         arc_ad = astrodata.open(arc_paths[0])
         data_label = sci_ad.data_label()
-        # is_ham = sci_ad.detector_name(pretty=True).startswith('Hamamatsu')
 
         logutils.config(file_name='log_bias_{}.txt'.format(data_label))
         bias_reduce = Reduce()
@@ -262,6 +273,8 @@ def create_inputs_recipe():
         p.addVAR(poisson_noise=True, read_noise=False)
         p.mosaicDetectors()
         p.makeIRAFCompatible()
+        p.determineWavelengthSolution(order=4., lsigma=2.5, hsigma=2.5,
+                                      min_sep=10., interactive=False)
         p.determineDistortion(**fixed_test_parameters_for_determine_distortion)
         p.storeProcessedArc()
 

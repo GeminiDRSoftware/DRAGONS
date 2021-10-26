@@ -210,7 +210,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             # data range on each side
             #height = (44 / 29 * self.spectrum.data['spectrum'].max() -
             #          1.1 * self.spectrum.data['spectrum'].min())
-            height = 44 / 29 * self.spectrum.data['spectrum'].max()
+            height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
         padding = 0.25 * height
         try:
             return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]

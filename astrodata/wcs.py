@@ -113,9 +113,11 @@ def fitswcs_to_gwcs(hdr):
     return gWCS([(in_frame, transform),
                  (out_frame, None)])
 
+
 # -----------------------------------------------------------------------------
 # gWCS -> FITS-WCS
 # -----------------------------------------------------------------------------
+
 def gwcs_to_fits(ndd, hdr=None):
     """
     Convert a gWCS object to a collection of FITS WCS keyword/value pairs,
@@ -239,6 +241,7 @@ def gwcs_to_fits(ndd, hdr=None):
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
+
 def model_is_affine(model):
     """"
     Test a Model for affinity. This is currently done by checking the
@@ -511,7 +514,6 @@ def make_fitswcs_transform(header):
     # The tricky stuff!
     sky_model = fitswcs_image(wcs_info)
     linear_models = fitswcs_linear(wcs_info)
-
     all_models = linear_models
     if sky_model:
         all_models.append(sky_model)
@@ -557,10 +559,11 @@ def fitswcs_image(header):
     # get the part of the PC matrix corresponding to the imaging axes
     sky_axes, spec_axes, unknown = get_axes(wcs_info)
     if not sky_axes:
-        if len(unknown) == 2:
-            sky_axes = unknown
-        else:  # No sky here
-            return
+        return
+        #if len(unknown) == 2:
+        #    sky_axes = unknown
+        #else:  # No sky here
+        #    return
     pixel_axes = _get_contributing_axes(wcs_info, sky_axes)
     if len(pixel_axes) > 2:
         raise ValueError("More than 2 pixel axes contribute to the sky coordinates")
@@ -627,8 +630,8 @@ def fitswcs_linear(header):
     crval = wcs_info['CRVAL']
     # get the part of the CD matrix corresponding to the imaging axes
     sky_axes, spec_axes, unknown = get_axes(wcs_info)
-    if not sky_axes and len(unknown) == 2:
-        unknown = []
+    #if not sky_axes and len(unknown) == 2:
+    #    unknown = []
 
     linear_models = []
     for ax in spec_axes + unknown:
