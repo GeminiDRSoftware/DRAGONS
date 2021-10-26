@@ -1168,6 +1168,7 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
                                                  max_apertures, threshold,
                                                  sizing_method, min_snr)
 
+    return locations, all_limits, profile, prof_mask
 
 def find_apertures_peaks(profile, prof_mask, max_apertures,
                          threshold, sizing_method, min_snr):
