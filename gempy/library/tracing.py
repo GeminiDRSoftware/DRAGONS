@@ -1170,6 +1170,7 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
 
     return locations, all_limits, profile, prof_mask
 
+
 def find_apertures_peaks(profile, prof_mask, max_apertures,
                          threshold, sizing_method, min_snr):
     # TODO: find_peaks might not be best considering we have no
@@ -1177,7 +1178,7 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
     widths = np.arange(3, 20)
     peaks_and_snrs = find_peaks(
         profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
-        reject_bad=False, min_snr=min_snr, min_frac=0.2, pinpoint_index=0)
+        reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")
