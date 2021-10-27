@@ -312,23 +312,23 @@ class fit_1D:
                     grow=self.grow  # requires AstroPy 4.2 (#10613)
                 )
 
-            # Fit the pixel data with rejection of outlying points:
-            fitted_models, fitted_mask = fitter(
-                model_set,
-                points[user_reg], image_to_fit[user_reg],
-                weights=None if weights is None else weights[user_reg]
-            )
-            self.fit_info = fitter.fit_info
+                # Fit the pixel data with rejection of outlying points:
+                fitted_models, fitted_mask = fitter(
+                    model_set,
+                    points[user_reg], image_to_fit[user_reg],
+                    weights=None if weights is None else weights[user_reg]
+                )
+                self.fit_info = fitter.fit_info
 
-            # Incorporate mask for fitted columns into the full-sized mask:
-            if image.ndim > 1 and n_models < image.shape[1]:
-                # this is quite ugly, but seems the best way to assign
-                # to an array with a mask on both dimensions. This is
-                # equivalent to:
-                #   mask[user_reg, masked_cols] = fitted_mask
-                mask[user_reg[:, None] & self._good_cols] = fitted_mask.flat
-            else:
-                mask[user_reg] = fitted_mask
+                # Incorporate mask for fitted columns into the full-sized mask:
+                if image.ndim > 1 and n_models < image.shape[1]:
+                    # this is quite ugly, but seems the best way to assign
+                    # to an array with a mask on both dimensions. This is
+                    # equivalent to:
+                    #   mask[user_reg, masked_cols] = fitted_mask
+                    mask[user_reg[:, None] & self._good_cols] = fitted_mask.flat
+                else:
+                    mask[user_reg] = fitted_mask
 
         else:
             #max_order = len(points) - self.model_args["k"]
