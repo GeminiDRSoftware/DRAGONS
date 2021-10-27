@@ -1,22 +1,44 @@
 import re
 from abc import ABC, abstractmethod
-from copy import copy
+from enum import Enum, auto
 from functools import cmp_to_key
 
+from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, RangeSlider, Slider, TextInput, Div, NumericInput)
+                          NumeralTickFormatter, Slider, TextInput, Div, NumericInput, PreText)
+from bokeh import models as bm
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
-from gempy.library.astrotools import cartesian_regions_to_slices
-from gempy.library.config import FieldValidationError
+from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_regions
+from gempy.library.config import FieldValidationError, Config
+
+# Singleton instance, there is only ever one of these
+from gempy.utils import logutils
+
+
+__all__ = ["FitQuality", "PrimitiveVisualizer", "build_text_slider", "connect_region_model",
+           "GIRegionListener", "GIRegionModel", "RegionEditor", "TabsTurboInjector", "UIParameters",
+           "do_later"]
+
+
+_visualizer = None
+
+
+_log = logutils.get_logger(__name__)
+
+
+class FitQuality(Enum):
+    GOOD = auto()
+    POOR = auto()
+    BAD = auto()
 
 
 class PrimitiveVisualizer(ABC):
-    def __init__(self, config=None, title='', primitive_name='',
-                 filename_info='', template=None, help_text=None):
+    def __init__(self, title='', primitive_name='',
+                 filename_info='', template=None, help_text=None, ui_params=None):
         """
         Initialize a visualizer.
 
@@ -28,8 +50,6 @@ class PrimitiveVisualizer(ABC):
 
         Parameters
         ----------
-        config : `~gempy.library.config.Config`
-            DRAGONS primitive configuration data to work from
         title : str
             Title fo the primitive for display, currently not used
         primitive_name : str
@@ -39,6 +59,9 @@ class PrimitiveVisualizer(ABC):
         template : str
             Optional path to an html template to render against, if customization is desired
         """
+        global _visualizer
+        _visualizer = self
+
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
 
@@ -48,10 +71,7 @@ class PrimitiveVisualizer(ABC):
         self.primitive_name = primitive_name if primitive_name else ''
         self.template = template
         self.extras = dict()
-        if config is None:
-            self.config = None
-        else:
-            self.config = copy(config)
+        self.ui_params = ui_params
 
         self.user_satisfied = False
 
@@ -62,22 +82,75 @@ class PrimitiveVisualizer(ABC):
                                     id="_submit_btn",
                                     label="Accept",
                                     name="submit_btn",
-                                    width_policy='min',
                                     )
-
-        # This now happens indirectly via the /shutdown ajax js callback
-        # Remove this line if we stick with that
+        self.abort_button = Button(align='center',
+                                   button_type='warning',
+                                   css_classes=["submit_btn"],
+                                   id="_warning_btn",
+                                   label="Abort",
+                                   name="abort_btn",
+                                   )
+        # The submit_button_handler is only needed to flip the user_accepted flag to True before
+        # the bokeh event loop terminates
         # self.submit_button.on_click(self.submit_button_handler)
+        # This window closing will end the session.  That is what
+        # causes the bokeh event look to terminate via session_ended().
         callback = CustomJS(code="""
             $.ajax('/shutdown').done(function()
                 {
                     window.close();
                 });
         """)
-        self.submit_button.js_on_click(callback)
+
+        # Listen to the disabled state and tweak that inside submit_button_handler
+        # This allows us to execute a python callback to the submit_button on click.  Then,
+        # if we decide to execute the /shutdown via javascript, we can just 'disable' the
+        # submit button to trigger that logic (DOM events are the only way to trigger
+        # JS callbacks in bokeh)
+        self.submit_button.on_click(self.submit_button_handler)
+        self.submit_button.js_on_change('disabled', callback)
+        # self.submit_button.js_on_click(callback)
+
+        abort_callback = CustomJS(code="""
+            $.ajax('/shutdown?user_satisfied=false').done(function()
+                {
+                    window.close();
+                });
+        """)
+        self.abort_button.on_click(self.abort_button_handler)
+        self.abort_button.js_on_change('disabled', abort_callback)
+
         self.doc = None
+        self._message_holder = None
+        # callback for the new (buttonless) ok/cancel dialog.
+        # This gets set just before the dialog is triggered
+        self._ok_cancel_callback = None
+        # Text widget for triggering ok/cancel via DOM text change event
+        self._ok_cancel_holder = None
+
+        self.fits = []
 
     def make_ok_cancel_dialog(self, btn, message, callback):
+        """
+        Make an OK/Cancel dialog that will trigger when the given button `btn` is set disabled
+
+        Note this method is superceded by :meth:`show_ok_cancel` which is not dependant on
+        disabling buttons.  Avoid using this as it will be refactored out at some point.
+
+        Parameters
+        ----------
+        btn : :class:`~bokeh.models.Button`
+            bokeh Button to listen for disabled
+        message : str
+            String message to show in the ok/cancel dialog
+        callback : function
+            Function to call with True/False for the user selection of OK/Cancel
+        """
+        # This is an older version of ok/cancel that requires a button.  The button is
+        # disabled to activate the dialog.  More recently, we needed ok/cancel without
+        # disabling a button so that is also available.  See `show_ok_cancel`
+        # TODO refactor this out in favor of the other exclusively
+
         # This is a bit hacky, but bokeh makes it very difficult to bridge the python-js gap.
         def _internal_handler(args):
             if callback:
@@ -101,23 +174,70 @@ class PrimitiveVisualizer(ABC):
             """ % (message, callback_name))
         btn.js_on_click(js_confirm_callback)
 
-    def submit_button_handler(self, stuff):
+    def submit_button_handler(self):
         """
-        Handle the submit button by stopping the bokeh server, which
+        Submit button handler.
+
+        This handler checks the sanity of the fit(s) and considers three possibilities.
+
+        1) The fit is good, we proceed ahead as normal
+        2) The fit is bad, we pop up a message dialog for the user and they hit 'OK' to return to the UI
+        3) The fit is poor, we pop up an ok/cancel dialog for the user and continue or return to the UI as directed.
+        """
+        bad_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
+                             if fit.quality == FitQuality.BAD)
+        poor_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
+                              if fit.quality == FitQuality.POOR)
+        if bad_fits:
+            # popup message
+            self.show_user_message(f"Failed fit(s) on {bad_fits}. Please "
+                                   "modify the parameters and try again.")
+        elif poor_fits:
+            def cb(accepted):
+                if accepted:
+                    # Trigger the exit/fit, otherwise we do nothing
+                    self.submit_button.disabled = True
+            self.show_ok_cancel(f"Poor quality fit(s)s on {poor_fits}. Click "
+                                "OK to proceed anyway, or Cancel to return to "
+                                "the fitter.", cb)
+        else:
+            # Fit is good, we can exit
+            # Trigger the submit callback via disabling the submit button
+            self.submit_button.disabled = True
+
+    def abort_button_handler(self):
+        """
+        Used by the abort button to provide a last ok/cancel dialog to the
+        user before killing reduce.
+        """
+        def cb(accepted):
+            if accepted:
+                # Trigger the exit/fit, otherwise we do nothing
+                _log.warn("Aborting reduction on user request")
+                self.abort_button.disabled = True
+
+        self.show_ok_cancel(f"Are you sure you want to abort?  DRAGONS reduce will exit completely.", cb)
+
+    def session_ended(self, sess_context, user_satisfied):
+        """
+        Handle the end of the session by stopping the bokeh server, which
         will resume python execution in the DRAGONS primitive.
 
         Parameters
         ----------
-        stuff
+        sess_context : Any
             passed by bokeh, but we do not use it
+
+        user_satisfied : bool
+            True if the user was satisfied (i.e. we are responding to the submit button)
 
         Returns
         -------
         none
         """
+        self.user_satisfied = user_satisfied
         if not self.exited:
             self.exited = True
-            self.user_satisfied = True
             server.stop_server()
 
     def get_filename_div(self):
@@ -134,6 +254,7 @@ class PrimitiveVisualizer(ABC):
                   )
         return div
 
+    @abstractmethod
     def visualize(self, doc):
         """
         Perform the visualization.
@@ -150,11 +271,126 @@ class PrimitiveVisualizer(ABC):
         doc : :class:`~bokeh.document.document.Document`
             Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
         """
-        self.doc = doc
-        doc.on_session_destroyed(self.submit_button_handler)
+        # This is now called via show() to make the code cleaner
+        # with respect to some before/after boilerplate.  It also
+        # reduces the chances someone will forget to super() call this
 
-        # doc.add_root(self._ok_cancel_dlg.layout)
-        # Add an OK/Cancel dialog we can tap into later
+    def show(self, doc):
+        """
+        Show the interactive fitter.
+
+        This is called via bkapp by the bokeh server and happens
+        when the bokeh server is spun up to interact with the user.
+
+        This method also detects if it is running in 'test' mode
+        and will build the UI and automatically submit it with the
+        input parameters.
+
+        Parameters
+        ----------
+        doc : :class:`~bokeh.document.document.Document`
+            Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
+        """
+        self.doc = doc
+        doc.on_session_destroyed(lambda stuff: self.session_ended(stuff, False))
+
+        self.visualize(doc)
+
+        if server.test_mode:
+            # Simulate a click of the accept button
+            self.do_later(lambda: self.submit_button_handler(None))
+
+        # Add a widget we can use for triggering a message
+        # This is a workaround, since CustomJS calls can only
+        # respond to DOM events.  We'll be able to trigger
+        # a Custom JS callback by modifying this widget
+        self._message_holder = PreText(text='', css_classes=['hidden'])
+        callback = CustomJS(args={}, code='alert(cb_obj.text);')
+        self._message_holder.js_on_change('text', callback)
+
+        # Add the invisible PreText element to drive message dialogs off
+        # of.  We do this with a do_later so that it will happen after the
+        # subclass implementation does all of it's document setup.  So,
+        # this widget will be added at the end.
+        self.do_later(lambda: doc.add_root(row(self._message_holder, )))
+
+        # and we have to hide it, the css class isn't enough
+        def _hide_message_holder():
+            self._message_holder.visible = False
+        self.do_later(_hide_message_holder)
+
+        #################
+        # OK/Cancel Setup
+        #################
+        # This is a workaround for bokeh so we can drive an ok/cancel dialog box
+        # and have the response sent back down via a Tornado web endpoint.  This
+        # is not dependent on being tied to a button like the earlier version.
+        # It does, therefore, need it's own widget which we supply as hidden
+        # and also double as the means for passing the text message to the js
+        def _internal_ok_cancel_handler(args):
+            if args['result'] == [b'confirmed']:
+                result = True
+            else:
+                result = False
+            self.do_later(lambda: self._ok_cancel_callback(result))
+
+        # callback_name is the unique ID that will be passed back in to the /handle_callback endpoint
+        # so it will execute the python method _internal_ok_cancel_handler
+        callback_name = register_callback(_internal_ok_cancel_handler)
+
+        # This JS callback will execute when the ok/cancel exits
+        ok_cancel_callback = CustomJS(code="""
+            cb_obj.name = '';
+            var confirmed = confirm(cb_obj.text);
+            var cbid = '%s';
+            if (confirmed) {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+            } else {
+                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+            }
+            """ % (callback_name,))
+
+        # Add a widget we can use for triggering an ok/cancel
+        # This is a workaround, since CustomJS calls can only
+        # respond to DOM events.  We'll be able to trigger
+        # a Custom JS callback by modifying this widget
+        self._ok_cancel_holder = PreText(text='', css_classes=['hidden'])
+        self._ok_cancel_holder.js_on_change('text', ok_cancel_callback)
+
+        # Add the invisible PreText element to drive message dialogs off
+        # of.  We do this with a do_later so that it will happen after the
+        # subclass implementation does all of it's document setup.  So,
+        # this widget will be added at the end.
+        self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
+
+    def show_ok_cancel(self, message, callback):
+        """
+        New OK/Cancel dialog helper method.
+
+        Use this in preference to the :meth:`make_ok_cancel_dialog` method
+        which will be deprecated in future.
+
+        Parameters
+        ----------
+        message : str
+            Text message to show in the ok/cancel dialog
+        callback : function
+            Function to call with a bool of True if the user hit OK, or False for Cancel
+        """
+        # This saves the `callback` in the `_ok_cancel_callback` field.  When
+        # the callback comes back into the bokeh server, that is the function
+        # that will be called with True (OK) or False (Cancel).
+        # We wrap it in a do_later so it will execute on the UI thread.
+        self._ok_cancel_callback = lambda x: self.do_later(lambda: callback(x))
+
+        # modifying the text of this hidden widget will trigger the ok/cancel dialog
+        # which will use the text value as it's message.  Then the dialog will
+        # make an AJAX back in and call the `callback` method.
+        if self._ok_cancel_holder.text == message:
+            # needs to be different to trigger the javascript
+            self._ok_cancel_holder.text = f"{message} "
+        else:
+            self._ok_cancel_holder.text = message
 
     def do_later(self, fn):
         """
@@ -178,7 +414,7 @@ class PrimitiveVisualizer(ABC):
             # no doc, probably ok to just execute
             fn()
         else:
-            self.doc.add_next_tick_callback(lambda: fn())
+            self.doc.add_next_tick_callback(fn)
 
     def make_modal(self, widget, message):
         """
@@ -209,8 +445,28 @@ class PrimitiveVisualizer(ABC):
         """ % message)
         widget.js_on_change('disabled', callback)
 
-    def make_widgets_from_config(self, params, extras, reinit_live,
-                                 slider_width=256):
+    def show_user_message(self, message):
+        """
+        Make a modal message dialog to display to the user.
+
+        Parameters
+        ----------
+        message : str
+            message to display in the popup modal
+        """
+        # In the constructor, we setup this throwaway widget
+        # so we could listen for changes in it's text field
+        # and display those via an alert.  It's a workaround
+        # so that here we can send messages to the user from
+        # the bokeh server-side python.
+        if self._message_holder.text == message:
+            # need to trigger a change...
+            self._message_holder.text = f"{message} "
+        else:
+            self._message_holder.text = message
+
+    def make_widgets_from_parameters(self, params, reinit_live: bool = True,
+                                     slider_width: int = 256):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -218,92 +474,49 @@ class PrimitiveVisualizer(ABC):
 
         Parameters
         ----------
-        params : list of str
-            which DRAGONS configuration fields to make a UI for
-        extras : dict
-            Dictionary of additional field definitions for anything not included in the primitive configuration
+        params : :class:`UIParameters`
+            Parameters to make widgets for
         reinit_live : bool
             True if recalcuating points is cheap, in which case we don't need a button and do it on any change.
             Currently only viable for text-slider style inputs
-        slider_width : int (default: 256)
-            Default width for sliders created here.
+        slider_width : int
+            Width of the sliders
 
         Returns
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        extras = [] if extras is None else extras
-        params = [] if params is None else params
         widgets = []
-        if self.config is None:
-            self.log.warn("No config, unable to make widgets")
-            return widgets
-        for pname, value in self.config.items():
-            if pname not in params:
-                continue
-            field = self.config._fields[pname]
-            # Do some inspection of the config to determine what sort of widget we want
-            doc = field.doc.split('\n')[0]
-            if hasattr(field, 'min'):
-                # RangeField => Slider
-                start, end = field.min, field.max
-                # TODO: Be smarter here!
-                if start is None:
-                    start = -20
-                if end is None:
-                    end = 50
-                step = start
+        if params.reinit_params:
+            for key in params.reinit_params:
+                field = params.fields[key]
+                if hasattr(field, 'min'):
+                    is_float = field.dtype is not int
+                    if is_float:
+                        step = 0.1
+                    else:
+                        step = 1
+                    widget = build_text_slider(
+                        params.titles[key], params.values[key], step, field.min, field.max, obj=params.values,
+                        attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
+                        is_float=is_float,
+                        handler=self.slider_handler_factory(key, reinit_live=reinit_live))
 
-                widget = build_text_slider(doc, value, step, start, end,
-                                           obj=self.config, attr=pname,
-                                           slider_width=slider_width)
+                    self.widgets[key] = widget.children[0]
+                elif hasattr(field, 'allowed'):
+                    # ChoiceField => drop-down menu
+                    widget = Dropdown(label=field.title, menu=list(field.allowed.keys()))
+                    self.widgets[key] = widget
+                elif field.dtype is bool:
+                    widget = bm.CheckboxGroup(labels=[params.titles[key]],
+                                              active=[0] if params.values[key] else [])
+                    self.widgets[key] = widget
+                else:
+                    # Anything else
+                    widget = TextInput(title=field.title)
+                    self.widgets[key] = widget
 
-                self.widgets[pname] = widget.children[0]
-            elif hasattr(field, 'allowed'):
-                # ChoiceField => drop-down menu
-                widget = Dropdown(label=doc, menu=list(self.config.allowed.keys()))
-            else:
-                # Anything else
-                widget = TextInput(label=doc)
-
-            widgets.append(widget)
-            # Complex multi-widgets will already have been added
-            if pname not in self.widgets:
-                self.widgets[pname] = widget
-
-        for pname, field in extras.items():
-            # Do some inspection of the config to determine what sort of widget we want
-            doc = field.doc.split('\n')[0]
-            if hasattr(field, 'min'):
-                # RangeField => Slider
-                start, end = field.min, field.max
-                # TODO: Be smarter here!
-                if start is None:
-                    start = -20
-                if end is None:
-                    end = 50
-                step = start
-
-                widget = build_text_slider(
-                    doc, field.default, step, start, end,
-                    obj=self.extras, attr=pname,
-                    handler=self.slider_handler_factory(
-                        pname, reinit_live=reinit_live),
-                    throttled=True,
-                    slider_width=slider_width)
-
-                self.widgets[pname] = widget.children[0]
-                self.extras[pname] = field.default
-            else:
-                # Anything else
-                widget = TextInput(label=doc)
-                self.extras[pname] = ''
-
-            widgets.append(widget)
-            # Complex multi-widgets will already have been added
-            if pname not in self.widgets:
-                self.widgets[pname] = widget
-
+                widgets.append(widget)
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):
@@ -332,7 +545,8 @@ class PrimitiveVisualizer(ABC):
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
-                      slider_width=256, config=None):
+                      slider_width=256, config=None, allow_none=False,
+                      is_float=None):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -356,6 +570,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Function to call after setting the attribute
     throttled : bool
         Set to `True` to limit handler calls to when the slider is released (default False)
+    allow_none : bool
+        Set to `True` to allow an empty text entry to specify a `None` value
+    is_float : bool
+        nature of parameter (None => try to figure it out)
 
     Returns
     -------
@@ -373,13 +591,20 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             if hasattr(field, 'max'):
                 max_value = field.max
 
-    start = min(value, min_value) if min_value is not None else min(value, 0)
-    end = max(value, max_value) if max_value is not None else max(10, value*2)
+    if value is None:
+        start = min_value if min_value is not None else 0
+        end = max_value if max_value is not None else 10
+        slider_kwargs = {"value": start, "show_value": False}
+    else:
+        start = min(value, min_value) if min_value is not None else min(value, 0)
+        end = max(value, max_value) if max_value is not None else max(10, value*2)
+        slider_kwargs = {"value": value, "show_value": True}
 
     # trying to convince int-based sliders to behave
-    is_float = not isinstance(value, int) or \
-               (min_value is not None and not isinstance(min_value, int)) or \
-               (max_value is not None and not isinstance(max_value, int))
+    if is_float is None:
+        is_float = ((value is not None and not isinstance(value, int)) or
+                    (min_value is not None and not isinstance(min_value, int)) or
+                    (max_value is not None and not isinstance(max_value, int)))
     if step is None:
         if is_float:
             step = 0.1
@@ -388,11 +613,11 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format='0,0')
-        slider = Slider(start=start, end=end, value=value, step=step,
-                        title=title, format=fmt)
+        slider = Slider(start=start, end=end, step=step, title=title,
+                        format=fmt, **slider_kwargs)
     else:
-        slider = Slider(start=start, end=end, value=value, step=step,
-                        title=title)
+        slider = Slider(start=start, end=end, step=step, title=title,
+                        **slider_kwargs)
 
     slider.width = slider_width
 
@@ -409,26 +634,30 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                if (inp.value > %s) {
+                if (%s inp.value > %s) {
                     alert('Maximum is %s');
                     inp.value = %s;
                 }
-            """ % (max_value, max_value, max_value)))
+            """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
     if min_value is not None:
         text_input.js_on_change('value', CustomJS(
             args=dict(inp=text_input),
             code="""
-                if (inp.value < %s) {
+                if (%s inp.value < %s) {
                     alert('Minimum is %s');
                     inp.value = %s;
                 }
-            """ % (min_value, min_value, min_value)))
+            """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
 
     component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
         if ((not is_float) and isinstance(val, int)) or (is_float and isinstance(val, float)):
+            return True
+        if val is None and not allow_none:
+            return False
+        if val is None and allow_none:
             return True
         try:
             if is_float:
@@ -443,9 +672,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Update the slider with the new value from the text input
         if not _input_check(new):
             if _input_check(old):
-                text_input.value = str(old)
+                text_input.value = old
             return
-        if old != new:
+        if new is not None and old != new:
             if is_float:
                 ival = float(new)
             else:
@@ -460,6 +689,9 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                 slider.start = min(ival, start)
             if slider.start <= ival <= slider.end:
                 slider.value = ival
+            slider.show_value = True
+        elif new is None:
+            slider.show_value = False
 
     def update_text_input(attrib, old, new):
         # Update the text input
@@ -478,7 +710,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
             except FieldValidationError:
                 # reset textbox
                 text_input.remove_on_change("value", handle_value)
-                text_input.value = str(old)
+                text_input.value = old
                 text_input.on_change("value", handle_value)
             else:
                 update_slider(attrib, old, new)
@@ -502,245 +734,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     return component
 
 
-def build_range_slider(title, location, start, end, step, min_value, max_value, obj=None, location_attr=None,
-                       start_attr=None, end_attr=None, handler=None, throttled=False):
-    """
-    Make a range slider widget to use in the bokeh interface.
-
-    Parameters
-    ----------
-    title : str
-        Title for the slider
-    location : int or float
-        Value for the location
-    start : int or float
-        Value to initially set for start
-    end : int or float
-        Value to initially set for end
-    step : int or float
-        Step size
-    min_value : int or float
-        Minimum slider value, or None defaults to min(start,0)
-    max_value : int or float
-        Maximum slider value, or None defaults to end*2
-    obj : object
-        Instance to modify the attribute of when slider changes
-    start_attr : str
-        Name of attribute in obj to be set with the new start value
-    end_attr : str
-        Name of the attribute on obj to be set with the new end value
-    handler : method
-        Function to call after setting the attribute
-    throttled : bool
-        Set to `True` to limit handler calls to when the slider is released (default False)
-
-    Returns
-    -------
-        :class:`~bokeh.models.layouts.Row` bokeh Row component with the interface inside
-    """
-    # We track of this entry is working on int values or float.  This affects the
-    # behavior and type conversion throughout the rest of the slider logic
-    is_float = True
-    if isinstance(start, int) and isinstance(end, int):
-        is_float = False
-
-    slider_start = min(start, min_value) if min_value else min(start, 0)
-    slider_end = max(end, max_value) if max_value else max(10, end*2)
-    slider = RangeSlider(start=slider_start, end=slider_end, value=(start, end), step=step, title=title)
-    slider.width = 192
-
-    start_text_input = TextInput()
-    start_text_input.width = 64
-    start_text_input.value = str(start)
-    location_text_input = TextInput()
-    location_text_input.width = 64
-    location_text_input.value = str(location)
-    end_text_input = TextInput()
-    end_text_input.width = 64
-    end_text_input.value = str(end)
-    component = row(slider, start_text_input, location_text_input, end_text_input)
-
-    def _input_check(val):
-        """
-        Check the validity of the input value, or reject
-
-        Parameters
-        ----------
-        val : float or int
-
-        Returns
-        -------
-            bool : True of the input is valid, False if not.  This may also be the case if a float is passed
-            where int is expected
-        """
-        if ((not is_float) and isinstance(val[0], int) and isinstance(val[1], int)) \
-                or (is_float and isinstance(val[0], float) and isinstance(val[1], float)):
-            return True
-        try:
-            if is_float:
-                if float(val[0]) > float(val[1]):
-                    return False
-            else:
-                if int(val[0]) > int(val[1]):
-                    return False
-            if (slider.start > float(val[0]) > slider.end) or (slider.start > float(val[1]) > slider.end):
-                # out of view
-                return False
-            return True
-        except ValueError:
-            return False
-
-    def update_slider(attrib, old, new):
-        """
-        This performs an :meth:`~geminidr.interactive.interactive.build_range_slider._input_check`
-        on the new value.  If it passes, it is converted and accepted into the slider.  If it
-        is a bad value, the change is rolled back and we use the `old` value.
-
-        Parameters
-        ----------
-        attrib : ignored
-        old : tuple of int or float
-            old value pair from the range slider
-        new : tuple of int or float or str
-            new value pair from the range slider/text fields.  This may be passes as a tuple of str from the text inputs
-        """
-        # Update the slider with a new (start, end) value
-        if not _input_check(new):
-            if _input_check(old):
-                start_text_input.value = str(old[0])
-                end_text_input.value = str(old[1])
-            return
-        if old != new:
-            if is_float:
-                start_val = float(new[0])
-                end_val = float(new[1])
-            else:
-                start_val = int(new[0])
-                end_val = int(new[1])
-            if start_val > end_val:
-                start_val, end_val = end_val, start_val
-            if end_val > slider.end and not max_value:
-                slider.end = end_val
-            if 0 <= start_val < slider.start and min_value is None:
-                slider.start = start_val
-            if slider.start <= start_val <= end_val <= slider.end:
-                slider.value = (start_val, end_val)
-
-    def update_text_input(attrib, old, new):
-        # Update the text inputs with the new (start, end) value for the slider
-        if new != old:
-            start_text_input.value = str(new[0])
-            end_text_input.value = str(new[1])
-
-    def handle_start_value(attrib, old, new):
-        if new == old:
-            return
-        # called by the start text input.  We pull the end value and delegate to handle_value
-        try:
-            if slider.start <= float(new) <= slider.end:
-                if float(new) > float(location_text_input.value):
-                    location_text_input.value = new
-                handle_value(attrib, (old, location_text_input.value, end_text_input.value),
-                             [new, location_text_input.value, end_text_input.value])
-                return
-        except ValueError as ve:
-            pass
-        start_text_input.value = old
-
-    def handle_location_value(attrib, old, new):
-        if new == old:
-            return
-        # called by the location text input.  We pull the end value and delegate to handle_value
-        try:
-            if slider.start <= float(new) <= slider.end:
-                handle_value(attrib, (slider.value[0], old, slider.value[1]),
-                             [slider.value[0], new, str(slider.value[1])])
-                return
-        except ValueError:
-            pass
-        location_text_input.value = old
-
-    def handle_end_value(attrib, old, new):
-        if new == old:
-            return
-        # called by the end text input.  We pull the start value and delegate to handle_value
-        try:
-            if slider.start <= float(new) <= slider.end:
-                if float(new) < float(location_text_input.value):
-                    location_text_input.value = new
-                handle_value(attrib, (start_text_input.value, location_text_input.value, old),
-                             [start_text_input.value, location_text_input.value, new])
-                return
-        except ValueError:
-            pass
-        end_text_input.value = old
-
-    def handle_value(attrib, old, new):
-        if new == old:
-            return
-        # Handle a change in value.  Since this has a value that is
-        # (start, end) we always end up working on both values.  This
-        # is even though typically the user will only be changing one
-        # or the other.
-        if obj and start_attr and end_attr:
-            if is_float:
-                start_numeric_value = float(new[0])
-                location_numeric_value = float(new[1])
-                end_numeric_value = float(new[2])
-            else:
-                start_numeric_value = int(new[0])
-                location_numeric_value = int(new[1])
-                end_numeric_value = int(new[2])
-            try:
-                if start_numeric_value > end_numeric_value:
-                    start_numeric_value, end_numeric_value = end_numeric_value, start_numeric_value
-                    new[2], new[0] = new[0], new[2]
-                if location_numeric_value > end_numeric_value:
-                    location_numeric_value = end_numeric_value
-                    location_text_input.remove_on_change("value", handle_location_value)
-                    location_text_input.value = str(location_numeric_value)
-                    location_text_input.on_change("value", handle_location_value)
-                if location_numeric_value < start_numeric_value:
-                    location_numeric_value = start_numeric_value
-                    location_text_input.remove_on_change("value", handle_location_value)
-                    location_text_input.value = str(location_numeric_value)
-                    location_text_input.on_change("value", handle_location_value)
-                obj.__setattr__(start_attr, start_numeric_value)
-                obj.__setattr__(location_attr, location_numeric_value)
-                obj.__setattr__(end_attr, end_numeric_value)
-            except FieldValidationError:
-                # reset textbox
-                start_text_input.remove_on_change("value", handle_start_value)
-                start_text_input.value = str(old[0])
-                start_text_input.on_change("value", handle_start_value)
-                end_text_input.remove_on_change("value", handle_end_value)
-                end_text_input.value = str(old[2])
-                end_text_input.on_change("value", handle_end_value)
-                location_text_input.remove_on_change("value", handle_location_value)
-                location_text_input.value = str(old[1])
-                location_text_input.on_change("value", handle_location_value)
-            else:
-                update_slider(attrib, (old[0], old[2]), (new[0], new[2]))
-        if handler:
-            handler()
-
-    if throttled:
-        # Since here the text_input calls handle_value, we don't
-        # have to call it from the slider as it will happen as
-        # a side-effect of update_text_input
-        slider.on_change("value_throttled", update_text_input)
-    else:
-        slider.on_change("value", update_text_input)
-        # since slider is listening to value, this next line will cause the slider
-        # to call the handle_value method and we don't need to do so explicitly
-    start_text_input.on_change("value", handle_start_value)
-    location_text_input.on_change("value", handle_location_value)
-    end_text_input.on_change("value", handle_end_value)
-
-    return component
-
-
-def connect_figure_extras(fig, aperture_model, region_model):
+def connect_region_model(fig, region_model):
     """
     Connect a figure to an aperture and region model for rendering.
 
@@ -754,18 +748,12 @@ def connect_figure_extras(fig, aperture_model, region_model):
     ----------
     fig : :class:`~bokeh.plotting.Figure`
         bokeh Figure to add visualizations too
-    aperture_model : :class:`~geminidr.interactive.interactive.GIApertureModel`
-        Aperture model to add view for
     region_model : :class:`~geminidr.interactive.interactive.GIRegionModel`
         Band model to add view for
     """
     # If we have regions or apertures to show, show them
     if region_model:
-        regions = GIRegionView(fig, region_model)
-    # This no longer works as we now require holoviews
-    # TODO remove from args to method
-    # if aperture_model:
-    #     aperture_view = GIApertureView(aperture_model, fig)
+        GIRegionView(fig, region_model)
 
     # This is a workaround for a bokeh bug.  Without this, things like the background shading used for
     # apertures and regions will not update properly after the figure is visible.
@@ -819,7 +807,7 @@ class GIRegionModel:
     """
     Model for tracking a set of regions.
     """
-    def __init__(self):
+    def __init__(self, domain=None):
         # Right now, the region model is effectively stateless, other
         # than maintaining the set of registered listeners.  That is
         # because the regions are not used for anything, so there is
@@ -829,6 +817,12 @@ class GIRegionModel:
         self.region_id = 1
         self.listeners = list()
         self.regions = dict()
+        if domain:
+            self.min_x = domain[0]
+            self.max_x = domain[1]
+        else:
+            self.min_x = None
+            self.max_x = None
 
     def add_listener(self, listener):
         """
@@ -858,12 +852,28 @@ class GIRegionModel:
 
     def load_from_tuples(self, tuples):
         self.clear_regions()
-        # region_ids = list(self.regions.keys())
-        # for region_id in region_ids:
-        #     self.delete_region(region_id)
         self.region_id = 1
+
+        def constrain_min(val, min):
+            if val is None:
+                return min
+            if min is None:
+                return val
+            return max(val, min)
+        def constrain_max(val, max):
+            if val is None:
+                return max
+            if max is None:
+                return val
+            return min(val, max)
         for tup in tuples:
-            self.adjust_region(self.region_id, tup.start, tup.stop)
+            start = tup.start
+            stop = tup.stop
+            start = constrain_min(start, self.min_x)
+            stop = constrain_max(stop, self.max_x)
+            start = constrain_max(start, self.max_x)
+            stop = constrain_min(stop, self.min_x)
+            self.adjust_region(self.region_id, start, stop)
             self.region_id = self.region_id + 1
         self.finish_regions()
 
@@ -1055,6 +1065,8 @@ class RegionHolder:
 
     We need to know if the start/stop values are a specific value or `None`
     which is open ended left/right.
+
+    Not used outside the `interactive` module.
     """
     def __init__(self, annotation, start, stop):
         self.annotation = annotation
@@ -1065,6 +1077,8 @@ class RegionHolder:
 class GIRegionView(GIRegionListener):
     """
     View for the set of regions to show then in a figure.
+
+    Not used outside the `interactive` module.
     """
     def __init__(self, fig, model):
         """
@@ -1201,7 +1215,8 @@ class RegionEditor(GIRegionListener):
 
         self.error_message = Div(text="<b> <span style='color:red'> "
                                       "  Please use comma separated : delimited "
-                                      "  values (i.e. 101:500,511:900,951:)"
+                                      "  values (i.e. 101:500,511:900,951:). "
+                                      " Negative values are not allowed."
                                       "</span></b>")
 
         self.error_message.visible = False
@@ -1274,7 +1289,12 @@ class RegionEditor(GIRegionListener):
                 self.region_model.finish_regions()
 
             if current != region_text:
-                if re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
+                unparseable = False
+                try:
+                    parse_user_regions(region_text)
+                except ValueError:
+                    unparseable = True
+                if not unparseable and re.match(r'^((\d+:|\d+:\d+|:\d+)(,\d+:|,\d+:\d+|,:\d+)*)$|^ *$', region_text):
                     self.region_model.load_from_string(region_text)
                     self.text_input.value = self.region_model.build_regions()
                     self.error_message.visible = False
@@ -1289,3 +1309,172 @@ class RegionEditor(GIRegionListener):
 
     def get_widget(self):
         return self.widget
+
+
+class TabsTurboInjector:
+    """
+    This helper class wraps a bokeh Tabs widget
+    and improves performance by dynamically
+    adding and removing children from the DOM
+    as their tabs are un/selected.
+
+    There is a moment when the new tab is visually
+    blank before the contents pop in, but I think
+    the tradeoff is worth it if you're finding your
+    tabs unresponsive at scale.
+    """
+    def __init__(self, tabs: bm.layouts.Tabs):
+        """
+        Create a tabs turbo helper for the given bokeh Tabs.
+
+        :param tabs: :class:`~bokeh.model.layout.Tabs`
+            bokeh Tabs to manage
+        """
+        if tabs.tabs:
+            raise ValueError("TabsTurboInjector expects an empty Tabs object")
+
+        self.tabs = tabs
+        self.tab_children = list()
+        self.tab_dummy_children = list()
+
+        for i, tab in enumerate(tabs.tabs):
+            self.tabs.append(tab)
+            self.tab_children.append(tab.child)
+            self.tab_dummy_children.append(row())
+
+            if i != tabs.active:
+                tab.child = self.tab_dummy_children[i]
+
+        tabs.on_change('active', self.tabs_callback)
+
+    def add_tab(self, child: Instance(bm.layouts.LayoutDOM), title: str):
+        """
+        Add the given bokeh widget as a tab with the given title.
+
+        This child widget will be tracked by the Turbo helper.  When the tab
+        becomes active, the child will be placed into the tab.  When the
+        tab is inactive, it will be cleared to improve performance.
+
+        :param child: :class:~bokeh.core.properties.Instance(bokeh.models.layouts.LayoutDOM)
+            Widget to add as a panel's contents
+        :param title: str
+            Title for the new tab
+        """
+        tab_dummy = row(Div(),)
+        tab_child = child
+
+        self.tab_children.append(child)
+        self.tab_dummy_children.append(tab_dummy)
+
+        if self.tabs.tabs:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_dummy,), title=title))
+        else:
+            self.tabs.tabs.append(bm.Panel(child=row(tab_child,), title=title))
+
+    def tabs_callback(self, attr, old, new):
+        """
+        This callback will be used when the tab selection changes.  It will clear the DOM
+        of the contents of the inactive tab and add back the new tab to the DOM.
+
+        :param attr: str
+            unused, will be ``active``
+        :param old: int
+            The old selection
+        :param new: int
+            The new selection
+        """
+        if old != new:
+            def clear_old_tab():
+                self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
+            # clear the old tab via an event on the UI loop
+            # we don't want to do it right now - wait until the tab change has happened
+            do_later(clear_old_tab)
+            self.tabs.tabs[new].child.children[0] = self.tab_children[new]
+
+
+class UIParameters:
+    """
+    Holder class for the set of UI-adjustable parameters
+    """
+    def __init__(self, config: Config = None, extras: dict = None, reinit_params: list = None,
+                 title_overrides: dict = None):
+        """
+        Create a UIParameters set of parameters for the UI.
+
+        This object holds a collection of parameters.  These are used for the visualizer to
+        provide user interactivity of the inputs.  Although we track a `value` here, note that
+        in some cases the UI may provide multiple tabs with distinct inputs.  In that case,
+        it is up to the visualizer to track changes to these inputs on a per tab basis itself.
+
+        Parameters
+        ----------
+        :config: :class:`~gempy.library.config.Config`
+            DRAGONS primitive configuration
+        :extras: dict
+            Dictionary of names to new Fields to track
+        :reinit_params: list
+            List of names of configuration fields to show in the reinit panel
+        :titles_overrides: dict
+            Dictionary of overrides for labeling the fields in the UI
+        """
+        self.fields = dict()
+        self.values = dict()
+        self.reinit_params = reinit_params
+        self.titles = dict()
+
+        if config:
+            for fname, field in config._fields.items():
+                self.fields[fname] = field
+                self.values[fname] = getattr(config, fname)
+        if extras:
+            for fname, field in extras.items():
+                self.fields[fname] = field
+                self.values[fname] = field.default
+
+        # Parse the titles once and be done, grab initial values
+        for fname, field in self.fields.items():
+            if title_overrides and fname in title_overrides:
+                title = title_overrides[fname]
+            else:
+                title = field.doc.split('\n')[0]
+            self.titles[fname] = title
+
+    def update_values(self, **kwargs):
+        """
+        Update values in the config from the supplied arguments
+        """
+        for k, v in kwargs.items():
+            self.values[k] = v
+
+    def __getattr__(self, attr):
+        """
+        Provides the same interface to get parameter values as Config
+
+        Parameters
+        ----------
+        attr : str
+            Name of config parameter to return the value of
+        """
+        try:
+            return self.values[attr]
+        except:
+            return object.__getattribute__(self, attr)
+
+
+def do_later(fn):
+    """
+    Helper method to queue work to be done on the bokeh UI thread.
+
+    When actiona happen as a result of a key press, for instance, this comes in
+    on a different thread than bokeh UI is operating on.  Performing any UI
+    impacting changes on this other thread can cause issues.  Instead, wrap
+    the desired changes in a function and pass it in here to be run on the UI
+    thread.
+
+    This works by referencing the active singleton Visualizer, so that
+    code doesn't have to all track the visualizer.
+
+    :param fn:
+    :return:
+    """
+    _visualizer.do_later(fn)

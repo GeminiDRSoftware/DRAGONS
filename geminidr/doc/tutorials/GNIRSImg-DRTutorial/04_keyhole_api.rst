@@ -1,7 +1,5 @@
 .. keyhole_api.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _keyhole_api:
 
 ********************************************************************

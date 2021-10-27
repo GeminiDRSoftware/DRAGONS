@@ -8,8 +8,6 @@ from geminidr.core import parameters_generic
 
 class QECorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_QECorrected", optional=True)
-    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
-                           optional=True, single=True)
     use_iraf = config.Field("Use IRAF polynomial fits for Hamamatsu CCDs?",
                             bool, False)
 
@@ -21,3 +19,4 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
 
     def setDefaults(self):
         self.order = 3
+        self._fields["central_wavelength"].max = 1200

@@ -23,7 +23,7 @@ def showprims_argparser():
     from argparse import ArgumentParser
     from argparse import RawDescriptionHelpFormatter
 
-    parser = ArgumentParser(description="desc", prog='showprims',
+    parser = ArgumentParser(description="desc", prog='showrecipes',
                             formatter_class=RawDescriptionHelpFormatter)
 
     parser.add_argument('inputfile', type=str,

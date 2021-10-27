@@ -1,12 +1,5 @@
 .. 05_issues_and_limitations.rst
 
-.. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html
-
-.. _showpars: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars
-
-.. _show_recipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes
-
-
 .. _issues_and_limitations:
 
 **********************

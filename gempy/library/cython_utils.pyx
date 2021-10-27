@@ -229,9 +229,6 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
     if not tmpmask:
         raise MemoryError()
 
-    if max_iters == 0:
-        max_iters = 100
-
     for i in range(data_size):
         iter = 0
         return_median = 1

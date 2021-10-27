@@ -43,14 +43,12 @@ def test_calculate_sensitivity_from_science_equals_one_and_table_equals_one(
         astrofaker = pytest.importorskip('astrofaker')
 
         hdu = fits.ImageHDU()
-        hdu.header['CCDSUM'] = "1 1"
-        hdu.data = np.zeros((1000, 1))
+        hdu.data = np.ones((1000,), dtype=np.float32)
 
-        _ad = astrofaker.create('GMOS-S')
+        _ad = astrofaker.create('GMOS-S', mode='LS')
         _ad.add_extension(hdu, pixel_scale=1.0)
 
-        _ad[0].data = _ad[0].data.ravel() + 1.
-        _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
+        _ad[0].mask = np.zeros_like(_ad[0].data, dtype=np.uint16)  # ToDo Requires mask
         _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
 
         _ad[0].phu.set('OBJECT', "DUMMY")
@@ -254,19 +252,20 @@ def create_inputs_recipe():
         p.prepare()
         p.addDQ(static_bpm=None, user_bpm=None, add_illum_mask=False)
         p.addVAR(read_noise=True, poisson_noise=False)
-        p.overscanCorrect(function="spline", high_reject=3., low_reject=3.,
-                          nbiascontam=0, niterate=2, order=None)
-        p.biasCorrect(bias=bias_master, do_bias='procmode')
+        p.overscanCorrect(function="spline3", lsigma=3., hsigma=3.,
+                          nbiascontam=0, niter=2, order=None)
+        p.biasCorrect(bias=bias_master, do_cal='procmode')
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True, read_noise=False)
+        p.attachWavelengthSolution(arc=arc_master)
         p.flatCorrect(flat=flat_master)
-        p.QECorrect(arc=arc_master)
-        p.distortionCorrect(arc=arc_master, order=3, subsample=1)
-        p.findSourceApertures(max_apertures=1, threshold=0.01, min_sky_region=20)
+        p.QECorrect()
+        p.distortionCorrect(order=3, subsample=1)
+        p.findApertures(max_apertures=1, threshold=0.01, min_sky_region=20)
         p.skyCorrectFromSlit(order=5, grow=0)
         p.traceApertures(order=2, nsum=10, step=10, max_missed=5,
                          max_shift=0.05)
-        p.extract1DSpectra(grow=10, method="standard", width=None)
+        p.extractSpectra(grow=10, method="standard", width=None)
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()

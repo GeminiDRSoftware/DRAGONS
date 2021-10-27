@@ -23,7 +23,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups import geometry_conf as geotable
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import transform
+from gempy.library import astromodels as am
+from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -54,8 +55,8 @@ def qeModel(ext, use_iraf=False):
     # All coefficients are for nm (not AA as in G-IRAF)
     qeData = {
         # GMOS-N EEV CCD1 and 3
-        "EEV_9273-16-03": [9.883090E-1, -1.390254E-5,  5.282149E-7, -6.847360E-10],
-        "EEV_9273-20-03": [9.699E-1, 1.330E-4, -2.082E-7, 1.206E-10],
+        "EEV 9273-16-03": [9.883090E-1, -1.390254E-5,  5.282149E-7, -6.847360E-10],
+        "EEV 9273-20-03": [9.699E-1, 1.330E-4, -2.082E-7, 1.206E-10],
         # GMOS-N Hamamatsu CCD1 and 3
         "BI13-20-4k-1": {"order": 3,
                          "knots": [366.5, 413.5, 435.5, 465., 478.5, 507.5, 693., 1062.],
@@ -75,9 +76,9 @@ def qeModel(ext, use_iraf=False):
                                    4.95886638e-12, -3.20198283e-15, 1.18833302e-18,
                                    -1.93303639e-22],
         # GMOS-S EEV CCD1 and 3
-        "EEV_2037-06-03": {"1900-01-01": [2.8197, -8.101e-3, 1.147e-5, -5.270e-9],
+        "EEV 2037-06-03": {"1900-01-01": [2.8197, -8.101e-3, 1.147e-5, -5.270e-9],
                            "2006-08-31": [2.225037, -4.441856E-3, 5.216792E-6, -1.977506E-9]},
-        "EEV_8261-07-04": {"1900-01-01": [1.3771, -1.863e-3, 2.559e-6, -1.0289e-9],
+        "EEV 8261-07-04": {"1900-01-01": [1.3771, -1.863e-3, 2.559e-6, -1.0289e-9],
                            "2006-08-31": [8.694583E-1, 1.021462E-3, -2.396927E-6, 1.670948E-9]},
         # GMOS-S Hamamatsu CCD1 and 3
         "BI5-36-4k-2": {"order": 3,
@@ -150,8 +151,9 @@ class GMOSSpect(Spect, GMOS):
     def QECorrect(self, adinputs=None, **params):
         """
         This primitive applies a wavelength-dependent QE correction to
-        a 2D spectral image, based on the wavelength solution of an
-        associated processed_arc.
+        a 2D spectral image, based on the wavelength solution in the WCS
+        (from `attachWavelengthSolution` or, in non-SQ-modes, the initial
+        linear approximation).
 
         It is only designed to work on FLATs, and therefore unmosaicked data.
 
@@ -159,15 +161,12 @@ class GMOSSpect(Spect, GMOS):
         ----------
         suffix: str
             suffix to be added to output files
-        arc : {None, AstroData, str}
-            Arc(s) with distortion map.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
-        arc = params["arc"]
         use_iraf = params["use_iraf"]
         do_cal = params["do_cal"]
 
@@ -175,15 +174,8 @@ class GMOSSpect(Spect, GMOS):
             log.warning("QE correction has been turned off.")
             return adinputs
 
-        # Get a suitable arc frame (with distortion map) for every science AD
-        if arc is None:
-            arc_list = self.caldb.get_processed_arc(adinputs)
-        else:
-            arc_list = (arc, None)
+        for ad in adinputs:
 
-        # Provide an arc AD object for every science frame, and an origin
-        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
-                                                  force_ad=(1,))):
             if ad.phu.get(timestamp_key):
                 log.warning(f"{ad.filename}: already processed by QECorrect. "
                             "Continuing.")
@@ -195,89 +187,15 @@ class GMOSSpect(Spect, GMOS):
                 continue
 
             if self.timestamp_keys['mosaicDetectors'] in ad.phu:
-                log.warning(f"{ad.filename} has been processed by mosaic"
-                            "Detectors so QECorrect cannot be run")
+                msg = (f"{ad.filename} has been processed by mosaicDetectors "
+                        "so cannot correct QE for each CCD")
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise ValueError(msg)
+                log.warning(msg)
                 continue
 
             # Determines whether to multiply or divide by QE correction
             is_flat = 'FLAT' in ad.tags
-
-            # If the arc's binning doesn't match, we may still be able to
-            # fall back to the approximate solution
-            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            if arc is not None and (arc.detector_x_bin() != xbin or
-                                    arc.detector_y_bin() != ybin):
-                log.warning("Science frame and arc have different binnings.")
-                arc = None
-
-            # The plan here is to attach the mosaic gWCS to the science frame,
-            # apply an origin shift to put it in the frame of the arc, and
-            # then use the arc's WCS to get the wavelength. If there's no arc,
-            # we just use the science frame's WCS.
-            # Since we're going to change that WCS, store it for restoration.
-            original_wcs = [ext.wcs for ext in ad]
-            try:
-                transform.add_mosaic_wcs(ad, geotable)
-            except ValueError:
-                log.warning(f"{ad.filename} already has a 'mosaic' coordinate"
-                            "frame. This is unexpected but I'll continue.")
-
-            if arc is None:
-                if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError(f"No processed arc listed for {ad.filename}")
-                else:
-                    log.warning(f"{ad.filename}: no arc was specified. Using "
-                                "wavelength solution in science frame.")
-            else:
-                # OK, we definitely want to try to do this, get a wavelength solution
-                origin_str = f" (obtained from {origin})" if origin else ""
-                log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
-                            f"{origin_str}")
-                if self.timestamp_keys['determineWavelengthSolution'] not in arc.phu:
-                    msg = f"Arc {arc.filename} (for {ad.filename} has not been wavelength calibrated."
-                    if 'sq' in self.mode or do_cal == 'force':
-                        raise IOError(msg)
-                    else:
-                        log.warning(msg)
-
-                # We'll be modifying this
-                arc_wcs = deepcopy(arc[0].wcs)
-                if 'distortion_corrected' not in arc_wcs.available_frames:
-                    msg = f"Arc {arc.filename} (for {ad.filename}) has no distortion model."
-                    if 'sq' in self.mode or do_cal == 'force':
-                        raise OSError(msg)
-                    else:
-                        log.warning(msg)
-
-                # NB. At this point, we could have an arc that has no good
-                # wavelength solution nor distortion correction. But we will
-                # use its WCS rather than the science frame's because it must
-                # have been supplied by the user.
-
-                # This is GMOS so no need to be as generic as distortionCorrect
-                ad_detsec = ad.detector_section()
-                arc_detsec = arc.detector_section()[0]
-                if (ad_detsec[0].x1, ad_detsec[-1].x2) != (arc_detsec.x1, arc_detsec.x2):
-                    raise ValueError("Cannot process the offsets between "
-                                     f"{ad.filename} and {arc.filename}")
-
-                yoff1 = arc_detsec.y1 - ad_detsec[0].y1
-                yoff2 = arc_detsec.y2 - ad_detsec[0].y2
-                arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
-                                   ext.shape[1]) for ext in ad]
-                arc_corners = np.concatenate([transform.get_output_corners(
-                    ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
-                    input_shape=arc_shape, origin=(yoff1, 0))
-                    for ext, arc_shape in zip(ad, arc_ext_shapes)], axis=1)
-                arc_origin = tuple(np.ceil(min(corners)) for corners in arc_corners)
-
-                # So this is what was applied to the ARC to get the
-                # mosaic frame to its pixel frame, in which the distortion
-                # correction model was calculated. Convert coordinates
-                # from python order to Model order.
-                origin_shift = reduce(Model.__and__, [models.Shift(-origin)
-                                                      for origin in arc_origin[::-1]])
-                arc_wcs.insert_transform(arc_wcs.input_frame, origin_shift, after=True)
 
             array_info = gt.array_information(ad)
             if array_info.detector_shape == (1, 3):
@@ -289,13 +207,31 @@ class GMOSSpect(Spect, GMOS):
                 if index in ccd2_indices:
                     continue
 
-                # Use the WCS in the extension if we don't have an arc,
-                # otherwise use the arc's mosaic->world transformation
-                if arc is None:
-                    trans = ext.wcs.forward_transform
-                else:
-                    trans = (ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic') |
-                             arc_wcs.forward_transform)
+                trans = ext.wcs.forward_transform
+
+                # There should always be a wavelength model (even if it's an
+                # approximation) as long as the data have been prepared, but
+                # check and produce a clear error if not:
+                try:
+                    am.get_named_submodel(trans, 'WAVE')
+                except (AttributeError, IndexError):
+                    raise ValueError('No wavelength solution for '
+                                     f'{ad.filename}, extension {ext.id}')
+
+                # For SQ, require that the distortion correction is included,
+                # either in the WCS or possibly by prior rectification (though
+                # this is a corner case since mosaicking is disallowed). This
+                # check might need revisiting if distortion correction gets
+                # included in any other resampling steps in future, but by that
+                # point we may be propagating an "already applied" WCS (from
+                # resampled to raw co-ordinates) that would make it easier.
+                if ('distortion_corrected' not in ext.wcs.available_frames and
+                      self.timestamp_keys['distortionCorrect'] not in ad.phu):
+                    msg = ('No distortion correction in WCS for '
+                           f'{ad.filename}, extension {ext.id}')
+                    if 'sq' in self.mode:
+                        raise ValueError(msg)
+                    log.warning(msg)
 
                 ygrid, xgrid = np.indices(ext.shape)
                 # TODO: want with_units
@@ -327,9 +263,6 @@ class GMOSSpect(Spect, GMOS):
                 if not is_flat:
                     qe_correction = 1. / qe_correction
                 ext.multiply(qe_correction)
-
-            for ext, orig_wcs in zip(ad, original_wcs):
-                ext.wcs = orig_wcs
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -450,11 +383,45 @@ class GMOSSpect(Spect, GMOS):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, in_vacuo=False):
-        use_second_order = w2 > 1000 and abs(dw) < 0.2
+    def standardizeWCS(self, adinputs=None, suffix=None):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+
+        This is a GMOS-specific primitive due to the systematic offsets for
+        GMOS-S at central wavelengths > 950nm.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+
+        """
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
+            cenwave = ad.central_wavelength(asNanometers=True)
+            if ad.instrument() == "GMOS-S" and cenwave > 950:
+                cenwave += (6.89483617 - 0.00332086 * cenwave) * cenwave - 3555.048
+            else:
+                cenwave = None
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+    def _get_arc_linelist(self, waves=None):
+        use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
+
         use_second_order = False
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
-        return self._read_and_convert_linelist(filename, w2=w2, in_vacuo=in_vacuo)
+        return wavecal.LineList(filename)

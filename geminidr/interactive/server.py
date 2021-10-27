@@ -1,10 +1,13 @@
+import os
 import uuid
+from logging import ERROR
 
 from astrodata import version
 
 import pathlib
 
 import tornado
+import bokeh
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
@@ -12,7 +15,17 @@ from jinja2 import Environment, FileSystemLoader
 
 from geminidr.interactive import controls
 
-__all__ = ["interactive_fitter", "stop_server"]
+__all__ = ["test_mode", "interactive_fitter", "stop_server"]
+
+# Set to True to tell the interactive code to automatically submit in
+# order to test the interactive paths automatically
+test_mode = False
+
+from bokeh.themes import built_in_themes
+
+from geminidr.interactive.interactive_config import interactive_conf
+
+from recipe_system.config import globalConf
 
 _bokeh_server = None
 _visualizer = None
@@ -116,7 +129,13 @@ def _bkapp(doc):
     -------
     none
     """
+    ic = interactive_conf()
+    bokeh_theme = ic.bokeh_theme
+    bokeh_template_css = ic.bokeh_template_css
+
     template = "index.html"
+    if bokeh_theme in built_in_themes:
+        doc.theme = built_in_themes[bokeh_theme]
     if _visualizer.template:
         template = _visualizer.template
     with open('%s/%s' % (TEMPLATE_PATH, template)) as f:
@@ -127,17 +146,26 @@ def _bkapp(doc):
         template = f.read()
         t = Environment(loader=FileSystemLoader(TEMPLATE_PATH)).from_string(template)
         doc.template = t
+        doc.template_variables['css_template'] = bokeh_template_css
         doc.template_variables['primitive_title'] = title.replace(' ', '&nbsp;')
         doc.template_variables['primitive_name'] = primitive_name.replace(' ', '&nbsp;')
 
         if hasattr(_visualizer, "filename_info"):
             doc.template_variables['filename_info'] = _visualizer.filename_info
 
-    _visualizer.visualize(doc)
+    _visualizer.show(doc)
     doc.title = title
 
 
 def _helpapp(doc):
+    """
+    Tornado request handler for showing help for the active visuializer.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        The web page showing the bokeh interface
+    """
     with open(f'{TEMPLATE_PATH}/help.html') as f:
         template = f.read()
 
@@ -154,7 +182,20 @@ def _helpapp(doc):
 
 
 def _shutdown(doc):
-    _visualizer.submit_button_handler(None)
+    """
+    Tornado request handler for shutdown requests from the HTML client.
+
+    Parameters
+    ----------
+    doc : :class:`~bokeh.document.Document`
+        Document for the webpage the request is coming from (there's only one)
+    """
+    user_satisfied = True
+    if 'user_satisfied' in doc.session_context.request.arguments:
+        user_satisfied = doc.session_context.request.arguments['user_satisfied'][0].decode('utf-8')
+        if user_satisfied is not None and user_satisfied.lower() in ('0', 'n', 'f', 'no', 'false'):
+            user_satisfied = False
+    _visualizer.session_ended(None, user_satisfied)
 
 
 def set_visualizer(visualizer):
@@ -174,6 +215,9 @@ def set_visualizer(visualizer):
 
 
 class DRAGONSStaticHandler(Handler):
+    """
+    Simple Tornado handler to serve static content from the embedded webserver
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._static = '%s/static' % pathlib.Path(__file__).parent.absolute()
@@ -208,6 +252,13 @@ def start_server():
                 # in interactive mode any more.  See below for a way
                 # to make interactive use "chrome" (or "firefox")
                 # regardless of the selected browser if desired.
+                def dummy_logger(*args, **kwargs):
+                    """
+                    Empty logger method to convince Tornado to not log.  This is so the reduce.log
+                    isn't filled with HTTP response codes and URLs
+                    """
+                    pass
+
                 _bokeh_server = Server(
                     {
                         '/': _bkapp,
@@ -220,6 +271,7 @@ def start_server():
                     keep_alive_milliseconds=0,
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],
+                    log_function=dummy_logger,
                     port=port)
             except OSError:
                 port = port+1
@@ -227,8 +279,13 @@ def start_server():
                     raise
         _bokeh_server.start()
 
-    # to force a browser, add browser="chrome" tp this add_callback
-    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/")
+    if test_mode:
+        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu", "--dump-dom"]}
+        kwargs = {"browser": "chrome"}
+    else:
+        ic = interactive_conf()
+        kwargs = {"browser": ic.browser}
+    _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", **kwargs)
     _bokeh_server.io_loop.start()
 
     # The server normally stops when the user hits the Submit button in the
@@ -263,4 +320,5 @@ def interactive_fitter(visualizer):
     set_visualizer(visualizer)
     start_server()
     set_visualizer(None)
-    return visualizer.user_satisfied
+    if not visualizer.user_satisfied:
+        raise KeyboardInterrupt()

@@ -1,7 +1,5 @@
 .. 05_tips_and_tricks.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _tips_and_tricks:
 
 ***************
@@ -25,7 +23,7 @@ with the calibration manager and it is not working for some reason.
 Whatever the specific situation, the following syntax can be used to bypass
 the calibration manager and set the input processed calibration yourself::
 
-     $ reduce @sci_images.list --user_cal processed_dark:N20120102S0538_dark.fits processed_flat:N20120117S0034_flat.fits
+     $ reduce @target.lis --user_cal processed_dark:N20120102S0538_dark.fits processed_flat:N20120117S0034_flat.fits
 
 The list of recognized processed calibration is:
 
@@ -34,4 +32,5 @@ The list of recognized processed calibration is:
 * processed_dark
 * processed_flat
 * processed_fringe
+* processed_standard
 

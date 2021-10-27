@@ -111,7 +111,7 @@ def evalexpression(ad, expression):
         evaluated expression, True or False
     """
     if type(eval(expression)) is not type(True):
-        raise(IOError, 'Expression does not return a boolean value.')
+        raise IOError('Expression does not return a boolean value.')
     return eval(expression)
 
 

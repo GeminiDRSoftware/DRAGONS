@@ -3,11 +3,11 @@ import numpy as np
 import re
 from datetime import date
 
-from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
+from astrodata import (astro_data_tag, astro_data_descriptor, returns_list,
+                       TagSet, Section)
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
-from ..common import Section
 from ..gemini import AstroDataGemini
 
 
@@ -703,10 +703,11 @@ class AstroDataGmos(AstroDataGemini):
             id_descriptor_list = ['filter_name']
         elif 'SPECT' in tags and ('FLAT' in tags or 'SLITILLUM' in tags
                 or 'ARC' in tags):
-            # unclear if STANDARD requires central_wavelength
-            # depends on the effects of grating efficiency as f(cwave)
             id_descriptor_list = ['filter_name', 'central_wavelength']
-        else:
+        elif 'SPECT' in tags and 'STANDARD' in tags:
+            id_descriptor_list = ['observation_id', 'filter_name',
+                                  'central_wavelength']
+        else:  # SPECT science
             id_descriptor_list = ['observation_id', 'filter_name']
 
         # Add in all of the common descriptors required
@@ -1014,7 +1015,7 @@ class AstroDataGmos(AstroDataGemini):
         in_adu = self.is_in_adu()
 
         # Get estimated bias levels from LUT
-        bias_levels = get_bias_level(self, estimate=True)
+        bias_levels = get_bias_level(self, estimate=False)
         if bias_levels is None:
             bias_levels = 0.0 if self.is_single else [0.0] * len(self)
         else:

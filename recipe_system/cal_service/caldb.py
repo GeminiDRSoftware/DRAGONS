@@ -147,10 +147,14 @@ class CalDB(metaclass=abc.ABCMeta):
         # AD objects. But currently the cal_requests are slightly different
         # for local and remote DBs (because of the "Section" namedtuple) so
         # this isn't possible just yet.
+        cal_ret = None
         if self.get_cal:
-            cal_ret = self._get_calibrations(adinputs, caltype=caltype,
-                                             procmode=procmode, howmany=howmany)
-        else:
+            try:
+                cal_ret = self._get_calibrations(adinputs, caltype=caltype,
+                                                 procmode=procmode, howmany=howmany)
+            except Exception as calex:
+                self.log.warning(f"Error getting calibrations, continuing: {calex}")
+        if cal_ret is None:
             cal_ret = CalReturn([None] * len(adinputs))
 
         if cal_ret.files.count(None) and self.nextdb:

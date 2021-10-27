@@ -1,7 +1,5 @@
 .. extended_cmdline.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _extended_cmdline:
 
 *********************************************************
@@ -9,7 +7,7 @@ Example 1-A: Extended source - Using the "reduce" command
 *********************************************************
 In this example we will reduce a NIRI observation of an extended source using
 the "|reduce|" command that is operated directly from the unix shell.  Just
-open a terminal to get started.
+open a terminal and load the DRAGONS conda environment to get started.
 
 This observation is a simple dither on target, a galaxy, with offset to sky.
 
@@ -75,9 +73,6 @@ remove the file on disk.)  (See the "|caldb|" documentation for more details.)
 
 Create file lists
 =================
-.. |astrouser_link| raw:: html
-
-   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
 
 This data set contains science and calibration frames. For some programs, it
 could have different observed targets and different exposure times depending
@@ -89,7 +84,7 @@ have to do it.  DRAGONS provides tools to help you with that.
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
 send the filenames to a text file that can then be fed to "|reduce|".  (See the
-|astrouser_link| for information about Astrodata.)
+|astrodatauser| for information about Astrodata.)
 
 First, navigate to the ``playground`` directory in the unpacked data package.
 
@@ -109,28 +104,29 @@ that list to "|showd|" to show descriptor values, in this case
 
     dataselect ../playdata/*.fits --tags DARK | showd -d exposure_time
 
-    filename   exposure_time
-    ------------------------------
-    N20160102S0423.fits: 20.002
-    N20160102S0424.fits: 20.002
-    N20160102S0425.fits: 20.002
-    N20160102S0426.fits: 20.002
-    N20160102S0427.fits: 20.002
-    N20160102S0428.fits: 20.002
-    N20160102S0429.fits: 20.002
-    N20160102S0430.fits: 20.002
-    N20160102S0431.fits: 20.002
-    N20160102S0432.fits: 20.002
-    N20160103S0463.fits: 1.001
-    N20160103S0464.fits: 1.001
-    N20160103S0465.fits: 1.001
-    N20160103S0466.fits: 1.001
-    N20160103S0467.fits: 1.001
-    N20160103S0468.fits: 1.001
-    N20160103S0469.fits: 1.001
-    N20160103S0470.fits: 1.001
-    N20160103S0471.fits: 1.001
-    N20160103S0472.fits: 1.001
+    -----------------------------------------------
+    filename                          exposure_time
+    -----------------------------------------------
+    ../playdata/N20160102S0423.fits          20.002
+    ../playdata/N20160102S0424.fits          20.002
+    ../playdata/N20160102S0425.fits          20.002
+    ../playdata/N20160102S0426.fits          20.002
+    ../playdata/N20160102S0427.fits          20.002
+    ../playdata/N20160102S0428.fits          20.002
+    ../playdata/N20160102S0429.fits          20.002
+    ../playdata/N20160102S0430.fits          20.002
+    ../playdata/N20160102S0431.fits          20.002
+    ../playdata/N20160102S0432.fits          20.002
+    ../playdata/N20160103S0463.fits           1.001
+    ../playdata/N20160103S0464.fits           1.001
+    ../playdata/N20160103S0465.fits           1.001
+    ../playdata/N20160103S0466.fits           1.001
+    ../playdata/N20160103S0467.fits           1.001
+    ../playdata/N20160103S0468.fits           1.001
+    ../playdata/N20160103S0469.fits           1.001
+    ../playdata/N20160103S0470.fits           1.001
+    ../playdata/N20160103S0471.fits           1.001
+    ../playdata/N20160103S0472.fits           1.001
 
 As one can see above the exposure times all have a small fractional increment.
 This is just a floating point inaccuracy somewhere in the software that
@@ -309,7 +305,7 @@ recommended) needs to be specified by the user.
 
 ::
 
-    reduce @stdstar.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits darkCorrect:do_dark=False
+    reduce @stdstar.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits darkCorrect:do_cal=skip
 
 
 Science Observations

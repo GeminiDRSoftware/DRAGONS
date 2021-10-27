@@ -31,9 +31,12 @@ import os
 import numpy as np
 import pytest
 from astropy import table
+from astropy import units as u
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
+
+from specutils.utils.wcs_utils import air_to_vac
 
 from gempy.library import astromodels as am
 from geminidr.core import primitives_spect
@@ -57,7 +60,7 @@ def test_extract_1d_spectra():
 
     # todo: if input is a single astrodata,
     #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra([ad])[0]
+    ad_out = _p.extractSpectra([ad])[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
@@ -84,7 +87,7 @@ def test_extract_1d_spectra_with_sky_lines():
 
     # todo: if input is a single astrodata,
     #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra([ad])[0]
+    ad_out = _p.extractSpectra([ad])[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
@@ -93,14 +96,16 @@ def test_extract_1d_spectra_with_sky_lines():
 @pytest.mark.xfail(reason="The fake data needs a DQ plane")
 def test_find_apertures():
     _p = primitives_spect.Spect([])
-    _p.findSourceApertures()
+    _p.findApertures()
 
 
-def test_get_spectrophotometry(path_to_outputs):
+@pytest.mark.parametrize('in_vacuo', (False, True, None))
+def test_get_spectrophotometry(path_to_outputs, in_vacuo):
+
+    wavelengths = np.arange(350., 750., 10)
 
     def create_fake_table():
 
-        wavelengths = np.arange(350., 750., 10)
         flux = np.ones(wavelengths.size)
         bandpass = np.ones(wavelengths.size) * 5.
 
@@ -114,16 +119,24 @@ def test_get_spectrophotometry(path_to_outputs):
         return _table.name
 
     _p = primitives_spect.Spect([])
-    fake_table = _p._get_spectrophotometry(create_fake_table())
+    fake_table = _p._get_spectrophotometry(create_fake_table(),
+                                           in_vacuo=in_vacuo)
     np.testing.assert_allclose(fake_table['FLUX'], 1)
 
-    assert 'WAVELENGTH' in fake_table.columns
+    assert 'WAVELENGTH_AIR' in fake_table.columns
+    assert 'WAVELENGTH_VACUUM' in fake_table.columns
     assert 'FLUX' in fake_table.columns
     assert 'WIDTH' in fake_table.columns
 
-    assert hasattr(fake_table['WAVELENGTH'], 'quantity')
+    assert hasattr(fake_table['WAVELENGTH_AIR'], 'quantity')
+    assert hasattr(fake_table['WAVELENGTH_VACUUM'], 'quantity')
     assert hasattr(fake_table['FLUX'], 'quantity')
     assert hasattr(fake_table['WIDTH'], 'quantity')
+
+    if in_vacuo:
+        np.testing.assert_allclose(fake_table['WAVELENGTH_VACUUM'], wavelengths)
+    else:  # False or None
+        np.testing.assert_allclose(fake_table['WAVELENGTH_AIR'], wavelengths)
 
 
 def test_QESpline_optimization():
@@ -317,6 +330,26 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     assert conserve == correct
     warning_given = any("WARNING" in record.message for record in caplog.records)
     assert warn == warning_given
+
+
+def test_resample_spec_table():
+
+    waves_air = np.arange(3500, 7500.001, 100) * u.AA
+    waves_vac = air_to_vac(waves_air)
+    bandpass = np.full(waves_air.size, 5.) * u.nm
+    flux = np.ones(waves_air.size) * u.Unit("W/(m^2 Hz)")
+    spec_table = table.Table(
+        [waves_air, waves_vac, flux, bandpass],
+        names=['WAVELENGTH_AIR', 'WAVELENGTH_VAC', 'FLUX', 'WIDTH'])
+
+    t = primitives_spect.resample_spec_table(spec_table, 0.1)
+
+    assert len(t) == 4001
+    np.testing.assert_allclose(t['WAVELENGTH_AIR'].quantity,
+                               np.arange(350, 750.001, 0.1) * u.nm)
+    assert all([bw.to(u.nm).value == 0.1 if i % 10 else 5
+               for i, bw in enumerate(t['WIDTH'].quantity)])
+    np.testing.assert_allclose(t['FLUX'].data, 1.0)
 
 
 # --- Fixtures and helper functions -------------------------------------------

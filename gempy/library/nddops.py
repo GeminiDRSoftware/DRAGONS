@@ -559,8 +559,8 @@ class NDStacker:
             has_var = False
         else:
             has_var = True
-        if max_iters is None:
-            max_iters = 0
+        if max_iters is None:  # iterate to convergence
+            max_iters = 100
         # We send each array as a 1D view, with all the input pixels together,
         # So if we have 10 input images, the first 10 pixels in this 1D array
         # will be the (0,0) pixels from each image, and so on...

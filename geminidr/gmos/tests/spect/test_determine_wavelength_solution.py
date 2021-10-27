@@ -47,7 +47,8 @@ import geminidr
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from gempy.library import astromodels as am
 from gempy.utils import logutils
-from recipe_system.testing import ref_ad_factory
+
+from pytest_dragons.plugin import path_to_inputs
 
 
 # Test parameters --------------------------------------------------------------
@@ -55,7 +56,7 @@ determine_wavelength_solution_parameters = {
     'center': None,
     'nsum': 10,
     'linelist': None,
-    'weighting': 'natural',
+    'weighting': 'global',
     'nbright': 0
 }
 
@@ -66,8 +67,7 @@ input_pars = [
     ("N20130112S0390_mosaic.fits", None, 3, 10.),  # B600:0.500 E2V
     ("N20170609S0173_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
     ("N20170403S0452_mosaic.fits", None, 3, 10.),  # B600:0.590 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for N20170415S0255_mosaic.fits
-    # ("N20170415S0255_mosaic.fits", None, 3, 10.),  # B600:0.590 HAM
+    ("N20170415S0255_mosaic.fits", None, 3, 10.),  # B600:0.590 HAM
     ("N20171016S0010_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
     ("N20171016S0127_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
     ("N20100307S0236_mosaic.fits", None, 3, 10.),  # B1200:0.445 EEV
@@ -90,8 +90,7 @@ input_pars = [
     ("N20130106S0194_mosaic.fits", None, 3, 3.),  # R400:0.500 E2V
     ("N20130422S0217_mosaic.fits", None, 3, 10.),  # R400:0.700 E2V
     ("N20170108S0210_mosaic.fits", None, 3, 10.),  # R400:0.660 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for N20171113S0135_mosaic.fits
-    # ("N20171113S0135_mosaic.fits", None, 3, 10.),  # R400:0.750 HAM
+    ("N20171113S0135_mosaic.fits", None, 3, 10.),  # R400:0.750 HAM
     ("N20100427S1276_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
     ("N20180120S0417_mosaic.fits", None, 3, 10.),  # R600:0.860 HAM
     ("N20100212S0143_mosaic.fits", None, 3, 10.),  # R831:0.450 EEV
@@ -113,10 +112,9 @@ input_pars = [
     ("S20130608S0182_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
     ("S20131105S0105_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
     ("S20140504S0008_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
-    # Todo: WARNING - No acceptable wavelength solution found for S20170103S0152_mosaic.fits
-    # ("S20170103S0152_mosaic.fits", None, 3, 10.),  # B600:0.600 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170108S0085_mosaic.fits
-    # ("S20170108S0085_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
+    # Todo: WARNING - No acceptable wavelength solution found for S20170103S0 152_mosaic.fits
+    # ("S20170103S0152_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM bad columns
+    ("S20170108S0085_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
     ("S20130510S0103_mosaic.fits", None, 3, 10.),  # B1200:0.450 EEV
     ("S20130629S0002_mosaic.fits", None, 3, 10.),  # B1200:0.525 EEV
     ("S20131123S0044_mosaic.fits", None, 3, 10.),  # B1200:0.595 EEV
@@ -152,8 +150,7 @@ input_pars = [
     ("S20120322S0122_mosaic.fits", None, 3, 10.),  # R600:0.900 EEV
     ("S20130803S0011_mosaic.fits", None, 3, 10.),  # R831:0.576 EEV
     ("S20130414S0040_mosaic.fits", None, 3, 10.),  # R831:0.845 EEV
-    # Todo: WARNING - No acceptable wavelength solution found for S20170214S0059_mosaic.fits
-    # ("S20170214S0059_mosaic.fits", None, 3, 10.),  # R831:0.440 HAM
+    ("S20170214S0059_mosaic.fits", None, 3, 10.),  # R831:0.440 HAM
     ("S20170703S0204_mosaic.fits", None, 3, 10.),  # R831:0.600 HAM
     ("S20171018S0048_mosaic.fits", None, 3, 10.)  # R831:0.865 HAM
 ]
@@ -236,6 +233,33 @@ def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
     wvac = air_to_vac(wair * u.nm).to(u.nm).value
     dw = wvac - wave_vac(x)
     assert abs(dw).max() < 0.001
+
+
+# We only need to test this with one input
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
+                         indirect=True)
+@pytest.mark.parametrize("in_vacuo", (True, False))
+def test_user_defined_linelist(ad, fwidth, order, min_snr, in_vacuo):
+    p = GMOSLongslit([])
+    p.viewer = geminidr.dormantViewer(p, None)
+    params = determine_wavelength_solution_parameters.copy()
+    params.pop("linelist")
+
+    linelist = os.path.join(os.path.dirname(geminidr.__file__),
+                            "gmos", "lookups", "CuAr_GMOS.dat")
+
+    ad_out = p.determineWavelengthSolution(
+        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=in_vacuo, linelist=None, **params).pop()
+    ad_out2 = p.determineWavelengthSolution(
+        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
+        in_vacuo=in_vacuo, linelist=linelist, **params).pop()
+    wave1 = am.get_named_submodel(ad_out[0].wcs.forward_transform, "WAVE")
+    wave2 = am.get_named_submodel(ad_out2[0].wcs.forward_transform, "WAVE")
+    x = np.arange(ad_out[0].shape[1])
+    np.testing.assert_array_equal(wave1(x), wave2(x))
 
 
 # Local Fixtures and Helper Functions ------------------------------------------

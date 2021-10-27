@@ -8,11 +8,9 @@
 import os
 import re
 import warnings
-from bisect import bisect
 from copy import copy
-from functools import reduce
+from functools import partial, reduce
 from importlib import import_module
-from itertools import product as cart_product
 
 import matplotlib
 import numpy as np
@@ -22,43 +20,49 @@ from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
-from astropy.stats import sigma_clip, sigma_clipped_stats
-from astropy.table import Table, vstack
+from astropy.modeling.core import CompoundModel
+from astropy.stats import sigma_clip
+from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
-from scipy import optimize, spatial
-from scipy.signal import correlate
+from scipy import optimize
 from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
 import geminidr.interactive.server
+from astrodata import AstroData
+from astrodata.provenance import add_provenance
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.fit.tracing import interactive_trace_apertures
+from geminidr.interactive.fit.wavecal import WavelengthSolutionVisualizer
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
-from gempy.library import matching, tracing, transform
-from gempy.library.astrotools import array_from_list
+from gempy.library import tracing, transform, wavecal
+from gempy.library.astrotools import array_from_list, transpose_if_needed
+from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
-from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.md5 import md5sum
 
 from . import parameters_spect
-from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
+from ..interactive.interactive import UIParameters
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
 # ------------------------------------------------------------------------------
 
 
+# noinspection SpellCheckingInspection
 @parameter_override
 class Spect(PrimitivesBASE):
     """
@@ -217,6 +221,312 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+    def attachWavelengthSolution(self, adinputs=None, **params):
+        """
+        Attach the distortion map (a Chebyshev2D model) and the mapping from
+        distortion-corrected pixels to wavelengths (a Chebyshev1D model, when
+        available after successful line matching) from a processed arc, or
+        similar wavelength reference, to the WCS of the input data.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D spectral images.
+        suffix : str
+            Suffix to be added to output files.
+        arc : :class:`~astrodata.AstroData` or str or None
+            Arc(s) containing distortion map & wavelength calibration.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Modified input objects with the WCS updated for each extension.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+        arc = params["arc"]
+
+        # Get a suitable arc frame (with distortion map) for every science AD
+        if arc is None:
+            arc_list = self.caldb.get_processed_arc(adinputs)
+        else:
+            arc_list = (arc, None)
+
+        fail = False
+
+        adoutputs = []
+        # Provide an arc AD object for every science frame, and an origin
+        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
+                                                  force_ad=(1,))):
+            # We don't check for a timestamp since it's not unreasonable
+            # to do multiple distortion corrections on a single AD object
+
+            len_ad = len(ad)
+            if arc is None:
+                log.warning(f"{ad.filename}: no arc was specified. "
+                            "Continuing.")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+                # By analogy with distortionCorrect, we should probably still
+                # attach the mosaic transform here if there's no arc and the
+                # data are not already mosaicked, but it would be better to
+                # separate that out into a different step anyway (and call it
+                # here if necessary), so leave that for further refactoring
+                # and just keep the original WCS for now (which currently won't
+                # prevent distortionCorrect from mosaicking the data).
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
+                        f"{origin_str}")
+            len_arc = len(arc)
+            if len_arc not in (1, len_ad):
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{arc.filename} had {len_arc} extensions so "
+                            "cannot calibrate the distortion.")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
+                log.warning("Science frame and arc have different binnings.")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+            # Read all the arc's distortion maps. Do this now so we only have
+            # one block of reading and verifying them
+            distortion_models, wave_models, wave_frames = [], [], []
+            for ext in arc:
+                wcs = ext.nddata.wcs
+
+                # Any failures must be handled in the outer loop processing
+                # ADs, so just set the found transforms to empty and present
+                # the warning at the end
+                try:
+                    if 'distortion_corrected' not in wcs.available_frames:
+                        distortion_models = []
+                        break
+                except AttributeError:
+                    distortion_models = []
+                    break
+
+                m_distcorr = wcs.get_transform(wcs.input_frame,
+                                               'distortion_corrected')
+                distortion_models.append(m_distcorr)
+
+                try:
+                    wave_model = am.get_named_submodel(wcs.forward_transform,
+                                                       'WAVE')
+                except IndexError:
+                    wave_models.append(None)
+                    wave_frames.append(None)
+                else:
+                    wave_models.append(wave_model)
+                    wave_frames.extend([frame for frame in wcs.output_frame.frames
+                                        if isinstance(frame, cf.SpectralFrame)])
+
+            if not distortion_models:
+                log.warning("Could not find a 'distortion_corrected' frame "
+                            f"in arc {arc.filename} extension {ext.id} - "
+                            "continuing")
+                if 'sq' in self.mode:
+                    fail = True
+                continue
+
+            # Determine whether we're producing a single-extension AD
+            # or keeping the number of extensions as-is
+            if len_arc == 1:
+
+                distortion_models *= len_ad
+                wave_models *= len_ad
+                wave_frames *= len_ad
+
+                # Save spatial WCS from input ext we're transforming WRT:
+                ref_idx = transform.find_reference_extension(ad)
+                sky_models = [
+                    am.get_named_submodel(ad[ref_idx].wcs.forward_transform,
+                                          'SKY')
+                ] * len_ad
+                output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
+
+                arc_detsec = arc.detector_section()[0]
+                ad_detsec = ad.detector_section()
+                if len_ad > 1:
+                    # We need to apply the mosaicking geometry, and add the
+                    # same distortion correction to each input extension.
+                    geotable = import_module('.geometry_conf', self.inst_lookups)
+                    transform.add_mosaic_wcs(ad, geotable)
+                    for ext in ad:
+                        # TODO: use insert_frame() method
+                        new_pipeline = []
+                        for item in ext.wcs.pipeline:
+                            if item[0].name == 'mosaic':
+                                new_pipeline.extend([(item[0], m_distcorr),
+                                                     (cf.Frame2D(name='distortion_corrected'), None)])
+                                break
+                            else:
+                                new_pipeline.append(item)
+                        ext.wcs = gWCS(new_pipeline)
+
+                    # We need to consider the different pixel frames of the
+                    # science and arc. The input->mosaic transform of the
+                    # science maps to the default pixel space, but the arc
+                    # will have had an origin shift before the distortion
+                    # correction was calculated.
+                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
+                                                        arc_detsec)]
+                    xoff1, yoff1 = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
+                    if xoff1 or yoff1:
+                        log.debug(f"Found a shift of ({xoff1},{yoff1}) "
+                                  f"pixels between {ad.filename} and the "
+                                  f"calibration {arc.filename}")
+                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).max(axis=0),
+                                                        arc_detsec)]
+                    xoff2, yoff2 = shifts[1] / xbin, shifts[3] / ybin  # x2, y2
+                    nzeros = [xoff1, xoff2, yoff1, yoff2].count(0)
+                    if nzeros < 2:
+                        raise ValueError("I don't know how to process the "
+                                         f"offsets between {ad.filename} "
+                                         f"and {arc.filename}")
+
+                    arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
+                                       ext.shape[1] - xoff1 + xoff2) for ext in ad]
+                    arc_corners = np.concatenate([transform.get_output_corners(
+                        ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                        input_shape=arc_shape, origin=(yoff1, xoff1))
+                        for ext, arc_shape in zip(ad, arc_ext_shapes)], axis=1)
+                    arc_origin = tuple(np.ceil(min(corners)) for corners in arc_corners)
+
+                    # So this is what was applied to the ARC to get the
+                    # mosaic frame to its pixel frame, in which the distortion
+                    # correction model was calculated. Convert coordinates
+                    # from python order to Model order.
+                    origin_shift = reduce(Model.__and__, [models.Shift(-origin)
+                                          for origin in arc_origin[::-1]])
+
+                    for ext in ad:
+                        ext.wcs.insert_transform('mosaic', origin_shift, after=True)
+
+                    # ARC and AD aren't the same size
+                    if nzeros < 4:
+                        ad_corners = np.concatenate([transform.get_output_corners(
+                            ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                            input_shape=ext.shape) for ext in ad], axis=1)
+                        ad_origin = tuple(np.ceil(min(corners)) for corners in ad_corners)
+
+                        # But a full-frame ARC and subregion AD may have different
+                        # origin shifts. We only care about the one in the
+                        # wavelength direction, since we need the AD to be on the
+                        # same pixel basis before applying the new wave_model
+                        offsets = tuple(o_ad - o_arc
+                                        for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
+                        # len(arc)=1 so we only have one wave_model, but need to
+                        # update the entry in the list, which gets used later
+                        if wave_model is not None:
+                            offset = offsets[ext.dispersion_axis()-1]
+                            if offset != 0:
+                                wave_model.name = None
+                                wave_models[0] = models.Shift(offset) | wave_model
+                                wave_models[0].name = 'WAVE'
+
+                else:
+                    # Single-extension AD, with single Transform
+                    ad_detsec = ad.detector_section()[0]
+                    if ad_detsec != arc_detsec:
+                        if self.timestamp_keys['mosaicDetectors'] in ad.phu:
+                            # Shouldn't this be allowed with a full-frame arc?
+                            log.warning("Cannot calibrate distortions in "
+                                        "mosaicked data unless arc has the "
+                                        "same ROI. Continuing.")
+                            if 'sq' in self.mode:
+                                fail = True
+                            adoutputs.append(ad)
+                            continue
+                        # No mosaicking, so we can just do a shift
+                        m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
+                                   models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
+                        m_distcorr = m_shift | m_distcorr
+                    # TODO: use insert_frame method
+                    new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
+                                    (cf.Frame2D(name='distortion_corrected'), None)]
+                    ad[0].wcs = gWCS(new_pipeline)
+
+                if wave_model is None:
+                    log.warning(f"{arc.filename} has no wavelength solution")
+                    if 'sq' in self.mode:
+                        fail = True
+
+            else:
+                log.warning("Distortion calibration with multiple-extension "
+                            "arcs has not been tested.")
+
+                sky_models, output_frames = [], []
+
+                for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
+                    # Save spatial WCS from input ext we're transforming WRT:
+                    sky_models.append(
+                        am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
+                    )
+                    output_frames.append(ext.wcs.output_frame.frames)
+
+                    # Shift science so its pixel coords match the arc's before
+                    # applying the distortion correction
+                    shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
+                                                        ext_arc.detector_section())]
+                    dist_model = (models.Shift(shifts[0] / xbin) &
+                                  models.Shift(shifts[1] / ybin)) | dist_model
+                    # TODO: use insert_frame method
+                    new_pipeline = [(ext.wcs.input_frame, dist_model),
+                                    (cf.Frame2D(name='distortion_corrected'), None)]
+                    ext.wcs = gWCS(new_pipeline)
+
+                    if wave_model is None:
+                        log.warning(f"{arc.filename} extension {ext.id} has "
+                                    "no wavelength solution")
+                        if 'sq' in self.mode:
+                            fail = True
+
+            for i, (ext, wave_model, wave_frame, sky_model, output_frame) in \
+              enumerate(zip(ad, wave_models, wave_frames, sky_models,
+                            output_frames)):
+
+                if ext.dispersion_axis() == 1:
+                    t = wave_model & sky_model
+                else:
+                    t = sky_model & wave_model
+                # We need to create a new output frame with a copy of the
+                # ARC's SpectralFrame in case there's a change from air->vac
+                # or vice versa
+                new_output_frame = cf.CompositeFrame(
+                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame)
+                     else frame for frame in output_frame], name='world'
+                )
+                ext.wcs.insert_frame('distortion_corrected', t,
+                                     new_output_frame)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad)
+            if arc.path:
+                add_provenance(ad, arc.filename, md5sum(arc.path) or "", self.myself())
+
+        if fail:
+            raise OSError("No suitable arc calibration for one or more "
+                          "input(s)")
+
+        return adoutputs
+
     def calculateSensitivity(self, adinputs=None, **params):
         """
         Calculates the overall sensitivity of the observation system
@@ -283,7 +593,9 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         datafile = params["filename"]
+        in_vacuo = params["in_vacuo"]
         bandpass = params["bandpass"]
+        resample_interval = params["resampling"]
         airmass0 = params["debug_airmass0"]
         debug_plot = params["debug_plot"]
         interactive = params["interactive"]
@@ -305,7 +617,8 @@ class Spect(PrimitivesBASE):
                         continue
                     full_path = os.path.join(path, 'spectrophotometric_standards', filename)
                     try:
-                        spec_table = self._get_spectrophotometry(full_path)
+                        spec_table = self._get_spectrophotometry(
+                            full_path, in_vacuo=in_vacuo)
                     except (FileNotFoundError, InconsistentTableError):
                         pass
                     else:
@@ -317,20 +630,24 @@ class Spect(PrimitivesBASE):
                     continue
             else:
                 try:
-                    spec_table = self._get_spectrophotometry(datafile)
+                    spec_table = self._get_spectrophotometry(
+                        datafile, in_vacuo=in_vacuo)
                 except FileNotFoundError:
                     log.warning(f"Cannot find spectrophotometric data table {datafile}."
-                                f"Unable to determine sensitivity for {ad.filename}")
+                                f" Unable to determine sensitivity for {ad.filename}")
                     continue
                 except InconsistentTableError:
                     log.warning(f"Cannot read spectrophotometric data table {datafile}."
-                                f"Unable to determine sensitivity for {ad.filename}")
+                                f" Unable to determine sensitivity for {ad.filename}")
                     continue
 
             exptime = ad.exposure_time()
             if 'WIDTH' not in spec_table.colnames:
                 log.warning(f"Using default bandpass of {bandpass} nm")
                 spec_table['WIDTH'] = bandpass * u.nm
+
+            if resample_interval:
+                spec_table = resample_spec_table(spec_table, resample_interval)
 
             # Do some checks now to avoid failing on every extension
             if airmass0:
@@ -357,9 +674,21 @@ class Spect(PrimitivesBASE):
                 spectrum = Spek1D(ext) / (exptime * u.s)
                 wave, zpt, zpt_err = [], [], []
 
+                extid = f"{ext.filename}:{ext.id}"
+                if "AWAV" in ext.wcs.output_frame.axes_names:
+                    wavecol_name = "WAVELENGTH_AIR"
+                    log.debug(f"{extid} is calibrated to air wavelengths")
+                elif "WAVE" in ext.wcs.output_frame.axes_names:
+                    wavecol_name = "WAVELENGTH_VACUUM"
+                    log.debug(f"{extid} is calibrated to vacuum wavelengths")
+                else:
+                    raise ValueError("Cannot interpret wavelength scale "
+                                     f"for {extid}")
+
                 # Compute values that are counts / (exptime * flux_density * bandpass)
-                for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
+                for w0, dw, fluxdens in zip(spec_table[wavecol_name].quantity,
                                             spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
                     data, mask, variance = spectrum.signal(
                         region, interpolate=DQ.bad_pixel)
@@ -417,11 +746,13 @@ class Spect(PrimitivesBASE):
                 calculated = True
 
             if interactive:
-                all_shapes = [x[0].shape[0] for x in all_exts]
-                all_waves = np.array([x[1] for x in all_exts])
-                all_zpt = np.array([x[2] for x in all_exts])
-                all_weights = np.array([x[3] for x in all_exts])
-                all_fp_init = np.array([fit_1D.translate_params(params)] * len(all_exts))
+                all_domains = [(0, x[0].shape[0]) for x in all_exts]
+                all_waves = [x[1].value for x in all_exts]
+                all_zpt = [x[2].value for x in all_exts]
+                all_weights = [x[3].value for x in all_exts]
+                all_fp_init = []
+                for i in range(len(all_exts)):
+                    all_fp_init.append(fit_1D.translate_params(params))
 
                 # build config for interactive
                 config = self.params[self.myself()]
@@ -430,17 +761,18 @@ class Spect(PrimitivesBASE):
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
 
-                visualizer = fit1d.Fit1DVisualizer((all_waves, all_zpt, all_weights),
+                uiparams = UIParameters(config)
+                visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
-                                                   config=config,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
-                                                   domains=all_shapes,
+                                                   domains=all_domains,
                                                    title="Calculate Sensitivity",
                                                    primitive_name="calculateSensitivity",
                                                    filename_info=filename_info,
-                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT)
+                                                   help_text=CALCULATE_SENSITIVITY_HELP_TEXT,
+                                                   ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
@@ -583,12 +915,12 @@ class Spect(PrimitivesBASE):
 
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
-                    data, _, _, _ = _average_along_slit(ext, center=None, nsum=nsum)
-                    fwidth = tracing.estimate_peak_width(data)
+                    data, _, _, _ = tracing.average_along_slit(ext, center=None, nsum=nsum)
+                    fwidth = tracing.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 if initial_peaks is None:
-                    data, mask, variance, extract_slice = _average_along_slit(ext, center=None, nsum=nsum)
+                    data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=None, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
@@ -679,8 +1011,9 @@ class Spect(PrimitivesBASE):
 
     def distortionCorrect(self, adinputs=None, **params):
         """
-        Corrects optical distortion in science frames using a `processed_arc`
-        with attached distortion map (a Chebyshev2D model).
+        Corrects optical distortion in science frames, using a distortion map
+        (a Chebyshev2D model, usually from a processed arc) that has previously
+        been attached to each input's WCS by attachWavelengthSolution.
 
         If the input image requires mosaicking, then this is done as part of
         the resampling, to ensure one, rather than two, interpolations.
@@ -688,11 +1021,9 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            2D spectral images.
+            2D spectral images with appropriately-calibrated WCS.
         suffix : str
             Suffix to be added to output files.
-        arc : :class:`~astrodata.AstroData` or str or None
-            Arc(s) containing distortion map.
         order : int (0 - 5)
             Order of interpolation when resampling.
         subsample : int
@@ -708,7 +1039,6 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
-        arc = params["arc"]
         order = params["order"]
         subsample = params["subsample"]
         do_cal = params["do_cal"]
@@ -717,255 +1047,107 @@ class Spect(PrimitivesBASE):
             log.warning('Distortion correction has been turned off.')
             return adinputs
 
-        # Get a suitable arc frame (with distortion map) for every science AD
-        if arc is None:
-            arc_list = self.caldb.get_processed_arc(adinputs)
-        else:
-            arc_list = (arc, None)
+        fail = False
 
         adoutputs = []
-        # Provide an arc AD object for every science frame, and an origin
-        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
-                                                  force_ad=(1,))):
+        for ad in adinputs:
+
             # We don't check for a timestamp since it's not unreasonable
             # to do multiple distortion corrections on a single AD object
 
-            len_ad = len(ad)
-            if arc is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    # TODO: Think about this when we have MOS/XD/IFU
-                    if len(ad) == 1:
-                        log.warning(f"{ad.filename}: no arc was specified. "
-                                    "Continuing.")
-                        adoutputs.append(ad)
-                    else:
-                        log.warning(f"{ad.filename}: no arc was specified. "
-                                    "Image will be mosaicked.")
-                        adoutputs.extend(self.mosaicDetectors([ad]))
-                    continue
-
-            origin_str = f" (obtained from {origin})" if origin else ""
-            log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
-                        f"{origin_str}")
-            len_arc = len(arc)
-            if len_arc not in (1, len_ad):
-                log.warning(f"{ad.filename} has {len_ad} extensions but "
-                            f"{arc.filename} had {len_arc} extensions so "
-                            "cannot correct the distortion.")
-                adoutputs.append(ad)
-                continue
-
-            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
-                log.warning("Science frame and arc have different binnings.")
-                adoutputs.append(ad)
-                continue
-
-            # Read all the arc's distortion maps. Do this now so we only have
-            # one block of reading and verifying them
-            distortion_models, wave_models, wave_frames = [], [], []
-            for ext in arc:
-                wcs = ext.nddata.wcs
-
-                # Any failures must be handled in the outer loop processing
-                # ADs, so just set the found transforms to empty and present
-                # the warning at the end
+            for ext in ad:
                 try:
-                    if 'distortion_corrected' in wcs.available_frames:
-                        pipeline = wcs.pipeline
-                    else:
-                        distortion_models = []
-                        break
-                except AttributeError:
-                    distortion_models = []
+                    idx = ext.wcs.available_frames.index('distortion_corrected')
+                except (ValueError, AttributeError):
+                    have_distcorr = False
+                else:
+                    have_distcorr = idx > 0
+                if not have_distcorr:
+                    log.warning('No distortion transformation attached to'
+                                f' {ad.filename}, extension {ext.id}')
                     break
 
-                # We could just pass the forward transform of the WCS, which
-                # already has its inverse attached, but the code currently
-                # relies on a no-op forward model to size the output correctly:
-                m_distcorr = models.Identity(2)
-                input_frame = wcs.input_frame
-                m_distcorr.inverse = wcs.get_transform(
-                    input_frame, 'distortion_corrected').inverse
-                distortion_models.append(m_distcorr)
+                # The resampling routine currently relies on a no-op forward
+                # distortion model to size the output correctly (while using
+                # the proper inverse for evaluating the sample points), so we
+                # replace that part of the WCS with Identity here. This hack
+                # gets uglier because any origin shift between arc & science
+                # ROIs that has been prefixed to the distortion model needs to
+                # be preserved; get rid of this at a later iteration by
+                # including ROI shifts in their own frame(s).
 
-                try:
-                    wave_model = am.get_named_submodel(wcs.forward_transform,
-                                                       'WAVE')
-                except IndexError:
-                    wave_models.append(None)
-                    wave_frames.append(None)
+                new_pipeline = ext.wcs.pipeline[:idx-1]
+                prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
+
+                if hasattr(m_distcorr, 'left') and (
+                    isinstance(m_distcorr.left, CompoundModel) and
+                    m_distcorr.left.n_outputs == 2 and
+                    all(isinstance(m, models.Shift) for m in m_distcorr.left)
+                ):
+                    m_dummy = m_distcorr.left | models.Identity(2)
                 else:
-                    wave_models.append(wave_model)
-                    wave_frames.extend([frame for frame in wcs.output_frame.frames
-                                        if isinstance(frame, cf.SpectralFrame)])
+                    m_dummy = models.Identity(2)
 
-            if not distortion_models:
-                log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in arc {arc.filename} extension {ext.id} - "
-                            "continuing")
+                m_dummy.inverse = m_distcorr.inverse
+                new_pipeline.append((prev_frame, m_dummy))
+                new_pipeline.extend(ext.wcs.pipeline[idx:])
+
+                ext.wcs = gWCS(new_pipeline)
+
+            if not have_distcorr:
+                # TODO: Think about this when we have MOS/XD/IFU
+                if 'sq' in self.mode or do_cal == 'force':
+                    fail = True
+                elif len(ad) == 1:
+                    adoutputs.append(ad)
+                else:
+                    # In further refactoring, the mosaic WCS should get added
+                    # at an earlier stage, separately from resampling.
+                    log.warning('Image will be mosaicked.')
+                    adoutputs.extend(self.mosaicDetectors([ad]))
                 continue
 
-            # Determine whether we're producing a single-extension AD
-            # or keeping the number of extensions as-is
-            if len_arc == 1:
-                arc_detsec = arc.detector_section()[0]
-                ad_detsec = ad.detector_section()
-                if len_ad > 1:
-                    # We need to apply the mosaicking geometry, and add the
-                    # same distortion correction to each input extension.
-                    geotable = import_module('.geometry_conf', self.inst_lookups)
-                    transform.add_mosaic_wcs(ad, geotable)
-                    for ext in ad:
-                        # TODO: use insert_frame() method
-                        new_pipeline = []
-                        for item in ext.wcs.pipeline:
-                            if item[0].name == 'mosaic':
-                                new_pipeline.extend([(item[0], m_distcorr),
-                                                     (cf.Frame2D(name='distortion_corrected'), item[1])])
-                            else:
-                                new_pipeline.append(item)
-                        ext.wcs = gWCS(new_pipeline)
+            # Do all the extension WCSs contain a mosaic frame, allowing us to
+            # resample them into a single mosaic at the same time as correcting
+            # distortions (they won't have if the arc wasn't mosaicked)?
+            mosaic = all('mosaic' in ext.wcs.available_frames if ext.wcs is not
+                         None else False for ext in ad)
 
-                    # We need to consider the different pixel frames of the
-                    # science and arc. The input->mosaic transform of the
-                    # science maps to the default pixel space, but the arc
-                    # will have had an origin shift before the distortion
-                    # correction was calculated.
-                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
-                                                        arc_detsec)]
-                    xoff1, yoff1 = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
-                    if xoff1 or yoff1:
-                        log.debug(f"Found a shift of ({xoff1},{yoff1}) "
-                                  f"pixels between {ad.filename} and the "
-                                  f"calibration {arc.filename}")
-                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).max(axis=0),
-                                                        arc_detsec)]
-                    xoff2, yoff2 = shifts[1] / xbin, shifts[3] / ybin  # x2, y2
-                    nzeros = [xoff1, xoff2, yoff1, yoff2].count(0)
-                    if nzeros < 2:
-                        raise ValueError("I don't know how to process the "
-                                         f"offsets between {ad.filename} "
-                                         f"and {arc.filename}")
-
-                    arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
-                                       ext.shape[1] - xoff1 + xoff2) for ext in ad]
-                    arc_corners = np.concatenate([transform.get_output_corners(
-                        ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
-                        input_shape=arc_shape, origin=(yoff1, xoff1))
-                        for ext, arc_shape in zip(ad, arc_ext_shapes)], axis=1)
-                    arc_origin = tuple(np.ceil(min(corners)) for corners in arc_corners)
-
-                    # So this is what was applied to the ARC to get the
-                    # mosaic frame to its pixel frame, in which the distortion
-                    # correction model was calculated. Convert coordinates
-                    # from python order to Model order.
-                    origin_shift = reduce(Model.__and__, [models.Shift(-origin)
-                                          for origin in arc_origin[::-1]])
-
-                    for ext in ad:
-                        ext.wcs.insert_transform('mosaic', origin_shift, after=True)
-                        #ext.wcs.insert_transform('distortion_corrected',
-                        #                         origin_shift.inverse, after=False)
-
-                    # ARC and AD aren't the same size
-                    if nzeros < 4:
-                        ad_corners = np.concatenate([transform.get_output_corners(
-                            ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
-                            input_shape=ext.shape) for ext in ad], axis=1)
-                        ad_origin = tuple(np.ceil(min(corners)) for corners in ad_corners)
-
-                        # But a full-frame ARC and subregion AD may have different
-                        # origin shifts. We only care about the one in the
-                        # wavelength direction, since we need the AD to be on the
-                        # same pixel basis before applying the new wave_model
-                        offsets = tuple(o_ad - o_arc
-                                        for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
-                        # len(arc)=1 so we only have one wave_model, but need to
-                        # update the entry in the list, which gets used later
-                        if wave_model is not None:
-                            offset = offsets[ext.dispersion_axis()-1]
-                            if offset != 0:
-                                wave_model.name = None
-                                wave_models[0] = models.Shift(offset) | wave_model
-                                wave_models[0].name = 'WAVE'
-
-                else:
-                    # Single-extension AD, with single Transform
-                    ad_detsec = ad.detector_section()[0]
-                    if ad_detsec != arc_detsec:
-                        if self.timestamp_keys['mosaicDetectors'] in ad.phu:
-                            log.warning("Cannot distortionCorrect mosaicked "
-                                        "data unless calibration has the "
-                                        "same ROI. Continuing.")
-                            adoutputs.append(ad)
-                            continue
-                        # No mosaicking, so we can just do a shift
-                        m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
-                                   models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
-                        m_distcorr = m_shift | m_distcorr
-                    # TODO: use insert_frame method
-                    new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
-                                    (cf.Frame2D(name='distortion_corrected'), ad[0].wcs.pipeline[0][1])]
-                    new_pipeline.extend(ad[0].wcs.pipeline[1:])
-                    ad[0].wcs = gWCS(new_pipeline)
-
-                ad_out = transform.resample_from_wcs(ad, 'distortion_corrected',
-                                                     order=order, subsample=subsample,
-                                                     parallel=False)
-
-                if wave_model is None:
-                    log.warning(f"{arc.filename} has no wavelength solution")
-
+            if mosaic:
+                ad_out = transform.resample_from_wcs(
+                    ad, 'distortion_corrected', order=order,
+                    subsample=subsample, parallel=False
+                )
             else:
-                log.warning("Distortion correction with multiple-extension "
-                            "arcs has not been tested.")
-                for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
-                    # Shift science so its pixel coords match the arc's before
-                    # applying the distortion correction
-                    shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
-                                                        ext_arc.detector_section())]
-                    dist_model = (models.Shift(shifts[0] / xbin) &
-                                  models.Shift(shifts[1] / ybin)) | dist_model
-                    # TODO: use insert_frame method
-                    new_pipeline = [(ext.wcs.input_frame, dist_model),
-                                    (cf.Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0][1])]
-                    new_pipeline.extend(ext.wcs.pipeline[1:])
-                    ext.wcs = gWCS(new_pipeline)
+                for i, ext in enumerate(ad):
                     if i == 0:
-                        ad_out = transform.resample_from_wcs(ext, order=order,
-                                                             subsample=subsample,
-                                                             parallel=False)
+                        ad_out = transform.resample_from_wcs(
+                            ext, 'distortion_corrected', order=order,
+                            subsample=subsample, parallel=False
+                        )
                     else:
-                        ad_out.append(transform.resample_from_wcs(ext, order=order,
-                                                                  subsample=subsample,
-                                                                  parallel=False))
-                    if wave_model is None:
-                        log.warning(f"{arc.filename} extension {ext.id} has "
-                                    "no wavelength solution")
+                        ad_out.append(
+                            transform.resample_from_wcs(ext,
+                                                        'distortion_corrected',
+                                                        order=order,
+                                                        subsample=subsample,
+                                                        parallel=False)
+                        )
 
-            for i, (ext, wave_model, wave_frame) in enumerate(
-                    zip(ad_out, wave_models, wave_frames)):
-                # TODO: remove this; for debugging purposes only
-                if arc is not None and hasattr(arc[i], "WAVECAL"):
-                    ad_out[i].WAVECAL = arc[i].WAVECAL
-                sky_model = am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
-                if ext.dispersion_axis() == 1:
-                    t = wave_model & sky_model
-                else:
-                    t = sky_model & wave_model
-                # We need to create a new output frame with a copy of the
-                # ARC's SpectralFrame in case there's a change from air->vac
-                # or vice versa
-                new_output_frame = cf.CompositeFrame(
-                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame) else
-                     frame for frame in ext.wcs.output_frame.frames])
-                ext.wcs = gWCS([(ext.wcs.input_frame, t),
-                                (new_output_frame, None)])
+            # The WCS gets updated by resample_from_wcs. We should also make it
+            # save the (inverted) WCS pipeline components prior to resampling
+            # somehow, to allow mapping rectified co-ordinates back to detector
+            # pixels for calibration & inspection purposes.
+
             # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad_out, primname=self.myself(),
+                            keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad_out)
+
+        if fail:
+            raise OSError("One or more input(s) missing distortion "
+                          "calibration; run attachWavelengthSolution first")
 
         return adoutputs
 
@@ -1038,6 +1220,9 @@ class Spect(PrimitivesBASE):
         nbright : int (or may not exist in certain class methods)
             Number of brightest lines to cull before fitting
 
+        interactive : bool
+            Use the interactive tool?
+
         debug : bool
             Enable plots for debugging.
 
@@ -1051,27 +1236,13 @@ class Spect(PrimitivesBASE):
         --------
         :class:`~geminidr.core.primitives_visualize.Visualize.mosaicDetectors`,
         :class:`~gempy.library.matching.KDTreeFitter`,
-        :class:`~gempy.library.matching.Chebyshev1DMatchBox`.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        order = params["order"]
-        center = params["center"]
-        nsum = params["nsum"]
-        min_snr = params["min_snr"]
-        weighting = params["weighting"]
-        fwidth = params["fwidth"]
-        min_lines = [int(x) for x in str(params["min_lines"]).split(',')]
-        min_sep = params["min_sep"]
-        cenwave = params["central_wavelength"]
-        dw0 = params["dispersion"]
         arc_file = params["linelist"]
-        in_vacuo = params["in_vacuo"]
-        nbright = params.get("nbright", 0)
-        alt_centers = params["alternative_centers"]
-        debug = params["debug"]
+        interactive = params["interactive"]
 
         # TODO: This decision would prevent MOS data being reduced so need
         # to think a bit more about what we're going to do. Maybe make
@@ -1082,282 +1253,70 @@ class Spect(PrimitivesBASE):
         # Top-level decision for this to only work on single-extension ADs
         # if not all(len(ad)==1 for ad in adinputs):
         #    raise ValueError("Not all inputs are single-extension AD objects")
-
-        # Get list of arc lines (probably from a text file dependent on the
-        # input spectrum, so a private method of the primitivesClass)
+        linelist = None
         if arc_file is not None:
             try:
-                arc_lines = np.loadtxt(arc_file, usecols=[0])
-            except (OSError, TypeError):
-                log.warning(f"Cannot read file {arc_file} - using default linelist")
-                arc_file = None
+                linelist = wavecal.LineList(arc_file)
+            except OSError:
+                log.warning(f"Cannot read file {arc_file} - "
+                            "using default linelist")
             else:
                 log.stdinfo(f"Read arc line list {arc_file}")
-                try:
-                    arc_weights = np.sqrt(np.loadtxt(arc_file, usecols=[1]))
-                except IndexError:
-                    arc_weights = None
-                else:
-                    log.stdinfo("Read arc line relative weights")
+
+        # Pass the primitive configuration to the interactive object.
+        config = copy(self.params[self.myself()])
+        config.update(**params)
 
         for ad in adinputs:
-            log.info(f"Determining wavelength solution for {ad.filename}")
-            for ext in ad:
-                if len(ad) > 1:
-                    log.info(f"Determining solution for extension {ext.id}")
+            log.stdinfo(f"Determining wavelength solution for {ad.filename}")
 
-                # Create 1D spectrum for calibration
-                if ext.data.ndim > 1:
-                    dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    direction = "row" if dispaxis == 1 else "column"
-                    data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
-                    log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                                format(direction, extract_slice.start + 1, extract_slice.stop))
-                    middle = 0.5 * (extract_slice.start + extract_slice.stop - 1)
-                    ny, nx = ext.shape
-                    pix_coords = ((0, nx-1), middle) if dispaxis == 1 else (middle, (0, ny-1))
+            uiparams = UIParameters(
+                config, reinit_params=["center", "nsum", "min_snr", "min_sep",
+                                       "fwidth", "central_wavelength", "dispersion",
+                                       "in_vacuo"])
+            uiparams.fields["center"].max = min(
+                ext.shape[ext.dispersion_axis() - 1] for ext in ad)
 
-                else:
-                    data = ext.data
-                    mask = ext.mask
-                    variance = ext.variance
-                    pix_coords = ((0, ext.size-1),)
+            if interactive:
+                all_fp_init = [fit_1D.translate_params(
+                    {**params, "function": "chebyshev"})] * len(ad)
+                # This feels like I shouldn't have to do it here
+                domains = []
+                for ext in ad:
+                    axis = 0 if ext.data.ndim == 1 else 2 - ext.dispersion_axis()
+                    domains.append([0, ext.shape[axis] - 1])
+                reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
+                            linelist=linelist, bad_bits=DQ.not_signal)
+                visualizer = WavelengthSolutionVisualizer(
+                    reconstruct_points, all_fp_init,
+                    modal_message="Re-extracting 1D spectra",
+                    tab_name_fmt="Slit {}",
+                    xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
+                    domains=domains,
+                    title="Wavelength Solution",
+                    primitive_name=self.myself(),
+                    filename_info=ad.filename,
+                    enable_regions=False, plot_ratios=False, plot_height=350,
+                    ui_params=uiparams)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                for ext, fit1d, image, other in zip(ad, visualizer.results(),
+                                                    visualizer.image, visualizer.meta):
+                    fit1d.image = image
+                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+            else:
+                for ext in ad:
+                    if len(ad) > 1:
+                        log.stdinfo(f"Determining solution for extension {ext.id}")
 
-                # Mask bad columns but not saturated/non-linear data points
-                if mask is not None:
-                    mask = mask & DQ.not_signal
-                    data[mask > 0] = 0.
+                    input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                        ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                    if not acceptable_fit:
+                        log.warning("No acceptable wavelength solution found "
+                                    f"for {ext.id}")
 
-                # Get the initial wavelength solution
-                try:
-                    if ext.data.ndim > 1:
-                        w1, w2 = ext.wcs(*pix_coords)[0]
-                    else:
-                        w1, w2 = ext.wcs(*pix_coords)
-                except (TypeError, AttributeError):
-                    c0 = ext.central_wavelength(asNanometers=True)
-                    c1 = 0.5 * ext.dispersion(asNanometers=True) * (len(data) - 1)
-                else:
-                    c0 = 0.5 * (w1 + w2)
-                    c1 = 0.5 * (w2 - w1)
-                if cenwave is not None:
-                    c0 = cenwave
-                if dw0 is not None:
-                    c1 = 0.5 * dw0 * (len(data) - 1)
-                else:
-                    dw0 = (w2 - w1) / (len(data) - 1)
-                log.stdinfo("Using central wavelength {:.1f} nm and dispersion "
-                            "{:.3f} nm/pixel".format(c0, dw0))
-
-                if fwidth is None:
-                    fwidth = tracing.estimate_peak_width(data, mask=mask)
-                    log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
-
-                # Don't read linelist if it's the one we already have
-                # (For user-supplied, we read it at the start, so don't do this at all)
-                if arc_file is None:
-                    arc_lines, arc_weights = self._get_arc_linelist(
-                        ext, w1=c0-abs(c1), w2=c0+abs(c1), dw=dw0,
-                        in_vacuo=in_vacuo)
-
-                # Find peaks; convert width FWHM to sigma
-                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
-                                                      variance=variance, min_snr=min_snr,
-                                                      min_sep=min_sep, reject_bad=False)
-                fit_this_peak = peak_snrs > min_snr
-                fit_this_peak[np.argsort(peak_snrs)[len(peaks) - nbright:]] = False
-                peaks = peaks[fit_this_peak]
-                peak_snrs = peak_snrs[fit_this_peak]
-                log.stdinfo(f"{ad.filename}: found {len(peaks)} peaks and "
-                            f"{len(arc_lines)} arc lines")
-
-                # Compute all the different types of weightings so we can
-                # change between them as needs require
-                weights = {'none': np.ones((len(peaks),)),
-                           'natural': np.sqrt(peak_snrs)}
-                # The "relative" weights compares each line strength to
-                # those of the lines close to it
-                tree = spatial.cKDTree(np.array([peaks]).T)
-                # Find lines within 10% of the array size
-                indices = tree.query(np.array([peaks]).T, k=10,
-                                     distance_upper_bound=0.1 * len(data))[1]
-                snrs = np.array(list(peak_snrs) + [np.nan])[indices]
-                # Normalize weights by the median of these lines
-                weights['relative'] = peak_snrs / np.nanmedian(snrs, axis=1)
-
-                kdsigma = fwidth * abs(dw0)
-                if cenwave is None:
-                    if alt_centers:
-                        centers = find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1,
-                                                                    2.5*kdsigma, weights=weights['natural'])
-                        if len(centers) > 1:
-                            log.warning("Alternative central wavelength(s) found "+str(centers))
-                    else:
-                        centers = [c0]
-                else:
-                    centers = [cenwave]
-
-                data_max = data.max()
-                k = 1 if fwidth * abs(dw0) < 3 else 2
-
-                all_fits = []
-                acceptable_fit = False
-                for min_lines_per_fit, fac, w0 in cart_product(min_lines, [0.5, 0.4, 0.6], centers):
-                    pix_shift = (fac - 0.5) * (len(data) - 1)
-                    pixel_start = fac * (len(data) - 1)
-                    wave_start = w0 + pix_shift * dw0
-                    matches = self._perform_piecewise_fit(data, peaks, arc_lines, pixel_start,
-                                                          wave_start, dw0, kdsigma,
-                                                          min_lines_per_fit=min_lines_per_fit,
-                                                          order=order, k=k, debug=debug)
-
-                    # We perform a regular least-squares fit to all the matches
-                    # we've made. This allows a high polynomial order to be
-                    # used without the risk of it going off the rails
-                    if set(matches) != {-1}:
-                        m_init = models.Chebyshev1D(degree=order, c0=c0, c1=c1,
-                                                    domain=[0, len(data) - 1])
-                        fit_it = fitting.LinearLSQFitter()
-                        matched = np.where(matches > -1)
-                        matched_peaks = peaks[matched]
-                        matched_arc_lines = arc_lines[matches[matched]]
-                        m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
-
-                        # We're close to the correct solution, perform a KDFit
-                        m_init = m_final.copy()
-                        fit_it = matching.KDTreeFitter(sigma=2*abs(dw0), maxsig=5, k=k, method='Nelder-Mead')
-                        m_final = fit_it(m_init, peaks, arc_lines, in_weights=weights[weighting],
-                                         ref_weights=arc_weights, matches=matches)
-                        log.stdinfo('{} {}'.format(repr(m_final), fit_it.statistic))
-
-                        # And then recalculate the matches
-                        match_radius = 4 * fwidth * abs(m_final.c1) / (len(data) - 1)  # 2*fwidth pixels
-                        try:
-                            m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                                                                               model=m_final, match_radius=match_radius,
-                                                                               sigma_clip=3)
-                        except ValueError:
-                            log.warning("Line-matching failed")
-                            continue
-                        log.stdinfo('{} {} {} {}'.format(ad.filename, repr(m.forward), len(m), m.rms_output))
-
-                        for loop in range(debug + 1):
-                            plt.ioff()
-                            fig, ax = plt.subplots()
-                            ax.plot(data, 'b-')
-                            ax.set_ylim(0, data_max * 1.05)
-                            if dw0 > 0:
-                                ax.set_xlim(-1, len(data))
-                            else:
-                                ax.set_xlim(len(data), -1)
-                            for p in peaks:
-                                ax.plot([p, p], [0, 2 * data_max], 'r:')
-                            for p, w in zip(m.input_coords, m.output_coords):
-                                j = int(p + 0.5)
-                                ax.plot([p, p], [data[j], data[j] + 0.02 * data_max], 'k-')
-                                ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
-                                        horizontalalignment='center', rotation=90, fontdict={'size': 8})
-                            if loop > 0:
-                                plt.show()
-                            else:
-                                fig.set_size_inches(17, 11)
-                                plt.savefig(ad.filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
-                            plt.ion()
-
-                        all_fits.append(m)
-                        if m.rms_output < 0.2 * fwidth * abs(dw0) and len(m) > order + 2:
-                            acceptable_fit = True
-                            break
-
-                if not acceptable_fit:
-                    log.warning(f"No acceptable wavelength solution found for {ad.filename}")
-                    scores = [m.rms_output / max(len(m) - order - 1, np.finfo(float).eps) for m in all_fits]
-                    m = all_fits[np.argmin(scores)]
-
-                if debug:
-                    m.display_fit(show=False)
-                    plt.savefig(ad.filename.replace('.fits', '.jpg'))
-
-                m_final = m.forward
-                rms = m.rms_output
-                nmatched = len(m)
-                log.stdinfo(m_final)
-                log.stdinfo(f"Matched {nmatched}/{len(peaks)} lines with "
-                            f"rms = {rms:.3f} nm.")
-
-                max_rms = 0.2 * rms / abs(dw0)  # in pixels
-                max_dev = 3 * max_rms
-                m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
-                                                                 max_deviation=max_dev)
-                inv_rms = np.std(m_inverse(m_final(m.input_coords)) - m.input_coords)
-                log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
-                m_final.name = "WAVE"  # always WAVE, never AWAV
-                m_final.inverse = m_inverse
-
-                m.sort()
-                # Add 1 to pixel coordinates so they're 1-indexed
-                incoords = np.float32(m.input_coords) + 1
-                outcoords = np.float32(m.output_coords)
-                temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
-                #### Temporary to ensure all the old stuff is still there
-                # while I refactor tests
-                temptable.add_columns([[1], [order], [m_final.domain[0]], [m_final.domain[1]]],
-                                      names=("ndim", "degree", "domain_start", "domain_end"))
-                temptable.add_columns([[rms], [fwidth]], names=("rms", "fwidth"))
-                if ext.data.ndim > 1:
-                    temptable[direction] = (extract_slice.start +
-                                             extract_slice.stop - 1) // 2
-                    temptable["nsum"] = nsum
-                pad_rows = nmatched - len(temptable.colnames)
-                if pad_rows < 0:  # Really shouldn't be the case
-                    incoords = list(incoords) + [0] * (-pad_rows)
-                    outcoords = list(outcoords) + [0] * (-pad_rows)
-                    pad_rows = 0
-
-                fit_table = Table([temptable.colnames + [''] * pad_rows,
-                                   list(temptable[0].values()) + [0] * pad_rows,
-                                   incoords, outcoords],
-                                  names=("name", "coefficients", "peaks", "wavelengths"),
-                                  units=(None, None, u.pix, u.nm),
-                                  meta=temptable.meta)
-                medium = "vacuo" if in_vacuo else "air"
-                fit_table.meta['comments'] = [
-                    'coefficients are based on 0-indexing',
-                    'peaks column is 1-indexed',
-                    f'calibrated with wavelengths in {medium}']
-                ext.WAVECAL = fit_table
-
-                spectral_frame = (ext.wcs.output_frame if ext.data.ndim == 1
-                                  else ext.wcs.output_frame.frames[0])
-                axis_name = "WAVE" if in_vacuo else "AWAV"
-                new_spectral_frame = cf.SpectralFrame(
-                    axes_order=spectral_frame.axes_order,
-                    unit=spectral_frame.unit, axes_names=(axis_name,),
-                    name=astrodata.wcs.frame_mapping[axis_name].description)
-
-                if ext.data.ndim == 1:
-                    ext.wcs.set_transform(ext.wcs.input_frame,
-                                          new_spectral_frame, m_final)
-                else:
-                    # Write out a simplified WCS model so it's easier to
-                    # extract what we need later
-                    spatial_frame = cf.CoordinateFrame(
-                        naxes=1, axes_type="SPATIAL", axes_order=(1,),
-                        unit=u.pix, name="SPATIAL")
-                    output_frame = cf.CompositeFrame(
-                        [new_spectral_frame, spatial_frame], name='world')
-                    try:
-                        slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
-                    except IndexError:
-                        slit_model = models.Identity(1)
-                    slit_model.name = 'SKY'
-                    if dispaxis == 1:
-                        transform = m_final & slit_model
-                    else:
-                        transform = slit_model & m_final
-                    ext.wcs = gWCS([(ext.wcs.input_frame, transform),
-                                    (output_frame, None)])
+                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
+                    wavecal.save_fit_as_pdf(input_data["spectrum"], fit1d.points[~fit1d.mask],
+                                            fit1d.image[~fit1d.mask], ad.filename)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1365,7 +1324,7 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
-    def extract1DSpectra(self, adinputs=None, **params):
+    def extractSpectra(self, adinputs=None, **params):
         """
         Extracts one or more 1D spectra from a 2D spectral image, according to
         the contents of the `.APERTURE` table.
@@ -1393,8 +1352,6 @@ class Spect(PrimitivesBASE):
         grow : float
             Avoidance region around each source aperture if a sky aperture
             is required. Default: 10.
-        interactive: bool
-            Perform extraction interactively
         subtract_sky : bool
             Extract and subtract sky spectra from object spectra if the 2D
             spectral image has not been sky subtracted?
@@ -1430,6 +1387,10 @@ class Spect(PrimitivesBASE):
             if skysub_needed:
                 log.stdinfo(f"Sky subtraction has not been performed on {ad.filename}"
                             " - extracting sky from separate apertures")
+
+            kw_to_delete = [ad._keyword_for(desc)
+                            for desc in ("detector_section", "array_section")]
+            kw_datasec = ad._keyword_for("data_section")
 
             for ext in ad:
                 extname = f"{ad.filename} extension {ext.id}"
@@ -1553,10 +1514,11 @@ class Spect(PrimitivesBASE):
                                                 'Aperture upper limit')
 
                     # Delete unnecessary keywords
-                    for descriptor in ('detector_section', 'array_section'):
-                        kw = ad._keyword_for(descriptor)
+                    for kw in kw_to_delete:
                         if kw in ext_spec.hdr:
                             del ext_spec.hdr[kw]
+
+                    ext_spec.hdr[kw_datasec] = f"[1:{ext_spec.data.size}]"
 
             # Don't output a file with no extracted spectra
             if len(ad_spec) > 0:
@@ -1571,7 +1533,7 @@ class Spect(PrimitivesBASE):
         # Only return extracted spectra
         return ad_extracted
 
-    def findSourceApertures(self, adinputs=None, **params):
+    def findApertures(self, adinputs=None, **params):
         """
         Finds sources in 2D spectral images and store them in an APERTURE table
         for each extension. Each table will, then, be used in later primitives
@@ -1671,8 +1633,6 @@ class Spect(PrimitivesBASE):
                     if 'APERTURE' in ext.tables:
                         del ext.APERTURE
                     continue
-                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
-                log.stdinfo(f"Found sources at: {locstr}")
 
                 # This is a little convoluted because of the simplicity of the
                 # initial models, but we want to ensure that the APERTURE
@@ -1681,15 +1641,19 @@ class Spect(PrimitivesBASE):
                 all_tables = []
                 for i, (loc, limits) in enumerate(zip(locations, all_limits),
                                                   start=1):
-                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
+                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1],
+                                              c0=loc)
                     aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
-                    aptable["number"] = i
+                    aptable["number"] = np.int32(i)
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
-                    log.debug("Limits for source "
-                              f"{loc:.1f} ({lower:.1f}, +{upper:.1f})")
+                    log.stdinfo(f"Aperture {i} found at {loc:.2f} "
+                                f"({lower:.2f}, +{upper:.2f})")
+                    if lower > 0 or upper < 0:
+                        log.warning("Problem with automated sizing of "
+                                    f"aperture {i}")
 
                 aptable = vstack(all_tables, metadata_conflicts="silent")
                 # Move "number" to be the first column
@@ -2273,7 +2237,8 @@ class Spect(PrimitivesBASE):
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
 
-                data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
+                data, mask, variance, extract_slice = tracing.average_along_slit(
+                    ext, center=center, nsum=nsum)
                 log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                             format(direction, extract_slice.start + 1, extract_slice.stop))
                 mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
@@ -2281,7 +2246,8 @@ class Spect(PrimitivesBASE):
 
                 masked_data = np.ma.masked_array(data, mask=mask)
                 weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                pixels = np.arange(len(masked_data))
+                center = (extract_slice.start + extract_slice.stop) // 2
+                waves = ext.wcs(range(len(masked_data)), center)[0]
 
                 # We're only going to do CCD-to-CCD normalization if we've
                 # done the mosaicking in this primitive; if not, we assume
@@ -2290,9 +2256,9 @@ class Spect(PrimitivesBASE):
                 if nslices > 1 and mosaicked:
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
-                    result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
+                    result = optimize.minimize(QESpline, coeffs, args=(waves, masked_data,
                                                                        weights, boundaries,
-                                                                       fit1d_params["order"]),
+                                                                       20),
                                                tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning(f"Problem with spline fitting: {result.message}")
@@ -2305,24 +2271,27 @@ class Spect(PrimitivesBASE):
                         weights[slice_] /= coeff
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                fit1d = fit_1D(masked_data, points=None, weights=weights,
+                fit1d = fit_1D(masked_data, points=waves, weights=weights,
                                **fit1d_params)
 
                 if not mosaicked:
                     flat_data = np.tile(fit1d.evaluate(), (ext.shape[1-dispaxis], 1))
-                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
+                    ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
-                origin = admos.nddata[0].meta.pop('transform')['origin']
-                origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
+                #origin = admos.nddata[0].meta.pop('transform')['origin']
+                #origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
                 for ext, wcs in zip(ad, orig_wcs):
-                    t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
-                    geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                    flat_data = fit1d.evaluate(geomap.coords[dispaxis])
+                    ypix, xpix = np.mgrid[:ext.shape[0], :ext.shape[1]]
+                    waves = wcs(xpix, ypix)[0]
+                    flat_data = np.array([fit1d.evaluate(w) for w in waves])
+                    #t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
+                    #geomap = transform.GeoMap(t, ext.shape, inverse=True)
+                    #flat_data = fit1d.evaluate(geomap.coords[dispaxis])
                     ext.divide(flat_data)
                     ext.wcs = wcs
 
@@ -2388,7 +2357,10 @@ class Spect(PrimitivesBASE):
 
         # Check that all ad objects are either 1D or 2D
         ndim = {len(ext.shape) for ad in adinputs for ext in ad}
-        if len(ndim) != 1:
+        if len(ndim) == 0:
+            log.warning('Input list empty. Doing nothing.')
+            return adinputs
+        elif len(ndim) != 1:
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()
 
@@ -2622,6 +2594,8 @@ class Spect(PrimitivesBASE):
             Masking growth radius (in pixels) for each aperture
         debug_plot : bool
             Show diagnostic plots?
+        interactive : bool
+            Show interactive interface?
 
         Returns
         -------
@@ -2632,35 +2606,58 @@ class Spect(PrimitivesBASE):
         --------
         :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
         :meth:`~geminidr.core.primitives_spect.Spect.distortionCorrect`,
-        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`,
+        :meth:`~geminidr.core.primitives_spect.Spect.findApertures`,
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        apgrow = params["aperture_growth"]
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
+        interactive = params["interactive"]
 
-        for ad in adinputs:
-            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning(f"{ad.filename} has not been distortion corrected."
-                            " Sky subtraction is likely to be poor.")
+        def calc_sky_coords(ad: AstroData, apgrow=0, interactive_mode=False):
+            """
+            Calculate the sky coordinates for the extensions in the given
+            AstroData object.
 
-            for ext in ad:
-                axis = ext.dispersion_axis() - 1  # python sense
+            This is useful for both feeding the data inputs calculation
+            for the interactive interface and for the final loop over
+            AstoData objects to do the fit (for both interactive and
+            non-interactive).
+
+            Parameters
+            ----------
+            ad : :class:`~astrodata.AstroData`
+                AstroData to generate coordinates for
+            apgrow : float
+                Aperture avoidance distance (pixels)
+            interactive_mode : bool
+                If True, collates aperture data mask separately to be used by UI
+
+            Returns
+            -------
+            :class:`~astrodata.AstroData`, :class:`~numpy.ndarray`, :class:`~numpy.ndarray`
+                extension, sky mask, sky weights yielded for each extension in the `ad`
+            """
+            for csc_ext in ad:
+                csc_axis = csc_ext.dispersion_axis() - 1  # python sense
 
                 # We want to mask pixels in apertures in addition to the mask.
                 # Should we also leave DQ.cosmic_ray (because sky lines can get
                 # flagged as CRs) and/or DQ.overlap unmasked here?
-                sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
-                            if ext.mask is None else
-                            ext.mask & DQ.not_signal)
+                csc_sky_mask = (np.zeros_like(csc_ext.data, dtype=bool)
+                                if csc_ext.mask is None else
+                                (csc_ext.mask & DQ.not_signal).astype(bool))
+
+                # for interactive mode, we aggregate an aperture mask separately
+                # for the UI
+                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=bool))
 
                 # If there's an aperture table, go through it row by row,
                 # masking the pixels
                 try:
-                    aptable = ext.APERTURE
+                    aptable = csc_ext.APERTURE
                 except AttributeError:
                     pass
                 else:
@@ -2669,34 +2666,169 @@ class Spect(PrimitivesBASE):
                         aperture = tracing.Aperture(trace_model,
                                                     aper_lower=row['aper_lower'],
                                                     aper_upper=row['aper_upper'])
-                        sky_mask |= aperture.aperture_mask(ext, grow=apgrow)
+                        aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
+                        csc_aperture_mask |= aperture_mask
 
-                if debug_plot:
-                    from astropy.visualization import simple_norm
-                    fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True,
-                                                   sharey=True)
-                    ax1.imshow(ext.data, cmap='gray',
-                               norm=simple_norm(ext.data, max_percent=99))
-                    ax2.imshow(sky_mask, cmap='gray', vmax=4)
-                    plt.show()
-
-                if ext.variance is None:
-                    sky_weights = None
+                if csc_ext.variance is None:
+                    csc_sky_weights = None
                 else:
-                    sky_weights = np.sqrt(at.divide0(1., ext.variance))
+                    csc_sky_weights = np.sqrt(at.divide0(1., csc_ext.variance))
+                    # Handle columns were all the weights are zero
+                    zeros = np.sum(csc_sky_weights, axis=csc_axis) == 0
+                    if csc_axis == 0:
+                        csc_sky_weights[:, zeros] = 1
+                    else:
+                        csc_sky_weights[zeros] = 1
 
                 # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
                 # chip gaps) to avoid a zillion warnings about insufficient
-                # unmasked points
-                #no_data = np.bitwise_and.reduce(sky_mask, axis=axis) & DQ.no_data
-                #if axis == 0:
-                #    sky_mask ^= no_data
-                #else:
-                #    sky_mask ^= no_data[:, None]
+                # unmasked points.
+                if csc_ext.mask is not None:
+                    no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_axis) &
+                               DQ.no_data).astype(bool)
+                    if csc_axis == 0:
+                        csc_sky_mask ^= no_data
+                    else:
+                        csc_sky_mask ^= no_data[:, None]
+
+                csc_ext.data, csc_sky_mask, csc_sky_weights = \
+                    transpose_if_needed(csc_ext.data, csc_sky_mask, csc_sky_weights, transpose=csc_axis != 0)
+                if interactive_mode:
+                    csc_aperture_mask = \
+                        transpose_if_needed(csc_aperture_mask, transpose=csc_axis != 0)[0]
+                    yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
+                else:
+                    yield csc_ext, csc_sky_mask | csc_aperture_mask, csc_sky_weights
+
+        def recalc_fn(ad: AstroData, ui_parms: UIParameters):
+            """
+            Used by the interactive code to generate all the inputs for the tabs
+            per extension.
+
+            This relies on the ``calc_sky_coords`` call to iterate on a set of
+            extensions and their calculated sky_mask and sky_weights.  It then
+            creates the sky masked array and pixel coordinates to return for
+            the interactive code.  This function is suitable for use as the
+            data source for the fit1d interactive code.
+
+            Parameters
+            ----------
+            ad : :class:`~astrodata.core.AstroData`
+                AstroData instance to work on
+            ui_parms : :class:`~geminidr.interactive.interactive.UIParameters`
+                configuration for the primitive, including extra controls
+
+            Returns
+            -------
+            :class:`~numpy.ndarray`, :class:`~numpy.ma.MaskedArray`, :class:`~numpy.ndarray`
+                Yields a list of tupes with the pixel, sky, sky_weights
+
+            See Also
+            --------
+            :meth:`~geminidr.core.primitives_spect.Spect.skyCorrectFromSlit.calc_sky_coords`
+            """
+            # pylint: disable=unused-argument
+            c = max(0, ui_parms.values['col'] - 1)
+            apgrow = ui_parms.values['aperture_growth']
+            # TODO alternatively, save these 3 arrays for faster recalc
+            # here I am rerunning all the above calculations whenever a col select is made
+            data = {"x": [], "y": [], "weights": [], "aperture_mask": []}
+            for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in \
+                    calc_sky_coords(ad, apgrow=apgrow, interactive_mode=True):
+                # TODO: FIX THIS TO PAY ATTENTION TO ORIENTATION!!!!!
+                if rc_ext.dispersion_axis() == 1:
+                    data["weights"].append(None if rc_sky_weights is None else rc_sky_weights[:, c])
+                    data["aperture_mask"].append(rc_aper_mask[:, c])
+                    rc_sky = np.ma.masked_array(rc_ext.data[:, c], mask=rc_sky_mask[:, c])
+                else:
+                    data["weights"].append(None if rc_sky_weights is None else rc_sky_weights[c])
+                    data["aperture_mask"].append(rc_aper_mask[c])
+                    rc_sky = np.ma.masked_array(rc_ext.data[c], mask=rc_sky_mask[c])
+                data["x"].append(np.arange(rc_sky.size))
+                data["y"].append(rc_sky)
+            return data
+
+        final_parms = list()
+        apgrow = None  # for saving selected aperture_grow values, if interactive
+
+        if interactive:
+            apgrow = list()
+            # build config for interactive
+            config = self.params[self.myself()]
+            config.update(**params)
+
+            # Create a 'col' parameter to add to the UI so the user can select the column they
+            # want to fit.
+            # We pass a default column at the 1/3 mark, since dead center is flat
+            axis = adinputs[0].dispersion_axis()[0] - 1  # python sense
+            ncols = adinputs[0].shape[0][1 if axis == 0 else 0]
+            reinit_params = ["col", "aperture_growth"]
+            reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 2),
+                                               min=1, max=ncols)}
+
+            # Build the set of input shapes and count the total extensions while we are at it
+            for ad in adinputs:
+                all_shapes = []
+                count = 0
+                for ext in ad:
+                    axis = ext.dispersion_axis() - 1  # python sense
+                    count = count+1
+                    all_shapes.append((0, ext.shape[axis]))  # extracting single line for interactive
+
+                # Get filename to display in visualizer
+                filename_info = getattr(ad, 'filename', '')
+
+                # get the fit parameters
+                fit1d_params = fit_1D.translate_params(params)
+                ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
+                visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
+                                                   fitting_parameters=[fit1d_params]*count,
+                                                   tab_name_fmt="Slit {}",
+                                                   xlabel='Row',
+                                                   ylabel='Signal',
+                                                   domains=all_shapes,
+                                                   title="Sky Correct From Slit",
+                                                   primitive_name="skyCorrectFromSlit",
+                                                   filename_info=filename_info,
+                                                   help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
+                                                   plot_ratios=False,
+                                                   enable_user_masking=False,
+                                                   recalc_inputs_above=True,
+                                                   ui_params=ui_params)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+
+                # Pull out the final parameters to use as inputs doing the real fit
+                fit_results = visualizer.results()
+                final_parms_exts = list()
+                apgrow.append(ui_params.values['aperture_growth'])
+                for fit in fit_results:
+                    final_parms_exts.append(fit.extract_params())
+                final_parms.append(final_parms_exts)
+        else:
+            # making fit params into an array even though it all matches
+            # so we can share the same final code with the interactive,
+            # where a user may have tweaked per extension inputs
+            for ad in adinputs:
+                final_parms.append([fit1d_params] * len(ad))
+
+        for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
+            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                log.warning(f"{ad.filename} has not been distortion corrected."
+                            " Sky subtraction is likely to be poor.")
+            eidx = 0
+            if apgrow:
+                # get value set in the interactive tool
+                apg = apgrow[idx]
+            else:
+                # get value for aperture growth from config
+                apg = params["aperture_growth"]
+            for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
+                axis = 0  # Note: transposed already
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                sky_model = fit_1D(sky, weights=sky_weights, **fit1d_params,
+                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
                                    axis=axis, plot=debug_plot).evaluate()
                 ext.data -= sky_model
+                eidx = eidx + 1
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2747,7 +2879,7 @@ class Spect(PrimitivesBASE):
 
         See Also
         --------
-        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
+        :meth:`~geminidr.core.primitives_spect.Spect.findApertures`
 
         """
 
@@ -2797,12 +2929,21 @@ class Spect(PrimitivesBASE):
                     # Pass the primitive configuration to the interactive object.
                     _config = self.params[self.myself()]
                     _config.update(**params)
-                    ext.APERTURE = interactive_trace_apertures(
-                        ext, _config, fit1d_params)
 
+                    title_overrides = {
+                        'max_missed': 'Max Missed',
+                        'max_shift':  'Max Shifted',
+                        'nsum':       'Lines to sum',
+                        'step':       'Tracing step',
+                    }
+                    ui_params = UIParameters(_config,
+                                             reinit_params=["max_missed", "max_shift", "nsum", "step"],
+                                             title_overrides=title_overrides)
+                    aperture_models = interactive_trace_apertures(
+                        ext, fit1d_params, ui_params=ui_params)
                 else:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    all_aperture_tables = []
+                    aperture_models = []
 
                     # For efficiency, we would like to trace all sources
                     #  simultaneously (like we do with arc lines), but we need
@@ -2812,7 +2953,7 @@ class Spect(PrimitivesBASE):
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(at.boxcar(spectrum, size=3))
+                        start = np.argmax(at.boxcar(spectrum, size=20))
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
@@ -2852,6 +2993,7 @@ class Spect(PrimitivesBASE):
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
                         try:
+                            # pylint: disable=repeated-keyword
                             _fit_1d = fit_1D(
                                 in_coords[dispaxis],
                                 domain=[0, ext.shape[dispaxis] - 1],
@@ -2869,6 +3011,7 @@ class Spect(PrimitivesBASE):
                             log.warning(
                                 f"Unable to trace aperture {aperture['number']}")
 
+                            # pylint: disable=repeated-keyword
                             _fit_1d = fit_1D(
                                 np.full_like(spectral_coords, c0),
                                 domain=[0, ext.shape[dispaxis] - 1],
@@ -2884,18 +3027,33 @@ class Spect(PrimitivesBASE):
                                 self.viewer.polygon(plot_coords, closed=False,
                                                     xfirst=(dispaxis == 1), origin=0)
 
-                        this_aptable = am.model_to_table(_fit_1d.model)
+                        aperture_models.append(_fit_1d.model)
 
-                        # Recalculate aperture limits after rectification
-                        apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
-                        this_aptable["aper_lower"] = \
-                            aperture["aper_lower"] #+ (location - apcoords.min())
-                        this_aptable["aper_upper"] = \
-                            aperture["aper_upper"] # - (apcoords.max() - location)
-                        all_aperture_tables.append(this_aptable)
+                all_aperture_tables = []
+                for model, aperture in zip(aperture_models, aptable):
+                    this_aptable = am.model_to_table(model)
 
-                    ext.APERTURE = vstack(all_aperture_tables,
-                                          metadata_conflicts="silent")
+                    # Recalculate aperture limits after rectification
+                    #apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
+                    this_aptable["number"] = aperture["number"]
+                    this_aptable["aper_lower"] = \
+                        aperture["aper_lower"] #+ (location - apcoords.min())
+                    this_aptable["aper_upper"] = \
+                        aperture["aper_upper"] # - (apcoords.max() - location)
+                    all_aperture_tables.append(this_aptable)
+
+                # If the traces have different orders, there will be missing
+                # values that vstack will mask, so we have to set those to zero
+                new_aptable = vstack(all_aperture_tables,
+                                     metadata_conflicts="silent")
+                colnames = new_aptable.colnames
+                new_col_order = (["number"] + sorted(c for c in colnames
+                                                     if c.startswith("c")) +
+                                 ["aper_lower", "aper_upper"])
+                for col in colnames:
+                    if isinstance(new_aptable[col], MaskedColumn):
+                        new_aptable[col] = new_aptable[col].filled(fill_value=0)
+                ext.APERTURE = new_aptable[new_col_order]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -3004,74 +3162,7 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
-    def _read_and_convert_linelist(self, filename, w2=None, in_vacuo=False):
-        """
-        Reads a standard-format linelist and returns a list of wavelengths
-        (in nm) and weights (if they are included in the file), converted to
-        air or vacuum if needed.
-
-        Parameters
-        ----------
-        filename : str
-            name of file to read
-        w2 : float
-            longest wavelength of data; used to determine if the linelist is
-            in Angstroms rather than nm (if it doesn't specify its units)
-        in_vacuo : bool
-            return vacuum wavelengths (rather than air)?
-
-        Returns
-        -------
-        tuple : wavelengths (in nm), and weights/None
-        """
-        def identity(x):
-            return x
-
-        r = re.compile(".*\sunits\s+(.+)")
-        units = None
-
-        with open(filename, "r") as f:
-            lines = f.readlines()
-
-        converter = None
-        while converter is None:
-            try:
-                next_line = lines.pop(0).strip()
-            except IndexError:  # run out of lines
-                raise OSError("AIR or VACUUM wavelengths not specified in "
-                              f"{filename}")
-
-            # We accept any case if there's a space before it, or require
-            # all caps, to avoid matching stuff like "Blair & Brown (2010)"
-            if " AIR" in next_line.upper() or "AIR" in next_line:
-                converter = air_to_vac if in_vacuo else identity
-            elif " VACUUM" in next_line.upper():
-                converter = identity if in_vacuo else vac_to_air
-            m = r.match(next_line)
-            if m:
-                try:
-                    units = u.Unit(m.group(1))
-                except ValueError:
-                    pass
-
-        wavelengths = np.genfromtxt(lines, usecols=[0])
-        try:
-            weights = np.genfromtxt(lines, usecols=[1])
-        except ValueError:
-            weights = None
-
-        if units:
-            wavelengths *= units
-        elif w2 is not None and wavelengths.min() > w2:
-            self.log.warning("Line list appears to be in Angstroms")
-            wavelengths *= u.AA
-        else:
-            wavelengths *= u.nm
-        # Return in nm
-        return converter(wavelengths).to(u.nm).value, weights
-
-    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None,
-                          in_vacuo=False):
+    def _get_arc_linelist(self, waves=None):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -3079,16 +3170,9 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
-        ext : single-slice AD object
-            Extension being calibrated (allows descriptors to be calculated).
-        w1 : float
-            Approximate shortest wavelength (nm).
-        w2 : float
-            Approximate longest wavelength (nm).
-        dw : float
-            Approximate dispersion (nm/pixel).
-        output : str ["air" | "vacuum"]
-            wavelength scale to get returned
+        waves : array / None
+            (approx) wavelengths of each pixel in nm. This is required in case
+            the linelist depends on resolution or wavelength setting.
 
         Returns
         -------
@@ -3101,10 +3185,9 @@ class Spect(PrimitivesBASE):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
-        return self._read_and_convert_linelist(filename, w2=w2,
-                                               in_vacuo=in_vacuo)
+        return wavecal.LineList(filename)
 
-    def _get_spectrophotometry(self, filename):
+    def _get_spectrophotometry(self, filename, in_vacuo=False):
         """
         Reads a file containing spectrophotometric data for a standard star
         and returns these data as a Table(), with unit information. We
@@ -3121,12 +3204,14 @@ class Spect(PrimitivesBASE):
         ----------
         filename: str
             name of file containing spectrophotometric data
+        in_vacuo: bool/None
+            are the wavelengths in the spectrophotometry file in vacuo?
 
         Returns
         -------
         Table:
-            the spectrophotometric data, with columns 'WAVELENGTH',
-            'WIDTH', and 'FLUX'
+            the spectrophotometric data, with columns 'WAVELENGTH_AIR',
+            'WAVELENGTH_VACUUM', 'WIDTH', and 'FLUX'
 
         Raises
         ------
@@ -3182,7 +3267,7 @@ class Spect(PrimitivesBASE):
                         unit = u.Unit("erg cm-2 s-1 AA-1")
                     else:
                         unit = u.mag
-                col.unit = unit
+            col.unit = unit
 
             # We've created a column called "MAGNITUDE" but it might be a flux
             if col.name == 'MAGNITUDE':
@@ -3193,6 +3278,18 @@ class Spect(PrimitivesBASE):
                 else:
                     col.name = 'FLUX'
 
+        wavecol = spec_table["WAVELENGTH"].quantity
+        if in_vacuo is None:
+            in_vacuo = min(wavecol) < 300 * u.nm
+
+        if in_vacuo:
+            spec_table["WAVELENGTH_VACUUM"] = spec_table["WAVELENGTH"]
+            spec_table["WAVELENGTH_AIR"] = vac_to_air(wavecol)
+        else:
+            spec_table["WAVELENGTH_AIR"] = spec_table["WAVELENGTH"]
+            spec_table["WAVELENGTH_VACUUM"] = air_to_vac(wavecol)
+        del spec_table["WAVELENGTH"]
+
         # If we don't have a flux column, create one
         if not 'FLUX' in spec_table.colnames:
             # Use ".data" here to avoid "mag" being in the unit
@@ -3200,275 +3297,8 @@ class Spect(PrimitivesBASE):
                                   * u.Unit("erg cm-2 s-1") / u.Hz)
         return spec_table
 
-    def _perform_piecewise_fit(self, data, peaks, arc_lines, pixel_start, wave_start,
-                               dw_start, kdsigma, order=3, min_lines_per_fit=15, k=1,
-                               arc_weights=None, debug=False):
-        """
-        This function performs fits in multiple regions of the 1D arc spectrum.
-        Given a starting location, a suitable fitting region is "grown" outwards
-        until it has at least the specified number of both input and output
-        coordinates to fit. A fit (usually linear, but quadratic if more than
-        half the arra yis being used and the final fit is order >= 2) is made
-        to this region and coordinate matches are found. The matches at the
-        extreme ends are then used as the starts of subsequent fits, moving
-        outwards until the edges of the data are reached.
-
-        Parameters
-        ----------
-        data : array (1D)
-            arc spectrum
-        peaks : array-like
-            pixel locations of detected arc lines
-        arc_lines : array-like
-            wavelengths of arc lines to be identified
-        pixel_start : float
-            pixel location from which to make initial regional fit
-        wave_start : float
-            wavelength that this pixel is believed to correspond to
-        dw_start : float
-            estimated dispersion per pixel
-        kdsigma : float
-            scale length for KDFitter (wavelength units)
-        order : int
-            order of Chebyshev fit providing complete solution
-        min_lines_per_fit : int
-            minimum number of peaks and arc lines needed to perform a regional fit
-        k : int
-            maximum number of arc lines to match each peak
-        arc_weights : array-like/None
-            weights of output coordinates
-        debug : bool
-            output additional debugging material?
-
-        Returns
-        -------
-        array : index in arc_lines that each peak has been matched to (the
-                value -1 means no match)
-        """
-        log = self.log
-        matches = np.full((len(peaks),), -1, dtype=int)
-        fits_to_do = [(pixel_start, wave_start, dw_start)]
-
-        dc0 = 10
-        match_radius = 2 * abs(dw_start)
-        while fits_to_do:
-            p0, c0, dw = fits_to_do.pop()
-            if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
-                p1 = p0
-            else:
-                p1 = 0
-            npeaks = narc_lines = 0
-            while (min(npeaks, narc_lines) < min_lines_per_fit and
-                   not (p0 - p1 < 0 and p0 + p1 >= len(data))):
-                p1 += 1
-                i1 = bisect(peaks, p0 - p1)
-                i2 = bisect(peaks, p0 + p1)
-                npeaks = i2 - i1
-                i1 = bisect(arc_lines, c0 - p1 * abs(dw))
-                i2 = bisect(arc_lines, c0 + p1 * abs(dw))
-                narc_lines = i2 - i1
-            c1 = p1 * dw
-
-            if p1 > 0.25 * len(data) and order >= 2:
-                m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
-                                            domain=[p0 - p1, p0 + p1])
-                m_init.c2.bounds = (-20, 20)
-            else:
-                m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
-                                            domain=[p0 - p1, p0 + p1])
-            m_init.c0.bounds = (c0 - dc0, c0 + dc0)
-            m_init.c1.bounds = (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))
-            log.debug("-" * 60)
-            log.debug("P0={:.2f} P1={:.2f} C0={:.4f}({:.4f}) C1={:.5f} "
-                      "dw={:.5f}".format(p0, p1, c0, dc0, c1, dw))
-            log.debug(f"{npeaks} peaks and {narc_lines} arc lines")
-
-            # Need to set in_weights=None as there aren't many lines so
-            # the fit could be swayed by a single very bright line
-            m_this = _fit_region(m_init, peaks, arc_lines, kdsigma, data=data,
-                                 in_weights=None, ref_weights=arc_weights,
-                                 matches=matches, k=k, plot=debug)
-            dw = 2 * m_this.c1 / np.diff(m_this.domain)[0]
-
-            # Add new matches to the list
-            new_matches = matching.match_sources(m_this(peaks), arc_lines, radius=match_radius)
-            for i, (m, p) in enumerate(zip(new_matches, peaks)):
-                if matches[i] == -1 and m > -1:
-                    if p0 - p1 <= p <= p0 + p1:
-                        # automatically removes old (bad) match
-                        matches[i] = m
-                        log.debug("    in={:10.4f}  ref={:10.4f}".format(p, arc_lines[m]))
-            try:
-                p_lo = peaks[matches > -1].min()
-            except ValueError:
-                log.debug("No matches at all")
-            else:
-                if p_lo < p0 <= pixel_start:
-                    arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
-                    fits_to_do.append((p_lo, arc_line, dw))
-                p_hi = peaks[matches > -1].max()
-                if p_hi > p0 >= pixel_start:
-                    arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
-                    fits_to_do.append((p_hi, arc_line, dw))
-            dc0 = 5 * abs(dw)
-        return matches
-
 
 # -----------------------------------------------------------------------------
-def _average_along_slit(ext, center=None, nsum=None):
-    """
-    Calculates the average of long the slit and its pixel-by-pixel variance.
-
-    Parameters
-    ----------
-    ext : `AstroData` slice
-        2D spectral image from which trace is to be extracted.
-
-    center : float or None
-        Center of averaging region (None => center of axis).
-
-    nsum : int
-        Number of rows/columns to combine
-
-    Returns
-    -------
-    data : array_like
-        Averaged data of the extracted region.
-
-    mask : array_like
-        Mask of the extracted region.
-
-    variance : array_like
-        Variance of the extracted region based on pixel-to-pixel variation.
-
-    extract_slice : slice
-        Slice object for extraction region.
-    """
-    slitaxis = ext.dispersion_axis() - 1
-    npix = ext.data.shape[slitaxis]
-
-    if nsum is None:
-        nsum = npix
-    if center is None:
-        center = 0.5 * npix
-
-    extract_slice = slice(max(0, int(center - 0.5 * nsum)),
-                          min(npix, int(center + 0.5 * nsum)))
-    data, mask, variance = _transpose_if_needed(ext.data, ext.mask, ext.variance,
-                                                transpose=(slitaxis == 1),
-                                                section=extract_slice)
-
-    # Create 1D spectrum; pixel-to-pixel variation is a better indicator
-    # of S/N than the VAR plane
-
-    # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
-    #  Use "variance=None" to make them pass again.
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
-
-    return data, mask, variance, extract_slice
-
-
-def _transpose_if_needed(*args, transpose=False, section=slice(None)):
-    """
-    This function takes a list of arrays and returns them (or a section of them),
-    either untouched, or transposed, according to the parameter.
-
-    Parameters
-    ----------
-    args : sequence of arrays
-        The input arrays.
-
-    transpose : bool
-        If True, return transposed versions.
-
-    section : slice object
-        Section of output data to return.
-
-    Returns
-    -------
-    list of arrays
-        The input arrays, or their transposed versions.
-    """
-    return list(None if arg is None
-                else arg.T[section] if transpose else arg[section] for arg in args)
-
-
-def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
-                ref_weights=None, matches=None, k=1, plot=False, data=None):
-    """
-    This function fits a region of a 1D spectrum (delimited by the domain of
-    the input Chebyshev model) using the KDTreeFitter. Only detected peaks
-    and arc lines within this domain (and a small border to prevent mismatches
-    when a feature is near the edge) are matched. An improved version of the
-    input model is returned.
-
-    Parameters
-    ----------
-    m_init : Model
-        initial model desccribing the wavelength solution
-    peaks : array-like
-        pixel locations of detected arc lines
-    arc_lines : array-like
-        wavelengths of plausible arc lines
-    kdsigma : float
-        scale length for KDFitter (wavelength units)
-    in_weights : array-like/None
-        weights of input coordinates
-    ref_weights : array-like/None
-        weights of output coordinates
-    matches : array, same length as peaks
-        existing matches (each element points to an index in arc_lines)
-    k : int
-        maximum number of arc lines to match each peak
-    plot : bool
-        plot this fit for debugging purposes?
-    data : array
-        full 1D arc spectrum (only used if plot=True)
-
-    Returns
-    -------
-    Model : improved model fit
-    """
-    p0 = np.mean(m_init.domain)
-    p1 = 0.5 * np.diff(m_init.domain)[0]
-    # We're only interested in fitting lines in this region
-    new_in_weights = (abs(peaks - p0) <= 1.05 * p1).astype(float)
-    if in_weights is not None:
-        new_in_weights *= in_weights
-    w0 = m_init.c0.value
-    w1 = abs(m_init.c1.value)
-    new_ref_weights = (abs(arc_lines - w0) <= 1.05 * w1).astype(float)
-    if ref_weights is not None:
-        new_ref_weights *= ref_weights
-    new_ref_weights = ref_weights
-
-    # Maybe consider two fits here, one with a large kdsigma, and then
-    # one with a small one (perhaps the second could use weights)?
-    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
-    m_init.linear = False  # supress warning
-    m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
-                    ref_weights=new_ref_weights, matches=matches, popsize=30, mutation=1.0)
-    if plot:
-        print(m_init.c0.value, m_init.c1.value, "->", m_this.c0.value, m_this.c1.value)
-        plt.ioff()
-        fig, ax = plt.subplots()
-        w = m_this(np.arange(len(data)))
-        dmax = np.max(data[max(0,int(p0-p1)):min(int(p0+p1),len(data)+1)])
-        wpeaks = m_this(peaks)
-        ax.plot(w, data / dmax, 'b-')
-        for wp in wpeaks:
-            ax.plot([wp, wp], [0, 2], 'r:')
-        for wl in arc_lines:
-            ax.plot([wl, wl], [0, 2], 'k-')
-        ax.set_ylim(0, 1.05)
-        ax.set_xlim(m_this(p0+p1) - 5, m_this(p0-p1) + 5)
-        ax.plot(m_this([p0-p1,p0-p1]), [0,2], 'g-')
-        ax.plot(m_this([p0+p1,p0+p1]), [0,2], 'g-')
-        plt.show()
-        plt.ion()
-    m_this.linear = True
-    return m_this
-
 
 def _extract_model_info(ext):
     if len(ext.shape) == 1:
@@ -3552,7 +3382,7 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
     return this_conserve
 
 
-def QESpline(coeffs, xpix, data, weights, boundaries, order):
+def QESpline(coeffs, waves, data, weights, boundaries, order):
     """
     Fits a cubic spline to data, allowing scaling renormalizations of
     contiguous subsets of the data.
@@ -3561,19 +3391,14 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
     ----------
     coeffs : array_like
         Scaling factors for CCDs 2+.
-
-    xpix : array
-        Pixel numbers (in general, 0..N).
-
+    waves : array
+        Wavelengths
     data : masked_array
         Data to be fit.
-
     weights: array
         Fitting weights (inverse standard deviations).
-
     boundaries: tuple
         The last pixel coordinate on each CCD.
-
     order: int
         Order of spline to fit.
 
@@ -3587,11 +3412,30 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
         scaling[boundary:] = coeff
     scaled_data = scaling * data
     scaled_weights = 1. / scaling if weights is None else (weights / scaling).astype(np.float64)
-    spline = am.UnivariateSplineWithOutlierRemoval(xpix, scaled_data,
-                                                            order=order, w=scaled_weights, niter=1, grow=0)
+    spline = am.UnivariateSplineWithOutlierRemoval(waves, scaled_data,
+                                                   order=order, w=scaled_weights, niter=1, grow=0)
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
                                                        scaled_weights)).sum() / (~spline.mask).sum()
     return result
+
+
+def resample_spec_table(spec_table, resample_interval):
+    # If we need to do this, we probably have ground-based
+    # spectrophotometry, so interpolate in WAVELENGTH_AIR
+    waves = spec_table["WAVELENGTH_AIR"].to(u.nm).value
+    new_waves_air = np.arange(min(waves), max(waves + 0.001),
+                              resample_interval)
+    new_waves_vac = air_to_vac(new_waves_air * u.nm)
+    new_fluxes = np.interp(new_waves_air, waves,
+                           spec_table["FLUX"]) * spec_table["FLUX"].unit
+    width_unit = spec_table["WIDTH"].unit
+    new_width = (resample_interval * u.nm).to(width_unit).value
+    new_widths = np.array([spec_table["WIDTH"][np.argmin(abs(waves-w))]
+                           if np.any(abs(waves-w)<1e-6) else new_width
+                           for w in new_waves_air]) * width_unit
+    t = Table([new_waves_air * u.nm, new_waves_vac, new_fluxes, new_widths],
+              names=["WAVELENGTH_AIR", "WAVELENGTH_VAC", "FLUX", "WIDTH"])
+    return t
 
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
@@ -3609,37 +3453,6 @@ def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Relative intensity")
     ax.set_title(title)
-
-
-def find_possible_central_wavelengths(data, arc_lines, peaks, c0, c1, kdsigma,
-                                      weights=None):
-    m_init = models.Chebyshev1D(degree=1, c0=c0, c1=c1,
-                                domain=[0, len(data) - 1])
-    m_init.c0.bounds = (c0 - 100, c0 + 100)
-    m_init.c1.bounds = (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))
-    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=5, k=1, method='differential_evolution')
-    m_out = fit_it(m_init, peaks, arc_lines, in_weights=weights)
-    c0_corr = get_center_from_correlation(data, arc_lines, peaks, 2, c0, c1)
-    center_tol = 5
-    centers = [c0]
-    for c in (m_out.c0.value, c0_corr):
-        if abs(c - c0) > center_tol:
-            centers.append(c)
-    return centers
-
-
-def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
-    len_data = len(data)
-    m = models.Chebyshev1D(degree=1, c0=c0, c1=c1, domain=[0, len_data-1])
-    w = m(np.arange(len_data))
-    fake_arc = np.zeros_like(w)
-    fake_data = np.zeros_like(w)
-    for p in m(peaks):
-        fake_data += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
-    for p in arc_lines:
-        fake_arc += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
-    p = correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
-    return c0 - 2 * p * c1/(len_data - 1)
 
 
 def plot_cosmics(ext, crmask):

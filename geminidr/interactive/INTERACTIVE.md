@@ -191,6 +191,15 @@ The only standard method is `visualize`.  You should provide a method/fields for
 primitive to access the results of your custom fit.  In the case of the `Fit1DVisualizer1`,
 this call is `results()`
 
+### show_user_message
+
+There is a helper method called `show_user_message` that will pop up a message dialog 
+for the user.  As an example:
+
+```python
+self.vis.show_user_message(f"Sigma slider changed to {val}")
+```
+
 ### make_modal
 
 There is a helper method called `make_modal` that will pop up a message in the webpage
@@ -220,6 +229,21 @@ def fn():
 self.do_later(fn)
 ```
 
+### show_ok_cancel
+
+There is a helper method called `show_ok_cancel`.  This is an updated way to make the
+bokeh show a standard javascript ok/cancel dialog and route the response, as a boolean,
+to some python code.  The python callback supplied will execute on the UI thread, so
+it can safely access bokeh components.
+
+Here is an example
+
+```python
+def im_a_callback(arg):
+    print(f"Callback made with {arg}")
+self.show_ok_cancel("Click OK or Cancel", im_a_callback)
+```
+
 ### make_ok_cancel_dialog
 
 There is a helper method called `make_ok_cancel_dialog`.  This is called on a bokeh
@@ -241,20 +265,28 @@ self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
                                                           reset_dialog_handler)
 ```
 
-### make_widgets_from_config
+### make_widgets_from_parameters
 
-The `PrimitiveVisualizer` has a `make_widgets_from_config` helper method.  For the 
-passed list of parameter names, this will build a panel of widgets to update the 
-corresponding config values.  This provides a quick and easy way to make a UI for 
-the config inputs to a primitive.  For this to work, the PrimitiveVisualizer must 
-be told about the config when it is constructed.  This is done with a few lines of 
+The `PrimitiveVisualizer` has a `make_widgets_from_parameters` helper method.  For the 
+passed parameters, defined in a `UIParameters`, this will build a panel of widgets 
+to update the corresponding parameters.  This provides a quick and easy way to make 
+a UI for the inputs to a primitive.  For this to work, the `PrimitiveVisualizer` must 
+be told about the parameters when it is constructed.  This is done with a few lines of 
 code in the primitive like so:
 
 ```python
 config = self.params[self.myself()]
 config.update(**params)
+ui_params = UIParams(config)
 # pass this config to the visualizer constructor
 ```
+
+The `UIParams` can also take a few extra arguments to fine tune it's behavior.  
+`params` is a list of all the parameters you want captured from the `Config`.
+`hidden_params` are the parameters to not automatically add in the 
+`make_widgets_from_parameters`, if you want to place them elsewhere.  You can add
+`title_overrides` to give a dictionary mapping of parameters to text to use in
+the UI instead of inferring them from the `Config`. 
 
 ## Tornado Handlers
 
@@ -302,7 +334,7 @@ Note that this code path is outside the bokeh event loop, so if you
 need to change the UI in response to a key press, you will want to use the
 `do_later` function provided in `PrimitiveVisualizer`
 
-## Controller/Tasks
+## Controller/Tasks/Handlers
 
 The key passing is currently used for working with selection bands and apertures.  
 The bands interface is built into the Fit1DVisualizer, but may be useful in building 
@@ -366,6 +398,33 @@ There is also a helper class called `RegionEditor`.  If you create an instance o
 this, it will make a text input that is linked to the `GIRegionModel`.  Just call
 `get_widget()` on the `RegionEditor` after you make it to get a widget you can add
 to a bokeh layout.
+
+### Handlers
+
+You can also define custom key handlers for the controller.  These allow you to
+map a key press over the figure to a function, along with some help text you
+want shown in the small help text in `controller_div`.  The function in your
+`Handler` should have a signature like `fn(key, x, y)`.
+
+```python
+def fn(key, x, y):
+    print(f"{key}: ({x}, {y})")
+h = Handler('q', 'Do something', fn)
+Controller(figure, None, None, controller_div, handlers=[h,])
+```
+
+
+
+## TabsTurboInjector
+
+The `Tabs` in `bokeh` do a poor job of managing the DOM.  If you have many tabs
+with content, it can drastically impair the performance.  As a workaround, you
+can initialize your tabs using the provided `TabsTurboInjector` in the `interactive`
+module.  First, you instantiate one of these helpers passing an empty bokeh `Tabs`
+to it to be managed.  Then, instead of adding child tab `Panel`s to your `Tabs`, 
+you call the injector's helper method to add the child with a passed title.
+
+A side effect of the injector is that, on tab changes, you'll get a momentary blank tab.
 
 ## Modules
 

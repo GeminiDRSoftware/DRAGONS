@@ -15,10 +15,9 @@ import numpy as np
 from astrodata import AstroData
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
-from astrodata import TagSet
+from astrodata import TagSet, Section
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
-from ..common import section_to_tuple
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -160,6 +159,9 @@ class AstroDataGemini(AstroData):
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
                 return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
+        elif self.phu.get('GCALLAMP') == 'No Value' and \
+             self.phu.get('GCALSHUT') == 'CLOSED':
+            return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
 
     @astro_data_tag
     def _type_site(self):
@@ -257,15 +259,15 @@ class AstroDataGemini(AstroData):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = (str if pretty else section_to_tuple)
+            value_filter = (str if pretty else Section.from_string)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
-                try:
-                    sections = '[1:{1},1:{0}]'.format(*self.data.shape)
-                except AttributeError:
+                if self.is_single:
+                    sections = '[1:{1},1:{0}]'.format(*self.shape)
+                else:
                     sections = ['[1:{1},1:{0}]'.format(*ext.shape)
-                                for ext in self.data]
+                                for ext in self]
             else:
                 sections = self.hdr.get(keyword)
             if self.is_single:

@@ -29,7 +29,7 @@ first step is to get and install Anaconda.  You can download it at:
     |anaconda_link|
 
 Choose the version of Python that suits your other Python needs.  DRAGONS is
-compatible with both Python 2.7 and 3.6.  We recommend that you install the
+compatible with Python 3.7.  We recommend that you install the standard
 Python 3 version of Anaconda, the specific Python version can be adjusted
 later.
 
@@ -80,8 +80,8 @@ If ``activate`` is still not found, you might have to add
 favorite text editor, and run the ``source`` command above again.
 
 .. note:: Sometimes the Anaconda installer will install the software in
-    ``~/anaconda2`` or ``~/anaconda3`` instead of simply ``~/anaconda``.  Just
-    check in your home directory which one of the three possibilities was used.
+    ``~/anaconda3`` instead of simply ``~/anaconda``.  Just
+    check in your home directory which one of the tow possibilities was used.
 
 The code Anaconda adds to the .bash_profile will automatically activate
 anaconda.  To activate or deactivate Anaconda manually::
@@ -101,11 +101,18 @@ the conda astronomy packages.
 The next step is to create a virtual environment and install the DRAGONS
 software and its dependencies in it.  The name of the environment can be
 anything you like.  Here we use "dragons" as the name and we install
-Python 3.6.
+Python 3.7.
 
 ::
 
-    $ conda create -n dragons python=3.6 stsci gemini
+    $ conda create -n dragons python=3.7 dragons
+
+    Or, to include things like ds9
+
+    $ conda create -n dragons python=3.7 dragons stsci
+
+Most users will probably want to install the extra astronomy tools that come
+with the ``stsci`` conda package.
 
 To use this environment, activate it::
 
@@ -118,18 +125,41 @@ command to your ``.bash_profile``, after the "conda init" block.
 .. note::
     As a side note, if you are going to use PyRAF regularly, for example to
     reduce Gemini data not yet supported in DRAGONS, you should be installing
-    Python 2.7 as well in a different environment, along with the ``iraf-all``
-    and ``pyraf-all`` conda packages.  PyRAF is very slow under Python 3.
-
-::
+    Python 2.7 **as well** in a different environment, along with the ``gemini``,
+    ``iraf-all`` and ``pyraf-all`` conda packages.  Do not use PyRAF from the
+    Python 3 environment; PyRAF is very slow under Python 3.
 
     $ conda create -n geminiconda python=2.7 iraf-all pyraf-all stsci gemini
 
+    DRAGONS and the Recipe System do not need IRAF, PyRAF.  Only DRAGONS v2
+    is compatible with Python 2.7.   See the Gemini website for information on
+    how to configure IRAF (|geminiiraf_link|)
 
-DRAGONS and the Recipe System to not need IRAF, PyRAF or Python 2.7, though
-all of DRAGONS is still compatible with Python 2.7.   See the Gemini
-website for information on how to configure IRAF
-(|geminiiraf_link|)
+.. _configure::
+
+Configure DRAGONS
+=================
+DRAGONS requires a configuration file located in ``~/.geminidr/``::
+
+    $ cd ~
+    $ mkdir .geminidr
+    $ cd .geminidr
+    $ touch rsys.cfg
+
+Open ``rsys.cfg`` with your favority editor and add these lines::
+
+    [calibs]
+    standalone = True
+    database_dir = ~/.geminidr/
+
+Then configure ``ds9`` buffer configurations::
+
+    $ cd ~
+    $ cp $CONDA_PREFIX/lib/python3.7/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
+    $ vi .bash_profile   # or use your favorite editor
+
+      Add this line to the .bash_profile:
+        export IMTOOLRC=~/.imtoolrc
 
 
 .. _test:
@@ -161,7 +191,7 @@ of your file)::
 
 If all is well, you will see something like::
 
-			--- reduce, v2.0.8 ---
+			--- reduce, v3.0.0 ---
     All submitted files appear valid
     Found 'prepare' as a primitive.
     ================================================================================
