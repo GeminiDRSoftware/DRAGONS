@@ -11,19 +11,20 @@
 </table>
 
 # Current Status
-**The stable version is v2.1.1.**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4025480.svg)](https://doi.org/10.5281/zenodo.4025480) DRAGONS is distributed as a conda package, *dragons*, and it is 
+**The stable version is v3.0.0.**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5565540.svg)](https://doi.org/10.5281/zenodo.5565540) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 2.1.1 is recommend of the reduction of **imaging** data from Gemini's
+Version 3.0.0 is recommended for the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI.
 
-There is no spectroscopy support in this release.  To reduce Gemini spectroscopy
-data, please continue to use the [Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
+There is now basic GMOS longslit support in DRAGONS to use only
+for quicklook purposes.  To reduce Gemini spectroscopy
+data for science purposes, please continue to use the [Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
 
-To install:
+To install DRAGONS:
 
 ```
-$ conda create -n geminiconda python=3.6 gemini stsci
+$ conda create -n dragons python=3.7 dragons stsci
 ```
 
 You might need to add two relevant conda channels if you haven't already:
@@ -34,7 +35,7 @@ $ conda config --add channels http://astroconda.gemini.edu/public
 ```
 
 
-A list of changes since 2.1.0. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v2.1.1/changes.html).
+A list of changes since 2.1.1. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v3.0.0/changes.html).
 
 ---
 # What is DRAGONS
@@ -47,9 +48,9 @@ reduction of Gemini data.
 ---
 
 # Documentation
-Documentation on DRAGONS v2.1 is available on "readthedocs" at:
+Documentation on DRAGONS v3.0 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/en/stable
+* https://dragons.readthedocs.io/en/v3.0.0
 
 There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging data with DRAGONS.

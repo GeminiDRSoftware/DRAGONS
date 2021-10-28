@@ -106,13 +106,15 @@ example::
 
 From the mappers
 ----------------
-Wehn using the mappers directly, again the attribute to set in either mapper,
+When using the mappers directly, again the attribute to set in either mapper,
 |PrimitiveMapper| or |RecipeMapper|, is ``drpkg``.  For example::
 
     >>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
     >>> from recipe_system.mappers.recipeMapper import RecipeMapper
-    >>> pm = PrimitiveMapper([ad], drpkg='mydrpkg')
-    >>> rm = RecipeMapper([ad], drpkg='mydrpkg')
+    >>> tags = ad.tags
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> pmapper = PrimitiveMapper(tags, instpkg, drpkg='mydrpkg')
+    >>> rmapper = RecipeMapper(tags, instpkg, drpkg='mydrpkg')
 
 
 
@@ -219,4 +221,4 @@ configuration layers are found in the package ``gemini_instruments``.  The
 convention is to name the modules with the tags and descriptor ``adclass.py``.
 This is just a convention.
 
-For more information on the AstroData configuration, see the |ADProg|_.
+For more information on the AstroData configuration, see the |astrodataprog|.

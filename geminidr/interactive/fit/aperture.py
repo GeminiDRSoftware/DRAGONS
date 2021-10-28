@@ -382,7 +382,8 @@ class FindSourceAperturesModel:
             # Find if parameters that would change the profile have
             # been modified
             recompute_profile = False
-            for name in ('min_sky_region', 'percentile', 'section', 'use_snr'):
+            for name in ('min_sky_region', 'percentile', 'section',
+                         'min_snr', 'use_snr'):
                 if self.profile_params[name] != self.aper_params[name]:
                     recompute_profile = True
                     break
@@ -397,8 +398,7 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.direction, self.threshold, self.sizing_method,
-                self.use_snr)
+                self.threshold, self.sizing_method, self.min_snr)
 
         self.aperture_models.clear()
 
@@ -746,8 +746,8 @@ class ApertureView:
         self.fig.x_range.on_change('end', lambda attr, old, new:
                                    self.update_viewport(end=new))
 
-        self.annotations_source = ColumnDataSource(data=dict(id=[], start=[], end=[]))
-        self.labels = LabelSet(x='end', y=380, y_units='screen', text='id',
+        self.annotations_source = ColumnDataSource(data=dict(id=[], text=[], start=[], end=[]))
+        self.labels = LabelSet(x='end', y=380, y_units='screen', text='text',
                                y_offset=2, source=self.annotations_source, render_mode='canvas')
         self.fig.add_layout(self.labels)
 
@@ -782,6 +782,7 @@ class ApertureView:
         plot = AperturePlotView(self.fig, model)
         self.widgets[aperture_id] = plot
         self.annotations_source.stream({'id': [model.source.data['id'][0], ],
+                                        'text': [str(model.source.data['id'][0]), ],
                                         'start': [model.source.data['start'][0], ],
                                         'end': [model.source.data['end'][0], ]})
 
@@ -791,21 +792,23 @@ class ApertureView:
             plot = self.widgets[aperture_id]
             plot.delete()
             del self.widgets[aperture_id]
-            newdata = {'id': [], 'start': [], 'end': []}
-            for i in range(len(self.annotations_source.data['id'])):
+            newdata = {'id': [], 'text': [], 'start': [], 'end': []}
+            for i in range(len(self.annotations_source.data['text'])):
                 if self.annotations_source.data['id'][i] != aperture_id:
                     newdata['id'].append(self.annotations_source.data['id'][i])
+                    newdata['text'].append(self.annotations_source.data['text'][i])
                     newdata['start'].append(self.annotations_source.data['start'][i])
                     newdata['end'].append(self.annotations_source.data['end'][i])
             self.annotations_source.data = newdata
 
     def renumber_apertures(self):
         new_widgets = {}
-        newlabeldata = {'id': [], 'start': [], 'end': []}
+        newlabeldata = {'id': [], 'text': [], 'start': [], 'end': []}
         for plot in self.widgets.values():
             aperture_id = plot.model.source.data['id'][0]
             new_widgets[aperture_id] = plot
             newlabeldata['id'].append(aperture_id)
+            newlabeldata['text'].append(str(aperture_id))
             newlabeldata['start'].append(plot.model.source.data['start'])
             newlabeldata['end'].append(plot.model.source.data['end'])
         self.annotations_source.data = newlabeldata
@@ -873,7 +876,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             fresh sets as needed
         """
         super().__init__(title='Find Source Apertures',
-                         primitive_name='findSourceApertures',
+                         primitive_name='findApertures',
                          filename_info=filename_info)
         self.model = model
         self.fig = None
@@ -912,7 +915,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 reset_button.disabled = True
                 def fn():
                     model.reset()
-                    for widget in (maxaper, minsky, use_snr,
+                    for widget in (maxaper, minsky, use_snr, min_snr,
                                    threshold, percentile, sizing):
                         widget.reset()
                     self.model.recalc_apertures()
@@ -935,8 +938,10 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                 attr="percentile", start=0, end=100, step=1)
         minsky = SpinnerInputLine("Min sky region", model,
                                   attr="min_sky_region", low=0)
-        use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
-                               handler=_use_snr_handler)
+        use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
+                               attr="use_snr", handler=_use_snr_handler)
+        min_snr = TextSlider("SNR threshold for peak detection", model,
+                             attr="min_snr", start=0.1, end=10, step=0.1)
         sections = TextInputLine("Sections", model, attr="section",
                                  placeholder="e.g. 100:900,1500:2000")
 
@@ -967,6 +972,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             percentile.build(),
             minsky.build(),
             use_snr.build(),
+            min_snr.build(),
             sections.build(),
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),

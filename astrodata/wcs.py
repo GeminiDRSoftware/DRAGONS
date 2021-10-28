@@ -225,7 +225,6 @@ def gwcs_to_fits(ndd, hdr=None):
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
-
 def model_is_affine(model):
     """"
     Test a Model for affinity. This is currently done by checking the
@@ -245,6 +244,7 @@ def model_is_affine(model):
         return model.__class__.__name__[:5] in ('Affin', 'Rotat', 'Scale',
                                                 'Shift', 'Ident', 'Mappi',
                                                 'Const')
+
 
 def calculate_affine_matrices(func, shape):
     """
@@ -357,6 +357,7 @@ def read_wcs_from_header(header):
     wcs_info['CD'] = cd
     return wcs_info
 
+
 def get_axes(header):
     """
     Matches input with spectral and sky coordinate axes.
@@ -386,8 +387,7 @@ def get_axes(header):
     spec_inmap = []
     unknown = []
     skysystems = np.array(list(sky_pairs.values())).flatten()
-    for ax in ctype:
-        ind = ctype.index(ax)
+    for ind, ax in enumerate(ctype):
         if ax in specsystems:
             spec_inmap.append(ind)
         elif ax in skysystems:
@@ -423,6 +423,7 @@ def _is_skysys_consistent(ctype, sky_inmap):
             sky_inmap.reverse()
             break
 
+
 def _get_contributing_axes(wcs_info, world_axes):
     """
     Returns a tuple indicating which axes in the pixel frame make a
@@ -447,6 +448,7 @@ def _get_contributing_axes(wcs_info, world_axes):
         return sorted(np.nonzero(cd[world_axes, :wcs_info['NAXIS']])[0])
     #return sorted(set(j for j in range(wcs_info['NAXIS'])
     #                    for i in world_axes if cd[i, j] != 0))
+
 
 def make_fitswcs_transform(header):
     """
@@ -494,6 +496,7 @@ def make_fitswcs_transform(header):
 
     return functools.reduce(core._model_oper('|'), transforms)
 
+
 def fitswcs_image(header):
     """
     Make a complete transform from CRPIX-shifted pixels to
@@ -518,10 +521,11 @@ def fitswcs_image(header):
     # get the part of the PC matrix corresponding to the imaging axes
     sky_axes, spec_axes, unknown = get_axes(wcs_info)
     if not sky_axes:
-        if len(unknown) == 2:
-            sky_axes = unknown
-        else:  # No sky here
-            return
+        return
+        #if len(unknown) == 2:
+        #    sky_axes = unknown
+        #else:  # No sky here
+        #    return
     pixel_axes = _get_contributing_axes(wcs_info, sky_axes)
     if len(pixel_axes) > 2:
         raise ValueError("More than 2 pixel axes contribute to the sky coordinates")
@@ -559,6 +563,7 @@ def fitswcs_image(header):
                            'output_axes': sky_axes})
     return sky_model
 
+
 def fitswcs_linear(header):
     """
     Create WCS linear transforms for any axes not associated with
@@ -587,8 +592,8 @@ def fitswcs_linear(header):
     crval = wcs_info['CRVAL']
     # get the part of the CD matrix corresponding to the imaging axes
     sky_axes, spec_axes, unknown = get_axes(wcs_info)
-    if not sky_axes and len(unknown) == 2:
-        unknown = []
+    #if not sky_axes and len(unknown) == 2:
+    #    unknown = []
 
     linear_models = []
     for ax in spec_axes + unknown:

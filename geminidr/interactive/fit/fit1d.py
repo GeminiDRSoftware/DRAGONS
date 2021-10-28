@@ -884,7 +884,7 @@ class Fit1DPanel:
         This is used when we initially build the figure, but also as a listener for
         whenever the data changes.
         """
-        if not hasattr(self, 'p_main'):
+        if not hasattr(self, 'p_main') or self.p_main is None:
             # This may be a subclass, p_main is not being stored so nothing to reset
             return
 

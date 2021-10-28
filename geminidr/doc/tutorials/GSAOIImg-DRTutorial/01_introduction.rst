@@ -29,10 +29,10 @@ machine. You can test that by typing the following commands:
 
 .. code-block:: bash
 
-    $ conda activate geminiconda
+    $ conda activate dragons
     $ python -c "import astrodata"
 
-Where ``geminiconda`` is the name of the conda environment where DRAGONS should
+Where ``dragons`` is the name of the conda environment where DRAGONS should
 be installed. If you have an error message, make sure:
 
     - Anaconda or MiniConda is properly installed;

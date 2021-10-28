@@ -37,7 +37,7 @@ SCRIPTS = [
 ]
 SCRIPTS += [
     os.path.join('gempy', 'scripts', name)
-    for name in ('dataselect', 'fwhm_histogram', 'gmosn_fix_headers',
+    for name in ('dataselect', 'dgsplot', 'fwhm_histogram', 'gmosn_fix_headers',
                  'gmoss_fix_HAM_BPMs.py', 'gmoss_fix_headers.py',
                  'pipeline2iraf', 'profile_all_obj', 'psf_plot', 'showrecipes',
                  'showd', 'showpars', 'typewalk', 'zp_histogram')
@@ -83,7 +83,7 @@ setup(name='dragons',
           'astropy>=4.2',
           'astroquery',
           'astroscrappy',
-          'bokeh',
+          'bokeh>=2.3',
           'bottleneck',
           'future',
           'gwcs>=0.14',

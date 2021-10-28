@@ -1460,6 +1460,12 @@ class TabsTurboInjector:
             The new selection
         """
         if old != new:
+            def clear_old_tab():
+                self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[old]
+            # clear the old tab via an event on the UI loop
+            # we don't want to do it right now - wait until the tab change has happened
+            do_later(clear_old_tab)
+
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
             # Have to clear the old tab contents with a future callback or bokeh Tabs interface freaks out
 

@@ -20,6 +20,7 @@ from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
+from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip
 from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
@@ -46,7 +47,7 @@ from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list, transpose_if_needed
-from gempy.library.config import RangeField, Config
+from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
@@ -220,6 +221,312 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+    def attachWavelengthSolution(self, adinputs=None, **params):
+        """
+        Attach the distortion map (a Chebyshev2D model) and the mapping from
+        distortion-corrected pixels to wavelengths (a Chebyshev1D model, when
+        available after successful line matching) from a processed arc, or
+        similar wavelength reference, to the WCS of the input data.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D spectral images.
+        suffix : str
+            Suffix to be added to output files.
+        arc : :class:`~astrodata.AstroData` or str or None
+            Arc(s) containing distortion map & wavelength calibration.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Modified input objects with the WCS updated for each extension.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+        arc = params["arc"]
+
+        # Get a suitable arc frame (with distortion map) for every science AD
+        if arc is None:
+            arc_list = self.caldb.get_processed_arc(adinputs)
+        else:
+            arc_list = (arc, None)
+
+        fail = False
+
+        adoutputs = []
+        # Provide an arc AD object for every science frame, and an origin
+        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
+                                                  force_ad=(1,))):
+            # We don't check for a timestamp since it's not unreasonable
+            # to do multiple distortion corrections on a single AD object
+
+            len_ad = len(ad)
+            if arc is None:
+                log.warning(f"{ad.filename}: no arc was specified. "
+                            "Continuing.")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+                # By analogy with distortionCorrect, we should probably still
+                # attach the mosaic transform here if there's no arc and the
+                # data are not already mosaicked, but it would be better to
+                # separate that out into a different step anyway (and call it
+                # here if necessary), so leave that for further refactoring
+                # and just keep the original WCS for now (which currently won't
+                # prevent distortionCorrect from mosaicking the data).
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
+                        f"{origin_str}")
+            len_arc = len(arc)
+            if len_arc not in (1, len_ad):
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{arc.filename} had {len_arc} extensions so "
+                            "cannot calibrate the distortion.")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
+                log.warning("Science frame and arc have different binnings.")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+            # Read all the arc's distortion maps. Do this now so we only have
+            # one block of reading and verifying them
+            distortion_models, wave_models, wave_frames = [], [], []
+            for ext in arc:
+                wcs = ext.nddata.wcs
+
+                # Any failures must be handled in the outer loop processing
+                # ADs, so just set the found transforms to empty and present
+                # the warning at the end
+                try:
+                    if 'distortion_corrected' not in wcs.available_frames:
+                        distortion_models = []
+                        break
+                except AttributeError:
+                    distortion_models = []
+                    break
+
+                m_distcorr = wcs.get_transform(wcs.input_frame,
+                                               'distortion_corrected')
+                distortion_models.append(m_distcorr)
+
+                try:
+                    wave_model = am.get_named_submodel(wcs.forward_transform,
+                                                       'WAVE')
+                except IndexError:
+                    wave_models.append(None)
+                    wave_frames.append(None)
+                else:
+                    wave_models.append(wave_model)
+                    wave_frames.extend([frame for frame in wcs.output_frame.frames
+                                        if isinstance(frame, cf.SpectralFrame)])
+
+            if not distortion_models:
+                log.warning("Could not find a 'distortion_corrected' frame "
+                            f"in arc {arc.filename} extension {ext.id} - "
+                            "continuing")
+                if 'sq' in self.mode:
+                    fail = True
+                continue
+
+            # Determine whether we're producing a single-extension AD
+            # or keeping the number of extensions as-is
+            if len_arc == 1:
+
+                distortion_models *= len_ad
+                wave_models *= len_ad
+                wave_frames *= len_ad
+
+                # Save spatial WCS from input ext we're transforming WRT:
+                ref_idx = transform.find_reference_extension(ad)
+                sky_models = [
+                    am.get_named_submodel(ad[ref_idx].wcs.forward_transform,
+                                          'SKY')
+                ] * len_ad
+                output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
+
+                arc_detsec = arc.detector_section()[0]
+                ad_detsec = ad.detector_section()
+                if len_ad > 1:
+                    # We need to apply the mosaicking geometry, and add the
+                    # same distortion correction to each input extension.
+                    geotable = import_module('.geometry_conf', self.inst_lookups)
+                    transform.add_mosaic_wcs(ad, geotable)
+                    for ext in ad:
+                        # TODO: use insert_frame() method
+                        new_pipeline = []
+                        for item in ext.wcs.pipeline:
+                            if item[0].name == 'mosaic':
+                                new_pipeline.extend([(item[0], m_distcorr),
+                                                     (cf.Frame2D(name='distortion_corrected'), None)])
+                                break
+                            else:
+                                new_pipeline.append(item)
+                        ext.wcs = gWCS(new_pipeline)
+
+                    # We need to consider the different pixel frames of the
+                    # science and arc. The input->mosaic transform of the
+                    # science maps to the default pixel space, but the arc
+                    # will have had an origin shift before the distortion
+                    # correction was calculated.
+                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
+                                                        arc_detsec)]
+                    xoff1, yoff1 = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
+                    if xoff1 or yoff1:
+                        log.debug(f"Found a shift of ({xoff1},{yoff1}) "
+                                  f"pixels between {ad.filename} and the "
+                                  f"calibration {arc.filename}")
+                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).max(axis=0),
+                                                        arc_detsec)]
+                    xoff2, yoff2 = shifts[1] / xbin, shifts[3] / ybin  # x2, y2
+                    nzeros = [xoff1, xoff2, yoff1, yoff2].count(0)
+                    if nzeros < 2:
+                        raise ValueError("I don't know how to process the "
+                                         f"offsets between {ad.filename} "
+                                         f"and {arc.filename}")
+
+                    arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
+                                       ext.shape[1] - xoff1 + xoff2) for ext in ad]
+                    arc_corners = np.concatenate([transform.get_output_corners(
+                        ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                        input_shape=arc_shape, origin=(yoff1, xoff1))
+                        for ext, arc_shape in zip(ad, arc_ext_shapes)], axis=1)
+                    arc_origin = tuple(np.ceil(min(corners)) for corners in arc_corners)
+
+                    # So this is what was applied to the ARC to get the
+                    # mosaic frame to its pixel frame, in which the distortion
+                    # correction model was calculated. Convert coordinates
+                    # from python order to Model order.
+                    origin_shift = reduce(Model.__and__, [models.Shift(-origin)
+                                          for origin in arc_origin[::-1]])
+
+                    for ext in ad:
+                        ext.wcs.insert_transform('mosaic', origin_shift, after=True)
+
+                    # ARC and AD aren't the same size
+                    if nzeros < 4:
+                        ad_corners = np.concatenate([transform.get_output_corners(
+                            ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
+                            input_shape=ext.shape) for ext in ad], axis=1)
+                        ad_origin = tuple(np.ceil(min(corners)) for corners in ad_corners)
+
+                        # But a full-frame ARC and subregion AD may have different
+                        # origin shifts. We only care about the one in the
+                        # wavelength direction, since we need the AD to be on the
+                        # same pixel basis before applying the new wave_model
+                        offsets = tuple(o_ad - o_arc
+                                        for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
+                        # len(arc)=1 so we only have one wave_model, but need to
+                        # update the entry in the list, which gets used later
+                        if wave_model is not None:
+                            offset = offsets[ext.dispersion_axis()-1]
+                            if offset != 0:
+                                wave_model.name = None
+                                wave_models[0] = models.Shift(offset) | wave_model
+                                wave_models[0].name = 'WAVE'
+
+                else:
+                    # Single-extension AD, with single Transform
+                    ad_detsec = ad.detector_section()[0]
+                    if ad_detsec != arc_detsec:
+                        if self.timestamp_keys['mosaicDetectors'] in ad.phu:
+                            # Shouldn't this be allowed with a full-frame arc?
+                            log.warning("Cannot calibrate distortions in "
+                                        "mosaicked data unless arc has the "
+                                        "same ROI. Continuing.")
+                            if 'sq' in self.mode:
+                                fail = True
+                            adoutputs.append(ad)
+                            continue
+                        # No mosaicking, so we can just do a shift
+                        m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
+                                   models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
+                        m_distcorr = m_shift | m_distcorr
+                    # TODO: use insert_frame method
+                    new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
+                                    (cf.Frame2D(name='distortion_corrected'), None)]
+                    ad[0].wcs = gWCS(new_pipeline)
+
+                if wave_model is None:
+                    log.warning(f"{arc.filename} has no wavelength solution")
+                    if 'sq' in self.mode:
+                        fail = True
+
+            else:
+                log.warning("Distortion calibration with multiple-extension "
+                            "arcs has not been tested.")
+
+                sky_models, output_frames = [], []
+
+                for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
+                    # Save spatial WCS from input ext we're transforming WRT:
+                    sky_models.append(
+                        am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
+                    )
+                    output_frames.append(ext.wcs.output_frame.frames)
+
+                    # Shift science so its pixel coords match the arc's before
+                    # applying the distortion correction
+                    shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
+                                                        ext_arc.detector_section())]
+                    dist_model = (models.Shift(shifts[0] / xbin) &
+                                  models.Shift(shifts[1] / ybin)) | dist_model
+                    # TODO: use insert_frame method
+                    new_pipeline = [(ext.wcs.input_frame, dist_model),
+                                    (cf.Frame2D(name='distortion_corrected'), None)]
+                    ext.wcs = gWCS(new_pipeline)
+
+                    if wave_model is None:
+                        log.warning(f"{arc.filename} extension {ext.id} has "
+                                    "no wavelength solution")
+                        if 'sq' in self.mode:
+                            fail = True
+
+            for i, (ext, wave_model, wave_frame, sky_model, output_frame) in \
+              enumerate(zip(ad, wave_models, wave_frames, sky_models,
+                            output_frames)):
+
+                if ext.dispersion_axis() == 1:
+                    t = wave_model & sky_model
+                else:
+                    t = sky_model & wave_model
+                # We need to create a new output frame with a copy of the
+                # ARC's SpectralFrame in case there's a change from air->vac
+                # or vice versa
+                new_output_frame = cf.CompositeFrame(
+                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame)
+                     else frame for frame in output_frame], name='world'
+                )
+                ext.wcs.insert_frame('distortion_corrected', t,
+                                     new_output_frame)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad)
+            if arc.path:
+                add_provenance(ad, arc.filename, md5sum(arc.path) or "", self.myself())
+
+        if fail:
+            raise OSError("No suitable arc calibration for one or more "
+                          "input(s)")
+
+        return adoutputs
+
     def calculateSensitivity(self, adinputs=None, **params):
         """
         Calculates the overall sensitivity of the observation system
@@ -288,6 +595,7 @@ class Spect(PrimitivesBASE):
         datafile = params["filename"]
         in_vacuo = params["in_vacuo"]
         bandpass = params["bandpass"]
+        resample_interval = params["resampling"]
         airmass0 = params["debug_airmass0"]
         debug_plot = params["debug_plot"]
         interactive = params["interactive"]
@@ -337,6 +645,9 @@ class Spect(PrimitivesBASE):
             if 'WIDTH' not in spec_table.colnames:
                 log.warning(f"Using default bandpass of {bandpass} nm")
                 spec_table['WIDTH'] = bandpass * u.nm
+
+            if resample_interval:
+                spec_table = resample_spec_table(spec_table, resample_interval)
 
             # Do some checks now to avoid failing on every extension
             if airmass0:
@@ -700,8 +1011,9 @@ class Spect(PrimitivesBASE):
 
     def distortionCorrect(self, adinputs=None, **params):
         """
-        Corrects optical distortion in science frames using a `processed_arc`
-        with attached distortion map (a Chebyshev2D model).
+        Corrects optical distortion in science frames, using a distortion map
+        (a Chebyshev2D model, usually from a processed arc) that has previously
+        been attached to each input's WCS by attachWavelengthSolution.
 
         If the input image requires mosaicking, then this is done as part of
         the resampling, to ensure one, rather than two, interpolations.
@@ -709,11 +1021,9 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            2D spectral images.
+            2D spectral images with appropriately-calibrated WCS.
         suffix : str
             Suffix to be added to output files.
-        arc : :class:`~astrodata.AstroData` or str or None
-            Arc(s) containing distortion map.
         order : int (0 - 5)
             Order of interpolation when resampling.
         subsample : int
@@ -729,7 +1039,6 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
-        arc = params["arc"]
         order = params["order"]
         subsample = params["subsample"]
         do_cal = params["do_cal"]
@@ -738,257 +1047,107 @@ class Spect(PrimitivesBASE):
             log.warning('Distortion correction has been turned off.')
             return adinputs
 
-        # Get a suitable arc frame (with distortion map) for every science AD
-        if arc is None:
-            arc_list = self.caldb.get_processed_arc(adinputs)
-        else:
-            arc_list = (arc, None)
+        fail = False
 
         adoutputs = []
-        # Provide an arc AD object for every science frame, and an origin
-        for ad, arc, origin in zip(*gt.make_lists(adinputs, *arc_list,
-                                                  force_ad=(1,))):
+        for ad in adinputs:
+
             # We don't check for a timestamp since it's not unreasonable
             # to do multiple distortion corrections on a single AD object
 
-            len_ad = len(ad)
-            if arc is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    # TODO: Think about this when we have MOS/XD/IFU
-                    if len(ad) == 1:
-                        log.warning(f"{ad.filename}: no arc was specified. "
-                                    "Continuing.")
-                        adoutputs.append(ad)
-                    else:
-                        log.warning(f"{ad.filename}: no arc was specified. "
-                                    "Image will be mosaicked.")
-                        adoutputs.extend(self.mosaicDetectors([ad]))
-                    continue
-
-            origin_str = f" (obtained from {origin})" if origin else ""
-            log.stdinfo(f"{ad.filename}: using the arc {arc.filename}"
-                        f"{origin_str}")
-            len_arc = len(arc)
-            if len_arc not in (1, len_ad):
-                log.warning(f"{ad.filename} has {len_ad} extensions but "
-                            f"{arc.filename} had {len_arc} extensions so "
-                            "cannot correct the distortion.")
-                adoutputs.append(ad)
-                continue
-
-            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
-                log.warning("Science frame and arc have different binnings.")
-                adoutputs.append(ad)
-                continue
-
-            # Read all the arc's distortion maps. Do this now so we only have
-            # one block of reading and verifying them
-            distortion_models, wave_models, wave_frames = [], [], []
-            for ext in arc:
-                wcs = ext.nddata.wcs
-
-                # Any failures must be handled in the outer loop processing
-                # ADs, so just set the found transforms to empty and present
-                # the warning at the end
+            for ext in ad:
                 try:
-                    if 'distortion_corrected' in wcs.available_frames:
-                        pipeline = wcs.pipeline
-                    else:
-                        distortion_models = []
-                        break
-                except AttributeError:
-                    distortion_models = []
+                    idx = ext.wcs.available_frames.index('distortion_corrected')
+                except (ValueError, AttributeError):
+                    have_distcorr = False
+                else:
+                    have_distcorr = idx > 0
+                if not have_distcorr:
+                    log.warning('No distortion transformation attached to'
+                                f' {ad.filename}, extension {ext.id}')
                     break
 
-                # We could just pass the forward transform of the WCS, which
-                # already has its inverse attached, but the code currently
-                # relies on a no-op forward model to size the output correctly:
-                m_distcorr = models.Identity(2)
-                input_frame = wcs.input_frame
-                m_distcorr.inverse = wcs.get_transform(
-                    input_frame, 'distortion_corrected').inverse
-                distortion_models.append(m_distcorr)
+                # The resampling routine currently relies on a no-op forward
+                # distortion model to size the output correctly (while using
+                # the proper inverse for evaluating the sample points), so we
+                # replace that part of the WCS with Identity here. This hack
+                # gets uglier because any origin shift between arc & science
+                # ROIs that has been prefixed to the distortion model needs to
+                # be preserved; get rid of this at a later iteration by
+                # including ROI shifts in their own frame(s).
 
-                try:
-                    wave_model = am.get_named_submodel(wcs.forward_transform,
-                                                       'WAVE')
-                except IndexError:
-                    wave_models.append(None)
-                    wave_frames.append(None)
+                new_pipeline = ext.wcs.pipeline[:idx-1]
+                prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
+
+                if hasattr(m_distcorr, 'left') and (
+                    isinstance(m_distcorr.left, CompoundModel) and
+                    m_distcorr.left.n_outputs == 2 and
+                    all(isinstance(m, models.Shift) for m in m_distcorr.left)
+                ):
+                    m_dummy = m_distcorr.left | models.Identity(2)
                 else:
-                    wave_models.append(wave_model)
-                    wave_frames.extend([frame for frame in wcs.output_frame.frames
-                                        if isinstance(frame, cf.SpectralFrame)])
+                    m_dummy = models.Identity(2)
 
-            if not distortion_models:
-                log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in arc {arc.filename} extension {ext.id} - "
-                            "continuing")
+                m_dummy.inverse = m_distcorr.inverse
+                new_pipeline.append((prev_frame, m_dummy))
+                new_pipeline.extend(ext.wcs.pipeline[idx:])
+
+                ext.wcs = gWCS(new_pipeline)
+
+            if not have_distcorr:
+                # TODO: Think about this when we have MOS/XD/IFU
+                if 'sq' in self.mode or do_cal == 'force':
+                    fail = True
+                elif len(ad) == 1:
+                    adoutputs.append(ad)
+                else:
+                    # In further refactoring, the mosaic WCS should get added
+                    # at an earlier stage, separately from resampling.
+                    log.warning('Image will be mosaicked.')
+                    adoutputs.extend(self.mosaicDetectors([ad]))
                 continue
 
-            # Determine whether we're producing a single-extension AD
-            # or keeping the number of extensions as-is
-            if len_arc == 1:
-                arc_detsec = arc.detector_section()[0]
-                ad_detsec = ad.detector_section()
-                if len_ad > 1:
-                    # We need to apply the mosaicking geometry, and add the
-                    # same distortion correction to each input extension.
-                    geotable = import_module('.geometry_conf', self.inst_lookups)
-                    transform.add_mosaic_wcs(ad, geotable)
-                    for ext in ad:
-                        # TODO: use insert_frame() method
-                        new_pipeline = []
-                        for item in ext.wcs.pipeline:
-                            if item[0].name == 'mosaic':
-                                new_pipeline.extend([(item[0], m_distcorr),
-                                                     (cf.Frame2D(name='distortion_corrected'), item[1])])
-                            else:
-                                new_pipeline.append(item)
-                        ext.wcs = gWCS(new_pipeline)
+            # Do all the extension WCSs contain a mosaic frame, allowing us to
+            # resample them into a single mosaic at the same time as correcting
+            # distortions (they won't have if the arc wasn't mosaicked)?
+            mosaic = all('mosaic' in ext.wcs.available_frames if ext.wcs is not
+                         None else False for ext in ad)
 
-                    # We need to consider the different pixel frames of the
-                    # science and arc. The input->mosaic transform of the
-                    # science maps to the default pixel space, but the arc
-                    # will have had an origin shift before the distortion
-                    # correction was calculated.
-                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
-                                                        arc_detsec)]
-                    xoff1, yoff1 = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
-                    if xoff1 or yoff1:
-                        log.debug(f"Found a shift of ({xoff1},{yoff1}) "
-                                  f"pixels between {ad.filename} and the "
-                                  f"calibration {arc.filename}")
-                    shifts = [c2 - c1 for c1, c2 in zip(np.array(ad_detsec).max(axis=0),
-                                                        arc_detsec)]
-                    xoff2, yoff2 = shifts[1] / xbin, shifts[3] / ybin  # x2, y2
-                    nzeros = [xoff1, xoff2, yoff1, yoff2].count(0)
-                    if nzeros < 2:
-                        raise ValueError("I don't know how to process the "
-                                         f"offsets between {ad.filename} "
-                                         f"and {arc.filename}")
-
-                    arc_ext_shapes = [(ext.shape[0] - yoff1 + yoff2,
-                                       ext.shape[1] - xoff1 + xoff2) for ext in ad]
-                    arc_corners = np.concatenate([transform.get_output_corners(
-                        ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
-                        input_shape=arc_shape, origin=(yoff1, xoff1))
-                        for ext, arc_shape in zip(ad, arc_ext_shapes)], axis=1)
-                    arc_origin = tuple(np.ceil(min(corners)) for corners in arc_corners)
-
-                    # So this is what was applied to the ARC to get the
-                    # mosaic frame to its pixel frame, in which the distortion
-                    # correction model was calculated. Convert coordinates
-                    # from python order to Model order.
-                    origin_shift = reduce(Model.__and__, [models.Shift(-origin)
-                                          for origin in arc_origin[::-1]])
-
-                    for ext in ad:
-                        ext.wcs.insert_transform('mosaic', origin_shift, after=True)
-                        #ext.wcs.insert_transform('distortion_corrected',
-                        #                         origin_shift.inverse, after=False)
-
-                    # ARC and AD aren't the same size
-                    if nzeros < 4:
-                        ad_corners = np.concatenate([transform.get_output_corners(
-                            ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'),
-                            input_shape=ext.shape) for ext in ad], axis=1)
-                        ad_origin = tuple(np.ceil(min(corners)) for corners in ad_corners)
-
-                        # But a full-frame ARC and subregion AD may have different
-                        # origin shifts. We only care about the one in the
-                        # wavelength direction, since we need the AD to be on the
-                        # same pixel basis before applying the new wave_model
-                        offsets = tuple(o_ad - o_arc
-                                        for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
-                        # len(arc)=1 so we only have one wave_model, but need to
-                        # update the entry in the list, which gets used later
-                        if wave_model is not None:
-                            offset = offsets[ext.dispersion_axis()-1]
-                            if offset != 0:
-                                wave_model.name = None
-                                wave_models[0] = models.Shift(offset) | wave_model
-                                wave_models[0].name = 'WAVE'
-
-                else:
-                    # Single-extension AD, with single Transform
-                    ad_detsec = ad.detector_section()[0]
-                    if ad_detsec != arc_detsec:
-                        if self.timestamp_keys['mosaicDetectors'] in ad.phu:
-                            log.warning("Cannot distortionCorrect mosaicked "
-                                        "data unless calibration has the "
-                                        "same ROI. Continuing.")
-                            adoutputs.append(ad)
-                            continue
-                        # No mosaicking, so we can just do a shift
-                        m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
-                                   models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
-                        m_distcorr = m_shift | m_distcorr
-                    # TODO: use insert_frame method
-                    new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
-                                    (cf.Frame2D(name='distortion_corrected'), ad[0].wcs.pipeline[0][1])]
-                    new_pipeline.extend(ad[0].wcs.pipeline[1:])
-                    ad[0].wcs = gWCS(new_pipeline)
-
-                ad_out = transform.resample_from_wcs(ad, 'distortion_corrected',
-                                                     order=order, subsample=subsample,
-                                                     parallel=False)
-
-                if wave_model is None:
-                    log.warning(f"{arc.filename} has no wavelength solution")
-
+            if mosaic:
+                ad_out = transform.resample_from_wcs(
+                    ad, 'distortion_corrected', order=order,
+                    subsample=subsample, parallel=False
+                )
             else:
-                log.warning("Distortion correction with multiple-extension "
-                            "arcs has not been tested.")
-                for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
-                    # Shift science so its pixel coords match the arc's before
-                    # applying the distortion correction
-                    shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
-                                                        ext_arc.detector_section())]
-                    dist_model = (models.Shift(shifts[0] / xbin) &
-                                  models.Shift(shifts[1] / ybin)) | dist_model
-                    # TODO: use insert_frame method
-                    new_pipeline = [(ext.wcs.input_frame, dist_model),
-                                    (cf.Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0][1])]
-                    new_pipeline.extend(ext.wcs.pipeline[1:])
-                    ext.wcs = gWCS(new_pipeline)
+                for i, ext in enumerate(ad):
                     if i == 0:
-                        ad_out = transform.resample_from_wcs(ext, order=order,
-                                                             subsample=subsample,
-                                                             parallel=False)
+                        ad_out = transform.resample_from_wcs(
+                            ext, 'distortion_corrected', order=order,
+                            subsample=subsample, parallel=False
+                        )
                     else:
-                        ad_out.append(transform.resample_from_wcs(ext, order=order,
-                                                                  subsample=subsample,
-                                                                  parallel=False))
-                    if wave_model is None:
-                        log.warning(f"{arc.filename} extension {ext.id} has "
-                                    "no wavelength solution")
+                        ad_out.append(
+                            transform.resample_from_wcs(ext,
+                                                        'distortion_corrected',
+                                                        order=order,
+                                                        subsample=subsample,
+                                                        parallel=False)
+                        )
 
-            for i, (ext, wave_model, wave_frame) in enumerate(
-                    zip(ad_out, wave_models, wave_frames)):
-                # TODO: remove this; for debugging purposes only
-                if arc is not None and hasattr(arc[i], "WAVECAL"):
-                    ad_out[i].WAVECAL = arc[i].WAVECAL
-                sky_model = am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
-                if ext.dispersion_axis() == 1:
-                    t = wave_model & sky_model
-                else:
-                    t = sky_model & wave_model
-                # We need to create a new output frame with a copy of the
-                # ARC's SpectralFrame in case there's a change from air->vac
-                # or vice versa
-                new_output_frame = cf.CompositeFrame(
-                    [copy(wave_frame) if isinstance(frame, cf.SpectralFrame) else
-                     frame for frame in ext.wcs.output_frame.frames])
-                ext.wcs = gWCS([(ext.wcs.input_frame, t),
-                                (new_output_frame, None)])
+            # The WCS gets updated by resample_from_wcs. We should also make it
+            # save the (inverted) WCS pipeline components prior to resampling
+            # somehow, to allow mapping rectified co-ordinates back to detector
+            # pixels for calibration & inspection purposes.
+
             # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad_out, primname=self.myself(),
+                            keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad_out)
-            if arc.path:
-                add_provenance(ad_out, arc.filename, md5sum(arc.path) or "", self.myself())
+
+        if fail:
+            raise OSError("One or more input(s) missing distortion "
+                          "calibration; run attachWavelengthSolution first")
 
         return adoutputs
 
@@ -1412,6 +1571,8 @@ class Spect(PrimitivesBASE):
         min_sky_region : int
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
+        min_snr : float
+            minimum S/N ratio for detecting peaks (passed to find_peaks)
         use_snr : bool
             Convert data to SNR per pixel before collapsing and peak-finding?
         threshold : float (0 - 1)
@@ -1442,7 +1603,7 @@ class Spect(PrimitivesBASE):
 
         aper_params = {key: params[key] for key in (
             'max_apertures', 'min_sky_region', 'percentile',
-            'section', 'sizing_method', 'threshold', 'use_snr')}
+            'section', 'sizing_method', 'threshold', 'min_snr', 'use_snr')}
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -1486,7 +1647,7 @@ class Spect(PrimitivesBASE):
                                               c0=loc)
                     aptable = am.model_to_table(cheb)
                     lower, upper = limits - loc
-                    aptable["number"] = i
+                    aptable["number"] = np.int32(i)
                     aptable["aper_lower"] = lower
                     aptable["aper_upper"] = upper
                     all_tables.append(aptable)
@@ -2078,7 +2239,8 @@ class Spect(PrimitivesBASE):
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
 
-                data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=center, nsum=nsum)
+                data, mask, variance, extract_slice = tracing.average_along_slit(
+                    ext, center=center, nsum=nsum)
                 log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                             format(direction, extract_slice.start + 1, extract_slice.stop))
                 mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
@@ -2086,7 +2248,8 @@ class Spect(PrimitivesBASE):
 
                 masked_data = np.ma.masked_array(data, mask=mask)
                 weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                pixels = np.arange(len(masked_data))
+                center = (extract_slice.start + extract_slice.stop) // 2
+                waves = ext.wcs(range(len(masked_data)), center)[0]
 
                 # We're only going to do CCD-to-CCD normalization if we've
                 # done the mosaicking in this primitive; if not, we assume
@@ -2095,9 +2258,9 @@ class Spect(PrimitivesBASE):
                 if nslices > 1 and mosaicked:
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
-                    result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
+                    result = optimize.minimize(QESpline, coeffs, args=(waves, masked_data,
                                                                        weights, boundaries,
-                                                                       fit1d_params["order"]),
+                                                                       20),
                                                tol=1e-7, method='Nelder-Mead')
                     if not result.success:
                         log.warning(f"Problem with spline fitting: {result.message}")
@@ -2110,7 +2273,7 @@ class Spect(PrimitivesBASE):
                         weights[slice_] /= coeff
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                fit1d = fit_1D(masked_data, points=None, weights=weights,
+                fit1d = fit_1D(masked_data, points=waves, weights=weights,
                                **fit1d_params)
 
                 if not mosaicked:
@@ -2122,12 +2285,15 @@ class Spect(PrimitivesBASE):
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
-                origin = admos.nddata[0].meta.pop('transform')['origin']
-                origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
+                #origin = admos.nddata[0].meta.pop('transform')['origin']
+                #origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
                 for ext, wcs in zip(ad, orig_wcs):
-                    t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
-                    geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                    flat_data = fit1d.evaluate(geomap.coords[dispaxis])
+                    ypix, xpix = np.mgrid[:ext.shape[0], :ext.shape[1]]
+                    waves = wcs(xpix, ypix)[0]
+                    flat_data = np.array([fit1d.evaluate(w) for w in waves])
+                    #t = ext.wcs.get_transform(ext.wcs.input_frame, "mosaic") | origin_shift
+                    #geomap = transform.GeoMap(t, ext.shape, inverse=True)
+                    #flat_data = fit1d.evaluate(geomap.coords[dispaxis])
                     ext.divide(flat_data)
                     ext.wcs = wcs
 
@@ -3218,7 +3384,7 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
     return this_conserve
 
 
-def QESpline(coeffs, xpix, data, weights, boundaries, order):
+def QESpline(coeffs, waves, data, weights, boundaries, order):
     """
     Fits a cubic spline to data, allowing scaling renormalizations of
     contiguous subsets of the data.
@@ -3227,19 +3393,14 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
     ----------
     coeffs : array_like
         Scaling factors for CCDs 2+.
-
-    xpix : array
-        Pixel numbers (in general, 0..N).
-
+    waves : array
+        Wavelengths
     data : masked_array
         Data to be fit.
-
     weights: array
         Fitting weights (inverse standard deviations).
-
     boundaries: tuple
         The last pixel coordinate on each CCD.
-
     order: int
         Order of spline to fit.
 
@@ -3253,11 +3414,30 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
         scaling[boundary:] = coeff
     scaled_data = scaling * data
     scaled_weights = 1. / scaling if weights is None else (weights / scaling).astype(np.float64)
-    spline = am.UnivariateSplineWithOutlierRemoval(xpix, scaled_data,
-                                                            order=order, w=scaled_weights, niter=1, grow=0)
+    spline = am.UnivariateSplineWithOutlierRemoval(waves, scaled_data,
+                                                   order=order, w=scaled_weights, niter=1, grow=0)
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
                                                        scaled_weights)).sum() / (~spline.mask).sum()
     return result
+
+
+def resample_spec_table(spec_table, resample_interval):
+    # If we need to do this, we probably have ground-based
+    # spectrophotometry, so interpolate in WAVELENGTH_AIR
+    waves = spec_table["WAVELENGTH_AIR"].to(u.nm).value
+    new_waves_air = np.arange(min(waves), max(waves + 0.001),
+                              resample_interval)
+    new_waves_vac = air_to_vac(new_waves_air * u.nm)
+    new_fluxes = np.interp(new_waves_air, waves,
+                           spec_table["FLUX"]) * spec_table["FLUX"].unit
+    width_unit = spec_table["WIDTH"].unit
+    new_width = (resample_interval * u.nm).to(width_unit).value
+    new_widths = np.array([spec_table["WIDTH"][np.argmin(abs(waves-w))]
+                           if np.any(abs(waves-w)<1e-6) else new_width
+                           for w in new_waves_air]) * width_unit
+    t = Table([new_waves_air * u.nm, new_waves_vac, new_fluxes, new_widths],
+              names=["WAVELENGTH_AIR", "WAVELENGTH_VAC", "FLUX", "WIDTH"])
+    return t
 
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):

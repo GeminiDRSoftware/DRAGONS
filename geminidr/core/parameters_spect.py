@@ -44,6 +44,12 @@ class adjustWCSToReferenceConfig(config.Config):
                                   float, 1, min=0., optional=True)
 
 
+class attachWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionAttached", optional=True)
+    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
+                           optional=True, single=True)
+
+
 class calculateSensitivityConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
@@ -51,6 +57,8 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
                             "in vacuo?", bool, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
                                  float, 5., min=0.1, max=10.)
+    resampling = config.RangeField("Resampling interval (nm) for spectrophotometric data file",
+                                   float, None, min=0, inclusiveMin=False, optional=True)
     debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
                                   bool, False)
     regions = config.Field("Wavelength sample regions (nm)", str, None, optional=True,
@@ -110,8 +118,6 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
-    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
-                           optional=True, single=True)
     order = config.RangeField("Interpolation order", int, 3, min=0, max=5, inclusiveMax=True)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
@@ -133,14 +139,14 @@ def check_section(value):
     subsections = value.split(',')
     for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
         try:
-            int(x1)
+            x1 = int(x1)
         except ValueError:
             if i > 0 or x1 != '':
                 return False
             else:
                 x1 = 0
         try:
-            int(x2)
+            x2 = int(x2)
         except ValueError:
             if i < len(subsections) - 1 or x2 != '':
                 return False
@@ -160,8 +166,10 @@ class findAperturesConfig(config.Config):
                            str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 20, min=1)
-    use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
-                           bool, True)
+    min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
+                                float, 3.0, min=0.1)
+    use_snr = config.Field("Use signal-to-noise ratio rather than data in "
+                           "collapsed profile?", bool, False)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,

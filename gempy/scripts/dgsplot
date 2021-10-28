@@ -36,9 +36,9 @@ def main(argv=None):
 
     ad = astrodata.open(args.infile[0])
     if args.bokeh:
-        plotting.splot_bokeh(ad, args.aperture[0])
+        plotting.dgsplot_bokeh(ad, args.aperture[0])
     else:
-        plotting.splot_matplotlib(ad, args.aperture[0])
+        plotting.dgsplot_matplotlib(ad, args.aperture[0])
 
 if __name__ == '__main__':
     sys.exit(main())
