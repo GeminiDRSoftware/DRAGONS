@@ -14,7 +14,7 @@
 
 pipeline {
 
-    agent any
+    agent any 
 
     triggers {
         // Polls Source Code Manager every four hours
