@@ -139,14 +139,14 @@ def check_section(value):
     subsections = value.split(',')
     for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
         try:
-            int(x1)
+            x1 = int(x1)
         except ValueError:
             if i > 0 or x1 != '':
                 return False
             else:
                 x1 = 0
         try:
-            int(x2)
+            x2 = int(x2)
         except ValueError:
             if i < len(subsections) - 1 or x2 != '':
                 return False
@@ -166,8 +166,10 @@ class findAperturesConfig(config.Config):
                            str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 20, min=1)
-    use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
-                           bool, True)
+    min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
+                                float, 3.0, min=0.1)
+    use_snr = config.Field("Use signal-to-noise ratio rather than data in "
+                           "collapsed profile?", bool, False)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,

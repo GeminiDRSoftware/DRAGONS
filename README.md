@@ -11,22 +11,17 @@
 </table>
 
 # Current Status
-**The stable version is v3.0.0.**  
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4025470.svg)](https://doi.org/10.5281/zenodo.4025470) DRAGONS is distributed as a conda package, *dragons*, and it is 
+**The stable version is v3.0.0.**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5565540.svg)](https://doi.org/10.5281/zenodo.5565540) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 3.0.0 is recommend of the reduction of **imaging** data from Gemini's
+Version 3.0.0 is recommended for the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI.
 
-There is no science quality spectroscopy support in this release.  To reduce 
-Gemini spectroscopy data, please continue to use the 
-[Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
+There is now basic GMOS longslit support in DRAGONS to use only
+for quicklook purposes.  To reduce Gemini spectroscopy
+data for science purposes, please continue to use the [Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
 
-There is however support for **quicklook** reduction of GMOS longslit spectroscopic
-data.  The products have not been verified for scientific accuracy.
-
-To install:
+To install DRAGONS:
 
 ```
 $ conda create -n dragons python=3.7 dragons stsci
@@ -55,7 +50,7 @@ reduction of Gemini data.
 # Documentation
 Documentation on DRAGONS v3.0 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/en/stable
+* https://dragons.readthedocs.io/en/v3.0.0
 
 There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging data with DRAGONS.

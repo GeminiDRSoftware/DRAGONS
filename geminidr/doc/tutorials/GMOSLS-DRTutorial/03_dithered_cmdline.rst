@@ -50,32 +50,33 @@ Here is a copy of the table for quick reference.
 
 Set up the Local Calibration Manager
 ====================================
-DRAGONS comes with a local calibration manager and a local light weight database
+DRAGONS comes with a local calibration manager
 that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows "|reduce|" to make requests for matching **processed**
+Archive.  This allows "|reduce|" to make requests to a local light-weight
+database for matching **processed**
 calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow::
 
     [calibs]
-    standalone = True
-    database_dir = <where_the_data_package_is>/gmosls_tutorial/playground
+    databases = <where_the_data_package_is>/gmosls_tutorial/playground/cal_manager.db get
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
 send to it.
 
-.. note:: ``~`` in the path above refers to your home directory.  Also, don't
-    miss the dot in ``.geminidr``.
+.. note:: ``~`` in the path above refers to your home directory.  Also, mind
+   the dot in ``.dragons``.
 
 Then initialize the calibration database::
 
     caldb init
 
-That's it.  It is ready to use.
+That's it.  It is ready to use.  You can check the configuration and confirm the
+setting with ``caldb config``.
 
 You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and

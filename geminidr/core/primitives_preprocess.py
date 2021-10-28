@@ -763,15 +763,13 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if flat is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    log.warning("No changes will be made to {}, since no "
-                                "flatfield has been specified".
-                                format(ad.filename))
-                    continue
+                if 'sq' in self.mode or do_cal == 'force':
+                   raise OSError("No processed flat listed for "
+                                 f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no flat was specified. "
-                                "Continuing.")
-                    continue
+                   log.warning(f"No changes will be made to {ad.filename}, "
+                               "since no flatfield has been specified")
+                   continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
