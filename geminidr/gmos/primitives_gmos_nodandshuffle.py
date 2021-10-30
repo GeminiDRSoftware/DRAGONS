@@ -14,7 +14,7 @@ from gwcs import coordinate_frames as cf
 
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels as am
+from gempy.library import astromodels as am, astrotools as at
 from gempy.library import transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -56,6 +56,8 @@ class GMOSNodAndShuffle(GMOS):
         align_sources: bool
             attempt to find alignment between the beams using the profile
             along the slit?
+        region: str / None
+            pixel region for determining slit profile for cross-correlation
         tolerance: float
             Maximum distance from the header offset, for the correlation
             method (arcsec). If the correlation computed offset is too
@@ -70,6 +72,7 @@ class GMOSNodAndShuffle(GMOS):
         timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
         align_sources = params["align_sources"]
+        region = params["region"]
         tolerance = params["tolerance"]
         order = params["order"]
         subsample = params["subsample"]
@@ -103,8 +106,8 @@ class GMOSNodAndShuffle(GMOS):
                         ad2.phu['QOFFSET'] = ad.phu['QOFFSET'] + nod_arcsec
 
                     ad2 = self.adjustWCSToReference(
-                        [ad, ad2], method="sources_offsets",
-                        fallback="offsets", tolerance=tolerance)[1]
+                        [ad, ad2], method="sources_offsets", fallback="offsets",
+                        tolerance=tolerance, region=region)[1]
                     beamshift = (models.Shift(0) &
                                  (am.get_named_submodel(ad2[0].wcs.forward_transform, 'SKY')[0]))
                     del ad2
