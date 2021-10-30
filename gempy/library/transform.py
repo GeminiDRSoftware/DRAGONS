@@ -1600,6 +1600,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     ref_wcs = ref_ext.wcs
     frame_index = ref_wcs.available_frames.index(frame_name)
     new_pipeline = ref_wcs.pipeline[frame_index:]
+    new_pipeline[0].frame.name = ref_wcs.input_frame.name
     # Remember, dg.origin is (y, x)
     new_origin = tuple(s for s in dg.origin[::-1])
 
