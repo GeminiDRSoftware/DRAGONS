@@ -645,24 +645,24 @@ class AstroDataF2(AstroDataGemini):
         except KeyError:
             return None
 
-    def _get_wcs_coords(self):
-        """
-        Returns the RA and dec of the middle of the data array
-
-        Returns
-        -------
-        dict
-            {'lon': right ascension, 'lat': declination}
-        """
-        wcs = self.wcs if self.is_single else self[0].wcs
-        if wcs is None:
-            return None
-
-        # (x, y) Cass rotator centre (according to Andy Stephens from gacq)
-        result = wcs(1034, 1054)
-        ra, dec = float(result[0]), float(result[1])
-
-        if 'NON_SIDEREAL' in self.tags:
-            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
-
-        return {'lon': ra, 'lat': dec}
+    # def _get_wcs_coords(self):
+    #     """
+    #     Returns the RA and dec of the middle of the data array
+    #
+    #     Returns
+    #     -------
+    #     dict
+    #         {'lon': right ascension, 'lat': declination}
+    #     """
+    #     wcs = self.wcs if self.is_single else self[0].wcs
+    #     if wcs is None:
+    #         return None
+    #
+    #     # (x, y) Cass rotator centre (according to Andy Stephens from gacq)
+    #     result = wcs(1034, 1054)
+    #     ra, dec = float(result[0]), float(result[1])
+    #
+    #     if 'NON_SIDEREAL' in self.tags:
+    #         ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+    #
+    #     return {'lon': ra, 'lat': dec}

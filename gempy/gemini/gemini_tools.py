@@ -7,7 +7,7 @@
 import os
 import re
 import numbers
-import itertools
+
 from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
@@ -15,19 +15,20 @@ from functools import wraps
 from collections import namedtuple
 
 import numpy as np
-from scipy.special import erf
 
 from astropy.stats import sigma_clip
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
 
+from scipy.ndimage import distance_transform_edt
+from scipy.special import erf
+
 from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
 from ..utils import logutils
 
-from datetime import datetime
-
 import astrodata
+from astrodata import Section
 
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
@@ -333,6 +334,165 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
 @handle_single_adinput
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         return_dtype=None):
+    """
+    This function clips auxiliary data like calibration files or BPMs
+    to the size of the data section in the science. It will pad auxiliary
+    data if required to match un-overscan-trimmed data, but otherwise
+    requires that the auxiliary data contain the science data.
+
+    Parameters
+    ----------
+    adinput: list/AstroData
+        input science image(s)
+    aux: list/AstroData
+        auxiliary file(s) (e.g., BPM, flat) to be clipped
+    aux_type: str
+        type of auxiliary file
+    return_dtype: dtype
+        datatype of returned objects
+
+    Returns
+    -------
+    list/AD:
+        auxiliary file(s), appropriately clipped
+    """
+    log = logutils.get_logger(__name__)
+    aux_output_list = []
+
+    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
+        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+
+        if this_aux.detector_x_bin() != xbin or this_aux.detector_y_bin() != ybin:
+            raise OSError("Auxiliary data {} has different binning to {}".
+                          format(os.path.basename(this_aux.filename), ad.filename))
+
+        # Make a new auxiliary file for appending to, starting with PHU
+        new_aux = astrodata.create(this_aux.phu)
+        new_aux.filename = this_aux.filename
+        new_aux.update_filename(suffix="_clipped", strip=False)
+
+        sci_detsec = ad.detector_section()
+        sci_datasec = ad.data_section()
+        sci_arraysec = ad.array_section()
+        clipped_this_ad = False
+
+        for num_ext, (ext, detsec, datasec, arrsec) in enumerate(zip(ad,
+                      sci_detsec, sci_datasec, sci_arraysec), start=1):
+            datasec, new_datasec = map_data_sections_to_trimmed_data(datasec)
+            #new_datasec = new_datasec.view((int, 4))
+            ext_shape = ext.shape[-2:]
+            #sci_trimmed = np.array_equal(new_datasec, [[0, ext_shape[1], 0, ext_shape[0]]])
+            sci_trimmed = new_datasec[0] == Section.from_shape(ext_shape)
+            sci_multi_amp = isinstance(arrsec, list)
+
+            for auxext in this_aux:
+                aux_detsec = auxext.detector_section()
+                #if not at.section_contains(aux_detsec, detsec):
+                if not aux_detsec.contains(detsec):
+                    continue
+
+                # If this is a perfect match, just do it and carry on
+                if auxext.shape == ext_shape:
+                    new_aux.append(auxext.nddata)
+                    continue
+
+                aux_arrsec = auxext.array_section()
+                aux_datasec, aux_new_datasec = map_data_sections_to_trimmed_data(auxext.data_section())
+                aux_trimmed = aux_new_datasec[0] == Section.from_shape(auxext.shape)
+                #aux_trimmed = np.array_equal(aux_new_datasec, [[0, auxext.shape[1], 0, auxext.shape[0]]])
+                aux_multi_amp = isinstance(aux_arrsec, list)
+
+                # Either both are multi-amp or neither is. If they both are,
+                # the science can't have more amps (but the aux can).
+                if ((sci_multi_amp ^ aux_multi_amp) or
+                        (sci_multi_amp and len(arrsec) > len(aux_arrsec))):
+                    raise OSError("Problem with array sections for "
+                                  f"{ext.filename} and {auxext.filename}")
+
+                # Assumption that the sections returned by array_section()
+                # are contiguous so we don't have to do an amp-by-amp match
+                if sci_multi_amp:
+                    x1 = min(sec.x1 for sec in arrsec)
+                    y1 = min(sec.y1 for sec in arrsec)
+                    ax1 = min(sec.x1 for sec in aux_arrsec)
+                    ay1 = min(sec.y1 for sec in aux_arrsec)
+                else:
+                    x1, y1 = arrsec.x1, arrsec.y1
+                    ax1, ay1 = aux_arrsec.x1, aux_arrsec.y1
+
+                xshift = (x1 - ax1) // xbin
+                yshift = (y1 - ay1) // ybin
+                #aux_new_datasec = (aux_new_datasec.view((int, 4)) -
+                #                   np.array([xshift, xshift, yshift, yshift]))
+                aux_new_datasec = [ands.shift(-xshift, -yshift)
+                                   for ands in aux_new_datasec]
+
+                shifts = [(ads[0]-ds[0]-ands[0]+nds[0], ads[2]-ds[2]-ands[2]+nds[2])
+                          for ds, nds in zip(datasec, new_datasec)
+                          for ads, ands in zip(aux_datasec, aux_new_datasec)
+                          if ands.contains(nds)]
+
+                # This means we can cut a single section from the aux data
+                if len(set(shifts)) == 1:
+                    #x1, y1 = shifts[0]
+                    #x2, y2 = x1 + ext_shape[1], y1 + ext_shape[0]
+                    #if at.section_contains((0, auxext.shape[1], 0, auxext.shape[0]),
+                    #                       (x1, x2, y1, y2)):
+                    #    new_aux.append(auxext.nddata[y1:y2, x1:x2])
+                    cut_sec = Section.from_shape(ext_shape).shift(*shifts[0])
+                    if Section.from_shape(auxext.shape).contains(cut_sec):
+                        new_aux.append(auxext.nddata[cut_sec.asslice()])
+                        clipped_this_ad = True
+                        continue
+
+                # So either we need to glue some stuff together, or pad the aux
+                # Science decision that may need revisiting
+                if aux_trimmed and not sci_trimmed and aux_type != 'bpm':
+                    raise OSError(f"Auxiliary data {auxext.filename} is trimmed, but "
+                                  f"science data {ext.filename} is untrimmed.")
+                nd = astrodata.NDAstroData(np.zeros(ext_shape, dtype=auxext.data.dtype if return_dtype is None else return_dtype),
+                                           mask=None if auxext.mask is None else np.zeros(ext_shape, dtype=auxext.mask.dtype),
+                                           meta=auxext.nddata.meta)
+                if auxext.variance is not None:
+                    nd.variance = np.zeros_like(nd.data)
+                # Find all overlaps between the "new" data_sections
+                for ds, nds in zip(datasec, new_datasec):
+                    for ads, ands in zip(aux_datasec, aux_new_datasec):
+                        overlap = ands.overlap(nds)
+                        if overlap:
+                            in_vertices = [a+b-c for a, b, c in zip(overlap, ads, ands)]
+                            input_section = (slice(*in_vertices[2:]), slice(*in_vertices[:2]))
+                            out_vertices = [a+b-c for a, b, c in zip(overlap, ds, nds)]
+                            output_section = (slice(*out_vertices[2:]), slice(*out_vertices[:2]))
+                            log.debug("Copying aux section [{}:{},{}:{}] to [{}:{},{}:{}]".
+                                      format(in_vertices[0]+1, in_vertices[1], in_vertices[2]+1, in_vertices[3],
+                                             out_vertices[0]+1, out_vertices[1], out_vertices[2]+1, out_vertices[3]))
+                            nd.set_section(output_section, auxext.nddata[input_section])
+                            new_aux.append(nd)
+
+            if len(new_aux) < num_ext:
+                raise OSError(f"No auxiliary data in {this_aux.filename} "
+                              f"matches the detector section {detsec} in "
+                              f"{ad.filename} extension {ext.id}")
+
+        # Coerce the return datatype if required
+        if return_dtype:
+            for auxext in new_aux:
+                if auxext.data.dtype != return_dtype:
+                    auxext.data = auxext.data.astype(return_dtype)
+                if auxext.variance is not None and auxext.variance.dtype != return_dtype:
+                    auxext.variance = auxext.variance.astype(return_dtype)
+
+        if clipped_this_ad:
+            log.stdinfo("Clipping {} to match science data.".
+                        format(os.path.basename(this_aux.filename)))
+        aux_output_list.append(new_aux)
+
+    return aux_output_list
+
+@handle_single_adinput
+def clip_auxiliary_data_old(adinput=None, aux=None, aux_type=None,
+                            return_dtype=None):
     """
     This function clips auxiliary data like calibration files or BPMs
     to the size of the data section in the science. It will pad auxiliary
@@ -1201,6 +1361,74 @@ def fit_continuum(ad):
 
     return good_sources[0] if single else good_sources
 
+
+def array_from_descriptor_value(ext, descriptor):
+    """
+    This function tries to return an array or value for a descriptor that
+    is suitable for combining with an NDAstroData object. In the simple case
+    that the descriptor returns a single value applicable to all pixels in
+    the NDAstroData object, that value is returned. However, in a more
+    complex case the descriptor will return a list of values corresponding to
+    different regions of the image, with the array_section() descriptor
+    indicating which region each value corresponds to. In this case, a 2D
+    array is constructed where each such region -- after mapping from the
+    array_section() to an appropriate region in data_section() -- has the
+    appropriate value.
+
+    In the case of a 3D or higher-dimension array, this 2D array is repeated
+    along the third (and, if necessary, higher) dimension(s). Furthermore, if
+    there are parts of each 2D slice that are not part of data_section(),
+    these are assigned values corresponding to the closest pixel.
+
+    Parameters
+    ----------
+    ext : single-slice AstroData object
+        the extension requiring application of a descriptor value
+    descriptor : str
+        name of descriptor
+
+    Returns
+    -------
+    float/ndarray : either a single value (if applicable to all pixels) or
+                    an ndarray of the same shape as ext.nddata, with
+                    appropriate values in each element
+    """
+    log = logutils.get_logger(__name__)
+    if not ext.is_single:
+        raise ValueError("Not a single-slice AstroData object")
+
+    desc_value = getattr(ext, descriptor)()
+    arrsec = ext.array_section()
+    extid = f"{ext.filename}:{ext.id}"
+
+    # Can return a single value if that's all the descriptor gives us, or if
+    # array_section() doesn't tell us how to divide the pixel plane
+    if hasattr(arrsec, "x1") or not isinstance(desc_value, list):
+        if desc_value is None:
+            log.warning(f"  {descriptor} for {extid} = None. Setting to zero")
+            desc_value = 0.0
+        else:  # "electrons" here because this is only used for gain/read_noise
+            log.fullinfo(f"  {descriptor} for {extid} = {desc_value} electrons")
+        return desc_value
+
+    if len(arrsec) != len(desc_value):
+        raise ValueError(f"The number of array sections and {descriptor} "
+                         f"values do not match in {extid}")
+
+    data_sections = map_array_sections(ext)
+    ret_arr = np.full(ext.shape[-2:], np.nan, dtype=np.float32)
+
+    for datsec, value in zip(data_sections, desc_value):
+        ret_arr[datsec.asslice()] = value
+
+    # Pad regions not defined by the array_section() with nearest real value
+    indices = distance_transform_edt(np.isnan(ret_arr), return_distances=False,
+                                     return_indices=True)
+
+    # Grow along third (and higher) dimension(s) if required
+    return np.tile(ret_arr[indices[0], indices[1]], ext.shape[:-2] + (1, 1))
+
+
 def log_message(function=None, name=None, message_type=None):
     """
     Creates a log message describing some function-related fun, e.g.,
@@ -1226,6 +1454,7 @@ def log_message(function=None, name=None, message_type=None):
     elif message_type == 'completed':
         message = 'The {} {} completed successfully'.format(name, function)
     return message
+
 
 def make_lists(*args, **kwargs):
     """
@@ -1286,6 +1515,90 @@ def make_lists(*args, **kwargs):
         else:
             ret_lists.append(_list)
     return ret_lists
+
+
+def map_array_sections(ext):
+    """
+    This function determines the actual pixel locations in a single-slice
+    AstroData object that the array_section corresponds to. Or, in the case
+    of a multi-amp (list) array_section descriptor, the locations for each
+    individual Section.
+
+    Parameters
+    ----------
+    ext : single-slice AstroData object
+        the slice whose sections need to be mapped
+
+    Returns
+    -------
+    Section / list of Sections
+        the region(s) in the data that the array_section() corresponds to
+    """
+    xbin, ybin = ext.detector_x_bin(), ext.detector_y_bin()
+
+    # These return lists, which is correct (it's ad.XXXX_section()
+    # that's wrong; it should return a list containing this list)
+    datasec = ext.data_section()
+    arrsec = ext.array_section(pretty=False)  # pretty required by code
+
+    datsec, new_datsec = map_data_sections_to_trimmed_data(datasec)
+
+    arrsec_is_list = isinstance(arrsec, list)
+    sections = []
+    xmin = min(asec.x1 for asec in arrsec) if arrsec_is_list else arrsec.x1
+    ymin = min(asec.y1 for asec in arrsec) if arrsec_is_list else arrsec.y1
+    for asec in (arrsec if arrsec_is_list else [arrsec]):
+        sec = Section((asec.x1 - xmin) // xbin, (asec.x2 - xmin) // xbin,
+                      (asec.y1 - ymin) // ybin, (asec.y2 - ymin) // ybin)
+        for dsec, new_dsec in zip(datsec, new_datsec):
+            if new_dsec.contains(sec):
+                sections.append(Section(*[a - b + c for a, b, c in
+                                          zip(sec, new_dsec, dsec)]))
+                break
+
+    return sections if arrsec_is_list else sections[0]
+
+
+def map_data_sections_to_trimmed_data(datasec):
+    """
+    This function describes where individual data sections end up in a
+    final image after all non-data regions have been removed. It was
+    originally intended to work with SCORPIO data when the plan was to have
+    overscan regions interior to the four quadrants.
+
+    Parameters
+    ----------
+    datasec: list of Section tuples
+        regions in the pixel plane containing data
+
+    Returns
+    -------
+    sections: list of Sections
+        array of data sections in datasec
+    new_sections: list of Sections
+        contiguous locations in pixel plane after trimming
+    """
+    if not isinstance(datasec, list):
+        datasec = [datasec]
+    sections = np.array(datasec, dtype=[('x1', int), ('x2', int),
+                                        ('y1', int), ('y2', int)])
+    args = np.argsort(sections, order=('y1', 'x1'))
+    new_sections = np.zeros_like(sections)
+
+    for arg in args:
+        x1, y1 = sections[arg]['x1'], sections[arg]['y1']
+        new_x1 = max(filter(lambda x: x <= x1, new_sections['x2']))
+        xshift = x1 - new_x1
+        new_y1 = max(filter(lambda y: y <= y1, new_sections['y2']))
+        yshift = y1 - new_y1
+        new_sections[arg]['x1'] = x1 - xshift
+        new_sections[arg]['x2'] = sections[arg]['x2'] - xshift
+        new_sections[arg]['y1'] = y1 - yshift
+        new_sections[arg]['y2'] = sections[arg]['y2'] - yshift
+
+    return ([Section(*sec) for sec in sections],
+            [Section(*sec) for sec in new_sections])
+
 
 @handle_single_adinput
 def mark_history(adinput=None, keyword=None, primname=None, comment=None):
@@ -1755,44 +2068,79 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
         # Get the keyword associated with the data_section descriptor
         datasec_kw = ad._keyword_for('data_section')
         oversec_kw = ad._keyword_for('overscan_section')
+        all_datasecs = ad.data_section()
 
-        for ext in ad:
-            # Get data section as string and as a tuple
-            datasecStr = ext.data_section(pretty=True)
-            datasec = ext.data_section()
+        for ext, datasec in zip(ad, all_datasecs):
+            if isinstance(datasec, list):
+                # Starting with the bottom-leftmost sections, we shift all
+                # the sections as far as they can do down and to the left
+                # which should end up producing a contiguous region
+                sections, new_sections = map_data_sections_to_trimmed_data(datasec)
 
-            # Check whether data need to be trimmed
-            sci_shape = ext.data.shape
-            if (sci_shape[0] == datasec.y2 and sci_shape[1] == datasec.x2 and
-                    datasec.x1 == 0 and datasec.y1 == 0):
-                log.fullinfo(f'No changes will be made to {ad.filename} '
-                             f'extension {ext.id}, since '
-                             'the data section matches the data shape')
-                continue
+                #x1, y1 = sections['x1'].min(), sections['y1'].min()
+                #nxpix = new_sections['x2'].max() - new_sections['x1'].min()
+                #nypix = new_sections['y2'].max() - new_sections['y1'].min()
+                x1 = min(s.x1 for s in sections)
+                y1 = min(s.y1 for s in sections)
+                nxpix = max(s.x2 for s in new_sections) - min(s.x1 for s in new_sections)
+                nypix = max(s.y2 for s in new_sections) - min(s.y1 for s in new_sections)
 
-            # Update logger with the section being kept
-            log.fullinfo(f'For {ad.filename} extension {ext.id}, '
-                         f'keeping the data from the section {datasecStr}')
+                old_ext = deepcopy(ext)[0]
+                # Trim SCI, VAR, DQ to new section, aligned at bottom-left.
+                # This slicing will update the gWCS properly too.
+                ext.reset(ext.nddata[y1:y1+nypix, x1:x1+nxpix])
+                has_objmask = hasattr(old_ext, 'OBJMASK')
+                if has_objmask:
+                    ext.OBJMASK = old_ext.OBJMASK[y1:y1+nypix, x1:x1+nxpix]
 
-            # Trim SCI, VAR, DQ to new section
-            ext.reset(ext.nddata[datasec.asslice()])
-            # And OBJMASK (if it exists)
-            # TODO: should check more generally for any image extensions
-            if hasattr(ext, 'OBJMASK'):
-                ext.OBJMASK = ext.OBJMASK[datasec.asslice()]
+                for i, (oldsec, newsec) in enumerate(zip(sections, new_sections), start=1):
+                    #oldsec, newsec = Section(*oldsec), Section(*newsec)
+                    datasecStr = oldsec.asIRAFsection()
+                    log.fullinfo(f'For {ad.filename} extension {ext.id}, '
+                                 f'keeping the data from the section {datasecStr}')
+                    newslice = newsec.asslice()
+                    oldslice = oldsec.asslice()
+                    ext.nddata.set_section(newslice, old_ext.nddata[oldslice])
+                    if has_objmask:
+                        ext.OBJMASK[newslice] = old_ext.OBJMASK[oldslice]
+                    ext.hdr.set(f'TRIMSEC{i}', datasecStr, comment=keyword_comments['TRIMSEC'])
+                del ext.hdr[datasec_kw+'*']
+
+            else:
+                # Check whether data need to be trimmed
+                x1, x2 = datasec.x1, datasec.x2
+                y1, y2 = datasec.y1, datasec.y2
+                sci_shape = ext.data.shape
+                if x1 == 0 and y1 == 0 and sci_shape == (y2, x2):
+                    log.fullinfo(f'No changes will be made to {ad.filename} '
+                                 f'extension {ext.id}, since the data section '
+                                 f'matches the data shape')
+                    continue
+
+                # Update logger with the section being kept
+                datasecStr = datasec.asIRAFsection()
+                log.fullinfo(f'For {ad.filename} extension {ext.id}, keeping '
+                             f'the data from the section {datasecStr}')
+
+                # Trim SCI, VAR, DQ to new section
+                ext.reset(ext.nddata[datasec.asslice()])
+                # And OBJMASK (if it exists)
+                # TODO: should check more generally for any image extensions
+                if hasattr(ext, 'OBJMASK'):
+                    ext.OBJMASK = ext.OBJMASK[datasec.asslice()]
+
+                # We can't do this unless the data section was contiguous
+                ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
 
             # Update header keys to match new dimensions
-            newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
-                                                 datasec.y2-datasec.y1)
-            ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments[datasec_kw])
-            ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
+            nypix, nxpix = ext.shape
+            newDataSecStr = f'[1:{nxpix},1:{nypix}]'
+            ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments.get(datasec_kw))
             if oversec_kw in ext.hdr:
                 del ext.hdr[oversec_kw]
 
     return adinput
 
-
-# FIXME: unused ?
 def write_database(ad, database_name=None, input_name=None):
     """
     Write out IRAF database files containing a wavelength calibration
