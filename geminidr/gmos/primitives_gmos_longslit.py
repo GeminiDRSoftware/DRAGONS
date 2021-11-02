@@ -6,6 +6,7 @@
 
 from copy import copy, deepcopy
 from importlib import import_module
+from itertools import groupby
 
 from gempy.library.config import RangeField
 
@@ -141,7 +142,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
                 model = np.zeros_like(row_medians, dtype=int)
-                longest_slit = 0
                 for ypos, ysize in mdf['slitpos_my', 'slitsize_my']:
                     y = ypos + np.array([-0.5, 0.5]) * ysize
                     c0 = offset_dict[ad.instrument(), ad.detector_name(pretty=True)]
@@ -155,17 +155,18 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     model[yccd[0]:yccd[1]+1] = 1
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
-                    longest_slit = max(longest_slit, yccd[1] - yccd[0])
 
                 if 'NODANDSHUFFLE' in ad.tags:
                     shuffle_pixels = ad.shuffle_pixels() // ybin
                     model[:-shuffle_pixels] += model[shuffle_pixels:]
 
-                # This is intended to remove bright objects that might mess up
-                # the cross-correlation, so not needed for calibrations. It
-                # causes problems with very long slits (e.g., N&S LS).
-                if 'CAL' not in ad.tags and model.mean() > 0.75:
-                    row_medians -= at.boxcar(row_medians, size=longest_slit)
+                # Find largest number of pixels between slits, which will
+                # define a smoothing box scale. This is necessary to take out
+                # the slit function, if most of the detector is illuminated
+                if model.mean() > 0.75:
+                    longest_gap = max([len(list(group)) for item, group in
+                                       groupby(model) if item == 0])
+                    row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
 
                 if shift is None:
                     mshift = max_shift // ybin + 2
