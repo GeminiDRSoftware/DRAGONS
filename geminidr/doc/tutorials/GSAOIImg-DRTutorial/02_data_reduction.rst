@@ -22,7 +22,7 @@ encourage you to look at the :ref:`tips_and_tricks` and
 :ref:`issues_and_limitations` chapters to learn more about GSAOI data
 reduction.
 
-DRAGONS installation comes with a set of handful scripts that are used to
+DRAGONS installation comes with a set of scripts that are used to
 reduce astronomical data. The most important script is called
 "|reduce|", which is extensively explained in the |RSUser|.
 It is through that command that a DRAGONS reduction is launched.
@@ -128,7 +128,7 @@ This command will open every FITS file within the folder passed after the ``-d``
 flag (recursively) and will print an unsorted table with the file names and the
 associated tags. For example, calibration files will always have the ``CAL``
 tag. Flat images will always have the ``FLAT`` tag. This means that we can
-start getting to know a bit more about our data set just by looking the tags.
+start getting to know a bit more about our data set just by looking at the tags.
 The output above was trimmed for presentation.
 
 
@@ -240,7 +240,7 @@ stacked (averaged), then the lamp-off stack is subtracted from the lamp-on
 stack and the result normalized.
 
 We create the master flat field and add it to the calibration manager as
-follow:
+follows:
 
 ..  code-block:: bash
 
@@ -269,7 +269,7 @@ target (next section). The processed flat field that we added earlier to
 the local calibration database will be fetched automatically.  Also, in
 this case the standard star was obtained using ROIs (Regions-of-Interest)
 which do not match the flat field.  The software will recognize that the
-flat field is still valid will crop it to match the ROIs.
+flat field is still valid and will crop it to match the ROIs.
 
 ::
 
@@ -321,7 +321,7 @@ This command will generate flat corrected and sky subtracted files but will
 not stack them. You can find which file is which by its suffix
 (``_flatCorrected`` or ``_skyCorrected``).  The on-target files are the ones
 that have been sky subtracted (``_skyCorrected``).  There should be nine of
-the them.
+them.
 
 The frames are not stacked because of the high level of distortion in the
 GSAOI images that requires special software to correct and properly stack.

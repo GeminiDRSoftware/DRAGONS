@@ -185,10 +185,10 @@ filters. It is not really needed in this case.
     :lineno-start: 22
 
     list_of_flats = dataselect.select_data(
-         all_files,
-         ['FLAT'],
-         [],
-         dataselect.expr_parser('filter_name=="i"')
+        all_files,
+        ['FLAT'],
+        [],
+        dataselect.expr_parser('filter_name=="i"')
     )
 
 List of Science Data

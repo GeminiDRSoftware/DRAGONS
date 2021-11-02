@@ -82,7 +82,7 @@ First, navigate to the ``playground`` directory in the unpacked data package.
 A list of the darks
 -------------------
 There is only one set of 60-second darks in the data package.  To create the
-list, one simply need to select on the ``DARK`` tag::
+list, one simply needs to select on the ``DARK`` tag::
 
     dataselect ../playdata/*.fits --tags DARK -o darks60.lis
 
@@ -136,7 +136,7 @@ The ``@`` character before the name of the input file is the "at-file" syntax.
 More details can be found in the |atfile| documentation.
 
 .. note:: The file name of the output processed dark is the file name of the
-          first file in the list with `_dark` appended as a suffix.  This the
+          first file in the list with `_dark` appended as a suffix. This is the
           general naming scheme used by "|reduce|".
 
 
@@ -147,7 +147,7 @@ Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
 
 We create the master flat field and add it to the calibration database as
-follow::
+follows::
 
     reduce @flats.lis
     caldb add N20120117S0034_flat.fits
