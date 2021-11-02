@@ -161,7 +161,7 @@ Two lists for the darks
 Our data set contains two sets of DARK files: some 120-seconds darks
 matching the science data and some 2-second darks to create the bad pixel
 mask (BPM). If you did not know the exposure times of the darks, you
-could send the |dataselect| results to the |showd| command line tool as follow
+could send the |dataselect| results to the |showd| command line tool as follows
 to get the information:
 
 .. code-block:: bash
@@ -182,7 +182,7 @@ to get the information:
    ../playdata/S20131122S0438.fits           120.0
    ../playdata/S20131122S0439.fits           120.0
 
-(The list has been shorten for presentation.)
+(The list has been shortened for presentation.)
 
 The ``|`` is the Unix "pipe" operator and it is used to pass output from
 |dataselect| to |showd|.
@@ -213,7 +213,7 @@ Now let us create the list containing the flat files:
 
 We know that our dataset has only one filter (Y-band). If our dataset
 contained data with more filters, we would have had to use the ``--expr``
-option to select the appropriate filter as follow:
+option to select the appropriate filter as follows:
 
 .. code-block:: bash
 

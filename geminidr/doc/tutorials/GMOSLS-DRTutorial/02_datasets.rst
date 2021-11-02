@@ -56,7 +56,7 @@ with the first group of four at 515 and the second at 530 nm.  The
 spectrophotometry standard was obtained about a month before the science
 observation.
 
-The calibrations we for this example are:
+The calibrations we use for this example are:
 
 * Biases.  The science and the standard observations are often taken with
   different Region-of-Interest (ROI) as the standard uses only the central area.
