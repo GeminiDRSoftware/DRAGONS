@@ -25,7 +25,6 @@ def reduce(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.attachWavelengthSolution()
-    p.writeOutputs()
     p.flatCorrect()
     #p.flagCosmicRays()
     p.skyCorrectNodAndShuffle()
