@@ -114,6 +114,9 @@ class GMOSNodAndShuffle(GMOS):
                 elif align_sources:
                     log.warning(f"{ad.filename} has multiple extensions "
                                 "and source alignment cannot be used.")
+                else:
+                    log.stdinfo(f"{ad.filename}: Applying the nod offset of "
+                                f"{nod_pixels:.2f} pixels")
 
                 # replace with adwcs.pixel_frame once enh/multi_amp_scorpio is merged
                 aligned_frame = cf.CoordinateFrame(
