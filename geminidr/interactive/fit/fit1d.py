@@ -696,12 +696,15 @@ class InfoPanel:
             extra_counts[em] = model.mask.count(em)
         total_count = model.x.size
 
-        total = f'<div class="info_header">Total Points: </div><div class="info_text">{total_count}</div>'
-        band = f'<div class="info_header">Outside Region(s): </div><div class="info_text">{band_count}</div>' if self.enable_regions else ''
-        user = f'<div class="info_header">User Masked: </div><div class="info_text">{user_count}</div>' if self.enable_user_masking else ''
-        fit = f'<div class="info_header">Sigma Clipped:</div><div class="info_text">{fit_count}</div>'
+        # inline styles so it works in jupyter
+        ih_style = ' style="font-size: 16px; font-weight: bold; float: left; padding-right: 16px;"'
+        it_style = ' style="font-size: 16px; float: left; text-align: right; padding-right: 16px;"'
+        total = f'<div class="info_header" {ih_style}>Total Points: </div><div class="info_text" {it_style}>{total_count}</div>'
+        band = f'<div class="info_header" {ih_style}>Outside Region(s): </div><div class="info_text" {it_style}>{band_count}</div>' if self.enable_regions else ''
+        user = f'<div class="info_header" {ih_style}>User Masked: </div><div class="info_text" {it_style}>{user_count}</div>' if self.enable_user_masking else ''
+        fit = f'<div class="info_header" {ih_style}>Sigma Clipped:</div><div class="info_text" {it_style}>{fit_count}</div>'
 
-        extra_masks = '\n'.join([f'<div class="info_header">{em.capitalize()}:</div><div class="info_text">{extra_counts[em]}</div>' for em in self.extra_masks])
+        extra_masks = '\n'.join([f'<div class="info_header" {ih_style}>{em.capitalize()}:</div><div class="info_text" {it_style}>{extra_counts[em]}</div>' for em in self.extra_masks])
         self.component.update(text=rms + total + band + user + fit + extra_masks + '</div>')
 
 

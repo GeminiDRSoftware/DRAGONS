@@ -1,13 +1,10 @@
-import os
 import uuid
-from logging import ERROR
 
 from astrodata import version
 
 import pathlib
 
 import tornado
-import bokeh
 from bokeh.application import Application
 from bokeh.application.handlers import Handler
 from bokeh.server.server import Server
@@ -24,8 +21,6 @@ test_mode = False
 from bokeh.themes import built_in_themes
 
 from geminidr.interactive.interactive_config import interactive_conf
-
-from recipe_system.config import globalConf
 
 _bokeh_server = None
 _visualizer = None
@@ -157,6 +152,61 @@ def _bkapp(doc):
     doc.title = title
 
 
+import yaml
+from bokeh.themes import Theme
+
+
+_jupyter_doc = None
+
+
+def setup_jupyter(doc, fn=None):
+    global _jupyter_doc
+    _jupyter_doc = doc
+    doc.theme = Theme(json=yaml.load("""
+        attrs:
+            Figure:
+                background_fill_color: "#DDDDDD"
+                outline_line_color: white
+                toolbar_location: above
+                height: 500
+                width: 800
+            Grid:
+                grid_line_dash: [6, 4]
+                grid_line_color: white
+    """, Loader=yaml.FullLoader))
+    if fn is not None:
+        # trying threaded version
+        def threaded_redux():
+            import threading
+            t = threading.Thread(name='jupyter_dragons_interactive_thread', target=fn)
+            t.start()
+
+        doc.add_next_tick_callback(threaded_redux)
+
+
+def jupyter_reduce(files=[], recipename=None, uparms=None, upload=[], mode=None):
+    from recipe_system.reduction.coreReduce import Reduce
+    from bokeh.io import show, output_notebook
+
+    output_notebook()
+
+    def stub_redux():
+        redux = Reduce()
+        redux.files = files
+        redux.recipename= recipename
+        if uparms:
+            redux.uparms = uparms
+        redux.upload = upload
+        if mode:
+            redux.mode = mode
+        redux.runr()
+
+    show(lambda x: setup_jupyter(x, stub_redux))
+
+
+_doc = None
+
+
 def _helpapp(doc):
     """
     Tornado request handler for showing help for the active visuializer.
@@ -211,7 +261,11 @@ def set_visualizer(visualizer):
     visualizer : :class:`~geminidr.interactive.interactive.PrimitiveVisualizer`
     """
     global _visualizer
+    global _jupyter_doc
+
     _visualizer = visualizer
+    if visualizer is not None and _jupyter_doc is not None:
+        _visualizer.show(_jupyter_doc)
 
 
 class DRAGONSStaticHandler(Handler):
@@ -223,6 +277,33 @@ class DRAGONSStaticHandler(Handler):
         self._static = '%s/static' % pathlib.Path(__file__).parent.absolute()
 
 
+# Check if we are running in a Jupyter notebook and set using_jupyter accordingly
+try:
+    __IPYTHON__
+    using_jupyter = True
+except NameError:
+    using_jupyter = False
+_jup_running = False
+
+
+def start_server_jupyter():
+    """
+    Tell the interactive code we are starting interactivity in Jupyter
+
+    This is analagous to :meth:`start_server` but it just blocks while
+    polling for the interactive session to end.  This way, it can be
+    used as a drop-in replacement for that call when running in a
+    notebook.  This works best from a separate thread as seein in
+    :meth:`jupyter_reduce`
+    """
+    global _jup_running
+    _jup_running = True
+
+    while _jup_running:
+        import time
+        time.sleep(2)
+
+
 def start_server():
     """
     Start the bokeh server.
@@ -231,6 +312,10 @@ def start_server():
     bokeh.  Until the server is explicitly stopped, the method
     will block and this call will not return.
     """
+    if using_jupyter:
+        start_server_jupyter()
+        return
+
     global _bokeh_server
 
     if not _bokeh_server:
@@ -300,6 +385,12 @@ def stop_server():
     This normally gets called when the user hits the submit button
     or closes the UI browser tab.
     """
+    global _jup_running
+    if using_jupyter:
+        # what to do?
+        _jup_running = False
+        return
+
     global _bokeh_server
     _bokeh_server.io_loop.stop()
 
@@ -319,6 +410,7 @@ def interactive_fitter(visualizer):
     """
     set_visualizer(visualizer)
     start_server()
+
     set_visualizer(None)
-    if not visualizer.user_satisfied:
+    if not visualizer.user_satisfied and not using_jupyter:
         raise KeyboardInterrupt()

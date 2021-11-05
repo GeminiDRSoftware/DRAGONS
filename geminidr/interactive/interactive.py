@@ -11,7 +11,7 @@ from bokeh import models as bm
 
 from geminidr.interactive import server
 from geminidr.interactive.fit.help import DEFAULT_HELP
-from geminidr.interactive.server import register_callback
+from geminidr.interactive.server import register_callback, using_jupyter
 from gempy.library.astrotools import cartesian_regions_to_slices, parse_user_regions
 from gempy.library.config import FieldValidationError, Config
 
@@ -204,6 +204,9 @@ class PrimitiveVisualizer(ABC):
             # Fit is good, we can exit
             # Trigger the submit callback via disabling the submit button
             self.submit_button.disabled = True
+            if using_jupyter:
+                self.session_ended(None, user_satisfied=True)
+                self.doc.clear()
 
     def abort_button_handler(self):
         """
@@ -215,6 +218,9 @@ class PrimitiveVisualizer(ABC):
                 # Trigger the exit/fit, otherwise we do nothing
                 _log.warn("Aborting reduction on user request")
                 self.abort_button.disabled = True
+                if using_jupyter:
+                    self.session_ended(None, user_satisfied=False)
+                    self.doc.clear()
 
         self.show_ok_cancel(f"Are you sure you want to abort?  DRAGONS reduce will exit completely.", cb)
 
@@ -292,76 +298,87 @@ class PrimitiveVisualizer(ABC):
             Bokeh document, this is saved for later in :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
         """
         self.doc = doc
-        doc.on_session_destroyed(lambda stuff: self.session_ended(stuff, False))
 
-        self.visualize(doc)
+        # wrap the UI setup in a function.  We will callt his directly unless we are
+        # running in a Jupyter context, in which we need to post it to the document to
+        # execute in that event loop
 
-        if server.test_mode:
-            # Simulate a click of the accept button
-            self.do_later(lambda: self.submit_button_handler(None))
+        def ui_setup():
+            doc.on_session_destroyed(lambda stuff: self.session_ended(stuff, False))
 
-        # Add a widget we can use for triggering a message
-        # This is a workaround, since CustomJS calls can only
-        # respond to DOM events.  We'll be able to trigger
-        # a Custom JS callback by modifying this widget
-        self._message_holder = PreText(text='', css_classes=['hidden'])
-        callback = CustomJS(args={}, code='alert(cb_obj.text);')
-        self._message_holder.js_on_change('text', callback)
+            self.visualize(doc)
 
-        # Add the invisible PreText element to drive message dialogs off
-        # of.  We do this with a do_later so that it will happen after the
-        # subclass implementation does all of it's document setup.  So,
-        # this widget will be added at the end.
-        self.do_later(lambda: doc.add_root(row(self._message_holder, )))
+            if server.test_mode:
+                # Simulate a click of the accept button
+                self.do_later(lambda: self.submit_button_handler(None))
 
-        # and we have to hide it, the css class isn't enough
-        def _hide_message_holder():
-            self._message_holder.visible = False
-        self.do_later(_hide_message_holder)
+            # Add a widget we can use for triggering a message
+            # This is a workaround, since CustomJS calls can only
+            # respond to DOM events.  We'll be able to trigger
+            # a Custom JS callback by modifying this widget
+            self._message_holder = PreText(text='', css_classes=['hidden'])
+            callback = CustomJS(args={}, code='alert(cb_obj.text);')
+            self._message_holder.js_on_change('text', callback)
 
-        #################
-        # OK/Cancel Setup
-        #################
-        # This is a workaround for bokeh so we can drive an ok/cancel dialog box
-        # and have the response sent back down via a Tornado web endpoint.  This
-        # is not dependent on being tied to a button like the earlier version.
-        # It does, therefore, need it's own widget which we supply as hidden
-        # and also double as the means for passing the text message to the js
-        def _internal_ok_cancel_handler(args):
-            if args['result'] == [b'confirmed']:
-                result = True
-            else:
-                result = False
-            self.do_later(lambda: self._ok_cancel_callback(result))
+            # Add the invisible PreText element to drive message dialogs off
+            # of.  We do this with a do_later so that it will happen after the
+            # subclass implementation does all of it's document setup.  So,
+            # this widget will be added at the end.
+            self.do_later(lambda: doc.add_root(row(self._message_holder, )))
 
-        # callback_name is the unique ID that will be passed back in to the /handle_callback endpoint
-        # so it will execute the python method _internal_ok_cancel_handler
-        callback_name = register_callback(_internal_ok_cancel_handler)
+            # and we have to hide it, the css class isn't enough
+            def _hide_message_holder():
+                self._message_holder.visible = False
+            self.do_later(_hide_message_holder)
 
-        # This JS callback will execute when the ok/cancel exits
-        ok_cancel_callback = CustomJS(code="""
-            cb_obj.name = '';
-            var confirmed = confirm(cb_obj.text);
-            var cbid = '%s';
-            if (confirmed) {
-                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
-            } else {
-                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
-            }
-            """ % (callback_name,))
+            #################
+            # OK/Cancel Setup
+            #################
+            # This is a workaround for bokeh so we can drive an ok/cancel dialog box
+            # and have the response sent back down via a Tornado web endpoint.  This
+            # is not dependent on being tied to a button like the earlier version.
+            # It does, therefore, need it's own widget which we supply as hidden
+            # and also double as the means for passing the text message to the js
+            def _internal_ok_cancel_handler(args):
+                if args['result'] == [b'confirmed']:
+                    result = True
+                else:
+                    result = False
+                self.do_later(lambda: self._ok_cancel_callback(result))
 
-        # Add a widget we can use for triggering an ok/cancel
-        # This is a workaround, since CustomJS calls can only
-        # respond to DOM events.  We'll be able to trigger
-        # a Custom JS callback by modifying this widget
-        self._ok_cancel_holder = PreText(text='', css_classes=['hidden'])
-        self._ok_cancel_holder.js_on_change('text', ok_cancel_callback)
+            # callback_name is the unique ID that will be passed back in to the /handle_callback endpoint
+            # so it will execute the python method _internal_ok_cancel_handler
+            callback_name = register_callback(_internal_ok_cancel_handler)
 
-        # Add the invisible PreText element to drive message dialogs off
-        # of.  We do this with a do_later so that it will happen after the
-        # subclass implementation does all of it's document setup.  So,
-        # this widget will be added at the end.
-        self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
+            # This JS callback will execute when the ok/cancel exits
+            ok_cancel_callback = CustomJS(code="""
+                cb_obj.name = '';
+                var confirmed = confirm(cb_obj.text);
+                var cbid = '%s';
+                if (confirmed) {
+                    $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+                } else {
+                    $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+                }
+                """ % (callback_name,))
+
+            # Add a widget we can use for triggering an ok/cancel
+            # This is a workaround, since CustomJS calls can only
+            # respond to DOM events.  We'll be able to trigger
+            # a Custom JS callback by modifying this widget
+            self._ok_cancel_holder = PreText(text='', css_classes=['hidden'])
+            self._ok_cancel_holder.js_on_change('text', ok_cancel_callback)
+
+            # Add the invisible PreText element to drive message dialogs off
+            # of.  We do this with a do_later so that it will happen after the
+            # subclass implementation does all of it's document setup.  So,
+            # this widget will be added at the end.
+            self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
+
+        if using_jupyter:
+            doc.add_next_tick_callback(ui_setup)
+        else:
+            ui_setup()
 
     def show_ok_cancel(self, message, callback):
         """
