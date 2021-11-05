@@ -1,11 +1,11 @@
 import pytest
-#from pytest_dragons.plugin import path_to_inputs
 
 import os
 import numpy as np
 
 import astrodata, gemini_instruments
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from recipe_system.testing import ref_ad_factory
 
 datasets = [("N20180908S0020_wavelengthSolutionAttached.fits", "N20180908S0019_flat.fits")]
 
