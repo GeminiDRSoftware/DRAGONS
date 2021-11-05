@@ -188,7 +188,7 @@ def jupyter_reduce(files=[], recipename=None, uparms=None, upload=[], mode=None)
     from recipe_system.reduction.coreReduce import Reduce
     from bokeh.io import show, output_notebook
 
-    output_notebook()
+    # output_notebook()
 
     def stub_redux():
         redux = Reduce()
@@ -201,7 +201,14 @@ def jupyter_reduce(files=[], recipename=None, uparms=None, upload=[], mode=None)
             redux.mode = mode
         redux.runr()
 
-    show(lambda x: setup_jupyter(x, stub_redux))
+    # uncomment output_notebook above and remove this, then uncomment the show if we want to go back to single cell
+    def threaded_redux():
+        import threading
+        t = threading.Thread(name='jupyter_dragons_interactive_thread', target=stub_redux)
+        t.start()
+    _jupyter_doc.add_next_tick_callback(threaded_redux)
+
+    # show(lambda x: setup_jupyter(x, stub_redux))
 
 
 _doc = None
