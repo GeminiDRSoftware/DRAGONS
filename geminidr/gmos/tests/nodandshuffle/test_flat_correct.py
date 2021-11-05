@@ -10,6 +10,7 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 datasets = [("N20180908S0020_wavelengthSolutionAttached.fits", "N20180908S0019_flat.fits")]
 
 @pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, flat", datasets, indirect=True)
 def test_flat_correct(ad, flat):
     p = GMOSLongslit([ad])
