@@ -12,7 +12,7 @@ datasets = [("N20180908S0020_wavelengthSolutionAttached.fits", "N20180908S0019_f
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, flat", datasets, indirect=True)
-def test_flat_correct(ad, flat):
+def test_flat_correct(ad, flat, ref_ad_factory):
     p = GMOSLongslit([ad])
     ad_out = p.flatCorrect(flat=flat).pop()
     ad_ref = ref_ad_factory(ad_out.filename)
