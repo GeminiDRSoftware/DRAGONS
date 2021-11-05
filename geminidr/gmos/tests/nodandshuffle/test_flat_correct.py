@@ -1,5 +1,5 @@
 import pytest
-from pytest_dragons.plugin import path_to_inputs
+#from pytest_dragons.plugin import path_to_inputs
 
 import os
 import numpy as np
@@ -11,7 +11,7 @@ datasets = [("N20180908S0020_wavelengthSolutionAttached.fits", "N20180908S0019_f
 
 @pytest.mark.gmosls
 @pytest.mark.parametrize("ad, flat", datasets, indirect=True)
-def test_add_illum_mask_position(ad, flat):
+def test_flat_correct(ad, flat):
     p = GMOSLongslit([ad])
     ad_out = p.flatCorrect(flat=flat).pop()
     ad_ref = ref_ad_factory(ad_out.filename)
