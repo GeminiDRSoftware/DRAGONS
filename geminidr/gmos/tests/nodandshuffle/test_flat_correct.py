@@ -17,9 +17,9 @@ def test_flat_correct(ad, flat, ref_ad_factory):
     ad_out = p.flatCorrect(flat=flat).pop()
     ad_ref = ref_ad_factory(ad_out.filename)
     for ext, ext_ref in zip(ad_out, ad_ref):
-        np.testing.assert_allclose(ext.data, ext_ref.data)
+        np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1e-6)
         np.testing.assert_array_equal(ext.mask, ext_ref.mask)
-        np.testing.assert_allclose(ext.variance, ext_ref.variance)
+        np.testing.assert_allclose(ext.variance, ext_ref.variance, rtol=1e-6)
 
 
 @pytest.fixture(scope='function')
