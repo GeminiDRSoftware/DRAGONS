@@ -12,9 +12,10 @@ datasets = [("N20180908S0020_distortionCorrected.fits", {}, -371.75),
             ("N20180908S0020_distortionCorrected.fits", {"align_sources": True, "region": "2850:2870"}, -375.41),
             ]
 
+
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad,kwargs,result", datasets, indirect=True)
+@pytest.mark.parametrize("ad,kwargs,result", datasets, indirect=["ad"])
 def test_combine_nod_and_shuffle_beams(ad, kwargs, result, caplog):
     p = GMOSLongslit([ad])
     p.combineNodAndShuffleBeams(**kwargs)
