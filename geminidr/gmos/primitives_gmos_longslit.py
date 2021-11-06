@@ -6,6 +6,7 @@
 
 from copy import copy, deepcopy
 from importlib import import_module
+from itertools import groupby
 
 from gempy.library.config import RangeField
 
@@ -137,7 +138,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 row_medians = np.percentile(np.concatenate(
                     [ext.data for ext in ad], axis=1),
                     95, axis=1)
-                row_medians -= at.boxcar(row_medians, size=50 // ybin)
 
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
@@ -155,6 +155,18 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     model[yccd[0]:yccd[1]+1] = 1
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
+
+                if 'NODANDSHUFFLE' in ad.tags:
+                    shuffle_pixels = ad.shuffle_pixels() // ybin
+                    model[:-shuffle_pixels] += model[shuffle_pixels:]
+
+                # Find largest number of pixels between slits, which will
+                # define a smoothing box scale. This is necessary to take out
+                # the slit function, if most of the detector is illuminated
+                if model.mean() > 0.75:
+                    longest_gap = max([len(list(group)) for item, group in
+                                       groupby(model) if item == 0])
+                    row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
 
                 if shift is None:
                     mshift = max_shift // ybin + 2

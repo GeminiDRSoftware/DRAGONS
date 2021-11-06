@@ -22,9 +22,9 @@ def validate_regions_float(value):
     at.parse_user_regions(value, dtype=float, allow_step=False)
     return True
 
-def validate_regions_int(value):
-    at.parse_user_regions(value, dtype=int, allow_step=True)
-    return True
+def validate_regions_int(value, multiple=False):
+    ranges = at.parse_user_regions(value, dtype=int, allow_step=True)
+    return multiple or len(ranges) == 1
 
 
 class adjustWCSToReferenceConfig(config.Config):
@@ -39,6 +39,8 @@ class adjustWCSToReferenceConfig(config.Config):
                                   allowed={"sources_offsets": "Match sources using telescope offsets",
                                            "offsets": "Use telescope offsets only"},
                                   default="offsets", optional=True)
+    region = config.Field("Pixel section for measuring the spatial profile",
+                           str, None, optional=True, check=validate_regions_int)
     tolerance = config.RangeField("Maximum distance from the header offset, "
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)

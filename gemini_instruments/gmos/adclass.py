@@ -30,7 +30,7 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(['DARK'], blocks=['IMAGE', 'SPECT'])
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_arc(self):

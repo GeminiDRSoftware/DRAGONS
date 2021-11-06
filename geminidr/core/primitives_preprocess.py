@@ -470,8 +470,8 @@ class Preprocess(PrimitivesBASE):
                                       check_units=True)
 
             origin_str = f" (obtained from {origin})" if origin else ""
-            log.fullinfo(f"{ad.filename}: subtracting the dark "
-                         f"{dark.filename}{origin_str}")
+            log.stdinfo(f"{ad.filename}: subtracting the dark "
+                        f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename

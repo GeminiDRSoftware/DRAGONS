@@ -20,6 +20,7 @@ timestamp_keys = {
     "attachWavelengthSolution": "ATTWVSOL",
     "biasCorrect": "BIASCORR",
     "calculateSensitivity": "SENSFUNC",
+    "combineNodAndShuffleBeams": "NSCOMB",
     "correctBackgroundToReference": "CORRBG",
     "makeSlitIllum": "MAKESILL",
     "cutFootprints": "CUTSFP",
