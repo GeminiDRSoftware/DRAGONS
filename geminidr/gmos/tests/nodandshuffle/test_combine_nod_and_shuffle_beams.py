@@ -14,10 +14,10 @@ datasets = [("N20180908S0020_distortionCorrected.fits", {}, -371.75),
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, params, result", datasets, indirect=True)
-def test_combine_nod_and_shuffle_beams(ad, params, result, caplog):
+@pytest.mark.parametrize("ad,kwargs,result", datasets, indirect=True)
+def test_combine_nod_and_shuffle_beams(ad, kwargs, result, caplog):
     p = GMOSLongslit([ad])
-    p.combineNodAndShuffleBeams(**params)
+    p.combineNodAndShuffleBeams(**kwargs)
     for rec in caplog.records:
         m = re.match(".*? (-?\d*.\d*) pixels", rec)
         if m:
