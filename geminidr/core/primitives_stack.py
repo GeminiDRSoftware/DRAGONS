@@ -292,8 +292,8 @@ class Stack(PrimitivesBASE):
                 gains = [g[index] for g in gain_list]
                 # If all inputs have the same gain, the output will also have
                 # this gain, and since the header has been copied, we don't
-                # need to do anything!
-                if len(set(gains)) > 1:
+                # need to do anything! (Can't use set() if gains are lists.)
+                if not all(g == gains[0] for g in gains):
                     log.warning("Not all inputs have the same gain.")
                     try:
                         output_gain = num_img / np.sum([1/g for g in gains])
