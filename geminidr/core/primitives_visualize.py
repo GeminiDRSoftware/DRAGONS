@@ -6,6 +6,7 @@
 import json
 import numpy as np
 import time
+import inspect
 import urllib.request
 
 from copy import deepcopy
@@ -346,6 +347,8 @@ class Visualize(PrimitivesBASE):
             # by a value have the same number of pixels, so the mean is OK
             with suppress(TypeError):  # some NoneTypes in read_noise
                 ad_out[0].hdr[ad._keyword_for('read_noise')] = np.mean(ad.read_noise())
+            propagate_gain(ad_out[0], ad.gain())
+
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
@@ -426,6 +429,7 @@ class Visualize(PrimitivesBASE):
                 yorigins, xorigins = np.zeros((2,) + array_info.detector_shape)
             it_ccd = np.nditer(xorigins, flags=['multi_index'])
             i = 0
+            gain_list = []
             read_noise_list = []
             while not it_ccd.finished:
                 ccdy, ccdx = it_ccd.multi_index
@@ -478,6 +482,7 @@ class Visualize(PrimitivesBASE):
                     # Reset data_section since we're not trimming overscans
                     ext.hdr[kw] = '[1:{},1:{}]'.format(*reversed(ext.shape))
                     read_noise_list.append(ext.read_noise())
+                    gain_list.append(ext.gain())
                     it.iternext()
 
                 if tile_all:
@@ -502,6 +507,8 @@ class Visualize(PrimitivesBASE):
                             ad[exts], "tile",attributes=attributes, process_objcat=True)[0])
                     with suppress(TypeError):
                         ad_out[-1].hdr[kw_readnoise] = np.mean(read_noise_list)
+                    propagate_gain(ad_out[-1], gain_list, report_ext=True)
+                    gain_list = []
                     read_noise_list = []
 
                 i += 1
@@ -512,6 +519,7 @@ class Visualize(PrimitivesBASE):
                                                      process_objcat=True)
                 with suppress(TypeError):
                     ad_out[0].hdr[kw_readnoise] = np.mean(read_noise_list)
+                propagate_gain(ad_out[0], gain_list)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.orig_filename = ad.filename
@@ -841,3 +849,25 @@ class _localNumDisplay(nd.NumDisplay):
         # Now, send the trimmed image (section) to the display device
         _d.writeImage(bpix,_wcsinfo)
         #displaydev.close()
+
+
+def propagate_gain(ext, gain_list, report_ext=False):
+    """
+
+    Parameters
+    ----------
+    ext: single-slice AstroData
+        the extension where the gain value is to be added
+    gain_list: iterable
+        input gain values from the extensions being combined
+    report_ext: bool
+        report the extension ID in the warning message?
+    """
+    log = logutils.get_logger(__name__)
+    if not all(g == gain_list[0] for g in gain_list):
+        if not any(rec.function == "display" for rec in inspect.stack()):
+            id = f"{ext.filename} extension {ext.id}" if report_ext else f"{ext.filename}"
+            log.warning(f"The extensions in {id} have different gains. "
+                        "Run ADUToElectrons first?")
+        with suppress(TypeError):  # some NoneTypes in gain
+            ext.hdr[ext._keyword_for('gain')] = np.mean(gain_list)
