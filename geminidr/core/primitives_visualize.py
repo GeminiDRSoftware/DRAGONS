@@ -10,6 +10,7 @@ import urllib.request
 
 from copy import deepcopy
 from importlib import import_module
+from contextlib import suppress
 
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
@@ -343,7 +344,8 @@ class Visualize(PrimitivesBASE):
 
             # Update read noise: we assume that all the regions represented
             # by a value have the same number of pixels, so the mean is OK
-            ad_out[0].hdr[ad._keyword_for('read_noise')] = np.mean(ad.read_noise())
+            with suppress(TypeError):  # some NoneTypes in read_noise
+                ad_out[0].hdr[ad._keyword_for('read_noise')] = np.mean(ad.read_noise())
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
@@ -498,7 +500,8 @@ class Visualize(PrimitivesBASE):
                     else:
                         ad_out.append(transform.resample_from_wcs(
                             ad[exts], "tile",attributes=attributes, process_objcat=True)[0])
-                    ad_out[-1].hdr[kw_readnoise] = np.mean(read_noise_list)
+                    with suppress(TypeError):
+                        ad_out[-1].hdr[kw_readnoise] = np.mean(read_noise_list)
                     read_noise_list = []
 
                 i += 1
@@ -507,7 +510,8 @@ class Visualize(PrimitivesBASE):
             if tile_all:
                 ad_out = transform.resample_from_wcs(ad, "tile", attributes=attributes,
                                                      process_objcat=True)
-                ad_out[0].hdr[kw_readnoise] = np.mean(read_noise_list)
+                with suppress(TypeError):
+                    ad_out[0].hdr[kw_readnoise] = np.mean(read_noise_list)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.orig_filename = ad.filename
