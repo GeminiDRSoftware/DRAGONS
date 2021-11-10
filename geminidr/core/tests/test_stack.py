@@ -100,8 +100,8 @@ def test_rejmap(niri_adinputs):
 
 
 def test_stacking_without_gain_or_readnoise(f2_adinputs):
-    """We use F2 since it doesn't use a LUT to return values for the
-    gain() and read_noise() descriptors"""
+    """We use F2 since our fake data return None for gain and read_noise,
+    due to the absence of the LNRS keyword"""
     p = F2Image(f2_adinputs)
     assert f2_adinputs[0].gain() == [None]
     assert f2_adinputs[0].read_noise() == [None]
