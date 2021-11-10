@@ -41,8 +41,8 @@ def niri_adinputs():
     return adinputs
 
 
-@pytest.mark.skip("bquint - Investigate this test")
 def test_error_only_one_file(niri_adinputs, caplog):
+    caplog.set_level(20)  # INFO
     # With only one file
     p = NIRIImage(niri_adinputs[1:])
     p.stackFrames()
