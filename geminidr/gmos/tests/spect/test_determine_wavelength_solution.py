@@ -44,7 +44,7 @@ from specutils.utils.wcs_utils import air_to_vac
 import astrodata
 import geminidr
 
-from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit, GMOSClassicLongslit
 from gempy.library import astromodels as am
 from gempy.utils import logutils
 
@@ -217,7 +217,7 @@ def test_regression_determine_wavelength_solution(
 @pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
                          indirect=True)
 def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
-    p = GMOSLongslit([])
+    p = GMOSClassicLongslit([])
     p.viewer = geminidr.dormantViewer(p, None)
 
     ad_air = p.determineWavelengthSolution(
@@ -242,7 +242,7 @@ def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
                          indirect=True)
 @pytest.mark.parametrize("in_vacuo", (True, False))
 def test_user_defined_linelist(ad, fwidth, order, min_snr, in_vacuo):
-    p = GMOSLongslit([])
+    p = GMOSClassicLongslit([])
     p.viewer = geminidr.dormantViewer(p, None)
     params = determine_wavelength_solution_parameters.copy()
     params.pop("linelist")
