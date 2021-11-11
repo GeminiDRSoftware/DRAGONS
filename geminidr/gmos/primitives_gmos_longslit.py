@@ -48,13 +48,28 @@ from ..interactive.interactive import UIParameters
 
 
 @parameter_override
-class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
+class GMOSLongslit():
+    """
+    "Magic" class to provide the correct class for N&S and classic data
+    """
+    tagset = {"GEMINI", "GMOS", "SPECT", "LS"}
+
+    def __new__(cls, adinputs, **kwargs):
+        if adinputs:
+            _class = GMOSNSLongslit if "NODANDSHUFFLE" in adinputs[0].tags else GMOSClassicLongslit
+            return _class(adinputs, **kwargs)
+        raise ValueError("GMOSLongslit objects cannot be instantiated without"
+                         " specifying 'adinputs'. Please instantiate either"
+                         "'GMOSClassicLongslit' or 'GMOSNSLongslit' instead.")
+
+
+@parameter_override
+class GMOSClassicLongslit(GMOSSpect):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = {"GEMINI", "GMOS", "SPECT", "LS"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)
@@ -1004,3 +1019,10 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
         ad_out.append(temp_ad[0])
 
     return ad_out
+
+
+@parameter_override
+class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
+    def __init__(self, adinputs, **kwargs):
+        super().__init__(adinputs, **kwargs)
+        self._param_update(parameters_gmos_longslit)
