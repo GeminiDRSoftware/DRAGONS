@@ -11,19 +11,20 @@ Descriptors must be defined for input data.  This also applies to data
 that is to be served by the Gemini Observatory Archive (GOA).
 
 For any ``AstroData`` objects, to get the list of the descriptors that are
-defined use the ``astrodata.descriptor_list()`` function::
+defined use the ``AstroData.descriptors`` attribute::
 
     >>> import astrodata
     >>> import gemini_instruments
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
 
-    >>> astrodata.descriptor_list(ad)
+    >>> ad.descriptors
+    ('airmass', 'amp_read_area', 'ao_seeing', ..., 'well_depth_setting')
 
 To get the values::
 
     >>> ad.airmass()
 
-    >>> for descriptor in astrodata.descriptor_list(ad):
+    >>> for descriptor in ad.descriptors:
     ...     print(descriptor, getattr(ad, descriptor)())
     ...
 
