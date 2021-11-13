@@ -23,6 +23,7 @@ test_data = [
     ("S20191005S0051_distortionCorrected.fits", 261),  # GS-2019B-Q-132-35-001 R400 0.73um
 ]
 
+
 # More real-world test cases with target aperture and snr parameter
 # Filename, aperture location, tolerance, snr, # expected results
 extra_test_data = [
