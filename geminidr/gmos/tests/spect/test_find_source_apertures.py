@@ -23,6 +23,13 @@ test_data = [
     ("S20191005S0051_distortionCorrected.fits", 261),  # GS-2019B-Q-132-35-001 R400 0.73um
 ]
 
+# More real-world test cases with target aperture and snr parameter
+# Filename, aperture location, tolerance, snr, # expected results
+extra_test_data = [
+    ("S20210219S0076_distortionCorrected.fits", 1169, 5, 5, None),  # GS-2021A-DD-102 Supernova within a galaxy bg
+    ("N20210730S0037_mosaic.fits", 1068, 5, 4, 1)                   # Kathleen test data via Chris, expecting 1 ap
+]
+
 # Parameters for test_find_apertures_with_fake_data(...)
 # ToDo - Explore a bit more the parameter space (e.g., larger seeing)
 seeing_pars = [0.5, 1.0, 1.25]
@@ -86,6 +93,28 @@ def test_find_apertures_using_standard_star(ad_and_center):
     np.testing.assert_allclose(ad[0].APERTURE['c0'], expected_center, 3)
 
 
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad_center_tolerance_snr", extra_test_data, indirect=True)
+def test_find_apertures_extra_cases(ad_center_tolerance_snr):
+    """
+    Test that p.findApertures can find apertures in special test cases, such as
+    with galaxy background
+    """
+    ad, expected_center, range, snr, count = ad_center_tolerance_snr
+    args = dict()
+    if snr is not None:
+        args["min_snr"] = snr
+    p = GMOSSpect([ad])
+    _ad = p.findApertures(max_apertures=1, **args).pop()
+
+    assert hasattr(ad[0], 'APERTURE')
+    if count is not None:
+        assert(len(ad[0].APERTURE) == count)
+    if expected_center is not None:
+        assert len([ext for ext in ad if abs(ext.APERTURE['c0'] - expected_center) < range]) >= 1
+
+
 # -- Fixtures -----------------------------------------------------------------
 @pytest.fixture(scope='function')
 def ad_and_center(path_to_inputs, request):
@@ -114,6 +143,43 @@ def ad_and_center(path_to_inputs, request):
         raise FileNotFoundError(path)
 
     return ad, center
+
+
+@pytest.fixture(scope='function')
+def ad_center_tolerance_snr(path_to_inputs, request):
+    """
+    Returns the pre-processed spectrum file and some additional input/check parameters.
+
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
+
+    Returns
+    -------
+    AstroData
+        Input spectrum processed up to right before the `applyQECorrection`.
+    center
+        expected location of aperture center
+    tolerance
+        tolerance to match aperture center
+    snr
+        min_snr parameter for find_apertures
+    count
+        number of apertures expected
+    """
+    filename, center, tolerance, snr, count = request.param
+    path = os.path.join(path_to_inputs, filename)
+
+    if os.path.exists(path):
+        ad = astrodata.open(path)
+    else:
+        raise FileNotFoundError(path)
+
+    return ad, center, tolerance, snr, count
 
 
 def create_inputs_recipe():
