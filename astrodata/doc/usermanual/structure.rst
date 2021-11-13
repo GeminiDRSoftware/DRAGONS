@@ -86,7 +86,7 @@ the object mask of the first extension, ``ad[0].OBJMASK``.
 
 In the example above, the "Other Extensions" at the bottom of the
 :meth:`~astrodata.AstroData.info` display contains a ``REFCAT`` table which in
-this case is a list of stars from a catalog that overlaps the field of view of
+this case is a list of stars from a catalog that overlaps the field of view
 covered by the pixel data. The "Other Extensions" are global extensions. They
 are not attached to any pixel extension in particular. To access a global
 extension one simply uses the name of that extension: ``ad.REFCAT``.
@@ -101,7 +101,7 @@ attribute as an :class:`astropy.io.fits.Header`.
 Any global tables, like ``REFCAT`` above, are stored in the private attribute
 ``_tables`` as a Python dictionary with the name (eg. "REFCAT") as the key.
 All tables are stored as :class:`astropy.table.Table`. Access to those table
-is done using the key directly as if it were a normal attributed, eg.
+is done using the key directly as if it were a normal attribute, eg.
 ``ad.REFCAT``. Header information for the table, if read in from a FITS table,
 is stored in the ``meta`` attribute of the :class:`astropy.table.Table`, eg.
 ``ad.REFCAT.meta['header']``. It is for information only, it is not used.
@@ -139,7 +139,7 @@ The science data is accessed as ``ad[0].data``, the variance as ``ad[0].variance
 and the data quality plane as ``ad[0].mask``.   Those familiar with astropy
 |NDData| will recognize the structure "data, error, mask", and will notice
 some differences. First |AstroData| uses the variance for the error plane, not
-the standard deviation. Another differences will be evident only when one looks
+the standard deviation. Another difference will be evident only when one looks
 at the content of the mask. |NDData| masks contain booleans, |AstroData| masks
 are ``uint16`` bit mask that contains information about the type of bad pixels
 rather than just flagging them a bad or not. Since ``0`` is equivalent to
@@ -158,14 +158,14 @@ Tables and pixel arrays associated with a science extension are
 stored in ``ad.nddata[0].meta['other']`` as a dictionary keyed on the array
 name, eg. ``OBJCAT``, ``OBJMASK``.   As it is for global tables, astropy tables
 are used for extension tables.  The extension tables and extra pixel arrays are
-accesses, like the global tables, by using the table name rather than the long
+accessed, like the global tables, by using the table name rather than the long
 format, for example ``ad[0].OBJCAT`` and ``ad[0].OBJMASK``.
 
-When reading FITS Table, the header information is stored in the
+When reading a FITS Table, the header information is stored in the
 ``meta['header']`` of the table, eg. ``ad[0].OBJCAT.meta['header']``.  That
 information is not used, it is simply a place to store what was read from disk.
 
-The header of a pixel extension directly associate with the science extension
+The header of a pixel extension directly associated with the science extension
 should match that of the science extension.  Therefore such headers are not
 stored in |AstroData|. For example, the header of ``ad[0].OBJMASK`` is the
 same as that of the science, ``ad[0].hdr``.

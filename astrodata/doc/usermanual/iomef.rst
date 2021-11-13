@@ -70,8 +70,8 @@ filename would be used. ::
 Accessing the content of a MEF file
 -----------------------------------
 
-Accessing pixel data, headers, tables will be covered in details in following
-chapters.  Here we just introduce the basic content interface.
+Accessing pixel data, headers, and tables will be covered in detail in the
+following chapters. Here we just introduce the basic content interface.
 
 For details on the |AstroData| structure, please refer to the
 :ref:`previous chapter <structure>`.
@@ -421,8 +421,8 @@ Needing true copies in memory
 Sometimes it is a true copy in memory that is needed.  This is not specific
 to MEF.  In Python, doing something like ``adnew = ad`` does not create a
 new copy of the AstrodData object; it just gives it a new name.  If you
-modify ``adnew`` you will be modify ``ad`` too.  They point to the same block
-of memory.
+modify ``adnew`` you will be modifying ``ad`` too.  They point to the same
+block of memory.
 
 To create a true independent copy, the ``deepcopy`` utility needs to be used. ::
 
@@ -430,7 +430,7 @@ To create a true independent copy, the ``deepcopy`` utility needs to be used. ::
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
     >>> adcopy = deepcopy(ad)
 
-Be careful using ``deepcopy``, you memory could balloon really fast.  Use it
+Be careful using ``deepcopy``, your memory could balloon really fast. Use it
 only when truly needed.
 
 
