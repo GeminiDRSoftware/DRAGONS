@@ -399,8 +399,8 @@ class Visualize(PrimitivesBASE):
             array_info = gt.array_information(ad)
             detshape = array_info.detector_shape
             if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
-                log.warning("{} has nothing to tile, as tile_all=False but "
-                            "each array has only one amplifier.")
+                log.warning(f"{ad.filename} has nothing to tile, as tile_all=False"
+                            " but each array has only one amplifier.")
                 adoutputs.append(ad)
                 continue
 

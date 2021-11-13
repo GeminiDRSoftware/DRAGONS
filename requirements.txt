@@ -1,2 +1,3 @@
 # this is only for RTD because it uses setup.py install instead of pip
 Cython
+docutils<0.18

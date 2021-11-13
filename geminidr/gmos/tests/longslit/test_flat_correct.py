@@ -7,7 +7,8 @@ import astrodata, gemini_instruments
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from recipe_system.testing import ref_ad_factory
 
-datasets = [("N20180908S0020_wavelengthSolutionAttached.fits", "N20180908S0019_flat.fits")]
+datasets = [("N20091018S0013_wavelengthSolutionAttached.fits", "N20090920S0020_flat.fits"),
+            ("N20180908S0020_wavelengthSolutionAttached.fits", "N20180908S0019_flat.fits")]
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
