@@ -265,7 +265,7 @@ Here is an example how to display pixel data to DS9 with ``imexam``.
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
 
     # Connect to the DS9 window (should already be opened.)
-    >>> ds9 = imexam.connect(imexam.list_active_ds9())
+    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
 
     >>> ds9.view(ad[0].data)
 

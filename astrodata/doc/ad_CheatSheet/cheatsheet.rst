@@ -389,6 +389,7 @@ Add a column::
 Add a row::
 
     >>> new_row = [0] * len(ad.REFCAT.colnames)
+    >>> new_row[1] = ''   # Cat_Id column is of "str" type.
     >>> ad.REFCAT.add_row(new_row)
 
 Selecting value from criterion::
