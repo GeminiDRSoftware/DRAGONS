@@ -161,8 +161,8 @@ class Stack(PrimitivesBASE):
         rn_list = [ad.read_noise() for ad in adinputs]
 
         # Determine whether we can construct these averages
-        process_gain = not any(g is None for g in flatten(gain_list))
-        process_rn = not any(rn is None for rn in flatten(rn_list))
+        process_gain = not None in flatten(gain_list)
+        process_rn = not None in flatten(rn_list)
 
         # Compute gain and read noise of final stacked images
         num_img = len(adinputs)
