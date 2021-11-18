@@ -114,6 +114,10 @@ class Stack(PrimitivesBASE):
         AssertError
             If any of the `.read_noise()` descriptors is None.
         """
+        def flatten(*args):
+            return (el for item in args for el in (
+                flatten(*item) if isinstance(item, (list, tuple)) else (item,)))
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackFrames"]
@@ -153,25 +157,16 @@ class Stack(PrimitivesBASE):
 
         # We will determine the average gain from the input AstroData
         # objects and add in quadrature the read noise
-        gains = [ad.gain() for ad in adinputs]
-        read_noises = [ad.read_noise() for ad in adinputs]
+        gain_list = [ad.gain() for ad in adinputs]
+        rn_list = [ad.read_noise() for ad in adinputs]
 
         # Determine whether we can construct these averages
-        process_gain = all(g is not None and not isinstance(g, list)
-                           for gain in gains for g in gain)
-        process_rn = all(rn is not None and not isinstance(rn, list)
-                         for read_noise in read_noises for rn in read_noise)
+        process_gain = not None in flatten(gain_list)
+        process_rn = not None in flatten(rn_list)
 
         # Compute gain and read noise of final stacked images
         num_img = len(adinputs)
         num_ext = len(adinputs[0])
-        if process_gain:
-            gain_list = [np.mean([gain[i] for gain in gains])
-                         for i in range(num_ext)]
-        if process_rn:
-            read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i]for rn in read_noises])) / num_img
-                                         for i in range(num_ext)]
-
         zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
         scale_factors = np.ones_like(zero_offsets)
 
@@ -265,9 +260,9 @@ class Stack(PrimitivesBASE):
                 status += " Applying offsets."
                 numbers = zfactors
             log.stdinfo(status)
-            if ((scale or zero) and (index == 0 or separate_ext)):
+            if (scale or zero) and (index == 0 or separate_ext):
                 for ad, value in zip(adinputs, numbers):
-                    log.stdinfo("{:40s}{:10.3f}".format(ad.filename, value))
+                    log.stdinfo(f"{ad.filename:40s}{value:10.3f}")
 
             shape = adinputs[0][index].nddata.shape
             if memory is None:
@@ -292,6 +287,28 @@ class Stack(PrimitivesBASE):
                                 with_mask=with_mask,
                                 save_rejection_map=save_rejection_map)
             ad_out.append(result)
+
+            if process_gain:
+                gains = [g[index] for g in gain_list]
+                # If all inputs have the same gain, the output will also have
+                # this gain, and since the header has been copied, we don't
+                # need to do anything! (Can't use set() if gains are lists.)
+                if not all(g == gains[0] for g in gains):
+                    log.warning("Not all inputs have the same gain.")
+                    try:
+                        output_gain = num_img / np.sum([1/g for g in gains])
+                    except TypeError:
+                        pass
+                    else:
+                        ad_out[-1].hdr[ad_out._keyword_for("gain")] = output_gain
+
+            if process_rn:
+                # Output gets the rms value of the inputs
+                rns = [rn[index] for rn in rn_list]
+                output_rn = np.sqrt(np.mean([np.square(np.asarray(rn).mean())
+                                             for rn in rns]))
+                ad_out[-1].hdr[ad_out._keyword_for("read_noise")] = output_rn
+
             log.stdinfo("")
 
         # Propagate REFCAT as the union of all input REFCATs
@@ -314,18 +331,6 @@ class Stack(PrimitivesBASE):
             pass
         else:
             ad_out.phu.set(airmass_kw, mean_airmass, "Mean airmass for the exposure")
-
-        # Set GAIN to the average of input gains. Set the RDNOISE to the
-        # sum in quadrature of the input read noises.
-        if process_gain:
-            for ext, gain in zip(ad_out, gain_list):
-                ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
-            ad_out.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
-
-        if process_rn:
-            for ext, rn in zip(ad_out, read_noise_list):
-                ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
-            ad_out.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
 
         # Add suffix to datalabel to distinguish from the reference frame
         if sfx[0] == '_':

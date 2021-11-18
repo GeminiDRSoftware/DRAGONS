@@ -8,7 +8,7 @@ from astrodata import (astro_data_tag, astro_data_descriptor, returns_list,
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 
 
 class AstroDataGmos(AstroDataGemini):
@@ -567,6 +567,7 @@ class AstroDataGmos(AstroDataGemini):
         return 'Imaging' if mask == 'None' else mask
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -578,10 +579,6 @@ class AstroDataGmos(AstroDataGemini):
             Gains used for the observation
 
         """
-        # If the file has been prepared, we trust the header keywords
-        if 'PREPARED' in self.tags:
-            return self.hdr.get(self._keyword_for('gain'))
-
         # Get the correct dict of gain values
         ut_date = self.ut_date()
         if ut_date is None:
@@ -917,6 +914,7 @@ class AstroDataGmos(AstroDataGemini):
         return mode_dict.get(mode_key)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def read_noise(self):
         """

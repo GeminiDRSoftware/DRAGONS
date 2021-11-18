@@ -106,6 +106,17 @@ gemini_keyword_names = dict(
     telescope_y_offset = 'YOFFSET',
 )
 
+
+def use_keyword_if_prepared(fn):
+    def gn(self):
+        if "PREPARED" in self.tags:
+            try:
+                return self.hdr[self._keyword_for(fn.__name__)]
+            except (KeyError, AttributeError):
+                pass
+        return fn(self)
+    return gn
+
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
     __keyword_dict = gemini_keyword_names
