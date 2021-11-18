@@ -26,7 +26,6 @@ To get the values::
 
     >>> for descriptor in ad.descriptors:
     ...     print(descriptor, getattr(ad, descriptor)())
-    ...
 
 Note that not all of the descriptors below are defined for all of the
 instruments.  For example, ``shuffle_pixels`` is defined only for GMOS data
@@ -132,7 +131,7 @@ since only GMOS offers a Nod & Shuffle mode.
 | gain_setting                   | Human readable gain setting (eg. low, high)                    | str             |
 +--------------------------------+----------------------------------------------------------------+-----------------+
 | gcal_lamp                      | Returns the name of the GCAL lamp being used, or "Off" if no   | str             |
-|                                | lamp is in used.                                               |                 |
+|                                | lamp is in use.                                               |                 |
 +--------------------------------+----------------------------------------------------------------+-----------------+
 | group_id                       | Gemini observation group ID that identifies compatible data.   | str             |
 +--------------------------------+----------------------------------------------------------------+-----------------+
@@ -247,4 +246,3 @@ since only GMOS offers a Nod & Shuffle mode.
 +--------------------------------+----------------------------------------------------------------+-----------------+
 | well_depth_setting             | Human readable well depth setting (eg. shallow, deep)          | str             |
 +--------------------------------+----------------------------------------------------------------+-----------------+
-

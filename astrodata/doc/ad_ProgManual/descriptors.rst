@@ -15,7 +15,7 @@ potentially doing some processing in between. They exist to:
   ``AstroDataNiri`` overrides this to provide a hard-coded value.
 
   More complex implementations also exist. In order to determine the gain
-  of a GMOS observations, ``AstroDataGmos`` uses the observation date
+  of a GMOS observation, ``AstroDataGmos`` uses the observation date
   (provided by a descriptor) to select a particular lookup table, and
   then uses the values of other descriptors to select the correct entry
   in the table.
@@ -28,7 +28,7 @@ potentially doing some processing in between. They exist to:
 Descriptors **should** be decorated using
 ``astrodata.core.astro_data_descriptor``. The only function of this decorator
 is to ensure that the descriptor is marked as such: it does not alter its input
-or output in any way. This lets the user to explore the API of an AstroData
+or output in any way. This lets the user explore the API of an AstroData
 object via the ``descriptors`` property.
 
 Descriptors **can** be decorated with ``astrodata.core.returns_list`` to

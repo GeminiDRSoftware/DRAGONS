@@ -51,7 +51,7 @@ This is all completely transparent to the user.  One simply opens the data
 file and all the descriptors are ready to be used.
 
 .. note::
-    Of course if the Descriptors have not be implemented for that specific
+    Of course if the Descriptors have not been implemented for that specific
     data, they will not work.  They should all be defined for Gemini data.
     For other sources, the headers can be accessed directly, one keyword at
     a time.  This type of access is discussed below.  This is also useful
@@ -140,13 +140,13 @@ is available for header content falling outside the scope of the descriptors.
 
 One important thing to keep in mind is that the PHU (Primary Header Unit) and
 the extension headers are accessed slightly differently.  The attribute
-``phu`` needs to used for the PHU, and ``hdr`` for the extension headers.
+``phu`` needs to be used for the PHU, and ``hdr`` for the extension headers.
 
 Here are some examples of direct header access::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
 
-    >>> #--- Get keyword value from teh PHU
+    >>> #--- Get keyword value from the PHU
     >>> ad.phu['AOFOLD']
     'park-pos.'
 
@@ -154,7 +154,7 @@ Here are some examples of direct header access::
     >>> ad[0].hdr['CRPIX1']
     511.862999160781
 
-    >>> #--- Get keyword value from all the extension in one call.
+    >>> #--- Get keyword value from all the extensions in one call.
     >>> ad.hdr['CRPIX1']
     [511.862999160781, 287.862999160781, -0.137000839218696, -224.137000839219]
 
@@ -171,7 +171,7 @@ Entire headers can be retrieved as ``fits`` ``Header`` objects::
     <class 'astropy.io.fits.header.Header'>
 
 In interactive mode, it is possible to print the headers on the screen as
-follow ::
+follows::
 
     >>> ad.phu
     SIMPLE  =                    T / file does conform to FITS standard
@@ -249,7 +249,7 @@ For proper and complete instructions on how to create Astrodata Descriptors,
 the reader is invited to refer to the Astrodata Programmer Manual.  Here we
 provide a simple introduction that might help some readers better understand
 Astrodata Descriptors, or serve as a quick reference for those who have
-written Astrodata Descriptor in the past but need a little refresher.
+written Astrodata Descriptors in the past but need a little refresher.
 
 The Astrodata Descriptors are defined in an ``AstroData`` class.  The
 ``AstroData`` class specific to an instrument is located in a separate

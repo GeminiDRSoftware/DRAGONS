@@ -46,8 +46,8 @@ the pixel data. ::
 
 In this example, we first access the pixels for the second extensions.
 Remember that in Python, list are zero-indexed, hence we access the second
-extension as ``ad[1]``.   The ``.data`` attribute contains a numpy ``ndarray``.
-In the for-loop, for each extension, we get the data and use the numpy
+extension as ``ad[1]``.   The ``.data`` attribute contains a NumPy ``ndarray``.
+In the for-loop, for each extension, we get the data and use the NumPy
 ``.sum()`` method to sum the pixel values.   Anything that can be done
 with a ``ndarray`` can be done on ``AstroData`` pixel data.
 
@@ -227,13 +227,13 @@ masked.   For example at Gemini here is our bit mapping for bad pixels.
 (These definitions are located in ``geminidr.gemini.lookups.DQ_definitions``.)
 
 So a pixel marked 10 in the mask, would be a "non-linear" "cosmic ray".  The
-``AstroData`` mask are propagated with bitwise-OR operation.  For example, let
-say that we are stacking frames. A pixel is set as bad (value 1)
+``AstroData`` masks are propagated with bitwise-OR operation.  For example,
+let's say that we are stacking frames. A pixel is set as bad (value 1)
 in one frame, saturated in another (value 4), and fine in all the other
 the frames (value 0).  The mask of the resulting stack will be assigned
 a value of 5 for that pixel.
 
-These bitmasks will work like any other numpy True/False mask.  There is a
+These bitmasks will work like any other NumPy True/False mask.  There is a
 usage example below using the mask.
 
 The mask can be accessed as follow::
@@ -246,7 +246,7 @@ The mask can be accessed as follow::
 
 Display
 =======
-Since the data is stored in the ``AstroData`` object as a numpy ``ndarray``
+Since the data is stored in the ``AstroData`` object as a NumPy ``ndarray``
 any tool that works on ``ndarray`` can be used.  To display to DS9 there
 is the ``imexam`` package.  The ``numdisplay`` package is still available for
 now but it is no longer supported by STScI.  We will show
@@ -397,12 +397,12 @@ too many to cover here, but here are a couple examples.
     >>> np.median(data)
 
 Note how ``mean()`` is called differently from the other two. ``mean()``
-is a ``ndarray`` method, the others are numpy functions. The implementation
+is a ``ndarray`` method, the others are NumPy functions. The implementation
 details are clearly well beyond the scope of this manual, but when looking
 for the tool you need, keep in mind that there are two sets of functions to
 look into. Duplications like ``.mean()`` and ``np.average()`` can happen,
 but they are not the norm. The readers are strongly encouraged to refer to
-the numpy documentation to find the tool they need.
+the NumPy documentation to find the tool they need.
 
 
 Clipped Statistics
@@ -458,7 +458,7 @@ The example below applies a gaussian filter to the pixel array.
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
     >>> data = ad[0].data
 
-    >>> # We need to prepare an array of the same size and shape and
+    >>> # We need to prepare an array of the same size and shape as
     >>> # the data array.  The result will be put in there.
     >>> convolved_data = np.zeros(data.size).reshape(data.shape)
 
@@ -474,7 +474,7 @@ The example below applies a gaussian filter to the pixel array.
     >>> ds9.view(convolved_data)
     >>> ds9.scale('zscale')
     >>> ds9.blink()
-    >>> # when you are convinced it's been convolved, stop the blinking.
+    >>> # When you are convinced it's been convolved, stop the blinking.
     >>> ds9.blink(blink=False)
 
 Note that there is an Astropy way to do this convolution, with tools in
@@ -654,7 +654,7 @@ add a variance plane to our raw data frame.
               .variance             ndarray           (2112, 288)    float64
 
     >>> # Let's operate on the first extension.
-    >>>
+    >>> #
     >>> # The section descriptors return the section in a Python format
     >>> # ready to use, 0-indexed.
     >>> oversec = ad[0].overscan_section()
@@ -759,8 +759,8 @@ attention.
 
     # We get the wavelength axis in Angstroms at the position we want to
     # extract, x=13, y=24.
-    # The wcs call returns a3-element list, the third element ([2]) contains
-    # contains the wavelength values for each pixel along the wavelength axis.
+    # The wcs call returns a 3-element list, the third element ([2]) contains
+    # the wavelength values for each pixel along the wavelength axis.
 
     >>> length_wlen_axis = adcube[0].shape[0]   # (wlen, y, x)
     >>> wavelengths = adcube[0].wcs(13, 24, range(length_wlen_axis))[2] # (x, y, wlen)
