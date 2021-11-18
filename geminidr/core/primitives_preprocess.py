@@ -82,7 +82,8 @@ class Preprocess(PrimitivesBASE):
         """
         This primitive will convert the units of the pixel data extensions
         of the input AstroData object from ADU to electrons by multiplying
-        by the gain.
+        by the gain. The gain keyword in each extension is then set to 1.0
+        to represent the new conversion factor.
 
         Parameters
         ----------

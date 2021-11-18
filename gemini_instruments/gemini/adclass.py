@@ -108,6 +108,13 @@ gemini_keyword_names = dict(
 
 
 def use_keyword_if_prepared(fn):
+    """
+    A decorator for descriptors. If decorated, the descriptor will bypass its
+    main code on "PREPARED" data in favour of simply returning the value of
+    the associated header keyword (as defined by the "_keyword_for" method)
+    if this exists in all the headers (if the keyword is missing, it will
+    execute the code in the descriptor method).
+    """
     def gn(self):
         if "PREPARED" in self.tags:
             try:

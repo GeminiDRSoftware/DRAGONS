@@ -289,6 +289,11 @@ class Visualize(PrimitivesBASE):
         An appropriate geometry_conf.py module containing geometric information
         is required.
 
+        The read noise keyword of the output extensions are set to the mean
+        of the read noise values returned by the input extensions being tiled.
+        The gain keyword of the output is set similarly, with a warning logged
+        if this is the case.
+
         Parameters
         ----------
         suffix: str
@@ -369,6 +374,11 @@ class Visualize(PrimitivesBASE):
         will not be trimmed. However, the WCS of the final image will
         only be correct for some of the image since extra space has been
         introduced into the image.
+
+        The read noise keyword of the output extensions are set to the mean
+        of the read noise values returned by the input extensions being tiled.
+        The gain keyword of the output is set similarly, with a warning logged
+        if this is the case.
 
         Parameters
         ----------
@@ -853,6 +863,12 @@ class _localNumDisplay(nd.NumDisplay):
 
 def propagate_gain(ext, gain_list, report_ext=False):
     """
+    Propagate the gain into an output value when combining (mosaicking or
+    tiling) multiple extensions. In addition, a warning is logged if the
+    gains are not all the same *unless* the "display" function (primitive)
+    is somewhere in the call stack. This is to prevent the warning appearing
+    whenever raw or minimally-prepared data are displayed for quality
+    assessment purposes.
 
     Parameters
     ----------
