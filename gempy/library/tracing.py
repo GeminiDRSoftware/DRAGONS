@@ -1185,7 +1185,7 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
     # widths = np.asarray([2,3,4,5,7,9,11,14,17])
 
     widths = np.asarray([(2**(i*.15)+i) for i in range(1, 9)])
-
+    print(widths)
     peaks_and_snrs = find_peaks(
         profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
         reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
