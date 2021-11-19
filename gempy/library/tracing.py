@@ -1177,7 +1177,15 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
                          threshold, sizing_method, min_snr):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
-    widths = np.arange(3, 20)
+    # widths = np.arange(3, 20)
+    # TODO trying various width inputs looking to treat the upper and
+    #  lower ends of the range in an equivalent manner with respect
+    #  to the number of wavelet solutions that include a peak
+    # widths = np.asarray([3,4,5,7,9,11,14,17,20])
+    # widths = np.asarray([2,3,4,5,7,9,11,14,17])
+
+    widths = np.asarray([(2**(i*.15)+i) for i in range(1, 9)])
+
     peaks_and_snrs = find_peaks(
         profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
         reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
