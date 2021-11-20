@@ -106,6 +106,24 @@ gemini_keyword_names = dict(
     telescope_y_offset = 'YOFFSET',
 )
 
+
+def use_keyword_if_prepared(fn):
+    """
+    A decorator for descriptors. If decorated, the descriptor will bypass its
+    main code on "PREPARED" data in favour of simply returning the value of
+    the associated header keyword (as defined by the "_keyword_for" method)
+    if this exists in all the headers (if the keyword is missing, it will
+    execute the code in the descriptor method).
+    """
+    def gn(self):
+        if "PREPARED" in self.tags:
+            try:
+                return self.hdr[self._keyword_for(fn.__name__)]
+            except (KeyError, AttributeError):
+                pass
+        return fn(self)
+    return gn
+
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
     __keyword_dict = gemini_keyword_names
