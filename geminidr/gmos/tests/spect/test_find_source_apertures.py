@@ -29,26 +29,27 @@ test_data = [
 # More real-world test cases with target aperture and snr parameter
 # Filename, aperture location, tolerance, snr, # expected results
 extra_test_data = [
-    ("S20210219S0076_align.fits", [1169], 15, 5, None),  # GS-2021A-DD-102 Supernova within a galaxy bg
-    ("N20210730S0037_mosaic.fits", [1068], 5, 4, 1)                   # Kathleen test data via Chris, expecting 1 ap
+    ("S20210219S0076_align.fits", [1169], [[1154, 1184]], 5, None),  # GS-2021A-DD-102 Supernova within a galaxy bg
+    ("N20210730S0037_mosaic.fits", [1068], [[1063, 1073]], 4, 1)                   # Kathleen test data via Chris, expecting 1 ap
 ]
+extra_test_data.clear()
 
 #################################
 # Fake Background Aperture Tests
 #################################
 
 # Edit these to provide iterables to iterate over
-BACKGROUNDS = (0,)  # overall background level
-PEAKS = (50,)  # signal in galaxy peak
-CONTRASTS = (0.25,)  # ratio of SN peak to galaxy peak
-SEPARATIONS = (8,)  # pixel separation between galaxy/SN peaks
+BACKGROUNDS = (0, 5,)  # overall background level
+PEAKS = (50, 75)  # signal in galaxy peak
+CONTRASTS = (0.25, 0.3)  # ratio of SN peak to galaxy peak
+SEPARATIONS = (8, 12)  # pixel separation between galaxy/SN peaks
 GAL_FWHMS = (40,)  # FWHM (pixels) of galaxy
-SN_FWHMS = (3,)  # FWHM (pixels) of SN
+SN_FWHMS = (3, 4)  # FWHM (pixels) of SN
 
 extra_test_data.extend([
     (f"fake_bkgd{bkgd:04.0f}_peak{peak:03.0f}_con{contrast:4.2f}_"
                 f"sep{sep:05.2f}_gal{gal_fwhm:5.2f}_sn{sn_fwhm:4.2f}.fits",
-     [1024, 1024+sep], 10, 2, 1)
+     [1024, 1024+sep], [[1024-gal_fwhm, 1023+sep], [1025-sep, 1039]], 3, None)
     for bkgd, peak, contrast, sep, gal_fwhm, sn_fwhm in cart_product(
             BACKGROUNDS, PEAKS, CONTRASTS, SEPARATIONS, GAL_FWHMS, SN_FWHMS)
 ])
@@ -127,19 +128,22 @@ def test_find_apertures_extra_cases(ad_center_tolerance_snr):
     Test that p.findApertures can find apertures in special test cases, such as
     with galaxy background
     """
-    ad, expected_centers, range, snr, count = ad_center_tolerance_snr
+    ad, expected_centers, ranges, snr, count = ad_center_tolerance_snr
     args = dict()
     if snr is not None:
         args["min_snr"] = snr
     p = GMOSSpect([ad])
-    _ad = p.findApertures(max_apertures=1, **args).pop()
+    _ad = p.findApertures(**args).pop()
 
     assert hasattr(ad[0], 'APERTURE')
     if count is not None:
         assert(len(ad[0].APERTURE) == count)
     if expected_centers is not None:
-        for expected_center in expected_centers:
-            assert len([ext for ext in ad if abs(ext.APERTURE['c0'] - expected_center) < range]) >= 1
+        apertures = ", ".join([str(ap) for ap in ad[0].APERTURE["c0"]])
+        for expected_center, range in zip(expected_centers, ranges):
+            assert len([ap for ap in ad[0].APERTURE['c0'] if (ap <= range[1] and ap >= range[0])]) >= 1, \
+                f'{ad.filename} check for aperture at {expected_center} not found within range {range} aps at ' \
+                f'{apertures}'
 
 
 # -- Fixtures -----------------------------------------------------------------
@@ -341,7 +345,6 @@ def create_inputs_automated_recipe():
         model = (Gaussian1D(amplitude=peak, mean=yc, stddev=gal_std) +
                  Gaussian1D(amplitude=peak * contrast, mean=yc + sep, stddev=sn_std))
         profile = model(np.arange(SHAPE[0]))
-        print(profile[:5])
         data = np.zeros(SHAPE) + profile[:, np.newaxis]
         data += np.random.normal(scale=RDNOISE, size=data.size).reshape(data.shape)
 
@@ -356,7 +359,7 @@ def create_inputs_automated_recipe():
 if __name__ == '__main__':
     import sys
     if "--create-inputs" in sys.argv[1:]:
-        # create_inputs_recipe()
+        create_inputs_recipe()
         create_inputs_automated_recipe()
     else:
         pytest.main()
