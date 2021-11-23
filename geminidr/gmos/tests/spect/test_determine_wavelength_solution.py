@@ -245,7 +245,6 @@ def test_user_defined_linelist(ad, params, in_vacuo):
     linelist = os.path.join(os.path.dirname(geminidr.__file__),
                             "gmos", "lookups", "CuAr_GMOS.dat")
 
-    new_params = {**determine_wavelength_solution_parameters, **params}
     ad_out = p.determineWavelengthSolution(
         [deepcopy(ad)], in_vacuo=in_vacuo, linelist=None, **new_params).pop()
     ad_out2 = p.determineWavelengthSolution(
