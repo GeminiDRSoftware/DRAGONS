@@ -111,33 +111,22 @@ input_pars = [
     ("S20130608S0182_mosaic.fits", dict()),  # B600:0.500 EEV
     ("S20131105S0105_mosaic.fits", dict()),  # B600:0.500 EEV
     ("S20140504S0008_mosaic.fits", dict()),  # B600:0.500 EEV
-    # ("S20170103S0152_mosaic.fits", dict(nbright=2)),  # B1200:0.440 HAM bad columns
+    ("S20170103S0152_mosaic.fits", dict(nbright=2)),  # B1200:0.440 HAM bad columns
     ("S20170108S0085_mosaic.fits", dict()),  # B600:0.500 HAM
     ("S20130510S0103_mosaic.fits", dict()),  # B1200:0.450 EEV
     ("S20130629S0002_mosaic.fits", dict()),  # B1200:0.525 EEV
     ("S20131123S0044_mosaic.fits", dict()),  # B1200:0.595 EEV
     ("S20170116S0189_mosaic.fits", dict()),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170103S0149_mosaic.fits
-    # ("S20170103S0149_mosaic.fits", dict()),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170730S0155_mosaic.fits
-    # ("S20170730S0155_mosaic.fits", dict()),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20171219S0117_mosaic.fits
-    # ("S20171219S0117_mosaic.fits", dict()),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170908S0189_mosaic.fits
-    # ("S20170908S0189_mosaic.fits", dict()),  # B1200:0.550 HAM
+    ("S20170908S0189_mosaic.fits", dict(nbright=1)),  # B1200:0.550 HAM bad column
     ("S20131230S0153_mosaic.fits", dict()),  # R150:0.550 EEV
     ("S20130801S0140_mosaic.fits", dict()),  # R150:0.700 EEV
-    # Todo: WARNING - No acceptable wavelength solution found for S20170430S0060_mosaic.fits
-    # ("S20170430S0060_mosaic.fits", dict()),  # R150:0.717 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170430S0063_mosaic.fits
-    # ("S20170430S0063_mosaic.fits", dict()),  # R150:0.727 HAM
+    ("S20170430S0060_mosaic.fits", dict(nbright=2)),  # R150:0.717 HAM bad columns
+    ("S20170430S0063_mosaic.fits", dict(nbright=2)),  # R150:0.727 HAM bad columns
     ("S20171102S0051_mosaic.fits", dict()),  # R150:0.950 HAM
     ("S20130114S0100_mosaic.fits", dict()),  # R400:0.620 EEV
     ("S20130217S0073_mosaic.fits", dict()),  # R400:0.800 EEV
-    # Todo: WARNING - No acceptable wavelength solution found for S20170108S0046_mosaic.fits
-    # ("S20170108S0046_mosaic.fits", dict()),  # R400:0.550 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170129S0125_mosaic.fits
-    # ("S20170129S0125_mosaic.fits", dict()),  # R400:0.685 HAM
+    ("S20170108S0046_mosaic.fits", dict(nbright=2)),  # R400:0.550 HAM bad columns
+    ("S20170129S0125_mosaic.fits", dict(nbright=1)),  # R400:0.685 HAM bad column
     ("S20170703S0199_mosaic.fits", dict()),  # R400:0.800 HAM
     ("S20170718S0420_mosaic.fits", dict()),  # R400:0.910 HAM
     ("S20100306S0460_mosaic.fits", dict()),  # R600:0.675 EEV
