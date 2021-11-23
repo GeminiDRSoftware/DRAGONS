@@ -439,8 +439,9 @@ class Spect(PrimitivesBASE):
                             offset = offsets[ext.dispersion_axis()-1]
                             if offset != 0:
                                 wave_model.name = None
-                                wave_models[0] = models.Shift(offset) | wave_model
-                                wave_models[0].name = 'WAVE'
+                                wave_model = models.Shift(offset) | wave_model
+                                wave_model.name = 'WAVE'
+                                wave_models = [wave_model] * len_ad
 
                 else:
                     # Single-extension AD, with single Transform
