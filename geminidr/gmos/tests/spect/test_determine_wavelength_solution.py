@@ -160,7 +160,7 @@ input_pars = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("ad, params", input_pars, indirect=True)
+@pytest.mark.parametrize("ad, params", input_pars, indirect=['ad'])
 def test_regression_determine_wavelength_solution(
         ad, params, caplog, change_working_dir,
         ref_ad_factory, request):
@@ -211,18 +211,16 @@ def test_regression_determine_wavelength_solution(
 # We only need to test this with one input
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
-                         indirect=True)
-def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
+@pytest.mark.parametrize("ad, params", input_pars[:1], indirect=['ad'])
+def test_consistent_air_and_vacuum_solutions(ad, params):
     p = GMOSClassicLongslit([])
     p.viewer = geminidr.dormantViewer(p, None)
 
+    new_params = {**determine_wavelength_solution_parameters, **params}
     ad_air = p.determineWavelengthSolution(
-        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=False, **determine_wavelength_solution_parameters).pop()
+        [deepcopy(ad)], **new_params, in_vacuo=False).pop()
     ad_vac = p.determineWavelengthSolution(
-        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=True, **determine_wavelength_solution_parameters).pop()
+        [ad], **new_params, in_vacuo=True).pop()
     wave_air = am.get_named_submodel(ad_air[0].wcs.forward_transform, "WAVE")
     wave_vac = am.get_named_submodel(ad_vac[0].wcs.forward_transform, "WAVE")
     x = np.arange(ad_air[0].shape[1])
@@ -235,24 +233,23 @@ def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
 # We only need to test this with one input
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
-                         indirect=True)
+@pytest.mark.parametrize("ad, params", input_pars[:1], indirect=['ad'])
 @pytest.mark.parametrize("in_vacuo", (True, False))
-def test_user_defined_linelist(ad, fwidth, order, min_snr, in_vacuo):
+def test_user_defined_linelist(ad, params, in_vacuo):
     p = GMOSClassicLongslit([])
     p.viewer = geminidr.dormantViewer(p, None)
-    params = determine_wavelength_solution_parameters.copy()
-    params.pop("linelist")
+    new_params = determine_wavelength_solution_parameters.copy()
+    new_params.pop("linelist")
+    new_params.update(params)
 
     linelist = os.path.join(os.path.dirname(geminidr.__file__),
                             "gmos", "lookups", "CuAr_GMOS.dat")
 
+    new_params = {**determine_wavelength_solution_parameters, **params}
     ad_out = p.determineWavelengthSolution(
-        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=in_vacuo, linelist=None, **params).pop()
+        [deepcopy(ad)], in_vacuo=in_vacuo, linelist=None, **new_params).pop()
     ad_out2 = p.determineWavelengthSolution(
-        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=in_vacuo, linelist=linelist, **params).pop()
+        [ad], in_vacuo=in_vacuo, linelist=linelist, **new_params).pop()
     wave1 = am.get_named_submodel(ad_out[0].wcs.forward_transform, "WAVE")
     wave2 = am.get_named_submodel(ad_out2[0].wcs.forward_transform, "WAVE")
     x = np.arange(ad_out[0].shape[1])
@@ -288,21 +285,6 @@ def ad(path_to_inputs, request):
         raise FileNotFoundError(path)
 
     return ad
-
-
-@pytest.fixture
-def fwidth(request):
-    return request.param
-
-
-@pytest.fixture
-def order(request):
-    return request.param
-
-
-@pytest.fixture
-def min_snr(request):
-    return request.param
 
 
 def do_plots(ad):
