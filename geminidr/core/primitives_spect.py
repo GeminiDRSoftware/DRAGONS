@@ -433,6 +433,16 @@ class Spect(PrimitivesBASE):
                         # same pixel basis before applying the new wave_model
                         offsets = tuple(o_ad - o_arc
                                         for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
+                        # Shift the distortion-corrected co-ordinates back from
+                        # the arc's ROI to the native one after transforming:
+                        for ext in ad:
+                            ext.wcs.insert_transform(
+                                'distortion_corrected',
+                                reduce(Model.__and__,
+                                       [models.Shift(-offset) for
+                                        offset in offsets]),
+                                after=False
+                            )
                         # len(arc)=1 so we only have one wave_model, but need to
                         # update the entry in the list, which gets used later
                         if wave_model is not None:
@@ -1083,14 +1093,25 @@ class Spect(PrimitivesBASE):
                 new_pipeline = ext.wcs.pipeline[:idx-1]
                 prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
 
-                if hasattr(m_distcorr, 'left') and (
-                    isinstance(m_distcorr.left, CompoundModel) and
-                    m_distcorr.left.n_outputs == 2 and
-                    all(isinstance(m, models.Shift) for m in m_distcorr.left)
-                ):
-                    m_dummy = m_distcorr.left | models.Identity(2)
-                else:
-                    m_dummy = models.Identity(2)
+                m_dummy = models.Identity(2)
+
+                if isinstance(m_distcorr, CompoundModel) and (
+                   isinstance(m_distcorr.left, CompoundModel) and
+                   isinstance(m_distcorr.right, CompoundModel)):
+
+                    # Mixed-ROI origin shifts (factor this into a function?):
+                    if all(isinstance(m, models.Shift) for
+                           m in m_distcorr.right) and (
+                       isinstance(m_distcorr.left.left, CompoundModel) and
+                       m_distcorr.left.left.n_outputs == 2 and
+                       all(isinstance(m, models.Shift) for
+                           m in m_distcorr.left.left)):
+                        m_dummy = m_distcorr.left.left | m_distcorr.right
+
+                    # Same-ROI origin shift:
+                    elif m_distcorr.left.n_outputs == 2 and all(
+                      isinstance(m, models.Shift) for m in m_distcorr.left):
+                        m_dummy = m_distcorr.left
 
                 m_dummy.inverse = m_distcorr.inverse
                 new_pipeline.append((prev_frame, m_dummy))
