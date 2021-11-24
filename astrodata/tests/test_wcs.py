@@ -3,17 +3,28 @@ import pytest
 from numpy.testing import assert_allclose
 
 from astropy.modeling import models
+from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+from astropy.io.fits import Header
 from gwcs import coordinate_frames as cf
 
 import astrodata
 from astrodata import wcs as adwcs
 from astrodata.testing import download_from_archive
+from gempy.library.transform import add_longslit_wcs
 
 
 @pytest.fixture(scope='module')
 def F2_IMAGE():
     """Any F2 image with CD3_3=1"""
     return download_from_archive("S20130717S0365.fits")
+
+
+@pytest.fixture(scope='module')
+def GMOS_LONGSLIT():
+    """Any F2 image with CD3_3=1"""
+    return download_from_archive("N20180103S0332.fits")
 
 
 @pytest.mark.parametrize("angle", [0, 20, 67, -35])
@@ -129,3 +140,15 @@ def test_remove_unused_world_axis(F2_IMAGE):
     assert_allclose(new_result, result[:2])
     for frame in ad[0].wcs.available_frames:
         assert getattr(ad[0].wcs, frame).naxes == 2
+
+
+def test_gwcs_creation(F2_IMAGE):
+    """Test that the gWCS object for an image agrees with the FITS WCS"""
+    ad = astrodata.open(F2_IMAGE)
+    frame_name = ad[0].hdr.get("RADESYS", ad[0].hdr["RADECSYS"]).lower()
+    w = WCS(ad[0].hdr)
+    for y in range(0, 2048, 200):
+        for x in range(0, 2048, 200):
+            wcs_sky = w.pixel_to_world(x, y)
+            gwcs_sky = SkyCoord(*ad[0].wcs(x, y), unit=u.deg, frame=frame_name)
+            assert wcs_sky.separation(gwcs_sky) < 0.01 * u.arcsec
