@@ -70,6 +70,9 @@ input_pars = [
     ("N20170415S0255_mosaic.fits", dict()),  # B600:0.590 HAM
     ("N20171016S0010_mosaic.fits", dict()),  # B600:0.500 HAM
     ("N20171016S0127_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("N20180103S0341_mosaic.fits", dict()),  # B600:0.430 HAM
+    ("N20180113S0351_mosaic.fits", dict()),  # B600:0.750 HAM
+    ("N20180615S0407_mosaic.fits", dict()),  # B600:0.620 HAM
     ("N20100307S0236_mosaic.fits", dict()),  # B1200:0.445 EEV
     ("N20130628S0290_mosaic.fits", dict()),  # B1200:0.420 E2V
     ("N20170904S0078_mosaic.fits", dict()),  # B1200:0.440 HAM
