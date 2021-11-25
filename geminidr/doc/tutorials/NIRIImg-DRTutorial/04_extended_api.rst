@@ -154,8 +154,8 @@ Two lists for the darks
 We have two sets of darks; one set for the science frames, the 20-second darks,
 and another for making the BPM, the 1-second darks.  We will create two lists.
 
-If you did not know the exposure times for the darks, you could have use
-``dataselect`` as follow to see the exposure times of all the darks in the
+If you did not know the exposure times for the darks, you could use
+``dataselect`` as follows to see the exposure times of all the darks in the
 directory.  We use the tag ``DARK`` and the descriptor ``exposure_time``.
 
 .. code-block:: python

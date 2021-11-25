@@ -221,7 +221,7 @@ Some highlights:
   or ``None``, which is the same as returning an empty ``TagSet``\ [#tagset1]_.
 
   **All** these methods will be executed when looking up for tags, and it's up
-  to the tag set construction algorithm (see :ref:`ad_tags` to figure out the final
+  to the tag set construction algorithm (see :ref:`ad_tags`) to figure out the final
   result.  In theory, one **could** provide *just one* big method, but this is
   feasible only when the logic behind deciding the tag set is simple. The
   moment that there are a few competing alternatives, with some conditions
@@ -304,10 +304,10 @@ In this new version of AstroData we've introduced a more manageable scheme,
 that places the discovery responsibility on the programmer. A typical
 ``__init__.py`` file on an instrument package will look like this::
 
-    __all__ = ['AstroDataMyInstrument']
+    __all__ = ['AstroDataMyInstrument']
 
-    from astrodata import factory
-    from .adclass import AstroDataMyInstrument
+    from astrodata import factory
+    from .adclass import AstroDataMyInstrument
 
     factory.addClass(AstroDataMyInstrument)
 
@@ -319,10 +319,10 @@ convenient, because importing the package will be enough!
 Thus, a script making use of DRAGONS' AstroData to manipulate GMOS data
 could start like this::
 
-    import astrodata
-    from gemini_instruments import gmos
+    import astrodata
+    from gemini_instruments import gmos
 
-    ...
+    ...
 
     ad = astrodata.open(some_file)
 
@@ -331,8 +331,8 @@ will import it too, anyway, but we'll probably need the ``astrodata`` package
 in the namespace anyway, and it's always better to be explicit. Our
 typical DRAGONS scripts and modules start like this, instead::
 
-    import astrodata
-    import gemini_instruments
+    import astrodata
+    import gemini_instruments
 
 ``gemini_instruments`` imports all the packages under it, making knowledge
 about all Gemini instruments available for the script, which is perfect for a
@@ -357,7 +357,7 @@ our ``gmos.__init__.py`` looks like this::
 
     __all__ = ['AstroDataGmos']
 
-    from astrodata import factory
+    from astrodata import factory
     from ..gemini import addInstrumentFilterWavelengths
     from .adclass import AstroDataGmos
     from .lookup import filter_wavelengths

@@ -13,3 +13,4 @@ pytest
 scipy
 specutils
 sqlalchemy
+docutils<0.18

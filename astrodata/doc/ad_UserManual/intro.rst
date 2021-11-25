@@ -41,7 +41,7 @@ astronomical datasets stored on disks and to properly parse their metadata
 using the |AstroData| and the |TagSet| classes. |astrodata| provides uniform
 interfaces for working on datasets from different
 instruments. Once a dataset has been opened with |astrodata|, the object
-"knowns about itself". Information like instrument, observation mode, and how
+"knows about itself". Information like instrument, observation mode, and how
 to access headers, is readily available through the uniform interface. All
 the details are coded inside the class associated with the instrument, that
 class then provides the interface. The appropriate class is selected
@@ -61,7 +61,7 @@ The best way to get everything you need is to install Anaconda_, and the
 |dragons| stack from the AstroConda channel.
 
 |astrodata| itself is part of |DRAGONS|. It is available from the
-repository, as tar file, or as a conda package. The bare |astrodata| package
+repository, as a tar file, or as a conda package. The bare |astrodata| package
 does not do much by itself, it needs a companion instrument definitions
 package. For Gemini, this is ``gemini_instruments``, also included in
 |DRAGONS|.
@@ -99,7 +99,7 @@ repository, the tar file or the conda package.
 #. Create an environment.
     To keep things clean, Anaconda offers virtual environments.  Each project
     can use its own environment.  For example, if you do not want to modify
-    the software packages needed for previous project, just create a new
+    the software packages needed for a previous project, just create a new
     environment for the new project.
 
     Here we set up an environment where the ``DRAGONS`` dependencies can
