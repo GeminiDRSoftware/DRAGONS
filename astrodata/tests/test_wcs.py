@@ -22,8 +22,14 @@ def F2_IMAGE():
 
 
 @pytest.fixture(scope='module')
+def NIRI_IMAGE():
+    """Any NIRI image"""
+    return download_from_archive("N20180102S0392.fits")
+
+
+@pytest.fixture(scope='module')
 def GMOS_LONGSLIT():
-    """Any F2 image with CD3_3=1"""
+    """Any GMOS longslit spectrum"""
     return download_from_archive("N20180103S0332.fits")
 
 
@@ -142,9 +148,9 @@ def test_remove_unused_world_axis(F2_IMAGE):
         assert getattr(ad[0].wcs, frame).naxes == 2
 
 
-def test_gwcs_creation(F2_IMAGE):
+def test_gwcs_creation(NIRI_IMAGE):
     """Test that the gWCS object for an image agrees with the FITS WCS"""
-    ad = astrodata.open(F2_IMAGE)
+    ad = astrodata.open(NIRI_IMAGE)
     frame_name = ad[0].hdr.get("RADESYS", ad[0].hdr["RADECSYS"]).lower()
     w = WCS(ad[0].hdr)
     for y in range(0, 2048, 200):
