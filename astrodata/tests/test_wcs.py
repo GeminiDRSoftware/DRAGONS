@@ -151,10 +151,37 @@ def test_remove_unused_world_axis(F2_IMAGE):
 def test_gwcs_creation(NIRI_IMAGE):
     """Test that the gWCS object for an image agrees with the FITS WCS"""
     ad = astrodata.open(NIRI_IMAGE)
-    frame_name = ad[0].hdr.get("RADESYS", ad[0].hdr["RADECSYS"]).lower()
     w = WCS(ad[0].hdr)
-    for y in range(0, 2048, 200):
-        for x in range(0, 2048, 200):
+    for y in range(0, 1024, 200):
+        for x in range(0, 1024, 200):
             wcs_sky = w.pixel_to_world(x, y)
-            gwcs_sky = SkyCoord(*ad[0].wcs(x, y), unit=u.deg, frame=frame_name)
+            gwcs_sky = SkyCoord(*ad[0].wcs(x, y), unit=u.deg)
             assert wcs_sky.separation(gwcs_sky) < 0.01 * u.arcsec
+
+
+def test_adding_longslit_wcs():
+    """Test that adding the longslit WCS doesn't interfere with the sky
+    coordinates of the WCS"""
+    ad = astrodata.open("N20211008S0368.fits")
+    frame_name = ad[4].hdr.get("RADESYS", ad[4].hdr["RADECSYS"]).lower()
+    crpix1 = ad[4].hdr["CRPIX1"] - 1
+    crpix2 = ad[4].hdr["CRPIX2"] - 1
+    gwcs_sky = SkyCoord(*ad[4].wcs(crpix1, crpix2), unit=u.deg, frame=frame_name)
+    add_longslit_wcs(ad)
+    gwcs_coords = ad[4].wcs(crpix1, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+    # The sky coordinates should not depend on the x pixel value
+    gwcs_coords = ad[4].wcs(0, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+
+    # This is equivalent to writing to disk and reading back in
+    wcs_dict = astrodata.wcs.gwcs_to_fits(ad[4].nddata, ad.phu)
+    new_gwcs = astrodata.wcs.fitswcs_to_gwcs(Header(wcs_dict))
+    gwcs_coords = new_gwcs(crpix1, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+    gwcs_coords = new_gwcs(0, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
