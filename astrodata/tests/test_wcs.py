@@ -159,10 +159,10 @@ def test_gwcs_creation(NIRI_IMAGE):
             assert wcs_sky.separation(gwcs_sky) < 0.01 * u.arcsec
 
 
-def test_adding_longslit_wcs():
+def test_adding_longslit_wcs(GMOS_LONGSLIT):
     """Test that adding the longslit WCS doesn't interfere with the sky
     coordinates of the WCS"""
-    ad = astrodata.open("N20211008S0368.fits")
+    ad = astrodata.open(GMOS_LONGSLIT)
     frame_name = ad[4].hdr.get("RADESYS", ad[4].hdr["RADECSYS"]).lower()
     crpix1 = ad[4].hdr["CRPIX1"] - 1
     crpix2 = ad[4].hdr["CRPIX2"] - 1
