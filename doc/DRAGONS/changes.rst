@@ -23,6 +23,13 @@ Bug Fixes
   the default, and estimate noise from pixel-to-pixel variations, regardless
   of its value.
 
+**gempy**
+
+**gempy.library.transform**
+
+* Fix bug that caused longslit spectra to have incorrect WCS, offset from true
+  slit location.
+
 
 3.0.0
 =====
