@@ -130,6 +130,7 @@ def test_remove_axis_from_model_5():
     assert_allclose(new_model(0), (0, 7))
 
 
+@pytest.mark.dragons_remote_data
 def test_remove_unused_world_axis(F2_IMAGE):
     """A test with an intermediate frame"""
     ad = astrodata.open(F2_IMAGE)
@@ -148,6 +149,7 @@ def test_remove_unused_world_axis(F2_IMAGE):
         assert getattr(ad[0].wcs, frame).naxes == 2
 
 
+@pytest.mark.dragons_remote_data
 def test_gwcs_creation(NIRI_IMAGE):
     """Test that the gWCS object for an image agrees with the FITS WCS"""
     ad = astrodata.open(NIRI_IMAGE)
@@ -159,6 +161,7 @@ def test_gwcs_creation(NIRI_IMAGE):
             assert wcs_sky.separation(gwcs_sky) < 0.01 * u.arcsec
 
 
+@pytest.mark.dragons_remote_data
 def test_adding_longslit_wcs(GMOS_LONGSLIT):
     """Test that adding the longslit WCS doesn't interfere with the sky
     coordinates of the WCS"""
