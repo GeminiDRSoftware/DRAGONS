@@ -176,6 +176,16 @@ def test_adding_longslit_wcs():
     new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
     assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
 
+    # The sky coordinates also should not depend on the extension
+    # there are shifts of order 1 pixel because of the rotations of CCDs 1
+    # and 3, which are incorporated into their raw WCSs. Remember that the
+    # 12 WCSs are independent at this stage, they don't all map onto the
+    # WCS of the reference extension
+    for ext in ad:
+        gwcs_coords = ext.wcs(0, crpix2)
+        new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+        assert gwcs_sky.separation(new_gwcs_sky) < 0.1 * u.arcsec
+
     # This is equivalent to writing to disk and reading back in
     wcs_dict = astrodata.wcs.gwcs_to_fits(ad[4].nddata, ad.phu)
     new_gwcs = astrodata.wcs.fitswcs_to_gwcs(Header(wcs_dict))
