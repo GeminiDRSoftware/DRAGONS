@@ -274,7 +274,7 @@ def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
         fake_data += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
     for p in arc_lines:
         fake_arc += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
-    p = correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
+    p = np.correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
     return c0 - 2 * p * c1/(len_data - 1)
 
 

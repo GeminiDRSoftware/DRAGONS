@@ -48,8 +48,6 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit, GMOSClassicLong
 from gempy.library import astromodels as am
 from gempy.utils import logutils
 
-from pytest_dragons.plugin import path_to_inputs
-
 
 # Test parameters --------------------------------------------------------------
 determine_wavelength_solution_parameters = {
@@ -57,102 +55,94 @@ determine_wavelength_solution_parameters = {
     'nsum': 10,
     'linelist': None,
     'weighting': 'global',
-    'nbright': 0
+    'fwidth': None,
+    'order': 3,
+    'min_snr': 10,
 }
 
 input_pars = [
     # Process Arcs: GMOS-N ---
-    # (Input File, fwidth, order, min_snr)
-    ("N20100115S0346_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
-    ("N20130112S0390_mosaic.fits", None, 3, 10.),  # B600:0.500 E2V
-    ("N20170609S0173_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
-    ("N20170403S0452_mosaic.fits", None, 3, 10.),  # B600:0.590 HAM
-    ("N20170415S0255_mosaic.fits", None, 3, 10.),  # B600:0.590 HAM
-    ("N20171016S0010_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
-    ("N20171016S0127_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
-    ("N20100307S0236_mosaic.fits", None, 3, 10.),  # B1200:0.445 EEV
-    ("N20130628S0290_mosaic.fits", None, 3, 10.),  # B1200:0.420 E2V
-    ("N20170904S0078_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
-    ("N20170627S0116_mosaic.fits", None, 3, 10.),  # B1200:0.520 HAM
-    ("N20100830S0594_mosaic.fits", None, 3, 10.),  # R150:0.500 EEV
-    ("N20100702S0321_mosaic.fits", None, 3, 10.),  # R150:0.700 EEV
-    ("N20130606S0291_mosaic.fits", None, 3, 10.),  # R150:0.550 E2V
-    ("N20130112S0574_mosaic.fits", None, 3, 10.),  # R150:0.700 E2V
-    ("N20130809S0337_mosaic.fits", None, 3, 10.),  # R150:0.700 E2V
-    ("N20140408S0218_mosaic.fits", None, 3, 10.),  # R150:0.700 E2V
-    ("N20180119S0232_mosaic.fits", None, 3, 10.),  # R150:0.520 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for N20180516S0214_mosaic.fits
-    # ("N20180516S0214_mosaic.fits", None, 3, 10.),  # R150:0.610 HAM
-    ("N20171007S0439_mosaic.fits", None, 3, 10.),  # R150:0.650 HAM
-    ("N20171007S0441_mosaic.fits", None, 3, 10.),  # R150:0.650 HAM
-    ("N20101212S0213_mosaic.fits", None, 3, 10.),  # R400:0.550 EEV
-    ("N20100202S0214_mosaic.fits", None, 3, 10.),  # R400:0.700 EEV
-    ("N20130106S0194_mosaic.fits", None, 3, 3.),  # R400:0.500 E2V
-    ("N20130422S0217_mosaic.fits", None, 3, 10.),  # R400:0.700 E2V
-    ("N20170108S0210_mosaic.fits", None, 3, 10.),  # R400:0.660 HAM
-    ("N20171113S0135_mosaic.fits", None, 3, 10.),  # R400:0.750 HAM
-    ("N20100427S1276_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
-    ("N20180120S0417_mosaic.fits", None, 3, 10.),  # R600:0.860 HAM
-    ("N20100212S0143_mosaic.fits", None, 3, 10.),  # R831:0.450 EEV
-    ("N20100720S0247_mosaic.fits", None, 3, 10.),  # R831:0.850 EEV
-    ("N20130808S0490_mosaic.fits", None, 3, 10.),  # R831:0.571 E2V
-    ("N20130830S0291_mosaic.fits", None, 3, 10.),  # R831:0.845 E2V
-    ("N20170910S0009_mosaic.fits", None, 3, 10.),  # R831:0.653 HAM
-    ("N20170509S0682_mosaic.fits", None, 3, 10.),  # R831:0.750 HAM
-    ("N20181114S0512_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
-    ("N20170416S0058_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
-    ("N20170416S0081_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
-    ("N20180120S0315_mosaic.fits", None, 3, 10.),  # R831:0.865 HAM
+    # (Input File, params)
+    ("N20100115S0346_mosaic.fits", dict()),  # B600:0.500 EEV
+    ("N20130112S0390_mosaic.fits", dict()),  # B600:0.500 E2V
+    ("N20170609S0173_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("N20170403S0452_mosaic.fits", dict()),  # B600:0.590 HAM
+    ("N20170415S0255_mosaic.fits", dict()),  # B600:0.590 HAM
+    ("N20171016S0010_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("N20171016S0127_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("N20180103S0341_mosaic.fits", dict()),  # B600:0.430 HAM
+    ("N20180113S0351_mosaic.fits", dict()),  # B600:0.750 HAM
+    ("N20180615S0407_mosaic.fits", dict()),  # B600:0.620 HAM
+    ("N20100307S0236_mosaic.fits", dict()),  # B1200:0.445 EEV
+    ("N20130628S0290_mosaic.fits", dict()),  # B1200:0.420 E2V
+    ("N20170904S0078_mosaic.fits", dict()),  # B1200:0.440 HAM
+    ("N20170627S0116_mosaic.fits", dict()),  # B1200:0.520 HAM
+    ("N20100830S0594_mosaic.fits", dict()),  # R150:0.500 EEV
+    ("N20100702S0321_mosaic.fits", dict()),  # R150:0.700 EEV
+    ("N20130606S0291_mosaic.fits", dict()),  # R150:0.550 E2V
+    ("N20130112S0574_mosaic.fits", dict()),  # R150:0.700 E2V
+    ("N20130809S0337_mosaic.fits", dict()),  # R150:0.700 E2V
+    ("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V
+    ("N20180119S0232_mosaic.fits", dict()),  # R150:0.520 HAM
+    ("N20180516S0214_mosaic.fits", dict()),  # R150:0.610 HAM
+    ("N20171007S0439_mosaic.fits", dict()),  # R150:0.650 HAM
+    ("N20171007S0441_mosaic.fits", dict()),  # R150:0.650 HAM
+    ("N20101212S0213_mosaic.fits", dict()),  # R400:0.550 EEV
+    ("N20100202S0214_mosaic.fits", dict()),  # R400:0.700 EEV
+    ("N20130106S0194_mosaic.fits", dict(min_snr=3)),  # R400:0.500 E2V
+    ("N20130422S0217_mosaic.fits", dict()),  # R400:0.700 E2V
+    ("N20170108S0210_mosaic.fits", dict()),  # R400:0.660 HAM
+    ("N20171113S0135_mosaic.fits", dict()),  # R400:0.750 HAM
+    ("N20100427S1276_mosaic.fits", dict()),  # R600:0.675 EEV
+    ("N20180120S0417_mosaic.fits", dict()),  # R600:0.860 HAM
+    ("N20100212S0143_mosaic.fits", dict()),  # R831:0.450 EEV
+    ("N20100720S0247_mosaic.fits", dict()),  # R831:0.850 EEV
+    ("N20130808S0490_mosaic.fits", dict()),  # R831:0.571 E2V
+    ("N20130830S0291_mosaic.fits", dict()),  # R831:0.845 E2V
+    ("N20170910S0009_mosaic.fits", dict()),  # R831:0.653 HAM
+    ("N20170509S0682_mosaic.fits", dict()),  # R831:0.750 HAM
+    ("N20181114S0512_mosaic.fits", dict()),  # R831:0.865 HAM
+    ("N20170416S0058_mosaic.fits", dict()),  # R831:0.865 HAM
+    ("N20170416S0081_mosaic.fits", dict()),  # R831:0.865 HAM
+    ("N20180120S0315_mosaic.fits", dict()),  # R831:0.865 HAM
     #
     # # Process Arcs: GMOS-S ---
-    ("S20130218S0126_mosaic.fits", None, 3, 10),  # B600:0.500 EEV
-    ("S20130111S0278_mosaic.fits", None, 3, 10.),  # B600:0.520 EEV
-    ("S20130114S0120_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
-    ("S20130216S0243_mosaic.fits", None, 3, 10.),  # B600:0.480 EEV
-    ("S20130608S0182_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
-    ("S20131105S0105_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
-    ("S20140504S0008_mosaic.fits", None, 3, 10.),  # B600:0.500 EEV
-    # Todo: WARNING - No acceptable wavelength solution found for S20170103S0 152_mosaic.fits
-    # ("S20170103S0152_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM bad columns
-    ("S20170108S0085_mosaic.fits", None, 3, 10.),  # B600:0.500 HAM
-    ("S20130510S0103_mosaic.fits", None, 3, 10.),  # B1200:0.450 EEV
-    ("S20130629S0002_mosaic.fits", None, 3, 10.),  # B1200:0.525 EEV
-    ("S20131123S0044_mosaic.fits", None, 3, 10.),  # B1200:0.595 EEV
-    ("S20170116S0189_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170103S0149_mosaic.fits
-    # ("S20170103S0149_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170730S0155_mosaic.fits
-    # ("S20170730S0155_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20171219S0117_mosaic.fits
-    # ("S20171219S0117_mosaic.fits", None, 3, 10.),  # B1200:0.440 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170908S0189_mosaic.fits
-    # ("S20170908S0189_mosaic.fits", None, 3, 10.),  # B1200:0.550 HAM
-    ("S20131230S0153_mosaic.fits", None, 3, 10.),  # R150:0.550 EEV
-    ("S20130801S0140_mosaic.fits", None, 3, 10.),  # R150:0.700 EEV
-    # Todo: WARNING - No acceptable wavelength solution found for S20170430S0060_mosaic.fits
-    # ("S20170430S0060_mosaic.fits", None, 3, 10.),  # R150:0.717 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170430S0063_mosaic.fits
-    # ("S20170430S0063_mosaic.fits", None, 3, 10.),  # R150:0.727 HAM
-    ("S20171102S0051_mosaic.fits", None, 3, 10.),  # R150:0.950 HAM
-    ("S20130114S0100_mosaic.fits", None, 3, 10.),  # R400:0.620 EEV
-    ("S20130217S0073_mosaic.fits", None, 3, 10.),  # R400:0.800 EEV
-    # Todo: WARNING - No acceptable wavelength solution found for S20170108S0046_mosaic.fits
-    # ("S20170108S0046_mosaic.fits", None, 3, 10.),  # R400:0.550 HAM
-    # Todo: WARNING - No acceptable wavelength solution found for S20170129S0125_mosaic.fits
-    # ("S20170129S0125_mosaic.fits", None, 3, 10.),  # R400:0.685 HAM
-    ("S20170703S0199_mosaic.fits", None, 3, 10.),  # R400:0.800 HAM
-    ("S20170718S0420_mosaic.fits", None, 3, 10.),  # R400:0.910 HAM
-    ("S20100306S0460_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
-    ("S20101218S0139_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
-    ("S20110306S0294_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
-    ("S20110720S0236_mosaic.fits", None, 3, 10.),  # R600:0.675 EEV
-    ("S20101221S0090_mosaic.fits", None, 3, 10.),  # R600:0.690 EEV
-    ("S20120322S0122_mosaic.fits", None, 3, 10.),  # R600:0.900 EEV
-    ("S20130803S0011_mosaic.fits", None, 3, 10.),  # R831:0.576 EEV
-    ("S20130414S0040_mosaic.fits", None, 3, 10.),  # R831:0.845 EEV
-    ("S20170214S0059_mosaic.fits", None, 3, 10.),  # R831:0.440 HAM
-    ("S20170703S0204_mosaic.fits", None, 3, 10.),  # R831:0.600 HAM
-    ("S20171018S0048_mosaic.fits", None, 3, 10.)  # R831:0.865 HAM
+    ("S20130218S0126_mosaic.fits", dict()),  # B600:0.500 EEV
+    ("S20130111S0278_mosaic.fits", dict()),  # B600:0.520 EEV
+    ("S20130114S0120_mosaic.fits", dict()),  # B600:0.500 EEV
+    ("S20130216S0243_mosaic.fits", dict()),  # B600:0.480 EEV
+    ("S20130608S0182_mosaic.fits", dict()),  # B600:0.500 EEV
+    ("S20131105S0105_mosaic.fits", dict()),  # B600:0.500 EEV
+    ("S20140504S0008_mosaic.fits", dict()),  # B600:0.500 EEV
+    ("S20170103S0152_mosaic.fits", dict(nbright=2)),  # B1200:0.440 HAM bad columns
+    ("S20170108S0085_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("S20130510S0103_mosaic.fits", dict()),  # B1200:0.450 EEV
+    ("S20130629S0002_mosaic.fits", dict()),  # B1200:0.525 EEV
+    ("S20131123S0044_mosaic.fits", dict()),  # B1200:0.595 EEV
+    ("S20170116S0189_mosaic.fits", dict()),  # B1200:0.440 HAM
+    ("S20170908S0189_mosaic.fits", dict(nbright=1)),  # B1200:0.550 HAM bad column
+    ("S20131230S0153_mosaic.fits", dict()),  # R150:0.550 EEV
+    ("S20130801S0140_mosaic.fits", dict()),  # R150:0.700 EEV
+    ("S20170430S0060_mosaic.fits", dict(nbright=2)),  # R150:0.717 HAM bad columns
+    ("S20170430S0063_mosaic.fits", dict(nbright=2)),  # R150:0.727 HAM bad columns
+    ("S20171102S0051_mosaic.fits", dict()),  # R150:0.950 HAM
+    ("S20130114S0100_mosaic.fits", dict()),  # R400:0.620 EEV
+    ("S20130217S0073_mosaic.fits", dict()),  # R400:0.800 EEV
+    ("S20170108S0046_mosaic.fits", dict(nbright=2)),  # R400:0.550 HAM bad columns
+    ("S20170129S0125_mosaic.fits", dict(nbright=1)),  # R400:0.685 HAM bad column
+    ("S20170703S0199_mosaic.fits", dict()),  # R400:0.800 HAM
+    ("S20170718S0420_mosaic.fits", dict()),  # R400:0.910 HAM
+    ("S20100306S0460_mosaic.fits", dict()),  # R600:0.675 EEV
+    ("S20101218S0139_mosaic.fits", dict()),  # R600:0.675 EEV
+    ("S20110306S0294_mosaic.fits", dict()),  # R600:0.675 EEV
+    ("S20110720S0236_mosaic.fits", dict()),  # R600:0.675 EEV
+    ("S20101221S0090_mosaic.fits", dict()),  # R600:0.690 EEV
+    ("S20120322S0122_mosaic.fits", dict()),  # R600:0.900 EEV
+    ("S20130803S0011_mosaic.fits", dict()),  # R831:0.576 EEV
+    ("S20130414S0040_mosaic.fits", dict()),  # R831:0.845 EEV
+    ("S20170214S0059_mosaic.fits", dict()),  # R831:0.440 HAM
+    ("S20170703S0204_mosaic.fits", dict()),  # R831:0.600 HAM
+    ("S20171018S0048_mosaic.fits", dict())  # R831:0.865 HAM
 ]
 
 
@@ -162,9 +152,9 @@ input_pars = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars, indirect=True)
+@pytest.mark.parametrize("ad, params", input_pars, indirect=['ad'])
 def test_regression_determine_wavelength_solution(
-        ad, fwidth, order, min_snr, caplog, change_working_dir,
+        ad, params, caplog, change_working_dir,
         ref_ad_factory, request):
     """
     Make sure that the wavelength solution gives same results on different
@@ -177,9 +167,8 @@ def test_regression_determine_wavelength_solution(
         p = GMOSLongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
 
-        p.determineWavelengthSolution(
-            order=order, min_snr=min_snr, fwidth=fwidth,
-            **determine_wavelength_solution_parameters)
+        p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
+                                         **params})
 
         wcalibrated_ad = p.writeOutputs().pop()
 
@@ -214,18 +203,16 @@ def test_regression_determine_wavelength_solution(
 # We only need to test this with one input
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
-                         indirect=True)
-def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
+@pytest.mark.parametrize("ad, params", input_pars[:1], indirect=['ad'])
+def test_consistent_air_and_vacuum_solutions(ad, params):
     p = GMOSClassicLongslit([])
     p.viewer = geminidr.dormantViewer(p, None)
 
+    new_params = {**determine_wavelength_solution_parameters, **params}
     ad_air = p.determineWavelengthSolution(
-        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=False, **determine_wavelength_solution_parameters).pop()
+        [deepcopy(ad)], **new_params, in_vacuo=False).pop()
     ad_vac = p.determineWavelengthSolution(
-        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=True, **determine_wavelength_solution_parameters).pop()
+        [ad], **new_params, in_vacuo=True).pop()
     wave_air = am.get_named_submodel(ad_air[0].wcs.forward_transform, "WAVE")
     wave_vac = am.get_named_submodel(ad_vac[0].wcs.forward_transform, "WAVE")
     x = np.arange(ad_air[0].shape[1])
@@ -238,24 +225,22 @@ def test_consistent_air_and_vacuum_solutions(ad, fwidth, order, min_snr):
 # We only need to test this with one input
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, fwidth, order, min_snr", input_pars[:1],
-                         indirect=True)
+@pytest.mark.parametrize("ad, params", input_pars[:1], indirect=['ad'])
 @pytest.mark.parametrize("in_vacuo", (True, False))
-def test_user_defined_linelist(ad, fwidth, order, min_snr, in_vacuo):
+def test_user_defined_linelist(ad, params, in_vacuo):
     p = GMOSClassicLongslit([])
     p.viewer = geminidr.dormantViewer(p, None)
-    params = determine_wavelength_solution_parameters.copy()
-    params.pop("linelist")
+    new_params = determine_wavelength_solution_parameters.copy()
+    new_params.pop("linelist")
+    new_params.update(params)
 
     linelist = os.path.join(os.path.dirname(geminidr.__file__),
                             "gmos", "lookups", "CuAr_GMOS.dat")
 
     ad_out = p.determineWavelengthSolution(
-        [deepcopy(ad)], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=in_vacuo, linelist=None, **params).pop()
+        [deepcopy(ad)], in_vacuo=in_vacuo, linelist=None, **new_params).pop()
     ad_out2 = p.determineWavelengthSolution(
-        [ad], order=order, min_snr=min_snr, fwidth=fwidth,
-        in_vacuo=in_vacuo, linelist=linelist, **params).pop()
+        [ad], in_vacuo=in_vacuo, linelist=linelist, **new_params).pop()
     wave1 = am.get_named_submodel(ad_out[0].wcs.forward_transform, "WAVE")
     wave2 = am.get_named_submodel(ad_out2[0].wcs.forward_transform, "WAVE")
     x = np.arange(ad_out[0].shape[1])
@@ -291,21 +276,6 @@ def ad(path_to_inputs, request):
         raise FileNotFoundError(path)
 
     return ad
-
-
-@pytest.fixture
-def fwidth(request):
-    return request.param
-
-
-@pytest.fixture
-def order(request):
-    return request.param
-
-
-@pytest.fixture
-def min_snr(request):
-    return request.param
 
 
 def do_plots(ad):
