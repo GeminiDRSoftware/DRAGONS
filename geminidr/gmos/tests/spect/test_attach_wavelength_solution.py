@@ -29,6 +29,10 @@ associated_calibrations = {
     "S20200116S0104.fits": {              # GS R400:0.850 HAM CS
         'arc': "S20200116S0357.fits",
     },
+    "N20211008S0368.fits": {              # GN B600:0.495 HAM CS+FULL
+        'arc': "N20211015S0382.fits",
+    #   'arc': "N20211008S0408.fits",  # Alternative CS arc
+    },
 }
 datasets = [(key.replace('.fits', '_varAdded.fits'),
              cals['arc'].replace('.fits', '_arc.fits'))
@@ -100,6 +104,9 @@ def test_regression_in_attach_wavelength_solution_to_mosaic(ad, arc_ad, change_w
 
         logutils.config(
             file_name='log_regression_{:s}.txt'.format(ad.data_label()))
+
+        if ad.detector_roi_setting() != arc_ad.detector_roi_setting():
+            pytest.skip('Can\'t use arc of different ROI for mosaicked data')
 
         p = primitives_gmos_longslit.GMOSLongslit([deepcopy(ad)])
         p.viewer = geminidr.dormantViewer(p, None)
