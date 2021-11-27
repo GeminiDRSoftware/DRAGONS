@@ -105,6 +105,7 @@ input_pars = [
     ("N20170416S0058_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20170416S0081_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20180120S0315_mosaic.fits", dict()),  # R831:0.865 HAM
+    ("N20190111S0271_mosaic.fits", dict()),  # R831:0.525 HAM
     #
     # # Process Arcs: GMOS-S ---
     ("S20130218S0126_mosaic.fits", dict()),  # B600:0.500 EEV
