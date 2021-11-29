@@ -155,8 +155,7 @@ input_pars = [
 @pytest.mark.regression
 @pytest.mark.parametrize("ad, params", input_pars, indirect=['ad'])
 def test_regression_determine_wavelength_solution(
-        ad, params, caplog, change_working_dir,
-        ref_ad_factory, request):
+        ad, params, caplog, change_working_dir, path_to_refs, request):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
@@ -177,7 +176,7 @@ def test_regression_determine_wavelength_solution(
             if record.levelname == "WARNING":
                 assert "No acceptable wavelength solution found" not in record.message
 
-    ref_ad = ref_ad_factory(wcalibrated_ad.filename)
+    ref_ad = astrodata.open(os.path.join(path_to_refs, wcalibrated_ad.filename))
     model = am.get_named_submodel(wcalibrated_ad[0].wcs.forward_transform, "WAVE")
     ref_model = am.get_named_submodel(ref_ad[0].wcs.forward_transform, "WAVE")
 
