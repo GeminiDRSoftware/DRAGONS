@@ -3,17 +3,34 @@ import pytest
 from numpy.testing import assert_allclose
 
 from astropy.modeling import models
+from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+from astropy.io.fits import Header
 from gwcs import coordinate_frames as cf
 
 import astrodata
 from astrodata import wcs as adwcs
 from astrodata.testing import download_from_archive
+from gempy.library.transform import add_longslit_wcs
 
 
 @pytest.fixture(scope='module')
 def F2_IMAGE():
     """Any F2 image with CD3_3=1"""
     return download_from_archive("S20130717S0365.fits")
+
+
+@pytest.fixture(scope='module')
+def NIRI_IMAGE():
+    """Any NIRI image"""
+    return download_from_archive("N20180102S0392.fits")
+
+
+@pytest.fixture(scope='module')
+def GMOS_LONGSLIT():
+    """Any GMOS longslit spectrum"""
+    return download_from_archive("N20180103S0332.fits")
 
 
 @pytest.mark.parametrize("angle", [0, 20, 67, -35])
@@ -113,6 +130,7 @@ def test_remove_axis_from_model_5():
     assert_allclose(new_model(0), (0, 7))
 
 
+@pytest.mark.dragons_remote_data
 def test_remove_unused_world_axis(F2_IMAGE):
     """A test with an intermediate frame"""
     ad = astrodata.open(F2_IMAGE)
@@ -129,3 +147,54 @@ def test_remove_unused_world_axis(F2_IMAGE):
     assert_allclose(new_result, result[:2])
     for frame in ad[0].wcs.available_frames:
         assert getattr(ad[0].wcs, frame).naxes == 2
+
+
+@pytest.mark.dragons_remote_data
+def test_gwcs_creation(NIRI_IMAGE):
+    """Test that the gWCS object for an image agrees with the FITS WCS"""
+    ad = astrodata.open(NIRI_IMAGE)
+    w = WCS(ad[0].hdr)
+    for y in range(0, 1024, 200):
+        for x in range(0, 1024, 200):
+            wcs_sky = w.pixel_to_world(x, y)
+            gwcs_sky = SkyCoord(*ad[0].wcs(x, y), unit=u.deg)
+            assert wcs_sky.separation(gwcs_sky) < 0.01 * u.arcsec
+
+
+@pytest.mark.dragons_remote_data
+def test_adding_longslit_wcs(GMOS_LONGSLIT):
+    """Test that adding the longslit WCS doesn't interfere with the sky
+    coordinates of the WCS"""
+    ad = astrodata.open(GMOS_LONGSLIT)
+    frame_name = ad[4].hdr.get("RADESYS", ad[4].hdr["RADECSYS"]).lower()
+    crpix1 = ad[4].hdr["CRPIX1"] - 1
+    crpix2 = ad[4].hdr["CRPIX2"] - 1
+    gwcs_sky = SkyCoord(*ad[4].wcs(crpix1, crpix2), unit=u.deg, frame=frame_name)
+    add_longslit_wcs(ad)
+    gwcs_coords = ad[4].wcs(crpix1, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+    # The sky coordinates should not depend on the x pixel value
+    gwcs_coords = ad[4].wcs(0, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+
+    # The sky coordinates also should not depend on the extension
+    # there are shifts of order 1 pixel because of the rotations of CCDs 1
+    # and 3, which are incorporated into their raw WCSs. Remember that the
+    # 12 WCSs are independent at this stage, they don't all map onto the
+    # WCS of the reference extension
+    for ext in ad:
+        gwcs_coords = ext.wcs(0, crpix2)
+        new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+        assert gwcs_sky.separation(new_gwcs_sky) < 0.1 * u.arcsec
+
+    # This is equivalent to writing to disk and reading back in
+    wcs_dict = astrodata.wcs.gwcs_to_fits(ad[4].nddata, ad.phu)
+    new_gwcs = astrodata.wcs.fitswcs_to_gwcs(Header(wcs_dict))
+    gwcs_coords = new_gwcs(crpix1, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+    gwcs_coords = new_gwcs(0, crpix2)
+    new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
+    assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec

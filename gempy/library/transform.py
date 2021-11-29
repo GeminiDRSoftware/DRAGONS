@@ -1449,11 +1449,11 @@ def add_longslit_wcs(ad, central_wavelength=None):
         transform = ext.wcs.forward_transform
         crpix = transform[f'crpix{dispaxis}'].offset.value
         transform.name = None  # so we can reuse "SKY"
-        #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :0})
+        #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :-crpix})
         if dispaxis == 1:
-            sky_model = models.Mapping((0, 0)) | (models.Const1D(0) & models.Identity(1)) | transform
+            sky_model = models.Mapping((0, 0)) | (models.Const1D(-crpix) & models.Identity(1)) | transform
         else:
-            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(0)) | transform
+            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(-crpix)) | transform
         sky_model.name = 'SKY'
         wave_model = (models.Shift(crpix) | models.Scale(dw) |
                       models.Shift(central_wavelength))

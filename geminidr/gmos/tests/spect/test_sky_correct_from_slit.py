@@ -8,20 +8,16 @@ import os
 import sys
 
 import astrodata
-import astropy
 import gemini_instruments  # noqa
-import geminidr
 import numpy as np
 import pytest
 from astrodata.testing import download_from_archive
-from astropy.utils import minversion
 from geminidr.gmos import primitives_gmos_longslit
 from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
 from gempy.utils import logutils
 from gempy.library import astrotools as at
 from recipe_system.reduction.coreReduce import Reduce
 
-ASTROPY_LT_42 = not minversion(astropy, '4.2')
 
 # Test parameters -------------------------------------------------------------
 # Each test input filename contains the original input filename with
@@ -69,18 +65,12 @@ def test_regression_sky_correct_from_slit(filename, params, refname,
                                           change_working_dir, path_to_inputs,
                                           path_to_refs):
 
-    func = params.get('function', 'spline')
-    if not func.startswith('spline') and ASTROPY_LT_42:
-        pytest.skip('Astropy 4.2 is required to use the linear fitter '
-                    'with weights')
-
     path = os.path.join(path_to_inputs, filename)
     ad = astrodata.open(path)
 
     with change_working_dir():
         logutils.config(file_name=f'log_regression_{ad.data_label()}.txt')
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.viewer = geminidr.dormantViewer(p, None)
         p.skyCorrectFromSlit(**params)
         sky_subtracted_ad = p.writeOutputs(outfilename=refname).pop()
 
