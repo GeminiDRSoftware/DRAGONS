@@ -171,7 +171,7 @@ def test_regression_determine_wavelength_solution(
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
                                          **params})
 
-        wcalibrated_ad = p.writeOutputs().pop()
+        wcalibrated_ad = p.streams["main"][0]
 
         for record in caplog.records:
             if record.levelname == "WARNING":
