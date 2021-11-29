@@ -225,10 +225,10 @@ pipeline {
                 checkout scm
                 echo "${env.PATH}"
                 sh '.jenkins/scripts/setup_agent.sh'
-//                 echo "Slow tests"
-//                 sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
-//                 echo "Reporting coverage"
-//                 sh 'tox -e codecov -- -F slow'
+                echo "Slow tests"
+                sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F slow'
             } // end steps
             post {
                 always {
