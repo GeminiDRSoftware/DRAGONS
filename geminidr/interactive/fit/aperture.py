@@ -382,7 +382,8 @@ class FindSourceAperturesModel:
             # Find if parameters that would change the profile have
             # been modified
             recompute_profile = False
-            for name in ('min_sky_region', 'percentile', 'section', 'use_snr'):
+            for name in ('min_sky_region', 'percentile', 'section',
+                         'min_snr', 'use_snr'):
                 if self.profile_params[name] != self.aper_params[name]:
                     recompute_profile = True
                     break
@@ -397,8 +398,7 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.direction, self.threshold, self.sizing_method,
-                self.use_snr)
+                self.threshold, self.sizing_method, self.min_snr)
 
         self.aperture_models.clear()
 
@@ -910,7 +910,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 reset_button.disabled = True
                 def fn():
                     model.reset()
-                    for widget in (maxaper, minsky, use_snr,
+                    for widget in (maxaper, minsky, use_snr, min_snr,
                                    threshold, percentile, sizing):
                         widget.reset()
                     self.model.recalc_apertures()
@@ -933,8 +933,10 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                 attr="percentile", start=0, end=100, step=1)
         minsky = SpinnerInputLine("Min sky region", model,
                                   attr="min_sky_region", low=0)
-        use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
-                               handler=_use_snr_handler)
+        use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
+                               attr="use_snr", handler=_use_snr_handler)
+        min_snr = TextSlider("SNR threshold for peak detection", model,
+                             attr="min_snr", start=0.1, end=10, step=0.1)
         sections = TextInputLine("Sections", model, attr="section",
                                  placeholder="e.g. 100:900,1500:2000")
 
@@ -965,6 +967,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             percentile.build(),
             minsky.build(),
             use_snr.build(),
+            min_snr.build(),
             sections.build(),
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),

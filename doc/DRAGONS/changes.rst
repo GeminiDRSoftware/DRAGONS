@@ -6,6 +6,23 @@
 Change Logs
 ***********
 
+3.0.1
+=====
+
+Bug Fixes
+---------
+
+**geminidr**
+
+**geminidr.core**
+
+* Fix bug where ``section`` start/end comparison was made on string, not
+  numeric, values.
+
+* Expose ``min_snr`` parameter in ``findApertures`` and hide ``use_snr``
+  (and set its default to ``False``).
+
+
 3.0.0
 =====
 
@@ -16,7 +33,7 @@ science quality outputs, yet.
 Bug Fixes
 ---------
 
-** gemnidr **
+**geminidr**
 
 * In imaging mode, the science recipes now include a call to
   ``scaleByExposureTime`` before the stacking step.  It is now possible to stack
@@ -54,6 +71,7 @@ New Features
 ------------
 
 **geminidr**
+
 * Quicklook (``--ql`` mode) reduction support for GMOS longslit data.
 
 **geminidr.core**

@@ -22,9 +22,9 @@ def validate_regions_float(value):
     at.parse_user_regions(value, dtype=float, allow_step=False)
     return True
 
-def validate_regions_int(value):
-    at.parse_user_regions(value, dtype=int, allow_step=True)
-    return True
+def validate_regions_int(value, multiple=False):
+    ranges = at.parse_user_regions(value, dtype=int, allow_step=True)
+    return multiple or len(ranges) == 1
 
 
 class adjustWCSToReferenceConfig(config.Config):
@@ -39,6 +39,8 @@ class adjustWCSToReferenceConfig(config.Config):
                                   allowed={"sources_offsets": "Match sources using telescope offsets",
                                            "offsets": "Use telescope offsets only"},
                                   default="offsets", optional=True)
+    region = config.Field("Pixel section for measuring the spatial profile",
+                           str, None, optional=True, check=validate_regions_int)
     tolerance = config.RangeField("Maximum distance from the header offset, "
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
@@ -139,14 +141,14 @@ def check_section(value):
     subsections = value.split(',')
     for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
         try:
-            int(x1)
+            x1 = int(x1)
         except ValueError:
             if i > 0 or x1 != '':
                 return False
             else:
                 x1 = 0
         try:
-            int(x2)
+            x2 = int(x2)
         except ValueError:
             if i < len(subsections) - 1 or x2 != '':
                 return False
@@ -166,8 +168,10 @@ class findAperturesConfig(config.Config):
                            str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 20, min=1)
-    use_snr = config.Field("Use signal-to-noise ratio rather than data to find peaks?",
-                           bool, True)
+    min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
+                                float, 3.0, min=0.1)
+    use_snr = config.Field("Use signal-to-noise ratio rather than data in "
+                           "collapsed profile?", bool, False)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,

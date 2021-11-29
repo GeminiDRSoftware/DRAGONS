@@ -9,7 +9,7 @@ import astrodata, gemini_instruments
 from recipe_system import cal_service
 from recipe_system.config import globalConf
 
-from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from geminidr.gmos.primitives_gmos_longslit import GMOSClassicLongslit
 
 CAL_DICT = {"N20180303S0131_nopixels.fits":
                 {"processed_bias": "N20180302S0528_bias_nopixels.fits"}}
@@ -39,7 +39,7 @@ def test_local_database_configuration(standard_config):
 
 
 def test_config_parsing(standard_config):
-    p = GMOSLongslit([])
+    p = GMOSClassicLongslit([])
     assert len(p.caldb) == 3
     assert p.caldb[1].name == "~/test/cal_manager.db"
     assert isinstance(p.caldb[1], cal_service.LocalDB)

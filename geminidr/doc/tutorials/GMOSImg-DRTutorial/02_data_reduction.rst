@@ -174,7 +174,7 @@ Now we can do the same with the FLAT files:
 
 
 If your dataset has flats obtained with more than one filter, you can add the
-``--expr 'filter_name=="i"'`` expression to get on the flats obtained with in
+``--expr 'filter_name=="i"'`` expression to get only the flats obtained within
 the i-band. For example:
 
 .. code-block:: bash
@@ -276,7 +276,7 @@ To check that the master bias was added to the database, use ``caldb list``.
 Create a Master Flat Field
 ==========================
 
-Twilight flats images are used to produced an imaging master flat and the
+Twilight flats images are used to produce an imaging master flat and the
 result is added to the calibration database.
 
 ..  code-block:: bash

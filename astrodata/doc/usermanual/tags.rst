@@ -84,7 +84,7 @@ In DRAGONS, there is a convenience tool that will list the Astrodata tags
 for all the FITS file in a directory.
 
 To try it, from the shell, not Python, go to the "playdata" directory and
-run typewalk ::
+run typewalk::
 
     % cd <path>/ad_usermanual/playdata
     % typewalk
@@ -100,7 +100,7 @@ run typewalk ::
     Done DataSpider.typewalk(..)
 
 ``typewalk`` can be used to select specific data based on tags, and even create
-lists ::
+lists::
 
     % typewalk --tags RAW
     directory:  /data/workspace/ad_usermanual/playdata
@@ -160,12 +160,12 @@ types of data an instrument can produce.
 Tags are about what the dataset is, not it's flavor.  The Astrodata
 "descriptors" (see the section on :ref:`headers`) will describe the flavor.
 For example, tags will say that the data is an image, but the descriptor
-will say whether is B-band or R-band.   Tags are used for recipe and
+will say whether it is B-band or R-band.   Tags are used for recipe and
 primitive selection.  A way to understand the difference between a tag and
 a descriptor is in terms of the recipe that will be selected: A GMOS image
 will use the same recipe whether it's a B-band or R-band image. However,
 a GMOS longslit spectrum will need a very different recipe.  A bias is
-reduced differently from a science image, there should be tag differentiating
+reduced differently from a science image, there should be a tag differentiating
 a bias from a science image.  (There is for GMOS.)
 
 For more information on adding to Astrodata, see the Astrodata Programmer

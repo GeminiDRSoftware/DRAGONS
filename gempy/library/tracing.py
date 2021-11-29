@@ -485,6 +485,11 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     max_width = max(widths)
     window_size = 4 * max_width + 1
 
+    # If no variance is supplied we estimate S/N from pixel-to-pixel variations
+    # (do this before wny smoothing)
+    if variance is None:
+        variance = sigma_clip(np.diff(data[~mask]), masked=False).std() ** 2 / 2
+
     # For really broad peaks we can do a median filter to remove spikes
     if max_width > 10:
         data = at.boxcar(data, size=2)
@@ -510,14 +515,9 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     pinpoint_data = (data if pinpoint_index is None else
                      wavelet_transformed_data[pinpoint_index])
 
-    # If no variance is supplied we estimate S/N from pixel-to-pixel variations
-    if variance is not None:
-        snr = np.divide(pinpoint_data, np.sqrt(variance),
-                        out=np.zeros_like(data, dtype=np.float32),
-                        where=variance > 0)
-    else:
-        sigma = sigma_clip(data[~mask], masked=False).std() / np.sqrt(2)
-        snr = pinpoint_data / sigma
+    snr = np.divide(pinpoint_data, np.sqrt(variance),
+                    out=np.zeros_like(data, dtype=np.float32),
+                    where=variance > 0)
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -873,12 +873,14 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
 
 
 @insert_descriptor_values("dispersion_axis")
-def stack_slit(ext, percentile=50, dispersion_axis=None):
+def stack_slit(ext, percentile=50, section=slice(None), dispersion_axis=None):
+    _slice = tuple([section if axis == dispersion_axis else slice(None)
+                   for axis in range(ext.data.ndim)])
     if ext.mask is None:
-        return np.percentile(ext.data, percentile, axis=dispersion_axis)
+        return np.percentile(ext.data[_slice], percentile, axis=dispersion_axis)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', message='All-NaN slice')
-        profile = np.nanpercentile(np.where(ext.mask, np.nan, ext.data),
+        profile = np.nanpercentile(np.where(ext.mask[_slice], np.nan, ext.data[_slice]),
                                    percentile, axis=dispersion_axis)
     return np.nan_to_num(profile, copy=False, nan=np.nanmedian(profile))
 
@@ -1107,7 +1109,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
 
 def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
-                   sizing_method, threshold, section, use_snr):
+                   sizing_method, threshold, section, min_snr, use_snr):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
@@ -1165,22 +1167,20 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
             profile = np.nanmean(masked_data, axis=1)
 
     locations, all_limits = find_apertures_peaks(profile, prof_mask,
-                                                 max_apertures, direction,
-                                                 threshold, sizing_method,
-                                                 use_snr)
+                                                 max_apertures, threshold,
+                                                 sizing_method, min_snr)
 
     return locations, all_limits, profile, prof_mask
 
 
-def find_apertures_peaks(profile, prof_mask, max_apertures, direction,
-                         threshold, sizing_method, use_snr):
+def find_apertures_peaks(profile, prof_mask, max_apertures,
+                         threshold, sizing_method, min_snr):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
     widths = np.arange(3, 20)
-    peaks_and_snrs = find_peaks(profile, widths,
-                                mask=prof_mask & DQ.not_signal,
-                                variance=1.0 if use_snr else None, reject_bad=False,
-                                min_snr=3, min_frac=0.2, pinpoint_index=0)
+    peaks_and_snrs = find_peaks(
+        profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+        reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")

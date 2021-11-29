@@ -16,7 +16,7 @@ potentially doing some processing in between. They exist to:
   overrides this to provide a hard-coded value.
 
   More complex implementations also exist. In order to determine the gain of
-  a GMOS observations, `~gemini_instruments.gmos.AstroDataGmos` uses the
+  a GMOS observation, `~gemini_instruments.gmos.AstroDataGmos` uses the
   observation date (provided by a descriptor) to select a particular lookup
   table, and then uses the values of other descriptors to select the correct
   entry in the table.
@@ -31,7 +31,7 @@ potentially doing some processing in between. They exist to:
 Descriptors **should** be decorated using `~astrodata.astro_data_descriptor`.
 The only function of this decorator is to ensure that the descriptor is marked
 as such: it does not alter its input or output in any way. This lets the user
-to explore the API of an |AstroData| object via the
+explore the API of an |AstroData| object via the
 `~astrodata.AstroData.descriptors` property.
 
 Descriptors **can** be decorated with `~astrodata.core.returns_list` to

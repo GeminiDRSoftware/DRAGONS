@@ -51,7 +51,7 @@ def test_update_header():
     assert list(hdr['HISTORY']) == ['This is historic', 'And not so useful']
 
 
-def test_section():
+def test_section_basics():
     s = Section.from_string("[1:1024,1:512")
     assert tuple(s) == (0, 1024, 0, 512)
     assert s.asIRAFsection() == "[1:1024,1:512]"
@@ -62,3 +62,24 @@ def test_section():
     s = Section.from_shape((8, 512, 1024))
     assert tuple(s) == (0, 1024, 0, 512, 0, 8)
     assert s.z2 == 8
+
+
+def test_section_relations():
+    s = Section.from_string("[1:1024,1:512")
+    s2 = Section.from_string("[1:1024,1:256]")
+    s3 = Section.from_string("[1:512,1:1024]")
+    s4 = Section.from_string("[513:1024,1:1024]")
+
+    assert s.contains(s2)
+    assert not s.contains(s3)
+
+    assert s.overlap(s2) == Section(0, 1024, 0, 256)
+    assert s.overlap(s3) == Section(0, 512, 0, 512)
+    assert s.overlap(s2) == s2.overlap(s)
+    assert s3.overlap(s4) is None
+
+    assert s3.is_same_size(s4)
+
+    ss = s2.shift(100, 200)
+    assert ss.is_same_size(s2)
+    assert ss == Section(100, 1124, 200, 456)

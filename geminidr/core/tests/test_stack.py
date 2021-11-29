@@ -6,10 +6,9 @@ import numpy as np
 import pytest
 from astropy.io import fits
 from astropy.table import Table
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_allclose
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.f2.primitives_f2_image import F2Image
 
@@ -42,8 +41,8 @@ def niri_adinputs():
     return adinputs
 
 
-@pytest.mark.skip("bquint - Investigate this test")
 def test_error_only_one_file(niri_adinputs, caplog):
+    caplog.set_level(20)  # INFO
     # With only one file
     p = NIRIImage(niri_adinputs[1:])
     p.stackFrames()
@@ -100,11 +99,23 @@ def test_rejmap(niri_adinputs):
 
 
 def test_stacking_without_gain_or_readnoise(f2_adinputs):
-    """We use F2 since it doesn't use a LUT to return values for the
-    gain() and read_noise() descriptors"""
+    """We use F2 since our fake data return None for gain and read_noise,
+    due to the absence of the LNRS keyword"""
     p = F2Image(f2_adinputs)
     assert f2_adinputs[0].gain() == [None]
     assert f2_adinputs[0].read_noise() == [None]
     ad = p.stackFrames(operation='mean', reject_method='none')[0]
     assert ad[0].data.mean() == 1.5
     assert ad[0].data.std() == 0
+
+
+def test_stacking_gain_read_noise_propagation(f2_adinputs, caplog):
+    f2_adinputs[0].phu["LNRS"] = 1
+    f2_adinputs[1].phu["LNRS"] = 8
+    p = F2Image(f2_adinputs)
+    ad = p.stackFrames(operation='mean', reject_method='none').pop()
+    assert "Not all inputs have the same gain" in caplog.records[0].message
+    # Input gains are 4.44 and 4.44/8
+    assert_allclose(ad.hdr["GAIN"], 8.88/9)
+    # Input read_noises are 11.7 and 5
+    assert_allclose(ad.hdr["RDNOISE"], 8.996944, atol=0.001)
