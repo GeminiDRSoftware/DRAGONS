@@ -70,9 +70,10 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py37-unit/reports/*_results.xml'
                             )
-                            echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
+                            echo "Deleting Unit tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
                             }
                         }
                         failure {
@@ -80,14 +81,7 @@ pipeline {
                             sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
         //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
                         }
-                        success {
-                            echo "Delete Tox Environment: .tox/py37-unit"
-                            dir ( ".tox/py37-unit" ) {
-                                deleteDir()
-                            }
-                        }
                     }
-
                 }
 
                 stage('Integration tests') {
@@ -115,15 +109,10 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py37-integ/reports/*_results.xml'
                             )
-                            echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
-                        }
-                        success {
-                            echo "Delete Tox Environment: .tox/py37-integ"
-                            dir ( ".tox/py37-integ" ) {
-                                deleteDir()
+                            echo "Deleting Integration tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
                             }
                         }
                     } // end post
@@ -154,15 +143,10 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py37-reg/reports/*_results.xml'
                             )
-                            echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
-                            }
-                        }
-                        success {
-                            echo "Delete Tox Environment: .tox/py37-reg"
-                            dir ( ".tox/py37-reg" ) {
-                                deleteDir()
+                            echo "Deleting Regression Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
                             }
                         }
                     } // end post
@@ -194,17 +178,12 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py37-gmosls/reports/*_results.xml'
                             )
-                            echo "Delete temporary folder: ${TMPDIR}"
-                            dir ( '$TMPDIR' ) {
-                                deleteDir()
+                            echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
                             }
                         }  // end always
-                        success {
-                            echo "Delete Tox Environment: .tox/py37-gmosls"
-                            dir( '.tox/py37-gmosls' ) {
-                                deleteDir()
-                            }
-                        }
                     }  // end post
                 }  // end stage
 
@@ -236,15 +215,10 @@ pipeline {
                         allowEmptyResults: true,
                         testResults: 'reports/*_results.xml'
                     )
-                    echo "Delete temporary folder: ${TMPDIR}"
-                    dir ( '$TMPDIR' ) {
-                        deleteDir()
-                    }
-                }
-                success {
-                    echo "Delete Tox Environment: .tox/py37-slow"
-                    dir( '.tox/py37-slow' ) {
-                        deleteDir()
+//                    echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
+//                    cleanWs()
+//                    dir("${env.WORKSPACE}@tmp") {
+//                      deleteDir()
                     }
                 }
             } // end post
@@ -254,10 +228,18 @@ pipeline {
     post {
         success {
             sendNotifications 'SUCCESSFUL'
-            deleteDir() /* clean up our workspace */
+//            deleteDir() /* clean up our workspace */
         }
         failure {
             sendNotifications 'FAILED'
+//            deleteDir() /* clean up our workspace */
+        }
+        cleanup {
+            echo "Delete master workspace ${env.WORKSPACE}"
+//            cleanWs()
+            dir( '${env.WORKSPACE}') {
+                deleteDir()
+            }
         }
     }
 }
