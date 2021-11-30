@@ -14,6 +14,7 @@ from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import GIRegionModel, connect_region_model, GIRegionListener, \
     RegionEditor, do_later, TabsTurboInjector, FitQuality
 from geminidr.interactive.interactive_config import interactive_conf
+from geminidr.interactive.server import using_jupyter
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
@@ -856,17 +857,27 @@ class Fit1DPanel:
         else:
             mask_handlers = None
 
+        button_bar = None
+        print("Checking if we should make the button_bar")
+        if using_jupyter:
+            print("Using Jupyter, adding Button Bar in fit1d")
+            button_bar = row(align='center')
+
         Controller(p_main, None, self.model.band_model if self.enable_regions else None, controller_div,
                    mask_handlers=mask_handlers, domain=domain, helpintrotext=
                    "While the mouse is over the upper plot, "
-                   "choose from the following commands:")
+                   "choose from the following commands:", button_bar=button_bar)
 
         info_panel = InfoPanel(self.enable_regions, self.enable_user_masking,
                                extra_masks=extra_masks)
         self.model.add_listener(info_panel.model_change_handler)
 
         # self.add_custom_cursor_behavior(p_main)
-        fig_column = [p_main, info_panel.component]
+        if using_jupyter:
+            fig_column = [p_main, button_bar, info_panel.component]
+        else:
+            fig_column = [p_main, info_panel.component]
+        # fig_column = [p_main, info_panel.component]
         if p_supp is not None:
             fig_column.append(p_supp)
 

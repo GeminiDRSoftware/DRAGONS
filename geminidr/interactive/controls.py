@@ -20,7 +20,7 @@ from bokeh.events import PointEvent, SelectionGeometry, Tap, MouseEnter, MouseLe
 
 __all__ = ["controller", "Controller", "Handler"]
 
-from bokeh.models import CustomJS
+from bokeh.models import CustomJS, Button
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -62,7 +62,7 @@ class Controller(object):
     text to give contextual help.
     """
     def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None,
-                 domain=None, handlers=None, helpintrotext=None):
+                 domain=None, handlers=None, helpintrotext=None, button_bar=None):
         """
         Create a controller to manage the given aperture and region models on
         the given GIFigure.
@@ -86,6 +86,8 @@ class Controller(object):
             List of handlers for key presses that are always active, not tied to a task
         helpintrotext : str
             HTML to show at the top of the controller help (gray text block), or None for a default message.
+        button_bar : :class:`~bokeh.models.Box`
+            Optional container for UI buttons for control commands, for environments that don't support key capture
         """
 
         fig.js_on_event(MouseEnter, CustomJS(code='window.controller_keys_enabled = true;'))
@@ -107,6 +109,8 @@ class Controller(object):
         self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
 
+        self.button_bar = button_bar
+
         self.handlers = dict()
         if mask_handlers:
             if len(mask_handlers) != 2:
@@ -116,13 +120,17 @@ class Controller(object):
                                           mask_handlers[0](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
                                                                   /float(self.fig.inner_width)) /
                                                            ((self.fig.y_range.end - self.fig.y_range.start)/
-                                                            float(self.fig.inner_height)))))
+                                                            float(self.fig.inner_height))),
+                                          button_label='Mask',
+                                          button_type='primary'))
             self.register_handler(Handler('u', 'Unmask selected/closest',
                                           lambda key, x, y:
                                           mask_handlers[1](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
                                                                   /float(self.fig.inner_width)) /
                                                            ((self.fig.y_range.end - self.fig.y_range.start)
-                                                            /float(self.fig.inner_height)))))
+                                                            /float(self.fig.inner_height))),
+                                          button_label='Unmask',
+                                          button_type='primary'))
         if handlers:
             for handler in handlers:
                 self.register_handler(handler)
@@ -163,6 +171,10 @@ class Controller(object):
         if handler.key in self.handlers.keys():
             raise ValueError(f'Key {handler.key} already registered')
         self.handlers[handler.key] = handler
+        if self.button_bar:
+            button = Button(label=handler.button_label, button_type=handler.button_type, width_policy='min')
+            button.on_click(lambda: handler.fn(handler.key, None, None))
+            self.button_bar.children.append(button)
 
     def update_helpmaskingtext(self):
         """
@@ -832,11 +844,15 @@ class Handler:
         Description of handler effect for the help text
     fn : callable
         Function to call with the key
+    button_label : str
+        Optional text label for a button where key commnands aren't supported
     """
-    def __init__(self, key, description, fn):
+    def __init__(self, key, description, fn, button_label=None, button_type='default'):
         self.key = key.lower()
         self.description = description
         self.fn = fn
+        self.button_label = button_label if button_label else key.upper()
+        self.button_type = button_type
 
     def handle(self, key, x, y):
         self.fn(key, x, y)
