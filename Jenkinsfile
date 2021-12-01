@@ -213,13 +213,13 @@ pipeline {
                 always {
                     junit (
                         allowEmptyResults: true,
-                        testResults: 'reports/*_results.xml'
+                        testResults: '.tmp/py37-slow/reports/*_results.xml'
                     )
-//                    echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
-//                    cleanWs()
-//                    dir("${env.WORKSPACE}@tmp") {
-//                      deleteDir()
-//                    }
+                    echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                      deleteDir()
+                    }
                 }
             } // end post
         }
@@ -234,12 +234,9 @@ pipeline {
             sendNotifications 'FAILED'
 //            deleteDir() /* clean up our workspace */
         }
-        cleanup {
+        always {
             echo "Delete master workspace ${env.WORKSPACE}"
-//            cleanWs()
-            dir( '${env.WORKSPACE}') {
-                deleteDir()
-            }
+            cleanWs()
         }
     }
 }
