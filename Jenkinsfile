@@ -219,7 +219,7 @@ pipeline {
 //                    cleanWs()
 //                    dir("${env.WORKSPACE}@tmp") {
 //                      deleteDir()
-                    }
+//                    }
                 }
             } // end post
         }
