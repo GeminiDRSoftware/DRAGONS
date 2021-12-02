@@ -12,23 +12,30 @@ Change Logs
 Bug Fixes
 ---------
 
-**geminidr**
-
 **geminidr.core**
 
 * Fix bug where ``section`` start/end comparison was made on string, not
   numeric, values.
 
-* Expose ``min_snr`` parameter in ``findApertures``, make ``use_snr=False``
-  the default, and estimate noise from pixel-to-pixel variations, regardless
-  of its value.
-
-**gempy**
-
 **gempy.library.transform**
 
 * Fix bug that caused longslit spectra to have incorrect WCS, offset from true
   slit location.
+
+
+Interface Modifications
+-----------------------
+
+**geminidr.core**
+
+* Expose ``min_snr`` parameter in ``findApertures``, make ``use_snr=False``
+  the default, and estimate noise from pixel-to-pixel variations, regardless
+  of its value.
+
+Documentation
+-------------
+
+* Various fixes to the documentation.
 
 
 3.0.0
