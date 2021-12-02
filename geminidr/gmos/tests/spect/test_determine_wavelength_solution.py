@@ -68,7 +68,7 @@ input_pars = [
     ("N20170609S0173_mosaic.fits", dict()),  # B600:0.500 HAM
     ("N20170403S0452_mosaic.fits", dict()),  # B600:0.590 HAM
     ("N20170415S0255_mosaic.fits", dict()),  # B600:0.590 HAM
-    #("N20171016S0010_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("N20171016S0010_mosaic.fits", dict()),  # B600:0.500 HAM
     ("N20171016S0127_mosaic.fits", dict()),  # B600:0.500 HAM
     ("N20180103S0341_mosaic.fits", dict()),  # B600:0.430 HAM
     ("N20180113S0351_mosaic.fits", dict()),  # B600:0.750 HAM
@@ -81,13 +81,13 @@ input_pars = [
     ("N20100702S0321_mosaic.fits", dict()),  # R150:0.700 EEV
     ("N20130606S0291_mosaic.fits", dict()),  # R150:0.550 E2V
     ("N20130112S0574_mosaic.fits", dict()),  # R150:0.700 E2V
-    #("N20130809S0337_mosaic.fits", dict()),  # R150:0.700 E2V
-    #("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V
+    ("N20130809S0337_mosaic.fits", dict()),  # R150:0.700 E2V
+    ("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V
     ("N20180119S0232_mosaic.fits", dict()),  # R150:0.520 HAM
     ("N20171007S0439_mosaic.fits", dict()),  # R150:0.650 HAM
     #("N20181114S0512_mosaic.fits", dict()),  # R150:0.610 HAM
     ("N20171007S0441_mosaic.fits", dict()),  # R150:0.650 HAM
-    #("N20101212S0213_mosaic.fits", dict()),  # R400:0.550 EEV
+    ("N20101212S0213_mosaic.fits", dict()),  # R400:0.550 EEV
     ("N20100202S0214_mosaic.fits", dict()),  # R400:0.700 EEV
     ("N20130106S0194_mosaic.fits", dict(min_snr=3)),  # R400:0.500 E2V
     ("N20130422S0217_mosaic.fits", dict()),  # R400:0.700 E2V
@@ -96,14 +96,14 @@ input_pars = [
     ("N20100427S1276_mosaic.fits", dict()),  # R600:0.675 EEV
     ("N20180120S0417_mosaic.fits", dict()),  # R600:0.865 HAM
     #("N20180516S0214_mosaic.fits", dict()),  # R600:0.860 HAM
-    #("N20100212S0143_mosaic.fits", dict()),  # R831:0.450 EEV
+    ("N20100212S0143_mosaic.fits", dict()),  # R831:0.450 EEV
     ("N20100720S0247_mosaic.fits", dict()),  # R831:0.850 EEV
     ("N20130808S0490_mosaic.fits", dict()),  # R831:0.571 E2V
     ("N20130830S0291_mosaic.fits", dict()),  # R831:0.845 E2V
     ("N20170910S0009_mosaic.fits", dict()),  # R831:0.653 HAM
     ("N20170509S0682_mosaic.fits", dict()),  # R831:0.750 HAM
     ("N20170416S0058_mosaic.fits", dict()),  # R831:0.855 HAM
-    #("N20170416S0081_mosaic.fits", dict()),  # R831:0.865 HAM
+    ("N20170416S0081_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20180120S0315_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20190111S0271_mosaic.fits", dict()),  # R831:0.525 HAM
     #
@@ -133,7 +133,6 @@ input_pars = [
     ("S20170129S0125_mosaic.fits", dict(nbright=1)),  # R400:0.685 HAM bad column
     ("S20170703S0199_mosaic.fits", dict()),  # R400:0.850 HAM
     ("S20170718S0420_mosaic.fits", dict()),  # R400:0.910 HAM
-    #("S20100306S0460_mosaic.fits", dict()),  # R600:0.675 EEV
     ("S20101218S0139_mosaic.fits", dict()),  # R600:0.675 EEV
     ("S20110306S0294_mosaic.fits", dict()),  # R600:0.675 EEV
     ("S20110720S0236_mosaic.fits", dict()),  # R600:0.675 EEV
@@ -190,8 +189,10 @@ def test_regression_determine_wavelength_solution(
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
     # We don't care about what the wavelength solution is doing at
-    # wavelengths where there's no data
-    indices = np.where(np.logical_and(ref_wavelength > 300, ref_wavelength < 1200))
+    # wavelengths outside where we've matched lines
+    lines = ref_ad[0].WAVECAL["wavelengths"].data
+    indices = np.where(np.logical_and(ref_wavelength > lines.min(),
+                                      ref_wavelength < lines.max()))
     tolerance = 0.5 * (slit_size_in_px * dispersion)
     np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
                                atol=tolerance)
