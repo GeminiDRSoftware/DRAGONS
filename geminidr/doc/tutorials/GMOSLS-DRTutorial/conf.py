@@ -23,11 +23,12 @@ author = 'Kathleen Labrie'
 
 # The full version, including alpha/beta/rc tags
 version = '3.0'
-release = '3.0.x'
-#rtdurl = 'v'+release
-rtdurl = 'release-'+release
+#release = '3.0.x'
+#rtdurl = 'release-'+release
+release = '3.0.1'
+rtdurl = 'v'+release
 
-today = 'October 2021'
+today = 'December 2021'
 
 # -- General configuration ---------------------------------------------------
 

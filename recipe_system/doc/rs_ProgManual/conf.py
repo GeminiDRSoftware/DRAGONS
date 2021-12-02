@@ -44,9 +44,10 @@ author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 # built documents.
 #
 version = '3.0'  # The short X.Y version.
-release = '3.0.x'  # The full version, including alpha/beta/rc tags.
-#rtdurl = 'v'+release
-rtdurl = 'release-'+release
+#release = '3.0.x'  # The full version, including alpha/beta/rc tags.
+#rtdurl = 'release-'+release
+release = '3.0.1'  # The full version, including alpha/beta/rc tags.
+rtdurl = 'v'+release
 
 
 # -- General configuration -----------------------------------------------------
@@ -100,7 +101,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'October 2021'
+today = 'December 2021'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'

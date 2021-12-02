@@ -39,9 +39,10 @@ author = 'Bruno C. Quint'
 version = '3.0'
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-release = '3.0.x'
-#rtdurl = 'v'+release
-rtdurl = 'release-'+release
+#release = '3.0.x'
+#rtdurl = 'release-'+release
+release = '3.0.1'
+rtdurl = 'v'+release
 
 
 # -- General configuration ---------------------------------------------------
@@ -85,7 +86,7 @@ language = None
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'October 2021'
+today = 'December 2021'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
