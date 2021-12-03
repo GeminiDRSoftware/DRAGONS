@@ -85,7 +85,8 @@ input_pars = [
     ("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V
     ("N20180119S0232_mosaic.fits", dict()),  # R150:0.520 HAM
     ("N20171007S0439_mosaic.fits", dict()),  # R150:0.650 HAM
-    #("N20181114S0512_mosaic.fits", dict()),  # R150:0.610 HAM
+    #("N20181114S0512_mosaic.fits", dict()),  # R150:0.610 HAM  2" slit I can't identify
+    ("N20180111S0155_mosaic.fits", dict()),  # R150:0.610 HAM
     ("N20171007S0441_mosaic.fits", dict()),  # R150:0.650 HAM
     ("N20101212S0213_mosaic.fits", dict()),  # R400:0.550 EEV
     ("N20100202S0214_mosaic.fits", dict()),  # R400:0.700 EEV
@@ -95,7 +96,8 @@ input_pars = [
     ("N20171113S0135_mosaic.fits", dict()),  # R400:0.750 HAM
     ("N20100427S1276_mosaic.fits", dict()),  # R600:0.675 EEV
     ("N20180120S0417_mosaic.fits", dict()),  # R600:0.865 HAM
-    #("N20180516S0214_mosaic.fits", dict()),  # R600:0.860 HAM
+    # actually closer to 833nm, so use "alternative_centers"
+    ("N20180516S0214_mosaic.fits", dict(debug_alternative_centers=True)),  # R600:0.860 HAM
     ("N20100212S0143_mosaic.fits", dict()),  # R831:0.450 EEV
     ("N20100720S0247_mosaic.fits", dict()),  # R831:0.850 EEV
     ("N20130808S0490_mosaic.fits", dict()),  # R831:0.571 E2V
