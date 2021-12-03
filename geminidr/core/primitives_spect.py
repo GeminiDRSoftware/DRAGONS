@@ -1111,7 +1111,7 @@ class Spect(PrimitivesBASE):
                     # Same-ROI origin shift:
                     elif m_distcorr.left.n_outputs == 2 and all(
                       isinstance(m, models.Shift) for m in m_distcorr.left):
-                        m_dummy = m_distcorr.left
+                        m_dummy = m_distcorr.left | models.Identity(2)
 
                 m_dummy.inverse = m_distcorr.inverse
                 new_pipeline.append((prev_frame, m_dummy))
