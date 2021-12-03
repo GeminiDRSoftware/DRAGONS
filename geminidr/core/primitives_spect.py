@@ -300,11 +300,31 @@ class Spect(PrimitivesBASE):
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
-                log.warning("Science frame and arc have different binnings.")
+                log.warning(f"Science frame {ad.filename} and arc "
+                            f"{arc.filename} have different binnings.")
                 if 'sq' in self.mode:
                     fail = True
                 adoutputs.append(ad)
                 continue
+
+            ad_detsec = ad.detector_section()
+
+            # Check that the arc is at least as large as the science frame
+            # We only do this for single-extension arcs now, which is true
+            # for GMOSLongslit
+            if len_arc == 1:
+                arc_detsec = arc.detector_section()[0]
+                detsec_array = np.asarray(ad_detsec)
+                x1, _, y1, _ = detsec_array.min(axis=0)
+                x2, _, y2, _ = detsec_array.max(axis=0)
+                if (x1 < arc_detsec.x1 or x2 > arc_detsec.x2 or
+                        y1 < arc_detsec.y1 or y2 > arc_detsec.y2):
+                    log.warning(f"Science frame {ad.filename} is larger than "
+                                f"the arc {arc.filename}")
+                    if 'sq' in self.mode:
+                        fail = True
+                    adoutputs.append(ad)
+                    continue
 
             # Read all the arc's distortion maps. Do this now so we only have
             # one block of reading and verifying them
@@ -362,8 +382,6 @@ class Spect(PrimitivesBASE):
                 ] * len_ad
                 output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
 
-                arc_detsec = arc.detector_section()[0]
-                ad_detsec = ad.detector_section()
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
                     # same distortion correction to each input extension.
