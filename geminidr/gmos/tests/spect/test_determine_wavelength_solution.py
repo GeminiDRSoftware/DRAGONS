@@ -82,7 +82,7 @@ input_pars = [
     ("N20130606S0291_mosaic.fits", dict()),  # R150:0.550 E2V
     ("N20130112S0574_mosaic.fits", dict()),  # R150:0.700 E2V
     #("N20130809S0337_mosaic.fits", dict()),  # R150:0.700 E2V  2" slit
-    ("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V
+    #("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V  2" slit
     ("N20180119S0232_mosaic.fits", dict()),  # R150:0.520 HAM
     ("N20171007S0439_mosaic.fits", dict()),  # R150:0.650 HAM
     #("N20181114S0512_mosaic.fits", dict()),  # R150:0.610 HAM  2" slit I can't identify
