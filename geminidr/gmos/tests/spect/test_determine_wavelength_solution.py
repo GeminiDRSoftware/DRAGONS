@@ -121,7 +121,7 @@ input_pars = [
     ("S20131105S0105_mosaic.fits", dict()),  # B600:0.500 EEV
     ("S20140504S0008_mosaic.fits", dict()),  # B600:0.500 EEV
     ("S20170103S0152_mosaic.fits", dict(nbright=2)),  # B1200:0.440 HAM bad columns
-    ("S20170108S0085_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("S20170108S0085_mosaic.fits", dict(nbright=2)),  # B600:0.500 HAM
     ("S20130510S0103_mosaic.fits", dict()),  # B1200:0.450 EEV
     ("S20130629S0002_mosaic.fits", dict()),  # B1200:0.525 EEV
     ("S20131123S0044_mosaic.fits", dict()),  # B1200:0.595 EEV
