@@ -161,19 +161,20 @@ _jupyter_doc = None
 
 def setup_jupyter(doc, fn=None):
     global _jupyter_doc
-    _jupyter_doc = doc
-    doc.theme = Theme(json=yaml.load("""
-        attrs:
-            Figure:
-                background_fill_color: "#DDDDDD"
-                outline_line_color: white
-                toolbar_location: above
-                height: 500
-                width: 800
-            Grid:
-                grid_line_dash: [6, 4]
-                grid_line_color: white
-    """, Loader=yaml.FullLoader))
+    if _jupyter_doc is None:
+        _jupyter_doc = doc
+        doc.theme = Theme(json=yaml.load("""
+            attrs:
+                Figure:
+                    background_fill_color: "#DDDDDD"
+                    outline_line_color: white
+                    toolbar_location: above
+                    height: 500
+                    width: 800
+                Grid:
+                    grid_line_dash: [6, 4]
+                    grid_line_color: white
+        """, Loader=yaml.FullLoader))
     if fn is not None:
         # trying threaded version
         def threaded_redux():
@@ -293,7 +294,7 @@ except NameError:
 _jup_running = False
 
 
-def start_server_jupyter():
+def _start_server_jupyter():
     """
     Tell the interactive code we are starting interactivity in Jupyter
 
@@ -320,7 +321,7 @@ def start_server():
     will block and this call will not return.
     """
     if using_jupyter:
-        start_server_jupyter()
+        _start_server_jupyter()
         return
 
     global _bokeh_server
@@ -394,7 +395,6 @@ def stop_server():
     """
     global _jup_running
     if using_jupyter:
-        # what to do?
         _jup_running = False
         return
 
