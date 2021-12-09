@@ -145,7 +145,7 @@ input_pars = [
     ("S20120322S0122_mosaic.fits", dict()),  # R600:0.900 EEV
     ("S20130803S0011_mosaic.fits", dict()),  # R831:0.576 EEV
     ("S20130414S0040_mosaic.fits", dict()),  # R831:0.845 EEV
-    ("S20170214S0059_mosaic.fits", dict()),  # R831:0.440 HAM
+    ("S20170214S0059_mosaic.fits", dict(nbright=3)),  # R831:0.440 HAM
     ("S20170703S0204_mosaic.fits", dict()),  # R831:0.600 HAM
     ("S20171018S0048_mosaic.fits", dict())  # R831:0.865 HAM
 ]
