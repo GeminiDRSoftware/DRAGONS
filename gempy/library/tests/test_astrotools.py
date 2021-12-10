@@ -36,6 +36,18 @@ def test_divide0():
     np.testing.assert_array_equal(at.divide0(twod, zeros), np.zeros_like(twod))
 
 
+def test_fit_spline_to_data():
+    rng = np.random.default_rng(0)
+    x = np.arange(1000)
+    y = np.ones((1000,))
+    spline = at.fit_spline_to_data(y)
+    np.testing.assert_allclose(spline(x), y)
+
+    y = x + x*x + rng.normal(size=x.size)
+    spline = at.fit_spline_to_data(y)
+    np.testing.assert_allclose(spline(x), y, atol=4)
+
+
 @pytest.mark.parametrize("separation", [1,2,3,4,5])
 def test_std_from_pixel_variations(separation):
     # Test passes with ths seed and number of samples

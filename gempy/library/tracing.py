@@ -750,29 +750,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     except KeyError:
         method = None
 
-    x = np.arange(len(data))
-    y = np.ma.masked_array(data, mask=mask)
-
-    # Try to better estimate the true noise from the pixel-to-pixel
-    # variations (the difference between adjacent pixels will be
-    # sqrt(2) times larger than the rms noise). Also lower the weights
-    # in regions of rapidly-varying signal to avoid getting spurious minima.
-    if variance is None:
-        diff = np.diff(y)
-        sigma1 = sigma_clipped_stats(diff)[2] / np.sqrt(2)
-        # 0.1 is a fudge factor that seems to work well
-        #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
-        # Average from 2 pixels either side; 0.05 corresponds to 0.1 before
-        # since this is the change in a 4-pixel span, instead of 2 pixels
-        diff2 = np.r_[diff[:2], y[4:] - y[:-4], diff[-2:]]
-        sigma2 = 0.05 * diff2
-        w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
-    else:
-        w = at.divide0(1.0, np.sqrt(variance))
-
-    # TODO: Consider outlier removal
-    #spline = am.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=3)
-    spline = interpolate.UnivariateSpline(x, y, w=w, k=3)
+    spline = at.fit_spline_to_data(data, mask, variance)
     minima, maxima = at.get_spline3_extrema(spline)
 
     all_limits = []
@@ -1174,13 +1152,16 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
 
 
 def find_apertures_peaks(profile, prof_mask, max_apertures,
-                         threshold, sizing_method, min_snr):
+                         threshold, sizing_method, min_snr, wavelet=True):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
-    widths = np.arange(3, 20)
-    peaks_and_snrs = find_peaks(
-        profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
-        reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
+    if wavelet:
+        widths = np.arange(3, 20)
+        peaks_and_snrs = find_peaks(
+            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+            reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
+    else:
+        pass
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")

@@ -7,6 +7,8 @@ The astroTools module contains astronomy specific utility functions
 import os
 import re
 import numpy as np
+from scipy import interpolate
+
 from astropy import units as u
 from astropy import stats
 
@@ -104,6 +106,48 @@ def divide0(numerator, denominator):
 
         return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
+
+
+def fit_spline_to_data(data, mask=None, variance=None, k=3):
+    """
+    Fit a spline to data, weighting by variance. If no variance is supplied,
+    it is computed from the pixel-to-pixel variations in the data and an
+    additional component is added based on how rapidly the data are varying.
+    This is important to prevent "overfitting" of the slopes of features.
+
+    Parameters
+    ----------
+    data: array
+        data to which a spline is to be fitted
+    mask: array/None
+        mask values for each data point
+    variance: array/None
+        variance of each data point
+    k: int
+        order of the spline
+
+    Returns
+    -------
+    callable spline object: the fitted spline
+    """
+    if variance is None:
+        y = np.ma.masked_array(data, mask=mask)
+        sigma1 = std_from_pixel_variations(data)
+        diff = np.diff(y)
+        # 0.1 is a fudge factor that seems to work well
+        #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
+        # Average from 2 pixels either side; 0.05 corresponds to 0.1 before
+        # since this is the change in a 4-pixel span, instead of 2 pixels
+        diff2 = np.r_[diff[:2], y[4:] - y[:-4], diff[-2:]]
+        sigma2 = 0.05 * diff2
+        w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
+    else:
+        w = divide0(1.0, np.sqrt(variance))
+
+    # TODO: Consider outlier removal
+    #spline = am.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=3)
+    spline = interpolate.UnivariateSpline(np.arange(data.size), data, w=w, k=k)
+    return spline
 
 
 def std_from_pixel_variations(array, separation=5, **kwargs):
