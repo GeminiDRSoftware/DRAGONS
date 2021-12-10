@@ -486,9 +486,9 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     window_size = 4 * max_width + 1
 
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
-    # (do this before wny smoothing)
+    # (do this before any smoothing)
     if variance is None:
-        variance = sigma_clip(np.diff(data[~mask]), masked=False).std() ** 2 / 2
+        variance = at.std_from_pixel_variations(data[~mask]) ** 2
 
     # For really broad peaks we can do a median filter to remove spikes
     if max_width > 10:
