@@ -1111,30 +1111,33 @@ class Spect(PrimitivesBASE):
                 new_pipeline = ext.wcs.pipeline[:idx-1]
                 prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
 
+                # The model must have a Mapping prior to the Chebyshev2D
+                # model(s) since coordinates have to be duplicated. Find this
+                for i in range(m_distcorr.n_submodels):
+                    if isinstance(m_distcorr[i], models.Mapping):
+                        break
+                else:
+                    raise ValueError("Cannot find Mapping")
+
+                # Now determine the extent of the submodel that encompasses the
+                # overall 2D distortion, which will be a 2D->2D model
+                for j in range(i + 1, m_distcorr.n_submodels + 1):
+                    try:
+                        msub = m_distcorr[i:j]
+                    except IndexError:
+                        continue
+                    if msub.n_inputs == msub.n_outputs == 2:
+                        break
+                else:
+                    raise ValueError("Cannot find distortion model")
+
+                # Name it so we can replace it
+                m_distcorr[i:j].name = "DISTCORR"
                 m_dummy = models.Identity(2)
-
-                if isinstance(m_distcorr, CompoundModel) and (
-                   isinstance(m_distcorr.left, CompoundModel) and
-                   isinstance(m_distcorr.right, CompoundModel)):
-
-                    # Mixed-ROI origin shifts (factor this into a function?):
-                    if all(isinstance(m, models.Shift) for
-                           m in m_distcorr.right) and (
-                       isinstance(m_distcorr.left.left, CompoundModel) and
-                       m_distcorr.left.left.n_outputs == 2 and
-                       all(isinstance(m, models.Shift) for
-                           m in m_distcorr.left.left)):
-                        m_dummy = m_distcorr.left.left | m_distcorr.right
-
-                    # Same-ROI origin shift:
-                    elif m_distcorr.left.n_outputs == 2 and all(
-                      isinstance(m, models.Shift) for m in m_distcorr.left):
-                        m_dummy = m_distcorr.left | models.Identity(2)
-
-                m_dummy.inverse = m_distcorr.inverse
-                new_pipeline.append((prev_frame, m_dummy))
+                m_dummy.inverse = msub.inverse
+                new_m_distcorr = m_distcorr.replace_submodel("DISTCORR", m_dummy)
+                new_pipeline.append((prev_frame, new_m_distcorr))
                 new_pipeline.extend(ext.wcs.pipeline[idx:])
-
                 ext.wcs = gWCS(new_pipeline)
 
             if not have_distcorr:
