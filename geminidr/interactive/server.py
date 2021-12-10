@@ -1,5 +1,8 @@
 import uuid
 
+from geminidr.interactive.jupyter import start_server_jupyter, using_jupyter, jupyter_doc, jupyter_mode, PANEL_MODE, \
+    stop_jupyter, EMBEDDED_SERVER_MODE
+
 from astrodata import version
 
 import pathlib
@@ -16,6 +19,7 @@ __all__ = ["test_mode", "interactive_fitter", "stop_server"]
 
 # Set to True to tell the interactive code to automatically submit in
 # order to test the interactive paths automatically
+
 test_mode = False
 
 from bokeh.themes import built_in_themes
@@ -152,66 +156,6 @@ def _bkapp(doc):
     doc.title = title
 
 
-import yaml
-from bokeh.themes import Theme
-
-
-_jupyter_doc = None
-
-
-def setup_jupyter(doc, fn=None):
-    global _jupyter_doc
-    if _jupyter_doc is None:
-        _jupyter_doc = doc
-        doc.theme = Theme(json=yaml.load("""
-            attrs:
-                Figure:
-                    background_fill_color: "#DDDDDD"
-                    outline_line_color: white
-                    toolbar_location: above
-                    height: 500
-                    width: 800
-                Grid:
-                    grid_line_dash: [6, 4]
-                    grid_line_color: white
-        """, Loader=yaml.FullLoader))
-    if fn is not None:
-        # trying threaded version
-        def threaded_redux():
-            import threading
-            t = threading.Thread(name='jupyter_dragons_interactive_thread', target=fn)
-            t.start()
-
-        doc.add_next_tick_callback(threaded_redux)
-
-
-def jupyter_reduce(files=[], recipename=None, uparms=None, upload=[], mode=None):
-    from recipe_system.reduction.coreReduce import Reduce
-    from bokeh.io import show, output_notebook
-
-    # output_notebook()
-
-    def stub_redux():
-        redux = Reduce()
-        redux.files = files
-        redux.recipename= recipename
-        if uparms:
-            redux.uparms = uparms
-        redux.upload = upload
-        if mode:
-            redux.mode = mode
-        redux.runr()
-
-    # uncomment output_notebook above and remove this, then uncomment the show if we want to go back to single cell
-    def threaded_redux():
-        import threading
-        t = threading.Thread(name='jupyter_dragons_interactive_thread', target=stub_redux)
-        t.start()
-    _jupyter_doc.add_next_tick_callback(threaded_redux)
-
-    # show(lambda x: setup_jupyter(x, stub_redux))
-
-
 _doc = None
 
 
@@ -253,7 +197,8 @@ def _shutdown(doc):
         user_satisfied = doc.session_context.request.arguments['user_satisfied'][0].decode('utf-8')
         if user_satisfied is not None and user_satisfied.lower() in ('0', 'n', 'f', 'no', 'false'):
             user_satisfied = False
-    _visualizer.session_ended(None, user_satisfied)
+    if _visualizer:
+        _visualizer.session_ended(None, user_satisfied)
 
 
 def set_visualizer(visualizer):
@@ -269,11 +214,12 @@ def set_visualizer(visualizer):
     visualizer : :class:`~geminidr.interactive.interactive.PrimitiveVisualizer`
     """
     global _visualizer
-    global _jupyter_doc
 
     _visualizer = visualizer
-    if visualizer is not None and _jupyter_doc is not None:
-        _visualizer.show(_jupyter_doc)
+    if visualizer is not None and jupyter_doc is not None:
+        _visualizer.show(jupyter_doc)
+    elif visualizer is not None and jupyter_mode == PANEL_MODE:
+        visualizer.show_jupyter()
 
 
 class DRAGONSStaticHandler(Handler):
@@ -285,33 +231,6 @@ class DRAGONSStaticHandler(Handler):
         self._static = '%s/static' % pathlib.Path(__file__).parent.absolute()
 
 
-# Check if we are running in a Jupyter notebook and set using_jupyter accordingly
-try:
-    __IPYTHON__
-    using_jupyter = True
-except NameError:
-    using_jupyter = False
-_jup_running = False
-
-
-def _start_server_jupyter():
-    """
-    Tell the interactive code we are starting interactivity in Jupyter
-
-    This is analagous to :meth:`start_server` but it just blocks while
-    polling for the interactive session to end.  This way, it can be
-    used as a drop-in replacement for that call when running in a
-    notebook.  This works best from a separate thread as seein in
-    :meth:`jupyter_reduce`
-    """
-    global _jup_running
-    _jup_running = True
-
-    while _jup_running:
-        import time
-        time.sleep(2)
-
-
 def start_server():
     """
     Start the bokeh server.
@@ -320,9 +239,14 @@ def start_server():
     bokeh.  Until the server is explicitly stopped, the method
     will block and this call will not return.
     """
-    if using_jupyter:
-        _start_server_jupyter()
+    if using_jupyter and not jupyter_mode == EMBEDDED_SERVER_MODE:
+        start_server_jupyter()
         return
+    elif using_jupyter:
+        # we must be running in embedded server mode, so we need to nest asyncio
+        # for bokeh apps to load in a nested manner
+        import nest_asyncio
+        nest_asyncio.apply()
 
     global _bokeh_server
 
@@ -393,9 +317,8 @@ def stop_server():
     This normally gets called when the user hits the submit button
     or closes the UI browser tab.
     """
-    global _jup_running
-    if using_jupyter:
-        _jup_running = False
+    if using_jupyter and not jupyter_mode == EMBEDDED_SERVER_MODE:
+        stop_jupyter()
         return
 
     global _bokeh_server

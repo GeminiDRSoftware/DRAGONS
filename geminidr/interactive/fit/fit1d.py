@@ -4,6 +4,8 @@ from operator import concat
 import numpy as np
 
 from bokeh import models as bm, transform as bt
+from bokeh.document import Document
+from bokeh.io import show
 from bokeh.layouts import row, column
 from bokeh.models import Div, Select, Range1d, Spacer, CustomJS
 from bokeh.plotting import figure
@@ -858,9 +860,7 @@ class Fit1DPanel:
             mask_handlers = None
 
         button_bar = None
-        print("Checking if we should make the button_bar")
         if using_jupyter:
-            print("Using Jupyter, adding Button Bar in fit1d")
             button_bar = row(align='center')
 
         Controller(p_main, None, self.model.band_model if self.enable_regions else None, controller_div,
@@ -1398,7 +1398,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         else:
             layout_ls.append(row(self.reinit_panel, col))
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
-        doc.add_root(self.layout)
+        if isinstance(doc, Document):
+            doc.add_root(self.layout)
+        else:
+            doc.children.append(self.layout)
 
     def reconstruct_points(self):
         """
