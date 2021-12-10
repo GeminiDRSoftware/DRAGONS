@@ -81,11 +81,12 @@ input_pars = [
     ("N20100702S0321_mosaic.fits", dict()),  # R150:0.700 EEV
     ("N20130606S0291_mosaic.fits", dict()),  # R150:0.550 E2V
     ("N20130112S0574_mosaic.fits", dict()),  # R150:0.700 E2V
-    ("N20130809S0337_mosaic.fits", dict()),  # R150:0.700 E2V
-    ("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V
+    #("N20130809S0337_mosaic.fits", dict()),  # R150:0.700 E2V  2" slit
+    #("N20140408S0218_mosaic.fits", dict()),  # R150:0.700 E2V  2" slit
     ("N20180119S0232_mosaic.fits", dict()),  # R150:0.520 HAM
-    ("N20180516S0214_mosaic.fits", dict()),  # R150:0.610 HAM
     ("N20171007S0439_mosaic.fits", dict()),  # R150:0.650 HAM
+    #("N20181114S0512_mosaic.fits", dict()),  # R150:0.610 HAM  2" slit I can't identify
+    ("N20180111S0155_mosaic.fits", dict()),  # R150:0.610 HAM
     ("N20171007S0441_mosaic.fits", dict()),  # R150:0.650 HAM
     ("N20101212S0213_mosaic.fits", dict()),  # R400:0.550 EEV
     ("N20100202S0214_mosaic.fits", dict()),  # R400:0.700 EEV
@@ -93,22 +94,26 @@ input_pars = [
     ("N20130422S0217_mosaic.fits", dict()),  # R400:0.700 E2V
     ("N20170108S0210_mosaic.fits", dict()),  # R400:0.660 HAM
     ("N20171113S0135_mosaic.fits", dict()),  # R400:0.750 HAM
+    ("N20100427S1274_mosaic.fits", dict()),  # R600:0.475 EEV
     ("N20100427S1276_mosaic.fits", dict()),  # R600:0.675 EEV
-    ("N20180120S0417_mosaic.fits", dict()),  # R600:0.860 HAM
+    ("N20120615S0512_mosaic.fits", dict()),  # R600:0.750 e2v
+    ("N20120615S0513_mosaic.fits", dict()),  # R600:0.950 e2v
+    ("N20180120S0417_mosaic.fits", dict()),  # R600:0.865 HAM
+    # actually closer to 833nm, so use "alternative_centers"
+    ("N20180516S0214_mosaic.fits", dict(debug_alternative_centers=True)),  # R600:0.860 HAM
     ("N20100212S0143_mosaic.fits", dict()),  # R831:0.450 EEV
     ("N20100720S0247_mosaic.fits", dict()),  # R831:0.850 EEV
     ("N20130808S0490_mosaic.fits", dict()),  # R831:0.571 E2V
     ("N20130830S0291_mosaic.fits", dict()),  # R831:0.845 E2V
     ("N20170910S0009_mosaic.fits", dict()),  # R831:0.653 HAM
     ("N20170509S0682_mosaic.fits", dict()),  # R831:0.750 HAM
-    ("N20181114S0512_mosaic.fits", dict()),  # R831:0.865 HAM
-    ("N20170416S0058_mosaic.fits", dict()),  # R831:0.865 HAM
+    ("N20170416S0058_mosaic.fits", dict()),  # R831:0.855 HAM
     ("N20170416S0081_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20180120S0315_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20190111S0271_mosaic.fits", dict()),  # R831:0.525 HAM
     #
     # # Process Arcs: GMOS-S ---
-    ("S20130218S0126_mosaic.fits", dict()),  # B600:0.500 EEV
+    ("S20130218S0126_mosaic.fits", dict()),  # B600:0.600 EEV
     ("S20130111S0278_mosaic.fits", dict()),  # B600:0.520 EEV
     ("S20130114S0120_mosaic.fits", dict()),  # B600:0.500 EEV
     ("S20130216S0243_mosaic.fits", dict()),  # B600:0.480 EEV
@@ -116,12 +121,12 @@ input_pars = [
     ("S20131105S0105_mosaic.fits", dict()),  # B600:0.500 EEV
     ("S20140504S0008_mosaic.fits", dict()),  # B600:0.500 EEV
     ("S20170103S0152_mosaic.fits", dict(nbright=2)),  # B1200:0.440 HAM bad columns
-    ("S20170108S0085_mosaic.fits", dict()),  # B600:0.500 HAM
+    ("S20170108S0085_mosaic.fits", dict(nbright=2)),  # B600:0.500 HAM
     ("S20130510S0103_mosaic.fits", dict()),  # B1200:0.450 EEV
     ("S20130629S0002_mosaic.fits", dict()),  # B1200:0.525 EEV
     ("S20131123S0044_mosaic.fits", dict()),  # B1200:0.595 EEV
     ("S20170116S0189_mosaic.fits", dict()),  # B1200:0.440 HAM
-    ("S20170908S0189_mosaic.fits", dict(nbright=1)),  # B1200:0.550 HAM bad column
+    ("S20170908S0189_mosaic.fits", dict(nbright=1)),  # B1200:0.595 HAM bad column
     ("S20131230S0153_mosaic.fits", dict()),  # R150:0.550 EEV
     ("S20130801S0140_mosaic.fits", dict()),  # R150:0.700 EEV
     ("S20170430S0060_mosaic.fits", dict(nbright=2)),  # R150:0.717 HAM bad columns
@@ -131,9 +136,8 @@ input_pars = [
     ("S20130217S0073_mosaic.fits", dict()),  # R400:0.800 EEV
     ("S20170108S0046_mosaic.fits", dict(nbright=2)),  # R400:0.550 HAM bad columns
     ("S20170129S0125_mosaic.fits", dict(nbright=1)),  # R400:0.685 HAM bad column
-    ("S20170703S0199_mosaic.fits", dict()),  # R400:0.800 HAM
+    ("S20170703S0199_mosaic.fits", dict()),  # R400:0.850 HAM
     ("S20170718S0420_mosaic.fits", dict()),  # R400:0.910 HAM
-    ("S20100306S0460_mosaic.fits", dict()),  # R600:0.675 EEV
     ("S20101218S0139_mosaic.fits", dict()),  # R600:0.675 EEV
     ("S20110306S0294_mosaic.fits", dict()),  # R600:0.675 EEV
     ("S20110720S0236_mosaic.fits", dict()),  # R600:0.675 EEV
@@ -141,7 +145,7 @@ input_pars = [
     ("S20120322S0122_mosaic.fits", dict()),  # R600:0.900 EEV
     ("S20130803S0011_mosaic.fits", dict()),  # R831:0.576 EEV
     ("S20130414S0040_mosaic.fits", dict()),  # R831:0.845 EEV
-    ("S20170214S0059_mosaic.fits", dict()),  # R831:0.440 HAM
+    ("S20170214S0059_mosaic.fits", dict(nbright=3)),  # R831:0.440 HAM
     ("S20170703S0204_mosaic.fits", dict()),  # R831:0.600 HAM
     ("S20171018S0048_mosaic.fits", dict())  # R831:0.865 HAM
 ]
@@ -155,8 +159,7 @@ input_pars = [
 @pytest.mark.regression
 @pytest.mark.parametrize("ad, params", input_pars, indirect=['ad'])
 def test_regression_determine_wavelength_solution(
-        ad, params, caplog, change_working_dir,
-        ref_ad_factory, request):
+        ad, params, caplog, change_working_dir, path_to_refs, request):
     """
     Make sure that the wavelength solution gives same results on different
     runs.
@@ -171,13 +174,13 @@ def test_regression_determine_wavelength_solution(
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
                                          **params})
 
-        wcalibrated_ad = p.writeOutputs().pop()
+        wcalibrated_ad = p.streams["main"][0]
 
         for record in caplog.records:
             if record.levelname == "WARNING":
                 assert "No acceptable wavelength solution found" not in record.message
 
-    ref_ad = ref_ad_factory(wcalibrated_ad.filename)
+    ref_ad = astrodata.open(os.path.join(path_to_refs, wcalibrated_ad.filename))
     model = am.get_named_submodel(wcalibrated_ad[0].wcs.forward_transform, "WAVE")
     ref_model = am.get_named_submodel(ref_ad[0].wcs.forward_transform, "WAVE")
 
@@ -191,11 +194,13 @@ def test_regression_determine_wavelength_solution(
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
     # We don't care about what the wavelength solution is doing at
-    # wavelengths where there's no data
-    indices = np.where(np.logical_and(ref_wavelength > 300, ref_wavelength < 1200))
+    # wavelengths outside where we've matched lines
+    lines = ref_ad[0].WAVECAL["wavelengths"].data
+    indices = np.where(np.logical_and(ref_wavelength > lines.min(),
+                                      ref_wavelength < lines.max()))
     tolerance = 0.5 * (slit_size_in_px * dispersion)
     np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
-                               rtol=tolerance)
+                               atol=tolerance)
 
     if request.config.getoption("--do-plots"):
         do_plots(wcalibrated_ad)
