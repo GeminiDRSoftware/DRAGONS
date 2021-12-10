@@ -591,7 +591,6 @@ class Spect(PrimitivesBASE):
             provides details of the fit which describes the sensitivity as
             a function of wavelength.
         """
-        print("in calculateSensitivity primitive")
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -750,7 +749,6 @@ class Spect(PrimitivesBASE):
                 calculated = True
 
             if interactive:
-                print("in interactive if block")
                 all_domains = [(0, x[0].shape[0]) for x in all_exts]
                 all_waves = [x[1].value for x in all_exts]
                 all_zpt = [x[2].value for x in all_exts]
@@ -767,7 +765,6 @@ class Spect(PrimitivesBASE):
                 filename_info = getattr(ad, 'filename', '')
 
                 uiparams = UIParameters(config)
-                print("building visualizer")
                 visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
                                                    tab_name_fmt="CCD {}",
@@ -779,7 +776,6 @@ class Spect(PrimitivesBASE):
                                                    filename_info=filename_info,
                                                    help_text=CALCULATE_SENSITIVITY_HELP_TEXT,
                                                    ui_params=uiparams)
-                print("calling interactive_fitter(visualizer)")
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 all_m_final = visualizer.results()
