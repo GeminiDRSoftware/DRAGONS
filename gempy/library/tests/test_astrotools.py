@@ -36,6 +36,14 @@ def test_divide0():
     np.testing.assert_array_equal(at.divide0(twod, zeros), np.zeros_like(twod))
 
 
+@pytest.mark.parametrize("separation", [1,2,3,4,5])
+def test_std_from_pixel_variations(separation):
+    # Test passes with ths seed and number of samples
+    rng = np.random.default_rng(1)
+    data = rng.normal(size=10000)
+    assert abs(at.std_from_pixel_variations(data, separation=separation) - 1) < 0.02
+
+
 def test_rasextodec():
     rastring = '20:30:40.506'
     ra = at.rasextodec(rastring)

@@ -8,6 +8,7 @@ import os
 import re
 import numpy as np
 from astropy import units as u
+from astropy import stats
 
 
 def array_from_list(list_of_quantities, unit=None):
@@ -29,6 +30,7 @@ def array_from_list(list_of_quantities, unit=None):
     values = [x.to(unit).value for x in list_of_quantities]
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
+
 
 def boxcar(data, operation=np.ma.median, size=1):
     """
@@ -56,6 +58,7 @@ def boxcar(data, operation=np.ma.median, size=1):
         boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
     return boxarray
+
 
 def divide0(numerator, denominator):
     """
@@ -101,6 +104,31 @@ def divide0(numerator, denominator):
 
         return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
+
+
+def std_from_pixel_variations(array, separation=5, **kwargs):
+    """
+    Estimate the standard deviation of pixels in an array by measuring the
+    pixel-to-pixel variations. Since the values might be correlated over small
+    scales (e.g., if the data have been smoothed), pixels are compared not
+    with their immediate neighbors but with pixels a few locations away.
+
+    Parameters
+    ----------
+    array: array-like
+        the data from which the standard deviation is to be estimated
+    separation: int
+        separation between pixels being compared
+    kwargs: dict
+        kwargs to be passed directly to astropy.stats.sigma_clipped_stats
+
+    Returns
+    -------
+    float: the estimated standard deviation
+    """
+    _array = np.asarray(array).ravel()
+    diffs = _array[separation:] - _array[:-separation]
+    return stats.sigma_clipped_stats(diffs, **kwargs)[2] / np.sqrt(2)
 
 
 def rasextodec(string):
