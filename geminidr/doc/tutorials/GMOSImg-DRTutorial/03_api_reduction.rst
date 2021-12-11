@@ -127,8 +127,7 @@ configured as follow:
 
 The calibration service is now ready to use. If you need more details,
 check the
-`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
-
+`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/caldb.html#using-the-caldb-api>`_ .
 
 .. _api_create_file_lists:
 
