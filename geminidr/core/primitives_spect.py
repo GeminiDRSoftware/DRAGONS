@@ -321,8 +321,7 @@ class Spect(PrimitivesBASE):
                         y1 < arc_detsec.y1 or y2 > arc_detsec.y2):
                     log.warning(f"Science frame {ad.filename} is larger than "
                                 f"the arc {arc.filename}")
-                    if 'sq' in self.mode:
-                        fail = True
+                    fail = True
                     adoutputs.append(ad)
                     continue
 
