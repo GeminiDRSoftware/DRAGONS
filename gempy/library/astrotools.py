@@ -132,7 +132,7 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
     """
     if variance is None:
         y = np.ma.masked_array(data, mask=mask)
-        sigma1 = std_from_pixel_variations(data)
+        sigma1 = std_from_pixel_variations(y)
         diff = np.diff(y)
         # 0.1 is a fudge factor that seems to work well
         #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
@@ -146,7 +146,11 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
 
     # TODO: Consider outlier removal
     #spline = am.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=3)
-    spline = interpolate.UnivariateSpline(np.arange(data.size), data, w=w, k=k)
+    if mask is None:
+        spline = interpolate.UnivariateSpline(np.arange(data.size), data, w=w, k=k)
+    else:
+        spline = interpolate.UnivariateSpline(np.arange(data.size)[mask==0],
+                                              data[mask==0], w=w[mask==0], k=k)
     return spline
 
 

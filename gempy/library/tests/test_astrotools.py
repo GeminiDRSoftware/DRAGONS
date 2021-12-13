@@ -38,14 +38,24 @@ def test_divide0():
 
 def test_fit_spline_to_data():
     rng = np.random.default_rng(0)
-    x = np.arange(1000)
-    y = np.ones((1000,))
+    x = np.arange(100)
+    y = np.ones_like(x)
     spline = at.fit_spline_to_data(y)
     np.testing.assert_allclose(spline(x), y)
 
+    # Test with a curve and noise
     y = x + x*x + rng.normal(size=x.size)
     spline = at.fit_spline_to_data(y)
-    np.testing.assert_allclose(spline(x), y, atol=4)
+    np.testing.assert_allclose(spline(x), y, atol=3)
+
+    # Test with some masking
+    mask = np.zeros_like(x, dtype=bool)
+    safe = y[10]
+    y[10] = 1000
+    mask[10] = True
+    spline = at.fit_spline_to_data(y, mask=mask)
+    y[10] = safe
+    np.testing.assert_allclose(spline(x), y, atol=3)
 
 
 @pytest.mark.parametrize("separation", [1,2,3,4,5])
