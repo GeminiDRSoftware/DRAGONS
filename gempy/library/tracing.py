@@ -1174,20 +1174,11 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
         # Estimate SNR from height of maximum above linear interpolation
         # between adjacent minima
         spline_at_minima = spline(minima)
-        #snrs = ((spline(maxima) - np.max([spline_at_minima[:-1], spline_at_minima[1:]], axis=0)) /
-        #        at.std_from_pixel_variations(profile[~mask]))
-        snrs = ((spline(maxima) - 0.5 * (spline_at_minima[:-1] + spline_at_minima[1:])) /
-                at.std_from_pixel_variations(profile[~mask]))
+        interpolate_at_maxima = (spline_at_minima[:-1] * (minima[1:] - maxima) +
+                                 spline_at_minima[1:] * (maxima - minima[:-1])) / np.diff(minima)
+        snrs = (spline(maxima) - interpolate_at_maxima) / at.std_from_pixel_variations(profile[~mask])
         snr_ok = snrs >= min_snr
         peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
-
-        from matplotlib import pyplot as plt
-        plt.ioff()
-        fig, ax = plt.subplots()
-        ax.plot(profile, 'b-')
-        ax.plot(spline(np.arange(profile.size)), 'k-')
-        plt.show()
-        plt.ion()
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")
