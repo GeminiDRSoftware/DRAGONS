@@ -141,7 +141,8 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
         diff2 = np.r_[diff[:2], y[4:] - y[:-4], diff[-2:]]
         sigma2 = 0.05 * diff2
         w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
-        mask = mask | w.mask
+        if mask is not None:
+            mask = mask | w.mask
     else:
         w = divide0(1.0, np.sqrt(variance))
 
