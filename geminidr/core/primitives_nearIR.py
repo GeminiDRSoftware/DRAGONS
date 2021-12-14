@@ -257,7 +257,7 @@ class NearIR(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        if not all(dark.exposure_time() == adinputs[0].exposure_time()
+        if not all(round(dark.exposure_time(),2) == round(adinputs[0].exposure_time(),2)
                    for dark in adinputs[1:]):
                 raise OSError("Darks are not of equal exposure time")
 
