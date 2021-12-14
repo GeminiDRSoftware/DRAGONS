@@ -141,16 +141,19 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
         diff2 = np.r_[diff[:2], y[4:] - y[:-4], diff[-2:]]
         sigma2 = 0.05 * diff2
         w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
+        mask = mask | w.mask
     else:
         w = divide0(1.0, np.sqrt(variance))
 
     # TODO: Consider outlier removal
-    #spline = am.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=3)
     if mask is None:
         spline = interpolate.UnivariateSpline(np.arange(data.size), data, w=w, k=k)
+        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size), data, w=w, k=k)
     else:
-        spline = interpolate.UnivariateSpline(np.arange(data.size)[mask==0],
-                                              data[mask==0], w=w[mask==0], k=k)
+        spline = interpolate.UnivariateSpline(np.arange(data.size)[mask == 0],
+                                              data[mask == 0], w=w[mask == 0], k=k)
+        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size)[mask == 0],
+        #                                      data[mask == 0], w=w[mask == 0], k=k)
     return spline
 
 
@@ -176,7 +179,8 @@ def std_from_pixel_variations(array, separation=5, **kwargs):
     """
     _array = np.asarray(array).ravel()
     diffs = _array[separation:] - _array[:-separation]
-    return stats.sigma_clipped_stats(diffs, **kwargs)[2] / np.sqrt(2)
+    ok = ~(np.isnan(diffs) | np.isinf(diffs))  # Stops AstropyUserWarning
+    return stats.sigma_clipped_stats(diffs[ok], **kwargs)[2] / np.sqrt(2)
 
 
 def rasextodec(string):
@@ -388,7 +392,7 @@ def get_spline3_extrema(spline):
     try:
         knots = derivative.get_knots()
     except AttributeError:  # for BSplines
-        knots = derivative.k
+        knots = derivative.t
 
     minima, maxima = [], []
     # We take each pair of knots and map to interval [-1,1]

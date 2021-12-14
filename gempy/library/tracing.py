@@ -1152,7 +1152,7 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
 
 
 def find_apertures_peaks(profile, prof_mask, max_apertures,
-                         threshold, sizing_method, min_snr, wavelet=True):
+                         threshold, sizing_method, min_snr, wavelet=False):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
     if wavelet:
@@ -1161,7 +1161,33 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
             profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
             reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
     else:
-        pass
+        mask = (prof_mask.astype(bool) if prof_mask is not None
+                else np.zeros_like(profile, dtype=bool))
+        spline = at.fit_spline_to_data(profile, mask=mask)
+        minima, maxima = at.get_spline3_extrema(spline)
+        # Ensure we have minima either side of each maximum
+        if maxima[0] < minima[0]:
+            minima = np.r_[[0], minima]
+        if maxima[-1] > minima[-1]:
+            minima = np.r_[minima, [profile.size-1]]
+
+        # Estimate SNR from height of maximum above linear interpolation
+        # between adjacent minima
+        spline_at_minima = spline(minima)
+        #snrs = ((spline(maxima) - np.max([spline_at_minima[:-1], spline_at_minima[1:]], axis=0)) /
+        #        at.std_from_pixel_variations(profile[~mask]))
+        snrs = ((spline(maxima) - 0.5 * (spline_at_minima[:-1] + spline_at_minima[1:])) /
+                at.std_from_pixel_variations(profile[~mask]))
+        snr_ok = snrs >= min_snr
+        peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
+
+        from matplotlib import pyplot as plt
+        plt.ioff()
+        fig, ax = plt.subplots()
+        ax.plot(profile, 'b-')
+        ax.plot(spline(np.arange(profile.size)), 'k-')
+        plt.show()
+        plt.ion()
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")
