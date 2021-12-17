@@ -79,7 +79,7 @@ class GNIRS(Gemini, NearIR):
 
             if 'SPECT' in ad.tags:
                 kw = ad._keyword_for('dispersion_axis')
-                self.hdr.set(kw, 2, self.keyword_comments(kw))
+                ad.hdr.set(kw, 2, self.keyword_comments[kw])
 
             # Adding the WCS information to the pixel data header, since for
             # GNIRS images at least, it may be only in the PHU

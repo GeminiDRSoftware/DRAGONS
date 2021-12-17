@@ -3,7 +3,7 @@ import math
 
 from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
                        returns_list, Section)
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from .lookup import array_properties, nominal_zeropoints
 
 from ..common import build_group_id
@@ -384,6 +384,7 @@ class AstroDataF2(AstroDataGemini):
         return '&'.join(filter[:2])
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -570,6 +571,7 @@ class AstroDataF2(AstroDataGemini):
         return None if lnrs is None else str(lnrs)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def read_noise(self):
         """
@@ -580,7 +582,6 @@ class AstroDataF2(AstroDataGemini):
         float
             read noise
         """
-        # Element [0] gives the read noise
         return getattr(array_properties.get(self.read_mode(), None),
                        'readnoise', None)
 

@@ -1,7 +1,7 @@
 import math
 
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from .. import gmu
 from ..common import build_group_id
 from . import lookup
@@ -111,6 +111,7 @@ class AstroDataGsaoi(AstroDataGemini):
                                      output_units)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -255,6 +256,8 @@ class AstroDataGsaoi(AstroDataGemini):
             return [f * s if f and s else None
                     for f, s in zip(fraction, sat_level)]
 
+    @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def read_noise(self):
         """

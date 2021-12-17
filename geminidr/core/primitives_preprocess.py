@@ -82,7 +82,8 @@ class Preprocess(PrimitivesBASE):
         """
         This primitive will convert the units of the pixel data extensions
         of the input AstroData object from ADU to electrons by multiplying
-        by the gain.
+        by the gain. The gain keyword in each extension is then set to 1.0
+        to represent the new conversion factor.
 
         Parameters
         ----------
@@ -114,6 +115,10 @@ class Preprocess(PrimitivesBASE):
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
+            try:
+                ad.hdr.set(ad._keyword_for("gain"), 1.)
+            except AttributeError:  # No keyword for "gain"
+                pass
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix,  strip=True)
 

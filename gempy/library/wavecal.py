@@ -261,7 +261,9 @@ def find_alternative_solutions(peaks, arc_lines, model, kdsigma, weights=None):
     m_out = fit_it(m_tweak, peak_waves, arc_lines, in_weights=weights)
     diffs = m_out(peak_waves) - peak_waves
     if abs(np.median(diffs)) > 10:
-        return [model | m_out]
+        new_model = model | m_out
+        new_model.meta["domain"] = model.meta["domain"]
+        return [new_model]
 
 
 def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
@@ -274,7 +276,7 @@ def get_center_from_correlation(data, arc_lines, peaks, sigma, c0, c1):
         fake_data += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
     for p in arc_lines:
         fake_arc += np.exp(-0.5*(w-p)*(w-p)/(sigma*sigma))
-    p = correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
+    p = np.correlate(fake_data, fake_arc, mode='full').argmax() - len_data + 1
     return c0 - 2 * p * c1/(len_data - 1)
 
 
@@ -489,10 +491,13 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
         if config.debug_alternative_centers:
             alt_models = find_alternative_solutions(
                 peaks, linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm"),
-                m_init, 2.5 * kdsigma, weights=weights["global"])
+                m_init[0], 2.5 * kdsigma, weights=weights["global"])
             if alt_models is not None:
                 m_init.extend(alt_models)
-                log.warning(f"Alternative model(s) found: {alt_models}")
+                log.warning("Alternative model(s) found")
+                for i, m in enumerate(alt_models, start=1):
+                    log.warning(f"{i}. Offset {m.right.offset_0.value} "
+                                f"scale {m.right.factor_1.value}")
 
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,

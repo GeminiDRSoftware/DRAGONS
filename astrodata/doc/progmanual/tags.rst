@@ -22,7 +22,7 @@ The most common ``TagSet`` is an **additive** one: ``TagSet(['FOO', 'BAR'])``.
 If all you need is to add tags, then you're done here. But the real power of
 our tag generating system is that you can specify some conditions to apply a
 certain ``TagSet``, or put restrictions on others. The different arguments to
-``TagSet`` all expect a list (or some other work the in the following way):
+``TagSet`` all expect a list (or some others work in the following way):
 
 * ``add``: if this ``TagSet`` is selected, then add all these members to the tag
   set.
@@ -37,7 +37,7 @@ certain ``TagSet``, or put restrictions on others. The different arguments to
 
 Note that ``blocked_by`` and ``blocks`` look like two sides of the same coin.
 This is intentional: which one to use is up to the programmer, depending on
-what will reduce the amount typing and/or make the logic easier (sometimes one
+what will reduce the amount of typing and/or make the logic easier (sometimes one
 wants to block a bunch of other tags from a single one; sometimes one wants a
 tag to be blocked by a bunch of others). Furthermore, while ``blocks`` and
 ``blocked_by`` prevent the entire ``TagSet`` from being added if it contains a
@@ -147,14 +147,14 @@ and starts iterating over the ``TagSet`` list.
 
   1. For the first ``TagSet`` there are no blocks or removals, so we just add its
      contents to the current sets: ``tags = {'BIAS', 'CAL'}``,
-     ``blocks = {'IMAGE', 'SPECT'}``.
+     ``blocked = {'IMAGE', 'SPECT'}``.
   2. Then comes ``TagSet(['GMOS'])``. Again, there are no removals in place, and
      ``GMOS`` is not in the list of blocked tags. Thus, we just add it to the current
      tag set: ``tags = {'BIAS', 'CAL', 'GMOS'}``.
   3. When processing ``TagSet(['IMAGE'])``, the algorithm observes that this ``IMAGE``
      is in the ``blocked`` set, and stops processing this tag set.
   4. Finally, neither ``GCAL_IR_OFF`` nor ``LAMPOFF`` are in ``blocked``, and
-     ``PROCESSED`` is not in ``tags``, meaning that we can add add this tag set to
+     ``PROCESSED`` is not in ``tags``, meaning that we can add this tag set to
      the final one.
      
 Our result will look something like: ``{'BIAS', 'CAL', 'GMOS', 'GCAL_IR_OFF', 'LAMPOFF'}``
