@@ -63,9 +63,7 @@ class GSAOI(Gemini, NearIR):
 
             for desc in ('read_noise', 'gain', 'non_linear_level',
                          'saturation_level'):
-
                 kw = ad._keyword_for(desc)
-
                 for ext, value in zip(ad, getattr(ad, desc)()):
                     ext.hdr.set(kw, value, self.keyword_comments[kw])
 

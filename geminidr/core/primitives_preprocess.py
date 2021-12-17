@@ -82,7 +82,8 @@ class Preprocess(PrimitivesBASE):
         """
         This primitive will convert the units of the pixel data extensions
         of the input AstroData object from ADU to electrons by multiplying
-        by the gain.
+        by the gain. The gain keyword in each extension is then set to 1.0
+        to represent the new conversion factor.
 
         Parameters
         ----------
@@ -100,20 +101,27 @@ class Preprocess(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            gain_list = ad.gain()
             # Now multiply the pixel data in each science extension by the gain
             # and the pixel data in each variance extension by the gain squared
             log.status("Converting {} from ADU to electrons by multiplying by "
                        "the gain".format(ad.filename))
-            for ext, gain in zip(ad, gain_list):
-                log.stdinfo(f"  gain for extension {ext.id} = {gain}")
-                ext.multiply(gain)
+            for ext in ad:
+                if not ext.is_in_adu():
+                    log.warning(f"  {ext.id} is already in electrons. "
+                                "Continuing.")
+                    continue
+                ext.multiply(gt.array_from_descriptor_value(ext, "gain"))
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
+            try:
+                ad.hdr.set(ad._keyword_for("gain"), 1.)
+            except AttributeError:  # No keyword for "gain"
+                pass
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix,  strip=True)
+
         return adinputs
 
     def applyDQPlane(self, adinputs=None, **params):
@@ -138,7 +146,6 @@ class Preprocess(PrimitivesBASE):
             outer radius of the cleaning filter
         max_iters: int
             maximum number of cleaning iterations to perform
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -468,8 +475,8 @@ class Preprocess(PrimitivesBASE):
                                       check_units=True)
 
             origin_str = f" (obtained from {origin})" if origin else ""
-            log.fullinfo(f"{ad.filename}: subtracting the dark "
-                         f"{dark.filename}{origin_str}")
+            log.stdinfo(f"{ad.filename}: subtracting the dark "
+                        f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename

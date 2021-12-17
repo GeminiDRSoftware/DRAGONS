@@ -3,7 +3,7 @@ import re
 
 from astrodata import astro_data_tag, astro_data_descriptor, TagSet, returns_list
 
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from ..common import build_group_id
 
 from .lookup import detector_properties, nominal_zeropoints, read_modes
@@ -266,6 +266,7 @@ class AstroDataGnirs(AstroDataGemini):
         return fpm
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -503,6 +504,7 @@ class AstroDataGnirs(AstroDataGemini):
                               "Unknown")
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def read_noise(self):
         """

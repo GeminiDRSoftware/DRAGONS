@@ -59,7 +59,8 @@ We first import the necessary modules and classes:
     from recipe_system import cal_service
     from recipe_system.reduction.coreReduce import Reduce
 
-:mod:`glob` is Python built-in packages. It will be used to return a
+
+:mod:`glob` is a Python built-in package. It will be used to return a
 :class:`list` with the input file names.
 
 
@@ -153,8 +154,8 @@ Now we can use the ``all_files`` :class:`list` as an input to
 
     select_data(inputs, tags=[], xtags=[], expression='True')
 
-Two list for the darks
-----------------------
+Two lists for the darks
+-----------------------
 We select the files that will be used to create a master dark for
 the science observations, those with an exposure time of 120 seconds.
 
@@ -307,7 +308,7 @@ A F2 master flat is created from a series of lamp-on and lamp-off exposures.
 Each flavor is stacked, then the lamp-off stack is subtracted from the
 lamp-on stack and the result normalized.
 
-We create the master flat field and add it to the calibration manager as follow:
+We create the master flat field and add it to the calibration manager as follows:
 
 .. code-block:: python
     :linenos:

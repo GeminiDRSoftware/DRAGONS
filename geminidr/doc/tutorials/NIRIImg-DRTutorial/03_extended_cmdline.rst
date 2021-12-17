@@ -349,4 +349,4 @@ the common area, rather the image size is adjusted to include the complete
 area covered by the whole sequence.  Of course the areas covered by less than
 the full stack of images will have a lower signal-to-noise.  The final MEF file
 has three named extensions, the science (SCI), the variance (VAR), and the data
-quality plance (DQ).
+quality plane (DQ).

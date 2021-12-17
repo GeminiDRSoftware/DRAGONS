@@ -221,7 +221,7 @@ two lists.
         dataselect.expr_parser('detector_roi_setting=="Full Frame"')
     )
 
-.. note::  All expression need to be processed with ``dataselect.expr_parser``.
+.. note::  All expressions need to be processed with ``dataselect.expr_parser``.
 
 
 A list for the flats
@@ -335,14 +335,14 @@ The two master biases are: ``S20170825S0347_bias.fits`` and
 ``S20171021S0265_bias.fits``.
 
 .. note:: The file name of the output processed bias is the file name of the
-    first file in the list with ``_bias`` appended as a suffix.  This the
+    first file in the list with ``_bias`` appended as a suffix.  This is the
     general naming scheme used by the ``Recipe System``.
 
 
 
 Master Flat Field
 =================
-GMOS longslit flat field are normally obtained at night along with the
+GMOS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.  The
 matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
@@ -406,7 +406,7 @@ logs to confirm a good solution.
    in quicklook mode.  It might be better to simply not use the arc at all and
    rely on the approximate solution instead.  When the science quality package
    is released, there will be interactive tools to fix a bad solution.
-   Remember, this is version only offers quicklook reduction for GMOS longslit.
+   Remember, this version only offers quicklook reduction for GMOS longslit.
 
 
 Processed Standard - Sensitivity Function
@@ -481,7 +481,7 @@ This is what one raw image looks like.
 With the master bias, the master flat, the processed arcs (one for each of the
 grating position, aka central wavelength), and the processed standard in the
 local calibration manager, to reduce the science observations and extract the 1-D
-spectrum, one only needs to do as follow.
+spectrum, one only needs to do as follows.
 
 .. code-block:: python
     :linenos:
@@ -544,7 +544,7 @@ To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
 script, see Tips and Tricks :ref:`plot_1d`.
 
 If you need an ascii representation of the spectum, you can use the primitive
-``write1DSpectra`` to extra the values from the FITS file.
+``write1DSpectra`` to extract the values from the FITS file.
 
 .. code-block:: python
     :linenos:
