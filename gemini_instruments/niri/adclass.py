@@ -1,5 +1,5 @@
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 import math
 
 from . import lookup
@@ -311,6 +311,7 @@ class AstroDataNiri(AstroDataGemini):
         return '&'.join(filters)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -466,6 +467,7 @@ class AstroDataNiri(AstroDataGemini):
             return 'Unknown'
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def read_noise(self):
         """

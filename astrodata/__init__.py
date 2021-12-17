@@ -6,7 +6,7 @@ accordingly to the :class:`~astrodata.TagSet` received.
 """
 
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
-           'astro_data_descriptor', 'astro_data_tag',
+           'AstroDataMixin', 'astro_data_descriptor', 'astro_data_tag',
            'open', 'create', '__version__', 'version', 'add_header_to_table',
            'Section']
 
@@ -14,7 +14,7 @@ __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
 from .core import AstroData
 from .fits import add_header_to_table
 from .factory import AstroDataFactory, AstroDataError
-from .nddata import NDAstroData
+from .nddata import NDAstroData, AstroDataMixin
 from .utils import *
 from ._version import version
 

@@ -91,6 +91,8 @@ class Spect(PrimitivesBASE):
             Method to use to compute offsets. 'correlation' uses a
             correlation of the slit profiles (the 2d images stacked
             on the dispersion axis), 'offsets' uses the QOFFSET keyword.
+        region: str / None
+            pixel region for determining slit profile for cross-correlation
         tolerance : float
             Maximum distance from the header offset, for the correlation
             method (arcsec). If the correlation computed offset is too
@@ -101,6 +103,7 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         methods = (params["method"], params["fallback"])
+        region = slice(*at.parse_user_regions(params["region"])[0])
         tolerance = params["tolerance"]
 
         if len(adinputs) <= 1:
@@ -121,7 +124,7 @@ class Spect(PrimitivesBASE):
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
-            ref_profile = tracing.stack_slit(refad[0])
+            ref_profile = tracing.stack_slit(refad[0], section=region)
         if 'sources_wcs' in methods:
             world_coords = (refad[0].central_wavelength(asNanometers=True),
                             refad.target_ra(), refad.target_dec())
@@ -151,7 +154,7 @@ class Spect(PrimitivesBASE):
                 # Cross-correlate to find real offset and compare. Only look
                 # for a peak in the range defined by "tolerance".
                 if 'sources' in method:
-                    profile = tracing.stack_slit(ad[0])
+                    profile = tracing.stack_slit(ad[0], section=region)
                     corr = np.correlate(ref_profile, profile, mode='full')
                     expected_peak = corr.size // 2 + hdr_offset
                     peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),

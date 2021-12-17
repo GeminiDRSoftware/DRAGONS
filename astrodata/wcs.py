@@ -1,12 +1,13 @@
 import functools
 import re
 from collections import namedtuple
+from copy import deepcopy
 
 import numpy as np
 from astropy import coordinates as coord
 from astropy import units as u
 from astropy.io import fits
-from astropy.modeling import core, models, projections
+from astropy.modeling import core, models, projections, CompoundModel
 from gwcs import coordinate_frames as cf
 from gwcs import utils as gwutils
 from gwcs.utils import sky_pairs, specsystems
@@ -21,9 +22,29 @@ FrameMapping = namedtuple("FrameMapping", "cls description")
 frame_mapping = {'WAVE': FrameMapping(cf.SpectralFrame, "Wavelength in vacuo"),
                  'AWAV': FrameMapping(cf.SpectralFrame, "Wavelength in air")}
 
+re_ctype = re.compile("^CTYPE(\d+)$", re.IGNORECASE)
+re_cd = re.compile("^CD(\d+)_\d+$", re.IGNORECASE)
+
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
 #-----------------------------------------------------------------------------
+def pixel_frame(naxes, name="pixels"):
+    """
+    Make a CoordinateFrame for pixels
+
+    Parameters
+    ----------
+    naxes: int
+        Number of axes
+
+    Returns
+    -------
+    CoordinateFrame
+    """
+    axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
+    return cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
+                              axes_order=tuple(range(naxes)), name=name,
+                              axes_names=axes_names, unit=[u.pix] * naxes)
 
 
 def fitswcs_to_gwcs(hdr):
@@ -42,12 +63,7 @@ def fitswcs_to_gwcs(hdr):
     outputs = transform.outputs
     wcs_info = read_wcs_from_header(hdr)
 
-    naxes = transform.n_inputs
-    axes_names = ('x', 'y', 'z', 'u', 'v', 'w')[:naxes]
-    in_frame = cf.CoordinateFrame(naxes=naxes, axes_type=['SPATIAL'] * naxes,
-                                  axes_order=tuple(range(naxes)), name="pixels",
-                                  axes_names=axes_names, unit=[u.pix] * naxes)
-
+    in_frame = pixel_frame(transform.n_inputs)
     out_frames = []
     for i, output in enumerate(outputs):
         unit_name = wcs_info["CUNIT"][i]
@@ -187,7 +203,7 @@ def gwcs_to_fits(ndd, hdr=None):
             wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
             wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
         else:  # Just something
-            wcs_dict[f'CRVAL{i}'] = 0
+            wcs_dict[f'CRVAL{i}'] = wcs_center[i-1]
 
     # Flag if we can't construct a perfect CD matrix
     if not model_is_affine(transform):
@@ -195,12 +211,12 @@ def gwcs_to_fits(ndd, hdr=None):
 
     affine = calculate_affine_matrices(transform, ndd.shape)
     # Convert to x-first order
-    affine_matrix = affine.matrix[::-1, ::-1]
+    affine_matrix = np.flip(affine.matrix)
     # Require an inverse to write out
     if np.linalg.det(affine_matrix) == 0:
         affine_matrix[-1, -1] = 1.
     wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[i, j]
-                     for j, _ in enumerate(world_axes)
+                     for j, _ in enumerate(ndd.shape)
                      for i, _ in enumerate(world_axes)})
     # Don't overwrite CTYPEi keywords we've already created
     wcs_dict.update({f'CTYPE{i}': axis.upper()[:8]
@@ -225,6 +241,7 @@ def gwcs_to_fits(ndd, hdr=None):
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
+
 def model_is_affine(model):
     """"
     Test a Model for affinity. This is currently done by checking the
@@ -246,7 +263,7 @@ def model_is_affine(model):
                                                 'Const')
 
 
-def calculate_affine_matrices(func, shape):
+def calculate_affine_matrices(func, shape, origin=None):
     """
     Compute the matrix and offset necessary of an affine transform that
     represents the supplied function. This is done by computing the
@@ -261,6 +278,9 @@ def calculate_affine_matrices(func, shape):
         function that maps input->output coordinates
     shape : sequence
         shape to use for fiducial points
+    origin : sequence/None
+        if a sequence, then use this as the opposite vertex (it must be
+        the same length as "shape")
 
     Returns
     -------
@@ -273,7 +293,12 @@ def calculate_affine_matrices(func, shape):
         ndim = len(func(*shape))  # handle increase in number of axes
     except TypeError:
         ndim = 1
-    halfsize = [0.5 * length for length in shape] + [1.] * (ndim - indim)
+    if origin is None:
+        halfsize = [0.5 * length for length in shape] + [1.] * (ndim - indim)
+    else:
+        halfsize = [0.5 * (len1 + len2)
+                    for len1, len2 in zip(origin, shape)] + [1.] * (ndim - indim)
+
     points = np.array([halfsize] * (2 * ndim + 1)).T
     points[:, 1:ndim + 1] += np.eye(ndim) * points[:, 0]
     points[:, ndim + 1:] -= np.eye(ndim) * points[:, 0]
@@ -307,22 +332,23 @@ def read_wcs_from_header(header):
     """
     wcs_info = {}
 
+    # NAXIS=0 if we're reading from a PHU
+    naxis = header.get('NAXIS') or max(int(k[5:]) for k in header['CRPIX*'].keys())
+    wcs_info['NAXIS'] = naxis
     try:
-        wcs_info['WCSAXES'] = header['WCSAXES']
+        wcsaxes = header['WCSAXES']
     except KeyError:
-        p = re.compile(r'ctype[\d]*', re.IGNORECASE)
-        ctypes = header['CTYPE*']
-        keys = list(ctypes.keys())
-        for key in keys[::-1]:
-            if p.split(key)[-1] != "":
-                keys.remove(key)
-        wcs_info['WCSAXES'] = len(keys)
-    wcsaxes = wcs_info['WCSAXES']
+        wcsaxes = 0
+        for kw in header["CTYPE*"]:
+            if re_ctype.match(kw):
+                wcsaxes = max(wcsaxes, int(re_ctype.match(kw).group(1)), naxis)
+        for kw in header["CD*_*"]:
+            if re_cd.match(kw):
+                wcsaxes = max(wcsaxes, int(re_cd.match(kw).group(1)), naxis)
+    wcs_info['WCSAXES'] = wcsaxes
     # if not present call get_csystem
     wcs_info['RADESYS'] = header.get('RADESYS', header.get('RADECSYS', 'FK5'))
     wcs_info['VAFACTOR'] = header.get('VAFACTOR', 1)
-    # NAXIS=0 if we're reading from a PHU
-    wcs_info['NAXIS'] = header.get('NAXIS') or max(int(k[5:]) for k in header['CRPIX*'].keys())
     # date keyword?
     # wcs_info['DATEOBS'] = header.get('DATE-OBS', 'DATEOBS')
     wcs_info['EQUINOX'] = header.get("EQUINOX", None)
@@ -335,11 +361,11 @@ def read_wcs_from_header(header):
     crval = []
     cdelt = []
     for i in range(1, wcsaxes + 1):
-        ctype.append(header['CTYPE{0}'.format(i)])
-        cunit.append(header.get('CUNIT{0}'.format(i), None))
-        crpix.append(header.get('CRPIX{0}'.format(i), 0.0))
-        crval.append(header.get('CRVAL{0}'.format(i), 0.0))
-        cdelt.append(header.get('CDELT{0}'.format(i), 1.0))
+        ctype.append(header.get(f'CTYPE{i}', 'LINEAR'))
+        cunit.append(header.get(f'CUNIT{i}', None))
+        crpix.append(header.get(f'CRPIX{i}', 0.0))
+        crval.append(header.get(f'CRVAL{i}', 0.0))
+        cdelt.append(header.get(f'CDELT{i}', 1.0))
 
     has_cd = len(header['CD?_?']) > 0
     cd = np.zeros((wcsaxes, wcsaxes))
@@ -350,6 +376,17 @@ def read_wcs_from_header(header):
             else:
                 cd[i - 1, j - 1] = cdelt[i - 1] * header.get('PC{0}_{1}'.format(i, j),
                                                              1 if i == j else 0)
+
+    # Hack to deal with non-FITS-compliant data where one axis is ignored
+    unspecified_pixel_axes = [axis for axis, unused in
+                              enumerate(np.all(cd == 0, axis=1)) if unused]
+    if unspecified_pixel_axes:
+        unused_world_axes = [axis for axis, unused in
+                             enumerate(np.all(cd == 0, axis=0)) if unused]
+        unused_world_axes += list(range(wcsaxes, wcsaxes+len(unspecified_pixel_axes)))
+        for pixel_axis, world_axis in zip(unspecified_pixel_axes, unused_world_axes):
+            cd[world_axis, pixel_axis] = 1.0
+
     wcs_info['CTYPE'] = ctype
     wcs_info['CUNIT'] = cunit
     wcs_info['CRPIX'] = crpix
@@ -387,7 +424,8 @@ def get_axes(header):
     spec_inmap = []
     unknown = []
     skysystems = np.array(list(sky_pairs.values())).flatten()
-    for ind, ax in enumerate(ctype):
+    for ax in ctype:
+        ind = ctype.index(ax)
         if ax in specsystems:
             spec_inmap.append(ind)
         elif ax in skysystems:
@@ -485,7 +523,7 @@ def make_fitswcs_transform(header):
     input_axes = [ax for m in all_models for ax in m.meta['input_axes']]
     output_axes = [ax for m in all_models for ax in m.meta['output_axes']]
     if input_axes != list(range(len(input_axes))):
-        input_mapping = models.Mapping(input_axes)
+        input_mapping = models.Mapping([max(x, 0) for x in input_axes])
         transforms.append(input_mapping)
 
     transforms.append(functools.reduce(core._model_oper('&'), all_models))
@@ -609,8 +647,185 @@ def fitswcs_linear(header):
             linear_model.outputs = (wcs_info['CTYPE'][ax],)
             linear_model.meta.update({'input_axes': pixel_axes,
                                       'output_axes': [ax]})
-            linear_models.append(linear_model)
-        else:
+        elif len(pixel_axes) > 1:
             raise ValueError(f"Axis {ax} depends on more than one input axis")
+        else:
+            linear_model = models.Const1D(crval[ax])
+            linear_model.inverse = models.Identity(1)
+            linear_model.meta.update({'input_axes': [-1],
+                                      'output_axes': [ax]})
+
+        linear_models.append(linear_model)
 
     return linear_models
+
+
+def remove_axis_from_frame(frame, axis):
+    """
+    Remove the numbered axis from a CoordinateFrame and return a modified
+    CoordinateFrame instance.
+
+    Parameters
+    ----------
+    frame: CoordinateFrame
+        The frame from which an axis is to be removed
+    axis: int
+        index of the axis to be removed
+
+    Returns
+    -------
+    CoordinateFrame: the modified frame
+    """
+    if axis is None:
+        return frame
+
+    if not isinstance(frame, cf.CompositeFrame):
+        if frame.name == "pixels" or frame.unit == (u.pix,) * frame.naxes:
+            return pixel_frame(frame.naxes - 1, name=frame.name)
+        else:
+            raise TypeError("Frame must be a CompositeFrame or pixel frame")
+
+    new_frames = []
+    for f in frame.frames:
+        if f.axes_order == (axis,):
+            continue
+        elif axis in f.axes_order:
+            new_frames.append(remove_axis_from_frame(f, axis))
+        else:
+            new_frames.append(deepcopy(f))
+            f._axes_order = tuple(x if x<axis else x-1 for x in f.axes_order)
+    if len(new_frames) == 1:
+        ret_frame = deepcopy(new_frames[0])
+        ret_frame.name = frame.name
+        return ret_frame
+    elif len(new_frames) > 1:
+        return cf.CompositeFrame(new_frames, name=frame.name)
+    raise ValueError("No frames left!")
+
+
+def remove_axis_from_model(model, axis):
+    """
+    Take a model where one output (axis) is no longer required and try to
+    construct a new model whether that output is removed. If the number of
+    inputs is reduced as a result, then report which input (axis) needs to
+    be removed.
+
+    Parameters
+    ----------
+    model: astropy.modeling.Model instance
+        model to modify
+    axis: int
+        Output axis number to be removed from the model
+
+    Returns
+    -------
+    tuple: Modified version of the model and input axis that is no longer
+           needed (input axis == None if completely removed)
+    """
+    def is_identity(model):
+        """Determine whether a model does nothing and so can be removed"""
+        return (isinstance(model, models.Identity) or
+                isinstance(model, models.Mapping) and
+                tuple(model.mapping) == tuple(range(model.n_inputs)))
+
+    if axis is None:
+        return model, None
+
+    if isinstance(model, CompoundModel):
+        op = model.op
+        if op == "|":
+            new_right_model, input_axis = remove_axis_from_model(model.right, axis)
+            new_left_model, input_axis = remove_axis_from_model(model.left, input_axis)
+            if is_identity(new_left_model):
+                return new_right_model, input_axis
+            elif is_identity(new_right_model):
+                return new_left_model, input_axis
+            return (new_left_model | new_right_model), input_axis
+        elif op == "&":
+            nl_inputs = model.left.n_inputs
+            nr_inputs = model.right.n_inputs
+            if nl_inputs == 1 and axis == 0:
+                return model.right, 0
+            elif nr_inputs == 1 and axis == nl_inputs:
+                return model.left, axis
+            elif axis < nl_inputs:
+                new_left_model, input_axis = remove_axis_from_model(model.left, axis)
+                return (new_left_model & model.right), input_axis
+            else:
+                new_right_model, input_axis = remove_axis_from_model(model.right, axis-nl_inputs)
+                return (model.left & new_right_model), (None if input_axis is None else input_axis+nl_inputs)
+        elif op in ("+", "-", "*", "/", "**"):
+            new_left_model, input_axis = remove_axis_from_model(model.left, axis)
+            new_right_model, input_axis2 = remove_axis_from_model(model.right, axis)
+            if input_axis != input_axis2:
+                raise ValueError("Different mappings on either side of an "
+                                 "arithmetic operator")
+            return functools.reduce(core._model_oper(op),
+                                    [new_left_model, new_right_model]), input_axis
+        elif op == "fix_inputs":
+            new_left_model, input_axis = remove_axis_from_model(model.left, axis)
+            fixed_inputs = model.right.copy()
+            if input_axis in fixed_inputs:
+                fixed_inputs.pop(input_axis)
+                input_axis = None
+            if fixed_inputs:
+                if input_axis is not None:
+                    fixed_inputs = {(ax if ax < input_axis else ax-1): value
+                                    for ax, value in fixed_inputs.items()}
+                return core.fix_inputs(new_left_model, fixed_inputs), input_axis
+            else:
+                return new_left_model, input_axis
+        else:
+            raise ValueError(f"Cannot process operator {op}")
+    elif isinstance(model, models.Identity):
+        return models.Identity(model.n_inputs-1), axis
+    elif isinstance(model, models.Mapping):
+        mapping = model.mapping
+        input_axis = mapping[axis]
+        new_mapping = mapping[:axis] + mapping[axis+1:]
+        if input_axis not in new_mapping:
+            new_mapping = [ax if ax < input_axis else ax-1 for ax in new_mapping]
+        else:
+            input_axis = None
+        if new_mapping == list(range(len(new_mapping))):
+            return models.Identity(len(new_mapping)), input_axis
+        else:
+            return models.Mapping(tuple(new_mapping)), input_axis
+
+    raise ValueError(f"Cannot process {model.__class__.__name__}")
+
+
+def remove_unused_world_axis(ext):
+    """
+    Remove a single axis from the output frame of the WCS if it has no
+    dependence on input pixel location.
+
+    Parameters
+    ----------
+    ext: single-slice AstroData object
+    """
+    ndim = len(ext.shape)
+    affine = calculate_affine_matrices(ext.wcs.forward_transform, ext.shape)
+    # Check whether there's a single output that isn't affected by the input
+    removable_axes = np.all(affine.matrix[:, ndim-1:] == 0, axis=1)[::-1]  # xyz order
+    if removable_axes.sum() == 1:
+        output_axis = removable_axes.argmax()
+    else:
+        raise ValueError("No single degenerate output axis to remove")
+
+    axis = output_axis
+    new_pipeline = []
+    for step in reversed(ext.wcs.pipeline):
+        frame, transform = step.frame, step.transform
+        if axis < frame.naxes:
+            frame = remove_axis_from_frame(frame, axis)
+        if transform is not None:
+            if axis < transform.n_outputs:
+                transform, axis = remove_axis_from_model(transform, axis)
+        new_pipeline = [(frame, transform)] + new_pipeline
+
+    if axis not in (ndim, None):
+        raise ValueError("Removed output axis does not trace back to removed"
+                         " input axis")
+
+    ext.wcs = gWCS(new_pipeline)

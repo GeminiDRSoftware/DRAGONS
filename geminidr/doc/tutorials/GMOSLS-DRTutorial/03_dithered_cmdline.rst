@@ -224,7 +224,7 @@ inspect what we have we can use |dataselect| and |showd| together.
     ../playdata/S20171022S0097.fits   J2145+0031
 
 Here we only have one object from the same sequence.  We would not need any
-expression, just exclusing calibrations would be sufficient.  But we demonstrate
+expression, just excluding calibrations would be sufficient.  But we demonstrate
 here how one would specify the object name for a more surgical selection.
 
 ::
@@ -287,7 +287,7 @@ Processed Arc - Wavelength Solution
 GMOS longslit arc can be obtained at night with the observation sequence,
 if requested by the program, but are often obtained at the end of the night
 or the following afternoon instead.  Like the spectroscopic flats, they are not
-stacked which means that they can be sent to reduce all to together and will
+stacked which means that they can be sent to reduce all together and will
 be reduced individually.
 
 The wavelength solution is automatically calculated and has been found to be
@@ -361,7 +361,7 @@ This is what one raw image looks like.
 With the master bias, the master flat, the processed arcs (one for each of the
 grating position, aka central wavelength), and the processed standard in the
 local calibration manager, to reduce the science observations and extract the 1-D
-spectrum, one only needs to do as follow.
+spectrum, one only needs to do as follows.
 
 ::
 
@@ -385,7 +385,7 @@ This is what the 2-D spectrum looks like.
    :width: 600
    :alt: 2D stacked spectrum
 
-The apertures found are list in the log for the ``findApertures`` just before
+The apertures found are listed in the log for the ``findApertures`` just before
 the call to ``traceApertures``.  Information about the apertures are also
 available in the header of each extracted spectrum: ``XTRACTED``, ``XTRACTLO``,
 ``XTRACTHI``, for aperture center, lower limit, and upper limit, respectively.

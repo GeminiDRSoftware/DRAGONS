@@ -232,6 +232,9 @@ class Section(tuple):
             raise ValueError("Cannot initialize 'Section' object")
         instance = tuple.__new__(cls, tuple(_dict.values()))
         instance._axis_names = tuple(_dict.keys())
+        if not all(np.diff(instance)[::2] > 0):
+            raise ValueError("Not all 'Section' end coordinates exceed the "
+                             "start coordinates")
         return instance
 
     @property
@@ -251,6 +254,23 @@ class Section(tuple):
                 ", ".join([f"{k}={self.__dict__[k]}"
                            for k in self._axis_names]) + ")")
 
+    @property
+    def ndim(self):
+        return len(self) // 2
+
+    @staticmethod
+    def from_shape(value):
+        """produce a Section object defining a given shape"""
+        return Section(*[y for x in reversed(value) for y in (0, x)])
+
+    @staticmethod
+    def from_string(value):
+        """The inverse of __str__, produce a Section object from a string"""
+        return Section(*[y for x in value.strip("[]").split(",")
+                         for start, end in [x.split(":")]
+                         for y in (None if start == '' else int(start)-1,
+                                   None if end == '' else int(end))])
+
     def asIRAFsection(self):
         """Produce string of style '[x1:x2,y1:y2]' that is 1-indexed
         and end-inclusive"""
@@ -267,17 +287,33 @@ class Section(tuple):
                             self.__dict__[axis.replace("1", "2")])
                       for axis in reversed(self._axis_names[::2])))
 
-    @staticmethod
-    def from_shape(value):
-        """produce a Section object defining a given shape"""
-        return Section(*[y for x in reversed(value) for y in (0, x)])
+    def contains(self, section):
+        """Return True if the supplied section is entirely within self"""
+        if self.ndim != section.ndim:
+            raise ValueError("Sections have different dimensionality")
+        return (all(s2 >= s1 for s1, s2 in zip(self[::2], section[::2])) and
+                all(s2 <= s1 for s1, s2 in zip(self[1::2], section[1::2])))
 
-    @staticmethod
-    def from_string(value):
-        """The inverse of __str__, produce a Section object from a string"""
-        return Section(*[y for x in value.strip("[]").split(",")
-                         for start, end in [x.split(":")]
-                         for y in (None if start == '' else int(start)-1,
-                                   None if end == '' else int(end))])
+    def is_same_size(self, section):
+        """Return True if the Sections are the same size"""
+        return np.array_equal(np.diff(self)[::2], np.diff(section)[::2])
 
+    def overlap(self, section):
+        """Determine whether the two sections overlap. If so, the Section
+        common to both is returned, otherwise None"""
+        if self.ndim != section.ndim:
+            raise ValueError("Sections have different dimensionality")
+        mins = [max(s1, s2) for s1, s2 in zip(self[::2], section[::2])]
+        maxs = [min(s1, s2) for s1, s2 in zip(self[1::2], section[1::2])]
+        try:
+            return self.__class__(*[v for pair in zip(mins, maxs) for v in pair])
+        except ValueError:
+            return
 
+    def shift(self, *shifts):
+        """Shift a section in each direction by the specified amount"""
+        if len(shifts) != self.ndim:
+            raise ValueError(f"Number of shifts {len(shifts)} incompatible "
+                             f"with dimensionality {self.ndim}")
+        return self.__class__(*[x + s for x, s in
+                                zip(self, [ss for s in shifts for ss in [s] * 2])])

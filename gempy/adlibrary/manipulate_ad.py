@@ -1,4 +1,4 @@
-import numpy as np
+from astrodata import wcs as adwcs
 from gempy.utils import logutils
 
 
@@ -25,48 +25,24 @@ def remove_single_length_dimension(adinput):
     for ext in adinput:
         # Ensure that there is only one single length dimension in the pixel
         # data
-        if ext.data.shape.count(1) == 1:
+        shape = ext.shape
+        extid = f"{adinput.filename}:{ext.id}"
+        if shape.count(1) == 1:
+            axis = shape.index(1)
 
-            # Determine the position of the single length dimension in the
-            # tuple of array dimensions output by ext.data.shape
-            axis = np.where([length == 1 for length in ext.data.shape])[0][0]
-
-            # numpy arrays use 0-based indexing and the axes are ordered from
-            # slow to fast. So, if the position of the single length dimension
-            # is located in e.g., ext.data.shape[0], the dimension number of
-            # the FITS pixel data array is ext.data.ndim + 1 (since FITS pixel
-            # data arrays use 1-based indexing).
+            # Dimension in user-friendly format (1=x, 2=y, etc.)
             dimension = ext.data.ndim - axis
 
-            # The np.squeeze method only removes a dimension from the array if
-            # the dimension has a length equal to 1
-            log.status("Removing dimension {} from {}".
-                       format(dimension, adinput.filename))
-            ext.operate(np.squeeze)
-
-            # Set the NAXIS keyword appropriately now that a dimension has been
-            # removed
-            ext.hdr.set("NAXIS", ext.data.ndim)
-
-            # This should be a log.debug call, but that doesn't appear to work
-            # right now, so using log.fullinfo
-            # log.fullinfo(f"Updated dimensions of {adinput.filename} "
-            #              f"extension {ext.id} = {ext.data.shape}")
-
-            # Remove the keywords relating to the dimension that has been
-            # removed (IRAF seems to add WCSDIM=3, CTYPE3='LINEAR  ', CD3_3=1.,
-            # LTM1_1=1., LTM2_2=1., LTM3_3=1., WAXMAP01='1 0 2 0 0 0 ',
-            # WAT0_001='system=image', WAT1_001='wtype=tan axtype=ra' and
-            # WAT2_001= 'wtype=tan axtype=dec' when doing e.g., imcopy
-            # f2.fits[*,*,1], so perhaps these should be removed as well?)
-            #
-            # old data don't have all keywords.  need to check first.
-            keywords = ("NAXIS{0}, AXISLAB{0}, CD{0}_{0}".format(dimension))
-            for keyword in keywords.split(','):
-                if keyword in ext.hdr:
-                    ext.hdr.remove(keyword)
+            log.debug(f"Removing dimension {dimension} from {extid}")
+            _slice = tuple(0 if i == axis else slice(None)
+                           for i, _ in enumerate(shape))
+            ext.reset(ext.nddata[_slice])
+            try:
+                adwcs.remove_unused_world_axis(ext)
+            except:
+                log.debug(f"Cannot remove world axis from {extid}")
         else:
             log.warning("No dimension of length 1 in extension pixel data."
-                        f"No changes will be made to {adinput.filename}.")
+                        f"No changes will be made to {extid}")
 
     return adinput

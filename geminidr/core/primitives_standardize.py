@@ -448,8 +448,8 @@ class Standardize(PrimitivesBASE):
               self.timestamp_keys["subtractOverscan"] not in ad.phu):
             log.warning("It is not recommended to add Poisson noise to the"
                         " variance of data that still contain a bias level")
-        gain_list = ad.gain()
-        for ext, gain in zip(ad, gain_list):
+
+        for ext in ad:
             if 'poisson' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Poisson noise already added for "
                             f"{ad.filename} extension {ext.id}")
@@ -458,9 +458,9 @@ class Standardize(PrimitivesBASE):
             if not ext.is_coadds_summed():
                 var_array /= ext.coadds()
             if ext.is_in_adu():
-                var_array /= ext.gain()
+                var_array /= gt.array_from_descriptor_value(ext, "gain")
             if ext.variance is None:
-                ext.variance = var_array
+                ext.variance = np.full_like(ext.data, var_array, dtype=dtype)
             else:
                 ext.variance += var_array
             varnoise = ext.hdr.get('VARNOISE')
@@ -478,31 +478,30 @@ class Standardize(PrimitivesBASE):
         existing plane if there is no header keyword indicating this operation
         has already been performed.
 
-        This primitive should be invoked by calling addVAR(read_noise=True)
+        This method should be invoked by calling addVAR(read_noise=True)
+
+        If an extension is composed of data from multiple amplifiers, the read
+        noise can be added provided there are the same number of Sections in
+        the data_section() descriptor as there are values in read_noise(). The
+        read noise will also be added to the overscan regions if the descriptor
+        returns Sections. If the data are in ADU, then the gain() descriptor
+        must also return a list of the same length.
         """
         log = self.log
 
         log.fullinfo("Adding read noise to {}".format(ad.filename))
-        gain_list = ad.gain()
-        read_noise_list = ad.read_noise()
-        for ext, gain, read_noise in zip(ad, gain_list, read_noise_list):
+        for ext in ad:
+            extver = ext.hdr['EXTVER']
             if 'read' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Read noise already added for "
                             f"{ad.filename} extension {ext.id}")
                 continue
-            if read_noise is None:
-                log.warning(f"Read noise for {ad.filename} extension {ext.id} "
-                            "is None. Setting to zero")
-                read_noise = 0.0
-            else:
-                log.fullinfo(f"Read noise for {ad.filename} extension {ext.id}"
-                             f" = {read_noise} electrons")
-            if ext.is_in_adu():
-                read_noise /= gain
-            var_array = np.full_like(ext.data, read_noise * read_noise,
-                                     dtype=dtype)
+            var_array = (gt.array_from_descriptor_value(ext, "read_noise") /
+                         (gt.array_from_descriptor_value(ext, "gain")
+                          if ext.is_in_adu() else 1.0)) ** 2
+
             if ext.variance is None:
-                ext.variance = var_array
+                ext.variance = np.full_like(ext.data, var_array, dtype=dtype)
             else:
                 ext.variance += var_array
             varnoise = ext.hdr.get('VARNOISE')

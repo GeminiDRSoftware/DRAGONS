@@ -3,7 +3,7 @@ import math
 
 from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
                        returns_list, Section)
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from .lookup import array_properties, nominal_zeropoints
 
 from ..common import build_group_id
@@ -384,6 +384,7 @@ class AstroDataF2(AstroDataGemini):
         return '&'.join(filter[:2])
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -570,6 +571,7 @@ class AstroDataF2(AstroDataGemini):
         return None if lnrs is None else str(lnrs)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def read_noise(self):
         """
@@ -580,7 +582,6 @@ class AstroDataF2(AstroDataGemini):
         float
             read noise
         """
-        # Element [0] gives the read noise
         return getattr(array_properties.get(self.read_mode(), None),
                        'readnoise', None)
 
@@ -645,24 +646,24 @@ class AstroDataF2(AstroDataGemini):
         except KeyError:
             return None
 
-    def _get_wcs_coords(self):
-        """
-        Returns the RA and dec of the middle of the data array
-
-        Returns
-        -------
-        dict
-            {'lon': right ascension, 'lat': declination}
-        """
-        wcs = self.wcs if self.is_single else self[0].wcs
-        if wcs is None:
-            return None
-
-        # (x, y) Cass rotator centre (according to Andy Stephens from gacq)
-        result = wcs(1034, 1054)
-        ra, dec = float(result[0]), float(result[1])
-
-        if 'NON_SIDEREAL' in self.tags:
-            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
-
-        return {'lon': ra, 'lat': dec}
+    # def _get_wcs_coords(self):
+    #     """
+    #     Returns the RA and dec of the middle of the data array
+    #
+    #     Returns
+    #     -------
+    #     dict
+    #         {'lon': right ascension, 'lat': declination}
+    #     """
+    #     wcs = self.wcs if self.is_single else self[0].wcs
+    #     if wcs is None:
+    #         return None
+    #
+    #     # (x, y) Cass rotator centre (according to Andy Stephens from gacq)
+    #     result = wcs(1034, 1054)
+    #     ra, dec = float(result[0]), float(result[1])
+    #
+    #     if 'NON_SIDEREAL' in self.tags:
+    #         ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+    #
+    #     return {'lon': ra, 'lat': dec}

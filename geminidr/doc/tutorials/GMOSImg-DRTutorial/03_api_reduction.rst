@@ -56,10 +56,6 @@ We first import the necessary modules and classes:
     from recipe_system.reduction.coreReduce import Reduce
 
 
-Importing ``print_function`` is for compatibility with the Python 2.7 print
-statement. If you are working with Python 3, it is not needed, but importing
-it will not break anything.
-
 :mod:`glob` is Python built-in packages. It will be used to return a
 :class:`list` with the input file names.
 
@@ -185,10 +181,10 @@ filters. It is not really needed in this case.
     :lineno-start: 22
 
     list_of_flats = dataselect.select_data(
-         all_files,
-         ['FLAT'],
-         [],
-         dataselect.expr_parser('filter_name=="i"')
+        all_files,
+        ['FLAT'],
+        [],
+        dataselect.expr_parser('filter_name=="i"')
     )
 
 List of Science Data
