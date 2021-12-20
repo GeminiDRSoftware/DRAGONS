@@ -1068,14 +1068,13 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         if ad.phu.get("CRVAL2") is not None:
             ad.phu.set("CRVAL2", 0.0, keyword_comments["CRVAL2"])
 
-        # Do the same for each extension as well as the object name
-        # Can't do simply with ad.hdr.set() because we don't know
-        # what's already in each extension
+        # The CRVALi keywords in the extension headers come from the gWCS
+        # object, so that needs to be modified
         for ext in ad:
-            if ext.hdr.get("CRVAL1") is not None:
-                ext.hdr.set("CRVAL1", 0.0, keyword_comments["CRVAL1"])
-            if ext.hdr.get("CRVAL2") is not None:
-                ext.hdr.set("CRVAL2", 0.0, keyword_comments["CRVAL2"])
+            for m in ext.wcs.forward_transform:
+                if isinstance(m, models.RotateNative2Celestial):
+                    m.lon = m.lat = 0
+                    break
             if ext.hdr.get("OBJECT") is not None:
                 if "fringe" in caltype:
                     ext.hdr.set("OBJECT", "Fringe Frame",
