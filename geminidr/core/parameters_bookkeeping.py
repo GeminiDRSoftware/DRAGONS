@@ -9,7 +9,7 @@ class clearAllStreamsConfig(config.Config):
     pass
 
 class clearStreamConfig(config.Config):
-    pass
+    stream = config.Field("Name of stream to clear", str, "main")
 
 class flushPixelsConfig(config.Config):
     force = config.Field("Force write-to-disk?", bool, False)

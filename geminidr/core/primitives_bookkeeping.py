@@ -66,7 +66,7 @@ class Bookkeeping(PrimitivesBASE):
         to empty lists.
         """
         log = self.log
-        for stream in self.streams.keys():
+        for stream in self.streams:
             if stream != 'main':
                 log.fullinfo('Clearing stream {}'.format(stream))
                 self.streams[stream] = []
