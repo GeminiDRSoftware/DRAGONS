@@ -22,7 +22,6 @@ import pytest
 from geminidr.niri.primitives_niri_image import NIRIImage
 from gempy.utils import logutils
 
-
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_bookkeeping.log'
 
@@ -43,7 +42,31 @@ def log():
     os.remove(logfilename)
 
 
+@pytest.fixture(scope="module")
+def niri_ads(request, astrofaker):
+    return [astrofaker.create('NIRI', ['IMAGE']) for _ in range(request.param)]
+
 # --- Tests ---
+@pytest.mark.parametrize('niri_ads', [2], indirect=True)
+def test_clear_all_streams(niri_ads):
+    p = NIRIImage(niri_ads[:1])
+    p.streams['test'] = niri_ads[1:]
+    p.clearAllStreams()
+    assert not p.streams['test']
+    assert len(p.streams['main']) == 1
+
+
+@pytest.mark.parametrize('niri_ads', [2], indirect=True)
+def test_clear_stream(niri_ads):
+    p = NIRIImage(niri_ads[:1])
+    p.streams['test'] = niri_ads[1:]
+    p.clearStream(stream='test')
+    assert not p.streams['test']
+    assert len(p.streams['main']) == 1
+    p.clearStream()
+    assert not p.streams['main']
+
+
 class TestBookkeeping:
     """
     Suite of tests for the functions in the primitives_standardize module.
