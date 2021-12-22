@@ -32,7 +32,7 @@ from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
-from gemini_instruments.gemini.lookup import get_specphot_name
+from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
