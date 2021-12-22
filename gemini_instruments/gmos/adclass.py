@@ -73,7 +73,7 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_standard(self):
-        if get_specphot_name(self):
+        if self._tag_is_spect() and get_specphot_name(self):
             return TagSet(['STANDARD', 'CAL'])
 
     @astro_data_tag
