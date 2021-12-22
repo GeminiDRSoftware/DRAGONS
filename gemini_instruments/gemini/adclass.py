@@ -12,12 +12,16 @@ import dateutil.parser
 
 import numpy as np
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 from astrodata import AstroData
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
 from astrodata import TagSet, Section
 
-from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
+from .lookup import (wavelength_band, nominal_extinction,
+                     filter_wavelengths, specphot_standards)
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -123,6 +127,44 @@ def use_keyword_if_prepared(fn):
                 pass
         return fn(self)
     return gn
+
+
+def get_specphot_name(ad):
+    """
+    Return the name of the specphotometric standard of which this AD object
+    is an observation, or None if it is not an observation of a specphot.
+    The name is returned in a whitespace-stripped, all-lowercase format
+    corresponding to the filename containing the specphot data in
+    geminidr.gemini.lookups.spectrophotometric_standards
+
+    Parameters
+    ----------
+    ad: AstroData object which might be a specphot standard
+
+    Returns
+    -------
+    str/None: name of the standard (or None if it's not a standard)
+    """
+    target_name = ad.object().lower().replace(' ', '')
+    try:
+        target = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
+    except TypeError:
+        return
+    try:
+        dt = ad.ut_datetime() - datetime.datetime(2000, 1, 1, 12)
+    except TypeError:
+        dt = datetime.timedelta(10 * u.yr)
+
+    for name, (coords, pm_ra, pm_dec) in specphot_standards.items():
+        c = SkyCoord(coords, unit=(u.hourangle, u.deg),
+                     pm_ra_cosdec=pm_ra*u.mas/u.yr, pm_dec=pm_dec*u.mas/u.yr,
+                     distance=1*u.kpc)  # needed to avoid ErfaWarning
+        sep = target.separation(c).arcsec
+        if sep < 2 or sep < 10 and target_name == name:
+            return name
+        sep = target.separation(c.apply_space_motion(dt=dt)).arcsec
+        if sep < 2 or sep < 10 and target_name == name:
+            return name
 
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
