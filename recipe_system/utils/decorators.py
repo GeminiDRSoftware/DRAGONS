@@ -308,12 +308,14 @@ def parameter_override(fn):
         params.update(kwargs)
 
         # config doesn't know about streams or adinputs
-        instream = params.get('instream', params.get('stream', 'main'))
-        outstream = params.get('outstream', params.get('stream', 'main'))
+        stream = params.get('stream', 'main')
+        instream = params.get('instream', stream)
+        outstream = params.get('outstream', stream)
         adinputs = params.get('adinputs')
         for k in ('adinputs', 'stream', 'instream', 'outstream'):
-            with suppress(KeyError):
-                del params[k]
+            if k not in config:
+                with suppress(KeyError):
+                    del params[k]
         # Can update config now it only has parameters it knows about
         config.update(**params)
         config.validate()
