@@ -148,7 +148,7 @@ def get_specphot_name(ad):
     target_name = ad.object().lower().replace(' ', '')
     try:
         target = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
-    except TypeError:
+    except (TypeError, ValueError):
         return
     try:
         dt = ad.ut_datetime() - datetime.datetime(2000, 1, 1, 12)
