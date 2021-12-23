@@ -34,6 +34,9 @@ class showInputsConfig(config.Config):
 class showListConfig(config.Config):
     purpose = config.Field("Purpose of displaying list", str, 'all')
 
+class sliceIntoStreamsConfig(config.Config):
+    clear = config.Field("Clear main stream after slicing?", bool, True)
+
 class sortInputsConfig(config.Config):
     descriptor = config.Field("Name of descriptor for sorting", str, 'filename')
     reverse = config.Field("Reverse order of sort?", bool, False)

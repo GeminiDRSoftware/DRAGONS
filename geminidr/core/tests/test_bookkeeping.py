@@ -20,6 +20,7 @@ import pytest
 
 # from . import ad_compare
 from geminidr.niri.primitives_niri_image import NIRIImage
+from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.utils import logutils
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
@@ -65,6 +66,41 @@ def test_clear_stream(niri_ads):
     assert len(p.streams['main']) == 1
     p.clearStream()
     assert not p.streams['main']
+
+
+def test_slice_into_streams(astrofaker):
+    def gmos_ads():
+        ad1 = astrofaker.create("GMOS-N")
+        ad1.init_default_extensions()
+        ad2 = astrofaker.create("GMOS-N")
+        ad2.init_default_extensions()
+        return [ad1, ad2]
+
+    # Slice, clearing "main"
+    p = GMOSImage(gmos_ads())
+    p.sliceIntoStreams(clear=True)
+    assert len(p.streams) == 13
+    for k, v in p.streams.items():
+        assert len(v) == 0 if k == 'main' else 2
+
+    # Slice, not clearing "main"
+    p = GMOSImage(gmos_ads())
+    p.sliceIntoStreams(clear=False)
+    assert len(p.streams) == 13
+    for k, v in p.streams.items():
+        assert len(v) == 2
+
+    # Slice with different lengths of input
+    ad1, ad2 = gmos_ads()
+    ad2.phu['EXTRA_KW'] = 33
+    del ad1[5]
+    p = GMOSImage([ad1, ad2])
+    p.sliceIntoStreams(clear=False)
+    assert len(p.streams) == 13
+    for k, v in p.streams.items():
+        assert len(v) == 1 if k == 'index11' else 2
+    # The last stream should only have a slice from ad2
+    assert 'EXTRA_KW' in p.streams['index11'][0].phu
 
 
 class TestBookkeeping:

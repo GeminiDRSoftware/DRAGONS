@@ -285,6 +285,40 @@ class Bookkeeping(PrimitivesBASE):
                 log.status("No datasets in list")
         return adinputs
 
+    def sliceIntoStreams(self, adinputs=None, clear=True):
+        """
+        This primitive slices each input AstroData object into separate AD
+        objects with one slice each, and puts them into separate streams. The
+        stream "index0" will contain all the first slices from all the AD
+        objects, "index1" all the second slices, and so on. These streams will
+        not be the same length if the input AD objects have different lengths.
+
+        Parameters
+        ----------
+        clear: bool
+            delete unsliced AD objects? (avoids memory duplication of data)
+        """
+        log = self.log
+        template = 'index{}'
+        if clear:
+            for ad in adinputs:
+                for i in range(len(ad)):
+                    new_ad = astrodata.create(ad.phu)
+                    new_ad.append(ad[i])
+                    try:
+                        self.streams[template.format(i)].append(new_ad)
+                    except KeyError:
+                        self.streams[template.format(i)] = [new_ad]
+                        nstreams = i + 1
+        else:
+            nstreams = max(len(ad) for ad in adinputs)
+            for i in range(nstreams):
+                self.streams[template.format(i)] = [
+                    copy.deepcopy(ad[i]) for ad in adinputs if len(ad) > i]
+
+        log.stdinfo(f'Created {nstreams} streams by slicing input files.')
+        return [] if clear else adinputs
+
     def sortInputs(self, adinputs=None, descriptor='filename', reverse=False):
         """
         This sorts the input list according to the values returned by the
