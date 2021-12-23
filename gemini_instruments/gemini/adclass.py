@@ -153,16 +153,19 @@ def get_specphot_name(ad):
     try:
         dt = ad.ut_datetime() - datetime.datetime(2000, 1, 1, 12)
     except TypeError:
-        dt = datetime.timedelta(10 * u.yr)
+        dt = datetime.timedelta(days=3652.5)  # 10 years
 
     for name, (coords, pm_ra, pm_dec) in specphot_standards.items():
         c = SkyCoord(coords, unit=(u.hourangle, u.deg),
                      pm_ra_cosdec=pm_ra*u.mas/u.yr, pm_dec=pm_dec*u.mas/u.yr,
-                     distance=1*u.kpc)  # needed to avoid ErfaWarning
+                     distance=100*u.pc)  # needed to avoid ErfaWarning
         sep = target.separation(c).arcsec
         if sep < 2 or sep < 10 and target_name == name:
             return name
         sep = target.separation(c.apply_space_motion(dt=dt)).arcsec
+        if name == 'ltt4364':
+            print(dt)
+            print(c.apply_space_motion(dt=dt))
         if sep < 2 or sep < 10 and target_name == name:
             return name
 
