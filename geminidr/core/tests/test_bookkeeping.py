@@ -43,11 +43,41 @@ def log():
     os.remove(logfilename)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def niri_ads(request, astrofaker):
-    return [astrofaker.create('NIRI', ['IMAGE']) for _ in range(request.param)]
+    return [astrofaker.create('NIRI', ['IMAGE'], filename=f"X{i+1}.fits")
+            for i in range(request.param)]
 
 # --- Tests ---
+@pytest.mark.parametrize('niri_ads', [3], indirect=True)
+def test_append_to_stream(niri_ads):
+    """Some manipulation of streams using appendToStream()"""
+    def filenames(stream):
+        return ''.join([ad.filename[1] for ad in stream])
+
+    p = NIRIImage(niri_ads[:1])
+    p.streams['test'] = niri_ads[1:2]
+    # Add the AD in 'test' to 'main' leaving it in 'test'
+    p.appendToStream(new_stream='test', delete=False)
+    assert len(p.streams['main']) == 2
+    assert len(p.streams['test']) == 1
+    # Change filename of version in 'test' to confirm that the one in 'main'
+    # is not simply a reference
+    p.streams['test'][0].filename = 'X4.fits'
+    assert filenames(p.streams['main']) == '12'
+
+    # Add the copy in 'test' to 'main', and delete 'test'
+    p.appendToStream(new_stream='test', delete=True)
+    assert len(p.streams['main']) == 3
+    assert filenames(p.streams['main']) == '124'
+    assert 'test' not in p.streams
+
+    # Take 'test2', append 'main', and put the result in 'main'
+    p.streams['test2'] = niri_ads[2:]
+    p.appendToStream(instream='test2', new_stream='main')
+    assert filenames(p.streams['main']) == '3124'
+
+
 @pytest.mark.parametrize('niri_ads', [2], indirect=True)
 def test_clear_all_streams(niri_ads):
     p = NIRIImage(niri_ads[:1])

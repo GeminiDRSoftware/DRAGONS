@@ -60,6 +60,36 @@ class Bookkeeping(PrimitivesBASE):
         save_cache(self.stacks, stkindfile)
         return adinputs
 
+    def appendToStream(self, adinputs=None, new_stream=None, delete=None):
+        """
+        This primitive takes the AstroData objects in a stream and appends them
+        (order unchanged) to the end of the current stream. If requested, the
+        stream whose ADs are being appended is deleted.
+
+        Parameters
+        ----------
+        new_stream: str
+            name of stream whose ADs are going to be appended to the working
+            stream
+        delete: bool
+            delete the stream being appended?
+        """
+        log = self.log
+        try:
+            stream = self.streams[new_stream]
+        except KeyError:
+            log.warning(f"There is no stream called '{new_stream}'. "
+                        f"Continuing without appending any images.")
+            return adinputs
+
+        log.info(f"Appending {len(stream)} frames from stream '{new_stream}'.")
+        if delete:
+            adinputs.extend(stream)
+            del self.streams[new_stream]
+        else:
+            adinputs.extend([copy.deepcopy(ad) for ad in stream])
+        return adinputs
+
     def clearAllStreams(self, adinputs=None):
         """
         This primitive clears all streams (except "main") by setting them
