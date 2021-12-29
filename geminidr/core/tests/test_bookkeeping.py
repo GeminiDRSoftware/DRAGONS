@@ -128,9 +128,9 @@ def test_slice_into_streams(astrofaker):
     p.sliceIntoStreams(clear=False)
     assert len(p.streams) == 13
     for k, v in p.streams.items():
-        assert len(v) == 1 if k == 'index11' else 2
+        assert len(v) == 1 if k == 'ext12' else 2
     # The last stream should only have a slice from ad2
-    assert 'EXTRA_KW' in p.streams['index11'][0].phu
+    assert 'EXTRA_KW' in p.streams['ext12'][0].phu
 
 
 class TestBookkeeping:

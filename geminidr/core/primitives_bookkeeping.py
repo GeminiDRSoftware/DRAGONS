@@ -329,22 +329,21 @@ class Bookkeeping(PrimitivesBASE):
             delete unsliced AD objects? (avoids memory duplication of data)
         """
         log = self.log
-        template = 'index{}'
-        if clear:
-            for ad in adinputs:
-                for i in range(len(ad)):
+        template = 'ext{}'
+        nstreams = 0
+        for ad in adinputs:
+            for i in range(len(ad)):
+                extid = ad[i].id
+                if clear:
                     new_ad = astrodata.create(ad.phu)
                     new_ad.append(ad[i])
-                    try:
-                        self.streams[template.format(i)].append(new_ad)
-                    except KeyError:
-                        self.streams[template.format(i)] = [new_ad]
-                        nstreams = i + 1
-        else:
-            nstreams = max(len(ad) for ad in adinputs)
-            for i in range(nstreams):
-                self.streams[template.format(i)] = [
-                    copy.deepcopy(ad[i]) for ad in adinputs if len(ad) > i]
+                else:
+                    new_ad = copy.deepcopy(ad[i])
+                try:
+                    self.streams[template.format(extid)].append(new_ad)
+                except KeyError:
+                    self.streams[template.format(extid)] = [new_ad]
+                    nstreams += 1
 
         log.stdinfo(f'Created {nstreams} streams by slicing input files.')
         return [] if clear else adinputs
