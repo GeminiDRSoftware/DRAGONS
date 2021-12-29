@@ -8,13 +8,19 @@ from copy import deepcopy
 from scipy import ndimage, optimize
 from scipy.interpolate import UnivariateSpline
 
+from astropy.modeling import models
+from gwcs.wcs import WCS as gWCS
+from gwcs import coordinate_frames as cf
+
 from gempy.gemini import gemini_tools as gt
+from gempy.library import transform
 from gempy.library.nddops import NDStacker
 from gemini_instruments.gmu import detsec_to_pixels
 
 from geminidr.core import Image, Photometry
 from .primitives_gmos import GMOS
 from . import parameters_gmos_image
+from .lookups.geometry_conf import geometry
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups.fringe_control_pairs import control_pairs
 
@@ -205,6 +211,88 @@ class GMOSImage(GMOS, Image, Photometry):
                 x = border
 
             ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
+    def applyWCSAdjustment(self, adinputs=None, suffix=None, reference_stream=None):
+        """
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        reference_stream: str
+            stream containing images which have already been processed by
+            adjustWCSToReference
+        """
+        log = self.log
+
+        try:
+            refstream = self.streams[reference_stream]
+        except KeyError:
+            raise ValueError(f"No stream called {reference_stream}")
+
+        # data_label() produces a unique ID for each observation
+        refstream_dict = {ad.data_label(): ad for ad in refstream}
+
+        for ad in adinputs:
+            datalab = ad.data_label()
+            try:
+                ref = refstream_dict[datalab]
+            except KeyError:
+                log.warning(f"{ad.filename} cannot be processed as no "
+                            f"image with data label {datalab} is present "
+                            "in the reference stream.")
+                continue
+
+            if len(ref) > 1:
+                log.warning(f"Reference file {ref.filename} has more than "
+                            "one extension. Continuing.")
+                continue
+
+            geom = geometry[ad.detector_name()]
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            origins = [k for k in geom if isinstance(k, tuple)]
+            ccd2_xorigin = sorted(origins)[1][0]
+
+            # New gWCS objects are going to have the mosaicking transform to
+            # map to the frame of CCD2, the mapping from CCD2 to the reference
+            # image, and then the reference image's WCS. The reference image
+            # might just be CCD2 or it might be a mosaic, in which case we
+            # need to know the offset back to the CCD2 frame.
+            # We want to rename the input frame here to avoid conflicts.
+            ref_wcs = deepcopy(ref[0].wcs)
+            ref_wcs = gWCS([(cf.Frame2D(name="reference"),
+                             ref_wcs.pipeline[0].transform)]
+                           + ref_wcs.pipeline[1:])
+            if ref.detector_section()[0].x1 != ccd2_xorigin:
+                mask = ref[0].mask
+                if mask is None:
+                    log.warning(f"Reference file {ref.filename} is not CCD2 "
+                                "and does not have a mask. Relative WCS of "
+                                f"{ad.filename} will be incorrect.")
+                else:
+                    xc, yc = mask.shape[1] // 2, mask.shape[0] // 2
+                    xorig = xc - np.argmax(mask[yc, xc::-1] & DQ.no_data) + 2
+                    yorig = yc - np.argmax(mask.T[xc, yc::-1] & DQ.no_data) + 2
+                    if xorig > xc:  # no pixels are NO_DATA
+                        xorig = 0
+                    if yorig > yc:
+                        yorig = 0
+                    if xorig != 0 or yorig != 0:
+                        print("ORIG", xorig, yorig)
+                        shift = models.Shift(xorig) & models.Shift(yorig)
+                        ref_wcs.insert_transform(ref_wcs.input_frame, shift, after=True)
+
+            array_info = gt.array_information(ad)
+            if len(array_info.origins) != len(ad):
+                raise ValueError(f"{ad.filename} has not been tiled")
+
+            for ext, origin, detsec in zip(ad, array_info.origins,
+                                           ad.detector_section()):
+                mosaic_model = transform.make_mosaic_model(origin, geom, xbin, ybin)
+                ext.wcs = gWCS([(ext.wcs.input_frame, mosaic_model)] +
+                               ref_wcs.pipeline)
 
         return adinputs
 
