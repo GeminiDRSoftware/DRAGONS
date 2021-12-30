@@ -79,6 +79,43 @@ def separateCCDs(p):
         p.storeProcessedScience()
 
 
+def separateCCDsMosaicking(p):
+    """
+    This recipe performs the standardization and corrections needed to
+    convert the raw input science images into a stacked image. To deal
+    with different color terms on the different CCDs, the images are
+    split by CCD midway through the recipe and subsequently reduced
+    separately. The relative WCS is determined from mosaicked versions
+    of the images and then applied to each of the CCDs separately.
+
+    Parameters
+    ----------
+    p : GMOSImage object
+        A primitive set matching the recipe_tags.
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.flatCorrect()
+    p.fringeCorrect()
+    p.tileArrays(tile_all=False)
+    p.sliceIntoStreams(clear=False)
+    p.mosaicDetectors()
+    p.detectSources()
+    p.adjustWCSToReference(outstream="mosaic")
+    for index in (1, 2, 3):
+        p.applyWCSAdjustment(stream=f"ext{index}", reference_stream="mosaic")
+        p.resampleToCommonFrame(instream=f"ext{index}")
+        p.detectSources()
+        p.flagCosmicRaysByStacking()
+        p.scaleByExposureTime()
+        p.stackFrames(zero=True, suffix=f"_ccd{index}_stack")
+        p.storeProcessedScience()
+
 
 def makeProcessedFringe(p):
     """

@@ -226,6 +226,8 @@ class GMOSImage(GMOS, Image, Photometry):
             adjustWCSToReference
         """
         log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         try:
             refstream = self.streams[reference_stream]
@@ -280,7 +282,6 @@ class GMOSImage(GMOS, Image, Photometry):
                     if yorig > yc:
                         yorig = 0
                     if xorig != 0 or yorig != 0:
-                        print("ORIG", xorig, yorig)
                         shift = models.Shift(xorig) & models.Shift(yorig)
                         ref_wcs.insert_transform(ref_wcs.input_frame, shift, after=True)
 
@@ -293,6 +294,10 @@ class GMOSImage(GMOS, Image, Photometry):
                 mosaic_model = transform.make_mosaic_model(origin, geom, xbin, ybin)
                 ext.wcs = gWCS([(ext.wcs.input_frame, mosaic_model)] +
                                ref_wcs.pipeline)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
