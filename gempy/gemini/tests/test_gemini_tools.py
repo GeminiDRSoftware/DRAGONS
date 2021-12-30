@@ -1,6 +1,7 @@
 import astrodata, gemini_instruments
 import astrodata.testing
 import pytest
+import numpy as np
 
 from geminidr.gemini.lookups.keyword_comments import keyword_comments
 from geminidr.gmos.primitives_gmos_image import GMOSImage
@@ -70,6 +71,29 @@ def test_fit_continuum_slit_image(fname, fwhm, change_working_dir):
         assert isinstance(tbl, Table)
         assert len(tbl) == 1
         assert abs(tbl['fwhm_arcsec'].data[0] - fwhm) < 0.05
+
+
+@pytest.mark.parametrize("gaussfit", [True, False])
+def test_measure_bg_from_image_fake(gaussfit, astrofaker):
+    datavalue = 10000
+    ad = astrofaker.create('NIRI', ['IMAGE'])
+    ad.init_default_extensions()
+    ad[0].data += datavalue
+    ad.add_poisson_noise()
+    mean, stddev, nsamples = gt.measure_bg_from_image(ad[0], gaussfit=gaussfit)
+    assert abs(mean - datavalue) < 1
+    if gaussfit:  # stddev unreliable for non-Gaussfit
+        assert abs(stddev - np.sqrt(datavalue / ad[0].gain())) < 0.5
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("gaussfit", [True, False])
+def test_measure_bg_from_image_real(gaussfit):
+    # A random GMOS-N image
+    ad = astrodata.open(astrodata.testing.download_from_archive("N20191210S0338.fits"))
+    mean, stddev, nsamples = gt.measure_bg_from_image(
+        ad[8].nddata[ad[8].data_section().asslice()], gaussfit=gaussfit)
+    assert abs(mean - 807) < 1
 
 
 class TestCheckInputsMatch:
