@@ -16,7 +16,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from astropy.stats import sigma_clip
+from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
 
@@ -1707,7 +1707,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
             if gaussfit:
                 frac = 0.55
                 datamax = np.percentile(bg_data, frac * 100)
-                bg, bg_std = np.median(bg_data), np.std(bg_data)
+                bg, bg_std = sigma_clipped_stats(bg_data, sigma=5, maxiters=5)[1:]
                 bg_data = np.sort(bg_data[bg_data < datamax])[::sampling]
                 niter = 0
                 while True:
