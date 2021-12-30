@@ -926,22 +926,19 @@ class AstroDataGmos(AstroDataGemini):
         float/list
             read noise
         """
-        if 'PREPARED' in self.tags:
-            return self.hdr.get(self._keyword_for('read_noise'))
-        else:
-            # Get the correct dict of read noise values
-            ut_date = self.ut_date()
-            if ut_date is None:
-                return None  # converted to list by decorator if needed
+        # Get the correct dict of read noise values
+        ut_date = self.ut_date()
+        if ut_date is None:
+            return None  # converted to list by decorator if needed
 
-            if ut_date > date(2017, 2, 24):
-                rn_dict = lookup.gmosampsRdnoise
-            elif ut_date >= date(2015, 8, 26):
-                rn_dict = lookup.gmosampsRdnoiseBefore20170224
-            elif ut_date >= date(2006, 8, 31):
-                rn_dict = lookup.gmosampsRdnoiseBefore20150826
-            else:
-                rn_dict = lookup.gmosampsRdnoiseBefore20060831
+        if ut_date > date(2017, 2, 24):
+            rn_dict = lookup.gmosampsRdnoise
+        elif ut_date >= date(2015, 8, 26):
+            rn_dict = lookup.gmosampsRdnoiseBefore20170224
+        elif ut_date >= date(2006, 8, 31):
+            rn_dict = lookup.gmosampsRdnoiseBefore20150826
+        else:
+            rn_dict = lookup.gmosampsRdnoiseBefore20060831
 
         read_speed_setting = self.read_speed_setting()
         gain_setting = self.gain_setting()
