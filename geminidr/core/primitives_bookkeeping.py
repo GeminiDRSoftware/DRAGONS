@@ -330,22 +330,26 @@ class Bookkeeping(PrimitivesBASE):
         """
         log = self.log
         template = 'ext{}'
-        nstreams = 0
+        streams = []
         for ad in adinputs:
             for i in range(len(ad)):
-                extid = ad[i].id
+                stream_name = template.format(ad[i].id)
                 if clear:
                     new_ad = astrodata.create(ad.phu)
                     new_ad.append(ad[i])
                 else:
                     new_ad = copy.deepcopy(ad[i])
                 try:
-                    self.streams[template.format(extid)].append(new_ad)
+                    self.streams[stream_name].append(new_ad)
                 except KeyError:
-                    self.streams[template.format(extid)] = [new_ad]
-                    nstreams += 1
+                    self.streams[stream_name] = [new_ad]
+                    streams.append(stream_name)
 
-        log.stdinfo(f'Created {nstreams} streams by slicing input files.')
+        log.stdinfo(f'Created {len(streams)} streams by slicing input files.')
+        for stream in streams:
+            log.debug(f'Files in stream {stream}:')
+            for ad in self.streams[stream]:
+                log.debug(f'    {ad.filename}')
         return [] if clear else adinputs
 
     def sortInputs(self, adinputs=None, descriptor='filename', reverse=False):
