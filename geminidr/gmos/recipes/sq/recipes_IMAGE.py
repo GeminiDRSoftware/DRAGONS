@@ -65,7 +65,6 @@ def separateCCDs(p):
     p.flatCorrect()
     p.fringeCorrect()
     p.tileArrays(tile_all=False)
-    p.writeOutputs()
     p.sliceIntoStreams(clear=True)
     p.detectSources(stream="ext2")
     p.adjustWCSToReference(stream="ext2")
@@ -74,10 +73,9 @@ def separateCCDs(p):
     for index in (1, 2, 3):
         p.resampleToCommonFrame(instream=f"ext{index}")
         p.detectSources()
-        p.writeOutputs(suffix=f"_sources_ccd{index}")
         p.flagCosmicRaysByStacking()
         p.scaleByExposureTime()
-        p.stackFrames(zero=True, suffix=f"_ccd{index}")
+        p.stackFrames(zero=True, suffix=f"_ccd{index}_stack")
         p.storeProcessedScience()
 
 

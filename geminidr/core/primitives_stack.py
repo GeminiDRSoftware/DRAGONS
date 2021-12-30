@@ -199,7 +199,6 @@ class Stack(PrimitivesBASE):
                               else ad[i][index].nddata.window[statsec])
                     #levels[i, index] = np.median(nddata.data)
                     levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
-                    print(f"{ad.filename}:{index}: bg = {levels[i, index]}")
             if scale and zero:
                 log.warning("Both scale and zero are set. Setting scale=False.")
                 scale = False
