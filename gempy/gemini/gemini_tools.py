@@ -34,8 +34,12 @@ ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
 
 @models.custom_model
-def Ogive(x, mean=0.0, stddev=1.0, lowfrac=1.0):
-    return 0.5 / lowfrac * (1.0 + erf((x - mean) / (1.414213562 * stddev)))
+def Ogive(x, mean=0.0, stddev=1.0, lsigma=3.0, hsigma=3.0):
+    """A cumulative frequency curve for the Normal distribution between
+    -lsigma and hsigma standard deviations, normalized to number of points"""
+    lfrac = 0.5 * (1 - erf(lsigma / 1.414213562))
+    hfrac = 0.5 * (1 + erf(hsigma / 1.414213562))
+    return (0.5 * (1.0 + erf((x - mean) / (1.414213562 * stddev))) - lfrac) / (hfrac - lfrac)
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -1700,30 +1704,28 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
                     else getattr(ext, 'OBJMASK', None)
             bg_data = ext.data.ravel()
 
-        if flags is not None:
+        if flags is None:
+            bg_data = bg_data[::sampling]
+        else:
             bg_data = bg_data[flags.ravel() == 0][::sampling]
 
         if len(bg_data) > 0:
             if gaussfit:
-                frac = 0.55
-                datamax = np.percentile(bg_data, frac * 100)
+                lsigma, hsigma = 3, 1
                 bg, bg_std = sigma_clipped_stats(bg_data, sigma=5, maxiters=5)[1:]
-                bg_data = np.sort(bg_data[bg_data < datamax])[::sampling]
                 niter = 0
                 while True:
+                    iter_data = np.sort(bg_data[np.logical_and(bg-lsigma*bg_std < bg_data,
+                                                               bg+hsigma*bg_std > bg_data)][::sampling])
                     oldbg, oldbg_std = bg, bg_std
-                    g_init = Ogive(bg, bg_std, frac)
-                    g_init.lowfrac.bounds = (0.001, 0.999)
+                    g_init = Ogive(bg, bg_std, lsigma, hsigma)
+                    g_init.lsigma.fixed = True
+                    g_init.hsigma.fixed = True
                     fit_g = fitting.LevMarLSQFitter()
-                    g = fit_g(g_init, bg_data, np.linspace(0., 1., bg_data.size + 1)[1:])
+                    g = fit_g(g_init, iter_data, np.linspace(0., 1., iter_data.size + 1)[1:])
                     bg, bg_std = g.mean.value, abs(g.stddev.value)
                     if abs(bg - oldbg) < 0.001 * bg_std or niter > maxiter:
                         break
-                    # Remove brightest pixels if we're sampling too much
-                    # to the bright side of the peak
-                    if g.lowfrac.value > 0.9:
-                        bg_data = bg_data[:int(0.9 * bg_data.size)]
-                    bg_data = bg_data[bg_data < bg + bg_std * 0.5]
                     niter += 1
             else:
                 # Sigma-clipping will screw up the stats of course!
