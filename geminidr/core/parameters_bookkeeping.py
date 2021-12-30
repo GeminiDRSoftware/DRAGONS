@@ -5,8 +5,8 @@ from gempy.library import config
 class addToListConfig(config.Config):
     purpose = config.Field("Purpose of list", str, None, optional=True)
 
-class appendToStreamConfig(config.Config):
-    new_stream = config.Field("Stream to be appended", str, "")
+class appendStreamConfig(config.Config):
+    from_stream = config.Field("Stream from which images are to be appended", str, "")
     delete = config.Field("Delete stream after appending?", bool, False)
 
 class clearAllStreamsConfig(config.Config):

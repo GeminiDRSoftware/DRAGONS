@@ -50,15 +50,15 @@ def niri_ads(request, astrofaker):
 
 # --- Tests ---
 @pytest.mark.parametrize('niri_ads', [3], indirect=True)
-def test_append_to_stream(niri_ads):
-    """Some manipulation of streams using appendToStream()"""
+def test_append_stream(niri_ads):
+    """Some manipulation of streams using appendStream()"""
     def filenames(stream):
         return ''.join([ad.filename[1] for ad in stream])
 
     p = NIRIImage(niri_ads[:1])
     p.streams['test'] = niri_ads[1:2]
     # Add the AD in 'test' to 'main' leaving it in 'test'
-    p.appendToStream(new_stream='test', delete=False)
+    p.appendStream(from_stream='test', delete=False)
     assert len(p.streams['main']) == 2
     assert len(p.streams['test']) == 1
     # Change filename of version in 'test' to confirm that the one in 'main'
@@ -67,14 +67,14 @@ def test_append_to_stream(niri_ads):
     assert filenames(p.streams['main']) == '12'
 
     # Add the copy in 'test' to 'main', and delete 'test'
-    p.appendToStream(new_stream='test', delete=True)
+    p.appendStream(from_stream='test', delete=True)
     assert len(p.streams['main']) == 3
     assert filenames(p.streams['main']) == '124'
     assert 'test' not in p.streams
 
     # Take 'test2', append 'main', and put the result in 'main'
     p.streams['test2'] = niri_ads[2:]
-    p.appendToStream(instream='test2', new_stream='main')
+    p.appendStream(instream='test2', from_stream='main')
     assert filenames(p.streams['main']) == '3124'
 
 
