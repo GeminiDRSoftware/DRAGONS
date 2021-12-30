@@ -76,7 +76,7 @@ def test_apply_wcs_adjustment(m_error, mosaic, gmos_tiled_images):
         p.mosaicDetectors()
         ref_stream = 'main'
     else:
-        ref_stream = 'index1'
+        ref_stream = 'ext2'
 
     # Mimic behaviour of adjustWCSToReference() by modifying second image's WCS
     wcs = p.streams[ref_stream][1][0].wcs
@@ -90,20 +90,19 @@ def test_apply_wcs_adjustment(m_error, mosaic, gmos_tiled_images):
         m_fix = m_error.inverse
     wcs.insert_transform(wcs.input_frame, m_fix, after=True)
 
-    for stream in list({'index0', 'index1', 'index2'} - {ref_stream}):
+    for stream in list({'ext1', 'ext2', 'ext3'} - {ref_stream}):
         p.applyWCSAdjustment(stream=stream, reference_stream=ref_stream)
         ad1, ad2 = p.streams[stream]
         ra1, dec1 = ad1[0].wcs(ad1[0].OBJCAT['X_IMAGE'] - 1,
                                ad1[0].OBJCAT['Y_IMAGE'] - 1)
         ra2, dec2 = ad2[0].wcs(ad2[0].OBJCAT['X_IMAGE'] - 1,
                                ad2[0].OBJCAT['Y_IMAGE'] - 1)
-        np.testing.assert_allclose(ra1, ra2)
-        np.testing.assert_allclose(dec1, dec2)
+        np.testing.assert_array_almost_equal(ra1, ra2)
+        np.testing.assert_array_almost_equal(dec1, dec2)
 
 
 @pytest.fixture(scope="function")
-def gmos_tiled_images():
-    import astrofaker
+def gmos_tiled_images(astrofaker):
     """Create 4 GMOS images, already tiled into separate CCDs"""
     adinputs = []
     for i in (1, 2, 3, 4):
