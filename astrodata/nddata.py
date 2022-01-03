@@ -374,7 +374,8 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
                 return self._uncertainty
 
     def _get_simple(self, target, section=None):
-        """Only use 'section' for image-like objects"""
+        """Only use 'section' for image-like objects that have the same shape
+        as the NDAstroData object; otherwise, return the whole object"""
         source = getattr(self, target)
         if source is not None:
             if is_lazy(source):
@@ -386,7 +387,7 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
                     ret = source[section]
                 return ret
             elif hasattr(source, 'shape'):
-                if section is None:
+                if section is None or source.shape != self.shape:
                     return np.array(source, copy=False)
                 else:
                     return np.array(source, copy=False)[section]
